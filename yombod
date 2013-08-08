@@ -1,0 +1,16 @@
+#!/bin/bash
+# Simple wrapper script to manage exit codes of Yombo Gateway.
+
+while :
+do
+twistd -n -y yombo.tac
+##  twistd --profiler=cprofile -p profile.out --profiler "cprofile" -n -y yombo.tac
+#  twistd --profiler=cprofile -p profile.out -n -y yombo.tac
+  OUT=$?
+  if [ $? -le "126" ]; then
+    exit $OUT
+  fi
+#  echo "nope!"
+#  exit
+done
+

@@ -1,0 +1,57 @@
+# Python Stuff #
+################
+MANIFEST
+*.c
+*.so
+*.pyc
+*.pyxc
+*.pyo
+*~
+*.lock
+*.swp
+*.DS_Store
+*profile.out
+twistd.pid
+
+# Yombo Stuff #
+###############
+yombo.ini*
+builddocs.sh*
+localmodules.ini*
+
+
+# Building / Documentation #
+############################
+MANIFEST
+build/
+dist/
+docs/build/
+webroot/*
+yombo/lib/html5*
+yombo/lib/old*
+
+# Logs and Databases #
+######################
+*.log
+*.out
+usr/*
+mymodules/*
+
+# Project Tools #
+#################
+/nbproject
+*.git-bundle
+/.project
+/.pydevproject
+x10testout.txt
+ahx.ini*
+mitchlog.*
+
+# Ignore Modules folder, except for empty! #
+##########################################
+yombo/modules/*
+!yombo/modules/__init__.py
+!yombo/modules/empty/
+!yombo/modules/logreader/
+!yombo/modules/logwriter/
+!yombo/modules/moduleunittest/
