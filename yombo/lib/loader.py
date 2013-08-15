@@ -181,12 +181,6 @@ class Loader(YomboLibrary):
             e.exit()
             raise
 
-    def getSomeDeferred(self):
-        """Some function that returns a Deferred."""
-        d = defer.Deferred()
-        reactor.callLater(1, d.callback, 'A string that yells "foo!"')
-        return d
-
     @defer.deferredGenerator
     def importLibraries(self):
         """

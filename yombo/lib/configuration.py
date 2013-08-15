@@ -76,6 +76,7 @@ class Configuration(YomboLibrary):
             fp = open('yombo.ini')
             config_parser.readfp(fp)
             ini = config_parser
+            fp.close()
 
             # check if "deletedbconfigs" is in the local section - remove configs from db
             if ini.has_section('local') and ini.has_option('local', 'deletedbconfigs'):
@@ -88,6 +89,13 @@ class Configuration(YomboLibrary):
                 self.cache[section] = {}
                 for option in ini.options(section):
                     value =  ini.get(section, option)
+                    try:
+                        value = int(value)
+                    except:
+                        try:
+                          value = float(value)
+                        except:
+                          value = str(value)
                     updateItem = section + "_+_" + option + "_+_hash"
                     hashValue = ""
 
@@ -111,7 +119,6 @@ class Configuration(YomboLibrary):
                     # if here, then hash doesn't match and time in .ini is newer        
                     self.write(section, option, value)
             self.dbpool.commit()
-            fp.close()
         except IOError:
             raise GWCritical("ERROR: yombo.ini doesn't exist. Use ./config to setup.", 503, "startup")
         except ConfigParser.NoSectionError:
@@ -132,8 +139,6 @@ class Configuration(YomboLibrary):
         if int(lastTime) < int(time.time()) - 12000:
           self.write("core", "externalIPAddress", getExternalIPAddress())
           self.write("core", "externalIPAddressTime", int(time.time()))
-          
-          
           
     def load(self):
         """
@@ -217,13 +222,14 @@ class Configuration(YomboLibrary):
         if len(key) > self.MAX_KEY:
             raise ValueError("key cannot be more than %d chars" % self.MAX_KEY)
 
+        section = section.lower()
+        key = key.lower()
+
         if section in self.cache:
             if key in self.cache[section]:
                 self.cacheHits += 1
                 return self.cache[section][key]
         
-        section = section.lower()
-        key = key.lower()
         self.cacheMisses += 1
         output = self.readDB(section, key)
 

@@ -11,7 +11,7 @@ import time
 
 from twisted.internet import reactor
 from yombo.core.module import YomboModule
-from yombo.core.helpers import getTimes
+from yombo.core.helpers import getTimes, getConfigValue
 from yombo.core.log import getLogger
 from yombo.core.sqldict import SQLDict
 from yombo.lib.loader import getTheLoadedComponents # Don't use this!
@@ -113,6 +113,28 @@ class ModuleUnitTest(YomboModule):
         
         Startup phase 3 of 3.
         """
+        reactor.callLater(2, self.started) # so we can see our results easier
+
+    def started(self):
+
+        logger.info("isDay: %s" % self.libraries['Times'].isDay)
+        logger.info("isLight: %s" % self.libraries['Times'].isLight)
+        logger.info("isTwilight: %s" % self.libraries['Times'].isTwilight)
+
+        logger.info("isDark: %s" % self.libraries['Times'].isDark)
+        logger.info("isNight: %s" % self.libraries['Times'].isNight)
+
+        logger.info("Time is now: %f" % time.time())
+
+        logger.info("My longitude is: %s " % str(getConfigValue('location', 'latitude', 0)) )
+
+        if self.libraries['Times'].isLight:
+          delayed = int( self.libraries['Times'].CLnowDark.getTime() - time.time() )
+          logger.info("It will be dark in %d seconds." % delayed )
+        else:
+          delayed = int( self.libraries['Times'].CLnowLight.getTime() - time.time() )
+          logger.info("It will be light in %d seconds." % int(time.time()) )
+
         # test times
         if self.libraries['Times'].isLight == self.libraries['Times'].isDark:
             logger.error("It can't be light and dark at same time!!")

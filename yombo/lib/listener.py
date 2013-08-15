@@ -405,11 +405,24 @@ class Listener(YomboLibrary):
         """
         pass
 
+    def start(self):
+        #@TODO: Houstin, uhh, is anyone else listening to this?
+        # GET SSL!!
+        
+        self.myfactory = ListenerFactory()
+        controllerPort = int(getConfigValue("listner", "port", 8443))
+        self.myreactor = reactor.listenTCP(controllerPort, self.myfactory)
+        logger.debug("print type(self.myreactor) = %s", self.myreactor)
+        logger.debug("print type(self.myreactor) = %s", self.myreactor)
+        logger.debug("print type(self.myreactor) %s", self.myreactor)
+        logger.info("print self.myreactor %s" % self.myreactor)
+
     def stop(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        self.myfactory.shutDown()
+        return
+        self.myreactor.shutDown()
 
     def unload(self):
         """
@@ -417,20 +430,3 @@ class Listener(YomboLibrary):
         """
         self.myreactor.stopListening()
 
-    def start(self):
-        self.myfactory = ListenerFactory()
-#        self.myfactory.protocol = ListenerFactory
-        controllerPort = int(getConfigValue("listner", "port", 8443))
-        self.myreactor = reactor.listenTCP(controllerPort, self.myfactory)
-        logger.debug("print type(self.myreactor) = %s", self.myreactor)
-        logger.debug("print type(self.myreactor) = %s", self.myreactor)
-        logger.debug("print type(self.myreactor) %s", self.myreactor)
-        logger.debug("print type(self.myreactor) %s", self.myreactor)
-
-#        import twisted.manhole.telnet
-#        # Add a manhole shell, for debuging.
-#        f = twisted.manhole.telnet.ShellFactory()
-#        f.username = "boss"
-#        f.password = "sekrit"
-#        f.namespace['foo'] = 12
-#        reactor.listenTCP(8007, f)

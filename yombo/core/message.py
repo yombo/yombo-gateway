@@ -545,8 +545,8 @@ class Message:
         logger.info("validcmd payload: %s" % self.payload)
 
         #for testing with isinstance. Can't include at startup - loop!
-#        from yombo.lib.devices import Device
-#        from yombo.lib.commands import Command
+        from yombo.lib.devices import Device
+        from yombo.lib.commands import Command
 
         if 'cmdobj' in self.payload:
             if isinstance(self.payload['cmdobj'], Command):

@@ -43,19 +43,21 @@ def validateNonce(nonce, **kwargs):
     import collections
 
     minLength =  kwargs.get('minLength', 32)
-    randomness =  kwargs.get('randomness', 0.85)
+    randomness =  kwargs.get('randomness', 0.60)
 
     if len(nonce) < minLength:
         return False
 
     d = collections.defaultdict(int)
 
-    if randomness > 0.95:
-        randomnes = 0.95
+    if randomness > 0.70:
+        randomness = 0.70
     elif randomness < 0.10:
-        randomnes = 0.10
+        randomness = 0.10
 
     randomChars = int(minLength * randomness)
+    if randomChars > 15:
+        randomChars = 15
     for c in nonce:  #now check to make sure the nonce is random enough.
         d[c] += 1
     if len(d) < randomChars:

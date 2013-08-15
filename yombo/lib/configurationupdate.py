@@ -255,11 +255,6 @@ class ConfigurationUpdate(YomboLibrary):
 
         logger.debug("Preparing for full configuration download.")
         self.doGetAllConfigs()
-        
-    def _getDeffered(self):
-        d = defer.Deferred()
-        reactor.callLater(1, d.callback, 'A string that yells "foo!"')
-        return d        
 
     def doGetAllConfigs(self, junk=None):
         logger.trace("dogetallconfigs.....")

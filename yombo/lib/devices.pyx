@@ -73,6 +73,7 @@ class Devices(YomboLibrary):
         self.yombodevicesByType = {}
         self.yombodevicesByName = FuzzySearch(None, .89)
         self._toSaveStatus = {}
+        self._saveStatusLoop = None
 
     def load(self):
         """
@@ -87,7 +88,7 @@ class Devices(YomboLibrary):
         Load devices, and load some of the device history. Setup looping
         call to periodically save any updated device status.
         """
-        self._saveStatusLoop = LoopingCall(self._saveStatus)
+        self._saveStatusLoop = LoopingCall(self._saveStatus, False)
         self._saveStatusLoop.start(60, False)
         pass
 
@@ -95,14 +96,13 @@ class Devices(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        self._saveStatusLoop.stop()
+        if self._saveStatusLoop != None:
+            self._saveStatusLoop.stop()
 
     def unload(self):
         """
         Stop periodic loop, save status updates.
         """
-        logger.info("!!!!!!!!!!!!!!!!1  In unload!!!!!!!!!!!!!!!!!!!!!!")
-
         self._saveStatus()
 
     def _saveStatus(self):
@@ -127,7 +127,6 @@ class Devices(YomboLibrary):
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. **Do not call this function!**
         """
-        logger.info("!!!!!!!!!!!!!!!!1  In cear!!!!!!!!!!!!!!!!!!!!!!")
         self._saveStatus()
         self.yombodevices.clear()
         self.yombodevicesByType.clear()

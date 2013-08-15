@@ -1,4 +1,4 @@
-#This file was created by Yombo for use with Yombo Python gateway automation
+#This file was created by Yombo for use with Yombo Gateway automation
 #software.  Details can be found at http://www.yombo.net
 """
 This is the main class the is responsible for getting everything started.

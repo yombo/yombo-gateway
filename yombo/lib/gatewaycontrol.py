@@ -9,26 +9,26 @@ this connection, nothing can be done.
 
 This data stream supports bi-direct, simultaneous, traffic.
 
-The Yombo service also acts as a router to deliver
-a :ref:`Message`_ from remote sources, including
-remote controllers that couldn't reach the gateway directly.
+The Yombo service also acts as a router to deliver a :ref:`Message`_ from
+remote sources, including remote controllers that couldn't reach the gateway
+directly.
 
-Connection should be maintained 100% of the time.  It's easier on the
-yombo servers to maintain an idle connection than to keep
-rasing and dropping connections.
+Connection should be maintained 100% of the time.  It's easier on the yombo
+servers to maintain an idle connection than to keep rasing and dropping
+connections.
 
-Depending on the security options the user has selected, it can be
-used to transmit real time data to the servers for further processing
-and event handling.  See the Yombo privacy policy regarding
-users data: In short, it's the users data, Yombo keeps it private.
+Depending on the security options the user has selected, it can be used to
+transmit real time data to the servers for further processing and event
+handling.  See the Yombo privacy policy regarding users data: In short, it's
+the users data, Yombo keeps it private.
 
 .. warning::
 
-  Module developers and users should not access any of these functions
-  or variables.  This is listed here for completeness. Use a
-  :mod:`helpers` function to get what is needed.
+  Module developers and users should not access any of these function or
+  variables.  This is listed here for completeness. Use a :mod:`helpers`
+  function to get what is needed.
 
-@TODO: The gateway needs to check for a non-responsive gateway or
+:TODO: The gateway needs to check for a non-responsive server or
 if it doesn't get a response in a timely manor. It should respond
 in MS, but it could have died/hung.  Perhaps disconnect and reconnect to
 another server? -Mitch
@@ -60,7 +60,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         """
         Setup a few basic settings for the gateway control protocol.
         """
-        self.protocol_version = 2.0
+        self.protocolVersion = 3
         self._Name = "gatewaycontrolprotocol"
         self._FullName = "yombo.gateway.lib.gatewaycontrolprotocol"
         
@@ -72,44 +72,84 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         """
         self.YomboReconnect = True
         self.authenticated = False
+        self.authState = 0
+        # Say hello to server.
+        self.__cnonce = generateRandom()
+        outgoing = {
+                    'type' : 'gateway',
+                    'protocolversion' : 3,
+                    'cnonce' : self.__cnonce,
+                    'clientuuid' : getConfigValue("core", "gwuuid"),
+                   }
+        self.sendMessage(outgoing)        
 
     def sendMessage(self, msg):
         """
-        Send message to Yombo Servers.  Msg needs to be a dict at this point.  Developers
-        should use the L{Message} class to deliver messages to the server.
+        Send message to Yombo Servers.  Msg needs to be a dict at this point.
+        Developers should use the :ref:`Message`_ class to deliver messages to
+        the server.
 
-        @param msg: A dictionary of the message to send TO the yombo server.
-        @type msg: C{dict}
+        :param msg: A dictionary of the message to send TO the yombo server.
+        :type msg: dict
         """
-        logger.trace("send to yombo: %s", msg)
-        json_string = json.dumps(msg)
-        self.sendString(json_string)
+        logger.info("send to yombo: %s", msg)
+
+        if self.authenticated == False:
+            themsg = json.dumps(msg)
+            self.sendString(themsg)
+            return
+
+        newmsg = { 'msgDestination' : msg['msgDestination'],
+                   'msgOrigin'      : msg['msgOrigin'],
+                   'data'           : {},
+                 }
+        del msg['msgDestination']
+        del msg['msgOrigin']
+        msgItemsSkip = ( 'uuidType', 'uuidSubType', 'notBefore', 'maxDelay')
+        for item in msg:
+            if item in msgItemsSkip:
+                continue
+            newmsg['data'][item] = msg[item]
+
+        themsg = json.dumps(newmsg)
+        self.sendString(themsg)
 
     def stringReceived(self, string):
         """
         Received a string from Yombo Servers. At this point, it's not at a point
-        that we can understand.  It needs to be processed to a JSON and then possibly
-        to a L{Message}, depending on the destination.
+        that we can understand.  It needs to be processed to a JSON and then
+        possibly to a Message, depending on the destination.
 
         This is a JSON string. Processing order:
         1) If not authed, then send the packet to the auth function.
         2) If it's a config item, send directly to configurationupdate.py - done for speed.
         3) Else, create a message from 'string', and tell it to send itself.
 
-        @param string: A string sent from the Yombo server.
-        @type string: C{string}
+        :param string: A string sent from the Yombo server.
+        :type string: C{string}
         """
-        logger.trace("received from yombo: %s", string)
-        msg = json.loads(string)
+        logger.info("received from yombo: %s", string)
+        msg = None
+        try:
+            msg = json.loads(string)
+            self.badStringCount = 0
+        except ValueError, e:
+            logger.warning("Server sent invalid json. Bad server. Hanging up.")
+            self.transport.loseConnection()            
+
+        if not isinstance(msg, dict):
+            logger.warning("Received message that is not a dict.")
+            self.transport.loseConnection()
+            
         if self.authenticated == False:
             try:
                 self.doAuth(msg)
             except AuthError, e:
                 self.sendString("%s" % e)
-                self.transport.loseConnection()
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 logger.error("%s" % e)
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                self.transport.loseConnection()
             except GWCritical, e:
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 logger.error("%s" % e)
@@ -117,14 +157,26 @@ class GatewayControlProtocol(basic.NetstringReceiver):
                 self.transport.loseConnection()
                 e.exit()
         else:
-            if msg['msgType'] == "config":
-#                logger.debug("configupdate.processconfig = %s", msg)  #LOTS!
-                self.configUpdate.processConfig(msg)
-            else:
-                logger.trace("got message: %s", msg)
-                message = Message(msg)
-                message.send()
+            # as of Aug 13, 2013 - messages between gateway and server enclose
+            # the meat of the message in 'data' portion of message.  This allows
+            # the data portion to be signed and/or fully encrypted.
+            msgKeys = ('msgOrigin', 'msgDestination', 'data')
+            if not all(item in msgKeys for item in msg): # missing message parts. Discard.
+              return
 
+            newmsg = { 'msgDestination' : msg['msgDestination'],
+                       'msgDestination' : msg['msgOrigin'],
+                     }
+            for item in msg['data']:
+                newmsg[item] = msg['data'][item]
+
+            if newmsg['msgType'] == "config":
+#                logger.debug("configupdate.processconfig = %s", msg)  #LOTS!
+                self.configUpdate.processConfig(newmsg)
+            else:
+                logger.trace("got message: %s", newmsg)
+                message = Message(newmsg)
+                message.send()
 
     def doAuth(self, msg):
         """
@@ -138,64 +190,66 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         doesn't find a valid response, it will disconnect from the current yombo server and
         try another server.
         
-        @param msg: A dictionary of the message sent from the yombo server. We don't use
+        :param msg: A dictionary of the message sent from the yombo server. We don't use
             full message object in the auth phase.
-        @type msg: C{dict}
+        :type msg: dict
         """
+        logger.info("auth state = %d" % self.authState)
         if "error" in msg:
             logger.error("A critical error occuring during authentication.")
             logger.error("Reason: %s", msg["error"])
-            raise AuthError("Authentication to server failed. Download an updated yombo.ini file.", 5010)
-        if "cmd" not in msg:
-            raise AuthError("Invalid message packet during auth.", 1001)
+            raise AuthError("Authentication to server failed: %s" % msg['error'], 5010)
 
-        if msg["cmd"] == "authrequest":
-            if "protocol_version" not in msg:
-                raise AuthError("Server didn't specify a protocol version. Bad server??", 5011)
+        if self.authState == 0: # if waiting for greeting, process that.
+          msgKeys = ('snonce', 'pgpkeyid', 'protocolversion', 'minprotocolversion')
+          if not all(item in msgKeys for item in msg): # missing message parts. Discard.
+            logger.warning("Server didn't send our required items back. Good bye.")
+            raise AuthError("Server didn't send our required items back. Good bye.", 5010)
 
-            min_protocol_version = float(msg['min_protocol_version'])
-            logger.debug("if %f > %f", min_protocol_version, self.protocol_version)
-            try:
-                if min_protocol_version > self.protocol_version:
-                    raise AuthError("You must upgrade the gateway software. Protocol communication is out of date.", 5012)
-            except:
-                raise AuthError("Error reading/processing remote protocol. Is your gateway software up to date?", 5013)
+          try:
+              minProtocolVersion = int(msg['minprotocolversion'])
+              logger.debug("if %f > %f", minProtocolVersion, self.protocolVersion)
+              if minProtocolVersion > self.protocolVersion:
+                raise AuthError("You must upgrade the gateway software. Protocol communication is out of date.", 5012)
+          except:
+              raise AuthError("Error reading/processing remote protocol. Is your gateway software up to date?", 5013)
             
-            logger.trace("GatewayControlProtocol::stringReceived() - Got auth request")
+          if validateNonce(msg["snonce"]) != True:
+              logger.warning("Server sent us a bad nonce.  Dropping connection and will attempt a reconnect.")
+              self.factory.router.reconnectToDifferent()
 
-            if validateNonce(msg["snonce"]) != True:
-                logger.warning("Server sent us a bad nonce.  Dropping connection and will attempt a reconnect.")
-                self.factory.router.reconnectToDifferent()
+          self.__snonce = msg["snonce"]
+          self.__gwhash = getConfigValue("core", "gwhash")
 
-            self.__cnonce = generateRandom()
-            self.__snonce = msg["snonce"]
-            self.__gwhash = getConfigValue("core", "gwhash")
-
-            authtoken = generateToken(self.__gwhash, self.__snonce, self.__cnonce)
-            response = {'cmd'        : "authresponse",
-                       'gwuuid'      : getConfigValue("core", "gwuuid"),
+          authtoken = generateToken(self.__gwhash, self.__snonce, self.__cnonce)
+          response = {
                        'authtoken'   : authtoken,
-                       'cnonce'      : self.__cnonce,
-                       'controllerport' : getConfigValue("core", "controllerport", 443),
+                       'listenerport': getConfigValue("core", "controllerport", 443),
                        'localip'     : getLocalIPAddress(),
                        'externalip'  : getConfigValue("core", "externalIPAddress", "0.0.0.0"),
-                       'protocolversion' : self.protocol_version}
-            self.sendMessage(response)
-        elif msg["cmd"] == "authfailed":
-            raise AuthError("Authentication to server failed. Download an updated yombo.ini file.", 5001)
-        elif msg["cmd"] == "authok":
-            logger.trace("my auth msg: %s", msg)
-            auth = checkToken(msg['authtoken'], self.__gwhash, self.__cnonce, self.__snonce)
-            if(auth == True):
-                self.authenticated = True
-                self.dataAuthID_svr = msg["dataAuthID_svr"]
-                self.dataAuthID_client = msg["dataAuthID_client"]
-                self.factory.router.connected(self)
-                logger.debug("GatewayControlProtocol::stringReceived() - Got authok - I'm authenticated")
-                setConfigValue('server', 'svcpgpkeyid', msg["pgpkeyid"])
-                #pgpFetchKey(msg["pgpkeyid"])
-            else:
-                logger.warning("Yombo server doesn't know our hash, dropping connection and attempt to connect elsewhere.")
+                     }
+          self.sendMessage(response)
+          self.authState = 1
+          return
+
+        elif self.authState == 1:
+            if 'cmd' in msg:
+              if msg['cmd'] == 'authok':
+                logger.trace("my auth msg: %s", msg)
+                auth = checkToken(msg['authtoken'], self.__gwhash[:15], self.__cnonce, self.__snonce)
+                if(auth == True):
+                  self.authenticated = True
+                  self.dataAuthID_svr = msg["dataAuthID_svr"]
+                  self.dataAuthID_client = msg["dataAuthID_client"]
+                  self.factory.router.connected(self)
+                  logger.debug("GatewayControlProtocol::stringReceived() - Got authok - I'm authenticated")
+                  setConfigValue('server', 'svcpgpkeyid', msg["pgpkeyid"])
+                  #pgpFetchKey(msg["pgpkeyid"])
+                else:
+                  logger.warning("Yombo server doesn't know our hash, dropping connection and attempt to connect elsewhere.")
+                  self.factory.router.reconnectToDifferent()
+              else:
+                logger.warning("Yombo server says out auth is bad!")
                 self.factory.router.reconnectToDifferent()
 
 class GatewayControlFactory(ReconnectingClientFactory):
@@ -203,10 +257,6 @@ class GatewayControlFactory(ReconnectingClientFactory):
     The interface between the gateway system and the protocol layer.
     """
     protocol = GatewayControlProtocol
-#    maxDelay = 600
-#    factor = 2.5
-#    jitter = 0.2
-
     def __init__(self, router):
         """
         Setup low level protocol.
@@ -243,8 +293,8 @@ class GatewayControlFactory(ReconnectingClientFactory):
         """
         Received a message from Yombo Servers.
         
-        @param incoming: An incoming message from Yombo servers.
-        @type incoming: C{dict}
+        :param incoming: An incoming message from Yombo servers.
+        :type incoming: dict
         """
         logger.debug("Gateway Control factory got incoming message:%s", incoming)
         msg = {"msgOrigin" : incoming["msgOrigin"],
@@ -270,8 +320,6 @@ class GatewayControl(YomboLibrary):
     configUpdate = None
 
     def init(self, loader):
-#        YomboLibrary.__init__(self)
-
         self.loader = loader
         
         self._connection = None #Protocol object

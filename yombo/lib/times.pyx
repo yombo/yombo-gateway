@@ -301,34 +301,6 @@ class Times(YomboLibrary):
         message = Message(**msg)
         message.send()
 
-# To be removed, maybe.. -- Mitch
-#    def _isDawn(self):
-#        """
-#        Sets the class variable "isDawn". This is called on gateway startup
-#        and whenever the an is dawn event occurs.
-#        """
-#        self.obs.date = datetime.utcnow()
-#        self.obsTwilight.date = datetime.utcnow()
-#        timenow = datetime.utcnow()
-#        logger.debug("timenow = %d", timenow)
-#        if self.obsTwilight.next_rising(ephem.Sun()).datetime() < timenow < self.obs.next_rising(ephem.Sun()).datetime():
-#            self.isDawn = True
-#        else:
-#            self.isDawn = False
-#
-#    def _isDusk(self):
-#        """
-#        Returns true it's twilight & dusk
-#        """
-#        self.obs.date = datetime.utcnow()
-#        self.obsTwilight.date = datetime.utcnow()
-#        timenow = datetime.utcnow()
-#        logger.debug("timenow = %d", timenow)
-#        if self.obs.next_setting(ephem.Sun()).datetime() < timenow < self.obsTwilight.next_setting(ephem.Sun()).datetime():
-#            self.isDusk = True
-#        else:
-#            self.isDusk = False
-#
     def _CalcTwilight(self):
         """
         Sets the class variable "isTwilight" depending if it's
@@ -357,7 +329,6 @@ class Times(YomboLibrary):
 
         So the TWILIGHT events occur when (N(set)>N(rise) AND  N(Tset)<N(Trise))
         This condition should work on polar day/night also.
-         
         
         """
         self.obs.date = datetime.utcnow()
