@@ -282,7 +282,30 @@ class Message:
                 'msgAuth'       : dict(self.msgAuth),
                 'notBefore'     : int(self.notBefore),
                 'maxDelay'      : int(self.maxDelay),
-                'payload'       : dict(self.payload)}
+                'payload'       : dict(self.payload),
+                }
+
+    def dumpToExternal(self):
+        """
+        Same as dump, but dosn't return all items needed for external usage.
+
+        :return: A dictionary containing the key values of the message. Can be
+            used to create a new message.
+        :rtype: dict
+
+        """
+        return {'msgOrigin'     : str(self.msgOrigin),
+                'msgDestination': str(self.msgDestination),
+                'msgType'       : str(self.msgType),
+                'msgStatus'     : str(self.msgStatus),
+                'msgStatusExtra': str(self.msgStatusExtra),
+                'msgUUID'       : str(self.msgUUID),
+                'msgUUID'       : str(self.msgUUID),
+                'msgOrigUUID'   : str(self.msgOrigUUID),
+                'msgPath'       : str(self.msgPath),
+                'msgAuth'       : dict(self.msgAuth),
+                'payload'       : dict(self.payload),
+                }
 
     def getReply(self, **kwargs):
         """
@@ -302,7 +325,7 @@ class Message:
             'msgDestination' : self.msgOrigin,
             'msgType'        : self.msgType,
             'msgOrigUUID'    : self.msgUUID,
-            'msgStatus'      : kwargs['msgStatus'],
+            'msgStatus'      : kwargs.get('msgStatus', 'reply'),
             'msgStatusExtra' : kwargs.get('msgStatusExtra', None),
             'payload'        : {},
             }

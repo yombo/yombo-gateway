@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://www.yombo.net
 """

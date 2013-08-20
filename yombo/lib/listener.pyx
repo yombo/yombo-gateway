@@ -1,3 +1,4 @@
+# cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://www.yombo.net
 """
@@ -27,8 +28,7 @@ Once a remote client is authenticated, all system broadcast messages
 from base64 import b64encode, b64decode
 import json
 import time
-#import zope.interface
-
+import re
 
 from yombo.core.library import YomboLibrary
 from twisted.protocols import basic
@@ -37,9 +37,11 @@ from twisted.internet import reactor, protocol
 from twisted.internet.protocol import ServerFactory
 
 from yombo.core import getComponent
-from yombo.core.auth import generateToken, validateNonce
-from yombo.core.helpers import getConfigValue, setConfigValue, generateRandom, getUserGWToken
+from yombo.core.auth import generateToken, validateNonce, checkToken
+from yombo.core.exceptions import AuthError, GWCritical
+from yombo.core.helpers import getConfigValue, setConfigValue, generateRandom, getUserGWToken, generateUUID
 from yombo.core.log import getLogger
+from yombo.core.message import Message
 
 logger = getLogger()
 
@@ -367,7 +369,7 @@ class ListenerFactory(ServerFactory):
         for client in self.gwclients:
             client.shutDown()
 
-    def sendToUsername(username, msg):
+    def sendToUsername(self, username, msg):
         if username in self.users:
           self.gwclient[self.users[username]].sendMessage(msg)
         else:

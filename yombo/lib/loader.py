@@ -540,9 +540,8 @@ class Loader(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-
         if moduleRequested in self.__yombodevices:
-            return self.__modulesByUUID[byUUID]
+            return self.__modulesByUUID[moduleRequested]
         else:
             try:
                 return self.__modulesByName[moduleRequested.lower()]

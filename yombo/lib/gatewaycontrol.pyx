@@ -38,8 +38,10 @@ another server? -Mitch
 :license: LICENSE for details.
 """
 
+import re
 import json
 from collections import deque
+
 from twisted.internet.protocol import ReconnectingClientFactory
 from twisted.protocols import basic
 from twisted.internet import reactor, ssl
@@ -92,8 +94,6 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         :param msg: A dictionary of the message to send TO the yombo server.
         :type msg: dict
         """
-        logger.info("send to yombo: %s", msg)
-
         if self.authenticated == False:
             themsg = json.dumps(msg)
             self.sendString(themsg)
@@ -128,7 +128,6 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         :param string: A string sent from the Yombo server.
         :type string: C{string}
         """
-        logger.info("received from yombo: %s", string)
         msg = None
         try:
             msg = json.loads(string)
@@ -160,23 +159,51 @@ class GatewayControlProtocol(basic.NetstringReceiver):
             # as of Aug 13, 2013 - messages between gateway and server enclose
             # the meat of the message in 'data' portion of message.  This allows
             # the data portion to be signed and/or fully encrypted.
+
             msgKeys = ('msgOrigin', 'msgDestination', 'data')
             if not all(item in msgKeys for item in msg): # missing message parts. Discard.
               return
 
             newmsg = { 'msgDestination' : msg['msgDestination'],
-                       'msgDestination' : msg['msgOrigin'],
+                       'msgOrigin' : msg['msgOrigin'],
                      }
             for item in msg['data']:
                 newmsg[item] = msg['data'][item]
+
+            msgOriginParts = newmsg['msgOrigin'].split(':')
+            msgOriginTypeParts = msgOriginParts[0].split('.')
+
+            if len(msgOriginParts) != 2:
+              return logger.warning("GatewayControl dropped packet: Incorrect number of msgOrigin components.")
+            if re.match('^[.\w-]+$', msgOriginParts[0]) is None:
+              return logger.warning("GatewayControl dropped packet: Invalid characters in message origin.")
+            if re.match('^[\w-]+$', msgOriginParts[1]) is None:
+              return logger.warning("GatewayControl dropped packet: Invalid characters in message origin.")
+
+            msgDestParts = newmsg['msgDestination'].split(':')
+            msgDestTypeParts = msgDestParts[0].split('.')
+            if len(msgDestParts) != 2:
+              return logger.warning("GatewayControl dropped packet: Incorrect number of msgDestination components.")
+            if re.match('^[.\w-]+$', msgDestParts[0]) is None:
+              return logger.warning("GatewayControl dropped packet: Invalid characters in message origin.")
+            if re.match('^[\w-]+$', msgDestParts[1]) is None:
+              return logger.warning("GatewayControl dropped packet: Invalid characters in message origin.")
+
+            msgDest2 = "%s.%s" % (msgDestTypeParts[0], msgDestTypeParts[1])
+            if msgDest2 != 'yombo.gateway':
+              return self.disconnect("Server trying something wierd.")
 
             if newmsg['msgType'] == "config":
 #                logger.debug("configupdate.processconfig = %s", msg)  #LOTS!
                 self.configUpdate.processConfig(newmsg)
             else:
+              try:
                 logger.trace("got message: %s", newmsg)
-                message = Message(newmsg)
+                message = Message(**newmsg)
                 message.send()
+              except:
+                return logger.warning("GatewayControl dropped packet: Couldn't create a Message instance.")
+                
 
     def doAuth(self, msg):
         """
@@ -411,13 +438,13 @@ class GatewayControl(YomboLibrary):
         forUs = message.checkDestinationAsLocal()
 
         if forUs == False:
-            self._connection.sendMessage(message.dump())
+            self._connection.sendMessage(message.dumpToExternal())
         else:
             logger.warning("Not routing message to YomboSvc since the message is for us.: %s", message.dump())
 
     def sendQueueAdd(self, message):
         if type(message) is not dict:
-            message = message.dump()
+            message = message.dumpToExternal()
         logger.trace("Adding command to queue: %s", message)
         self.sendQueue.appendleft(message)
         self.sendQueueCheck()

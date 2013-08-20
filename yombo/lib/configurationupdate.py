@@ -28,7 +28,7 @@ from yombo.core.message import Message
 #TODO: Consolidate.
 import yombo.core.db
 from yombo.core.db import get_dbconnection
-from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime
+from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime, generateUUID
 from yombo.core.log import getLogger
 from yombo.core import getComponent
 
@@ -287,12 +287,11 @@ class ConfigurationUpdate(YomboLibrary):
 
 
     def _generateMessage(self, payload):
-        return {'msgOrigin'     : "yombo.gateway.lib.GatewayConfigs:%s" % self.gwuuid,
-               'msgDestination' : "yombo.svc.lib.GatewayConfigs",
+        return {'msgOrigin'     : "yombo.gateway.lib.configurationupdate:%s" % self.gwuuid,
+               'msgDestination' : "yombo.svc.gwhandler",
                'msgType'        : "config",
-               'msgStatus'      : "request",
-               'uuidType'       : "0",
-               'uuidSubType'    : "010",
+               'msgStatus'      : "new",
+               'msgUUID'        : str(generateUUID(mainType='Y', subType='cu0')),
                'payload'        : payload,
               }
 

@@ -22,7 +22,7 @@ includes Ubuntu, Xubuntu, and Mint. The following script can copied and used.
   #sudo apt-get update
 
   # Install most of the needed items.
-  sudo apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel
+  sudo apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel python-dev build-essential
 
   # gnupg is used for signing and encryption. pyephem is used for sunset/sunrise times.
   sudo pip install python-gnupg pyephem
