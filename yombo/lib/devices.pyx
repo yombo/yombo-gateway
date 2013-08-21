@@ -96,7 +96,7 @@ class Devices(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        if self._saveStatusLoop != None:
+        if hasattr(self, '_saveStatusLoop') and self._saveStatusLoop != None:
             self._saveStatusLoop.stop()
 
     def unload(self):
@@ -347,9 +347,9 @@ class Device:
             - maxDelay *(int)* - How late the message is allowed to be delivered.
             - pinnumber *(string)* - Required if device requries a pin.
             - skippinnumber *(True)* - Bypass pin checking (use wisely).
-            - cmd  or cmduuid *(string)* - Needs to include either a "cmd" or "cmduuid";
-              *cmdUUID* is always prefered.
-            - payload *(dict)* - Payload attributes to include. cmduuid and deviceuuid are
+            - cmdobj (instance), cmd  or cmduuid *(string)* - Needs to include either a "cmdobj", "cmd" or "cmduuid";
+              *cmdobj* is always preferred, followed by *cmdUUID*, then cmd.
+            - payload *(dict)* - Payload attributes to include. cmdobj and deviceobj are
               already set.
         :return: the msgUUID
         :rtype: string
@@ -364,15 +364,20 @@ class Device:
 
         logger.debug("device kwargs: %s", kwargs)
         cmdobj = None
-        if 'cmdobj' in kwargs:
+        try:
+          if 'cmdobj' in kwargs:
             if isinstance(kwargs['cmdobj'], Command):
               cmdobj = kwargs['cmdobj']
-        elif 'cmdUUID' in kwargs:
-            cmdobj = getCommand(kwargs['cmdUUID'])
-        elif 'cmd' in kwargs:
+            else:
+              raise DeviceError("Invalid 'cmdobj'.", errorno=103)
+          elif 'cmdUUID' in kwargs:
+              cmdobj = getCommand(kwargs['cmdUUID'])
+          elif 'cmd' in kwargs:
             cmdobj = getCommand(kwargs['cmd'])
-        else:
+          else:
             raise DeviceError("Missing 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
+        except:
+            raise DeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
 
         if self.validateCommand(cmdobj.cmdUUID) != True:
             raise DeviceError("Invalid command requested for device.", errorno=103)
@@ -384,7 +389,7 @@ class Device:
             else:
                 raise DeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']), errorno=102)
 
-        payload = {"cmdUUID" : cmdobj.cmdUUID, "deviceUUID" : self.deviceUUID}
+        payload = {"cmdobj" : cmdobj.cmdUUID, "deviceobj" : self}
         
         payload.update(payloadValues)
 

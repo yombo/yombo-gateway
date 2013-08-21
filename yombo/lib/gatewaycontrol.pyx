@@ -5,9 +5,11 @@
 Establishes a connection the Yombo servers for command / data control. This
 connection it used for settings, command messages, data traffic control and
 authorization, etc, between the gateway and the yombo service.  Without
-this connection, nothing can be done.
+this connection, nothing can be done. This data stream supports bi-direct,
+simultaneous, traffic.
 
-This data stream supports bi-direct, simultaneous, traffic.
+This connection is for text only, gatawaydata library is used for transfering
+binary data.
 
 The Yombo service also acts as a router to deliver a :ref:`Message`_ from
 remote sources, including remote controllers that couldn't reach the gateway
@@ -65,7 +67,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         self.protocolVersion = 3
         self._Name = "gatewaycontrolprotocol"
         self._FullName = "yombo.gateway.lib.gatewaycontrolprotocol"
-        
+
         self.configUpdate = getComponent('yombo.gateway.lib.ConfigurationUpdate')
 
     def connectionMade(self):
@@ -96,6 +98,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         """
         if self.authenticated == False:
             themsg = json.dumps(msg)
+            logger.trace("sending: %s" % themsg)
             self.sendString(themsg)
             return
 
@@ -111,7 +114,10 @@ class GatewayControlProtocol(basic.NetstringReceiver):
                 continue
             newmsg['data'][item] = msg[item]
 
+        self.factory.outgoingUUID.append(msg['msgUUID'])
+
         themsg = json.dumps(newmsg)
+        logger.trace("sending: %s" % themsg)
         self.sendString(themsg)
 
     def stringReceived(self, string):
@@ -126,8 +132,9 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         3) Else, create a message from 'string', and tell it to send itself.
 
         :param string: A string sent from the Yombo server.
-        :type string: C{string}
+        :type string: string
         """
+        logger.trace("received: %s" % string)
         msg = None
         try:
             msg = json.loads(string)
@@ -194,9 +201,34 @@ class GatewayControlProtocol(basic.NetstringReceiver):
               return self.disconnect("Server trying something wierd.")
 
             if newmsg['msgType'] == "config":
-#                logger.debug("configupdate.processconfig = %s", msg)  #LOTS!
                 self.configUpdate.processConfig(newmsg)
             else:
+              # Make sure msg has a msgUUID and that it's not already sent!
+              if 'msgUUID' not in newmsg:
+                logger.warning("Message didn't have msgUUID, dropping!")
+                return
+
+              if newmsg['msgUUID'] in self.factory.incomingUUID:
+                logger.warning("Recent duplicate msgUUID, dropping!")
+                return
+
+              self.factory.incomingUUID.append(msg['msgUUID'])
+
+              # if new, it won't have a msgOrigUUID field, otherwise it must.
+              # Check that it does contain an OrigUUID field and that it is
+              # a valid msgUUID sent by us.
+
+              if 'status' not in newmsg:
+                logger.warning("Message should have a status, but didn't. Dropping!")
+                return
+              if newmsg['status'] != 'new':
+                if 'msgOrigUUID' not in newmsg:
+                  logger.warning("Message should have msgOrigUUID, but didn't. Dropping!")
+                  return
+              if newmsg['msgOrigUUID'] in self.factory.outgoingUUID:
+                logger.warning("This is not a valid response for this session.")
+                return
+
               try:
                 logger.trace("got message: %s", newmsg)
                 message = Message(**newmsg)
@@ -297,6 +329,10 @@ class GatewayControlFactory(ReconnectingClientFactory):
         self.factor = 2.42503912
         self.router = router
         self.maxDelay = 60
+        # These are in the factory incase the connection is dropped and remade.
+        self.incomingUUID = deque([],600) # Make sure the last few message UUIDs are unique
+        self.outgoingUUID = deque([],600) # Make sure the last few message UUIDs are unique
+        
 
     def startedConnecting(self, connector):
         logger.debug("Attempting connecting to yombo servers.")

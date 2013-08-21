@@ -201,7 +201,7 @@ class Loader(YomboLibrary):
 #            library.init(self)
 #            continue
             if hasattr(library, 'init'):
-                logger.trace("Calling init function for library: %s" % componentName)
+#                logger.info("Calling init function for library: %s" % componentName)
                 try:
 #                    wfd = defer.waitForDeferred(defer.maybeDeferred(library.init, self))
                     d = defer.maybeDeferred(library.init, self)

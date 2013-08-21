@@ -258,31 +258,31 @@ class ConfigurationUpdate(YomboLibrary):
 
     def doGetAllConfigs(self, junk=None):
         logger.trace("dogetallconfigs.....")
-        self._appendFullTableQueue("GatewayDetailsTable")
-        self._appendFullTableQueue("GatewayVariablesTable")
         self._appendFullTableQueue("CommandsTable")
- #       self._appendFullTableQueue("GatewayModuleInterfacesTable")
         self._appendFullTableQueue("DevicesTable")
         self._appendFullTableQueue("DeviceTypeCommandsTable")
+        self._appendFullTableQueue("GatewayDetailsTable")
+        self._appendFullTableQueue("GatewayVariablesTable")
+        self._appendFullTableQueue("ModuleInterfacesTable")
         self._appendFullTableQueue("ModuleDeviceTypesTable")
         self._appendFullTableQueue("ModulesTable")
+        self._appendFullTableQueue("UsersTable")
         self._appendFullTableQueue("VariableDevicesTable")
         self._appendFullTableQueue("VariableModulesTable")
-        self._appendFullTableQueue("UsersTable")
         
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'GPGKEY', 'gpgkeyid' : self.gpg_key, 'gpgkeyascii' : self.gpg_key_ascii}))
+        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullCommands', 'type' : "outgoing"}))
+        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullDevices'}))
+        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullDeviceTypeCommands'}))
+        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayModuleInterfaces'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayDetails'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayUserTokens'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayVariables'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullCommands', 'type' : "outgoing"}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayModuleInterfaces'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullDevices'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullDeviceTypeCommands'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullModuleDeviceTypes'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullModules'}))
+        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullUsers'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullVariableDevices'}))
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullVariableModules'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullUsers'}))
         return True
 
 
@@ -306,11 +306,12 @@ class ConfigurationUpdate(YomboLibrary):
             self.__pendingUpdates.append(table)
 
     def _removeFullTableQueue(self, table):
+#        logger.info("!!!!!!!!!!!!!!!!!!!!!: %s" % table)
         if table in self.__pendingUpdates:
             self.__pendingUpdates.remove(table)
 
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs == True:
             self.__doingfullconfigs = False
             self.loadDefer.callback(10) # a made up number.
-        logger.trace("Configs pending: %s", self.__pendingUpdates)
+#        logger.info("Configs pending: %s", self.__pendingUpdates)
             

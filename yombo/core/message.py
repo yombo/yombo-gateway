@@ -211,9 +211,12 @@ class Message:
                user to be authenticated, this field will be populated with
                the username. Used for API calls or remote data streams such as
                HTML5 clients, etc.
-            
         :type msgAuth: dict
 
+        :param newMessage: Default is True. Set to false to force simple
+            validations on the message. For example, it will make sure the
+            msgUUID exists and won't create a new one.
+        :type newMessage: bool
         """
         self.loader = getLoader()
         self.libMessages = getComponent('yombo.gateway.lib.messages')
@@ -233,6 +236,7 @@ class Message:
         self.msgPath        = OrderedDict([])
         self.notBefore      = kwargs.get('notBefore', 0)
         self.maxDelay       = kwargs.get('maxDelay', 0)
+        self.newMessage     = kwargs.get('newMessage', True)
 
         if 'msgPath' in kwargs:
             for hop in kwargs['msgPath']:
@@ -242,7 +246,10 @@ class Message:
 
         self.gwUUID = getConfigValue("core", "gwuuid")
         if self.msgUUID == None:
+          if self.newMessage:
             self.msgUUID = str(generateUUID(mainType=self.uuidType, subType=self.uuidSubType))
+          else:
+            raise MessageError("Existing message should have a msgUUID", 'Message API::Create message.')
 
     def __getitem__(self, key):
         """
@@ -458,7 +465,7 @@ class Message:
         Update many items in one swoop.  Usually used when array is sent to
         us from an outside source.
 
-        :param updateDict: A diction of various message class components to update.
+        :param updateDict: A dictionary of various message class components to update.
         :type updateDict: dict
         """
         logger.trace("MESAGE.update(%s)", updateDict)
@@ -482,6 +489,10 @@ class Message:
                 self.uuidSubType = v
             elif k == "payload":
                 self.payload = v
+            elif k == "notBefore":
+                self.notBefore = v
+            elif k == "maxDelay":
+                self.maxDelay = v
             else:
               raise MessageError("Item '%s' is not a valid message component" % (k,), 'message API')
 

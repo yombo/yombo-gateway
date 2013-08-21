@@ -423,12 +423,12 @@ class Listener(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        return
-        self.myreactor.shutDown()
 
     def unload(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        self.myreactor.stopListening()
+        if hasattr(self, 'myreactor') and self.myreactor != None:
+          self.myreactor.shutDown()
+          self.myreactor.stopListening()
 
