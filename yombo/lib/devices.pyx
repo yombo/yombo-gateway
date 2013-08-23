@@ -71,6 +71,7 @@ class Devices(YomboLibrary):
         self.loader = loader
         self.yombodevices = {}
         self.yombodevicesByType = {}
+        self.yombodevicesByTypeName= FuzzySearch(None, .85)
         self.yombodevicesByName = FuzzySearch(None, .89)
         self._toSaveStatus = {}
         self._saveStatusLoop = None
@@ -88,7 +89,7 @@ class Devices(YomboLibrary):
         Load devices, and load some of the device history. Setup looping
         call to periodically save any updated device status.
         """
-        self._saveStatusLoop = LoopingCall(self._saveStatus, False)
+        self._saveStatusLoop = LoopingCall(self._saveStatus)
         self._saveStatusLoop.start(60, False)
         pass
 
@@ -96,7 +97,7 @@ class Devices(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        if hasattr(self, '_saveStatusLoop') and self._saveStatusLoop != None:
+        if hasattr(self, '_saveStatusLoop') and self._saveStatusLoop != None and self._saveStatusLoop.running == True:
             self._saveStatusLoop.stop()
 
     def unload(self):
@@ -130,6 +131,7 @@ class Devices(YomboLibrary):
         self._saveStatus()
         self.yombodevices.clear()
         self.yombodevicesByType.clear()
+        self.yombodevicesByTypeName.clear()
         self.yombodevicesByName.clear()
 
     def reload(self):
@@ -152,8 +154,16 @@ class Devices(YomboLibrary):
         """
         return self.yombodevices
 
-    def getDevicesByType(self, deviceTypeUUID):
+    def getDevicesByType(self, deviceTypeUUID=None):
         """
+        Returns devices by type. However, how it returns that information
+        depends on how it was called.  If called with no params, returns a
+        dictionary of devices with deviceType as the keys and a dictionary of
+        devices as the value.
+
+        If called with a parameter, it will return a single dictionary with all
+        the devices of that device type.
+
         .. seealso::
 
            Function: :func:`yombo.core.helpers.getDevices`
@@ -162,8 +172,15 @@ class Devices(YomboLibrary):
            Function: :func:`yombo.core.helpers.getDevicesByType`
               to get all devices for a specific type.
         """
-        return self.yombodevicesByType[deviceTypeUUID]
-
+        if deviceTypeUUID == None:
+            return self.yombodevicesByType
+        elif deviceTypeUUID in self.yombodevicesByType:
+            return self.yombodevicesByType[deviceTypeUUID]
+        else:
+            try:
+                return self.yombodevicesByTypeName[deviceTypeUUID]
+            except FuzzySearchError, e:
+                return {}
 
     def search(self, deviceRequested):
         """
@@ -211,6 +228,8 @@ class Devices(YomboLibrary):
                 pass
             self._addDevice(record)
             row = c.fetchone()
+
+        logger.info("yombodevices by type:::: %s" % self.yombodevicesByType )
 
 
     def _addDevice(self, record, testDevice = False):

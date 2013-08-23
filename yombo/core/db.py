@@ -339,14 +339,15 @@ class DBTools:
 
     def get_moduleInterface(self, moduleSearch):
         c = self.dbpool.cursor()
-        c.execute("SELECT interfaceUUID FROM moduleInterfaces WHERE moduleUUID = '%s'" % (moduleSearch,))
+        c.execute("SELECT moduleLabel FROM moduleInterfaces, modules WHERE moduleInterfaces.moduleUUID = '%s' and moduleInterfaces.interfaceUUID = modules.moduleUUID" % (moduleSearch,))
         row = c.fetchone()
         if row == None:
             return None
-        logger.trace("@#: %s", row)
+#        logger.info("@#: %s", row)
         field_names = [d[0].lower() for d in c.description]
         record = dict(izip(field_names, row))
-        return record['interfaceUUID']
+#        logger.info("@#@@: %s", record)
+        return record['modulelabel']
 
     def get_module_data_by_key(self, modulename, key1, key2 = '', type = 'data'):
         if key1 == '':
@@ -602,6 +603,7 @@ class ModuleInterfacesTable(Table):
 
 class ModuleDeviceTypesTable(Table):
     table_name = 'moduleDeviceTypes'
+    label = TextColumn()
     moduleUUID = TextColumn()
     deviceTypeUUID = TextColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name),

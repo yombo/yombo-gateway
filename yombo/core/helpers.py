@@ -380,7 +380,7 @@ def getCommands():
     :return: The pointer to the commands dictionary.
     :rtype: dict
     """
-    return getComponent('yombo.gateway.lib.commands').getCommands()
+    return getComponent('yombo.gateway.lib.commands')
 
 def getCommandsByVoice():
     """
@@ -492,13 +492,12 @@ def getInterfaceModule(module):
     global yombodbtools
     if yombodbtools == None:
         yombodbtools = get_dbtools()
-    a = module.name.split('.')
-    b = yombodbtools.get_moduleInterface(a[-1])
-    if (b is None):
+    iModule = yombodbtools.get_moduleInterface(module._ModuleUUID)
+    if (iModule is None):
       return None
     else:
-      logger.debug("@#@#:  %s,  %s", a, b)
-      return 'yombo.gateway.modules.' + b
+      logger.debug("@#@#:  %s", iModule)
+      return 'yombo.gateway.modules.' + iModule.lower()
 
 def getLocalIPAddress():
     """

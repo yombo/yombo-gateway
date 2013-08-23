@@ -429,6 +429,5 @@ class Listener(YomboLibrary):
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         if hasattr(self, 'myreactor') and self.myreactor != None:
-          self.myreactor.shutDown()
           self.myreactor.stopListening()
 

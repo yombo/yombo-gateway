@@ -391,8 +391,8 @@ class Loader(YomboLibrary):
         logger.debug("Calling load functions of modules.")
         for name, module in self.loadedModules.iteritems():
             logger.debug("Calling load function of module: %s, %s, from: %s", name, module, module._Name)
-#            module.load()
-#            continue
+            module.load()
+            continue
             if hasattr(module, 'load'):
                 try:
                     d = defer.maybeDeferred(module.load)
