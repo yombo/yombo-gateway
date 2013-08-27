@@ -192,7 +192,7 @@ class Loader(YomboLibrary):
             componentName = "yombo.gateway.lib.%s" % component
             self._importComponent(pathName, componentName, 'library')
 
-        logger.info("Calling init functions of libraries.")
+        logger.debug("Calling init functions of libraries.")
         logger.trace("Imported libraries: %s", self.loadedLibraries)
         logger.trace("Imported components: %s", self.loadedComponents)
         for index, name in enumerate(HARD_LOAD):

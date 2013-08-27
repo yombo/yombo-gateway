@@ -22,7 +22,8 @@ from twisted.internet import fdesc
 
 loggers = {}    
 configCache = {}
-logLevels = {'TRACE':5,
+logLevels = {'GARBAGE':1,
+             'TRACE':5,
              'DEBUG':10,
              'INFO':20,
              'WARNING':30,
@@ -58,6 +59,7 @@ def getLogger(logname='yombolog'):
         wasempty = True
 #        print "$$$$$$$$$$$$$$$$$$$ No logs!!"
         logging.TRACE = 5
+        logging.GARBAGE = 1
         logging.addLevelName(logging.TRACE, 'TRACE')
 
         global configCache

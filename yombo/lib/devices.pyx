@@ -229,9 +229,6 @@ class Devices(YomboLibrary):
             self._addDevice(record)
             row = c.fetchone()
 
-        logger.info("yombodevices by type:::: %s" % self.yombodevicesByType )
-
-
     def _addDevice(self, record, testDevice = False):
         """
         Add a device based on data from a row in the SQL database.
@@ -562,12 +559,12 @@ class Device:
     def loadHistory(self, howmany=15):
         c = self.__dbpool.cursor()
         logger.debug("loading device history...")
-        c.execute("SELECT * FROM devicestatus WHERE deviceuuid = ? ORDER BY settime desc LIMIT ?",
+        c.execute("SELECT * FROM devicestatus WHERE deviceuuid = ? ORDER BY settime LIMIT ?",
             (self.deviceUUID, howmany))
         row = c.fetchone()
         if row == None:  #lets set at least one status, it can be blank!
             logger.debug("No device history found for %s,  deviceUUID: %s" % (self.label, self.deviceUUID))
-            self.status.append(self.Status(0, '', '', ''))
+            self.status.append(self.Status(0, '', {}, ''))
             return
         field_names = [d[0].lower() for d in c.description]
         tempStatus = deque((), 20)

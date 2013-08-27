@@ -51,7 +51,6 @@ class ConfigurationUpdate(YomboLibrary):
         This function returns a deferred to the loader.  Once all the configurations
         have been completed, the deferred will finish, allowing the gateway to finish the
         startup cycle.
-    
         
         :param loader: The loader module.
         :type loader: :mod:`~yombo.lib.loader`
@@ -79,7 +78,6 @@ class ConfigurationUpdate(YomboLibrary):
         """
         """
         pass
-
     
     def __loadFinish(self, nextSteps):
         """
@@ -150,19 +148,13 @@ class ConfigurationUpdate(YomboLibrary):
             'getfullvariabledevicesresponse': {'table': "VariableDevicesTable", 'type': "fullConfig"},
             'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}}
 
+        logger.trace("Config Type: %s", cmdmap[cmd]['type'])
         # make sure the command exists
-#        logger.info("Config Type: %s", cmdmap[cmd]['type'])
         if cmd not in cmdmap:
             logger.warning("ConfigurationUpdate::processConfig - Command '%s' doesn't exist. Skipping.", cmd)
-#            message = Message()
-#            message.update(msg)
-#            message.send_reply({'status' : "ERROR", 'statusMsg' : "ConfigurationUpdate::processConfig - Command '%s' doesn't exist. Skipping." % (cmd) })
             return
         elif 'type' not in cmdmap[cmd]:
             logger.warning("ConfigurationUpdate::processConfig - Invalid commandMap. Skipping.")
-#            message = Message()
-#            message.update(msg)
-#            message.sendReply({"msgStatus" : "ERROR", "msgStatusExtra" : "ConfigurationUpdate::processConfig - Invalid commandMap. Skipping."})
             return
         elif cmdmap[cmd]["type"] == "fullConfig":
             logger.trace("ConfigurationUpdate::processConfig - 'fullConfig' - %s.", cmdmap[cmd]["table"])
@@ -170,9 +162,6 @@ class ConfigurationUpdate(YomboLibrary):
             c = self.dbconnection.cursor()
             if not upd_table:
                 logger.error("ConfigurationUpdate::processConfig - Invalid table to update: %s", upd_table.table_name)
-#                message = Message()
-#                message.update(msg)
-#                message.sendReply({"msgStatus" : "ERROR", "msgStatusExtra" : "ConfigurationUpdate::processConfig - Invalid table to update: %s" %(upd_table.table_name)})
                 return
             c.execute("DELETE FROM " + upd_table.table_name)
 
@@ -285,7 +274,6 @@ class ConfigurationUpdate(YomboLibrary):
         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullVariableModules'}))
         return True
 
-
     def _generateMessage(self, payload):
         return {'msgOrigin'     : "yombo.gateway.lib.configurationupdate:%s" % self.gwuuid,
                'msgDestination' : "yombo.svc.gwhandler",
@@ -306,12 +294,11 @@ class ConfigurationUpdate(YomboLibrary):
             self.__pendingUpdates.append(table)
 
     def _removeFullTableQueue(self, table):
-#        logger.info("!!!!!!!!!!!!!!!!!!!!!: %s" % table)
         if table in self.__pendingUpdates:
             self.__pendingUpdates.remove(table)
 
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs == True:
             self.__doingfullconfigs = False
             self.loadDefer.callback(10) # a made up number.
-#        logger.info("Configs pending: %s", self.__pendingUpdates)
+        logger.trace("Configs pending: %s", self.__pendingUpdates)
             

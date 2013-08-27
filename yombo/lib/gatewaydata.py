@@ -68,7 +68,6 @@ class GatewayDataProtocol(LineReceiver):
         # Check with controller to see if we've been cancelled and abort
         # if so.
         if self.controller.cancel:
-            print 'FileIOClient._monitor Cancelling'
             # Need to unregister the producer with the transport or it will
             # wait for it to finish before breaking the connection
             self.transport.unregisterProducer()
@@ -94,7 +93,6 @@ class GatewayDataProtocol(LineReceiver):
 
     def connectionLost(self, reason):
         LineReceiver.connectionLost(self, reason)
-        print 'FileIOClient:connectionLost'
         self.infile.close()
         if self.completed:
             self.controller.completed.callback(self.result)
@@ -121,7 +119,6 @@ class GatewayDataFactory(ReconnectingClientFactory):
         self.controller.completed.errback(reason)
 
     def buildProtocol(self, addr):
-        print 'buildProtocol'
         p = self.protocol(self.path, self.sess_key, self.file_key,
                           self.controller)
         p.factory = self

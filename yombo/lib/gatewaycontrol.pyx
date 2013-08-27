@@ -60,6 +60,11 @@ from yombo.core.message import Message
 logger = getLogger('library.gatewaycontrol')
 
 class GatewayControlProtocol(basic.NetstringReceiver):
+    """
+    Gateway Control Protocol is responsible for low level communications to the
+    Yombo Servers. It's responsible for authenticating to the server as well as
+    validating the server.
+    """
     def __init__(self):
         """
         Setup a few basic settings for the gateway control protocol.
@@ -68,6 +73,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         self._Name = "gatewaycontrolprotocol"
         self._FullName = "yombo.gateway.lib.gatewaycontrolprotocol"
 
+        # Any configuration updates are sent directly to the config library.
         self.configUpdate = getComponent('yombo.gateway.lib.ConfigurationUpdate')
 
     def connectionMade(self):
@@ -114,7 +120,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
                 continue
             newmsg['data'][item] = msg[item]
 
-        self.factory.outgoingUUID.append(msg['msgUUID'])
+        self.factory.outgoingMsgUUID.append(msg['msgUUID'])
 
         themsg = json.dumps(newmsg)
         logger.trace("sending: %s" % themsg)
@@ -122,9 +128,8 @@ class GatewayControlProtocol(basic.NetstringReceiver):
 
     def stringReceived(self, string):
         """
-        Received a string from Yombo Servers. At this point, it's not at a point
-        that we can understand.  It needs to be processed to a JSON and then
-        possibly to a Message, depending on the destination.
+        Received a string from Yombo Servers. The string must be converted from
+        JSON and then to a Yombo :ref:`Message`. 
 
         This is a JSON string. Processing order:
         1) If not authed, then send the packet to the auth function.
@@ -138,7 +143,6 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         msg = None
         try:
             msg = json.loads(string)
-            self.badStringCount = 0
         except ValueError, e:
             logger.warning("Server sent invalid json. Bad server. Hanging up.")
             self.transport.loseConnection()            
@@ -201,18 +205,19 @@ class GatewayControlProtocol(basic.NetstringReceiver):
               return self.disconnect("Server trying something wierd.")
 
             if newmsg['msgType'] == "config":
-                self.configUpdate.processConfig(newmsg)
+              self.configUpdate.processConfig(newmsg)
+              return
             else:
               # Make sure msg has a msgUUID and that it's not already sent!
               if 'msgUUID' not in newmsg:
                 logger.warning("Message didn't have msgUUID, dropping!")
                 return
 
-              if newmsg['msgUUID'] in self.factory.incomingUUID:
+              if newmsg['msgUUID'] in self.factory.incomingMsgUUID:
                 logger.warning("Recent duplicate msgUUID, dropping!")
                 return
 
-              self.factory.incomingUUID.append(msg['msgUUID'])
+              self.factory.incomingMsgUUID.append(msg['msgUUID'])
 
               # if new, it won't have a msgOrigUUID field, otherwise it must.
               # Check that it does contain an OrigUUID field and that it is
@@ -225,7 +230,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
                 if 'msgOrigUUID' not in newmsg:
                   logger.warning("Message should have msgOrigUUID, but didn't. Dropping!")
                   return
-              if newmsg['msgOrigUUID'] in self.factory.outgoingUUID:
+              if newmsg['msgOrigUUID'] not in self.factory.outgoingMsgUUID:
                 logger.warning("This is not a valid response for this session.")
                 return
 
@@ -253,7 +258,6 @@ class GatewayControlProtocol(basic.NetstringReceiver):
             full message object in the auth phase.
         :type msg: dict
         """
-        logger.info("auth state = %d" % self.authState)
         if "error" in msg:
             logger.error("A critical error occuring during authentication.")
             logger.error("Reason: %s", msg["error"])
@@ -330,9 +334,8 @@ class GatewayControlFactory(ReconnectingClientFactory):
         self.router = router
         self.maxDelay = 60
         # These are in the factory incase the connection is dropped and remade.
-        self.incomingUUID = deque([],600) # Make sure the last few message UUIDs are unique
-        self.outgoingUUID = deque([],600) # Make sure the last few message UUIDs are unique
-        
+        self.incomingMsgUUID = deque([],600) # Make sure the last few message UUIDs are unique
+        self.outgoingMsgUUID = deque([],600) # Make sure the last few message UUIDs are unique
 
     def startedConnecting(self, connector):
         logger.debug("Attempting connecting to yombo servers.")
@@ -411,12 +414,23 @@ class GatewayControl(YomboLibrary):
             self.disconnect()
     
     def reconnectToDifferent(self):
+        """
+        Called by the protocol is something seems wierd about the Yombo Server.
+        This function currently just disconnects and reconnects.
+        """
         logger.debug("I'm supposed to reconnect to different server!")
         self.disconnect()
         self.updateSvcList()
+        self.connect()
         
     def updateSvcList(self):
-        self.connect()
+        """
+        This function will download a list of active Yombo Servers. This allows the gateway
+        to select the closest/least busy server.
+
+        This function doesn't currently do anything.
+        """
+        pass
 
     def connect(self):
         logger.debug("Yombo Client trying to connect to master server...")

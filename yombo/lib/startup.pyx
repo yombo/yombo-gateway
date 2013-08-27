@@ -59,10 +59,8 @@ class Startup(YomboLibrary):
 
     def load(self):
         lastcheck = getConfigValue("local", "configlastcheckbygw", 0)
-#        return ##this doesn't work!!
         if lastcheck > (int(time()) - 10):
             return
-        logger.info("Doing last check...")
         setConfigValue("local", "configlastcheckbygw", int(time()) )
         return
 
@@ -89,7 +87,6 @@ class Startup(YomboLibrary):
         else:
             url = "http://wwwdev.yombo.net/info.php"
  
-#        print type(longitude)
         url = "%s?lat=%s&long=%s" % (url, latitude, longitude)
         logger.debug("URL = %s", url)
 

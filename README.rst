@@ -1,26 +1,26 @@
-=============
-Yombo Gateway
-=============
+=====================
+What is Yombo Gateway
+=====================
 
 The Yombo Gateway is an open-source framework to provide automation of various
 devices (X10, Z-Wave, Insteon, etc) from any manufacturer.  Yombo provides a
 way out of vendor lock-in by allowing cross-vendor and cross-protocol bridging.
 
-================
-Installation
-================
+=============
+Documentation
+=============
 
-For detailed installation directions, visit:
-http://www.yombo.net/docs/gateway/current/chapters/install.html
+Installation instructions, getting started and in-depth API documentation can
+be found here:
 
-==========
-Resources
-==========
+http://www.yombo.net/docs/gateway/current/
 
-For issue (tickets), feature requests, and wiki articles, visit
+===============================
+Getting Help / Other Resources
+===============================
+
+For issue (tickets), feature requests, forums,  and wiki articles, visit
 `Yombo Gateway Projects <https://projects.yombo.net/projects/gateway>`_ page.
-
-Track issues, wiki
 
 =========================
 Yombo Gateway License 
@@ -37,4 +37,4 @@ If you do not wish to release the source of software you build using Yombo
 Gateway, you may use Yombo Gateway source and/or binaries under the Yombo
 Gateway End User License Agreement as described here:
 
-http://www.yombo.net/policies/licensing/gateway_private
+http://www.yombo.net/policies/licensing/yombo-private-license

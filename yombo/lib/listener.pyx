@@ -43,7 +43,7 @@ from yombo.core.helpers import getConfigValue, setConfigValue, generateRandom, g
 from yombo.core.log import getLogger
 from yombo.core.message import Message
 
-logger = getLogger()
+logger = getLogger('library.listener')
 
 DID_CONTROL = 1
 # 1 - Network connection control commands such as saying "goodbye" to drop
@@ -414,10 +414,6 @@ class Listener(YomboLibrary):
         self.myfactory = ListenerFactory()
         controllerPort = int(getConfigValue("listner", "port", 8443))
         self.myreactor = reactor.listenTCP(controllerPort, self.myfactory)
-        logger.debug("print type(self.myreactor) = %s", self.myreactor)
-        logger.debug("print type(self.myreactor) = %s", self.myreactor)
-        logger.debug("print type(self.myreactor) %s", self.myreactor)
-        logger.info("print self.myreactor %s" % self.myreactor)
 
     def stop(self):
         """

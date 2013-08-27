@@ -1,5 +1,3 @@
 #!/bin/sh
 find . -type f -name "*.pyc" -exec rm -f {} \;
 find . -type f -name "*.c" -exec rm -f {} \;
-rm data/config.sqlite3
-cp yombo.ini.bak yombo.ini

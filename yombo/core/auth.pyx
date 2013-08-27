@@ -36,9 +36,9 @@ def validateNonce(nonce, **kwargs):
 
        from yombo.core.auth import validateNonce
        if validateNonce(incomingNonce, minLength=32, randomness=0.70):
-           print "The nonce is valid."
+           logger.debug("The nonce is valid.")
        else:
-           print "The nonce doesn't meet the minimum security requirements."
+           logger.debug("The nonce doesn't meet the minimum security requirements.")
     """
     import collections
 
@@ -78,9 +78,9 @@ def checkToken(authToken, *components):
 
        from yombo.core.auth import checkToken
        if checkToken(GivenToken, myPasswordHash, serverNonce, clientNonce):
-           print "The authentication token is valid."
+           logger.debug("The authentication token is valid.")
        else:
-           print "The authentication token is ** NOT ** valid.."
+           logger.debug("The authentication token is ** NOT ** valid..")
 
     :param authToken: The given hash to validate.
     :type authToken: string
@@ -108,7 +108,7 @@ def generateToken(*components):
 
         from yombo.core.auth import generateToken
         newHash = generateToken(myPasswordHash, serverNonce, clientNonce)
-        print "The hash is: %s" % newHash
+        logger.debug("The hash is: %s" % newHash)
     
     :param components: Any number of arguments to form a hash from.
     :type components: kwargs
