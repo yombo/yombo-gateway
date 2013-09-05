@@ -137,8 +137,8 @@ class DownloadModules(YomboLibrary):
             gmrow = ''
             if ( ( ( record['prodversion'] != '' and record['prodversion'] != None and record['prodversion'] != "*INVALID*") or
               ( record['devversion'] != '' and record['devversion'] != None and record['devversion'] != "*INVALID*") ) and
-#              record['installsource'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel ) and ( not os.path.exists("yombo/modules/%s/.freeze" % modulelabel) ):
-              record['installsource'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
+#              record['installsource'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
+              record['installsource'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
                 gm.execute("SELECT moduleuuid, installedversion, installtime FROM modulesinstalled WHERE moduleuuid = '%s'" % (moduleuuid))
                 gmrow = gm.fetchone()
                 gmfield_names = []

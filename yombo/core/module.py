@@ -103,10 +103,12 @@ class YomboModule:
     :cvar _ModType: (string) Type of module (interface, command, logic, other). Defined here,
       but set in _Loader(), which is called just before the module's init().
     :cvar _ModuleUUID (string) UUID of this module.
-    :cvar _Devices: preloaded pointer to all configured devices.
+    :cvar _LocalDevices: (dict) Dictionary to all devices this module controls.
+    :cvar _LocalDeviceTypes: (list) List of device types that are registered for this module.
+    :cvar _LocalDevicesByType: (dict) Dictionary of devices this module controls, broken down by device type
     :cvar _Commands: preloaded pointer to all configured commands.
+    :cvar _Devices: preloaded pointer to all configured devices.
     :cvar _DevicesByType: preloaded pointer to all configured devices by type.
-    :cvar _DeviceTypes: (list) List of device types that are registered for this module.
     :cvar _RegisterDistributions: (list) Defined by the module author. Used to subscribe
       to any message distribution lists. Typically use for "cmd" and "status" distros.
     :cvar _RegisterVoiceCommands: (list) Register voice commands to be used to send
@@ -128,7 +130,9 @@ class YomboModule:
         self._Devices = getDevices()
         self._Commands = getCommands()
         self._DevicesByType = getDevicesByType()
-        self._DeviceTypes = []
+        self._LocalDevices = {}
+        self._LocalDeviceTypes = []
+        self._LocalDevicesByType = {}
 
     def _Loader(self, moduleDetails):
         """
@@ -142,7 +146,12 @@ class YomboModule:
         self._ModuleUUID = moduleDetails['moduleuuid']
         deviceTypes = getModuleDeviceTypes(moduleDetails['moduleuuid'])
         for dtype in deviceTypes:
-            self._DeviceTypes.append(dtype['devicetypeuuid'])
+            self._LocalDeviceTypes.append(dtype['devicetypeuuid'])
+            self._LocalDevicesByType = {dtype['devicetypeuuid'] : {}}
+
+            for device in self._DevicesByType(dtype['devicetypeuuid']):
+              self._LocalDevices[device.deviceUUID] = device
+              self._LocalDevicesByType[dtype['devicetypeuuid']] = {device.deviceUUID : device }
     
     def init(self):
         """

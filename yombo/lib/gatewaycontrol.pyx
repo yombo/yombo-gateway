@@ -73,9 +73,6 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         self._Name = "gatewaycontrolprotocol"
         self._FullName = "yombo.gateway.lib.gatewaycontrolprotocol"
 
-        # Any configuration updates are sent directly to the config library.
-        self.configUpdate = getComponent('yombo.gateway.lib.ConfigurationUpdate')
-
     def connectionMade(self):
         """
         Called when a connection is made to the yombo servers.
@@ -86,10 +83,10 @@ class GatewayControlProtocol(basic.NetstringReceiver):
         # Say hello to server.
         self.__cnonce = generateRandom()
         outgoing = {
-                    'type' : 'gateway',
-                    'protocolversion' : 3,
-                    'cnonce' : self.__cnonce,
-                    'clientuuid' : getConfigValue("core", "gwuuid"),
+                    'type'            : 'gateway',
+                    'protocolversion' : self.protocolVersion,
+                    'cnonce'          : self.__cnonce,
+                    'clientuuid'      : getConfigValue("core", "gwuuid"),
                    }
         self.sendMessage(outgoing)        
 
@@ -205,7 +202,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
               return self.disconnect("Server trying something wierd.")
 
             if newmsg['msgType'] == "config":
-              self.configUpdate.processConfig(newmsg)
+              self.factory.gatewayControl.configUpdate.processConfig(newmsg)
               return
             else:
               # Make sure msg has a msgUUID and that it's not already sent!
@@ -279,7 +276,7 @@ class GatewayControlProtocol(basic.NetstringReceiver):
             
           if validateNonce(msg["snonce"]) != True:
               logger.warning("Server sent us a bad nonce.  Dropping connection and will attempt a reconnect.")
-              self.factory.router.reconnectToDifferent()
+              self.factory.gatewayControl.reconnectToDifferent()
 
           self.__snonce = msg["snonce"]
           self.__gwhash = getConfigValue("core", "gwhash")
@@ -304,23 +301,23 @@ class GatewayControlProtocol(basic.NetstringReceiver):
                   self.authenticated = True
                   self.dataAuthID_svr = msg["dataAuthID_svr"]
                   self.dataAuthID_client = msg["dataAuthID_client"]
-                  self.factory.router.connected(self)
+                  self.factory.gatewayControl.connected(self)
                   logger.debug("GatewayControlProtocol::stringReceived() - Got authok - I'm authenticated")
                   setConfigValue('server', 'svcpgpkeyid', msg["pgpkeyid"])
                   #pgpFetchKey(msg["pgpkeyid"])
                 else:
                   logger.warning("Yombo server doesn't know our hash, dropping connection and attempt to connect elsewhere.")
-                  self.factory.router.reconnectToDifferent()
+                  self.factory.gatewayControl.reconnectToDifferent()
               else:
                 logger.warning("Yombo server says out auth is bad!")
-                self.factory.router.reconnectToDifferent()
+                self.factory.gatewayControl.reconnectToDifferent()
 
 class GatewayControlFactory(ReconnectingClientFactory):
     """
     The interface between the gateway system and the protocol layer.
     """
     protocol = GatewayControlProtocol
-    def __init__(self, router):
+    def __init__(self, gatewayControl):
         """
         Setup low level protocol.
         """
@@ -331,7 +328,7 @@ class GatewayControlFactory(ReconnectingClientFactory):
         self.initialDelay = 2
         self.jitter = 0.2
         self.factor = 2.42503912
-        self.router = router
+        self.gatewayControl = gatewayControl
         self.maxDelay = 60
         # These are in the factory incase the connection is dropped and remade.
         self.incomingMsgUUID = deque([],600) # Make sure the last few message UUIDs are unique
@@ -347,7 +344,7 @@ class GatewayControlFactory(ReconnectingClientFactory):
         return p
 
     def clientConnectionLost(self, connector, reason):
-        self.router.disconnected()
+        self.gatewayControl.disconnected()
         logger.info('Lost connection.  Reason: %s' % reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
@@ -372,10 +369,10 @@ class GatewayControlFactory(ReconnectingClientFactory):
             msg['msgPath'] = incoming['msgPath']
         message = Message(**msg)
         message.addPathLocal('lib.gatewaycontrol', 'yes')
-        self.router.receivedMessage(message)
+        self.gatewayControl.receivedMessage(message)
 
     def disconnected(self, reconnect):
-        self.router.disconnected(reconnect)
+        self.gatewayControl.disconnected(reconnect)
 
 
 class GatewayControl(YomboLibrary):
@@ -454,7 +451,7 @@ class GatewayControl(YomboLibrary):
             
         port = int(getConfigValue("svcsvr", "yombosvcport", "5400"))
 
-        logger.info("Going to connect to Yombo server at %s:%d " % (host, port) )
+        logger.debug("Going to connect to Yombo server at %s:%d " % (host, port) )
 
         self.GCfactory = GatewayControlFactory(self)
         self.myreactor =  reactor.connectSSL(host, port, self.GCfactory,

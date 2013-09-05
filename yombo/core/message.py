@@ -586,6 +586,7 @@ class Message:
             if isinstance(self.payload['cmdobj'], Command):
               self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
               self.payload['cmd'] = self.payload['cmdobj'].cmd
+            else:
               raise MessageError("if 'cmdobj' specified', it must be a command instance.", 'Message API::ValidateCMD')
         elif 'cmdUUID' in self.payload:
             try:
@@ -618,12 +619,12 @@ class Message:
             else:
               raise MessageError("if 'deviceobj' specified', it must be a device instance.", 'Message API::ValidateCMD')
         elif 'deviceUUID' in self.payload:
-#            try:
+            try:
               self.payload['deviceobj'] = getDevice(self.payload['deviceUUID'])
               self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
               self.payload['device'] = self.payload['deviceobj'].label
-#            except:
-#              raise MessageError("Couldn't find specified deviceUUID.", 'Message API')
+            except:
+              raise MessageError("Couldn't find specified deviceUUID.", 'Message API')
         elif 'device' in self.payload:
             try:
               self.payload['deviceobj'] = getDevice(self.payload['device'])
@@ -634,6 +635,8 @@ class Message:
         else:
             raise MessageError("'deviceUUID' or 'device' not found in payload. Required for commands.", 'Message API::ValidateCMD')
 
+        logger.info("availablecommands: %s" % self.payload['deviceobj'].availableCommands)
+        logger.info("self.payload['cmdobj']" % self.payload['cmdobj'])
         # check that command is possible for given deviceUUID
         if self.payload['cmdobj'].cmdUUID not in self.payload['deviceobj'].availableCommands:
            raise MessageError("Invalid cmdUUID for this deviceUUID.", 'Message API::ValidateCMD')

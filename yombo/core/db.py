@@ -149,7 +149,7 @@ def get_dbconnection():
     global yombodbpool
     global yombotoolsdb
     if yombodbpool is None:
-        logger.info("Creating db connection pools.")
+        logger.debug("Creating db connection pools.")
         yombodbpool = DBConnectionPool()
         yombodbpool.connect()
         yombotoolsdb = DBTools(yombodbpool)

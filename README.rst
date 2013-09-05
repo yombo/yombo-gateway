@@ -15,6 +15,18 @@ be found here:
 
 http://www.yombo.net/docs/gateway/current/
 
+===========
+Quick Start
+===========
+
+1. You must have a `Yombo account <http://www.yombo.net>`_ .
+2. Configure the gateway: yconfig 
+3. You can run the Gateway from the local directory (thumb drive, etc)
+   or install and have it start at bootup. The install script installs
+   the Gateway software and requests the system start it up bootup.
+3a. Mac/Unix/Linux: install.sh
+3b. Windows: install.bat (Windows won't be support until a later version)
+
 ===============================
 Getting Help / Other Resources
 ===============================

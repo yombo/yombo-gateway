@@ -186,7 +186,7 @@ class Loader(YomboLibrary):
         """
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
-        logger.info("Importing gateway libraries.")
+        logger.debug("Importing gateway libraries.")
         for component in HARD_LOAD:
             pathName = "yombo.lib.%s" % component
             componentName = "yombo.gateway.lib.%s" % component
@@ -363,14 +363,13 @@ class Loader(YomboLibrary):
             # if varibles set by localmodules, use those variables.
             if module._Name.lower() in self.__localModuleVars:
                 module._ModVariables = self.__localModuleVars[module._Name.lower()]
+            module._Loader(modules[module._Name])
 
             logger.trace("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
 #            module.init()
-#            module._Loader(modules[module._Name])
 #            continue
             if hasattr(module, 'init'):
                 try:
-                    module._Loader(modules[module._Name])
 #                    wfd = defer.waitForDeferred(defer.maybeDeferred(module.init))
                     d = defer.maybeDeferred(module.init)
                     d.addErrback(self._handleError)

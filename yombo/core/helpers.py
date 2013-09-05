@@ -287,6 +287,22 @@ def getDevices():
     """
     return getComponent('yombo.gateway.lib.devices')
 
+def getDevice(deviceSearch):
+    """
+    Returns a pointer to device.
+    
+    .. note::
+    
+       This shouldn't be used by modules, instead, use the pre-set point of
+       *self._Devices*, see: :py:func:`getDevices`.
+
+    :param deviceSearch: Which device to search for.  DeviceUUID or Device Label. UUID preferred.
+    :type deviceSearch: string - Device UUID or Device Label.
+    :return: The pointer to the requested device.
+    :rtype: object
+    """
+    return getComponent('yombo.gateway.lib.devices').search(deviceSearch)
+
 def getDevicesByType():
     """
     Returns a pointer to a **function** to get all devices for a given deviceTypeUUID.
@@ -319,22 +335,6 @@ def getDevicesByType():
     """
     return getattr(getComponent('yombo.gateway.lib.devices'), "getDevicesByType")
 
-def getDevice(deviceSearch):
-    """
-    Returns a pointer to device.
-    
-    .. note::
-    
-       This shouldn't be used by modules, instead, use the pre-set point of
-       *self._Devices*, see: :py:func:`getDevices`.
-
-    :param deviceSearch: Which device to search for.  DeviceUUID or Device Label. UUID preferred.
-    :type deviceSearch: string - Device UUID or Device Label.
-    :return: The pointer to the requested device.
-    :rtype: object
-    """
-    return getComponent('yombo.gateway.lib.devices').search(deviceSearch)
-
 def getCommands():
     """
     Returns a pointer to defined commands as a dictionary. From here, you can
@@ -354,7 +354,7 @@ def getCommands():
     
     **Short Usage**:
 
-        >>> self._Commnads['se74yhsdSd283']  #by uuid, preferred
+        >>> self._Commands['se74yhsdSd283']  #by uuid, preferred
     or:
         >>> self._Commands['off']  #by name
 
@@ -382,6 +382,22 @@ def getCommands():
     """
     return getComponent('yombo.gateway.lib.commands')
 
+def getCommand(commandSearch):
+    """
+    Returns a pointer to a command.
+
+    .. note::
+
+       This shouldn't be used by modules, instead, use the pre-set point of
+       *self._Commands*, see: :py:func:`getCommands`.
+
+    :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
+    :type commandSearch: string - Command UUID or Command Label.
+    :return: The pointer to a single command.
+    :rtype: object
+    """
+    return getComponent('yombo.gateway.lib.commands').search(commandSearch)
+    
 def getCommandsByVoice():
     """
     Returns a pointer to all commands by voice as a dictionary. Primary
@@ -399,22 +415,6 @@ def getCommandsByVoice():
     """
     return getComponent('yombo.gateway.lib.commands').getCommandsByVoice()
 
-def getCommand(commandSearch):
-    """
-    Returns a pointer to a command.
-
-    .. note::
-
-       This shouldn't be used by modules, instead, use the pre-set point of
-       *self._Devices*, see: :py:func:`getCommands`.
-
-    :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
-    :type commandSearch: string - Command UUID or Command Label.
-    :return: The pointer to a single command.
-    :rtype: object
-    """
-    return getComponent('yombo.gateway.lib.commands').search(commandSearch)
-    
 def getVoiceCommands():
     """
     Return the :class:`~VoiceCmd` dictionary (library).  It contains all possible voice
@@ -894,24 +894,3 @@ def pgpTrustKey(fingerprint, trustLevel = 5):
 
     result = child_stdout.read()
     logger.info("GPG Trust change: %s", result)
-
-#@defer.deferredGenerator
-#def runCmd(cmdText):
-#    wfd = defer.waitForDeferred(execRunCmd(cmdText))
-#    yield wfd
-#    results = wfd.getResult()
-#    logger.info("run command (%s) results: %s", cmdText, results)
-#
-#def execRunCmd(cmdText):
-##    cmdText = "/bin/false"
-#    logger.info("about to run cmd: %s", cmdText)
-#    
-#    output = utils.getProcessValue(cmdText)
-#    output.addCallback(runCmdResult)
-#    return output
-#    
-#    
-#def runCmdResult(val):
-#    print "/bin/true exits with rc=%d" % val
-#
-#

@@ -405,7 +405,7 @@ class Device:
             else:
                 raise DeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']), errorno=102)
 
-        payload = {"cmdobj" : cmdobj.cmdUUID, "deviceobj" : self}
+        payload = {"cmdobj" : cmdobj, "deviceobj" : self}
         
         payload.update(payloadValues)
 
