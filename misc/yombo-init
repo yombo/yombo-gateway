@@ -18,13 +18,13 @@
 ### END INIT INFO
 
 #Required -- What user yombo runs as.
-USER="yombo" #Set Linux Mint, Ubuntu, or Debian user name here.
+USER=SOURCE__USER #Set Linux/Unix user name here.
 
 DAEMON=/usr/bin/twistd
 SERVICE_NAME=yombo.tac
-SERVICE_DIR=~yombo
+SERVICE_DIR=SOURCE__DIRECTORY
 PIDFILE=/var/run/yombo/yombo.pid
-LOGFILE=/var/log/yombo.log
+LOGFILE=/var/log/yombo/yombo.log
 DAEMON_OPTS="--pidfile=$PIDFILE --logfile=$LOGFILE -y $SERVICE_DIR/yombo.tac"
 
 # Set python path so twistd can find the plugin
@@ -42,7 +42,7 @@ fi
 
 start_service() {
   echo -n " * Starting $SERVICE_NAME... "
-  start-stop-daemon -Sq -p $PIDFILE -x $DAEMON -- $DAEMON_OPTS
+  start-stop-daemon -c $USER:$USER -Sq -p $PIDFILE -x $DAEMON -- $DAEMON_OPTS
   e=$?
   if [ $e -eq 1 ]; then
     echo "already running"
