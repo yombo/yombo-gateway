@@ -1,2 +1,5 @@
+#To install, use:
+# sudo pip install -r requirements.txt
 python-gnupg
 pyephem
+cython

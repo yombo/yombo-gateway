@@ -119,38 +119,16 @@ regularly, such as every other sunday morning at 2am.
 Installing Gateway
 --------------------------
 
-Installing the Yombo Gateway is straight forward on Raspberry PI.  These steps should also work
-for other ARM computers using a Debian distribution.
+Installing the Yombo Gateway is straight forward on Raspberry PI.  These steps
+ should also work for other ARM computers using a Debian distribution.
 
 .. code-block:: bash
 
   # Install most of the needed items.
-  sudo apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel
+  sudo apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel python-dev build-essential git
 
-  # Sensitive data is encrypted and only the gateway's private key can decrypt it.
-  $ sudo pip install python-gnupg pyephem
-
-  # Last but not least, install git to download repositories
-  sudo apt-get install git  
-
-We need the latest version of Cython, not always available on various distributions. Find the link
-from `<http://cython.org/#documentation>`_  Compile from source:
-
-.. code-block:: bash
-
-  # Find a place to put it.
-  cd /usr/local/src
-
-  # Get the source.  As of 7/25/2013, current version is 0.19.1 and found at
-  # http://cython.org/release/Cython-0.19.1.tar.gz
-  wget http://cython.org/release/Cython-xx.yy.tar.gz
-
-  # Uncompress the source
-  tar zxf Cython-0.19.1.tar.gz
-
-  # Build it.
-  cd Cython-0.19.1
-  sudo python setup.py install
+  # gnupg is used for signing and encryption. pyephem is used for sunset/sunrise times.
+  sudo pip install python-gnupg pyephem cython
 
 Next steps
 ========== 

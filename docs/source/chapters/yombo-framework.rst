@@ -25,6 +25,9 @@ The gateway framework is split into four directories:
 Core
 ****
 
+Core modules are the base Yombo Gateway API functions. They provide the base
+features to be used by libraries and modules.
+
 .. toctree::
    :maxdepth: 1
 

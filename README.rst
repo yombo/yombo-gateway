@@ -20,12 +20,13 @@ Quick Start
 ===========
 
 1. You must have a `Yombo account <http://www.yombo.net>`_ .
-2. Configure the gateway: yconfig 
-3. You can run the Gateway from the local directory (thumb drive, etc)
-   or install and have it start at bootup. The install script installs
-   the Gateway software and requests the system start it up bootup.
-3a. Mac/Unix/Linux: install.sh
-3b. Windows: install.bat (Windows won't be support until a later version)
+2. Prepare your os. Need to install python and various python modules.
+   See http://www.yombo.net/docs/gateway/current/chapters/prepare-operating-system.html
+3. Configure the gateway: ./config.py
+4. You can run the Gateway from the local directory (thumb drive, etc)
+   or install and have it start at bootup. The install folder contains
+   install-*-service script to setup the Gateway software and requests the
+   system start it up bootup.  Run with: `sudo ./install-OSVERSION-service.sh`
 
 ===============================
 Getting Help / Other Resources

@@ -20,12 +20,12 @@
 #Required -- What user yombo runs as.
 USER=SOURCE__USER #Set Linux/Unix user name here.
 
-DAEMON=/usr/bin/twistd
-SERVICE_NAME=yombo.tac
+DAEMON=SOURCE__DAEMON
+SERVICE_NAME=yombo
 SERVICE_DIR=SOURCE__DIRECTORY
 PIDFILE=/var/run/yombo/yombo.pid
 LOGFILE=/var/log/yombo/yombo.log
-DAEMON_OPTS="--pidfile=$PIDFILE --logfile=$LOGFILE -y $SERVICE_DIR/yombo.tac"
+DAEMON_OPTS="-p $PIDFILE -l $LOGFILE -L -t $SERVICE_DIR/yombo.tac"
 
 # Set python path so twistd can find the plugin
 export PYTHONPATH=$SERVICE_DIR
@@ -42,7 +42,7 @@ fi
 
 start_service() {
   echo -n " * Starting $SERVICE_NAME... "
-  start-stop-daemon -c $USER:$USER -Sq -p $PIDFILE -x $DAEMON -- $DAEMON_OPTS
+  start-stop-daemon -c $USER:$USER -Sq -p $PIDFILE -d $SERVICE_DIR -x $DAEMON -- $DAEMON_OPTS
   e=$?
   if [ $e -eq 1 ]; then
     echo "already running"
