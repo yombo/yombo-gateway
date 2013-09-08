@@ -234,6 +234,7 @@ class Configuration(YomboLibrary):
         output = self.readDB(section, key)
 
         if output == False:
+            self.write(section,key, default) # save to ini so user can play
             return default
 
         if section not in self.cache:

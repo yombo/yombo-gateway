@@ -441,13 +441,13 @@ class GatewayControl(YomboLibrary):
             host = getConfigValue("server", 'hostname')
         else:
             if(environment == "production"):
-                host = "svc1.yombo.net"
+                host = "svc.yombo.net"
             elif (environment == "staging"):
                 host = "svcstg.yombo.net"
             elif (environment == "development"):
                 host = "svcdev.yombo.net"
             else:
-                host = "svc2.yombo.net"
+                host = "svc.yombo.net"
             
         port = int(getConfigValue("svcsvr", "yombosvcport", "5400"))
 

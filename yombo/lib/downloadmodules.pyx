@@ -177,11 +177,11 @@ class DownloadModules(YomboLibrary):
                     row = m.fetchone()
                     continue
  
-                logger.info("Adding to queue: %s (%s)", modulelabel, data['zipuri'])
+                logger.debug("Adding to download module queue: %s (%s)", modulelabel, data['zipuri'])
                
-#                d = self.mysemaphore.run(getPage, texturi)
                 d = self.mysemaphore.run(downloadPage, data['zipuri'], data['zipfile'])
                 self.allDownloads.append(d)
+                d.addErrback(self.downloadFileFailed, data)
                 d.addCallback(self.unzipVersion, data)
                 d.addErrback(self.unzipVersionFailed, data)
                 d.addCallback(self.updateDatabase, data)
@@ -215,8 +215,8 @@ class DownloadModules(YomboLibrary):
         Helper function for cleanup is called when the download failed.  Won't
         continue processing the zip file.
         """
-        logger.warning("Couldn't not download the file...")
-        return data
+        logger.warning("Couldn't download the file...")
+        return defer.fail()
 
     def unzipVersion(self, tossaway, data):
         """
@@ -228,7 +228,6 @@ class DownloadModules(YomboLibrary):
         :param data: Contains the module information, passed on.
         :type data: dict
         """
-        logger.info("data: %s" % data)
         moduleLabel = data['module']['modulelabel']
         moduleLabel = moduleLabel.lower()
         logger.debug("Modulelabel = %s", moduleLabel)
@@ -253,7 +252,7 @@ class DownloadModules(YomboLibrary):
         Helper function for cleanup when the zip process fails
         or unable to move the module to it's final destination.
         """
-        logger.warning("Failed???")
+        logger.warning("unzip failed (%s) (%s)" % (data, data2))
         if data != None:
           return defer.fail()
 
@@ -262,11 +261,11 @@ class DownloadModules(YomboLibrary):
 
         c = self.dbpool.cursor()
         if (data2['installedmodule']['installtime'] > 0):
-            logger.info("About to UPDATE to modulesinstalled!")
+            logger.debug("About to UPDATE to modulesinstalled!")
             c.execute("""
                 update modulesinstalled set installedversion=?, installtime=? where moduleUUID=?;""", (data2['version'], int(time.time()), moduleUUID) )
         else:
-            logger.info("About to replace into to modulesinstalled!")
+            logger.debug("About to replace into to modulesinstalled!")
             c.execute("""
                 replace into modulesinstalled (moduleuuid, installedversion, installtime)
                 values  (?, ?, ?);""", (moduleUUID, data2['version'], int(time.time()) ) )
@@ -276,6 +275,6 @@ class DownloadModules(YomboLibrary):
         """
         Helper function for cleanup is called when unable to update the database.
         """
-        logger.warning("Download Version, updateDatabase Failed???")
+        logger.warning("Download Version, updateDatabase failed (%s) (%s)" % (data, data2))
         if data != None:
           return defer.fail()

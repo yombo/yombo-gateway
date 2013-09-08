@@ -116,7 +116,7 @@ class Devices(YomboLibrary):
         for deviceUUID in self._toSaveStatus:
                 ss = self._toSaveStatus[deviceUUID]
                 statusExtra = cPickle.dumps(ss.statusextra)
-                logger.info("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (%s, %s, %s, %s, %s)" %  (deviceUUID, ss.status, statusExtra, ss.time, ss.source) )
+                logger.trace("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (%s, %s, %s, %s, %s)" %  (deviceUUID, ss.status, statusExtra, ss.time, ss.source) )
                 c.execute("""INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (?, ?, ?, ?, ?)""",
                     ( deviceUUID, ss.status, statusExtra, ss.time, ss.source) )
 

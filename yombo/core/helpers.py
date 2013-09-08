@@ -32,16 +32,22 @@ yombodbtools = None
 
 def sleep(secs):
     """
-    A simple non-blocking sleep function.  Just call this to delay
-    some logic in your code. This function allows the rest of the
-    gateway to function without interruption.
+    A simple non-blocking sleep function.  This generates a twisted  
+    deferred. You have to decorate your function to make the yield work  
+    properly.  
 
     **Usage**:
 
     .. code-block:: python
 
+       from twisted.internet import defer
        from yombo.core.helpers import sleep
-       sleep(5.4) # sleep 5.4 seconds.
+
+       @defer.inlineCallbacks
+       def myFunction(self):
+           logger.info("About to sleep.")
+           yield sleep(5.4) # sleep 5.4 seconds.
+           logger.info("I'm refreshed.")
 
     :param secs: Number of seconds (whole or partial) to sleep for.
     :type secs: int of float

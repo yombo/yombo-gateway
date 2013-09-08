@@ -75,7 +75,8 @@ class Message:
             messageID with a status of "failed".  An exception is not thrown
             since it may take a while to get a failed message.
         :type msgDestination: string
-        :param msgType: The type of message being sent, such as: command,
+        :param msgType:           logger.info("messages:beforeSendMessage")
+The type of message being sent, such as: command,
             event, status, config:
 
             * "cmd" - Used for sending commands to various devices. It is best
@@ -371,7 +372,7 @@ class Message:
 
                 
         if self.libMessages.processing == False:
-            logger.info("Message::send - Queuing message for later")
+            logger.debug("Message::send - Queuing message for later")
             self.libMessages.queue.appendleft(self)
             return
 
@@ -576,7 +577,7 @@ class Message:
         if self.msgStatus != 'new':
             return True
         
-        logger.info("validcmd payload: %s" % self.payload)
+        logger.trace("validcmd payload: %s" % self.payload)
 
         #for testing with isinstance. Can't include at startup - loop!
         from yombo.lib.devices import Device
@@ -635,8 +636,8 @@ class Message:
         else:
             raise MessageError("'deviceUUID' or 'device' not found in payload. Required for commands.", 'Message API::ValidateCMD')
 
-        logger.info("availablecommands: %s" % self.payload['deviceobj'].availableCommands)
-        logger.info("self.payload['cmdobj']" % self.payload['cmdobj'])
+        logger.trace("availablecommands: %s" % self.payload['deviceobj'].availableCommands)
+        logger.trace("self.payload['cmdobj']" % self.payload['cmdobj'])
         # check that command is possible for given deviceUUID
         if self.payload['cmdobj'].cmdUUID not in self.payload['deviceobj'].availableCommands:
            raise MessageError("Invalid cmdUUID for this deviceUUID.", 'Message API::ValidateCMD')

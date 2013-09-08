@@ -199,7 +199,6 @@ class Messages(YomboLibrary):
         delete that and clean up the reactors list.
         """
         try:
-          logger.info("messages:beforeSendMessage")
           self.cancelDelay(message.msgUUID)
         except:
           pass        
