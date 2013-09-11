@@ -29,23 +29,29 @@ logger = getLogger('library.commands')
 
 class Commands(YomboLibrary):
     """
-    Manages all commands available for devices.  Most common functions:
-    * getCommands - Get a pointer to all devices.
-    * search - Get a pointer to a command, using cmdUUID or command label.
+    Manages all commands available for devices.
+
+    All modules already have a predefined reference to this library as
+    `self._Commands`. All documentation will reference this use case.
     """
-    def __getitem__(self, key):
+    def __getitem__(self, commandRequested):
         """
-        Simulate a dictionary when requested with::
-            >>> commands['137ab129da9318]  #by uuid
+        Return a command, searching first by command UUID and then by command
+        function (on, off, bright, dim, open, close, etc).  Modules should use
+        `self._Commands` to search with:
+
+            >>> self._Commands['137ab129da9318]  #by uuid
         or::
-            >>> commands['living room light']  #by name
+            >>> self._Commands['living room light']  #by name
 
-        :param key: The search key/token to look for a command with.
-        :type key: string
+        See: :func:`yombo.core.helpers.getCommands` for full usage example.
+
+        :param commandRequested: The command UUID or command label to search for.
+        :type commandRequested: string
         """
-        return self.search(key)
+        return self._search(commandRequested)
 
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -62,31 +68,31 @@ class Commands(YomboLibrary):
 
         self.__loadCommands()
         
-    def load(self):
+    def _load_(self):
         """
         Loads all commands from DB to various arrays for quick lookup.
         """
         pass 
 
-    def start(self):
+    def _start_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
 
-    def stop(self):
+    def _stop_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
 
-    def unload(self):
+    def _unload_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
 
-    def clear(self):
+    def _clear_(self):
         """
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. B{Do not call this function!}
@@ -95,29 +101,14 @@ class Commands(YomboLibrary):
         self.__yombocommandsByName.clear()
         self.__yombocommandsByVoice.clear()
 
-    def reload(self):
+    def _reload_(self):
         self.__loadCommands()
-
-    def getCommands(self):
-        """
-        Return a pointer to all commands.
-
-        **Usage**:
-
-        .. code-block:: python
-
-           from yombo.core.helpers import getCommands
-           commands = getCommands()
-           onCmd = commands['on'] #fuzzy search match
-
-        :return: Pointer to array of all devices.
-        :rtype: dict
-        """
-        return self.__yombocommands
 
     def getCommandsByVoice(self):
         """
-        Return a pointer to all commands with Voice as the key. Uses fuzzysearch to find the voice verb.
+        This function shouldn't be used by modules. Internal use only. For modules,
+        use: `self._Commands['on']` to search by name.
+
 
         **Usage**:
 
@@ -132,22 +123,16 @@ class Commands(YomboLibrary):
         """
         return self.__yombocommandsByVoice
 
-    def search(self, commandRequested):
+    def _search(self, commandRequested):
         """
-        Attempts to find the command requested using a couple of methods.
-        
-        First, it checks if this is a cmdUUID and does a lookup. If that fails
-        it performs a fuzzy search looking for a matching name. This module requires
-        command B{matches to be at least 92%}.  This can be overridden by
-        L{searchaccuracycommand<searchaccuracycommand>}.
+        Performs the actual command search.
 
-        **Usage**:
+        .. note::
 
-        .. code-block:: python
+           Modules shouldn't use this function. Use the built in reference to
+           find commands: `self._Commands['8w3h4sa']`
 
-           from yombo.core.helpers import getCommands
-           commands = getCommands()
-           onCmd = commands.search('on') #fuzzy search match
+        See: :func:`yombo.core.helpers.getCommands` for full usage example.
 
         :raises CommandError: Raised when device cannot be found.
         :param commandRequested: The device UUID or device label to search for.
@@ -171,7 +156,7 @@ class Commands(YomboLibrary):
         import itertools
 
         logger.info("Loading commands!")
-        self.clear()
+        self._clear_()
 
         c = self.__dbpool.cursor()
         c.execute("SELECT * FROM commands")
@@ -192,8 +177,7 @@ class Commands(YomboLibrary):
 
 class Command:
     """
-    A class to manage a single command.2
-
+    A class to manage a single command.
     """
     def __init__(self, command):
         """

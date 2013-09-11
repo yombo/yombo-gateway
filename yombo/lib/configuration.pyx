@@ -51,7 +51,7 @@ class Configuration(YomboLibrary):
     MAX_KEY = 100
     MAX_VALUE = 5001
 
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Open the yombo.ini file for reading.
 
@@ -100,14 +100,14 @@ class Configuration(YomboLibrary):
                     hashValue = ""
 
                     # check hash in the DB, if not there or not match, update
-                    theValue = self.readDB(section, option)
+                    theValue = self._readDB(section, option)
                     if theValue != False:
                         hashValue = hashlib.sha224( str(theValue) ).hexdigest()
                         try:
                             # compare hash, if same, then check time.
                             if hashValue == ini.get('updateinfo', updateItem):
                                 updateItem = section + "_+_" + option + "_+_time"
-                                theValue = self.readDB('updateinfo', updateItem)
+                                theValue = self._readDB('updateinfo', updateItem)
 
                                 #last place with higher time wins.
                                 if theValue != False:
@@ -140,25 +140,25 @@ class Configuration(YomboLibrary):
           self.write("core", "externalIPAddress", getExternalIPAddress())
           self.write("core", "externalIPAddressTime", int(time.time()))
           
-    def load(self):
+    def _load_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
   
-    def start(self):
+    def _start_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
   
-    def stop(self):
+    def _stop_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
 
-    def unload(self):
+    def _unload_(self):
         """
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
@@ -231,7 +231,7 @@ class Configuration(YomboLibrary):
                 return self.cache[section][key]
         
         self.cacheMisses += 1
-        output = self.readDB(section, key)
+        output = self._readDB(section, key)
 
         if output == False:
             self.write(section,key, default) # save to ini so user can play
@@ -242,7 +242,7 @@ class Configuration(YomboLibrary):
         self.cache[section][key] = output
         return output
 
-    def readDB(self, section, key):
+    def _readDB(self, section, key):
         c = self.dbpool.cursor()
         c.execute("select configValue from config where configPath='%s' AND configKey='%s'" % (section, key))
         row = c.fetchone()

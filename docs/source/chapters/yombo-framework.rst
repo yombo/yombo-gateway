@@ -50,21 +50,23 @@ Lib
 ***
 
 Libraries build on the core modules and functions and provide essential
-gateway services.  There should be no need to access libraries directly,
-instead, use a function from the :mod:`helpers`_ module as part of the
-core. An exception to this would be the Times libarary.
+gateway services. There should be no need to access libraries directly,
+instead, use a function from the :doc:`devices <../core/helpers>` module
+as part of the core. An *exception* to this would be the CronTab and
+Times libararies.
 
 .. toctree::
    :maxdepth: 1
 
    ../lib/commands.rst
+   ../lib/configuration.rst
    ../lib/configurationupdate.rst
+   ../lib/crontab.rst
+   ../lib/devices.rst
    ../lib/downloadmodules.rst
    ../lib/loader.rst
-   ../lib/times.rst
-   ../lib/configuration.rst
-   ../lib/devices.rst
    ../lib/gatewaycontrol.rst
    ../lib/startup.rst
+   ../lib/times.rst
    ../lib/voicecmds.rst
 

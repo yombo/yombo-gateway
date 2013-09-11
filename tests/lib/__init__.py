@@ -1,1 +1,3 @@
-from .times import *
+from .crontab import *
+from .devices import *
+#from .times import *

@@ -64,7 +64,7 @@ class DownloadModules(YomboLibrary):
     MAX_KEY = 50
     MAX_VALUE = 50
 
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Gets the library setup and preconfigures some items.  Sets up the
         semaphore for queing downloads.
@@ -77,7 +77,7 @@ class DownloadModules(YomboLibrary):
         self.allDownloads = []   # to start deferreds
         self.mysemaphore = defer.DeferredSemaphore(2)  #used to queue deferreds
 
-    def load(self):
+    def _load_(self):
         """
         Prepare the cloudfront download location, and :func:`checkModules`
         to see if any modules need to be downloaded.
@@ -97,19 +97,19 @@ class DownloadModules(YomboLibrary):
             
         return self.checkModules()
 
-    def start(self):
+    def _start_(self):
         """
         Not used, here to prevent method not implemented exception.
         """
         pass
 
-    def stop(self):
+    def _stop_(self):
         """
         Not used, here to prevent method not implemented exception.
         """
         pass
 
-    def unload(self):
+    def _unload_(self):
         """
         Not used, here to prevent method not implemented exception.
         """

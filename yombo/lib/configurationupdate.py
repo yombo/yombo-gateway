@@ -42,7 +42,7 @@ class ConfigurationUpdate(YomboLibrary):
     """
     #zope.interface.implements(ILibrary)
 
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Setup the configuration queue, prepare the module.
 
@@ -68,13 +68,14 @@ class ConfigurationUpdate(YomboLibrary):
 
         self.gateway_control = getComponent('yombo.gateway.lib.GatewayControl')
         self.dbconnection = get_dbconnection()
+        if self.loader.unittest: # if we are testing, don't try to download configs
+          return
         self.loadDefer = defer.Deferred()
         self.loadDefer.addCallback(self.__loadFinish)
         self.getAllConfigs()
-
         return self.loadDefer
 
-    def load(self):
+    def _load_(self):
         """
         """
         pass
@@ -85,7 +86,7 @@ class ConfigurationUpdate(YomboLibrary):
         """
         return 1
 
-    def start(self):
+    def _start_(self):
         """
         Start the timer to pool for new configurations.
 
@@ -95,14 +96,14 @@ class ConfigurationUpdate(YomboLibrary):
         self.__incomingConfigQueueLoop.start(5)
         self.__incomingConfigQueueCheck()
 
-    def stop(self):
+    def _stop_(self):
         """
         Stop this module and prepare to be unloaded.
         """
         self.timerQueue.stop()
         self.__incomingConfigQueueCheck()
     
-    def unload(self):
+    def _unload_(self):
         """
         Don't really do anything, function defined to prevent an exception.
         """

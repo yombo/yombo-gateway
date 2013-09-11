@@ -24,14 +24,14 @@ class YomboLibrary:
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
-    def load(self):
+    def _load_(self):
         """
         Called when a library should start running its process
         operations. 
         """
         raise NotImplementedError()
 
-    def unload(self):
+    def _unload_(self):
         """
         Called when a library is about to be unloaded. 
         """

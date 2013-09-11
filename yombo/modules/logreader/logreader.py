@@ -10,20 +10,20 @@ class LogReader(YomboModule):
     """
     Monitors a file for voice commands and send them to yombobot for processing.
     """
-    def init(self):
+    def _init_(self):
         self._ModDescription = "Logread monitors a file for voice commands."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "http://www.yombo.net"
 
         self.fileReader = None # Used to test if file reader is running on stop.
 
-    def load(self):
+    def _load_(self):
         """
         Nothing to do here, move along.
         """
         pass
 
-    def start(self):
+    def _start_(self):
         """
         Setups the file to be read. FileReader does the heavy lifting.
 
@@ -70,7 +70,7 @@ class LogReader(YomboModule):
         pass
 
 
-    def stop(self):
+    def _stop_(self):
         """
         Module is shutting down. If a FileReader was setup, delete it. FileReader will close the file
         and save it's current location. This will be used next time as a starting point.
@@ -78,7 +78,7 @@ class LogReader(YomboModule):
         if self.fileReader != None:
             self.fileReader.close()
 
-    def unload(self):
+    def _unload_(self):
         """
         Nothing to do, move along.
         """

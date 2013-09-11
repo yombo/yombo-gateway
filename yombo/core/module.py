@@ -7,7 +7,7 @@ A shell for module developers to get basic items configured for modules.
 All modules should extend this module.  See the class documentation for
 additional details.
 
-Modules have 3 phases of startup: init, load, start.
+Modules have 3 phases of startup: _init, _load, _start.
     - Init - Get the basics of the module running.  All libraries are
       loaded and available.  Not all modules have been through init
       this stage.  A deferred can be returned if the :ref:`Loader`
@@ -26,7 +26,7 @@ Modules have 3 phases of startup: init, load, start.
    class. If you *must* use the __init__ function, be sure to call the parent
    __init__ function before any actions take place within your local __init__.
 
-Modules have 2 phases of shutdown: stop, unload
+Modules have 2 phases of shutdown: _stop, _unload
     - Stop - The gateway is on the first phase of shutting down. The module
       should no longer send messages.  It can still receive them after this
       function ends.
@@ -41,7 +41,7 @@ Modules have 2 phases of shutdown: stop, unload
    from yombo.core.module import YomboModule
     
    class ExampleModule(YomboModule):
-       def init(self):
+       def _init_(self):
            self._ModDescription = "Insteon API command interface"
            self._ModAuthor = "Mitch Schwenk @ Yombo"
            self._ModUrl = "http://www.yombo.net/SomeUrlForDetailsAboutThisModule"
@@ -51,15 +51,15 @@ Modules have 2 phases of shutdown: stop, unload
              {'voiceCmd': "insteon [reset]", 'order' : 'nounverb'}
              ]
             
-       def load(self):
+       def _load_(self):
            pass    #do stuff on loading of the module.
                    #modules can't send messages at this point, but after load completes
                    #it should be able to receive messages for processing.
 
-        def start(self):
+        def _start_(self):
             pass    #do stuff when module can now send and receive messages.
             
-        def stop(self):
+        def _stop_(self):
             pass    # the first phase of module gateway shut down. Should no longer
                     # send messages to other modules/components like normal run time
                     # but can still technically do so if desired while inside this
@@ -67,7 +67,7 @@ Modules have 2 phases of shutdown: stop, unload
                     # messages, but is required to continue to process messages
                     # until the unload() function is called.
 
-        def unload(self):
+        def _unload_(self):
             pass    #the gateway is on final phase of shutdown. Must quit now!
 
         def message(self, message):
@@ -86,7 +86,7 @@ documentation.
 
 #import zope.interface
 from yombo.core.component import IModule
-from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes
+from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes, getCronTab
 
 class YomboModule:
     """
@@ -127,8 +127,9 @@ class YomboModule:
         self._ModURL = "NA"
         self._ModuleUUID = ""
         self._ModVariables = getModuleVariables(self._Name)
-        self._Devices = getDevices()
         self._Commands = getCommands()
+        self._CronTab = getCronTab()
+        self._Devices = getDevices()
         self._DevicesByType = getDevicesByType()
         self._LocalDevices = {}
         self._LocalDeviceTypes = []
@@ -148,18 +149,18 @@ class YomboModule:
         for dtype in deviceTypes:
             self._LocalDeviceTypes.append(dtype['devicetypeuuid'])
             self._LocalDevicesByType = {dtype['devicetypeuuid'] : {}}
+            self._LocalDevicesByType[dtype['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
-            for device in self._DevicesByType(dtype['devicetypeuuid']):
+            for device in self._LocalDevicesByType[dtype['devicetypeuuid']]:
               self._LocalDevices[device.deviceUUID] = device
-              self._LocalDevicesByType[dtype['devicetypeuuid']] = {device.deviceUUID : device }
-    
-    def init(self):
+
+    def _init_(self):
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.
         """
         raise NotImplementedError()
 
-    def load(self):
+    def _load_(self):
         """
         Phase 2 of 3 for statup - Called when module should load anything else. After this
         function completes, it should be able to accept and process messages. Doesn't send
@@ -167,21 +168,21 @@ class YomboModule:
         """
         raise NotImplementedError()
 
-    def start(self):
+    def _start_(self):
         """
         Phase 3 of 3 for statup - Called when this module should start processing and is
         now able to send messages to other components.
         """
         raise NotImplementedError()
 
-    def stop(self):
+    def _stop_(self):
         """
         Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incomming
         messages for processing.
         """
         raise NotImplementedError()
 
-    def unload(self):
+    def _unload_(self):
         """
         Phase 2 of 2 for shutdown - By the time this is called, no messages will be sent
         to this module. Close all connections/items. Once this function ends, it's
@@ -195,4 +196,3 @@ class YomboModule:
         be sent to this method.
         """
         raise NotImplementedError()
-

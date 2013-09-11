@@ -393,7 +393,7 @@ class Listener(YomboLibrary):
     may be easier to implement other API's through module if special use cases are
     needed. All gateway functions can be accessed through this API.
     """
-    def init(self, loader):
+    def _init_(self, loader):
         self._Name = "listener"
         self._FullName = "yombo.gateway.lib.listener"
 
@@ -401,13 +401,13 @@ class Listener(YomboLibrary):
         self.clients = []
         self.myreactor = None
 
-    def load(self):
+    def _load_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
 
-    def start(self):
+    def _start_(self):
         #@TODO: Houstin, uhh, is anyone else listening to this?
         # GET SSL!!
         
@@ -415,12 +415,12 @@ class Listener(YomboLibrary):
         controllerPort = int(getConfigValue("listner", "port", 8443))
         self.myreactor = reactor.listenTCP(controllerPort, self.myfactory)
 
-    def stop(self):
+    def _stop_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
 
-    def unload(self):
+    def _unload_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """

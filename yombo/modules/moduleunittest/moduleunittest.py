@@ -1,7 +1,7 @@
 """
-Module unit test aims to test all the libraries and core functions. Inspiration
-for this came from adding various features to the manhole module. These tests
-should be automatic.
+Module unit test is used to test loaded modules using their included _unittest
+method.  You can functionality to your module to include unittests by defining
+a _unittest method. 
 
 :copyright: 2013 Yombo
 :license: Yombo RPL 1.5
@@ -22,7 +22,7 @@ class ModuleUnitTest(YomboModule):
     """
     ModuleUnitTest
     """
-    def init(self):
+    def _init_(self):
         """
         Init the module.  Don't use __init__ as that will override the
         setup functions of the base YomboModule class.
@@ -53,7 +53,7 @@ class ModuleUnitTest(YomboModule):
         self.outMsg = namedtuple('outMsg', "time, deviceUUID, message")
         self.outMessages = {}
 
-    def load(self):
+    def _load_(self):
         """
         After this phase, module should be able to
         processing incoming messages.
@@ -105,7 +105,7 @@ class ModuleUnitTest(YomboModule):
         self.devices[2]= self.libraries['Devices']._addDevice(record, True)
         self.libraries['Devices'].yombodevices['02zZzZzZzZzZzZzZzZzZzZzZ'].availableCommands = deviceCmds
         
-    def start(self):
+    def _start_(self):
         """
         Assume all other modules are loaded, we can start
         sending messages to other modules.  Here, is where we enable or turn on
@@ -147,14 +147,14 @@ class ModuleUnitTest(YomboModule):
         self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].deviceUUID, msg)
         
     
-    def stop(self):
+    def _stop_(self):
         """
         Stop sending messages.  Other components are unable to receive
         messages.  Queue up or pause functionality.
         """
         pass
     
-    def unload(self):
+    def _unload_(self):
         """
         Called just before the gateway is about to shutdown
         or reload all the modules.  Should assume gateway is going down.

@@ -87,27 +87,9 @@ class SQLDict(dict):
         After calling the dictionary __setitem__, update the database.
         """
         super(SQLDict, self).__setitem__(key, value)
-        self.updateSQL(key, value)
+        self._updateSQL(key, value)
 
-
-    def update(self, *args, **kwargs):
-        """
-        Update the dictionary variable as well as the database.
-        """
-        if args:
-            if len(args) > 1:
-                raise TypeError("update expected at most 1 arguments, got %d" % len(args))
-            other = dict(args[0])
-            for key in other:
-                self[key] = other[key]
-                self.updateSQL(self[key], other[key])
-
-        for key in kwargs:
-            self[key] = kwargs[key]
-            self.updateSQL(self[key], kwargs[key])
-
-
-    def updateSQL(self, key, value):
+    def _updateSQL(self, key, value):
         """
         Update the database with new data. Use the loader library to handle this.
         """
@@ -121,3 +103,19 @@ class SQLDict(dict):
         if key not in self:
             self[key] = value
         return self[key]
+
+    def update(self, *args, **kwargs):
+        """
+        Update the dictionary variable as well as the database.
+        """
+        if args:
+            if len(args) > 1:
+                raise TypeError("update expected at most 1 arguments, got %d" % len(args))
+            other = dict(args[0])
+            for key in other:
+                self[key] = other[key]
+                self._updateSQL(self[key], other[key])
+
+        for key in kwargs:
+            self[key] = kwargs[key]
+            self._updateSQL(self[key], kwargs[key])

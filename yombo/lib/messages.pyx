@@ -38,7 +38,7 @@ class Messages(YomboLibrary):
     """
     Store messages to be delivered in future here.
     """
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
@@ -47,7 +47,7 @@ class Messages(YomboLibrary):
         self.queue = deque()     # Placeholder for startup message queues
         self.processing = False
 
-    def load(self):
+    def _load_(self):
         """
         Load the messages, but that's about it. Can't send any messages until start is reached. Can accept
         messages by the time load has completed.
@@ -56,7 +56,7 @@ class Messages(YomboLibrary):
         self.reactors = {} # map msgUUID to a reactor (delayed message)
         self.deviceList = {} # list of devices that have pending messages.
 
-    def start(self):
+    def _start_(self):
         """
         Nothing to do here, wait for modules started.
         """
@@ -99,13 +99,13 @@ class Messages(YomboLibrary):
                when = float(msg.notBefore) - time.time()
                reactor.callLater(when, toSend.send)
 
-    def stop(self):
+    def _stop_(self):
         """
         Stop library - stop the looping call.
         """
         pass
 
-    def unload(self):
+    def _unload_(self):
         pass
 
     def addToDelay(self, message):

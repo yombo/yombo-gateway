@@ -18,7 +18,7 @@ class Empty(YomboModule):
     Empty base module
     """
 
-    def init(self):
+    def _init_(self):
         """
         Init the module.  Don't use __init__ as that will override the
         setup functions of the base YomboModule class.
@@ -32,7 +32,7 @@ class Empty(YomboModule):
         # get a reference to the times instance so we can check ifDark later.
         self.times = getTimes()
         
-    def load(self):
+    def _load_(self):
         """
         After this phase, module should be able to
         processing incoming messages.
@@ -70,7 +70,7 @@ class Empty(YomboModule):
         logger.debug("yombo.modules.empty.loaded() has been called.")
     
         
-    def start(self):
+    def _start_(self):
         """
         Assume all other modules are loaded, we can start
         sending messages to other modules.  Here, is where we enable or turn on
@@ -82,16 +82,16 @@ class Empty(YomboModule):
         logger.debug("Is Dark: %s", self.times.isDark)
         logger.debug("Is Day: %s", self.times.isDay)
         logger.debug("Is Night: %s", self.times.isNight)
-        logger.debug("Mars Next Rise: %s", self.times.objRise(1, 'Mars'))
+        logger.debug("Mars Next Rise: %s", self.times.objRise(dayOffset=1, object='Mars'))
     
-    def stop(self):
+    def _stop_(self):
         """
         Stop sending messages.  Other components are unable to receive
         messages.  Queue up or pause functionality.
         """
         pass
     
-    def unload(self):
+    def _unload_(self):
         """
         Called just before the gateway is about to shutdown
         or reload all the modules.  Should assume gateway is going down.

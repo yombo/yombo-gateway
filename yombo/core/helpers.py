@@ -370,18 +370,13 @@ def getCommands():
 
        from yombo.core.helpers import inputValidate
        # Get the command for "off"
-       cmdOff = self._Devices['off']
-
-       # Now we can look at some attributes.
-       cmdInputType = cmdOff.inputTypeID
-
-       # Send the input type ID along with some input to validate it.
-       try:
-         
-       except InputValidationError, e:  #isn't valid input
-           reply = message.getReply( msgStatus="failed", msgStatusExtra="User value input invalid!")
-           reply.send()
-           return
+       cmdOff = self._Commands['off']
+       # get a device to control.
+       bedroomLamp = self._Devices['bedroom light']
+       # create a command message
+       aMessage = bedroomLamp.getMessage(self, cmdobj=cmdOff)
+       #send the message - tell it do it!
+       aMessage.send()
 
     :return: The pointer to the commands dictionary.
     :rtype: dict
@@ -420,6 +415,33 @@ def getCommandsByVoice():
     :rtype: dict
     """
     return getComponent('yombo.gateway.lib.commands').getCommandsByVoice()
+
+def getCronTab():
+    """
+    Returns a pointer to CronTab library.
+
+    .. note::
+
+       This function is documented for reference only. For all modules there
+       is already a pre-defined variable containing a pointer:
+       **"self._CronTab"**.  Usage of this is listed in this example.
+
+    .. warning::
+
+       This returns a pointer to the a dictionary (array) of commandss. Care
+       should be taken not to remove, replace, or change the dictionary as
+       this will affect the entire gateway framework.
+    
+    **Short Usage**:
+
+        >>> self._CronTab['se74yhsdSd283']  #by uuid, preferred
+    or:
+        >>> self._CronTab['modules.myModule.myCronTabLabel']  #by name
+
+    :return: The pointer to the crontab dictionary.
+    :rtype: dict
+    """
+    return getComponent('yombo.gateway.lib.crontab')
 
 def getVoiceCommands():
     """
@@ -475,7 +497,7 @@ def getTimes():
 
        from yombo.core.helpers import getTimes
        times = getTimes()
-       moonrise = times.objRise(1, 'Moon') # 1 - we want the next moon rise
+       moonrise = times.objRise(dayOffset=1, object='Moon') # 1 - we want the next moon rise
 
        # Or, assume a module received a status message about a motion detector tripping
 

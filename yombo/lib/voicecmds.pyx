@@ -103,7 +103,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
 
     Also, provides searching for voice commands.
     """
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Construct a new VoiceCmds Instance
 
@@ -114,15 +114,27 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         super(VoiceCmds, self).__init__(None, .8)
         self.commandsByVoice = getCommandsByVoice()
 
-    def load(self):
+    def _load_(self):
         """
         Setup self.commandsByVoice.... todo doco...
         """
         self._Devices = getDevices()
 
-    def start(self):
+    def _start_(self):
         """
         Does notthing, defined to avoid an exception.
+        """
+        pass
+
+    def _unload_(self):
+        """
+        Nothing to do.
+        """
+        pass
+
+    def _stop_(self):
+        """
+        Nothing to do.
         """
         pass
 

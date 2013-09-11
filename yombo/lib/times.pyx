@@ -15,7 +15,7 @@ See usage below on using this module within your module.
 
        from yombo.core.helpers import getTimes
        times = getTimes()
-       moonrise = times.objRise(1, 'Moon') # 1 - we want the next moon rise
+       moonrise = times.objRise(dayOffset=1, object='Moon') # 1 - we want the next moon rise
 
        # The following can be used in logic for day/night/light/dark events.
        #times.isTwilight = True - it's not dark (sundown) or light (sun up), or False if not.
@@ -55,19 +55,17 @@ class Times(YomboLibrary):
     """
     Provide various rise/set of the sun, moon, and all things heavenly.
     """
-    def init(self, loader, PatchEnvironment = False):
+    def _init_(self, loader, PatchEnvironment = False):
         """
         Setup various common objects, setup frame work if isday/night/dark/twilight.
         :param loader: A pointer to the L{Loader<yombo.lib.loader.Loader>}
         library.
         :type loader: Instance of Loader
         """
+        self.loader = loader	
+        if PatchEnvironment: self.runned_for_tests()
 
         self.time_ajust = 300.0
-
-        if PatchEnvironment: self.runned_for_tests()
-        
-        self.loader = loader	
 
         self.obs = ephem.Observer()
         self.obs.lat = str(getConfigValue('location', 'latitude', 0))
@@ -103,16 +101,27 @@ class Times(YomboLibrary):
         self._setupNextTwilightEvents() # needs to be called before setupNextDawnDuskEvent
         self._setupNextDawnDuskEvent()
 
-        
-    def load(self):
+    def _load_(self):
         """
-        Already done, nothing to do.
+        Nothing to do.
         """
         pass
 
-    def start(self):
+    def _start_(self):
         """
-        Already done, nothing to do.
+        Nothing to do.
+        """
+        pass
+
+    def _unload_(self):
+        """
+        Nothing to do.
+        """
+        pass
+
+    def _stop_(self):
+        """
+        Nothing to do.
         """
         pass
 
@@ -131,13 +140,13 @@ class Times(YomboLibrary):
         if self.isLight:
             setTime = self.sunSetTwilight() - time()
             #print "%d = %d - %d" % (setTime, self.sunSetTwilight(),time())
-            self.CLnowDark = reactor.callLater(setTime, self.sendStatus, 'nowDark')
-            #print "self.CLnowDark = reactor.callLater(setTime, self.sendStatus, 'nowDark')"
+            self.CLnowDark = reactor.callLater(setTime, self._sendStatus, 'nowDark')
+            #print "self.CLnowDark = reactor.callLater(setTime, self._sendStatus, 'nowDark')"
         else:
             setTime = self.sunRiseTwilight() - time()
             #print "setTime = self.sunRiseTwilight()"
             #print "%d = %d - %d" % (setTime, self.sunRiseTwilight(),time())
-            self.CLnowLight = reactor.callLater(setTime, self.sendStatus, 'nowLight')
+            self.CLnowLight = reactor.callLater(setTime, self._sendStatus, 'nowLight')
 
         #set a callLater to redo islight/dark, and setup next broadcast.
         reactor.callLater(setTime+self.time_ajust, self._setupLightDarkEvents)
@@ -156,11 +165,11 @@ class Times(YomboLibrary):
         if self.isDay:
             setTime = self.sunSet() - time()
             logger.trace("NowNight3 event in: %s", setTime)
-            self.CLnowNight = reactor.callLater(setTime, self.sendStatus, 'nowNight')
+            self.CLnowNight = reactor.callLater(setTime, self._sendStatus, 'nowNight')
         else:
             setTime = self.sunRise() -time()
             logger.trace("NowDay4 event in: %s", setTime)
-            self.CLnowDay = reactor.callLater(setTime, self.sendStatus, 'nowDay')
+            self.CLnowDay = reactor.callLater(setTime, self._sendStatus, 'nowDay')
 
         #set a callLater to redo isday/night, and setup next broadcast.
         reactor.callLater(setTime+self.time_ajust, self._setupDayNightEvents)
@@ -188,18 +197,16 @@ class Times(YomboLibrary):
             
             twTime = min (setTime, riseTime)
             logger.trace("nowNotTwilight event in: %s", twTime)
-            self.CLnowNotTwilight = reactor.callLater(twTime, self.sendStatus, 'nowNotTwilight')
+            self.CLnowNotTwilight = reactor.callLater(twTime, self._sendStatus, 'nowNotTwilight')
         else:
             setTime = self.sunSet() - time()
             riseTime = self.sunRiseTwilight() - time()
             twTime = min(setTime, riseTime)
                 
             logger.trace("nowTwilight event in: %s", twTime)
-            self.CLnowTwilight = reactor.callLater(twTime, self.sendStatus, 'nowTwilight')
+            self.CLnowTwilight = reactor.callLater(twTime, self._sendStatus, 'nowTwilight')
 
         reactor.callLater(twTime+self.time_ajust, self._setupNextTwilightEvents)                
-
-
 
     def _setupNextDawnDuskEvent(self):
         """
@@ -254,7 +261,7 @@ class Times(YomboLibrary):
         Called by timer when it's nowDawn.
         """
         self.isDawn = True
-        self.sendStatus('nowDawn')
+        self._sendStatus('nowDawn')
         #        self._setupNextTwilightEvents()
         
     def _sendNowNotDawn(self):
@@ -263,7 +270,7 @@ class Times(YomboLibrary):
         to setup the next twilight cycle for dusk.
         """
         self.isDawn = False
-        self.sendStatus('nowNotDawn')
+        self._sendStatus('nowNotDawn')
         #self._setupNextTwilightEvents()
 
     def _sendNowDusk(self):
@@ -271,7 +278,7 @@ class Times(YomboLibrary):
         Called by timer when it's nowDusk.
         """
         self.isDusk = True
-        self.sendStatus('nowDusk')
+        self._sendStatus('nowDusk')
         #self._setupNextTwilightEvents()
         
     def _sendNowNotDusk(self):
@@ -280,10 +287,10 @@ class Times(YomboLibrary):
         to setup the next twilight cycle for dawn.
         """
         self.isDusk = False
-        self.sendStatus('nowNotDusk')
+        self._sendStatus('nowNotDusk')
         #self._setupNextTwilightEvents()
         
-    def sendStatus(self, msgstatus):
+    def _sendStatus(self, msgstatus):
         """
         Generate an "event" message of status type being the time
         event name.
@@ -391,7 +398,7 @@ class Times(YomboLibrary):
             start = 0
         return {'start' : self._timegm(start), 'end' : self._timegm(end)}
 
-    def objVisible(self, object):
+    def objVisible(self, **kwargs):
         """
         Returns a true if the given object is above the horizon.
 
@@ -399,10 +406,20 @@ class Times(YomboLibrary):
         
         .. code-block:: python
           
-            from yombo.core.helpers import getTime
-            time = getTime()
-            saturnVisible = getTime('Saturn') # Is Saturn above the horizon? (True/False)
+            from yombo.core.helpers import getTimes
+            time = getTimes()
+            saturnVisible = time.objVisible('Saturn') # Is Saturn above the horizon? (True/False)
+
+        :raises TimeError: Raised when function encounters an error.
+        :param object: The device UUID or device label to search for.
+        :type object: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
         """
+        if 'object' not in kwargs:
+           raise TimeError("objVisible must have 'object' set.")
+        object = kwargs['object']
+
         try:
             obj = getattr(ephem, object)
         except AttributeError:
@@ -415,20 +432,33 @@ class Times(YomboLibrary):
             return False
         else:
             return True
-
             
-    def objRise(self, dayOffset=0, object='Sun'):
+    def objRise(self, **kwargs):
         """
-        Returns when an item/object rises or sets.
-        
+        Returns when an item/object rises.
+
         **Usage**:
         
         .. code-block:: python
           
             from yombo.core.helpers import getTime
-            time = getTime()
-            saturnRise = getTime(1, 'Saturn') # the NEXT (1) rising of Saturn.
+            time = getTimes()
+            saturnRise = time.objRise(dayOffset=1, object='Saturn') # the NEXT (1) rising of Saturn.
+
+        :raises TimeError: Raised when function encounters an error.
+        :param dayOffset: Default=0. How many days in future to find when object rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
+        :type dayOffset: int
+        :param object: Default='Sun'. PyEphem object to search for and return results for.
+        :type object: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
         """
+        if 'object' not in kwargs:
+           raise TimeError("objVisible must have 'object' set.")
+        object = kwargs['object']
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
 
         try:
             obj = getattr(ephem, object)
@@ -439,67 +469,127 @@ class Times(YomboLibrary):
         temp = self._next_rising(self.obs,obj())
         return self._timegm (temp)
     
-    def objSet(self, dayOffset=0, object="Sun"):
+    def objSet(self, **kwargs):
         """
-        Returns the setting time for a given object name, such as "Sun", "Moon". Optionaly returns sunset +/- # days.
+        Returns when an item/object sets.
 
-        :param dayOffset: How many days to offset. 0 is today, 1 would be next, -1 is yesterday.
+        **Usage**:
+        
+        .. code-block:: python
+          
+            from yombo.core.helpers import getTime
+            time = getTimes()
+            saturnRise = time.objRise(dayOffset=1, object='Saturn') # the NEXT (1) rising of Saturn.
+
+        :raises TimeError: Raised when function encounters an error.
+        :param dayOffset: Default=0. How many days in future to find when object sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
-        :param object: Which object to return information on. Sun, Moon, Mars, Jupiter, etc.
+        :param object: Default='Sun'. PyEphem object to search for and return results for.
         :type object: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
         """
+        if 'object' not in kwargs:
+           raise TimeError("objVisible must have 'object' set.")
+        object = kwargs['object']
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)        
-
+            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            
         # we want the date part only, but date.today() isn't UTC.
         dt = datetime.utcnow()+timedelta(days=dayOffset)
         self.obs.date = dt
         temp = self._next_setting(self.obs,obj())
         return self._timegm(temp)
 
-    def sunRise(self, dayOffset=0):
+    def sunRise(self, **kwargs):
         """
         Return sunrise, optionaly returns sunrise +/- # days. The offset of "0" would be
         for the next sunrise.
         
-        :param dayOffset: How many days to offset. 0 would be next, -1 is today.
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
         :type dayOffset: int
-        :param object: Which object to return information on. Sun, Moon, Mars, Jupiter, etc.
+        :param object: Default='Sun'. PyEphem object to search for and return results for.
         :type object: string
         """
-        return self.objRise(dayOffset, 'Sun')
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        object = 'Sun'        
+        if 'object' in kwargs:
+            object = kwargs['object']
 
-    def sunSet(self, dayOffset=0, object='Sun'):
-        """
-        Return sunset, optionaly returns sunset +/- # days.
-
-        :param dayOffset: How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
-        :type dayOffset: int
-        :param object: Which object to return information on. Sun, Moon, Mars, Jupiter, etc.
-        :type object: string
-        """
-        return self.objSet(dayOffset, object)
-
-
-    def sunRiseTwilight(self, dayOffset=0, object='Sun'):
-        """
-        Return sunrise, optionaly returns sunrise +/- # days.
-        """
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            obj = getattr(ephem, 'Sun')
+            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+
+        return self.objRise(dayOffset=dayOffset, object=object)
+
+    def sunSet(self, **kwargs):
+        """
+        Return sunset, optionaly returns sunset +/- # days.
+
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
+        :type dayOffset: int
+        :param object: Default='Sun'. PyEphem object to search for and return results for.
+        :type object: string
+        """
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        object = 'Sun'        
+        if 'object' in kwargs:
+            object = kwargs['object']
+
+        try:
+            obj = getattr(ephem, object)
+        except AttributeError:
+            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+
+        return self.objSet(dayOffset=dayOffset, object=object)
+
+    def sunRiseTwilight(self, **kwargs):
+        """
+        Return sunrise, optionally returns sunrise +/- # days.
+
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
+        :type dayOffset: int
+        :param object: Which object to return information on. Sun, Moon, Mars, Jupiter, etc.
+        :type object: string
+        """
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        object = 'Sun'        
+        if 'object' in kwargs:
+            object = kwargs['object']
+
+        try:
+            obj = getattr(ephem, object)
+        except AttributeError:
+            raise TimeError("Couldn't not find PyEphem object: %s" % object)
             
         self.obsTwilight.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obsTwilight,obj(),use_center=True)
         return self._timegm(temp)
 
-    def sunSetTwilight(self, dayOffset=0, object='Sun'):
+    def sunSetTwilight(self, **kwargs):
         """
         Return sunset, optionaly returns sunset +/- # days.
         """
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        object = 'Sun'        
+        if 'object' in kwargs:
+            object = kwargs['object']
+
         try:
             obj = getattr(ephem, object)
         except AttributeError:
@@ -511,11 +601,7 @@ class Times(YomboLibrary):
         temp = self._next_setting(self.obsTwilight,obj(),use_center=True)
         return self._timegm(temp)
 
-
-        
-    # This wrappers need for polar regions where day might be longer than 24 hours
-
-        
+    # These wrappers need for polar regions where day might be longer than 24 hours
     def _previous_rising(self, observer, object, use_center=False):
         return self._riset_wrapper(observer,'previous_rising',object,use_center=use_center)
 
@@ -527,10 +613,6 @@ class Times(YomboLibrary):
 
     def _next_setting(self, observer, object, use_center=False):
         return self._riset_wrapper(observer,'next_setting',object,use_center=use_center)
-        
-        
-        
-
         
     def _riset_wrapper(self, observer, obsf_name, obj,use_center=False):                
         save_date = observer.date #we need to save this date to compare with later                
@@ -548,13 +630,9 @@ class Times(YomboLibrary):
     def _timegm (self, dt):
         return CalTimegm(dt.tuple())
 
-
-
-                
 #******************************************************************************************************
 #************************************ TESTS  **********************************************************
 #******************************************************************************************************
-
     def runned_for_tests(self):
         """
         Patch reactor.callLater to be a simple print for tests
@@ -588,11 +666,11 @@ class Times(YomboLibrary):
         self.year_array = [0]*(365*24)
         self.start_time = time()
             
-        def sendStatusMy (a):
-            #print 'sendStatus %s on %s' % (a, datetime.fromtimestamp(time()))
+        def _sendStatusMy(a):
+            #print '_sendStatus %s on %s' % (a, datetime.fromtimestamp(time()))
             ct = int ((time() - self.start_time) / 60 / 60)
             
-            #print 'sendStatus %s on %s' % (a, datetime.fromtimestamp(time()))            
+            #print '_sendStatus %s on %s' % (a, datetime.fromtimestamp(time()))            
             if (ct >= (365*24)):
                 return
             
@@ -628,12 +706,12 @@ class Times(YomboLibrary):
                 self.year_array[ct] = self.year_array[ct] | 512                                
             
             
-        self._sendStatus_old = getattr(self,'sendStatus')
-        setattr(self, 'sendStatus', sendStatusMy)
+        self._sendStatus_old = getattr(self,'_sendStatus')
+        setattr(self, '_sendStatus', _sendStatusMy)
 
     def finish_tests(self):
         setattr(reactor, 'callLater', self._reactor_callLater)
-        setattr(self, 'sendStatus', self._sendStatus_old)        
+        setattr(self, '_sendStatus', self._sendStatus_old)        
         
 
                 
@@ -647,7 +725,6 @@ class Times(YomboLibrary):
         self.obsTwilight.lat = lat
         self.obsTwilight.lon = lon
 
-
         #        globals()['datetime'] = old_datetime        
         set_olddt()
         midnight_utc = datetime.utcnow().date()
@@ -655,7 +732,6 @@ class Times(YomboLibrary):
         #        globals()['datetime'] = DateTime        
         set_newdt()
         t = CalTimegm (midnight_utc.timetuple())
-        
 
         err = 0
         print 'Year check results (. - ok, X - should be day but night, x - should be night):[', midnight_utc,']',

@@ -16,7 +16,7 @@ class LogWriter(YomboModule):
     :license: see LICENSE.TXT from Yombo Gateway Software distribution
     """
 
-    def init(self):
+    def _init_(self):
         self._ModDescription = "Writes message to a log file."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "http://www.yombo.net"
@@ -31,7 +31,7 @@ class LogWriter(YomboModule):
 
         self.fp_out = None
 
-    def load(self):
+    def _load_(self):
         """
         Simple file open.
         """
@@ -43,19 +43,19 @@ class LogWriter(YomboModule):
             self.fp_out = None
             callLater(10, self.load)
 
-    def start(self):
+    def _start_(self):
         """
         Nothing to start, move along.
         """
         pass
 
-    def stop(self):
+    def _stop_(self):
         """
         Nothing to stop.
         """
         pass
 
-    def unload(self):
+    def _unload_(self):
         """
         Flush and close the output log file.
         """

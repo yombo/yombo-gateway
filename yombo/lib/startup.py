@@ -38,7 +38,7 @@ class Startup(YomboLibrary):
     MAX_KEY = 50
     MAX_VALUE = 50
 
-    def init(self, loader):
+    def _init_(self, loader):
         pgpDownloadRoot()
 
         self.loader = loader
@@ -57,7 +57,7 @@ class Startup(YomboLibrary):
         if gpg_key == None or gpg_key == '' or gpg_key_ascii == None or gpg_key_ascii == '':
             raise GWCritical("ERROR: No GPG/PGP key pair found. Please run configure.py", 503, "startup")
 
-    def load(self):
+    def _load_(self):
         lastcheck = getConfigValue("local", "configlastcheckbygw", 0)
         if lastcheck > (int(time()) - 10):
             return
@@ -90,21 +90,13 @@ class Startup(YomboLibrary):
         url = "%s?lat=%s&long=%s" % (url, latitude, longitude)
         logger.debug("URL = %s", url)
 
-        
-
         #d = getPage(url)
 
-
-#TODO: ???  Move to here???   Get updated configs before going on...
-
-
-
-    def start(self):
+    def _start_(self):
         pass
 
-    def stop(self):
+    def _stop_(self):
         pass
 
-    def unload(self):
+    def _unload_(self):
         pass
-

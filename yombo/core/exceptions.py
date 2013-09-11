@@ -24,7 +24,6 @@ class GWException(Exception):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-
         Exception.__init__(self)
         self.message = message
         self.errorno = errorno
@@ -421,6 +420,12 @@ class PinNumberError(Exception):
 class CommandError(Exception):
     """
     If commands class has an error.
+    """
+    pass
+
+class CronTabError(Exception):
+    """
+    If crontab class has an error.
     """
     pass
 

@@ -51,15 +51,27 @@ class Devices(YomboLibrary):
 
     def __getitem__(self, key):
         """
-        See :func:`search` for details.
+        Attempts to find the device requested using a couple of methods.
+
+        Simulate a dictionary when requested with:
+            >>> self._Devices['137ab129da9318']  #by uuid
+        or:
+            >>> self._Devices['living room light']  #by name
+
+        See: :func:`yombo.core.helpers.getDevices` for full usage example.
+
+        :raises DeviceError: Raised when device cannot be found.
+        :param deviceRequested: The device UUID or device label to search for.
+        :type deviceRequested: string
+        :return: Pointer to array of all devices.
+        :rtype: dict
         """
-#        logger.info("performing device search....")
-        return self.search(key)
+        return self._search(key)
 
     def __iter__(self):
         return self.yombodevices.__iter__()
 
-    def init(self, loader):
+    def _init_(self, loader):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -76,7 +88,7 @@ class Devices(YomboLibrary):
         self._toSaveStatus = {}
         self._saveStatusLoop = None
 
-    def load(self):
+    def _load_(self):
         """
         Get pointer to voice commands, get db connection.
         """
@@ -84,7 +96,7 @@ class Devices(YomboLibrary):
         self.voiceCmds = self.loader.loadedLibraries['yombo.gateway.lib.voicecmds']
         self.__loadDevices()
 
-    def start(self):
+    def _start_(self):
         """
         Load devices, and load some of the device history. Setup looping
         call to periodically save any updated device status.
@@ -93,14 +105,14 @@ class Devices(YomboLibrary):
         self._saveStatusLoop.start(60, False)
         pass
 
-    def stop(self):
+    def _stop_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         if hasattr(self, '_saveStatusLoop') and self._saveStatusLoop != None and self._saveStatusLoop.running == True:
             self._saveStatusLoop.stop()
 
-    def unload(self):
+    def _unload_(self):
         """
         Stop periodic loop, save status updates.
         """
@@ -123,7 +135,7 @@ class Devices(YomboLibrary):
         self._toSaveStatus.clear()
         self.__dbpool.pool.commit()
 
-    def clear(self):
+    def _clear_(self):
         """
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. **Do not call this function!**
@@ -134,64 +146,19 @@ class Devices(YomboLibrary):
         self.yombodevicesByTypeName.clear()
         self.yombodevicesByName.clear()
 
-    def reload(self):
+    def _reload_(self):
         self.__loadDevices()
 
-    def getDevices(self):
+    def _search(self, deviceRequested):
         """
-        Return a pointer to all devices, but not the actual devices object.
+        Performs the actual device search.
 
-        .. seealso::
+        .. note::
 
-           Function: :func:`yombo.core.helpers.getDevices`
-              for usage example.
+           Modules shouldn't use this function. Use the built in reference to
+           find commands: `self._Devices['8w3h4sa']`
 
-           Function: :func:`yombo.core.helpers.getDevicesByType`
-              to get all devices for a specific type.
-
-        :return: Pointer to array of all devices.
-        :rtype: dict
-        """
-        return self.yombodevices
-
-    def getDevicesByType(self, deviceTypeUUID=None):
-        """
-        Returns devices by type. However, how it returns that information
-        depends on how it was called.  If called with no params, returns a
-        dictionary of devices with deviceType as the keys and a dictionary of
-        devices as the value.
-
-        If called with a parameter, it will return a single dictionary with all
-        the devices of that device type.
-
-        .. seealso::
-
-           Function: :func:`yombo.core.helpers.getDevices`
-              for usage example.
-
-           Function: :func:`yombo.core.helpers.getDevicesByType`
-              to get all devices for a specific type.
-        """
-        if deviceTypeUUID == None:
-            return self.yombodevicesByType
-        elif deviceTypeUUID in self.yombodevicesByType:
-            return self.yombodevicesByType[deviceTypeUUID]
-        else:
-            try:
-                return self.yombodevicesByTypeName[deviceTypeUUID]
-            except FuzzySearchError, e:
-                return {}
-
-    def search(self, deviceRequested):
-        """
-        Attempts to find the device requested using a couple of methods.
-
-        Simulate a dictionary when requested with:
-            >>> devices['137ab129da9318']  #by uuid
-        or:
-            >>> devices['living room light']  #by name
-
-        See: :func:`yombo.core.helpers.getDevices` for usage example.
+        See: :func:`yombo.core.helpers.getDevices` for full usage example.
 
         :raises DeviceError: Raised when device cannot be found.
         :param deviceRequested: The device UUID or device label to search for.
@@ -235,7 +202,7 @@ class Devices(YomboLibrary):
 
         :param record: Row of items from the SQLite3 database.
         :type record: dict
-        :returns: Pointer to new device. Only used in the ModuleUnitTest
+        :returns: Pointer to new device. Only used during unittest
         """
         deviceUUID = record["deviceuuid"]
         self.yombodevices[deviceUUID] = Device(record, self)
@@ -246,6 +213,23 @@ class Devices(YomboLibrary):
             self.yombodevicesByType[record['devicetypeuuid']].append(self.yombodevices[deviceUUID])
         if testDevice:
             return self.yombodevices[deviceUUID]
+
+    def getDevicesByType(self, **kwargs):
+        """
+        Returns list of devices by deviceTypeUUID.
+        :raises DeviceError: Raised when function encounters an error.
+        :param deviceRequested: The device UUID or device label to search for.
+        :type deviceRequested: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
+        """
+        if 'deviceTypeUUID' not in kwargs:
+           raise DeviceError("getDevicesByType must have 'deviceTypeUUID' set.")
+        
+        if kwargs['deviceTypeUUID'] in self.yombodevicesByType:
+            return self.yombodevicesByType[kwargs['deviceTypeUUID']]
+        else:
+            return {}
 
 class Device:
     """
@@ -271,12 +255,14 @@ class Device:
         :ivar deviceTypeUUID: *(string)* - The device type UUID of the device.
         :type deviceUUID: string
         :ivar label: *(string)* - Device label as defined by the user.
+        :ivar description: *(string)* - Device description as defined by the user.
         :ivar enabled: *(bool)* - If the device is enabled - can send/receive command and/or
             status updates.
         :ivar pinrequired: *(bool)* - If a pin is required to access this device.
         :ivar pinnumber: *(string)* - The device pin number.
-        :ivar module: *(string)* - The module that handles this devices. Used by the message
+        :ivar moduleLabel: *(string)* - The module that handles this devices. Used by the message
             system to deliver commands and status update requests.
+        :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
         :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
         :ivar lastCmd: *(dict)* - A dictionary of up to the last 30 command messages.
         :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
@@ -294,12 +280,16 @@ class Device:
         self.deviceUUID = device["deviceuuid"]
         self.deviceTypeUUID = device["devicetypeuuid"]
         self.label = device["label"]
-        self.enabled = device["status"]
-        self.pinrequired = device["pinrequired"]
+        self.description = device["description"]
+        self.enabled = int(device["status"])
+        self.pinrequired = int(device["pinrequired"])
         self.pinnumber = device["pinnumber"]
-        self.module = device["modulelabel"]
-        self.created = device["created"]
-        self.updated = device["updated"]
+        self.pintimeout = int(device["pintimeout"])
+        self.moduleLabel = device["modulelabel"]
+        self.voiceCmd = device["voicecmd"]
+        self.voiceCmdOrder = device["voicecmdorder"]
+        self.created = int(device["created"])
+        self.updated = int(device["updated"])
         self.lastCmd = deque({}, 30)
         self.status = deque({}, 30)
         self._allDevices = allDevices
@@ -325,9 +315,13 @@ class Device:
         return {'deviceUUID'     : str(self.deviceUUID),
                 'deviceTypeUUID' : str(self.deviceTypeUUID),
                 'label'          : str(self.label),
-                'enabled'        : str(self.enabled),
-                'pinrequired'    : str(self.pinrequired),
-                'module'         : str(self.module),
+                'description'    : str(self.description),
+                'enabled'        : int(self.enabled),
+                'pinrequired'    : int(self.pinrequired),
+                'pintimeout'     : int(self.pintimeout),
+                'moduleLabel'    : str(self.moduleLabel),
+                'voiceCmd'       : str(self.voiceCmd),
+                'voiceCmdOrder'  : str(self.voiceCmdOrder),
                 'created'        : int(self.created),
                 'updated'        : int(self.updated),
                 'status'         : copy.copy(self.status),
@@ -351,7 +345,7 @@ class Device:
             - pinnumber is required and pinnumber submitted is invalid and
               skippinnumber is missing. Errorno: 101
             - payload was submitted, but not a dict. Errorno: 102
-            - cmd or cmduUUID was not sent in. Errorno: 103
+            - cmdobj, cmduUUID, or cmd was not sent in. Errorno: 103
         :param sourceComponent: The library or module name that response messages should
             be addressed to.
         :type sourceComponent: Name of the Library or Core or Module
@@ -370,13 +364,13 @@ class Device:
         :return: the msgUUID
         :rtype: string
         """
-        if self.pinrequired == True:
+        if self.pinrequired == 1:
             if "skippinnumber" not in kwargs:
                 if "pinnumber" not in kwargs:
-                    raise PinNumberError("'pinnumber' is required, but missing.", errorno=100)
+                    raise PinNumberError("'pinnumber' is required, but missing.")
                 else:
                     if self.pinnumber != kwargs["pinnumber"]:
-                        raise PinNumberError("'pinnumber' supplied is incorrect.", errorno=101)
+                        raise PinNumberError("'pinnumber' supplied is incorrect.")
 
         logger.debug("device kwargs: %s", kwargs)
         cmdobj = None
@@ -411,7 +405,7 @@ class Device:
 
         msg = {
                'msgOrigin'      : sourceComponent._FullName.lower(),
-               'msgDestination' : "yombo.gateway.modules.%s" % (self.module),
+               'msgDestination' : "yombo.gateway.modules.%s" % (self.moduleLabel),
                'msgType'        : "cmd", 
                'msgStatus'      : "new",
                'uuidType'       : "1",

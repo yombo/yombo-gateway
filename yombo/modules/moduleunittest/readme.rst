@@ -1,5 +1,8 @@
 Module Unit Testing
 ===================
+This goal of this module is to perform unit testing on various modules. To include
+unit tests in your module...
+
 The goal of this module is to test all frame libraries and core functions.
 
 As of Aug 3, 2013, it dosn't do much. But that's the goal.

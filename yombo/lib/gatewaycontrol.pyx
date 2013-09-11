@@ -382,7 +382,7 @@ class GatewayControl(YomboLibrary):
     commandTimeOut = 0
     configUpdate = None
 
-    def init(self, loader):
+    def _init_(self, loader):
         self.loader = loader
         
         self._connection = None #Protocol object
@@ -395,17 +395,17 @@ class GatewayControl(YomboLibrary):
         self.configUpdate = getComponent('yombo.gateway.lib.ConfigurationUpdate')
         self.gwuuid = getConfigValue("core", "gwuuid")
 
-    def load(self):
+    def _load_(self):
         pass
 
-    def start(self):
+    def _start_(self):
         self.loopCmdQueue = LoopingCall(self.sendQueueCheck)
         self.loopCmdQueue.start(1)
 
-    def stop(self):
+    def _stop_(self):
         pass
 
-    def unload(self):
+    def _unload_(self):
         logger.debug("Disonnecting due to unload.")
         if self._connection != None:
             self.disconnect()
