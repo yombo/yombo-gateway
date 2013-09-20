@@ -374,8 +374,8 @@ class Loader(YomboLibrary):
 
             logger.trace("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
             if hasattr(module, '_init_') and callable(module._init_) and self.getMethodDefinitionLevel(module._init_) != 'yombo.core.module.YomboModule':
-#              module.init()
-#              continue
+#                module._init_()
+#                continue
                 try:
 #                    wfd = defer.waitForDeferred(defer.maybeDeferred(module._init_))
                     d = defer.maybeDeferred(module._init_)
@@ -398,8 +398,8 @@ class Loader(YomboLibrary):
         for name, module in self.loadedModules.iteritems():
             logger.debug("Calling load function of module: %s, %s, from: %s", name, module, module._Name)
             if hasattr(module, '_load_') and callable(module._load_) and self.getMethodDefinitionLevel(module._load_) != 'yombo.core.module.YomboModule':
-#              module._load()
-#              continue
+                module._load_()
+                continue
                 try:
                     d = defer.maybeDeferred(module._load_)
                     d.addErrback(self._handleError)

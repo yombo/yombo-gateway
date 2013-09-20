@@ -307,7 +307,7 @@ def getDevice(deviceSearch):
     :return: The pointer to the requested device.
     :rtype: object
     """
-    return getComponent('yombo.gateway.lib.devices').search(deviceSearch)
+    return getComponent('yombo.gateway.lib.devices')._search(deviceSearch)
 
 def getDevicesByType():
     """
@@ -397,7 +397,7 @@ def getCommand(commandSearch):
     :return: The pointer to a single command.
     :rtype: object
     """
-    return getComponent('yombo.gateway.lib.commands').search(commandSearch)
+    return getComponent('yombo.gateway.lib.commands')._search(commandSearch)
     
 def getCommandsByVoice():
     """

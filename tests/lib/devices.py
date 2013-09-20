@@ -1,8 +1,7 @@
 import pyximport; pyximport.install()
-from unittest import TestCase, main
 
-from mock import Mock
 import time
+import mock
 
 from yombo.core.exceptions import PinNumberError, DeviceError
 from yombo.core.helpers import getComponent
@@ -116,6 +115,26 @@ class DevicesTests(ExpectingTestCase):
 
         with self.expectRaises(DeviceError): # no cmd, cmdUUID, or cmdobj submitted.
             dev.getMessage('yombo.gateway.tests.devices', pinnumber=1234)
+
+        command = {'description'    : "Test command 3.",
+#                  'created'        : int(time.time())-10,
+#                  'updated'        : int(time.time()),
+                  'liveupdate'     : 0,
+                  'cmduuid'        : "yYyYyYyYyYyYyYyYyYyYyY03",
+                  'cmd'            : "testcmd3",
+                  'label'          : "Test Cmd 3",
+                  'inputtypeid'    : 1,
+                  'voicecmd'       : "test command 3",
+                 }
+
+        _Commands = getComponent("yombo.gateway.lib.commands")
+        _Commands._addCommand(command, True)
+
+        dev.availableCommands = ['yYyYyYyYyYyYyYyYyYyYyY03'] # force this command to work with device
+        
+        tempObj = mock.Mock()
+        tempObj._FullName = "yombo.gateway.tests.devices"
+        dev.getMessage(tempObj, pinnumber=1234, cmd="Test Cmd 3")
 
 if __name__ == '__main__':
     main()

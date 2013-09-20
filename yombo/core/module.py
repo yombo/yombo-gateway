@@ -148,12 +148,11 @@ class YomboModule:
         deviceTypes = getModuleDeviceTypes(moduleDetails['moduleuuid'])
         for dtype in deviceTypes:
             self._LocalDeviceTypes.append(dtype['devicetypeuuid'])
-            self._LocalDevicesByType = {dtype['devicetypeuuid'] : {}}
             self._LocalDevicesByType[dtype['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
             for device in self._LocalDevicesByType[dtype['devicetypeuuid']]:
               self._LocalDevices[device.deviceUUID] = device
-
+              
     def _init_(self):
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.

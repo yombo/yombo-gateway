@@ -310,7 +310,7 @@ class Device:
 
     def dump(self):
         """
-        Export key components as a dictionary.
+        Export device variables as a dictionary.
         """
         return {'deviceUUID'     : str(self.deviceUUID),
                 'deviceTypeUUID' : str(self.deviceTypeUUID),
@@ -346,9 +346,9 @@ class Device:
               skippinnumber is missing. Errorno: 101
             - payload was submitted, but not a dict. Errorno: 102
             - cmdobj, cmduUUID, or cmd was not sent in. Errorno: 103
-        :param sourceComponent: The library or module name that response messages should
-            be addressed to.
-        :type sourceComponent: Name of the Library or Core or Module
+        :param sourceComponent: The library or module name that msgOrigin
+            should be set to.
+        :type sourceComponent: Reference to the Library or Core or Module (usually 'self')
         :param kwargs: Multiple key/value pairs.
 
             - delay *(int)* - How many second to delay before sending message.
@@ -387,7 +387,7 @@ class Device:
           else:
             raise DeviceError("Missing 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
         except:
-            raise DeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
+            raise DeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do??", errorno=103)
 
         if self.validateCommand(cmdobj.cmdUUID) != True:
             raise DeviceError("Invalid command requested for device.", errorno=103)

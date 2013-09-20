@@ -644,7 +644,7 @@ The type of message being sent, such as: command,
 
         # force delivery to the correct module.
         if(self.msgStatus == "new"):
-            moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].module.lower()
+            moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].moduleLabel.lower()
             if(self.msgDestination != moduleLabel):
                 self.msgDestination = moduleLabel
 

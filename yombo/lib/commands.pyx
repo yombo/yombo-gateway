@@ -146,7 +146,7 @@ class Commands(YomboLibrary):
             try:
                 return self.__yombocommandsByName[commandRequested]
             except FuzzySearchError, e:
-                raise CommandError('Searched for %s, but no good matches found.' % e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
+                raise CommandError('Searched for %s, but no good matches found.' % e.searchFor)
 
     def __loadCommands(self):
         """
@@ -166,19 +166,38 @@ class Commands(YomboLibrary):
         field_names = [d[0].lower() for d in c.description]
         while row is not None:
             record = (dict(itertools.izip(field_names, row)))
-#            logger.trace("record: %s", record)
-            cmdUUID = record["cmduuid"]
-            self.__yombocommands[cmdUUID] = Command(record)
-            self.__yombocommandsByName[record["label"]] = self.__yombocommands[cmdUUID]
-            if len(record["voicecmd"]) >= 2:
-              self.__yombocommandsByVoice[record["voicecmd"]] = self.__yombocommands[cmdUUID]
+            self._addCommand(record)
             row = c.fetchone()
-#        logger.debug("Done load_commands: %s", self.__yombodevicesByType)
+        logger.trace("Done load_commands: %s", self.__yombocommands)
+
+    def _addCommand(self, record, testCommand = False):
+        """
+        Add a command based on data from a row in the SQL database.
+
+        :param record: Row of items from the SQLite3 database.
+        :type record: dict
+        :param testCommand: If true, is a test command not from SQL, only used for unittest.
+        :type testCommand: bool
+        :returns: Pointer to new device. Only used during unittest
+        """
+        cmdUUID = record["cmduuid"]
+        self.__yombocommands[cmdUUID] = Command(record)
+        self.__yombocommandsByName[record["label"]] = self.__yombocommands[cmdUUID]
+        if len(record["voicecmd"]) >= 2:
+            self.__yombocommandsByVoice[record["voicecmd"]] = self.__yombocommands[cmdUUID]
+        if testCommand:
+            return self.__yombocommands[cmdUUID]
+
 
 class Command:
     """
     A class to manage a single command.
+    :ivar label: Command label
+    :ivar description: The description of the command.
+    :ivar inputTypeID: The type of input that is required as a variable.
+    :ivar voiceCmd: The voice command of the command.
     """
+
     def __init__(self, command):
         """
         Setup the command object using information passed in.
@@ -192,27 +211,13 @@ class Command:
         """
         logger.trace("command info: %s", command)
 
-        self.cmdUUID = command["cmduuid"]
-
-        self.label = command["label"]
-        """:ivar: Command label - as defined by the server.
-        :type: string"""
-
-        self.description = command["description"]
-        """@ivar: The description of the command.
-        @type: C{string}"""
-
         self.cmd = command["cmd"]
-        """@ivar: The cmd itself..
-        @type: C{string}"""
-
+        self.cmdUUID = command["cmduuid"]
+        self.label = command["label"]
+        self.description = command["description"]
         self.inputTypeID = command["inputtypeid"]
-        """@ivar: The type of input that is required as a variable.
-        @type: C{string}"""
-
         self.voiceCmd = command["voicecmd"]
-        """@ivar: The voice command of the command.
-        @type: C{string}"""
+        self.liveUpdate = command["liveupdate"]
 
     def __str__(self):
         """
@@ -221,3 +226,15 @@ class Command:
         """
         return self.cmdUUID
 
+    def dump(self):
+        """
+        Export command variables as a dictionary.
+        """
+        return {'cmdUUID'     : str(self.cmdUUID),
+                'cmd'         : str(self.cmd),
+                'label'       : str(self.label),
+                'description' : str(self.description),
+                'inputTypeID' : int(self.inputTypeID),
+                'voiceCmd'    : str(self.voiceCmd),
+                'liveUpdate'  : int(self.liveUpdate),
+               }
