@@ -38,7 +38,7 @@ from twisted.internet.protocol import ServerFactory
 
 from yombo.core import getComponent
 from yombo.core.auth import generateToken, validateNonce, checkToken
-from yombo.core.exceptions import AuthError, GWCritical
+from yombo.core.exceptions import AuthError, YomboCritical
 from yombo.core.helpers import getConfigValue, setConfigValue, generateRandom, getUserGWToken, generateUUID
 from yombo.core.log import getLogger
 from yombo.core.message import Message
@@ -85,8 +85,8 @@ class ListenerProtocol(basic.NetstringReceiver):
         self.protocol_version = "1.0"
         self.min_protocol_version = "1.0"
         self.authenticated = False
-        self.snonce = generateRandom()
-        self.session = generateRandom(length=24)
+        self.snonce = ""
+        self.session = ""
 
         self.badStringCount = 0
         self.lastValidMsg = 0
@@ -98,6 +98,8 @@ class ListenerProtocol(basic.NetstringReceiver):
         """
         Called when a new connection is recieved from a client.
         """
+        self.snonce = generateRandom()
+        self.session = generateRandom(length=24)
         logger.info("Got new client! Sending greeting")
         gwuuidtoken = generateToken(self.snonce, self.gwuuid)
         outline = {'protocol_version': self.protocol_version, 'min_protocol_version': self.min_protocol_version, 'snonce': self.snonce, 'gwuuid': gwuuidtoken, 'cmd': 'authrequest'}
@@ -174,7 +176,7 @@ class ListenerProtocol(basic.NetstringReceiver):
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 logger.error("%s" % e)
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            except GWCritical, e:
+            except YomboCritical, e:
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                 logger.error("%s" % e)
                 logger.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")

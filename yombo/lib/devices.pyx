@@ -32,7 +32,7 @@ from twisted.internet.task import LoopingCall
 from yombo.lib.commands import Command # used to test if isinstance
 from yombo.core.db import get_dbconnection, get_dbtools
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.exceptions import PinNumberError, DeviceError, FuzzySearchError
+from yombo.core.exceptions import YomboPinNumberError, YomboDeviceError, YomboFuzzySearchError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
@@ -60,7 +60,7 @@ class Devices(YomboLibrary):
 
         See: :func:`yombo.core.helpers.getDevices` for full usage example.
 
-        :raises DeviceError: Raised when device cannot be found.
+        :raises YomboDeviceError: Raised when device cannot be found.
         :param deviceRequested: The device UUID or device label to search for.
         :type deviceRequested: string
         :return: Pointer to array of all devices.
@@ -160,7 +160,7 @@ class Devices(YomboLibrary):
 
         See: :func:`yombo.core.helpers.getDevices` for full usage example.
 
-        :raises DeviceError: Raised when device cannot be found.
+        :raises YomboDeviceError: Raised when device cannot be found.
         :param deviceRequested: The device UUID or device label to search for.
         :type deviceRequested: string
         :return: Pointer to array of all devices.
@@ -171,8 +171,8 @@ class Devices(YomboLibrary):
         else:
             try:
                 return self.yombodevicesByName[deviceRequested]
-            except FuzzySearchError, e:
-                raise DeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
+            except YomboFuzzySearchError, e:
+                raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
 
     def __loadDevices(self):
         """
@@ -217,14 +217,14 @@ class Devices(YomboLibrary):
     def getDevicesByType(self, **kwargs):
         """
         Returns list of devices by deviceTypeUUID.
-        :raises DeviceError: Raised when function encounters an error.
+        :raises YomboDeviceError: Raised when function encounters an error.
         :param deviceRequested: The device UUID or device label to search for.
         :type deviceRequested: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
         if 'deviceTypeUUID' not in kwargs:
-           raise DeviceError("getDevicesByType must have 'deviceTypeUUID' set.")
+           raise YomboDeviceError("getDevicesByType must have 'deviceTypeUUID' set.")
         
         if kwargs['deviceTypeUUID'] in self.yombodevicesByType:
             return self.yombodevicesByType[kwargs['deviceTypeUUID']]
@@ -339,7 +339,7 @@ class Device:
         If a pinnumber is required, "pinnumber" must be included as one of
         the arguments otherwise. All **kwargs are sent to the 'module'.
 
-        :raises DeviceError: Raised when:
+        :raises YomboDeviceError: Raised when:
 
             - pinnumber is required but not sent it; skippinnumber overrides. Errorno: 100
             - pinnumber is required and pinnumber submitted is invalid and
@@ -367,10 +367,10 @@ class Device:
         if self.pinrequired == 1:
             if "skippinnumber" not in kwargs:
                 if "pinnumber" not in kwargs:
-                    raise PinNumberError("'pinnumber' is required, but missing.")
+                    raise YomboPinNumberError("'pinnumber' is required, but missing.")
                 else:
                     if self.pinnumber != kwargs["pinnumber"]:
-                        raise PinNumberError("'pinnumber' supplied is incorrect.")
+                        raise YomboPinNumberError("'pinnumber' supplied is incorrect.")
 
         logger.debug("device kwargs: %s", kwargs)
         cmdobj = None
@@ -379,25 +379,25 @@ class Device:
             if isinstance(kwargs['cmdobj'], Command):
               cmdobj = kwargs['cmdobj']
             else:
-              raise DeviceError("Invalid 'cmdobj'.", errorno=103)
+              raise YomboDeviceError("Invalid 'cmdobj'.", errorno=103)
           elif 'cmdUUID' in kwargs:
               cmdobj = getCommand(kwargs['cmdUUID'])
           elif 'cmd' in kwargs:
             cmdobj = getCommand(kwargs['cmd'])
           else:
-            raise DeviceError("Missing 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
+            raise YomboDeviceError("Missing 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
         except:
-            raise DeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do??", errorno=103)
+            raise YomboDeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do??", errorno=103)
 
         if self.validateCommand(cmdobj.cmdUUID) != True:
-            raise DeviceError("Invalid command requested for device.", errorno=103)
+            raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         payloadValues = {}
         if 'payload' in kwargs:
             if isinstance(kwargs['payload'], dict):
                 payloadValues = kwargs['payload']
             else:
-                raise DeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']), errorno=102)
+                raise YomboDeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']), errorno=102)
 
         payload = {"cmdobj" : cmdobj, "deviceobj" : self}
         
@@ -434,24 +434,24 @@ class Device:
             try:
               notBefore = float(kwargs['notBefore'])
               if notBefore < time():
-                raise DeviceError("Cannot set 'notBefore' to a time in the past.", errorno=150)
+                raise YomboDeviceError("Cannot set 'notBefore' to a time in the past.", errorno=150)
             except:
-                raise DeviceError("notBefore is not an int or float.", errorno=151)
+                raise YomboDeviceError("notBefore is not an int or float.", errorno=151)
         elif 'delay' in kwargs:
             try:
               notBefore = time() + float(kwargs['delay'])
             except:
-              raise DeviceError("delay is not an int or float", errorno=152)
+              raise YomboDeviceError("delay is not an int or float", errorno=152)
         else:
-              raise DeviceError("notBefore or delay not set.", errorno=153)
+              raise YomboDeviceError("notBefore or delay not set.", errorno=153)
 
         if maxDelay in kwargs:
           try:
             maxDelay = float(kwargs['kwargs'])
             if maxDelay < 0:
-              raise DeviceError("Max delay cannot be less then 0.", errorno=154)
+              raise YomboDeviceError("Max delay cannot be less then 0.", errorno=154)
           except:
-            raise DeviceError("maxDelay is not an int or float.", errorno=151)
+            raise YomboDeviceError("maxDelay is not an int or float.", errorno=151)
 
         return notBefore, maxDelay
 
@@ -460,7 +460,7 @@ class Device:
         Usually called by the device's command/logic module to set/update the
         device status.
 
-        :raises DeviceError: Raised when:
+        :raises YomboDeviceError: Raised when:
 
             - If no valid status sent in. Errorno: 120
             - If statusExtra was set, but not a dictionary. Errorno: 121
@@ -487,7 +487,7 @@ class Device:
         if 'status' in kwargs:
             status = kwargs['status']
         else:
-            raise DeviceError("setStatus was called without a real status!", errorno=120)
+            raise YomboDeviceError("setStatus was called without a real status!", errorno=120)
 
         statusExtra = kwargs.get('statusExtra', {})
 

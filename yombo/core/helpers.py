@@ -23,7 +23,7 @@ from twisted.internet import defer, reactor
 
 from yombo.core.db import get_dbtools
 from yombo.core.log import getLogger
-from yombo.core.exceptions import GWException, NoSuchLoadedComponentError
+from yombo.core.exceptions import YomboNoSuchLoadedComponentError
 
 logger = getLogger('core.helpers')
 
@@ -240,7 +240,7 @@ def getComponent(name):
                                                   # display and send a device
                                                   # status message
         
-    :raises NoSuchLoadedComponentError: When the requested component cannot be found.
+    :raises YomboNoSuchLoadedComponentError: When the requested component cannot be found.
     :param name: The name of the component (library or module) to find.  Returns a
         pointer to the object so it's functions and attributes can be accessed.
     :type name: string
@@ -253,7 +253,7 @@ def getComponent(name):
     try:
         return getComponent.components[name.lower()]
     except KeyError:
-        raise NoSuchLoadedComponentError("No such loaded component:" + str(name))
+        raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
 
 def getDevices():
     """
@@ -531,6 +531,7 @@ def getLocalIPAddress():
     """
     Get the ip address of the local machine.
 
+
     No single/simple way to do this.  First, do a simple get (works on windows).
     Then if that doesn't work, use the hostname -I function of the os.
 
@@ -618,6 +619,7 @@ def getModuleVariables(moduleName):
         yombodbtools = get_dbtools()
     return yombodbtools.getVariableModules(moduleName)
 
+#TODO: Rewrite this function to use AMQP, remove sleep!
 def getUserGWToken(username, gwtokenid, fetchRemote=False):
     """
     Fetches a gateway token for a username from yombo service. Used by the
@@ -649,6 +651,7 @@ def getUserGWToken(username, gwtokenid, fetchRemote=False):
         message.send()
         for x in range (0,10):
           logger.info("Waiting for user tokens to flow in.")
+          #todo: WHAT?!?!?!?!!?  No sleeping allowed...
           sleep(0.2)
           afterTime = getConfigValue('local', 'lastUserTokens')
           if beforeTime != beforeTime:
@@ -811,14 +814,15 @@ def pgpDownloadRoot():
         uri = "http://%s/" % getConfigValue("server", 'gpgidtxt')
     else:
         if(environment == "production"):
-            uri = "http://www.yombo.net/gpgid.txt"
+            uri = "http://yombo.net/gpgid.txt"
         elif (environment == "staging"):
             uri = "http://wwwstg.yombo.net/gpgid.txt"
         elif (environment == "development"):
             uri = "http://wwwdev.yombo.net/gpgid.txt"
         else:
-            uri = "http://www.yombo.net/gpgid.txt"
+            uri = "http://yombo.net/gpgid.txt"
 
+    uri = "http://yombo.net/gpgid.txt"
     deferred = getPage(uri)
     deferred.addCallback(pgpCheckRoot)
 

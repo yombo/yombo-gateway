@@ -19,6 +19,8 @@ from twisted.application import internet, service, strports
 #ensure that usr data directory exists
 if not os.path.exists('usr'):
     os.makedirs('usr')
+if not os.path.exists('usr'):
+    os.makedirs('usr/gpg')
 #sql data directory
 if not os.path.exists('usr/sql'):
     os.makedirs('usr/sql')
@@ -50,4 +52,4 @@ application = service.Application('yombo')
 service = GWService()
 service.setServiceParent(application)
 service.start()
-#logging.basicConfig(level=logging.DEBUG)
+#logger.basicConfig(level=logging.DEBUG)

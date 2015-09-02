@@ -21,7 +21,7 @@ usage statistics.
 """
 from yombo.core.db import get_dbconnection
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.exceptions import FuzzySearchError, CommandError
+from yombo.core.exceptions import YomboFuzzySearchError, YomboCommandError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 
@@ -134,7 +134,7 @@ class Commands(YomboLibrary):
 
         See: :func:`yombo.core.helpers.getCommands` for full usage example.
 
-        :raises CommandError: Raised when device cannot be found.
+        :raises YomboCommandError: Raised when device cannot be found.
         :param commandRequested: The device UUID or device label to search for.
         :type commandRequested: string
         :return: Pointer to array of all devices.
@@ -145,8 +145,8 @@ class Commands(YomboLibrary):
         else:
             try:
                 return self.__yombocommandsByName[commandRequested]
-            except FuzzySearchError, e:
-                raise CommandError('Searched for %s, but no good matches found.' % e.searchFor)
+            except YomboFuzzySearchError, e:
+                raise YomboCommandError('Searched for %s, but no good matches found.' % e.searchFor)
 
     def __loadCommands(self):
         """

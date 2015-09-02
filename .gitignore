@@ -46,6 +46,8 @@ mymodules/*
 x10testout.txt
 ahx.ini*
 mitchlog.*
+old/*
+.idea/*
 
 # Ignore Modules folder, except for empty! #
 ##########################################

@@ -8,8 +8,10 @@
 # update.
 
 #reset vars
-YOMBO_LOGFILE="/var/log/yombo/yombo.log"
-YOMBO_PIDFILE="/var/run/yombo/yombo.pid"
+#YOMBO_LOGFILE="/var/log/yombo/yombo.log"
+YOMBO_LOGFILE="yombo.log"
+#YOMBO_PIDFILE="/var/run/yombogateway.pid"
+YOMBO_PIDFILE="yombogateway.pid"
 YOMBO_TACFILE="yombo.tac"
 YOMBO_LOGENABLE="0"
 YOMBO_DAEMON="0"

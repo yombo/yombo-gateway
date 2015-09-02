@@ -39,7 +39,7 @@ from twisted.internet import reactor, defer
 from twisted.internet.task import LoopingCall
 
 from yombo.core.db import DBTools
-from yombo.core.exceptions import GWCritical, NoSuchLoadedComponentError
+from yombo.core.exceptions import YomboCritical, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
@@ -51,20 +51,20 @@ HARD_LOAD = [
     "CronTab",
     "Configuration",
     "Startup",
-    "GatewayControl",
-    "ConfigurationUpdate",
+    "AMQPYombo",
+#    "ConfigurationUpdate",
     "Times",
     "Commands",
     "VoiceCmds",
     "Devices",
     "Messages",
-    "Listener",
+#    "Listener",
 ]
 
 HARD_UNLOAD = [
-    "Listener",
+#    "Listener",
     "Messages",
-    "GatewayControl",
+    "AMQPYombo",
     "Controller",
     "Devices",
     "Configuration",
@@ -104,7 +104,7 @@ class Loader(YomboLibrary):
         """
         try:
             self.importLibraries() # import and init all libraries
-        except GWCritical, e:
+        except YomboCritical, e:
             logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logger.debug("%s" % e)
             logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -133,7 +133,7 @@ class Loader(YomboLibrary):
         Load component of given name. Can be a core library, or a module.
         """
         pymodulename = pathName.lower()
-        logger.trace("Importing: '%s', with full name: %s. pymodulename: %s", pathName, componentName, pymodulename)
+        logger.debug("Importing: '%s', with full name: %s. pymodulename: %s", pathName, componentName, pymodulename)
         try:
             pyclassname = ReSearch("(?<=\.)([^.]+)$", pathName).group(1)
         except AttributeError:
@@ -176,7 +176,7 @@ class Loader(YomboLibrary):
                 temp = componentName.split(".")
                 self.moduleNames[temp[-1]] = moduleinst
 
-        except GWCritical, e:
+        except YomboCritical, e:
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logger.debug("%s" % e)
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -205,10 +205,10 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.trace("Calling init function for library: %s" % componentName)
+            logger.debug("Calling init function for library: %s" % componentName)
             if hasattr(library, '_init_') and callable(library._init_) and self.getMethodDefinitionLevel(library._init_) != 'yombo.core.module.YomboModule':
-#                library._init_(self)
-#                continue
+                library._init_(self)
+                continue
                 try:
 #                    wfd = defer.waitForDeferred(defer.maybeDeferred(library._init_, self))
                     d = defer.maybeDeferred(library._init_, self)
@@ -216,7 +216,7 @@ class Loader(YomboLibrary):
                     wfd = defer.waitForDeferred(d)
                     yield wfd
                     self.loadingResults = wfd.getResult()
-                except GWCritical, e:
+                except YomboCritical, e:
                     logger.error("---==(Critical GW Error in init function for library: %s)==----", name)
                     logger.error("--------------------------------------------------------")
                     logger.error("Error message: %s" % e)
@@ -239,14 +239,14 @@ class Loader(YomboLibrary):
         """
         Called the "load" function of libraries.  Calls "startLibraries" when done.
         """
-        logger.debug("Calling load functions of libraries.")
+        logger.info("Calling load functions of libraries.")
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.trace("Calling load function for component: %s", componentName)
+            logger.info("Calling load function for component: %s", componentName)
             if hasattr(library, '_load_') and callable(library._load_) and self.getMethodDefinitionLevel(library._load_) != 'yombo.core.module.YomboModule':
-#                library._load_()
-#                continue
+                library._load_()
+                continue
                 try:
 #                    wfd = defer.waitForDeferred(defer.maybeDeferred(library._load_))
                     d = defer.maybeDeferred(library._load_)
@@ -273,7 +273,7 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.trace("Calling start function for component: %s", componentName)
+            logger.info("Calling start function for component: %s", componentName)
             if hasattr(library, '_start_') and callable(library._start_) and self.getMethodDefinitionLevel(library._start_) != 'yombo.core.module.YomboModule':
 #                library._start_()
 #                continue
@@ -328,10 +328,10 @@ class Loader(YomboLibrary):
                 else:
                     mLabel = section
 
-                if 'typel' in options:
-                    type = ini.get(section, 'type')
+                if 'type' in options:
+                    mType = ini.get(section, 'type')
                 else:
-                    type = 'other'
+                    mType = 'other'
                     options.remove('type')
                     
                 modules[section] = { 
@@ -345,8 +345,6 @@ class Loader(YomboLibrary):
                 self.__localModuleVars[section.lower()] = {}
                 for item in options:
                     self.__localModuleVars[section.lower()][item.lower()] = (ini.get(section, item),)
-
-
             fp.close()
         except IOError as (errno, strerror):
             logger.trace("localmodule.ini error: I/O error(%s): %s", errno, strerror)
@@ -362,7 +360,7 @@ class Loader(YomboLibrary):
             componentName = "yombo.gateway.modules.%s" % module
             self._importComponent(pathName, componentName, 'module')
 
-        logger.debug("Calling init functions of modules.")
+        logger.info("Calling init functions of modules.")
         for name, module in self.loadedModules.iteritems():
             self.__modulesByName[modules[module._Name]['modulelabel'].lower()] = self.loadedModules[name]
             self.__modulesByUUID[modules[module._Name]['moduleuuid']] = self.loadedModules[name]
@@ -372,10 +370,10 @@ class Loader(YomboLibrary):
                 module._ModVariables = self.__localModuleVars[module._Name.lower()]
             module._Loader(modules[module._Name])
 
-            logger.trace("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
+            logger.info("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
             if hasattr(module, '_init_') and callable(module._init_) and self.getMethodDefinitionLevel(module._init_) != 'yombo.core.module.YomboModule':
-#                module._init_()
-#                continue
+                module._init_()
+                continue
                 try:
 #                    wfd = defer.waitForDeferred(defer.maybeDeferred(module._init_))
                     d = defer.maybeDeferred(module._init_)
@@ -398,8 +396,8 @@ class Loader(YomboLibrary):
         for name, module in self.loadedModules.iteritems():
             logger.debug("Calling load function of module: %s, %s, from: %s", name, module, module._Name)
             if hasattr(module, '_load_') and callable(module._load_) and self.getMethodDefinitionLevel(module._load_) != 'yombo.core.module.YomboModule':
-                module._load_()
-                continue
+#                module._load_()
+#                continue
                 try:
                     d = defer.maybeDeferred(module._load_)
                     d.addErrback(self._handleError)
@@ -433,6 +431,9 @@ class Loader(YomboLibrary):
 
         # send queued and delayed messages after all libraried and modules are started
         self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
+
+    def connect(self):
+        self.loadedComponents['yombo.gateway.lib.gatewaycontrol'].connect()
 
     def _handleError(self, err):
 #        logger.error("Error caught: %s", err.getErrorMessage())
@@ -497,7 +498,8 @@ class Loader(YomboLibrary):
             componentName = "yombo.gateway.lib.%s" % component
             if componentName in self.loadedComponents:
                 logger.debug("checking to unload component: %s", componentName)
-                if hasattr(self.loadedComponents[componentName], '_stop_') and callable(self.loadedComponents[componentName]._stop_) and self.getMethodDefinitionLevel(self.loadedComponents[componentName]._stop_) != 'yombo.core.module.YomboModule':
+                LCCN = self.loadedComponents[componentName]
+                if hasattr(LCCN, '_stop_') and callable(LCCN._stop_) and self.getMethodDefinitionLevel(LCCN._stop_) != 'yombo.core.module.YomboModule':
                     logger.debug("checking component: %s", component)
                     self.loadedComponents[componentName]._stop_()
                     
@@ -507,7 +509,8 @@ class Loader(YomboLibrary):
             componentName = "yombo.gateway.lib.%s" % component
             if componentName in self.loadedComponents:
                 logger.debug("checking to unload component: %s", componentName)
-                if hasattr(self.loadedComponents[componentName], '_unload_') and callable(self.loadedComponents[componentName]._unload_) and self.getMethodDefinitionLevel(self.loadedComponents[componentName]._unload_) != 'yombo.core.module.YomboModule':
+                LCCN = self.loadedComponents[componentName]
+                if hasattr(LCCN, '_unload_') and callable(LCCN._unload_) and self.getMethodDefinitionLevel(LCCN._unload_) != 'yombo.core.module.YomboModule':
                     logger.debug("checking component: %s", component)
                     self.loadedComponents[componentName]._unload_()
 
@@ -518,7 +521,7 @@ class Loader(YomboLibrary):
         try:
             return self.loadedComponents[name.lower()]
         except KeyError:
-            raise NoSuchLoadedComponentError("No such loaded component: %s" % str(name))
+            raise YomboNoSuchLoadedComponentError("No such loaded component: %s" % str(name))
 
     def getAllLoadedComponents(self):
         """

@@ -18,9 +18,9 @@ to be approximate and not exact.
    
    momName = ''
    try:
-       momName = items['mum']  #this will result in a FuzzySearchError due to our 95% requirement
+       momName = items['mum']  #this will result in a YomboFuzzySearchError due to our 95% requirement
                                #if we lowered the requirement to 70%, it would find it.
-   catch FuzzySearchError, e:  #e contains a bunch of attributes that are useful.
+   catch YomboFuzzySearchError, e:  #e contains a bunch of attributes that are useful.
            momName = e.value   #Use the highest value that was found.
    print momName               #this will output Jane
    
@@ -37,7 +37,7 @@ import operator
 from itertools import islice
 
 from yombo.core.log import getLogger
-from yombo.core.exceptions import FuzzySearchError
+from yombo.core.exceptions import YomboFuzzySearchError
 
 logger = getLogger('core.fuzzysearch')
 
@@ -217,7 +217,7 @@ class FuzzySearch(dict):
         found, key, item, ratio, others = self._search(searchFor)
 
         if not found:
-            raise FuzzySearchError(searchFor, key, item, ratio, others)
+            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
 
         return item
 
@@ -232,6 +232,6 @@ class FuzzySearch(dict):
         found, key, item, ratio, others = self._search(searchFor)
 
         if not found:
-            raise FuzzySearchError(searchFor, key, item, ratio, others)
+            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
 
         return key

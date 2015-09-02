@@ -20,9 +20,9 @@ from time import time
 
 from twisted.internet import reactor, defer
 
-from yombo.core.exceptions import GWCritical
+from yombo.core.exceptions import YomboCritical
 from yombo.core.library import YomboLibrary
-from yombo.core.helpers import getConfigValue, setConfigValue, pgpDownloadRoot
+from yombo.core.helpers import getConfigValue, setConfigValue, pgpDownloadRoot, getLocalIPAddress, getExternalIPAddress
 from yombo.core.log import getLogger
 
 logger = getLogger('library.startup')
@@ -45,17 +45,17 @@ class Startup(YomboLibrary):
 
         gwuuid = getConfigValue("core", "gwuuid", None)
         if gwuuid == None or gwuuid == "":
-            raise GWCritical("ERROR: No gateway ID, please run configure.py", 503, "startup")
+            raise YomboCritical("ERROR: No gateway ID, please run configure.py", 503, "startup")
 
         hash = getConfigValue("core", "gwhash", None)
         if hash == None or hash == "":
-            raise GWCritical("ERROR: No gateway hash, please run configure.py", 503, "startup")
+            raise YomboCritical("ERROR: No gateway hash, please run configure.py", 503, "startup")
 
 
         gpg_key = getConfigValue("core", "gpgkeyid",None)
         gpg_key_ascii = getConfigValue("core", "gpgkeyascii", None)
         if gpg_key == None or gpg_key == '' or gpg_key_ascii == None or gpg_key_ascii == '':
-            raise GWCritical("ERROR: No GPG/PGP key pair found. Please run configure.py", 503, "startup")
+            raise YomboCritical("ERROR: No GPG/PGP key pair found. Please run configure.py", 503, "startup")
 
     def _load_(self):
         lastcheck = getConfigValue("local", "configlastcheckbygw", 0)
@@ -64,9 +64,13 @@ class Startup(YomboLibrary):
         setConfigValue("local", "configlastcheckbygw", int(time()) )
         return
 
+        setConfigValue("core", "localipaddress", getLocalIPAddress())
+        setConfigValue("core", "externalipaddress", getExternalIPAddress())
+
         environment = getConfigValue("server", 'environment', "production")
         latitude = getConfigValue("location", 'latitude', '39.555')
         longitude = getConfigValue("location", 'longitude', '-95.555')
+
         url = '';
         if getConfigValue("server", 'hostname', "") != "":
             host = getConfigValue("server", 'webnearhostname')
@@ -80,10 +84,9 @@ class Startup(YomboLibrary):
             else:
                 host = "www.yombo.net"
         if(environment == "prod"):
-            uri = getConfigValue("server", 'nearesturi', "")
-            url = "http://www" + uri + ".yombo.net/info.php"
+            url = "http://yombo.net/info.php"
         elif (environment == "stg"):
-            url = "http://wwwst.yombo.net/info.php"
+            url = "http://wwwstg.yombo.net/info.php"
         else:
             url = "http://wwwdev.yombo.net/info.php"
  

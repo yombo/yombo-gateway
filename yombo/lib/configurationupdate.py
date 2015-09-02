@@ -72,7 +72,7 @@ class ConfigurationUpdate(YomboLibrary):
           return
         self.loadDefer = defer.Deferred()
         self.loadDefer.addCallback(self.__loadFinish)
-        self.getAllConfigs()
+#        self.getAllConfigs()
         return self.loadDefer
 
     def _load_(self):

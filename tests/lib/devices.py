@@ -3,7 +3,7 @@ import pyximport; pyximport.install()
 import time
 import mock
 
-from yombo.core.exceptions import PinNumberError, DeviceError
+from yombo.core.exceptions import YomboPinNumberError, DeviceError
 from yombo.core.helpers import getComponent
 from yombo.lib.devices import Device
 
@@ -110,7 +110,7 @@ class DevicesTests(ExpectingTestCase):
                  }
 
         dev = self._Devices._addDevice(record, True)  # create dummy device
-        with self.expectRaises(PinNumberError):       # Pin is required, so, it should toss an error
+        with self.expectRaises(YomboPinNumberError):       # Pin is required, so, it should toss an error
             dev.getMessage('yombo.gateway.tests.devices')
 
         with self.expectRaises(DeviceError): # no cmd, cmdUUID, or cmdobj submitted.

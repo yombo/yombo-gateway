@@ -2,7 +2,7 @@ import pyximport; pyximport.install()
 
 import time
 
-from yombo.core.exceptions import CommandError
+from yombo.core.exceptions import YomboCommandError
 from yombo.core.helpers import getComponent
 from yombo.lib.commands import Command
 

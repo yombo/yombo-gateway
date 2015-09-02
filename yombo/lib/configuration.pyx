@@ -28,7 +28,7 @@ import hashlib
 import time
 
 from yombo.core.db import get_dbconnection
-from yombo.core.exceptions import GWCritical
+from yombo.core.exceptions import YomboCritical
 from yombo.core.helpers import getExternalIPAddress
 from yombo.core.log import getLogger
 from yombo.core.library import YomboLibrary
@@ -120,7 +120,7 @@ class Configuration(YomboLibrary):
                     self.write(section, option, value)
             self.dbpool.commit()
         except IOError:
-            raise GWCritical("ERROR: yombo.ini doesn't exist. Use ./config to setup.", 503, "startup")
+            raise YomboCritical("ERROR: yombo.ini doesn't exist. Use ./config to setup.", 503, "startup")
         except ConfigParser.NoSectionError:
             pass
         

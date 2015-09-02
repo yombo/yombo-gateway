@@ -16,7 +16,7 @@ will delivery itself here automatically and this library will call the
 send function of a message when needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 from collections import deque
@@ -25,7 +25,7 @@ import time
 
 from twisted.internet import reactor
 
-from yombo.core.exceptions import MessageError
+from yombo.core.exceptions import YomboMessageError
 from yombo.core.helpers import getCommand, getDevice
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
@@ -73,7 +73,7 @@ class Messages(YomboLibrary):
             m = self.queue.pop()
             try:
                 m.send()
-            except MessageError:
+            except YomboMessageError:
                 pass
 
         # Now check to existing delayed messages.  If not too old, send
@@ -178,10 +178,10 @@ class Messages(YomboLibrary):
         if msgUUID in self.delayQueue:
             del self.delayQueue[msgUUID]
         else:
-            raise MessageError("msgUUID not found in delay queue.", 'Messages Library')
+            raise YomboMessageError("msgUUID not found in delay queue.", 'Messages Library')
 
         if isGood == False:
-            raise MessageError("msgUUID not found in reactors.", 'Messages Library')
+            raise YomboMessageError("msgUUID not found in reactors.", 'Messages Library')
 
     def checkDelay(self, msgUUID):
         """

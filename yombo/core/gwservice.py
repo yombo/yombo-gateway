@@ -44,6 +44,7 @@ class GWService(Service):
         self.loader = getLoader()
         self.loader.load()
         self.loader.start()
+#        self.loader.connect()
         
     def stopService(self):
         """

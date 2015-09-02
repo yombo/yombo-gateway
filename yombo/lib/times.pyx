@@ -43,7 +43,7 @@ from datetime import datetime, date, timedelta
 
 from twisted.internet import reactor
 
-from yombo.core.exceptions import TimeError
+from yombo.core.exceptions import YomboTimeError
 from yombo.core.helpers import getConfigValue
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
@@ -410,20 +410,20 @@ class Times(YomboLibrary):
             time = getTimes()
             saturnVisible = time.objVisible('Saturn') # Is Saturn above the horizon? (True/False)
 
-        :raises TimeError: Raised when function encounters an error.
+        :raises YomboTimeError: Raised when function encounters an error.
         :param object: The device UUID or device label to search for.
         :type object: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
         if 'object' not in kwargs:
-           raise TimeError("objVisible must have 'object' set.")
+           raise YomboTimeError("objVisible must have 'object' set.")
         object = kwargs['object']
 
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
             
         self.obs.date = datetime.utcnow()
 
@@ -445,7 +445,7 @@ class Times(YomboLibrary):
             time = getTimes()
             saturnRise = time.objRise(dayOffset=1, object='Saturn') # the NEXT (1) rising of Saturn.
 
-        :raises TimeError: Raised when function encounters an error.
+        :raises YomboTimeError: Raised when function encounters an error.
         :param dayOffset: Default=0. How many days in future to find when object rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
         :param object: Default='Sun'. PyEphem object to search for and return results for.
@@ -454,7 +454,7 @@ class Times(YomboLibrary):
         :rtype: dict
         """
         if 'object' not in kwargs:
-           raise TimeError("objVisible must have 'object' set.")
+           raise YomboTimeError("objVisible must have 'object' set.")
         object = kwargs['object']
         dayOffset = 0
         if 'dayOffset' in kwargs:
@@ -463,7 +463,7 @@ class Times(YomboLibrary):
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
             
         self.obs.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obs,obj())
@@ -481,7 +481,7 @@ class Times(YomboLibrary):
             time = getTimes()
             saturnRise = time.objRise(dayOffset=1, object='Saturn') # the NEXT (1) rising of Saturn.
 
-        :raises TimeError: Raised when function encounters an error.
+        :raises YomboTimeError: Raised when function encounters an error.
         :param dayOffset: Default=0. How many days in future to find when object sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
         :param object: Default='Sun'. PyEphem object to search for and return results for.
@@ -490,7 +490,7 @@ class Times(YomboLibrary):
         :rtype: dict
         """
         if 'object' not in kwargs:
-           raise TimeError("objVisible must have 'object' set.")
+           raise YomboTimeError("objVisible must have 'object' set.")
         object = kwargs['object']
         dayOffset = 0
         if 'dayOffset' in kwargs:
@@ -499,7 +499,7 @@ class Times(YomboLibrary):
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
             
         # we want the date part only, but date.today() isn't UTC.
         dt = datetime.utcnow()+timedelta(days=dayOffset)
@@ -527,7 +527,7 @@ class Times(YomboLibrary):
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
 
         return self.objRise(dayOffset=dayOffset, object=object)
 
@@ -550,7 +550,7 @@ class Times(YomboLibrary):
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
 
         return self.objSet(dayOffset=dayOffset, object=object)
 
@@ -573,7 +573,7 @@ class Times(YomboLibrary):
         try:
             obj = getattr(ephem, object)
         except AttributeError:
-            raise TimeError("Couldn't not find PyEphem object: %s" % object)
+            raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
             
         self.obsTwilight.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obsTwilight,obj(),use_center=True)

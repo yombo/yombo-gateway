@@ -55,7 +55,7 @@ import time
 from twisted.internet.task import LoopingCall
 
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.exceptions import FuzzySearchError, CronTabError
+from yombo.core.exceptions import YomboFuzzySearchError, YomboCronTabError
 from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
@@ -153,7 +153,7 @@ class CronTab(YomboLibrary):
 
         See: :func:`yombo.core.helpers.getCronTab` for full usage example.
         
-        :raises CronTabError: Raised when cron job cannot be found.
+        :raises YomboCronTabError: Raised when cron job cannot be found.
         :param cronRequested: The device UUID or device label to search for.
         :type cronRequested: string
         :return: Pointer to array to requested cron job.
@@ -169,9 +169,9 @@ class CronTab(YomboLibrary):
               results = theCrons[cronRequested]
               if results['valid']:
                 return self.__yombocron[results['key']]
-            except FuzzySearchError, e:
-                raise CronTabError('Searched for %s, but no good matches found. Best match: %s' % (e.searchFor, e.others[0].label) )
-        raise CronTabError('Searched for %s, but no matches found. ' % cronRequested )
+            except YomboFuzzySearchError, e:
+                raise YomboCronTabError('Searched for %s, but no good matches found. Best match: %s' % (e.searchFor, e.others[0].label) )
+        raise YomboCronTabError('Searched for %s, but no matches found. ' % cronRequested )
 
     def new(self, action, min=allMatch, hour=allMatch, day=allMatch,
             month=allMatch, dow=allMatch, label='', enabled=True, args=(),
@@ -215,7 +215,7 @@ class CronTab(YomboLibrary):
         or::
             >>> self._CronTab.remove('module.YomboBot.MyCron')  #by name
 
-        :raises CronTabError: Raised when cron job cannot be found.
+        :raises YomboCronTabError: Raised when cron job cannot be found.
         :param key: The cron UUID / cron job name
         :type key: string
         """
@@ -232,7 +232,7 @@ class CronTab(YomboLibrary):
         or::
             >>> self._CronTab.enable('module.YomboBot.MyCron')  #by name
 
-        :raises CronTabError: Raised when cron job cannot be found.
+        :raises YomboCronTabError: Raised when cron job cannot be found.
         :param key: The cron UUID / cron job name
         :type key: string
         """
@@ -277,7 +277,7 @@ class CronTab(YomboLibrary):
         To set a label for a cron job:
             >>> self._CronTab.setLabel('7s453hhxl3', 'modules.mymodule.mycronjob')  #by cron uuid
 
-        :raises CronTabError: Raised when cron job cannot be found.
+        :raises YomboCronTabError: Raised when cron job cannot be found.
         :param key: The cron UUID
         :type key: string
         :param label: New label for cron job.
@@ -321,7 +321,7 @@ class CronTab(YomboLibrary):
             return self.new(action, dateObj.minute, dateObj.hour, label=label,
                    args=args, kwargs=kwargs)
         except:
-          CronTabError("Unable to parse time string. Try HH:MM (24 hour time) format")
+          YomboCronTabError("Unable to parse time string. Try HH:MM (24 hour time) format")
 
 class CronJob(object):
     """

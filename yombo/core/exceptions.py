@@ -9,7 +9,7 @@ gateway.
 :license: LICENSE for details.
 """
 
-class GWException(Exception):
+class YomboException(Exception):
     """
     Extends *Exception* - A non-fatal generic gateway exception that is used for minor errors.
     """
@@ -40,13 +40,13 @@ class GWException(Exception):
         output = "%d: %s  In %s '%s'." % (self.errorno, self.message, self.component, self.name)
         return repr(output)
 
-class GWWarning(GWException):
+class YomboWarning(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
     """
-    def __init__(self, message, errorno, name="unknown", component="component"):
+    def __init__(self, message, errorno=101, name="unknown", component="component"):
         """
-        Setup the GWWarning and then pass everying to GWException
+        Setup the YomboWarning and then pass everying to YomboException
         
         :param message: The error message to log/display.
         :type message: string
@@ -57,15 +57,15 @@ class GWWarning(GWException):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        GWException.__init__(self, message, errorno, component, name)
+        YomboException.__init__(self, message, errorno, component, name)
 
-class GWCritical(RuntimeWarning):
+class YomboCritical(RuntimeWarning):
     """
     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
     """
-    def __init__(self, message, errorno, name="unknown", component="component"):
+    def __init__(self, message, errorno=101, name="unknown", component="component"):
         """
-        Setup the GWCritical. When caught, call the exit function of this exception to
+        Setup the YomboCritical. When caught, call the exit function of this exception to
         exit the gateway.
 
         :todo: Add to logging once the logging library is completed.
@@ -104,7 +104,7 @@ class GWCritical(RuntimeWarning):
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 1)
         reactor.stop()
 
-class GWRestart(RuntimeWarning):
+class YomboRestart(RuntimeWarning):
     """
     Extends *RunningWarning* - Restarts the gateway, not a fatal exception.  
     """
@@ -135,21 +135,21 @@ class GWRestart(RuntimeWarning):
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 127)
         reactor.stop()
 
-class ImproperlyConfigured(GWWarning):
+class YomboImproperlyConfigured(YomboWarning):
     """
-    Extends :class:`GWWarning` - A missing configuration or improperly configured option.
-    """
-    pass
-
-class SuspiciousOperation(GWWarning):
-    """
-    Extends :class:`GWWarning` - Service detected something suspicious and stopped that activity.
+    Extends :class:`YomboWarning` - A missing configuration or improperly configured option.
     """
     pass
 
-class ModuleWarning(GWWarning):
+class YomboSuspiciousOperation(YomboWarning):
     """
-    Extends :class:`GWWarning` - Same as calling GWWarning, but sets component type to "module".
+    Extends :class:`YomboWarning` - Service detected something suspicious and stopped that activity.
+    """
+    pass
+
+class YomboModuleWarning(YomboWarning):
+    """
+    Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "module".
     """
     def __init__(self, message, errorno, moduleObj):
         """
@@ -160,11 +160,11 @@ class ModuleWarning(GWWarning):
         :param moduleObj: The module instance.
         :type moduleObj: Module
         """
-        GWWarning.__init__(self, message, errorno, "module", moduleObj._Name)
+        YomboWarning.__init__(self, message, errorno, "module", moduleObj._Name)
 
-class ModuleCritical(GWCritical):
+class YomboModuleCritical(YomboCritical):
     """
-    Extends :class:`GWCritical` - Same as calling GWCritical, but sets the component type to 
+    Extends :class:`YomboCritical` - Same as calling YomboCritical, but sets the component type to
     "module" - **this forces the gateway to quit**.
     """
     def __init__(self, message, errorno, moduleObj):
@@ -176,24 +176,24 @@ class ModuleCritical(GWCritical):
         :param moduleObj: Name of the library, component, or module rasing the exception.
         :type moduleObj: string
         """
-        GWCritical.__init__(self, message, errorno, "module", moduleObj._Name)
+        YomboCritical.__init__(self, message, errorno, "module", moduleObj._Name)
 
-class LibraryWarning(GWWarning):
+class YomboLibraryWarning(YomboWarning):
     """
-    Extends :class:`GWWarning` - Same as calling GWWarning, but sets component type to "library".
+    Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "library".
     """
     def __init__(self, message, errorno, moduleObj):
-        GWWarning.__init__(self, message, errorno, "library", moduleObj._Name)
+        YomboWarning.__init__(self, message, errorno, "library", moduleObj._Name)
 
-class LibraryCritical(GWCritical):
+class YomboLibraryCritical(YomboCritical):
     """
-    Extends :class:`GWCritical` - Same as calling GWCritical, but sets the component type to 
+    Extends :class:`YomboCritical` - Same as calling YomboCritical, but sets the component type to
     "library" - **this forces the gateway to quit**.
     """
     def __init__(self, message, errorno, moduleObj):
-        GWCritical.__init__(self, message, errorno, "library", moduleObj._Name)
+        YomboCritical.__init__(self, message, errorno, "library", moduleObj._Name)
 
-class MessageError(Exception):
+class YomboMessageError(Exception):
     """
     Extends *Exception* - A non-fatal message exception used to catch message errors.
 
@@ -222,7 +222,7 @@ class MessageError(Exception):
         output = "Message API Error: '%s' Raised from: '%s'." % (self.message, self.name)
         return repr(output)
 
-class FileError(Exception):
+class YomboFileError(Exception):
     """
     Extends *Exception* - A non-fatal message exception used to catch file errors.
 
@@ -251,7 +251,7 @@ class FileError(Exception):
         output = "File API Error: '%s' Raised from: '%s'." % (self.message, self.name)
         return repr(output)
 
-class DeviceError(Exception):
+class YomboDeviceError(Exception):
     """
     Extends *Exception* - A non-fatal device exception used to catch device errors.
 
@@ -264,7 +264,7 @@ class DeviceError(Exception):
         - errorno - An error number for further sorting/processing.
         
     Additionally, if this is the result of a search exception, it may also
-    contain some of the error components of the :class:`FuzzySearchError`,
+    contain some of the error components of the :class:`YomboFuzzySearchError`,
     such as:
         
         - key: The best matching key, in this case would be the deviceUUID (string).
@@ -346,29 +346,15 @@ class DeviceError(Exception):
                 'name'        : self.name}
 
 
-class AuthError(GWCritical):
-    """
-    Extends :class:`GWCritical` - Called when the gateway cannot auth to the
-    server.  **This forces the gateway to quit.**
-    """
-    def __init__(self, message, errorno):
-        """
-        :param message: The error message to log/display.
-        :type message: C{string}
-        :param errorno: The error number to log/display.
-        :type errorno: C{int}
-        """
-        GWCritical.__init__(self, message, errorno, "library", "gatewaycontrol")
-        self.exit()
         
-class NoSuchLoadedComponentError(Exception):
+class YomboNoSuchLoadedComponentError(Exception):
     """
     Extends *Exception* - Raised when a request for a loaded module or library
    (aka component), is not found.
     """
     pass
 
-class FuzzySearchError(Exception):
+class YomboFuzzySearchError(Exception):
     """
     Extends *Exception* - A non-fatal FuzzySearch error. Occurs when something happened
     with a fuzzy search.
@@ -411,31 +397,31 @@ class FuzzySearchError(Exception):
         output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." % (self.searchFor, self.key, self.ratio)
         return repr(output)
 
-class PinNumberError(Exception):
+class YomboPinNumberError(Exception):
     """
     Raised when the pin number is invalid.
     """
     pass
         
-class CommandError(Exception):
+class YomboCommandError(Exception):
     """
     If commands class has an error.
     """
     pass
 
-class CronTabError(Exception):
+class YomboCronTabError(Exception):
     """
     If crontab class has an error.
     """
     pass
 
-class TimeError(Exception):
+class YomboTimeError(Exception):
     """
     If :py:mod:`yombo.lib.times` class has an error.
     """
     pass
 
-class InputValidationError(Exception):
+class YomboInputValidationError(Exception):
     """
     If a value input doesn't match the allowed input type id.
     """

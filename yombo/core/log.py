@@ -10,10 +10,9 @@ Handles logging functions. These functions are in dire need of attention:
    all libraries, core code.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
 
 import logging
 import ConfigParser
@@ -85,7 +84,7 @@ def getLogger(logname='yombolog'):
         if logname in configCache:
             loglevel = configCache[logname]
         else:
-            loglevel = 'INFO'
+            loglevel = 'TRACE'
         logger = logging.getLogger(logname)
         setattr(logger, 'trace', lambda *args: logger.log(5, *args))
         tempLevel = logLevels.get(logname, 20)

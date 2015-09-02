@@ -85,7 +85,7 @@ import re
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
-from yombo.core.exceptions import GWException
+from yombo.core.exceptions import YomboException
 from yombo.core.message import Message
 from yombo.core.helpers import getCommands, getCommandsByVoice, getDevices
 
@@ -142,7 +142,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         """
         Add a voice command to the available voice commands.
 
-        :raises GWException: If voiceString or destination is invalid.
+        :raises YomboException: If voiceString or destination is invalid.
         :param voiceString: Voice command string to process: "desklamp [on, off]"
         :type voiceString: string
         :param destination: The destination module or library to send command for processing when activated.
@@ -153,7 +153,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                  - order: (string) Order of the voice command.  One of: both, nounverb, verbnoun.
         """
         if voiceString == None or voiceString == None:
-            raise GWException("VoiceString or destination is mising.", 1000, 'voicecmd', 'core')
+            raise YomboException("VoiceString or destination is mising.", 1000, 'voicecmd', 'core')
 
         tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))
         stringParts = tag_re.split(voiceString)
@@ -163,7 +163,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         verbs = []
 
         if len(stringParts) > 2:
-            raise GWException("Cannot have more then 2 string parts for VoiceString.", 1000, 'voicecmd', 'core')
+            raise YomboException("Cannot have more then 2 string parts for VoiceString.", 1000, 'voicecmd', 'core')
 
         for part in range(len(stringParts)):
             stringParts[part] = stringParts[part].strip()
@@ -177,7 +177,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                 noun = stringParts[part]
 
         if len(verbs) == 0:
-            raise GWException("No verbs found in VoiceString.", 1000, 'voicecmd', 'core')
+            raise YomboException("No verbs found in VoiceString.", 1000, 'voicecmd', 'core')
 
         for verb in verbs:
             command = self.commandsByVoice[verb]
