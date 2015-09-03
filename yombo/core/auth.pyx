@@ -1,21 +1,20 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Handles authentication items between gateway and any remote connection.  Has functions
 to check nonce strength/validity. Also generates and checks auth tokens.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 from hashlib import sha256
 from operator import concat
 
 def validateNonce(nonce, **kwargs):
-
     """
     Validate a nonce is at least minLength in size and have a certain
     amount of randomness. Using the default settings will match up

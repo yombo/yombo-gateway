@@ -1,5 +1,5 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 The FileReader class uses non-blocking code to open and monitor a file
 for reading lines of text and for monitoring the file for any new lines.
@@ -30,15 +30,18 @@ send any new lines of text to the function define on setup.
        self.file.close()  # Tell FileReader to close the file. Very important!
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2013 by Yombo.
+:copyright: Copyright 2013-2015 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 import codecs
 import os # used to create the file if it doesn't exist.
 
-from twisted.internet.reactor import callLater
+# Import twisted libraries
+# from twisted.internet.reactor import callLater
 from twisted.internet.task import LoopingCall
 
+# Import Yombo libraries
 from yombo.core.exceptions import FileError
 from yombo.core.log import getLogger
 from yombo.core.sqldict import SQLDict

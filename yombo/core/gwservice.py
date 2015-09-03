@@ -1,16 +1,17 @@
 #This file was created by Yombo for use with Yombo Gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 This is the main class the is responsible for getting everything started.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import twisted libraries
 from twisted.internet import reactor
 from twisted.application.service import Service
 
+# Import Yombo libraries
 from yombo.lib.loader import getLoader, stopLoader, setupLoader
 from yombo.core.log import getLogger
 

@@ -6,13 +6,15 @@
 Raspberry PI - From bare metal
 ==============================
 
-This guide will walk you through bare metal Raspberry PI to a running Yombo Gateway.
+This guide will walk you through bare metal Raspberry PI to a running Yombo Gateway. Any model of Raspberry PI
+will work with Yombo Gateway. However, please note that on the original, it will take a minute or so for the
+Cython modules to full compile the first time the gateway software runs.
 
 Debian - Wheezy
 ---------------
 
 The following outlines the steps required to get up and running with Debian Wheezy.
-You can download the image from here (latest version found as of July 26, 2012):
+You can download the image from here (latest version found as of 2015-05-05):
 
 You will need to follow the steps and directions found here for writing
 the image: `<http://www.raspberrypi.org/downloads>`_

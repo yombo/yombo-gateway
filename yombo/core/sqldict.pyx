@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Acts like a persistent dictionary between gateway stop/starts.
 Acts exactly like a dictionary {}, however when the dictionary
@@ -20,14 +20,15 @@ gets updated.
    resources['family'] = {'brother' : 'Jeff', 'mom' : 'Sara', 'dad' : 'Sam'}
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 import cPickle
 from itertools import izip
 from sqlite3 import Binary as sqlite3Binary
 
+# Import Yombo libraries
 from yombo.lib.loader import getLoader
 from yombo.core.db import get_dbconnection
 from yombo.core.log import getLogger

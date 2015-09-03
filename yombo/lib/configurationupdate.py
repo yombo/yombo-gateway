@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Handles getting configuration updates from the Yombo servers.
 
@@ -10,19 +10,20 @@ Handles getting configuration updates from the Yombo servers.
    or variables.  They are used internally.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 from collections import deque
 import cPickle # to store dictionaries
 from sqlite3 import Binary as sqlite3Binary
 import time
 
-
+# Import twisted libraries
 from twisted.internet import defer, reactor
 from twisted.internet.task import LoopingCall
 
+# Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.message import Message
 #TODO: Consolidate.
@@ -36,9 +37,7 @@ logger = getLogger('library.configurationupdate')
 
 class ConfigurationUpdate(YomboLibrary):
     """
-    Responsbile for processing configuration update requests.
-
-    Currently, only handles full configuration downloads.
+    Responsible for processing configuration update requests.
     """
     #zope.interface.implements(ILibrary)
 

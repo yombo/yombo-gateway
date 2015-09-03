@@ -1,5 +1,5 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Handles logging functions. These functions are in dire need of attention:
 
@@ -13,7 +13,8 @@ Handles logging functions. These functions are in dire need of attention:
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+#TODO: Migrate to new twisted 15.x logging system.
+# Import python libraries
 import logging
 import ConfigParser
 

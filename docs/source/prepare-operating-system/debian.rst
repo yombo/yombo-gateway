@@ -13,7 +13,7 @@ includes Ubuntu, Xubuntu, and Mint. The following script can copied and used.
 
   If using **Ubuntu 12.04/Mint 13 or older**, you will need to edit this script
   uncomment the two commented commands. This installs an updated version of
-  twisted. 
+  twisted.
 
 Steps
 -----

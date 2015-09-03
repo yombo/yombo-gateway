@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 The Yombo Message is a key component or concept for the Yombo system.  Yombo
 messages are used to communicate between all components.  This includes within
@@ -30,18 +30,22 @@ TODO: Document standard payload fields here.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2013 by Yombo
+:copyright: Copyright 2012-2015 by Yombo
 :license: RPL 1.5, see LICENSE for details.
 """
+# Import python libraries
 from collections import OrderedDict
 from json import dumps, loads
 from uuid import uuid4
 import copy
 import time
 
+# Import twisted libraries
 from twisted.internet.reactor import callLater
 
+# Import Yombo libraries
 from yombo.core.exceptions import YomboMessageError
+#TODO: When redoing PGP, move calls to the library
 from yombo.core.helpers import getConfigValue, getComponent, generateUUID, getCommand, getDevice, pgpSign, pgpVerify
 from yombo.core.log import getLogger
 from yombo.lib.loader import getLoader

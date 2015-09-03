@@ -239,11 +239,11 @@ class Loader(YomboLibrary):
         """
         Called the "load" function of libraries.  Calls "startLibraries" when done.
         """
-        logger.info("Calling load functions of libraries.")
+        logger.debug("Calling load functions of libraries.")
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.info("Calling load function for component: %s", componentName)
+            logger.trace("Calling load function for component: %s", componentName)
             if hasattr(library, '_load_') and callable(library._load_) and self.getMethodDefinitionLevel(library._load_) != 'yombo.core.module.YomboModule':
                 library._load_()
                 continue
@@ -273,7 +273,7 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.info("Calling start function for component: %s", componentName)
+            logger.trace("Calling start function for component: %s", componentName)
             if hasattr(library, '_start_') and callable(library._start_) and self.getMethodDefinitionLevel(library._start_) != 'yombo.core.module.YomboModule':
 #                library._start_()
 #                continue

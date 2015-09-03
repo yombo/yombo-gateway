@@ -1,5 +1,5 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 .. module:: yombo.core
    :synopsis: Core resources of the Yombo gateway.

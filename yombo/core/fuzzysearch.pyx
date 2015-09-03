@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Allows fuzzy key search on dictionary keys, expands on the base dictionary class.
 
@@ -28,14 +28,15 @@ to be approximate and not exact.
    momName = items.search('mum', .50)   # Search, but only require 50% match.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 from difflib import SequenceMatcher
 import operator
 from itertools import islice
 
+# Import Yombo libraries
 from yombo.core.log import getLogger
 from yombo.core.exceptions import YomboFuzzySearchError
 

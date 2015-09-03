@@ -12,7 +12,7 @@ up and running in no time.  Just three steps:
 
 Other Resouces
 ==============
-* `Yombo.net <http://www.yombo.net/>`_ - Main website for Yombo
+* `Yombo.net <http://yombo.net/>`_ - Main website for Yombo
 * `Projects.Yombo.net <http://projects.yombo.net/>`_ - Forums, submit tickets,
   feature requests, wiki.
 * `Code.Yombo.net <http://code.yombo.net/>`_ - Where all the Yombo open source
@@ -59,6 +59,6 @@ Index and search
 License Information
 ===================
 
-:Homepage: http://www.yombo.net/
-:Copyright: 2013 Yombo
-:License: For the open source license, see the LICENSE file or http://www.yombo.net/policies/licensing
+:Homepage: http://yombo.net/
+:Copyright: 2013-2015 Yombo
+:License: For the open source license, see the LICENSE file or http://yombo.net/policies/licensing

@@ -19,14 +19,16 @@ A database API to SQLite3.
    Do not rely on these function names to remain the same.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 import cPickle
 from itertools import izip
 import sqlite3
 import time
 
+# Import Yombo libraries
 from yombo.core.log import getLogger
 
 logger = getLogger('core.db')

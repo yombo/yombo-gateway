@@ -1,5 +1,5 @@
 #This file was created by Yombo for use with Yombo Gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Various helper functions to 'get stuff done'. These range from simple
 function wrappers to larger functions.  Look here first for a function that
@@ -10,17 +10,20 @@ issue has been submitted for it. You can also just create it and contribute
 the code.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-import gnupg
+# Import python libraries
+import gnupg  #TODO: Move gnupg to a library and interface with AMQP
 import random
 import string
 import re    
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE
 
+# Import twisted libraries
 from twisted.internet import defer, reactor
 
+# Import Yombo libraries
 from yombo.core.db import get_dbtools
 from yombo.core.log import getLogger
 from yombo.core.exceptions import YomboNoSuchLoadedComponentError
