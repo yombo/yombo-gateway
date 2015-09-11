@@ -102,7 +102,7 @@ class Devices(YomboLibrary):
         call to periodically save any updated device status.
         """
         self._saveStatusLoop = LoopingCall(self._saveStatus)
-        self._saveStatusLoop.start(60, False)
+        self._saveStatusLoop.start(120, False)
         pass
 
     def _stop_(self):
@@ -123,16 +123,19 @@ class Devices(YomboLibrary):
         Function that does actual work. Saves items in the self._toStaveStatus
         queue to the SQLite database.
         """
+        if len(self._toSaveStatus) == 0:
+            return
+
         logger.info("Saving device status to disk.")
         c = self.__dbpool.cursor()
-        for deviceUUID in self._toSaveStatus:
-                ss = self._toSaveStatus[deviceUUID]
-                statusExtra = cPickle.dumps(ss.statusextra)
-                logger.trace("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (%s, %s, %s, %s, %s)" %  (deviceUUID, ss.status, statusExtra, ss.time, ss.source) )
-                c.execute("""INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (?, ?, ?, ?, ?)""",
-                    ( deviceUUID, ss.status, statusExtra, ss.time, ss.source) )
+        for key in self._toSaveStatus.keys():
+            ss = self._toSaveStatus[key]
+            statusExtra = cPickle.dumps(ss.statusextra)
+            logger.trace("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (%s, %s, %s, %s, %s)" %  (key, ss.status, statusExtra, ss.time, ss.source) )
+            c.execute("""INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (?, ?, ?, ?, ?)""",
+                ( key, ss.status, statusExtra, ss.time, ss.source) )
 
-        self._toSaveStatus.clear()
+#        self._toSaveStatus.clear()
         self.__dbpool.pool.commit()
 
     def _clear_(self):
@@ -498,6 +501,8 @@ class Device:
         self.status.appendleft(newStatus)
         if self.testDevice == False:
             self._allDevices._toSaveStatus[self.deviceUUID] = newStatus
+            if len(self._allDevices._toSaveStatus) > 60:
+                self._allDevices._saveStatus()
 
     def sendStatus(self, **kwargs):
         logger.trace("sendStatus called...")

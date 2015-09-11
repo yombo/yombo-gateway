@@ -42,7 +42,7 @@ import os # used to create the file if it doesn't exist.
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import FileError
+from yombo.core.exceptions import YomboFileError
 from yombo.core.log import getLogger
 from yombo.core.sqldict import SQLDict
 
@@ -119,7 +119,7 @@ class FileReader:
             self.fp_in = codecs.open(self.filename, encoding='utf-8')
             self.fp_in.seek(self.fileInfo['startLocation'])
         except IOError as (errno, strerror):
-            logger.warning("Logreader could not open file for reading. Reason: %s" % strerror)
+            raise YomboFileError("Logreader could not open file for reading. Reason: %s" % strerror)
             self.fileOpened = None
             callLater(10, self.load)
 

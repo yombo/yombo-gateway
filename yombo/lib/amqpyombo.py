@@ -40,6 +40,9 @@ another server? -Mitch
 # Import python libraries
 try: import simplejson as json
 except ImportError: import json
+from collections import deque
+from time import time
+from datetime import datetime
 
 try:  #prefer to talk in msgpack, if available.
     import msgpack
@@ -62,6 +65,7 @@ from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.helpers import getConfigValue, setConfigValue, generateRandom, sleep
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
+from yombo.core.yombodict import YomboDict
 from yombo.core.message import Message
 
 logger = getLogger('library.AMQPYombo')
@@ -79,6 +83,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
     connected = False
     connection = None
     name = 'AMQP:Protocol'
+    sentCorrelationIDs = YomboDict(200)
 
     def __init__(self, factory):
         """
@@ -90,7 +95,6 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         self.amqp_queues = []
         self.amqp_queue_bind = []
         self.amqp_consumers = []
-
 
     @inlineCallbacks
     def connected(self, connection):
@@ -239,7 +243,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         #TODO: Add timestamp to a message and check against TTL. Ensure message
           isn't expired before being sent.
         """
-        logger.trace("In PikaProtocol send")
+        logger.trace("In PikaProtocol send %s" % self.connected)
         if self.connected:
             while len(self.factory.queued_messages) > 0:
                 message = self.factory.queued_messages.pop(0)
@@ -250,15 +254,16 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         """
         Send a single message.
         """
-        logger.debug("In PikaProtocol send_message: %s" % kwargs)
+        logger.info("In PikaProtocol send_message a: %s" % kwargs['properties'].correlation_id)
 #        prop = spec.BasicProperties(delivery_mode=2)
+        self.sentCorrelationIDs[kwargs['properties'].correlation_id] = {"time" : datetime.now()}
         try:
             yield self.channel.basic_publish(exchange=kwargs['exchange_name'], routing_key=kwargs['routing_key'], body=kwargs['body'], properties=kwargs['properties'])
         except Exception as error:
             logger.warn('Error while sending message: %s' % error)
 
     def validate_incoming(self, deliver, props, msg):
-        logger.debug("validate_incoming: %s" % msg)
+        logger.info("validate_incoming: %s" % msg)
         if props.user_id == None:
             raise YomboWarning("user_id missing.")
         if props.content_type == None:
@@ -276,6 +281,19 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 msg = msgpack.loads(msg)
             else:
                 raise YomboWarning("Recieved msg reported msgpack, but isn't.")
+
+        # do nothing on requests for now.... in future if we ever accept requests, we will.
+        if props.headers['Type'] == 'Request':
+            raise YomboWarning("Currently not accepting requests.")
+        # if a response, lets make sure it's something we asked for!
+        elif props.headers['Type'] == "Response":
+            if props.correlation_id in self.sentCorrelationIDs:
+                dt = datetime.now() - self.sentCorrelationIDs[props.correlation_id]['time']
+                ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
+                logger.info("Message Response time: %s ms" % ms)
+                pass  # it's good!
+            else:
+                raise YomboWarning("Recieved request %s, but never asked for it." % props.correlation_id)
 
         if props.correlation_id != None and not isinstance(props.correlation_id, basestring):
             raise YomboWarning("correlation_id must be string is present.")
@@ -348,7 +366,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         headers = {
             "Source"        : "gw_amqpyombo",
             "Type"          : "Request",
-            "RequestUserId" : self.AMQPYombo.user_id,
         }
 
         requestmsg = {
@@ -393,14 +410,15 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                     self.fullyConnected = True
                     logger.info("FULLY CONNECTED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                     self.AMQPYombo.connected()
+                    self.client.send()
                 else:
                     raise YomboCritical("Yombo Server won't accept our startup request. Reason: %s" % message['Message'])
             else:
                 self.incoming_queue.append(item)
             return
-
-        for item in self.incoming_queue:
-            self.do_incoming(item['deliver'], item['properties'], item['message'])
+        else:
+            for item in self.incoming_queue:
+                self.do_incoming(item['deliver'], item['properties'], item['message'])
 
     def do_incoming(self, deliver, properties, message):
         logger.debug("do_incoming item: %s" % deliver)
@@ -602,7 +620,7 @@ class AMQPYombo(YomboLibrary):
         self._connected = True
         self._connecting = False
         self.timeout_reconnect_task = False
-
+        self.check_send_messages()
 
     def send_message(self, **kwargs):
         logger.info("library:send_message")
@@ -631,25 +649,25 @@ class AMQPYombo(YomboLibrary):
         self.check_send_messages()
 
     def check_send_messages(self):
-        if self.fullyConnected:
+        if self.PFactory.fullyConnected:
             self.checking_queued_mesasge = False
             logger.info("In AMQPLibrary check_send_messages and fully connected")
             while len(self.queued_messages) > 0:
-                message = self.factory.queued_messages.pop(0)
+                message = self.queued_messages.pop(0)
                 self.PFactory.send_message(**message)
         elif self.checking_queued_mesasge == False:
             self.checking_queued_mesasge = True
             logger.info("In AMQPLibrary check_send_messages, not connected. Calling later.")
-            reactor.callLater(0.5, self.check_send_messages())
+            reactor.callLater(0.5, self.check_send_messages)
 
 
     def disconnect(self):
-        self.GCfactory.stopTrying()
+        self.PFactory.stopTrying()
         self.myreactor.disconnect()
 
     def disconnected(self):
         logger.info("Disconnected from Yombo service.!!!!!!!!!!!!!!!!!!!!!!!!")
-        self.fullyConnected = False  # connected to AMQP, and ready to send messages.
+        self.PFactory.fullyConnected = False  # connected to AMQP, and ready to send messages.
         self._connected = False  # connected to AMQP, and ready to send messages.
 
 #        self._connecting = True

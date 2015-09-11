@@ -24,8 +24,9 @@ to be approximate and not exact.
            momName = e.value   #Use the highest value that was found.
    print momName               #this will output Jane
    
-   # We can also specifically call the search function
-   momName = items.search('mum', .50)   # Search, but only require 50% match.
+   We can also specifically call the search function
+   momName = items.search('mum', .50)
+   Search, but only require 50% match.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2015 by Yombo.

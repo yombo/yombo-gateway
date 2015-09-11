@@ -7,7 +7,7 @@ import sys, os
 
 # This is here to cython modules will display their content properly.
 import pyximport; pyximport.install()
-sys.path.append('/home/mitch/yombo/projects/gateway')
+sys.path.append('..')
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

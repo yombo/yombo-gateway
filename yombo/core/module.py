@@ -86,6 +86,8 @@ documentation.
 # Import Yombo libraries
 from yombo.core.component import IModule
 from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes, getCronTab
+from yombo.core.fuzzysearch import FuzzySearch
+from yombo.core.exceptions import YomboWarning
 
 class YomboModule:
     """
@@ -130,9 +132,11 @@ class YomboModule:
         self._CronTab = getCronTab()
         self._Devices = getDevices()
         self._DevicesByType = getDevicesByType()
-        self._LocalDevices = {}
-        self._LocalDeviceTypes = []
-        self._LocalDevicesByType = {}
+
+        self._LocalDevicesByUUID = {}
+        self._LocalDeviceTypesByUUID = {}
+        self._LocalDeviceTypesByName = FuzzySearch({}, .95)
+        self._LocalDevicesByDeviceTypeUUID = {}
 
     def _Loader(self, moduleDetails):
         """
@@ -146,12 +150,81 @@ class YomboModule:
         self._ModuleUUID = moduleDetails['moduleuuid']
         deviceTypes = getModuleDeviceTypes(moduleDetails['moduleuuid'])
         for dtype in deviceTypes:
-            self._LocalDeviceTypes.append(dtype['devicetypeuuid'])
-            self._LocalDevicesByType[dtype['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
+            self._LocalDeviceTypesByUUID[dtype['devicetypeuuid']] = dtype['label']
+            self._LocalDeviceTypesByName[dtype['label']] = dtype['devicetypeuuid']
+            self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
-            for device in self._LocalDevicesByType[dtype['devicetypeuuid']]:
-              self._LocalDevices[device.deviceUUID] = device
-              
+            for device in self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']]:
+              self._LocalDevicesByUUID[device.deviceUUID] = device
+
+    def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
+        """
+        Updates the local module pointers to devicetypes when an updates/deleted/new device type is registered. This
+        would happen when a new an update is made from the server.
+
+        :param oldDeviceType: If not new, this would be the information from the old deviceType information
+        :param newDeviceType: Updated or new device type. If deleted, this would be None.
+        """
+
+        #Handle updated first
+        if oldDeviceType != None and newDeviceType != None:
+            self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']] = newDeviceType['label']
+            del self._LocalDeviceTypesByName[oldDeviceType['label']]
+            self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
+
+        #handle new deviceTypes
+        elif oldDeviceType == None and newDeviceType != None:
+            self._LocalDeviceTypesByUUID[newDeviceType['devicetypeuuid']] = newDeviceType['label']
+            self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
+            self._LocalDevicesByDeviceTypeUUID[newDeviceType['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
+
+        #handle deleting a device type
+        elif oldDeviceType != None and newDeviceType == None:
+            del self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']]
+            del self._LocalDeviceTypesByName[oldDeviceType['label']]
+            del self._LocalDevicesByDeviceTypeUUID[oldDeviceType['devicetypeuuid']]
+
+        #Some Error
+        else:
+            raise YomboWarning("Error updating device type in module: %s" % self._FullName)
+
+        self._UpdateDeviceTypes_(oldDeviceType, newDeviceType)
+
+    def _UpdateDevice(self, oldDevice, newDevice):
+        """
+        Updates the local module pointers to devices when an updates/deleted/new device is registered. This
+        would happen when a new an update is made from the server.
+
+        :param oldDevice: If not new, this would be the information from the old deviceType information
+        :param newDevice: Updated or new device. If deleted, this would be Non.
+        """
+        #Handle updated first
+        if oldDevice != None and newDevice != None:
+            self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
+
+        #handle new  (same as updating in this use case)
+        elif oldDeviceType == None and newDeviceType != None:
+            self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
+
+        #handle deleting
+        elif oldDeviceType != None and newDeviceType == None:
+            del self._LocalDevicesByUUID[oldDevice.deviceUUID]
+
+        self._UpdateDevice_(oldDevice, newDevice)
+
+
+    def _UpdateDeviceTypes_(self, oldDeviceType, newDeviceType):
+        """
+        When device types are updated, let the module know that it should handle any updates itself.
+        """
+        pass
+
+    def _UpdateDeviceTypes_(self, oldDeviceType, newDeviceType):
+        """
+        When devices are updated, let the module know that it should handle any updates itself.
+        """
+        pass
+
     def _init_(self):
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.

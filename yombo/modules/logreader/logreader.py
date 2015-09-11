@@ -1,4 +1,4 @@
-from yombo.core.exceptions import FileError
+from yombo.core.exceptions import YomboFileError
 from yombo.core.filereader import FileReader
 from yombo.core.module import YomboModule
 from yombo.core.helpers import getComponent, generateUUID
@@ -52,7 +52,7 @@ class LogReader(YomboModule):
         try:
             self.fileReader = FileReader(self, filename=self.fileName, callback=self.newContent)
             self.isRunning = True
-        except FileError, e:
+        except YomboFileError, e:
             self.fileReader = None
             logger.warning("Error with FileReader: %s" % e)
 

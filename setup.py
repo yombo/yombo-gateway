@@ -5,7 +5,7 @@ from Cython.Distutils import build_ext
 
 setup(
     name = "Yombo",
-    version = "0.9.0pre",
+    version = "0.10.0",
     description = "Yombo Gateway Software",
     author='Mitch Schwenk',
     author_email='mitch-gateway@yombo.me',

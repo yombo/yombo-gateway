@@ -226,7 +226,7 @@ def setConfigValue(section, key, value):
 def getComponent(name):
     """
     Return loaded component (module or library). This can be used to find
-    other modules or libraries. The getComponent uses the Fuzzysearch_
+    other modules or libraries. The getComponent uses the FuzzySearch_
     class to make searching easier, but can only be off one or two letters
     due to importance of selecting the correct library or module.
 

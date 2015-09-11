@@ -52,7 +52,8 @@ HARD_LOAD = [
     "Configuration",
     "Startup",
     "AMQPYombo",
-#    "ConfigurationUpdate",
+    "ConfigurationUpdate",
+    "DownloadModules",
     "Times",
     "Commands",
     "VoiceCmds",
@@ -63,6 +64,7 @@ HARD_LOAD = [
 
 HARD_UNLOAD = [
 #    "Listener",
+    "DownloadModules"
     "Messages",
     "AMQPYombo",
     "Controller",
@@ -264,7 +266,7 @@ class Loader(YomboLibrary):
         
         self.startLibraries()
 
-    @defer.deferredGenerator
+    @defer.inlineCallbacks
     def startLibraries(self):
         """
         Called the "load" function of libraries.
@@ -278,11 +280,17 @@ class Loader(YomboLibrary):
 #                library._start_()
 #                continue
                 try:
-                    d = defer.maybeDeferred(library._start_)
-                    d.addErrback(self._handleError)
-                    wfd = defer.waitForDeferred(d)
-                    yield wfd
-                    self.loadingResults = wfd.getResult()
+                    startResults = yield library._start_()
+#                    d.addErrback(self._handleError)
+#                    wfd = defer.waitForDeferred(d)
+#                    yield wfd
+#                    self.loadingResults = wfd.getResult()
+
+#                    d = defer.maybeDeferred(library._start_)
+#                    d.addErrback(self._handleError)
+#                    wfd = defer.waitForDeferred(d)
+#                    yield wfd
+#                    self.loadingResults = wfd.getResult()
                 except:
                     logger.error("----==(Error in _start_ function for library: %s)==-----", componentName)
                     logger.error("1:: %s",sys.exc_info())
@@ -295,17 +303,19 @@ class Loader(YomboLibrary):
         if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
           self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
         else:
-          self.downloadModules()
+#          self.downloadModules()
+          self.loadModules()
 
-    def downloadModules(self):
-        from yombo.lib.downloadmodules import DownloadModules
-        DLModule = DownloadModules()
-        DLModule._init_(self)
-        d = DLModule._load_()
-        d.addCallback(self.loadModules)
+#    def downloadModules(self):
+#        from yombo.lib.downloadmodules import DownloadModules
+#        DLModule = DownloadModules()
+#        DLModule._init_(self)
+#        d = DLModule._load_()
+#        d.addCallback(self.loadModules)
         
     @defer.deferredGenerator
-    def loadModules(self, tossmeaway):
+    def loadModules(self):
+#    def loadModules(self, tossmeaway):
         """
         Load modules configured to run at startup.
         """
@@ -412,7 +422,7 @@ class Loader(YomboLibrary):
                 logger.error("----==(Module doesn't have _load_ function: %s)==-----", name)
 
         self.startModules()
-    
+
     def startModules(self):
         logger.debug("Calling start functions of modules.")
         for name, module in self.loadedModules.iteritems():

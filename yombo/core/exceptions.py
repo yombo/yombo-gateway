@@ -222,34 +222,11 @@ class YomboMessageError(Exception):
         output = "Message API Error: '%s' Raised from: '%s'." % (self.message, self.name)
         return repr(output)
 
-class YomboFileError(Exception):
+class YomboFileError(YomboWarning):
     """
-    Extends *Exception* - A non-fatal message exception used to catch file errors.
-
-    :cvar message: (message) The message object.
-    :cvar name: (string) Name of the library, component, or module rasing the exception.
+    Extends :class:`YomboWarning` - A missing configuration or improperly configured option.
     """
-    def __init__(self, message, name="unknown"):
-        """
-        :param message: The error message to log/display.
-        :type message: string
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        """
-
-        Exception.__init__(self)
-        self.message = message
-        self.name = name
-
-    def __str__(self):
-        """
-        Formats the exception for logging to text.
-
-        :return: A formated string of the error message.
-        :rtype: string
-        """
-        output = "File API Error: '%s' Raised from: '%s'." % (self.message, self.name)
-        return repr(output)
+    pass
 
 class YomboDeviceError(Exception):
     """
@@ -350,7 +327,7 @@ class YomboDeviceError(Exception):
 class YomboNoSuchLoadedComponentError(Exception):
     """
     Extends *Exception* - Raised when a request for a loaded module or library
-   (aka component), is not found.
+    (aka component), is not found.
     """
     pass
 

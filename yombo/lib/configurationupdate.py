@@ -17,7 +17,7 @@ Handles getting configuration updates from the Yombo servers.
 from collections import deque
 import cPickle # to store dictionaries
 from sqlite3 import Binary as sqlite3Binary
-import time
+from time import time
 
 # Import twisted libraries
 from twisted.internet import defer, reactor
@@ -29,7 +29,7 @@ from yombo.core.message import Message
 #TODO: Consolidate.
 import yombo.core.db
 from yombo.core.db import get_dbconnection
-from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime, generateUUID
+from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime, generateRandom
 from yombo.core.log import getLogger
 from yombo.core import getComponent
 
@@ -65,13 +65,13 @@ class ConfigurationUpdate(YomboLibrary):
         self.gpg_key_ascii = getConfigValue("core", "gpgkeyascii", '')
         self.gwuuid = getConfigValue("core", "gwuuid")
 
-        self.gateway_control = getComponent('yombo.gateway.lib.GatewayControl')
+        self.amqp = getComponent('yombo.gateway.lib.AMQPYombo')
         self.dbconnection = get_dbconnection()
         if self.loader.unittest: # if we are testing, don't try to download configs
           return
         self.loadDefer = defer.Deferred()
         self.loadDefer.addCallback(self.__loadFinish)
-#        self.getAllConfigs()
+        self.getAllConfigs()
         return self.loadDefer
 
     def _load_(self):
@@ -198,7 +198,7 @@ class ConfigurationUpdate(YomboLibrary):
             self.dbconnection.pool.commit()
             self._removeFullTableQueue(cmdmap[cmd]["table"])
             if cmdmap[cmd]["table"] == "gwTokensTable":
-              setConfigValue('local', 'lastUserTokens', int(time.time()) )
+              setConfigValue('local', 'lastUserTokens', int(time()) )
         elif cmdmap[cmd]["type"] == "partialConfig":
             logger.error("ConfigurationUpdate::processConfig - 'partialConfig'.")
         elif cmdmap[cmd]["type"] == "GatewayDetailsResponse":
@@ -230,58 +230,64 @@ class ConfigurationUpdate(YomboLibrary):
         self.__incomingConfigQueueCheck()
         
     def getAllConfigs(self):
-        # don't over do it on the the full config download.  Might be
-        # multiple sources for this on bootup!!
+        # don't over do it on the the full config download. Might be a quick restart of gateway.
         if self.__doingfullconfigs == True:
             return False
         lastTime = getConfigValue("core", "lastFullConfigDownload", 30)
-        if int(lastTime) > int(time.time()):
+        if int(lastTime) > int(time()):
             logger.debug("Not downloading fullconfigs due to race condition.")
             return
 
         self.__doingfullconfigs = True
-        setConfigValue("core", "lastFullConfigDownload", int(time.time()) )
+        setConfigValue("core", "lastFullConfigDownload", int(time()) )
 
         logger.debug("Preparing for full configuration download.")
         self.doGetAllConfigs()
 
     def doGetAllConfigs(self, junk=None):
         logger.trace("dogetallconfigs.....")
-        self._appendFullTableQueue("CommandsTable")
-        self._appendFullTableQueue("DevicesTable")
-        self._appendFullTableQueue("DeviceTypeCommandsTable")
-        self._appendFullTableQueue("GatewayDetailsTable")
-        self._appendFullTableQueue("GatewayVariablesTable")
-        self._appendFullTableQueue("ModuleInterfacesTable")
-        self._appendFullTableQueue("ModuleDeviceTypesTable")
-        self._appendFullTableQueue("ModulesTable")
-        self._appendFullTableQueue("UsersTable")
-        self._appendFullTableQueue("VariableDevicesTable")
-        self._appendFullTableQueue("VariableModulesTable")
-        
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'GPGKEY', 'gpgkeyid' : self.gpg_key, 'gpgkeyascii' : self.gpg_key_ascii}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullCommands', 'type' : "outgoing"}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullDevices'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullDeviceTypeCommands'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayModuleInterfaces'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayDetails'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayUserTokens'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullGatewayVariables'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullModuleDeviceTypes'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullModules'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullUsers'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullVariableDevices'}))
-        self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullVariableModules'}))
-        return True
 
-    def _generateMessage(self, payload):
-        return {'msgOrigin'     : "yombo.gateway.lib.configurationupdate:%s" % self.gwuuid,
-               'msgDestination' : "yombo.svc.gwhandler",
-               'msgType'        : "config",
-               'msgStatus'      : "new",
-               'msgUUID'        : str(generateUUID(mainType='Y', subType='cu0')),
-               'payload'        : payload,
-              }
+        allCommands = [
+            "getCommands",
+            "getDevices",
+            "getDeviceTypeCommands",
+            "getGatewayDetails",
+            "getGatewayModuleInterfaces",
+            "getGatewayUserTokens",
+            "getGatewayVariables",
+            "getModuleDeviceTypes",
+            "getModules",
+            "getUsers",
+        ]
+        for command in allCommands:
+            requestContent = {"RequestType": command}
+            rand = generateRandom(length=12)
+#            self.ampq_request_ids[rand] = requestContent
+            self.amqp.send_message(**self._generateMessage(rand, requestContent))
+
+    def _generateMessage(self, requestID, requestContent):
+        request = {
+              "DataType": "Object",
+              "Request": requestContent,
+            }
+
+        headers = {
+            "Source"        : "gw_configurationupdate",
+            "Type"          : "Request",
+        }
+
+        requestmsg = {
+            "exchange_name"    : "gw_config",
+            "routing_key"      : '*',
+            "body"             : request,
+            "properties" : {
+                "correlation_id" : requestID,
+                "user_id"        : self.amqp.user_id,
+                "headers"        : headers,
+                },
+            }
+        return requestmsg
+
 
     def _appendFullTableQueue(self, table):
         """
