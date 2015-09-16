@@ -2,12 +2,14 @@
 
 .. _install_gateway_fork:
 
-====================================
-Forked repository install
-====================================
+============================================================
+Install with forked GIT - Allows you to contribute to Yombo
+============================================================
 
 This outlines the steps to download, configure, and use the gateway software.
 This assumes that you already have
+
+
 :doc:`python and the required python modules <../chapters/install-python>`
 installed.
 

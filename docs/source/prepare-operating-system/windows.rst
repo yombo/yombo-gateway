@@ -50,3 +50,14 @@ Sticking to Windows
 
 Documentation is pending for getting it working on Windows.
 
+Installing GIT
+==============
+
+The msysGit project is easy to install - just download the installer
+and run it:
+
+`<http://code.google.com/p/msysgit>`_
+
+This installes command-line version, which includes an SSH client to
+communicate with remote repositories, and the standard GUI.
+

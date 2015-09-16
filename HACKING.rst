@@ -1,10 +1,7 @@
 Developing Gateway
 ===================
 
-If you want to help develop the Gateway there is a great need and your patches
-are welcome!
-
-To assist in Gateway development, you can help in a number of ways.
+We welcome contributions to the Yombo Gateway and modules.
 
 Sending a bitbucket pull request
 ---------------------------------
@@ -28,6 +25,9 @@ Contributions Welcome!
 The goal here is to make contributions clear, make sure there is a trail for
 where the code has come from, but most importantly, to give credit where credit
 is due!
+
+Documentation
+=============
 
 Editing and Previewing the Docs
 -------------------------------
@@ -54,29 +54,8 @@ Then::
 Installing Gateway for development
 ----------------------------------
 
-Clone the repository using::
-
-    git clone https://bitbucket.org/yombo/yombo-gateway.git
-    cd yombo-gateway
-
-Just cloning the repository is enough to work with the Gateway and make
-contributions. 
-
-Preparing your system
-~~~~~~~~~~~~~~~~~~~~~
-
-In order to install the Gateway requirements, you'll need a system with a
-compiler and Python's development libraries.
-
-Debian-based systems
-````````````````````
-
-On Debian and derivative systems such as Ubuntu, system requirements can be
-installed by running::
-
-    apt-get install python python-twisted python-twisted-words \
-      python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools \
-      python-dev python-wokkel python-dev build-essential
+Documention for configuring your machine and downloading the software
+is located here: https://yombo.net/docs/gateway/current/chapters/prepare-operating-system.html
 
 Create a virtual environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

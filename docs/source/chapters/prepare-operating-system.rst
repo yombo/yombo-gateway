@@ -4,11 +4,15 @@
 Installing python
 #################
 
-In order to support a wide range of operating systems (Linux, Windows, Mac), the
-installation is broken up into two portions:
+In order to support a wide range of operating systems, the installation
+is broken up into two steps:
 
-1. Prepare your operating system - Installing python and required python modules
-2. :doc:`Downaloading and running the gateway software <install-gateway>`
+1. Prepare system by installing python and other required item (see below).
+2. :doc:`Downloading and install gateway software <install-gateway>`
+
+**Step 1: Prepare operating system**
+
+Select your operating system.
 
 .. toctree::
    :maxdepth: 1

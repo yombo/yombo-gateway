@@ -2,25 +2,23 @@
 
 Yombo Gateway Documentation
 ===========================
-Welcome to the open source Yombo Gateway documentation. Get your gateway
-up and running in no time.  Just three steps:
+Welcome to the open source Yombo Gateway documentation.
 
-* Install python and required modules
-* Download the gateway (Doesn't require special installation, can run on thumb
-  drive.)
-* Configure your gateway.
+TL;DR Quick Start Guide
+=======================
+Get your gateway up and running in no time.  Just three steps:
+
+1. Install python and others: (:doc:`Debian/Mint/Ubuntu <prepare-operating-system/debian>` or :doc:`Raspberry PI/PI2 <prepare-operating-system/raspberry-pi>`)
+2. :doc:`Download the gateway <install/install-gateway-basic>`
+3. :doc:`Configure and run your gateway <chapters/configuring-the-gateway>`
 
 Other Resouces
 ==============
 * `Yombo.net <http://yombo.net/>`_ - Main website for Yombo
 * `Projects.Yombo.net <http://projects.yombo.net/>`_ - Forums, submit tickets,
   feature requests, wiki.
-* `Code.Yombo.net <http://code.yombo.net/>`_ - Where all the Yombo open source
+* `bitbucket.org/yombo/ <https://bitbucket.org/yombo/>`_ - Where all the Yombo open source
   code lives.
-
-For more information about Yombo or the API interface for accessing
-various features of the Yombo Gateway remotely, visit the Yombo web
-site at `<http://www.yombo.net>`_.
 
 Table of Contents
 =================
@@ -28,10 +26,12 @@ Table of Contents
 .. toctree::
    :maxdepth: 2
    :numbered:
+   :includehidden:
 
    chapters/prepare-operating-system.rst
    chapters/install-gateway.rst
-   chapters/running-the-gateway.rst
+   chapters/configuring-the-gateway.rst
+   chapters/updating.rst
    chapters/yombo-framework.rst
    chapters/developing-yombo-modules.rst
 

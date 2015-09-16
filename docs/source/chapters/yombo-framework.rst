@@ -36,13 +36,13 @@ features to be used by libraries and modules.
    ../core/exceptions
    ../core/filereader
    ../core/fuzzysearch
-   ../core/gwservice
    ../core/helpers
    ../core/library
    ../core/log
    ../core/message
    ../core/module
    ../core/sqldict
+   ../core/yombodict
 
 .. _lib:
 
@@ -58,6 +58,7 @@ Times libararies.
 .. toctree::
    :maxdepth: 1
 
+   ../lib/amqpyombo.rst
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/configurationupdate.rst
@@ -65,7 +66,6 @@ Times libararies.
    ../lib/devices.rst
    ../lib/downloadmodules.rst
    ../lib/loader.rst
-   ../lib/gatewaycontrol.rst
    ../lib/startup.rst
    ../lib/times.rst
    ../lib/voicecmds.rst

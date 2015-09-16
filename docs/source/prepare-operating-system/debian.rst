@@ -6,39 +6,21 @@
 Installing on Debian (Mint, Ubuntu, Xubuntu, etc)
 =================================================
 
-Installing the Yombo Gateway is straight forward on debian systems. This
-includes Ubuntu, Xubuntu, and Mint. The following script can copied and used.
+Install required software
+-------------------------
 
-.. warning::
+For Debian based systems, this portion has been automated. A script is included with the
+Yombo Gateway to get your Debian based system running quickly. After downloading the
+gateway (next step), simply go into the `installer` directory and execute
+`sudo bash ./debian-setup.sh`.
 
-  If using **Ubuntu 12.04/Mint 13 or older**, you will need to edit this script
-  uncomment the two commented commands. This installs an updated version of
-  twisted.
-
-Steps
------
-
-The following two steps will prepare your debian system.  Start in the directory
-where the Yombo Gateway was downloaded and extracted.
-
-
-
-.. code-block:: bash
-
-  # If using **Ubuntu 12.04/Mint 13 or older** uncomment the following two
-  # commands. This points to and installs an updated version of twisted. 
-  #sudo add-apt-repository ppa:twisted-dev/ppa
-  #sudo apt-get update
-
-  # Install most of the needed items.
-  sudo apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel python-dev build-essential git
-
-  # gnupg is used for signing and encryption. pyephem is used for sunset/sunrise times.
-  sudo pip install python-gnupg pyephem cython
+It is recommened to create a local user account, download the gateway to /opt/yombo-gateway,
+and execute the above mentioned script while logged in as that user.
 
 Next steps
 ========== 
 
-The python environment is now ready to run the gateway software. Proceed to
-:doc:`installing the gateway <../chapters/install-gateway>`.
+Your system is ready, continue to: :doc:`installing the gateway <../chapters/install-gateway>`.
+
+Don't forget to execute the ./installer/debian-setup.sh file after downloading.
 

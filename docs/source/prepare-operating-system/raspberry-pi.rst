@@ -6,9 +6,9 @@
 Raspberry PI - From bare metal
 ==============================
 
-This guide will walk you through bare metal Raspberry PI to a running Yombo Gateway. Any model of Raspberry PI
-will work with Yombo Gateway. However, please note that on the original, it will take a minute or so for the
-Cython modules to full compile the first time the gateway software runs.
+This guide will walk you through bare metal Raspberry PI to a running Yombo Gateway. However,
+please note that on the original R-PI, it will take a minute or so for the Cython modules
+to full compile the first time the gateway software runs.
 
 Debian - Wheezy
 ---------------
@@ -113,27 +113,13 @@ regularly, such as every other sunday morning at 2am.
   cd
   sudo apt-get update
   sudo apt-get upgrade
-  sudo apt-get install git
-  git clone git://github.com/Hexxeh/rpi-update.git
-  sudo rpi-update/rpi-update
+  sudo apt-get install python python-pip python-setuptools python-dev gnupg2 rng-tools build-essential git -y
+  sudo pip install Twisted msgpack-python python-gnupg pyephem cython gnupg service_identity
+  # git clone git://github.com/Hexxeh/rpi-update.git
+  # sudo rpi-update/rpi-update
   sudo reboot
 
-Installing Gateway
---------------------------
-
-Installing the Yombo Gateway is straight forward on Raspberry PI.  These steps
- should also work for other ARM computers using a Debian distribution.
-
-.. code-block:: bash
-
-  # Install most of the needed items.
-  sudo apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel python-dev build-essential git
-
-  # gnupg is used for signing and encryption. pyephem is used for sunset/sunrise times.
-  sudo pip install python-gnupg pyephem cython
-
 Next steps
-========== 
+==========
 
-The python environment is now ready to run the gateway software. Proceed to
-:doc:`installing the gateway <../chapters/install-gateway>`.
+Your system is ready, continue to: :doc:`installing the gateway <../chapters/install-gateway>`.

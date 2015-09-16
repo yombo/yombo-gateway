@@ -24,9 +24,9 @@ if not os.path.exists('usr'):
 #sql data directory
 if not os.path.exists('usr/sql'):
     os.makedirs('usr/sql')
-#downloaded modules directory
-if not os.path.exists('usr/opt'):
-    os.makedirs('usr/opt')
+#Misc items are stored here.
+if not os.path.exists('usr/etc'):
+    os.makedirs('usr/etct')
 #logging directory
 if not os.path.exists('usr/log'):
     os.makedirs('usr/log')
@@ -40,12 +40,6 @@ except ImportError:
 from yombo.core.log import getLogger
 
 logger = getLogger('twistedlogger')
-#from twisted.python import log
-#observer = log.PythonLoggingObserver(loggerName='twistedlogger')
-#observer.start()
-
-#sys.stdout = stdoutbefore
-#sys.stderr = stderrbefore
 
 application = service.Application('yombo')
 

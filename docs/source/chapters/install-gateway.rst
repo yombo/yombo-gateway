@@ -4,19 +4,32 @@
 Installing Gateway
 ##################
 
-This is the second step to installing the Yombo Gateway software.  If you have
-not already done, be sure to 
-:doc:`install python and required modules <prepare-operating-system>` first.
+This is the second step to installing the Yombo Gateway software. Be sure
+to :doc:`install python and required modules <prepare-operating-system>` first.
 
-There are two methods to getting the the software:
+The following 3 methods are used to get the software. We recommend option #1:
 
-1. :doc:`Basic download of repository. <../install/install-gateway-basic>`
+1. :doc:`Use GIT <../install/install-gateway-git>`
 
-  * Use this if you want to quickly download the software and get started.
-  * Not able to easily contribute code back to the community.
+  * Easily upgrade the gateway software with a single command.
+  * Quickly download the software and get started.
+
+2. :doc:`Download zip file <../install/install-gateway-zip>`
+
+  * Requires manually downloading zipfiles in the future to upgrade the software.
+  * Difficult to upgrade, but quickly download the software and get started.
   
-2. :doc:`Fork the gateway repository. <../install/install-gateway-fork>`
+3. :doc:`Fork GIT repo (intermediate) <../install/install-gateway-fork>`
 
-  * The gateway software is stored in a git repository. Simply fork it, download it, and run.
-  * Can easily create pull requests to contribute code back to the community.
+  * Easily upgrade the gateway software with a single command.
+  * Quickly download the software and get started.
+  * Contribute code changes back to the community.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   ../install/install-gateway-git
+   ../install/install-gateway-zip
+   ../install/install-gateway-fork
 
