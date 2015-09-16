@@ -1,20 +1,20 @@
 #!/usr/bin/python
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#
+# Used to configure the Yombo Gateway. Used for initial configuration and setup as well as
+#adjusting settings later.
+#
+# Details can be found at http://www.yombo.net
 """
 Configures and sets up the gateway for use.
 
-This tool performs the following:
-1. Prompts user for credentials to authenticate to Yombo.
-2. Configures the gateway by either:
-2a. Download a configuration file (yombo.ini) for an existing gateway.
-2b. Or create a new gateway and downloads it's yombo.ini file.
+On initial setup/configuration, this toold performs the following:
+1. Prompts user for username and Gateway setup PIN number.
+  The PIN number is setup when the user creates a Gateway using the APi or Yombo App.
+2. Interacts with the Yombo API as required to configure the Gateway
 3. Setup the GPG/PGP encryption between the gateway and server.
 
-@todo: Completely redo this app.  It's a mess!
-
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 import signal
@@ -32,7 +32,8 @@ import getpass
 import time
 import hashlib
 #@TODO: Change later with advanced menu...
-apiurl = "http://www.yombo.net"
+
+apiurl = "https://api.yombo.net"
 requests.adapters.DEFAULT_RETRIES = 5
 
 gpg = gnupg.GPG()  #:Build the gpg interface once.
@@ -43,6 +44,7 @@ accounthash = ''
 accountsession = ''
 apigwdata = None
 gwuuid = None
+gwpin = None
 apikey = 'asdf'
 
 #ensure we are working in the directory where yombo is installed
@@ -110,12 +112,12 @@ def signal_handler(signal, frame):
         print 'Quiting at users request.'
         sys.exit(0)
 
-def yomboGet(url):
+def yomboGetUrl(url):
   """
   Simple wrapper to webGet(), used for calling yombo API.
   """
   global apiurl
-  return webGet(apiurl + url + "&format=json")
+  return webGet(apiurl + url)
 
 def webGet(url):
   """
@@ -144,7 +146,7 @@ def webGet(url):
 
 def yomboSend(url, payload, sendType):
   """
-  Simple wrapper to webSent(), used for calling yombo API.
+  Simple wrapper to webSend(), used for calling yombo API.
   """
   global apiurl
   global accountsession
@@ -193,7 +195,7 @@ def readIni():
         fp.close()
     except IOError:
         fp.close()
-        raise Exception("Error with yombo.ini. Cannot open file. Try downloading a new version.")
+        raise Exception("Error with yombo.ini. Cannot open file. Check permissions or run as user assigned for Yombo Gateway.")
     try:
         environment = yomboconfig.get("server", "environment")
         if environment == "production":
@@ -201,7 +203,7 @@ def readIni():
         elif environment == "staging":
             apiurl = "https://apistg.yombo.net"
         if environment == "development":
-            apiurl = "http://wwwdev.yombo.net:8088"
+            apiurl = "https://api.yombo.net"
     except:
         apiurl = "https://api.yombo.net"
         pass
@@ -234,16 +236,20 @@ def deleteSql():
     """
     global yomboini
     global yomboconfig
-    if os.path.isfile('usr/sql/config.sqlite3') == True:
-        os.remove('usr/sql/config.sqlite3')
+    try:
+        if os.path.isfile('usr/sql/config.sqlite3') == True:
+            os.remove('usr/sql/config.sqlite3')
+    except:
+        raise Exception("Error with yombo.ini file, cannot write to file. Have permission?")
 
 def testIni():
     """
-    Test to make sure there is a yombo.ini, and find it's location.
+    Test to make sure there is a yombo.ini, and find it's location. Then load it's contents.
     """
     global apiurl
     global yomboini
     global gwuuid
+    global gwhash
     global yomboconfig
     yomboini = 'yombo.ini'
     if os.path.isfile(yomboini) == False:
@@ -251,9 +257,9 @@ def testIni():
         yomboconfig.add_section('core')
         yomboconfig.add_section('local')
         yomboconfig.add_section('updateinfo')
-        apiurl = "http://www.yombo.net"
         gwuuid = None
-        saveIni()
+#        saveIni()
+        return False
     else:
         readIni()
         gwuuid = getConfig('core', 'gwuuid')
@@ -273,7 +279,7 @@ def validateIni():
     readIni()
     gwuuid = getConfig('core', 'gwuuid')
 
-    response = yomboGet("/api/v1/gateway_registered/%s?sessionid=%s" % (gwuuid, accountsession))
+    response = yomboGetUrl("/api/v1/gateway_registered/%s?sessionid=%s" % (gwuuid, accountsession))
     print("Checking gateway authentication hash..."),
     if response['gwhash'] != getConfig('core', 'gwuuid'):
         print "Invalid...Fixed."
@@ -478,12 +484,12 @@ def saveBundleToAPI(bundle, newgw=False):
 
 def gatewayFetchDetail(gwuuid):
       global accountsession
-      return yomboGet("/api/v1/gateway_registered/%s?sessionid=%s" % (gwuuid, accountsession))
+      return yomboGetUrl("/api/v1/gateway_registered/%s?sessionid=%s" % (gwuuid, accountsession))
 
 def gatewayFetchList():
       global accountsession
       global apigwdata
-      response = yomboGet("/api/v1/gateway_registered?sessionid=%s" % (accountsession,))
+      response = yomboGetUrl("/api/v1/gateway_registered?sessionid=%s" % (accountsession,))
       if 'objects' in response:
         apigwdata = {}
         for (i, item) in enumerate(response['objects']):
@@ -855,7 +861,7 @@ def menuGateway(**kwargs):
     elif command == 'v':
       validateIni()
     elif command == 'd':
-      deleteIni()
+      deleteIni() + "&format=json"
       deleteSql()
       bundle = updateBundleFromAPI(gwuuid)
       gwlabel = bundle['both']['core']['label']
@@ -936,7 +942,7 @@ def gatewayLabel(bundle):
   desc = bundle['both']['core']['description']
   newLabel = ''
   newDesc = ''
-  while doContinue:
+  while doContinu + "&format=json"e:
     if doSkip == False:
       print "\n\rBasic gateway information."
       newLabel = raw_input('Gateway label [%s]: ' % (newLabel if newLabel != '' else label,))
@@ -1006,7 +1012,7 @@ def gatewayLocation(bundle):
   print "Set location and timezone"
   print "========================="
   print "Fetching information based on IP address..."
-  result = yomboGet("/api/v1/location?sessionid=%s" % (accountsession,))
+  result = yomboGetUrl("/api/v1/location?sessionid=%s" % (accountsession,))
   r = result['objects'][0]
   latitude = r['latitude']
   longitude = r['longitude']
@@ -1037,7 +1043,7 @@ def gatewayLocation(bundle):
     if command == 'i' or command == 'g':
       if command == 'i':
         print "\n\rFetching location information based on your IP address."
-        result = yomboGet("/api/v1/location?sessionid=%s" % (accountsession,))
+        result = yomboGetUrl("/api/v1/location?sessionid=%s" % (accountsession,))
         r = result['objects'][0]
         latitude = r['latitude']
         longitude = r['longitude']
@@ -1119,7 +1125,7 @@ def checkLoginCredentials():
     if account == None:
       return False
     if accountsession != None:
-      response = yomboGet("/api/v1/user_validatesession?sessionid=%s" % (accountsession,))
+      response = yomboGetUrl("/api/v1/user_validatesession?sessionid=%s" % (accountsession,))
       if response['result'] == 'success':
         print "Valid account found at Yombo."
         deleteConfig('local','accounthash')
@@ -1127,7 +1133,7 @@ def checkLoginCredentials():
       else:
         return False
     if accounthash != None:
-      response = yomboGet("/api/v1/user_loginwithhash?apikey=%s&username=%s&userhash=%s" % (apikey, account, accounthash))
+      response = yomboGetUrl("/api/v1/user_loginwithhash?apikey=%s&username=%s&userhash=%s" % (apikey, account, accounthash))
       if response['result'] == 'success':
         print "User has a valid userhash. Saving session id, clearing userhash."
         setConfig('local','accountsession', response['sessionid'])
@@ -1136,6 +1142,22 @@ def checkLoginCredentials():
       else:
         return False
     return False
+
+def promptForString(promptDescription, promptLine, showInput=True, required=True):
+    print "\n%s\n" % promptDescription
+    while doPrompt:
+      doAsk = True
+      while doAsk:
+        if showInput:
+            theinput = raw_input("%s:" % promptLine)
+        else:
+            theinput = getpass.getpass("%s:" % promptLine)
+        if len(theinput) == 0 and required == False:
+          doAsk = False
+          return theinput
+        else:
+          print "\n\nThis value is required.\n"
+
 
 def promptLoginCredentials():
     global account
@@ -1169,7 +1191,7 @@ def promptLoginCredentials():
         else:
 	  print "The password must be at least 4 characters."
 
-      response = yomboGet("/api/v1/user_loginwithpassword?apikey=asdf&username=%s&password=%s" % (account, accountpassword))
+      response = yomboGetUrl("/api/v1/user_loginwithpassword?apikey=asdf&username=%s&password=%s" % (account, accountpassword))
       if response['result'] == 'success':
         print "\n\rValid credentails found at Yombo."
         setConfig('local','account', account)
@@ -1180,6 +1202,52 @@ def promptLoginCredentials():
         print "\n\rYombo reports problem with credentials: %s\n\r" % response['errormessage']
 
 
-testIni()
-promptLoginCredentials()
-menuStart()
+# Flow:
+# Check if already configured.
+# If new:
+#  Prompt for gateway setup PIN.  This is required to setup gateway, no other method will work going forward.
+#  Configure gateway - setup yombo.ini file, SQL file, GPG keys.
+
+# If not new:
+#   Check if gwuuid and gwhash is valid against API.
+#   If valid, prompt user asking what they want to do (wipe, change settings, manage GPG keys)
+#
+#   If not valid:
+#     Ask user: Delete all configrations, start over.
+#       This will reqire user to use mobile app or website to request gateway pin setup.
+
+
+if testIni() == False:  # a new gateway setup
+    print "\n\rIt appears this is a new gateway installation or the configuration has been wipped.\n\r"
+    print "You will need the one-time Gateway setup PIN code. This is provided when a new Gateway is\n\r"
+    print "created. This PIN code is good for only one use. If you new a new PIN, use the Yombo APP and\n\r"
+    print "select the gateway you wish to setup. Go into the Gateway configurations and select\n\r"
+    print "'Request setup PIN code.\n\r"
+
+    configMode = "PINSetup"
+
+    doPrompt = True
+    while doPrompt:
+        gatewayPIN = promptForString("", "Gateway PIN Code")
+        response = yomboGetUrl("/api/v1/gateway!setupPin?apikey=%s&pincode=%s" % (apikey, gatewayPIN) )
+      if response['result'] == 'Success':
+        print "\n\rValid gateway PIN code found. Configuring gateway."
+        setConfig('core','gwuuid', response['Response']['Gateway']['gwuuid'])
+        setConfig('core','gwhash', response['Response']['Gateway']['gwhash'])
+        doPrompt = False
+      else:
+        print "\n\rYombo reports problem with gateway PIN Code.\n\r"
+
+
+    # setup GPG keys now.
+
+else:
+    menuStart()
+
+
+
+
+
+
+
+

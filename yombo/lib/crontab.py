@@ -46,14 +46,16 @@ Usage example
    self.MyCron.label = "modules.myModule.Lunchtime on Sundays"
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2013 by Yombo.
+:copyright: Copyright 2013-2015 by Yombo.
 :license: LICENSE for details.
 """
-from datetime import datetime, timedelta
-import time
+# Import python libraries
+from datetime import datetime
 
+# Import twisted libraries
 from twisted.internet.task import LoopingCall
 
+# Import Yombo libraries
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCronTabError
 from yombo.core.helpers import generateRandom

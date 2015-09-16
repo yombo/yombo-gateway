@@ -2,23 +2,33 @@
 Install Directory
 =====================
 
-Various files to get Yombo Gateway installed
+Various files to get Yombo Gateway installed on various platforms.
 
-install-debian-requirements.sh
-------------------------------
 
-Installs the requirements needed for Yombo Gateway. It also configures the
-the log file path and pid file path.
+Debian
+======
 
-install-debian-service.sh
--------------------------
+For installing on Debian based systems, including Mint and Ubuntu.
 
-For Debian based systems (Debian, Ubuntu, Mint, etc), this will setup Yombo
-Gateway to run at startup. After installation, you can use the service
-command to manage the Gateway.
+
+debian-setup.sh
+----------------------
+
+Installs the required software before Yombo Gateway can run.
+
+debian-install-service.sh
+-----------------
+
+Setup Yombo Gateway to run as a service on Debian based systems. After installation,
+you can use the service command to manage the Gateway.
+
+
+Misc
+====
+
+Misc files in this directory.
 
 yombo-init
 ----------
 
-Init script to be installed on linux distributions.  Used by the install.sh
-installation script.
+Init script to be installed on linux distributions.  Used by the debian installer script.

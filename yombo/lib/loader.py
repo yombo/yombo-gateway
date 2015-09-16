@@ -51,6 +51,7 @@ HARD_LOAD = [
     "CronTab",
     "Configuration",
     "Startup",
+    "Statistics",
     "AMQPYombo",
     "ConfigurationUpdate",
     "DownloadModules",
@@ -70,6 +71,7 @@ HARD_UNLOAD = [
     "Controller",
     "Devices",
     "Configuration",
+    "Statistics",
 ]
 
 class Loader(YomboLibrary):

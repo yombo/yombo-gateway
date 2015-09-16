@@ -1,11 +1,11 @@
 #!/bin/bash
-echo
-echo
+echo ""
 if [ $UID != 0 ]; then
     echo "This must be run with sudo from the current user that will be using the gateway.
     echo
-    echo "For example is user 'mitch' is installing the gateway, run this command logged
+    echo "For example if user 'mitch' is installing the gateway, run this command logged
     echo "in as mitch: sudo install-debian-service.sh"
+    exit
 fi
 
 echo "This will install Yombo Gateway as the current user. If you want this to"
@@ -39,5 +39,5 @@ chmod +x /etc/init.d/yombo
 echo "Setting Yombo to start from run level 3"
 ln -s ../init.d/yombo /etc/rc3.d/S99yombo
 
-echo "Yombo installed.  To start service daemon, execute '/etc/init.d/yombo start'"
-echo "To run not in daemon, execute: './yombo.sh'"
+echo "Yombo installed. To start: `service yombo start`"
+echo "To run without daemon, execute: './yombo.sh'"

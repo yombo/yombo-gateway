@@ -5,7 +5,7 @@ if [ $UID != 0 ]; then
     echo ""
     echo "For example is user 'mitch' is installing the gateway, run this command logged"
     echo "in as mitch: sudo setup-debian.sh"
-echo ""
+    echo ""
     exit
 fi
 
@@ -32,5 +32,5 @@ fi
 chmod 775 /var/log/yombo
 chown $SUDO_USER:$SUDO_USER /var/log/yombo
 
-apt-get install python python-twisted python-twisted-words python-twisted-web python-twisted-mail gnupg2 python-pip rng-tools python-dev python-wokkel python-dev build-essential git -y
-pip install python-gnupg pyephem cython pika
+apt-get install python python-pip python-setuptools python-dev gnupg2 rng-tools build-essential git -y
+pip install Twisted msgpack-python python-gnupg pyephem cython gnupg service_identity

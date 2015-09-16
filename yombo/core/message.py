@@ -2,25 +2,27 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://yombo.net
 """
-The Yombo Message is a key component or concept for the Yombo system.  Yombo
-messages are used to communicate between all components.  This includes within
-a gateway, and between the gateway and any other endpoints, such as the Yombo
-service. 
+The Yombo Message is a key component or concept for the Yombo system. It's primarily
+used within the Yombo gateway to communication between libraries and modules. Libraries
+and modules can subscribe to certain message types (commands, status) and receive
+messages when activities take place.
+
+Externally, messages are converted to various formats as required by the external
+communication method. Libraries and modules that provide external communications must
+convert from the Yombo Message to the form required by that commincation method. However,
+care should be taken to convey as much of the message elements as practical.
 
 Internally to the gateway software, the Yombo Message is responsible for
 delivering commands and status updates to various libraries and modules for
-further processing.  Externally, it is used to send commands to/from control
-software, and to Yombo servers for configuration.  It can also be used
-to send messages to other gateways with commands to control remote
-devices.
+further processing.
 
 Other than a standard set of key components, the yombo message is fairly free
 form. Module developers should follow these guidelines when developing modules
-so that they can communicate with other modules.  If additional standards or
-fields are needed, please start a new thread on the forums for discussion.
+so that they can communicate with other modules. If additional standard fields
+are needed, please start a new thread on the forums for discussion.
 
-Additionally, 'product family types' such as X10, Insteon, Z-Wave, Audio,
-Video, may have additional requirements.  See
+Additionally, 'product family types' such as X10, Insteon, Z-Wave, Audio, Video,
+may have additional requirements.  See
 `here for additional details <https://projects.yombo.net/projects/modules/wiki>`_
 
 TODO: Document standard payload fields here.
@@ -79,8 +81,7 @@ class Message:
             messageID with a status of "failed".  An exception is not thrown
             since it may take a while to get a failed message.
         :type msgDestination: string
-        :param msgType:           logger.info("messages:beforeSendMessage")
-The type of message being sent, such as: command,
+        :param msgType: The type of message being sent, such as: command,
             event, status, config:
 
             * "cmd" - Used for sending commands to various devices. It is best
@@ -88,17 +89,12 @@ The type of message being sent, such as: command,
             * "voiceCmd" - Used by the voiceCmd module to send a registered
               voiceCmd to a module. This is used if the voiceCmd doesn't match
               a deviceUUID.
-            * "event" - Used to send various system events. (TODO: make a list!)
+            * "event" - Used to send various system events. # TODO: make a list!
             * "status" - Used for sending device status.  This is typically used
               by Device object to send status when something is changed.
-            * "config" - Only used by Yombo  servers to send configuration
-              information to configurationupdate library. Typically, these type
-              of messages pass through this library for performance reasons.
-              Modules should not be sending config messages. If a configuration
-              item is needed, use the Helper library.
         :type msgType: string
         :param msgStatus: **Required.** Status of this message (value depends
-            on the msgType), such as - new, process, done, failed, reply:
+            on the msgType), such as - new, processing, done, failed, reply:
 
             * Reply type messages must include the previous msgUUID so the
               sender can match the request.
@@ -185,25 +181,21 @@ The type of message being sent, such as: command,
         :param msgPath: Used to track the history of the message. Most recent
             entry at the end.
         :type msgPath: OrderedDict
-
         :param sentTo: Only used within a gateway, it notes what modules this
                message has been sent to. Populated during message distribution.
-        :type sentTo: dict        The params defined refer to kwargs.
-        
+        :type sentTo: dict
         :param notBefore: Time in unix epoch to wait before deliverying the
             message. Used as a way to defer delivery of a message until epoch
             has _passed_.  Note: This is not a delay in number of seconds, but
             a time in number of seconds since epoch.  Messages with a notBefore
             are persisted between gateway restarts.
         :type notBefore: int
-
         :param maxDelay: Used with notBefore. A window of time (in seconds) that
             the message can be delivered in.  Another way of thinking: the
             maximum number of seconds since notBefore that can pass before the
             message expires and not be delivered. This occurs if the gateway
             is down during the time the notBefore time elapses.
         :type maxDelay: int
-
         :param msgAuth: Used when processing non-local messages. Used to
             validate the source of a remotely generated message. This
             dictionary *can* contain the following attributes:
@@ -215,9 +207,10 @@ The type of message being sent, such as: command,
             * "username" (Optional) - If the receiving component requires the
                user to be authenticated, this field will be populated with
                the username. Used for API calls or remote data streams such as
-               HTML5 clients, etc.
+               HTML5 clients, etc.  **Note**: If set, this must be set by the
+               recieving library or module that has actually authenticated
+               the user.
         :type msgAuth: dict
-
         :param newMessage: Default is True. Set to false to force simple
             validations on the message. For example, it will make sure the
             msgUUID exists and won't create a new one.
@@ -297,23 +290,61 @@ The type of message being sent, such as: command,
                 'payload'       : dict(self.payload),
                 }
 
-    def dumpToExternal(self):
+    def dumpToExternal(self, **kwargs):
         """
-        Used to create a dictionary to send the message external.
-        
-        TODO: Create a message signature HASH Using gpg
-        """
+        Used to dump key parts of the message for an external source. Perfect for relaying complete messages
+        to another gateway or 3rd party processor for advanced command & status processing.
 
-        newmsg = { 'msgDestination' : msg['msgDestination'],
-                   'msgOrigin'      : msg['msgOrigin'],
-                   'data'           : {},
-                 }
-        msgItemsSkip = ( 'msgOrigin', 'msgDestination', 'uuidType', 'uuidSubType', 'notBefore', 'maxDelay')
-        for item in msg:
-            if item in msgItemsSkip:
-                continue
-            newmsg['data'][item] = msg[item]
+        Ensures the message has full Origin and Destination routes.  Creates GPG signature and stores in msgAuth.
+        """
+        if self.validateMsgOriginFull() == False:
+            YomboMessageError("Cannot dump message to external without full Origin path.")
+        if self.validateMsgDestinationFull() == False:
+            YomboMessageError("Cannot dump message to external without full Destination path.")
+
+        newmsg = {
+            'msgOrigin'     : str(self.msgOrigin),
+            'msgDestination': str(self.msgDestination),
+            'msgType'       : str(self.msgType),
+            'msgStatus'     : str(self.msgStatus),
+            'msgStatusExtra': str(self.msgStatusExtra),
+            'msgUUID'       : str(self.msgUUID),
+            'msgAuth'       : str(self.msgAuth),
+            'msgOrigUUID'   : str(self.msgOrigUUID),
+            'msgPath'       : str(self.msgPath),
+            'payload'       : dict(self.payload),
+            }
+
+#TODO: Create signature method. :-)
+#        self.generateMsgAuth()
         return newmsg
+
+    def validateMsgOriginFull(self):
+        """
+        Validates that the msgOrigin field has both sections path:id
+
+        :return:
+        """
+        item = self.msgOrigin.split(":")
+        if len(item) == 1:
+            return False
+        elif len(item) == 2:
+            return True
+        raise YomboMessageError("msgOrigin is in unknown state")
+
+    def validateMsgDestinationFull(self):
+        """
+        Validates that the msgDestination field has both sections path:id
+
+        :return:
+        """
+        item = self.msgDestination.split(":")
+        if len(item) == 1:
+            return False
+        elif len(item) == 2:
+            return True
+        raise YomboMessageError("msgDestination is in unknown state")
+
 
     def getReply(self, **kwargs):
         """
@@ -675,15 +706,18 @@ The type of message being sent, such as: command,
         if 'signature' in self.msgAuth:
             del self.msgAuth['signature']
 
-        hashed = { 'msgOrigin' : str(self.msgOrigin),
-                   'msgDestination' : str(self.msgDestination),
-                   'msgType' : str(self.msgType),
-                   'msgStatus' : str(self.msgStatus),
-                   'msgStatusExtra' : str(self.msgStatusExtra),
-                   'msgUUID' : str(self.msgUUID),
-                   'msgAuth' : self.msgAuth,
-                   'payload' : self._generatePayloadHash(),
-                 }
+        hashed = {
+            'msgOrigin'     : str(self.msgOrigin),
+            'msgDestination': str(self.msgDestination),
+            'msgType'       : str(self.msgType),
+            'msgStatus'     : str(self.msgStatus),
+            'msgStatusExtra': str(self.msgStatusExtra),
+            'msgUUID'       : str(self.msgUUID),
+            'msgAuth'       : str(self.msgAuth),
+            'msgOrigUUID'   : str(self.msgOrigUUID),
+            'msgPath'       : str(self.msgPath),
+            'payload'       : dict(self.payload),
+            }
 
         self.msgAuth['username'] = kwargs.get('username', '')
         self.msgAuth['signature'] = pgpSign(dumps(hashed))
