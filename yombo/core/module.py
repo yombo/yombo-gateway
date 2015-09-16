@@ -84,8 +84,8 @@ documentation.
 :license: LICENSE for details.
 """
 # Import Yombo libraries
-from yombo.core.component import IModule
-from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes, getCronTab
+#from yombo.core.component import IModule
+from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes, getCronTab, getTimes
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 
@@ -130,6 +130,7 @@ class YomboModule:
         self._ModVariables = getModuleVariables(self._Name)
         self._Commands = getCommands()
         self._CronTab = getCronTab()
+        self._Times = getTimes()
         self._Devices = getDevices()
         self._DevicesByType = getDevicesByType()
 

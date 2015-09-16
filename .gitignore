@@ -19,7 +19,6 @@ yombo.ini*
 builddocs.sh*
 localmodules.ini*
 
-
 # Building / Documentation #
 ############################
 MANIFEST
@@ -35,6 +34,7 @@ yombo/lib/old*
 *.log
 *.out
 usr/*
+!usr/bin/*
 mymodules/*
 
 # Project Tools #

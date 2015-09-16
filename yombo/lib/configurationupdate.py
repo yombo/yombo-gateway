@@ -26,12 +26,13 @@ from twisted.internet.task import LoopingCall
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.message import Message
-#TODO: Consolidate.
 import yombo.core.db
 from yombo.core.db import get_dbconnection
 from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime, generateRandom
 from yombo.core.log import getLogger
 from yombo.core import getComponent
+from yombo.core.maxdict import MaxDict
+from yombo.core.exceptions import YomboWarning
 
 logger = getLogger('library.configurationupdate')
 
@@ -55,6 +56,7 @@ class ConfigurationUpdate(YomboLibrary):
         :type loader: :mod:`~yombo.lib.loader`
         """
         self.loader = loader
+        self.ampq_request_ids = MaxDict(200)
 
         self.__incomingConfigQueue = deque([])
         self.__incomingConfigQueueLoop = LoopingCall(self.__incomingConfigQueueCheck)
@@ -65,10 +67,10 @@ class ConfigurationUpdate(YomboLibrary):
         self.gpg_key_ascii = getConfigValue("core", "gpgkeyascii", '')
         self.gwuuid = getConfigValue("core", "gwuuid")
 
-        self.amqp = getComponent('yombo.gateway.lib.AMQPYombo')
         self.dbconnection = get_dbconnection()
         if self.loader.unittest: # if we are testing, don't try to download configs
           return
+        self.amqp = getComponent('yombo.gateway.lib.AMQPYombo')
         self.loadDefer = defer.Deferred()
         self.loadDefer.addCallback(self.__loadFinish)
         self.getAllConfigs()
@@ -99,7 +101,6 @@ class ConfigurationUpdate(YomboLibrary):
         """
         Stop this module and prepare to be unloaded.
         """
-        self.timerQueue.stop()
         self.__incomingConfigQueueCheck()
     
     def _unload_(self):
@@ -125,14 +126,38 @@ class ConfigurationUpdate(YomboLibrary):
         Checks the incoming config queue 
         """
 #        logger.warning("configQueueCheck was just called.")
-        if len(self.__incomingConfigQueue) > 0:
+        while self.__incomingConfigQueue:
             config = self.__incomingConfigQueue.pop()
-            self.processConfig(config)        
+            self.processConfig(config)
+
+    def amqp_direct_incoming(self, sendInfo, deliver, props, msg):
+        # do nothing on requests for now.... in future if we ever accept requests, we will.
+        if props.headers['Type'] == "Response":
+                dt = sendInfo['time_sent'] - sendInfo['time_created']
+                ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
+                logger.info("Delay between create and send: %s ms" % ms)
+        else:
+            raise YomboWarning("ConfigurationUpdate::amqp_direct_incoming only accepts 'Response' type message.")
+        # if a response, lets make sure it's something we asked for!
+
 
     def processConfig(self, msg):
 #        cfg = getComponent("yombo.lib.Configuration")
         payload = msg['payload']
         cmd = payload['cmd'].lower()
+        allCommands = [
+            "getCommands",
+            "getDevices",
+            "getDeviceTypeCommands",
+            "getGatewayDetails",
+            "getGatewayModules",
+            "getGatewayModuleInterfaces",
+            "getGatewayUserTokens",
+            "getGatewayVariables",
+            "getGatewayModuleDeviceTypes",
+            "getGatewayUsers",
+        ]
+
         cmdmap = {
             'getfullconfigs': {'type': "GetFullConfigs"},
             'getfullgatewaydetailsresponse': {'type': "GatewayDetailsResponse"},
@@ -231,10 +256,11 @@ class ConfigurationUpdate(YomboLibrary):
         
     def getAllConfigs(self):
         # don't over do it on the the full config download. Might be a quick restart of gateway.
+        logger.info("About to do getAllConfigs")
         if self.__doingfullconfigs == True:
             return False
-        lastTime = getConfigValue("core", "lastFullConfigDownload", 30)
-        if int(lastTime) > int(time()):
+        lastTime = getConfigValue("core", "lastFullConfigDownload", 1)
+        if int(lastTime) > (int(time() - 10)):
             logger.debug("Not downloading fullconfigs due to race condition.")
             return
 
@@ -252,18 +278,19 @@ class ConfigurationUpdate(YomboLibrary):
             "getDevices",
             "getDeviceTypeCommands",
             "getGatewayDetails",
+            "getGatewayModules",
             "getGatewayModuleInterfaces",
             "getGatewayUserTokens",
             "getGatewayVariables",
-            "getModuleDeviceTypes",
-            "getModules",
-            "getUsers",
+            "getGatewayModuleDeviceTypes",
+            "getGatewayUsers",
         ]
         for command in allCommands:
+            logger.info("sending command: %s"  % command)
             requestContent = {"RequestType": command}
             rand = generateRandom(length=12)
-#            self.ampq_request_ids[rand] = requestContent
-            self.amqp.send_message(**self._generateMessage(rand, requestContent))
+            self.ampq_request_ids[rand] = requestContent
+            self.amqp.send_direct_message(**self._generateMessage(rand, requestContent))
 
     def _generateMessage(self, requestID, requestContent):
         request = {
@@ -271,23 +298,22 @@ class ConfigurationUpdate(YomboLibrary):
               "Request": requestContent,
             }
 
-        headers = {
-            "Source"        : "gw_configurationupdate",
-            "Type"          : "Request",
-        }
-
         requestmsg = {
             "exchange_name"    : "gw_config",
             "routing_key"      : '*',
             "body"             : request,
             "properties" : {
                 "correlation_id" : requestID,
-                "user_id"        : self.amqp.user_id,
-                "headers"        : headers,
+                "user_id"        : self.gwuuid,
+                "headers"        : {
+                    "Source"        : "yombo.gateway.lib.configurationupdate:" + self.gwuuid,
+                    "Destination"   : "yombo.server.configs",
+                    "Type"          : "Request",
+                    },
                 },
+            "callback"          : self.amqp_direct_incoming,
             }
         return requestmsg
-
 
     def _appendFullTableQueue(self, table):
         """

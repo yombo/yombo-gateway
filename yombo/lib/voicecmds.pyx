@@ -15,7 +15,7 @@ XAP, microphone with speech to text processing capabilities, etc.
 
 **Example**:
 
-  For example, if a voice command noun/verb pairs exit::
+  For example, if a voice command noun/verb pairs exist::
 
     Noun: living room desk lamp
     Verb: on, off, dim, bright
@@ -74,7 +74,6 @@ the fuzzysearch phase of voice command lookup.
             
      voicecmds = getVoiceCommands()
      voicecmds["desklamb off"] # it's misspelled, but it will still be found.
-                               # this return 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2013 by Yombo.

@@ -1,14 +1,15 @@
 """
-Defines a simple, and nearly empty starter module.  This module
-requests the Times_ library to display various times on startup.
+A starting point to creating your own module. This is a simple,
+nearly empty starter module.
 
-:copyright: 2012 Yombo
+This module requests the _Times_ library to display various times on startup.
+
+:copyright: 2012-2015 Yombo
 :license: GPL
 """
 from twisted.internet import reactor
 
 from yombo.core.module import YomboModule
-from yombo.core.helpers import getTimes
 from yombo.core.log import getLogger
 
 logger = getLogger("module.empty")
@@ -17,7 +18,6 @@ class Empty(YomboModule):
     """
     Empty base module
     """
-
     def _init_(self):
         """
         Init the module.  Don't use __init__ as that will override the
@@ -27,11 +27,8 @@ class Empty(YomboModule):
         """
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "http://www.yombo.net"
+        self._ModUrl = "http://yombo.net"
 
-        # get a reference to the times instance so we can check ifDark later.
-        self.times = getTimes()
-        
     def _load_(self):
         """
         After this phase, module should be able to
@@ -78,11 +75,11 @@ class Empty(YomboModule):
         
         Startup phase 3 of 3.
         """
-        logger.debug("Is Light: %s", self.times.isLight)
-        logger.debug("Is Dark: %s", self.times.isDark)
-        logger.debug("Is Day: %s", self.times.isDay)
-        logger.debug("Is Night: %s", self.times.isNight)
-        logger.debug("Mars Next Rise: %s", self.times.objRise(dayOffset=1, object='Mars'))
+        logger.debug("Is Light: %s", self._Times.isLight)
+        logger.debug("Is Dark: %s", self._Times.isDark)
+        logger.debug("Is Day: %s", self._Times.isDay)
+        logger.debug("Is Night: %s", self._Times.isNight)
+        logger.debug("Mars Next Rise: %s", self._Times.objRise(dayOffset=1, object='Mars'))
     
     def _stop_(self):
         """
@@ -104,7 +101,3 @@ class Empty(YomboModule):
         be sent here.
         """
         pass
-        
-        
-            
-            
