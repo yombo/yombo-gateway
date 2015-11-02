@@ -209,7 +209,7 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.debug("Calling init function for library: %s" % componentName)
+            logger.info("Calling init function for library: %s" % componentName)
             if hasattr(library, '_init_') and callable(library._init_) and self.getMethodDefinitionLevel(library._init_) != 'yombo.core.module.YomboModule':
                 library._init_(self)
                 continue

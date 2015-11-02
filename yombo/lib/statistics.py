@@ -269,45 +269,45 @@ class Statistics(YomboLibrary):
 
         amqpBody = []
         for key, items in self.count:
-            if key <= bucket - (self.countDuration +10)
+            if (key <= (bucket - (self.countDuration +10))):
                 bucket.append(key)
                 for name, value in items:
-                    amqpBody.append({"name":name, "value": value, "timestamp": key}
+                    amqpBody.append({"name":name, "value": value, "timestamp": key})
 
         for time in bucketsSent:
             del self.count[time]
 
         bucketsSent = []
         for key, items in self.timing:
-            if key <= bucket - (self.timingDuration +10)
+            if key <= bucket - (self.timingDuration +10):
                 bucketsSent.append(key)
                 sortedItem = sorted(items)
                 for name, values in items:
                     sortedValues = sorted(values)
 
                 count = len(sortedValues)
-                median = percentile(sortedValues, 0.50)
+                median = percentile(sortedValues, 0.50)
 
                 min = sortedValues[0]
                 max = sortedValues[-1]
 
-                90percentile = percentile(sortedValues, 0.90)
-                temp = []
+                percentile90 = percentile(sortedValues, 0.90)
+                temp = []
                 for val in a:
-                    if val < 90percentile:
+                    if val < percentile90:
                         temp.append(val)
                     else:
                         break
 
                 median_90 = percentile(temp, 0.50)
 
-                  amqpBody.append({"name":name + ".count", "value" : count, "timestamp": key}
-                  amqpBody.append({"name":name + ".median", "value": median, "timestamp": key}
-                  amqpBody.append({"name":name + ".upper", "value" : max, "timestamp": key}
-                  amqpBody.append({"name":name + ".lower", "value" : min, "timestamp": key}
-                  amqpBody.append({"name":name + ".upper_90", "value" : temp[-1], "timestamp": key}
-                  amqpBody.append({"name":name + ".lower_90", "value" : temp[0], "timestamp": key}
-                  amqpBody.append({"name":name + ".median_90", "value" : median_90, "timestamp": key}
+                amqpBody.append({"name":name + ".count", "value"  : count, "timestamp": key})
+                amqpBody.append({"name":name + ".median", "value" : median, "timestamp": key})
+                amqpBody.append({"name":name + ".upper", "value"  : max, "timestamp": key})
+                amqpBody.append({"name":name + ".lower", "value"  : min, "timestamp": key})
+                amqpBody.append({"name":name + ".upper_90", "value"  : temp[-1], "timestamp": key})
+                amqpBody.append({"name":name + ".lower_90", "value"  : temp[0], "timestamp": key})
+                amqpBody.append({"name":name + ".median_90", "value" : median_90, "timestamp": key})
 
         for time in bucketsSent:
             del self.timing[time]
@@ -315,7 +315,7 @@ class Statistics(YomboLibrary):
         amqpBody = []
         for key, items in self.gauge:
             for name, value in items:
-                amqpBody.append({"name":name, "value" : value , "timestamp": key}
+                amqpBody.append({"name":name, "value" : value , "timestamp": key})
 
         #TODO: Send to AMQP library for actual sending.
         request = {
