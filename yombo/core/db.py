@@ -65,6 +65,7 @@ class DBConnectionPool:
         for table in ALLTABLES:
             lines = table.sql()
             for line in lines:
+#                logger.info("line: %s" % line)
                 self.cur.execute(line)
         self.pool.commit()
 
@@ -520,13 +521,18 @@ class CommandsTable(Table):
     """Defines the commands table."""
     table_name = 'commands'
     cmdUUID = TextPKColumn()
-    cmd = TextColumn()
+    uri = TextColumn()
+    machineLabel = TextColumn()
     voiceCmd = TextColumn()
-    inputTypeID = IntegerColumn()
-    liveupdate = IntegerColumn()
     label = TextColumn()
     description = TextColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS cmd_idx ON %s (cmd);" % (table_name),
+#    inputTypeID = IntegerColumn()
+#    liveupdate = IntegerColumn()
+    public = IntegerColumn()
+    status = IntegerColumn()
+    created = IntegerColumn()
+    updated = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name),
                "CREATE INDEX IF NOT EXISTS voicecmd_idx ON %s (voicecmd);" % (table_name)]
 
 class ConfigTable(Table):

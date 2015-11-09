@@ -147,6 +147,13 @@ class YomboSuspiciousOperation(YomboWarning):
     """
     pass
 
+
+class YomboAPIWarning(YomboWarning):
+    """
+    Extends :class:`YomboWarning` - Service detected something suspicious and stopped that activity.
+    """
+    pass
+
 class YomboModuleWarning(YomboWarning):
     """
     Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "module".

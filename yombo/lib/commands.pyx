@@ -211,13 +211,14 @@ class Command:
         """
         logger.trace("command info: %s", command)
 
-        self.cmd = command["cmd"]
-        self.cmdUUID = command["cmduuid"]
+        self.cmd = command["machineLabel"]
+        self.cmdUUID = command["cmdUUID"]
         self.label = command["label"]
         self.description = command["description"]
-        self.inputTypeID = command["inputtypeid"]
-        self.voiceCmd = command["voicecmd"]
-        self.liveUpdate = command["liveupdate"]
+#        self.inputTypeID = command["inputtypeid"]
+        self.voiceCmd = command["voiceCmd"]
+        self.uri = command["uri"]
+#        self.liveUpdate = command["liveupdate"]
 
     def __str__(self):
         """
@@ -234,7 +235,7 @@ class Command:
                 'cmd'         : str(self.cmd),
                 'label'       : str(self.label),
                 'description' : str(self.description),
-                'inputTypeID' : int(self.inputTypeID),
+#                'inputTypeID' : int(self.inputTypeID),
                 'voiceCmd'    : str(self.voiceCmd),
-                'liveUpdate'  : int(self.liveUpdate),
+#                'liveUpdate'  : int(self.liveUpdate),
                }

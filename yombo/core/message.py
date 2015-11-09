@@ -270,7 +270,6 @@ class Message:
         :return: A dictionary containing the key values of the message. Can be
             used to create a new message.
         :rtype: dict
-
         """
         return {'msgOrigin'     : str(self.msgOrigin),
                 'msgDestination': str(self.msgDestination),
