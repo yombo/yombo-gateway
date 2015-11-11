@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Class to maintain list of all available commands. Initially, this
 is a cache with the ability and intention to expand later.
@@ -16,7 +16,7 @@ The private online repository can be used to recover previous command
 usage statistics.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 from yombo.core.db import get_dbconnection
@@ -211,14 +211,17 @@ class Command:
         """
         logger.trace("command info: %s", command)
 
-        self.cmd = command["machineLabel"]
         self.cmdUUID = command["cmdUUID"]
+        self.uri = command["uri"]
+        self.voiceCmd = command["voiceCmd"]
+        self.cmd = command["machineLabel"]
         self.label = command["label"]
         self.description = command["description"]
-#        self.inputTypeID = command["inputtypeid"]
-        self.voiceCmd = command["voiceCmd"]
-        self.uri = command["uri"]
-#        self.liveUpdate = command["liveupdate"]
+        self.inputTypeUUID = command["inputTypeUUID"]
+        self.public = command["public"]
+        self.status = command["status"]
+        self.created = command["created"]
+        self.updated = command["updated"]
 
     def __str__(self):
         """
@@ -231,11 +234,16 @@ class Command:
         """
         Export command variables as a dictionary.
         """
-        return {'cmdUUID'     : str(self.cmdUUID),
-                'cmd'         : str(self.cmd),
-                'label'       : str(self.label),
-                'description' : str(self.description),
-#                'inputTypeID' : int(self.inputTypeID),
-                'voiceCmd'    : str(self.voiceCmd),
-#                'liveUpdate'  : int(self.liveUpdate),
-               }
+        return {
+            'cmdUUID'       : str(self.cmdUUID),
+            'uri'           : str(self.uri),
+            'voiceCmd'      : str(self.voiceCmd),
+            'cmd'           : str(self.cmd), # AKA machineLabel
+            'label'         : str(self.label),
+            'description'   : str(self.description),
+            'inputTypeUUID' : int(self.inputTypeUUID),
+            'public'        : int(self.public),
+            'status'        : int(self.status),
+            'created'       : int(self.created),
+            'updated'       : int(self.updated),
+        }

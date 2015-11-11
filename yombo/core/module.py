@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 A shell for module developers to get basic items configured for modules.
 
@@ -44,7 +44,7 @@ Modules have 2 phases of shutdown: _stop, _unload
        def _init_(self):
            self._ModDescription = "Insteon API command interface"
            self._ModAuthor = "Mitch Schwenk @ Yombo"
-           self._ModUrl = "http://www.yombo.net/SomeUrlForDetailsAboutThisModule"
+           self._ModUrl = "https://yombo.net/SomeUrlForDetailsAboutThisModule"
 
            self._RegisterDistributions = ['cmd'] # register to get all CMD messages.
            self._RegisterVoiceCommands = [

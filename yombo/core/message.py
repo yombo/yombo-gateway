@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 The Yombo Message is a key component or concept for the Yombo system. It's primarily
 used within the Yombo gateway to communication between libraries and modules. Libraries

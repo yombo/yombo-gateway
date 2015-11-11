@@ -1,5 +1,5 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at https://yombo.net
 """
 A database API to SQLite3.
 
@@ -518,7 +518,9 @@ class Table:
 
 
 class CommandsTable(Table):
-    """Defines the commands table."""
+    """
+    Defines the commands table. Lists all possible commands a local or remote gateway can perform.
+    """
     table_name = 'commands'
     cmdUUID = TextPKColumn()
     uri = TextColumn()
@@ -526,8 +528,8 @@ class CommandsTable(Table):
     voiceCmd = TextColumn()
     label = TextColumn()
     description = TextColumn()
-#    inputTypeID = IntegerColumn()
-#    liveupdate = IntegerColumn()
+    inputTypeUUID = IntegerColumn()
+    liveUpdate = IntegerColumn()
     public = IntegerColumn()
     status = IntegerColumn()
     created = IntegerColumn()
@@ -536,7 +538,9 @@ class CommandsTable(Table):
                "CREATE INDEX IF NOT EXISTS voicecmd_idx ON %s (voicecmd);" % (table_name)]
 
 class ConfigTable(Table):
-    """Defines the config table."""
+    """
+    Defines the config table for the local gateway.
+    """
     table_name = 'config'
     configid = IntegerPKColumn()
     configPath = TextColumn()
@@ -547,32 +551,60 @@ class ConfigTable(Table):
                "CREATE INDEX IF NOT EXISTS configkey_idx ON %s (configKey);" % (table_name)]
 
 class DevicesTable(Table):
-    """Defines the devices table."""
+    """
+    Defines the devices table. Lists all possible devices for local gateway and related remote gateways.
+    """
     table_name = 'devices'
     deviceUUID = TextPKColumn()
-    deviceTypeUUID = TextColumn()
+    uri = TextColumn()
     label = TextColumn()
     description = TextColumn()
+    gatewayUUID = TextColumn()
+    deviceTypeUUID = TextColumn()
+    notes = TextColumn()
     voiceCmd = TextColumn()
     voiceCmdOrder = TextColumn()
-    moduleLabel = TextColumn()
-    pinNumber = IntegerColumn()
+    VoiceCmdSrc = TextColumn()
+    deviceTypeUUID = TextColumn()  #TODO: Change all references to 'modulelabel'
+    pinCode = IntegerColumn()
     pinRequired = BooleanColumn()
     pinTimeout = IntegerColumn()
     created = IntegerColumn()
     updated = IntegerColumn()
     status = BooleanColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)]
-    
+
+class DeviceTypesTable(Table):
+    """
+    Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
+    """
+    table_name = 'devicetypes'
+    deviceTypeUUID = TextPKColumn()
+    machineLabel = TextColumn()
+    label = TextColumn()
+    description = TextColumn()
+    liveUpdate = IntegerColumn()
+    public = IntegerColumn()
+    status = IntegerColumn()
+    created = IntegerColumn()
+    updated = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name),
+               "CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name)]
+
 class DeviceTypeCommandsTable(Table):
+    """
+    All possible commands for a given device type. For examples, appliances are on and off.
+    """
     table_name = 'devicetypecommands'
-    deviceTypeUUID = TextColumn()
+    deviceTypeUUID = TextPKColumn()
     cmdUUID = TextColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name),
                "CREATE INDEX IF NOT EXISTS cmdUUID_idx ON %s (cmdUUID);" % (table_name)]
 
 class DeviceStatusTable(Table):
-    """Defines the device status table."""
+    """
+    Defines the device status table. Stores device status information.
+    """
     table_name = 'devicestatus'
     rowID = IntegerPKColumn()
     deviceUUID = TextColumn()
@@ -590,7 +622,9 @@ class DeviceStatusTable(Table):
 
 class gwTokensTable(Table):
     """
-    Defines user tokens that can be used to access this gateway.
+    User access tokens to login to this gateway directly.
+
+    Note: Not currently implemented.
     """
     table_name = 'gwTokens'
     gwtokenid = TextPKColumn()
@@ -599,6 +633,17 @@ class gwTokensTable(Table):
     created = IntegerColumn()
     lastaccess = IntegerColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS gwtokenid_idx ON %s (gwtokenid);" % (table_name)]
+
+class ModulesTable(Table):
+    table_name = 'modules'
+    moduleUUID = TextPKColumn()
+    moduleType = TextColumn()
+    moduleLabel = TextColumn()
+    installSource = TextColumn()
+    prodVersion = TextColumn()
+    devVersion = TextColumn()
+    status = BooleanColumn()
+#    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
 
 class ModuleInterfacesTable(Table):
     """
@@ -617,18 +662,10 @@ class ModuleDeviceTypesTable(Table):
     indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name),
                "CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)]
 
-class ModulesTable(Table):
-    table_name = 'modules'
-    moduleUUID = TextPKColumn()
-    moduleType = TextColumn()
-    moduleLabel = TextColumn()
-    installSource = TextColumn()
-    prodVersion = TextColumn()
-    devVersion = TextColumn()
-    status = BooleanColumn()
-#    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
-
 class ModulesInstalledTable(Table):
+    """
+    Tracks what versions of a module is installed, when it was installed, and last checked for new version.
+    """
     table_name = 'modulesinstalled'
     moduleUUID = TextPKColumn()
     installedVersion = TextColumn()
@@ -691,16 +728,18 @@ ALLTABLES = [
     CommandsTable,
     ConfigTable,
     DevicesTable,
+    DeviceTypesTable,
     DeviceTypeCommandsTable,
     DeviceStatusTable,
 #    InterfacesTable,
     LogsTable,
     gwTokensTable,
     ModulesTable,
-    ModuleDeviceTypesTable,
-    SQLDictTable,
-    ModulesInstalledTable,
     ModuleInterfacesTable,
+    ModuleDeviceTypesTable,
+    ModulesInstalledTable,
+    SQLDictTable,
+
     VariableDevicesTable,
     VariableModulesTable,
     UsersTable,
@@ -710,13 +749,14 @@ ALLTABLES = [
 CONFTABLES = [
     CommandsTable,
     DevicesTable,
+    DeviceTypesTable,
     DeviceTypeCommandsTable,
 #    InterfacesTable,
     gwTokensTable,
     ModulesTable,
-    ModulesInstalledTable,
-    ModuleDeviceTypesTable,
     ModuleInterfacesTable,
+    ModuleDeviceTypesTable,
+
     VariableDevicesTable,
     VariableModulesTable,
     UsersTable,

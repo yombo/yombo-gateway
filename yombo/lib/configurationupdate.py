@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#software.  Details can be found at https://yombo.net
 """
 Handles getting configuration updates from the Yombo servers.
 
@@ -156,14 +156,52 @@ class ConfigurationUpdate(YomboLibrary):
                 'machineLabel' : 'machineLabel',
                 'label' : 'label',
                 'description' : 'description',
-                'created' : 'created',
-                'updated' : 'updated',
-                'status' : 'status',
-                'public' : 'public',
+                'inputtype' : 'inputTypeUUID',
+                'LiveUpdate' : 'liveupdate',
+                'Created' : 'created',
+                'Updated' : 'updated',
+                'Status' : 'status',
+                'Public' : 'public',
 #                '' : '',
             }},
-            'Devices' : {'table': "DevicesTable"},
-#            "DeviceTypeCommands",
+            'Devices' : {'table': "DevicesTable", 'map' : {
+                'Uri' : 'uri',
+                'DeviceUUID' : 'deviceUUID',
+#                'machineLabel' : 'machineLabel',  #Not implemented yet.
+                'label' : 'label',
+                'description' : 'description',
+                'GatewayUUID' : 'gatewayUUID',
+                'Notes' : 'notes',
+                'VoiceCmd' : 'voiceCmd',
+                'VoiceCmdOrder' : 'voiceCmdOrder',
+                'VoiceCmdSrc' : 'VoiceCmdSrc',
+                'DeviceTypeUUID' : 'deviceTypeUUID',
+                'PinCode' : 'pinCode',
+                'PinRequired' : 'pinRequired',
+                'PinTimeout' : 'pinTimeout',
+                'Created' : 'created',
+                'Updated' : 'updated',
+                'Status' : 'status',
+#                '' : '',
+            }},
+            'DeviceTypes' : {'table': "DevicesTypesTable", 'map' : {
+                'DeviceTypeUUID' : 'deviceTypeUUID',
+                'Uri' : 'uri',
+                'MachineLabel' : 'machineLabel',
+                'Label' : 'label',
+                'Description' : 'description',
+                'LiveUpdate' : 'liveupdate',
+                'Public' : 'public',
+                'Created' : 'created',
+                'Updated' : 'updated',
+                'Status' : 'status',
+#                '' : '',
+            }},
+            'DeviceTypeCommands' : {'table': "DevicesTypesCommandsTable", 'map' : {
+                'DeviceTypeUUID' : 'deviceTypeUUID',
+                'CmdUUID' : 'cmdUUID',
+#                '' : '',
+            }},
 #            "GatewayDetails",
 #            "GatewayModules",
 #            "GatewayModuleInterfaces",
@@ -174,11 +212,9 @@ class ConfigurationUpdate(YomboLibrary):
     }
 
         cmdmap = {
-            'getfullconfigs': {'type': "GetFullConfigs"},
             'getfullgatewaydetailsresponse': {'type': "GatewayDetailsResponse"},
             'getfullgatewayusertokensresponse': {'table': "gwTokensTable", 'type': "fullConfig"},
             'getfullgatewayvariablesresponse': {'type': "GatewayVariablesResponse"},
-            'getfullcommandsresponse': {'table': "CommandsTable", 'type': "fullConfig"},
             'getfullgatewaymoduleinterfacesresponse': {'table': "ModuleInterfacesTable", 'type': "fullConfig"},
             'getfulldevicesresponse': {'table': "DevicesTable", 'type': "fullConfig"},
             'getfulldevicetypecommandsresponse': {'table': "DeviceTypeCommandsTable", 'type': "fullConfig"},
@@ -213,10 +249,6 @@ class ConfigurationUpdate(YomboLibrary):
 #            if len(sendUpdates):
 #              self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'setGatewayVariables', 'configdata':sendUpdates}))
 #            self._removeFullTableQueue('GatewayVariablesTable')
-#        elif cmdmap[cmd]["type"] == "GetFullConfigs":
-#            logger.info("Requesting full configuration update VIA process config.")
-#            logger.trace("doing GetFullConfigs!  %s", msg)
-#            self.getAllConfigs()
         elif configType in configTypes:
             logger.trace("ConfigurationUpdate::processConfig - Doing config for: %s" % configType)
             upd_table = getattr(yombo.core.db, configTypes[configType]["table"])
@@ -262,8 +294,8 @@ class ConfigurationUpdate(YomboLibrary):
                     ", ".join(i for i in savecols),
                     ", ".join('?' for i in saveitems),
                     )
- #               logger.info('sql: %s', sql)
- #               logger.info([i[1] for i in saveitems])
+                logger.info('sql: %s', sql)
+                logger.info([i[1] for i in saveitems])
                 c.execute(sql, [i[1] for i in saveitems])
             self.dbconnection.pool.commit()
 #            self._removeFullTableQueue(cmdmap[cmd]["table"])
@@ -292,8 +324,8 @@ class ConfigurationUpdate(YomboLibrary):
         logger.trace("dogetallconfigs.....")
 
         allCommands = [
-            "Commands",
-#            "getDevices",
+            "GetCommands",
+            "GetGatewayDevices",
 #            "getDeviceTypeCommands",
 #            "getGatewayDetails",
 #            "getGatewayModules",

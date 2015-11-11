@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Setups up various times.  Also creates events for next sunrise/sunset, etc.
 
@@ -32,7 +32,7 @@ See usage below on using this module within your module.
   Polar region debug (some strange glitches like nowNight message when it is polar day (I think we need variables for polar day and night begin/end)
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 

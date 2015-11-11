@@ -1,6 +1,6 @@
 #cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Establishes a connection the Yombo servers. Configuration updates are sent,
 device logs (if enabled), statistics (if enabled), and various other features

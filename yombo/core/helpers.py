@@ -1,11 +1,11 @@
-#This file was created by Yombo for use with Yombo Gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Various helper functions to 'get stuff done'. These range from simple
 function wrappers to larger functions.  Look here first for a function that
 may do what you need. Next, look for a library that may contain what you
 need.  If you still can't find the function you are looking for look through
-http://projects.yombo.net/projects/gateway to see if a feature request or
+https://projects.yombo.net/projects/gateway to see if a feature request or
 issue has been submitted for it. You can also just create it and contribute
 the code.
 
@@ -814,18 +814,18 @@ def pgpDownloadRoot():
     environment = getConfigValue("server", 'environment', "production")
     uri = ''
     if getConfigValue("server", 'gpgidtxt', "") != "":
-        uri = "http://%s/" % getConfigValue("server", 'gpgidtxt')
+        uri = "https://%s/" % getConfigValue("server", 'gpgidtxt')
     else:
         if(environment == "production"):
-            uri = "http://yombo.net/gpgid.txt"
+            uri = "https://yombo.net/gpgid.txt"
         elif (environment == "staging"):
-            uri = "http://wwwstg.yombo.net/gpgid.txt"
+            uri = "https://wwwstg.yombo.net/gpgid.txt"
         elif (environment == "development"):
-            uri = "http://wwwdev.yombo.net/gpgid.txt"
+            uri = "https://wwwdev.yombo.net/gpgid.txt"
         else:
-            uri = "http://yombo.net/gpgid.txt"
+            uri = "https://yombo.net/gpgid.txt"
 
-    uri = "http://yombo.net/gpgid.txt"
+    uri = "https://yombo.net/gpgid.txt"
     deferred = getPage(uri)
     deferred.addCallback(pgpCheckRoot)
 

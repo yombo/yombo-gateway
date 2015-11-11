@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Checks for basic requirements.  If anything is wrong/missing, halts
 start and displays an error.
@@ -12,7 +12,7 @@ start and displays an error.
   :mod:`helpers` function to get what is needed.
   
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 
@@ -76,13 +76,13 @@ class Startup(YomboLibrary):
             host = getConfigValue("server", 'webnearhostname')
         else:
             if(environment == "production"):
-                host = "www.yombo.net"
+                host = "yombo.net"
             elif (environment == "staging"):
                 host = "wwwstg.yombo.net"
             elif (environment == "development"):
                 host = "wwwdev.yombo.net"
             else:
-                host = "www.yombo.net"
+                host = "yombo.net"
         if(environment == "prod"):
             url = "http://yombo.net/info.php"
         elif (environment == "stg"):

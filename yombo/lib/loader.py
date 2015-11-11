@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Responsible for importing, starting, and stopping all libraries and modules.
 
@@ -26,7 +26,7 @@ Stops components in the following phases. Modules first, then libraries.
    function to get what is needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 from re import search as ReSearch

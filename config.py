@@ -3,7 +3,7 @@
 # Used to configure the Yombo Gateway. Used for initial configuration and setup as well as
 #adjusting settings later.
 #
-# Details can be found at http://www.yombo.net
+# Details can be found at https://yombo.net
 """
 Configures and sets up the gateway for use.
 
@@ -537,7 +537,7 @@ def GPGKeyGenerate(**kwargs):
     global gpg
 
     input_data = gpg.gen_key_input(
-        name_email=gwuuid + "@yombo.me",
+        name_email=gwuuid + "@yombo.net",
         name_real="Yombo Gateway",
         name_comment=gwuuid,
         key_length=2048)
