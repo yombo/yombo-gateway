@@ -180,6 +180,7 @@ class Commands(YomboLibrary):
         :type testCommand: bool
         :returns: Pointer to new device. Only used during unittest
         """
+        logger.trace("record: %s" % record)
         cmdUUID = record["cmduuid"]
         self.__yombocommands[cmdUUID] = Command(record)
         self.__yombocommandsByName[record["label"]] = self.__yombocommands[cmdUUID]
@@ -211,13 +212,13 @@ class Command:
         """
         logger.trace("command info: %s", command)
 
-        self.cmdUUID = command["cmdUUID"]
+        self.cmdUUID = command["cmduuid"]
         self.uri = command["uri"]
-        self.voiceCmd = command["voiceCmd"]
-        self.cmd = command["machineLabel"]
+        self.voiceCmd = command["voicecmd"]
+        self.cmd = command["machinelabel"]
         self.label = command["label"]
         self.description = command["description"]
-        self.inputTypeUUID = command["inputTypeUUID"]
+        self.inputTypeUUID = command["inputtypeuuid"]
         self.public = command["public"]
         self.status = command["status"]
         self.created = command["created"]

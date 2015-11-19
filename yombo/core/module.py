@@ -89,6 +89,7 @@ from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getD
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 
+
 class YomboModule:
     """
     Defines basic items for all modules and helps with consistency.
@@ -151,12 +152,13 @@ class YomboModule:
         self._ModuleUUID = moduleDetails['moduleuuid']
         deviceTypes = getModuleDeviceTypes(moduleDetails['moduleuuid'])
         for dtype in deviceTypes:
-            self._LocalDeviceTypesByUUID[dtype['devicetypeuuid']] = dtype['label']
-            self._LocalDeviceTypesByName[dtype['label']] = dtype['devicetypeuuid']
-            self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
+            self._LocalDeviceTypesByUUID[dtype['devicetypeuuid']] = dtype['modulelabel']
+            self._LocalDeviceTypesByName[dtype['modulelabel']] = dtype['devicetypeuuid']
+            self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']] = \
+                self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
             for device in self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']]:
-              self._LocalDevicesByUUID[device.deviceUUID] = device
+                self._LocalDevicesByUUID[device.deviceUUID] = device
 
     def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
         """
@@ -167,20 +169,23 @@ class YomboModule:
         :param newDeviceType: Updated or new device type. If deleted, this would be None.
         """
 
+        #TODO This entire thing is broken. DTYPE is not defined. What's up with that?
+
         #Handle updated first
-        if oldDeviceType != None and newDeviceType != None:
+        if oldDeviceType is not None and newDeviceType is None:
             self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']] = newDeviceType['label']
             del self._LocalDeviceTypesByName[oldDeviceType['label']]
             self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
 
         #handle new deviceTypes
-        elif oldDeviceType == None and newDeviceType != None:
+        elif oldDeviceType is None and newDeviceType is not None:
             self._LocalDeviceTypesByUUID[newDeviceType['devicetypeuuid']] = newDeviceType['label']
             self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
-            self._LocalDevicesByDeviceTypeUUID[newDeviceType['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
+            self._LocalDevicesByDeviceTypeUUID[newDeviceType['devicetypeuuid']] = \
+                self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
         #handle deleting a device type
-        elif oldDeviceType != None and newDeviceType == None:
+        elif oldDeviceType is not None and newDeviceType is None:
             del self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']]
             del self._LocalDeviceTypesByName[oldDeviceType['label']]
             del self._LocalDevicesByDeviceTypeUUID[oldDeviceType['devicetypeuuid']]
@@ -200,19 +205,18 @@ class YomboModule:
         :param newDevice: Updated or new device. If deleted, this would be Non.
         """
         #Handle updated first
-        if oldDevice != None and newDevice != None:
+        if oldDevice is not None and newDevice is not None:
             self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
 
         #handle new  (same as updating in this use case)
-        elif oldDeviceType == None and newDeviceType != None:
+        elif oldDevice is None and newDevice is not None:
             self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
 
         #handle deleting
-        elif oldDeviceType != None and newDeviceType == None:
+        elif oldDevice is not None and newDevice is None:
             del self._LocalDevicesByUUID[oldDevice.deviceUUID]
 
-        self._UpdateDevice_(oldDevice, newDevice)
-
+#        self._UpdateDevice_(oldDevice, newDevice)
 
     def _UpdateDeviceTypes_(self, oldDeviceType, newDeviceType):
         """

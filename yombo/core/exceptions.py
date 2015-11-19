@@ -381,7 +381,7 @@ class YomboFuzzySearchError(Exception):
         output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." % (self.searchFor, self.key, self.ratio)
         return repr(output)
 
-class YomboPinNumberError(Exception):
+class YomboPinCodeError(Exception):
     """
     Raised when the pin number is invalid.
     """

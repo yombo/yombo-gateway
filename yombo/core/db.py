@@ -33,7 +33,6 @@ from yombo.core.log import getLogger
 
 logger = getLogger('core.db')
 
-DBVERSION = 15
 yombodbpool = None
 yombotoolsdb = None
 
@@ -43,6 +42,7 @@ def get_dbtools():
     """
     global yombotoolsdb
     return yombotoolsdb
+
 
 class DBConnectionPool:
     """
@@ -139,11 +139,12 @@ class DBConnectionPool:
             additional,
         )
 
-        if isinstance(positional, str):
-            positional = (positional,)
+#        if isinstance(positional, str):
+#            positional = (positional,)
 
         logger.trace("SQL: '%s", query)
         return self.fetchDict(query, fields)
+
 
 def get_dbconnection():
     """
@@ -165,7 +166,7 @@ class DBTools:
     work.
     """
     def __init__(self, dbpool=None):
-        if dbpool == None:
+        if dbpool is None:
             self.dbpool = get_dbconnection()
         else:
             self.dbpool = dbpool
@@ -174,7 +175,7 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute('SELECT * FROM commands WHERE cmdUUID = ?', (cmdid,))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
@@ -183,7 +184,7 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute('SELECT * FROM commands WHERE cmd = "?"', (cmd,))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
@@ -192,16 +193,16 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute("SELECT * FROM commands WHERE voiceCmd = '%s'" % (voicecmd,))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
     
     def get_module_by_name(self, modulelabel):
         c = self.dbpool.cursor()
-        c.execute('SELECT * FROM modules WHERE modulelabel = ?', (modulelabel,))
+        c.execute('SELECT * FROM modules WHERE machinelabel = ?', (modulelabel,))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
@@ -210,7 +211,7 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute('SELECT * FROM moduleDeviceTypes WHERE moduleUUID = ?', (moduleuuid,))
         data = c.fetchall()
-        if data == None:
+        if data is None:
             return None
         records = []
         field_names = [d[0].lower() for d in c.description]
@@ -222,7 +223,7 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute('SELECT * FROM deviceTypeCommands WHERE deviceTypeUUID = ?', (deviceuuid,))
         data = c.fetchall()
-        if data == None:
+        if data is None:
             return None
         records = []
         field_names = [d[0].lower() for d in c.description]
@@ -235,7 +236,7 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute("SELECT * FROM messageDelayed")
         data = c.fetchall()
-        if data == None:
+        if data is None:
             return None
         records = []
         field_names = [d[0].lower() for d in c.description]
@@ -249,21 +250,22 @@ class DBTools:
         Used in the message clas to verify if a given devicetypeuud and cmduuid are valid.
         """
         c = self.dbpool.cursor()
-        c.execute("select deviceTypeUUID from deviceTypeCommands where cmdUUID = '%s' and deviceTypeUUID = '%s'" % (cmduuid, devicetypeuuid))
+        c.execute("select deviceTypeUUID from deviceTypeCommands where cmdUUID = '%s' and deviceTypeUUID = '%s'" %
+                  (cmduuid, devicetypeuuid))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
 
     def getModules(self, getAll=False):
         c = self.dbpool.cursor()
-        if getAll == False:
-          c.execute("SELECT * FROM modules WHERE status = 1")
+        if getAll is False:
+            c.execute("SELECT * FROM modules WHERE status = 1")
         else:
-          c.execute("SELECT * FROM modules WHERE")
+            c.execute("SELECT * FROM modules WHERE")
         data = c.fetchall()
-        if data == None:
+        if data is None:
             return None
         records = []
         field_names = [d[0].lower() for d in c.description]
@@ -275,18 +277,19 @@ class DBTools:
         from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
         module = self.get_module_by_name(modulelabel)
-        if module == None:
+        if module is None:
             return {}
 
-        c.execute('SELECT * FROM variableModules WHERE moduleuuid = ? order by weight ASC, dataWeight ASC', (module["moduleuuid"], ))
+        c.execute('SELECT * FROM variableModules WHERE moduleuuid = ? order by weight ASC, dataWeight ASC',
+                  (module["moduleuuid"], ))
         data = c.fetchall()
-        if data == None or len(data) == 0:
+        if data is None or len(data) == 0:
             return {}
         records = {}
         field_names = [d[0].lower() for d in c.description]
         for row in data:
             record = dict(izip(field_names, row))
-            c = 0
+#            c = 0
             varnames = cPickle.loads(str(record['varnames']))
             varvalues = cPickle.loads(str(record['varvalues']))
             logger.trace("varnames = %s", varnames)
@@ -305,9 +308,9 @@ class DBTools:
     def getUserGWToken(self, username, gwtokenid):
         c = self.dbpool.cursor()
 
-        c.execute('SELECT * FROM gwTokens WHERE username = ? and gwtokenid = ?', (username, gwtokenid ))
+        c.execute('SELECT * FROM gwTokens WHERE username = ? and gwtokenid = ?', (username, gwtokenid))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
@@ -318,7 +321,7 @@ class DBTools:
 
         c.execute('SELECT * FROM variableDevices WHERE deviceUUID = ? order by weight ASC, dataWeight ASC', (deviceuuid, ))
         data = c.fetchall()
-        if data == None or len(data) == 0:
+        if data is None or len(data) == 0:
             return None
         records = {}
         field_names = [d[0].lower() for d in c.description]
@@ -344,7 +347,7 @@ class DBTools:
         c = self.dbpool.cursor()
         c.execute("SELECT moduleLabel FROM moduleInterfaces, modules WHERE moduleInterfaces.moduleUUID = '%s' and moduleInterfaces.interfaceUUID = modules.moduleUUID" % (moduleSearch,))
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
 #        logger.info("@#: %s", row)
         field_names = [d[0].lower() for d in c.description]
@@ -362,7 +365,7 @@ class DBTools:
 #        logger.debug("get_moduledData: %s", sql)
         c.execute(sql)
         row = c.fetchone()
-        if row == None:
+        if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         record = dict(izip(field_names, row))
@@ -372,12 +375,12 @@ class DBTools:
             return record['data1']
         
     def set_module_data_by_key(self, modulename, key1, key2 = '', data1 = None):
-        if key1 == '' or data1 == None:
+        if key1 == '' or data1 is None:
             return False
 
         rowid = self.get_module_data_by_key(modulename, key1, key2, 'rowid')
         c = self.dbpool.cursor()
-        if rowid == False:
+        if rowid is False:
             c.execute("""
                 update moduleData set data1=? where rowid=?;""", (data1, rowid) )
         else:
@@ -435,18 +438,26 @@ class BaseColumn:
 
         return " ".join(modifiers)
 
+
 class TextColumn(BaseColumn):
     affinity="TEXT"
 
+
 class NumericColumn(BaseColumn):
     affinity="NUMERIC"
+
 
 class IntegerColumn(BaseColumn):
     affinity="INTEGER"
 
 class BlobColumn(BaseColumn):
     affinity="BLOB"
-    
+
+
+class RealColumn(BaseColumn): # floating type
+    affinity="REAL"
+
+
 class BooleanColumn(IntegerColumn):
     pass
 
@@ -463,12 +474,10 @@ class TextPKColumn(TextColumn):
 class ForeignKeyColumn(IntegerColumn):
     pass
 
-class RealColumn(BaseColumn):
-    affinity="REAL"
-
 class TableMeta(type):
     def __new__(cls, class_name, bases, attrs):
         columns = []
+        columnsByName = {}
         indexes = []
         new_attrs = {}
         for n, v in attrs.iteritems():
@@ -476,6 +485,7 @@ class TableMeta(type):
                 if not v.name:
                     v.name = n
                 columns.append(v)
+                columnsByName[v.name] = v.affinity
             else:
                 new_attrs[n] = v
 
@@ -489,18 +499,22 @@ class TableMeta(type):
 
         cls = type.__new__(cls, class_name, bases, new_attrs)
         cls.columns = columns
+        cls.columnsByName = columnsByName
         if not getattr(cls, 'table_name', None):
             cls.table_name = table_name
         if not getattr(cls, 'server_table_name', None):
             cls.server_table_name = table_name
         return cls
 
+
 class Table:
     __metaclass__ = TableMeta
     columns = []
+    columnsByName = {}
     table_name = ''
     indexes = []
     update = True
+    tableVersion = 0
 
     @classmethod
     def sql(cls):
@@ -521,6 +535,7 @@ class CommandsTable(Table):
     """
     Defines the commands table. Lists all possible commands a local or remote gateway can perform.
     """
+    tableVersion = 20
     table_name = 'commands'
     cmdUUID = TextPKColumn()
     uri = TextColumn()
@@ -528,7 +543,7 @@ class CommandsTable(Table):
     voiceCmd = TextColumn()
     label = TextColumn()
     description = TextColumn()
-    inputTypeUUID = IntegerColumn()
+    inputTypeUUID = TextColumn()
     liveUpdate = IntegerColumn()
     public = IntegerColumn()
     status = IntegerColumn()
@@ -537,23 +552,27 @@ class CommandsTable(Table):
     indexes = ["CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name),
                "CREATE INDEX IF NOT EXISTS voicecmd_idx ON %s (voicecmd);" % (table_name)]
 
+
 class ConfigTable(Table):
     """
     Defines the config table for the local gateway.
     """
+    tableVersion = 15
     table_name = 'config'
     configid = IntegerPKColumn()
     configPath = TextColumn()
     configValue = TextColumn()
     configKey = TextColumn()
     updated = IntegerColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS path_idx ON %s (configPath);" % (table_name),
+    indexes = ["CREATE INDEX IF NOT EXISTS configPath_idx ON %s (configPath);" % (table_name),
                "CREATE INDEX IF NOT EXISTS configkey_idx ON %s (configKey);" % (table_name)]
+
 
 class DevicesTable(Table):
     """
     Defines the devices table. Lists all possible devices for local gateway and related remote gateways.
     """
+    tableVersion = 20
     table_name = 'devices'
     deviceUUID = TextPKColumn()
     uri = TextColumn()
@@ -566,20 +585,24 @@ class DevicesTable(Table):
     voiceCmdOrder = TextColumn()
     VoiceCmdSrc = TextColumn()
     deviceTypeUUID = TextColumn()  #TODO: Change all references to 'modulelabel'
-    pinCode = IntegerColumn()
+    pinCode = TextColumn()
     pinRequired = BooleanColumn()
     pinTimeout = IntegerColumn()
+#    liveUpdate = IntegerColumn()
     created = IntegerColumn()
     updated = IntegerColumn()
-    status = BooleanColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)]
+    status = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)] #for joins
+
 
 class DeviceTypesTable(Table):
     """
     Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
     """
+    tableVersion = 20
     table_name = 'devicetypes'
     deviceTypeUUID = TextPKColumn()
+    uri = TextColumn()
     machineLabel = TextColumn()
     label = TextColumn()
     description = TextColumn()
@@ -588,23 +611,25 @@ class DeviceTypesTable(Table):
     status = IntegerColumn()
     created = IntegerColumn()
     updated = IntegerColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name),
-               "CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name)]
+    indexes = ["CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name)]
 
 class DeviceTypeCommandsTable(Table):
     """
     All possible commands for a given device type. For examples, appliances are on and off.
     """
+    tableVersion = 20
     table_name = 'devicetypecommands'
-    deviceTypeUUID = TextPKColumn()
+    deviceTypeUUID = TextColumn()
     cmdUUID = TextColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name),
                "CREATE INDEX IF NOT EXISTS cmdUUID_idx ON %s (cmdUUID);" % (table_name)]
+
 
 class DeviceStatusTable(Table):
     """
     Defines the device status table. Stores device status information.
     """
+    tableVersion = 15
     table_name = 'devicestatus'
     rowID = IntegerPKColumn()
     deviceUUID = TextColumn()
@@ -620,12 +645,14 @@ class DeviceStatusTable(Table):
 #    interfaceUUID = TextColumn()
 ##    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
 
+
 class gwTokensTable(Table):
     """
     User access tokens to login to this gateway directly.
 
     Note: Not currently implemented.
     """
+    tableVersion = 15
     table_name = 'gwTokens'
     gwtokenid = TextPKColumn()
     gwtoken = TextColumn()
@@ -634,38 +661,60 @@ class gwTokensTable(Table):
     lastaccess = IntegerColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS gwtokenid_idx ON %s (gwtokenid);" % (table_name)]
 
+
 class ModulesTable(Table):
+    """
+    Stores module information
+    """
+    tableVersion = 20
     table_name = 'modules'
     moduleUUID = TextPKColumn()
+    uri = TextColumn()
     moduleType = TextColumn()
-    moduleLabel = TextColumn()
-    installSource = TextColumn()
+    machineLabel = TextColumn()
+    label = TextColumn()
+    description = TextColumn()
+    installNotes = TextColumn()
+    docLink = TextColumn()
+    installBranch = TextColumn()
     prodVersion = TextColumn()
     devVersion = TextColumn()
-    status = BooleanColumn()
-#    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
+    public = IntegerColumn()
+    status = IntegerColumn()
+    created = IntegerColumn()
+    updated = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name)]
+
 
 class ModuleInterfacesTable(Table):
     """
     Tells the API/Command modules what module to use for it's interface module.
     """
+    tableVersion = 15
     table_name = 'moduleInterfaces'
     moduleUUID = TextPKColumn()
     interfaceUUID = TextColumn()
 #    indexes = ["CREATE INDEX IF NOT EXISTS module_idx ON %s (module);" % (table_name)]
 
+
 class ModuleDeviceTypesTable(Table):
+    """
+    Maps devices to a module using deviceTypes.
+    """
+    tableVersion = 20
     table_name = 'moduleDeviceTypes'
-    label = TextColumn()
+    deviceTypeUUID = TextPKColumn()
     moduleUUID = TextColumn()
-    deviceTypeUUID = TextColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name),
-               "CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)]
+    moduleLabel = TextColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name),
+               "CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
+
 
 class ModulesInstalledTable(Table):
     """
     Tracks what versions of a module is installed, when it was installed, and last checked for new version.
     """
+    tableVersion = 15
     table_name = 'modulesinstalled'
     moduleUUID = TextPKColumn()
     installedVersion = TextColumn()
@@ -673,11 +722,13 @@ class ModulesInstalledTable(Table):
     lastCheck = IntegerColumn()
 #    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
 
+
 class SQLDictTable(Table):
     """
     Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain
     persistent dictionaries.
     """
+    tableVersion = 15
     table_name = 'sqldict'
     rowID = IntegerPKColumn()
     module = TextColumn()
@@ -688,8 +739,10 @@ class SQLDictTable(Table):
     updated = IntegerColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS dictname_idx ON %s (dictname);" % (table_name),
                "CREATE INDEX IF NOT EXISTS module_idx ON %s (module);" % (table_name)]
-   
+
+
 class VariableDevicesTable(Table):
+    tableVersion = 15
     table_name = 'variableDevices'
     deviceUUID = TextColumn()
     variableUUID = TextColumn()
@@ -700,30 +753,37 @@ class VariableDevicesTable(Table):
     updated = IntegerColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS deviceUUID_idx ON %s (deviceUUID);" % (table_name)]
 
+
 class VariableModulesTable(Table):
+    tableVersion = 15
     table_name = 'variableModules'
     moduleUUID = TextColumn()
     variableUUID = TextColumn()
     weight = IntegerColumn()
     dataWeight = IntegerColumn()
     varNames = BlobColumn()
-    varValues   = BlobColumn()
+    varValues = BlobColumn()
     updated = IntegerColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
 
+
 class UsersTable(Table):
+    tableVersion = 15
     table_name = 'users'
     username = TextPKColumn()
     hash = TextColumn()
 #    indexes = ["CREATE INDEX IF NOT EXISTS username_idx ON %s (username);" % (table_name)]
 
+
 class LogsTable(Table):
+    tableVersion = 15
     table_name = 'logs'
     rowID = IntegerPKColumn()
     logTime = TextColumn()
     logLine = TextColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS logtime_idx ON %s (logTime);" % (table_name)]
-    
+
+
 ALLTABLES = [
     CommandsTable,
     ConfigTable,
@@ -761,3 +821,10 @@ CONFTABLES = [
     VariableModulesTable,
     UsersTable,
 ]
+
+class AllTabless:
+    global ALLTABLES
+    alltablessss = ALLTABLES
+
+    def __init__(self):
+        pass

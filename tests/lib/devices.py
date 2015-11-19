@@ -3,7 +3,7 @@ import pyximport; pyximport.install()
 import time
 import mock
 
-from yombo.core.exceptions import YomboPinNumberError, DeviceError
+from yombo.core.exceptions import YomboPinCodeError, DeviceError
 from yombo.core.helpers import getComponent
 from yombo.lib.devices import Device
 
@@ -28,7 +28,7 @@ class DevicesTests(ExpectingTestCase):
                   'pintimeout'     : 100,
                   'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZ01",
                   'label'          : "tstdvc1",
-                  'pinnumber'      : 1234,
+                  'pincode'      : "1234",
                   'status'         : 1, #device enabled or not, not device status
                   'pinrequired'    : 0,
                   'modulelabel'    : "ModuleUnitTest",
@@ -46,7 +46,7 @@ class DevicesTests(ExpectingTestCase):
         self.expectEqual(record['pintimeout'], dev.pintimeout, "Device didn't init with correct pintimeout.")
         self.expectEqual(record['deviceuuid'], dev.deviceUUID, "Device didn't init with correct deviceuuid.")
         self.expectEqual(record['label'], dev.label, "Device didn't init with correct label.")
-        self.expectEqual(record['pinnumber'], dev.pinnumber, "Device didn't init with correct pinnumber.")
+        self.expectEqual(record['pincode'], dev.pincode, "Device didn't init with correct pincode.")
         self.expectEqual(record['pinrequired'], dev.pinrequired, "Device didn't init with correct pinrequired.")
         self.expectEqual(record['modulelabel'], dev.moduleLabel, "Device didn't init with correct modulelabel.")
         self.expectEqual(record['voicecmd'], dev.voiceCmd, "Device didn't init with correct voicecmd.")
@@ -64,7 +64,7 @@ class DevicesTests(ExpectingTestCase):
                   'pintimeout'     : 100,
                   'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZ02",
                   'label'          : "tstdvc2",
-                  'pinnumber'      : 1234,
+                  'pincode'        : "1234",
                   'status'         : 1, #device enabled or not, not device status
                   'pinrequired'    : 0,
                   'modulelabel'    : "ModuleUnitTest",
@@ -101,7 +101,7 @@ class DevicesTests(ExpectingTestCase):
                   'pintimeout'     : 100,
                   'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZ03",
                   'label'          : "tstdvc3",
-                  'pinnumber'      : 1234,
+                  'pincode'        : "1234",
                   'status'         : 1, #device enabled or not, not device status
                   'pinrequired'    : 1,
                   'modulelabel'    : "ModuleUnitTest",
@@ -110,11 +110,11 @@ class DevicesTests(ExpectingTestCase):
                  }
 
         dev = self._Devices._addDevice(record, True)  # create dummy device
-        with self.expectRaises(YomboPinNumberError):       # Pin is required, so, it should toss an error
+        with self.expectRaises(YomboPinCodeError):       # Pin is required, so, it should toss an error
             dev.getMessage('yombo.gateway.tests.devices')
 
         with self.expectRaises(DeviceError): # no cmd, cmdUUID, or cmdobj submitted.
-            dev.getMessage('yombo.gateway.tests.devices', pinnumber=1234)
+            dev.getMessage('yombo.gateway.tests.devices', pincode="1234")
 
         command = {'description'    : "Test command 3.",
 #                  'created'        : int(time.time())-10,
@@ -134,7 +134,7 @@ class DevicesTests(ExpectingTestCase):
         
         tempObj = mock.Mock()
         tempObj._FullName = "yombo.gateway.tests.devices"
-        dev.getMessage(tempObj, pinnumber=1234, cmd="Test Cmd 3")
+        dev.getMessage(tempObj, pincode="1234", cmd="Test Cmd 3")
 
 if __name__ == '__main__':
     main()

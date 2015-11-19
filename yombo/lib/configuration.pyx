@@ -290,7 +290,6 @@ class Configuration(YomboLibrary):
         if 'updateinfo' not in self.cache:
             self.cache['updateinfo'] = {}
 
-
         c = self.dbpool.cursor()
         if section != 'local': # don't save local items to the DB
             c.execute("select configid from config where configPath='%s' AND configKey='%s'" % (section, key))

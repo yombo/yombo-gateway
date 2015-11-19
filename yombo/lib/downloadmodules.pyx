@@ -123,7 +123,7 @@ class DownloadModules(YomboLibrary):
         """
         m = self.dbpool.cursor()
         gm = self.dbpool.cursor()
-        m.execute("SELECT moduleuuid, modulelabel, installsource, prodversion, devversion FROM modules WHERE status = 1")
+        m.execute("SELECT moduleuuid, machinelabel, installbranch, prodversion, devversion FROM modules WHERE status = 1")
         row = m.fetchone()
         if row == None:
             return None
@@ -131,14 +131,14 @@ class DownloadModules(YomboLibrary):
         deferredList = []
         while row is not None:
             record = (dict(izip(field_names, row)))
-            modulelabel = record['modulelabel']
+            modulelabel = record['machinelabel']
             modulelabel = modulelabel.lower()
             moduleuuid = record['moduleuuid']
             gmrow = ''
             if ( ( ( record['prodversion'] != '' and record['prodversion'] != None and record['prodversion'] != "*INVALID*") or
               ( record['devversion'] != '' and record['devversion'] != None and record['devversion'] != "*INVALID*") ) and
-#              record['installsource'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
-              record['installsource'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
+#              record['installbranch'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
+              record['installbranch'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
                 gm.execute("SELECT moduleuuid, installedversion, installtime FROM modulesinstalled WHERE moduleuuid = '%s'" % (moduleuuid))
                 gmrow = gm.fetchone()
                 gmfield_names = []
@@ -154,7 +154,7 @@ class DownloadModules(YomboLibrary):
                 installVersion = ''
                 data = {}
 
-                if (record['installsource'] == 'prodbranch' and gmrecord['installedversion'] != record['prodversion']):
+                if (record['installbranch'] == 'prodbranch' and gmrecord['installedversion'] != record['prodversion']):
                     installVersion = record['prodversion']
                     data = {'zipuri'    : str(clouduri + record['prodversion'] + ".zip"),
                             'zipfile'   : self.DL_PATH + record['prodversion'] + ".zip",
@@ -163,7 +163,7 @@ class DownloadModules(YomboLibrary):
                             'installedmodule' : gmrecord,
                             'version'   : record['prodversion'],
                             }
-                elif (record['installsource'] == 'devbranch' and gmrecord['installedversion'] != record['devversion']):
+                elif (record['installbranch'] == 'devbranch' and gmrecord['installedversion'] != record['devversion']):
                     installVersion = record['prodversion']
                     data = {'zipuri'    : str(clouduri + record['devversion'] + ".zip"),
                             'zipfile'   : self.DL_PATH + record['devversion'] + ".zip",

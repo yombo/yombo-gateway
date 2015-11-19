@@ -288,8 +288,8 @@ def getDevices():
        # Get the living room device using the fuzzy search feature.
        livingRoom = self._Devices['living room light']
 
-       # now we can turn on the lamp without needing a pinnumber.
-       livingRoom.sendCmd(self, array('skippinnumber':True, 'cmd': 'on'))
+       # now we can turn on the lamp without needing a pincode.
+       livingRoom.sendCmd(self, array('skippincode':True, 'cmd': 'on'))
 
     :return: A dictionary of pointers of all devices.
     :rtype: dict
@@ -334,7 +334,7 @@ def getDevicesByType():
 
        # Turn off all x10 lamps
        for lamp in allX10Lamps:
-           lamp.sendCmd(self, array('skippinnumber':True, 'cmd': 'off'))
+           lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
 
     :param deviceTypeUUID: The deviceTypeUUID to search for.
     :type deviceTypeUUID: string (uuid)
@@ -507,7 +507,7 @@ def getTimes():
        motionDevice = message.payaload['deviceobj'] # get the device from the message
        if times.isDark and motionDevice.status['high']: # it's high if motion detected
          sideYardLight = self._Devices('side yard light')
-         sideYardLight.sendCmd(self, array('skippinnumber':True, 'cmd': 'on'))
+         sideYardLight.sendCmd(self, array('skippincode':True, 'cmd': 'on'))
     
     :return: The pointer to the times object.
     :rtype: object

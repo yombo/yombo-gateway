@@ -181,7 +181,7 @@ class Message:
         :param msgPath: Used to track the history of the message. Most recent
             entry at the end.
         :type msgPath: OrderedDict
-        :param sentTo: Only used within a gateway, it notes what modules this
+        :param sentTo: Only used within asend gateway, it notes what modules this
                message has been sent to. Populated during message distribution.
         :type sentTo: dict
         :param notBefore: Time in unix epoch to wait before deliverying the

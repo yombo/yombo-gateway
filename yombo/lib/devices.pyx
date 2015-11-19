@@ -32,7 +32,7 @@ from twisted.internet.task import LoopingCall
 from yombo.lib.commands import Command # used to test if isinstance
 from yombo.core.db import get_dbconnection, get_dbtools
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.exceptions import YomboPinNumberError, YomboDeviceError, YomboFuzzySearchError
+from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
@@ -134,8 +134,7 @@ class Devices(YomboLibrary):
             logger.trace("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (%s, %s, %s, %s, %s)" %  (key, ss.status, statusExtra, ss.time, ss.source) )
             c.execute("""INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (?, ?, ?, ?, ?)""",
                 ( key, ss.status, statusExtra, ss.time, ss.source) )
-
-#        self._toSaveStatus.clear()
+            del self._toSaveStatus[key]
         self.__dbpool.pool.commit()
 
     def _clear_(self):
@@ -185,7 +184,7 @@ class Devices(YomboLibrary):
         logger.info("Loading devices")
 
         c = self.__dbpool.cursor()
-        c.execute("SELECT * FROM devices")
+        c.execute("select * from devices join moduleDeviceTypes  on devices.deviceTypeUUID = moduleDeviceTypes.deviceTypeUUID")
         row = c.fetchone()
         if row == None:
             return None
@@ -262,7 +261,7 @@ class Device:
         :ivar enabled: *(bool)* - If the device is enabled - can send/receive command and/or
             status updates.
         :ivar pinrequired: *(bool)* - If a pin is required to access this device.
-        :ivar pinnumber: *(string)* - The device pin number.
+        :ivar pincode: *(string)* - The device pin number.
         :ivar moduleLabel: *(string)* - The module that handles this devices. Used by the message
             system to deliver commands and status update requests.
         :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
@@ -273,7 +272,7 @@ class Device:
             values entered by the user.
         :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
         """
-        logger.trace("New device - info: %s", device)
+        logger.info("New device - info: %s", device)
         self.__dbpool = get_dbconnection()
 
         self.Status = namedtuple('Status', "time, status, statusextra, source")
@@ -286,7 +285,7 @@ class Device:
         self.description = device["description"]
         self.enabled = int(device["status"])
         self.pinrequired = int(device["pinrequired"])
-        self.pinnumber = device["pinnumber"]
+        self.pincode = device["pincode"]
         self.pintimeout = int(device["pintimeout"])
         self.moduleLabel = device["modulelabel"]
         self.voiceCmd = device["voicecmd"]
@@ -339,14 +338,14 @@ class Device:
         command through a message so other 'subscribing modules'
         will also see the activity.
 
-        If a pinnumber is required, "pinnumber" must be included as one of
+        If a pincode is required, "pincode" must be included as one of
         the arguments otherwise. All **kwargs are sent to the 'module'.
 
         :raises YomboDeviceError: Raised when:
 
-            - pinnumber is required but not sent it; skippinnumber overrides. Errorno: 100
-            - pinnumber is required and pinnumber submitted is invalid and
-              skippinnumber is missing. Errorno: 101
+            - pincode is required but not sent it; skippincode overrides. Errorno: 100
+            - pincode is required and pincode submitted is invalid and
+              skippincode is missing. Errorno: 101
             - payload was submitted, but not a dict. Errorno: 102
             - cmdobj, cmduUUID, or cmd was not sent in. Errorno: 103
         :param sourceComponent: The library or module name that msgOrigin
@@ -358,8 +357,8 @@ class Device:
               can not be used with notBefore.
             - notBefore *(int)* - Time in epoch to send the message.
             - maxDelay *(int)* - How late the message is allowed to be delivered.
-            - pinnumber *(string)* - Required if device requries a pin.
-            - skippinnumber *(True)* - Bypass pin checking (use wisely).
+            - pincode *(string)* - Required if device requries a pin.
+            - skippincode *(True)* - Bypass pin checking (use wisely).
             - cmdobj (instance), cmd  or cmduuid *(string)* - Needs to include either a "cmdobj", "cmd" or "cmduuid";
               *cmdobj* is always preferred, followed by *cmdUUID*, then cmd.
             - payload *(dict)* - Payload attributes to include. cmdobj and deviceobj are
@@ -368,12 +367,12 @@ class Device:
         :rtype: string
         """
         if self.pinrequired == 1:
-            if "skippinnumber" not in kwargs:
-                if "pinnumber" not in kwargs:
-                    raise YomboPinNumberError("'pinnumber' is required, but missing.")
+            if "skippincode" not in kwargs:
+                if "pincode" not in kwargs:
+                    raise YomboPinCodeError("'pincode' is required, but missing.")
                 else:
-                    if self.pinnumber != kwargs["pinnumber"]:
-                        raise YomboPinNumberError("'pinnumber' supplied is incorrect.")
+                    if self.pincode != kwargs["pincode"]:
+                        raise YomboPinCodeError("'pincode' supplied is incorrect.")
 
         logger.debug("device kwargs: %s", kwargs)
         cmdobj = None
