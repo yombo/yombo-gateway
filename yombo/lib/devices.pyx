@@ -45,7 +45,7 @@ class Devices(YomboLibrary):
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
         - :func:`getDevices` - Get a pointer to all devices.
-        - :func:`getDevicesByType` - Get all device for a certain deviceTypeUUID
+        - :func:`getDevicesByDeviceType` - Get all device for a certain deviceType (UUID or MachineLabel)
         - :func:`search` - Get a pointer to a device, using deviceUUID or device label.
     """
 
@@ -69,7 +69,7 @@ class Devices(YomboLibrary):
         return self._search(key)
 
     def __iter__(self):
-        return self.yombodevices.__iter__()
+        return self._yomboDevicesByUUID.__iter__()
 
     def _init_(self, loader):
         """
@@ -81,10 +81,10 @@ class Devices(YomboLibrary):
         """
         self.libMessages = getComponent('yombo.gateway.lib.messages')
         self.loader = loader
-        self.yombodevices = {}
-        self.yombodevicesByType = {}
-        self.yombodevicesByTypeName= FuzzySearch(None, .85)
-        self.yombodevicesByName = FuzzySearch(None, .89)
+        self._yomboDevicesByUUID = {}
+        self._yomboDevicesByName = FuzzySearch({}, .89)
+        self._yomboDevicesByDeviceTypeByUUID = {}
+        self._yomboDevicesByDeviceTypeByName = FuzzySearch({}, .93)
         self._toSaveStatus = {}
         self._saveStatusLoop = None
 
@@ -143,10 +143,10 @@ class Devices(YomboLibrary):
         during a reconfiguration event. **Do not call this function!**
         """
         self._saveStatus()
-        self.yombodevices.clear()
-        self.yombodevicesByType.clear()
-        self.yombodevicesByTypeName.clear()
-        self.yombodevicesByName.clear()
+        self._yomboDevicesByUUID.clear()
+        self._yomboDevicesByName.clear()
+        self._yomboDevicesByDeviceTypeByUUID.clear()
+        self._yomboDevicesByDeviceTypeByName.clear()
 
     def _reload_(self):
         self.__loadDevices()
@@ -168,11 +168,12 @@ class Devices(YomboLibrary):
         :return: Pointer to array of all devices.
         :rtype: dict
         """
-        if deviceRequested in self.yombodevices:
-            return self.yombodevices[deviceRequested]
+        if deviceRequested in self._yomboDevicesByUUID:
+            return self._yomboDevicesByUUID[deviceRequested]
         else:
             try:
-                return self.yombodevicesByName[deviceRequested]
+                requestedUUID = self._yomboDevicesByName[deviceRequested]
+                return self._yomboDevicesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
                 raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
 
@@ -184,7 +185,10 @@ class Devices(YomboLibrary):
         logger.info("Loading devices")
 
         c = self.__dbpool.cursor()
-        c.execute("select * from devices join moduleDeviceTypes  on devices.deviceTypeUUID = moduleDeviceTypes.deviceTypeUUID")
+        c.execute("select devices.*, moduleDeviceTypes.*, deviceTypes.machineLabel as deviceTypeMachineLabel from devices " +
+                "join moduleDeviceTypes on devices.deviceTypeUUID = moduleDeviceTypes.deviceTypeUUID " +
+                "join deviceTypes on devices.deviceTypeUUID = deviceTypes.deviceTypeUUID")
+
         row = c.fetchone()
         if row == None:
             return None
@@ -207,31 +211,45 @@ class Devices(YomboLibrary):
         :returns: Pointer to new device. Only used during unittest
         """
         deviceUUID = record["deviceuuid"]
-        self.yombodevices[deviceUUID] = Device(record, self)
-        self.yombodevicesByName[record["label"]] = self.yombodevices[deviceUUID]
-        if record['devicetypeuuid'] not in self.yombodevicesByType:
-            self.yombodevicesByType[record['devicetypeuuid']] = []
-        if deviceUUID not in self.yombodevicesByType[record['devicetypeuuid']]:
-            self.yombodevicesByType[record['devicetypeuuid']].append(self.yombodevices[deviceUUID])
-        if testDevice:
-            return self.yombodevices[deviceUUID]
+        self._yomboDevicesByUUID[deviceUUID] = Device(record, self)
+        self._yomboDevicesByName[record["label"]] = deviceUUID
 
-    def getDevicesByType(self, **kwargs):
+        if record['devicetypeuuid'] not in self._yomboDevicesByDeviceTypeByUUID:
+            self._yomboDevicesByDeviceTypeByUUID[record['devicetypeuuid']] = {}
+        if deviceUUID not in self._yomboDevicesByDeviceTypeByUUID[record['devicetypeuuid']]:
+            self._yomboDevicesByDeviceTypeByUUID[record['devicetypeuuid']][deviceUUID] = self._yomboDevicesByUUID[deviceUUID]
+
+        if record['devicetypemachinelabel'] not in self._yomboDevicesByDeviceTypeByName:
+            self._yomboDevicesByDeviceTypeByName[record['devicetypemachinelabel']] = {}
+        if deviceUUID not in self._yomboDevicesByDeviceTypeByName[record['devicetypemachinelabel']]:
+            self._yomboDevicesByDeviceTypeByName[record['devicetypemachinelabel']][deviceUUID] = deviceUUID
+
+        logger.trace("_addDevice::_yomboDevicesByTypeUUID=%s" % self._yomboDevicesByDeviceTypeByUUID)
+        if testDevice:
+            return self._yomboDevicesByUUID[deviceUUID]
+
+    def getDevicesByDeviceType(self, deviceTypeRequested):
         """
-        Returns list of devices by deviceTypeUUID.
+        Returns list of devices by deviceType. Will search by DeviceType UUID or MachineLabel.
+
         :raises YomboDeviceError: Raised when function encounters an error.
-        :param deviceRequested: The device UUID or device label to search for.
+        :param deviceTypeRequested: The device UUID or device label to search for.
         :type deviceRequested: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
-        if 'deviceTypeUUID' not in kwargs:
-           raise YomboDeviceError("getDevicesByType must have 'deviceTypeUUID' set.")
-        
-        if kwargs['deviceTypeUUID'] in self.yombodevicesByType:
-            return self.yombodevicesByType[kwargs['deviceTypeUUID']]
+        logger.trace("## _yomboDevicesByDeviceTypeByUUID: %s " % self._yomboDevicesByDeviceTypeByUUID)
+        logger.trace("## deviceTypeRequested: %s" % deviceTypeRequested)
+        if deviceTypeRequested in self._yomboDevicesByDeviceTypeByUUID:
+            logger.trace("## %s" % self._yomboDevicesByDeviceTypeByUUID[deviceTypeRequested])
+            return self._yomboDevicesByDeviceTypeByUUID[deviceTypeRequested]
         else:
-            return {}
+            try:
+                requestedUUID = self._yomboDevicesByDeviceTypeByName[deviceTypeRequested]
+                logger.trace("## requestedUUID: %s" % requestedUUID)
+                return self._yomboDevicesByDeviceTypeByUUID[requestedUUID]
+            except YomboFuzzySearchError, e:
+                raise YomboDeviceError('Searched for device type %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
 
 class Device:
     """
@@ -272,7 +290,7 @@ class Device:
             values entered by the user.
         :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
         """
-        logger.info("New device - info: %s", device)
+        logger.trace("New device - info: %s", device)
         self.__dbpool = get_dbconnection()
 
         self.Status = namedtuple('Status', "time, status, statusextra, source")
@@ -402,13 +420,13 @@ class Device:
                 raise YomboDeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']), errorno=102)
 
         payload = {"cmdobj" : cmdobj, "deviceobj" : self}
-        
+
         payload.update(payloadValues)
 
         msg = {
                'msgOrigin'      : sourceComponent._FullName.lower(),
                'msgDestination' : "yombo.gateway.modules.%s" % (self.moduleLabel),
-               'msgType'        : "cmd", 
+               'msgType'        : "cmd",
                'msgStatus'      : "new",
                'uuidType'       : "1",
                'uuidSubType'    : "123",
@@ -431,7 +449,7 @@ class Device:
         """
         notBefore = 0.0
         maxDelay = 0.0
-        
+
         if 'notBefore' in kwargs:
             try:
               notBefore = float(kwargs['notBefore'])
@@ -495,7 +513,7 @@ class Device:
 
         source = kwargs.get('source', 'unknown')
 
-        logger.trace("_setStatus is saving status...")            
+        logger.trace("_setStatus is saving status...")
         newStatus = self.Status(time(), status, statusExtra, source.lower())
         self.status.appendleft(newStatus)
         if self.testDevice == False:
@@ -517,7 +535,7 @@ class Device:
             payloadAddon = kwargs['payloadAddon']
         else:
             payloadAddon = {}
-    
+
         payload = {"deviceobj" : self,
                    "status" : self.status[0],
                    "prevStatus" : self.status[1],
@@ -533,7 +551,7 @@ class Device:
                'msgStatus'      : "new",
                'msgStatusExtra' : "",
                'uuidtype'       : "APDS",
-               'payload'        : payload,               
+               'payload'        : payload,
               }
         message = Message(**msg)
         message.send()

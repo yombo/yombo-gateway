@@ -207,9 +207,9 @@ class DBTools:
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
 
-    def getModuleDeviceTypes(self, moduleuuid):
+    def getModuleDeviceTypes(self):
         c = self.dbpool.cursor()
-        c.execute('SELECT * FROM moduleDeviceTypes WHERE moduleUUID = ?', (moduleuuid,))
+        c.execute('SELECT * FROM moduleDeviceTypes join deviceTypes on moduleDeviceTypes.deviceTypeUUID = deviceTypes.deviceTypeUUID')
         data = c.fetchall()
         if data is None:
             return None
@@ -676,7 +676,7 @@ class ModulesTable(Table):
     description = TextColumn()
     installNotes = TextColumn()
     docLink = TextColumn()
-    installBranch = TextColumn()
+#    installBranch = TextColumn()
     prodVersion = TextColumn()
     devVersion = TextColumn()
     public = IntegerColumn()

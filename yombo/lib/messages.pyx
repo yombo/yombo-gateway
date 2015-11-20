@@ -19,9 +19,12 @@ send function of a message when needed.
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 from collections import deque
-import re
 import time
+
+# Import twisted libraries
+
 
 from twisted.internet import reactor
 

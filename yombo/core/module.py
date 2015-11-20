@@ -85,7 +85,7 @@ documentation.
 """
 # Import Yombo libraries
 #from yombo.core.component import IModule
-from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes, getCronTab, getTimes
+from yombo.core.helpers import getModuleVariables, getDevicesByDeviceType, getCommands, getCronTab, getTimes, getComponent
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 
@@ -132,8 +132,10 @@ class YomboModule:
         self._Commands = getCommands()
         self._CronTab = getCronTab()
         self._Times = getTimes()
-        self._Devices = getDevices()
-        self._DevicesByType = getDevicesByType()
+
+        self._ModuleLibrary = getComponent('yombo.gateway.lib.modules')
+
+        self._DevicesByType = getDevicesByDeviceType()  # returns a callable (function)
 
         self._LocalDevicesByUUID = {}
         self._LocalDeviceTypesByUUID = {}
@@ -150,15 +152,12 @@ class YomboModule:
         """
         self._ModType = moduleDetails['moduletype']
         self._ModuleUUID = moduleDetails['moduleuuid']
-        deviceTypes = getModuleDeviceTypes(moduleDetails['moduleuuid'])
-        for dtype in deviceTypes:
-            self._LocalDeviceTypesByUUID[dtype['devicetypeuuid']] = dtype['modulelabel']
-            self._LocalDeviceTypesByName[dtype['modulelabel']] = dtype['devicetypeuuid']
-            self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']] = \
-                self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
-            for device in self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']]:
-                self._LocalDevicesByUUID[device.deviceUUID] = device
+        self._Devices = self._ModuleLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
+        self._DevicesByName = {}
+        self._DeviceTypes = self._ModuleLibrary.getModuleDeviceTypes(self._ModuleUUID)
+        for device in self._Devices:
+            self._DevicesByName[self._Devices[device].label] = self._Devices[device].deviceUUID
 
     def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
         """

@@ -15,23 +15,23 @@ Handles getting configuration updates from the Yombo servers.
 """
 # Import python libraries
 from collections import deque
-import cPickle # to store dictionaries
+import cPickle  # to store dictionaries
 from sqlite3 import Binary as sqlite3Binary
 from time import time
 
 # Import twisted libraries
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
-from yombo.core.message import Message
+#from yombo.core.message import Message
 import yombo.core.db
 from yombo.core.db import get_dbconnection
-from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime, generateRandom
+from yombo.core.helpers import getConfigValue, setConfigValue, getConfigTime
 from yombo.core.log import getLogger
 from yombo.core import getComponent
-from yombo.core.maxdict import MaxDict
+#from yombo.core.maxdict import MaxDict
 from yombo.core.exceptions import YomboWarning
 
 logger = getLogger('library.configurationupdate')
@@ -212,7 +212,6 @@ class ConfigurationUpdate(YomboLibrary):
                 'Description' : 'description',
                 'InstallNotes' : 'installNotes',
                 'DocLink' : 'docLink',
-                'InstallBranch' : 'installBranch',
                 'ProdVersion' : 'prodVersion',
                 'DevVersion' : 'devVersion',
                 'Public' : 'public',
@@ -336,6 +335,7 @@ class ConfigurationUpdate(YomboLibrary):
                     if configStatus == "Full":  # DeviceTypeCommands is included in full update.
                         c.execute("DELETE FROM devicetypes")
                         c.execute("DELETE FROM devicetypecommands")
+                        c.execute("DELETE FROM moduleDeviceTypes")
                         self.dbconnection.pool.commit()
 
 #                    logger.info("Call nested: %s" % record)
@@ -354,10 +354,9 @@ class ConfigurationUpdate(YomboLibrary):
                                 'CmdUUID' : dtc['UUID'],  #dtc = devicetypecommands
                             })
                         self.processConfig('nested', 'DeviceTypeCommands', 'Incremental', deviceTypeCommandRecords)
-
-                    self.processConfig('nested', 'ModuleDeviceTypes', 'Full', moduleRecords)
+                    self.processConfig('nested', 'DeviceTypes', configStatus, record['DeviceTypes'])
+                    self.processConfig('nested', 'ModuleDeviceTypes', configStatus, moduleRecords)
                 # end if configType == 'GatewayModules'
-
 
             self.dbconnection.pool.commit()
 #            if cmdmap[cmd]["table"] == "gwTokensTable":

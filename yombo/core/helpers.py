@@ -312,9 +312,10 @@ def getDevice(deviceSearch):
     """
     return getComponent('yombo.gateway.lib.devices')._search(deviceSearch)
 
-def getDevicesByType():
+def getDevicesByDeviceType():
     """
-    Returns a pointer to a **function** to get all devices for a given deviceTypeUUID.
+    Returns a pointer to a **function** to get all devices for a given deviceType UUID or MachineLabel. Modules
+    should use the built in function ``self._DevicesByDeviceType``.
     
     .. note::
 
@@ -323,7 +324,7 @@ def getDevicesByType():
     
     **Short Usage**:
 
-        >>> self._DevicesByType('137ab129da9318')  #by device type UUID, this is a function.
+        >>> deviceList = self._DevicesByDeviceType('137ab129da9318')  #by device type UUID, this is a function.
 
     **Usage**:
 
@@ -336,13 +337,13 @@ def getDevicesByType():
        for lamp in allX10Lamps:
            lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
 
-    :param deviceTypeUUID: The deviceTypeUUID to search for.
-    :type deviceTypeUUID: string (uuid)
+    :param deviceType: The deviceType to search for, either a UUID or Machinelabel
+    :type deviceTypeUUID: string
     :return: Returns a pointer to function that can be called to fetch
         all devices belonging to a device type UUID.
     :rtype: 
     """
-    return getattr(getComponent('yombo.gateway.lib.devices'), "getDevicesByType")
+    return getattr(getComponent('yombo.gateway.lib.devices'), "getDevicesByDeviceType")
 
 def getCommands():
     """
@@ -463,31 +464,6 @@ def getVoiceCommands():
     :rtype: object
     """
     return getComponent('yombo.gateway.lib.voicecmds')
-
-def getModule(name):
-    """
-    Can be used in place of :py:func:`getComponent` to search for
-    a module by name or by the module UUID.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.core.helpers import getModule
-       self.someOtherModule = getComponent("Homevision")
-
-    :raises KeyError: When requested module is not found.
-    :param name: The name of the module to find.  Returns a
-        pointer to the object so it's functions can be called.
-    :type name: string
-    :return: The requested object.
-    :rtype: Object pointer
-    """
-    if not hasattr(getModule, 'components'):
-        from yombo.lib.loader import getLoader
-        getModule.theLoader = getLoader()
-
-    return getModule.theLoader.getModule(name)
 
 def getTimes():
     """
