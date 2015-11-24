@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at U{http://yombo.net}
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Create various exceptions to be used throughout the Yombo
 gateway.
@@ -142,6 +142,13 @@ class YomboImproperlyConfigured(YomboWarning):
     pass
 
 class YomboSuspiciousOperation(YomboWarning):
+    """
+    Extends :class:`YomboWarning` - Service detected something suspicious and stopped that activity.
+    """
+    pass
+
+
+class YomboAPIWarning(YomboWarning):
     """
     Extends :class:`YomboWarning` - Service detected something suspicious and stopped that activity.
     """
@@ -374,7 +381,7 @@ class YomboFuzzySearchError(Exception):
         output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." % (self.searchFor, self.key, self.ratio)
         return repr(output)
 
-class YomboPinNumberError(Exception):
+class YomboPinCodeError(Exception):
     """
     Raised when the pin number is invalid.
     """

@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 The FileReader class uses non-blocking code to open and monitor a file
 for reading lines of text and for monitoring the file for any new lines.

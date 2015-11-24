@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Manages messages that are to be delivered at a later time (notBefore).
 This library can take a message in, pickle it, and store it for persistency.
@@ -19,9 +19,12 @@ send function of a message when needed.
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 from collections import deque
-import re
 import time
+
+# Import twisted libraries
+
 
 from twisted.internet import reactor
 
@@ -193,8 +196,8 @@ class Messages(YomboLibrary):
 
     def beforeSendMessage(self, message):
         """
-        This is called by the message instance to let use know it's going to
-        send itself now.  We'll use this later to capture stats, but for now..
+        This is called by the message instance to let us know it's going to
+        send itself now.  We'll use this later to capture stats, sent to hooks, etc.
         We will check if the message is in the delayQueue, if it is, we'll
         delete that and clean up the reactors list.
         """

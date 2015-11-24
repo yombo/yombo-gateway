@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 The term "Voice commands" may be misleading.  Think of voice commands as
 noun/verb or verb/noun pairs to control devices.  The verb is the "what",
@@ -31,7 +31,7 @@ Two primary actions the voicecmd class can do::
 #. Search for voice commands
 
 Users can set voice commands on each device through the API or the
-`Yombo Website <http://www.yombo.net>`_ for each device.  The voice commands
+`Yombo Website <http://yombo.net>`_ for each device.  The voice commands
 are loaded when the gateway starts up.  Additional voice commands can be
 added by modules to add more functionality.
 
@@ -76,7 +76,7 @@ the fuzzysearch phase of voice command lookup.
      voicecmds["desklamb off"] # it's misspelled, but it will still be found.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
 import re

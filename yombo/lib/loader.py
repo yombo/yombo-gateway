@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Responsible for importing, starting, and stopping all libraries and modules.
 
@@ -26,18 +26,22 @@ Stops components in the following phases. Modules first, then libraries.
    function to get what is needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 from re import search as ReSearch
 import ConfigParser
 import inspect
 import traceback
 import sys
 
-from twisted.internet import reactor, defer
+# Import twisted libraries
+#from twisted.internet import reactor, defer
+from twisted.internet.defer import inlineCallbacks, maybeDeferred
 from twisted.internet.task import LoopingCall
 
+# Import Yombo libraries
 from yombo.core.db import DBTools
 from yombo.core.exceptions import YomboCritical, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
@@ -51,6 +55,7 @@ HARD_LOAD = [
     "CronTab",
     "Configuration",
     "Startup",
+    "Modules",
     "Statistics",
     "AMQPYombo",
     "ConfigurationUpdate",
@@ -72,6 +77,7 @@ HARD_UNLOAD = [
     "Devices",
     "Configuration",
     "Statistics",
+    "Modules",
 ]
 
 class Loader(YomboLibrary):
@@ -93,8 +99,6 @@ class Loader(YomboLibrary):
         self.loadedModules = {}
         self.moduleNames = {}
         self.libraryNames = {}
-        self.__modulesByUUID = {}
-        self.__modulesByName = FuzzySearch(None, .92)
         self.__localModuleVars = {}
         self._SQLDictUpdates = {}
         self.dbtools = DBTools()
@@ -137,7 +141,7 @@ class Loader(YomboLibrary):
         Load component of given name. Can be a core library, or a module.
         """
         pymodulename = pathName.lower()
-        logger.debug("Importing: '%s', with full name: %s. pymodulename: %s", pathName, componentName, pymodulename)
+        logger.trace("Importing: '%s', with full name: %s. pymodulename: %s", pathName, componentName, pymodulename)
         try:
             pyclassname = ReSearch("(?<=\.)([^.]+)$", pathName).group(1)
         except AttributeError:
@@ -192,7 +196,7 @@ class Loader(YomboLibrary):
         if meth.__name__ in cls.__dict__: return str(cls)
       return None
 
-    @defer.deferredGenerator
+    @inlineCallbacks
     def importLibraries(self):
         """
         Import then "init" all libraries. Call "loadLibraries" when done.
@@ -207,19 +211,14 @@ class Loader(YomboLibrary):
         logger.trace("Imported libraries: %s", self.loadedLibraries)
         logger.trace("Imported components: %s", self.loadedComponents)
         for index, name in enumerate(HARD_LOAD):
+            logger.trace("Calling init function for library: %s" % componentName)
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.info("Calling init function for library: %s" % componentName)
             if hasattr(library, '_init_') and callable(library._init_) and self.getMethodDefinitionLevel(library._init_) != 'yombo.core.module.YomboModule':
-                library._init_(self)
-                continue
+#                library._init_(self)
+#                continue
                 try:
-#                    wfd = defer.waitForDeferred(defer.maybeDeferred(library._init_, self))
-                    d = defer.maybeDeferred(library._init_, self)
-                    d.addErrback(self._handleError)
-                    wfd = defer.waitForDeferred(d)
-                    yield wfd
-                    self.loadingResults = wfd.getResult()
+                    d = yield maybeDeferred(library._init_, self)
                 except YomboCritical, e:
                     logger.error("---==(Critical GW Error in init function for library: %s)==----", name)
                     logger.error("--------------------------------------------------------")
@@ -238,42 +237,38 @@ class Loader(YomboLibrary):
                 logger.error("----==(Library doesn't have init function: %s)==-----", name)
         self.loadLibraries()
 
-    @defer.deferredGenerator
+    @inlineCallbacks
     def loadLibraries(self):
         """
         Called the "load" function of libraries.  Calls "startLibraries" when done.
         """
-        logger.debug("Calling load functions of libraries.")
+        logger.info("Calling load functions of libraries.")
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
             logger.trace("Calling load function for component: %s", componentName)
             if hasattr(library, '_load_') and callable(library._load_) and self.getMethodDefinitionLevel(library._load_) != 'yombo.core.module.YomboModule':
-                library._load_()
-                continue
+#                library._load_()
+#                continue
                 try:
-#                    wfd = defer.waitForDeferred(defer.maybeDeferred(library._load_))
-                    d = defer.maybeDeferred(library._load_)
-                    d.addErrback(self._handleError)
-                    wfd = defer.waitForDeferred(d)
-                    yield wfd
-                    self.loadingResults = wfd.getResult()
+                    d = yield maybeDeferred(library._load_)
                 except:
                     logger.error("1:: %s",sys.exc_info())
                     logger.error("---------------==(Traceback)==--------------------------")
                     logger.error(traceback.print_exc(file=sys.stdout))
+                    logger.error("--------------------------------------------------------")
+                    logger.error(traceback.print_stack())
                     logger.error("--------------------------------------------------------")
             else:
                 logger.error("----==(Library doesn't have _load_ function: %s)==-----", componentName)
         
         self.startLibraries()
 
-    @defer.inlineCallbacks
     def startLibraries(self):
         """
         Called the "load" function of libraries.
         """
-        logger.debug("Calling start function of libraries.")
+        logger.info("Calling start function of libraries.")
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
@@ -282,17 +277,7 @@ class Loader(YomboLibrary):
 #                library._start_()
 #                continue
                 try:
-                    startResults = yield library._start_()
-#                    d.addErrback(self._handleError)
-#                    wfd = defer.waitForDeferred(d)
-#                    yield wfd
-#                    self.loadingResults = wfd.getResult()
-
-#                    d = defer.maybeDeferred(library._start_)
-#                    d.addErrback(self._handleError)
-#                    wfd = defer.waitForDeferred(d)
-#                    yield wfd
-#                    self.loadingResults = wfd.getResult()
+                    startResults = library._start_()
                 except:
                     logger.error("----==(Error in _start_ function for library: %s)==-----", componentName)
                     logger.error("1:: %s",sys.exc_info())
@@ -305,19 +290,10 @@ class Loader(YomboLibrary):
         if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
           self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
         else:
-#          self.downloadModules()
           self.loadModules()
 
-#    def downloadModules(self):
-#        from yombo.lib.downloadmodules import DownloadModules
-#        DLModule = DownloadModules()
-#        DLModule._init_(self)
-#        d = DLModule._load_()
-#        d.addCallback(self.loadModules)
-        
-    @defer.deferredGenerator
+    @inlineCallbacks
     def loadModules(self):
-#    def loadModules(self, tossmeaway):
         """
         Load modules configured to run at startup.
         """
@@ -347,7 +323,7 @@ class Loader(YomboLibrary):
                     options.remove('type')
                     
                 modules[section] = { 
-                  'modulelabel' : mLabel,
+                  'machinelabel' : mLabel,
                   'enabled' : "1",
                   'moduletype' : mType,
                   'moduleuuid' :  generateRandom(),
@@ -363,7 +339,7 @@ class Loader(YomboLibrary):
 
         modulesDB = self.dbtools.getModules()
         for module in modulesDB:
-            modules[module["modulelabel"]] = module
+            modules[module["machinelabel"]] = module
 
         logger.trace("Complete list of modules, before import: %s", modules)
 
@@ -373,26 +349,22 @@ class Loader(YomboLibrary):
             self._importComponent(pathName, componentName, 'module')
 
         logger.info("Calling init functions of modules.")
+        moduleLibrary = self.loadedLibraries['yombo.gateway.lib.modules']
         for name, module in self.loadedModules.iteritems():
-            self.__modulesByName[modules[module._Name]['modulelabel'].lower()] = self.loadedModules[name]
-            self.__modulesByUUID[modules[module._Name]['moduleuuid']] = self.loadedModules[name]
+            logger.trace("ModuleLibrary: %s" % moduleLibrary)
+            moduleLibrary.addModule(modules[module._Name]['moduleuuid'], modules[module._Name]['machinelabel'].lower(), self.loadedModules[name])
 
             # if varibles set by localmodules, use those variables.
             if module._Name.lower() in self.__localModuleVars:
                 module._ModVariables = self.__localModuleVars[module._Name.lower()]
             module._Loader(modules[module._Name])
 
-            logger.info("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
+            logger.trace("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
             if hasattr(module, '_init_') and callable(module._init_) and self.getMethodDefinitionLevel(module._init_) != 'yombo.core.module.YomboModule':
-                module._init_()
-                continue
+#                module._init_()
+#                continue
                 try:
-#                    wfd = defer.waitForDeferred(defer.maybeDeferred(module._init_))
-                    d = defer.maybeDeferred(module._init_)
-                    d.addErrback(self._handleError)
-                    wfd = defer.waitForDeferred(d)
-                    yield wfd
-                    self.loadingResults = wfd.getResult()
+                    d = yield maybeDeferred(module._init_)
                     self._register_voicecmds(module)
                     self._register_distributions(module)
                 except:
@@ -401,21 +373,15 @@ class Loader(YomboLibrary):
                     logger.error("--------------------------------------------------------")
             else:
                 logger.error("----==(Module doesn't have _init_ function: %s)==-----", name)
-            
-                
 
-        logger.debug("Calling load functions of modules.")
+        logger.info("Calling load functions of modules.")
         for name, module in self.loadedModules.iteritems():
             logger.debug("Calling load function of module: %s, %s, from: %s", name, module, module._Name)
             if hasattr(module, '_load_') and callable(module._load_) and self.getMethodDefinitionLevel(module._load_) != 'yombo.core.module.YomboModule':
 #                module._load_()
 #                continue
                 try:
-                    d = defer.maybeDeferred(module._load_)
-                    d.addErrback(self._handleError)
-                    wfd = defer.waitForDeferred(d)
-                    yield wfd
-                    self.loadingResults = wfd.getResult()
+                    d = yield maybeDeferred(module._load_)
                 except Exception as err:
                     logger.error("------==(ERROR During _load_ of module: %s)==-------", name)
                     traceback.print_exc(file=sys.stdout)
@@ -426,7 +392,7 @@ class Loader(YomboLibrary):
         self.startModules()
 
     def startModules(self):
-        logger.debug("Calling start functions of modules.")
+        logger.info("Calling start functions of modules.")
         for name, module in self.loadedModules.iteritems():
             logger.trace("Calling start function of module: %s, %s", name, module)
             if hasattr(module, '_start_') and callable(module._start_) and self.getMethodDefinitionLevel(module._start_) != 'yombo.core.module.YomboModule':
@@ -443,6 +409,7 @@ class Loader(YomboLibrary):
 
         # send queued and delayed messages after all libraried and modules are started
         self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
+        logger.info("done with startModules")
 
     def connect(self):
         self.loadedComponents['yombo.gateway.lib.gatewaycontrol'].connect()
@@ -543,31 +510,6 @@ class Loader(YomboLibrary):
 
     def getReceiveAllComponents(self):
         return self.receive_all_components
-
-
-    def getModule(self, moduleRequested):
-        """
-        Attempts to find the module requested using a couple of methods.
-
-            >>> getModule('137ab129da9318')  #by uuid
-        or:
-            >>> getModule('Homevision')  #by name
-
-        See: :func:`yombo.core.helpers.getModule` for usage example.
-
-        :raises KeyError: Raised when module cannot be found.
-        :param moduleRequested: The module UUID or module name to search for.
-        :type moduleRequested: string
-        :return: Pointer to module.
-        :rtype: module
-        """
-        if moduleRequested in self.__yombodevices:
-            return self.__modulesByUUID[moduleRequested]
-        else:
-            try:
-                return self.__modulesByName[moduleRequested.lower()]
-            except FuzzySearchError, e:
-                raise KeyError('Module not found.')
 
     def saveSQLDict(self, module, dictname, key1, data1):
         if module not in self._SQLDictUpdates:

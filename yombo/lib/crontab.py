@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#software.  Details can be found at http://yombo.net
 """
 Cron like library that can be used to perform activites.  Can be used by
 modules to call a function at set times.
