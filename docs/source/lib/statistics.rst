@@ -1,17 +1,17 @@
-.. index:: amqpyombo
+.. index:: statistics
 
 .. _amqpyombo:
 
-.. currentmodule:: yombo.lib.amqpyombo
+.. currentmodule:: yombo.lib.statistics
 
 ===========================================
-AMQPYombo (yombo.lib.amqpyombo)
+Statistics (yombo.lib.statistics)
 ===========================================
-.. automodule:: yombo.lib.amqpyombo
+.. automodule:: yombo.lib.statistics
 
-AMQPYombo class
+Statistics class
 ===========================================
-.. autoclass:: AMQPYombo
+.. autoclass:: Statistics
    :members:
 
    .. automethod:: __init__

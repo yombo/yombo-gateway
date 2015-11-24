@@ -3,6 +3,9 @@
 # Yombo_Gateway documentation build configuration file.
 #
 
+#=============================================================================
+# environment setup
+#=============================================================================
 import sys, os
 
 # This is here to cython modules will display their content properly.
@@ -14,14 +17,32 @@ sys.path.append('..')
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #sys.path.insert(0, os.path.abspath('.'))
 
+#=============================================================================
+# imports
+#=============================================================================
+# import cloud_sptheme for themes, etc
+import cloud_sptheme as csp
+
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.ifconfig']
+extensions = [
+    # standard sphinx extensions
+    'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx.ext.ifconfig',
+    # cloud's extensions
+    'cloud_sptheme.ext.autodoc_sections',
+    'cloud_sptheme.ext.index_styling',
+    'cloud_sptheme.ext.relbar_toc',
+    'cloud_sptheme.ext.escaped_samp_literals',
+    'cloud_sptheme.ext.issue_tracker',
+    'cloud_sptheme.ext.table_styling',
+    ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -33,7 +54,12 @@ source_suffix = '.rst'
 #source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = 'contents'
+
+# The frontpage document
+index_doc = 'index'
+
+
 
 # General information about the project.
 project = u'Yombo Gateway'
@@ -60,13 +86,16 @@ release = '0.10.0'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = [
+    # may revise/remove this
+    "lib/cloud_sptheme.make_helper.rst",
+]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
-#add_function_parentheses = True
+add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
@@ -81,23 +110,29 @@ pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
 #modindex_common_prefix = []
-
+modindex_common_prefix = [ "cloud_sptheme." ]
 
 # -- Options for HTML output ---------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #html_theme = 'default'
-html_theme = 'sphinxdoc'
-#html_theme = 'cloud-sptheme'
+#html_theme = 'sphinxdoc'
+html_theme = os.environ.get("SPHINX_THEME") or 'cloud'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {}
+if csp.is_cloud_theme(html_theme):
+    html_theme_options.update(
+        roottarget=index_doc,
+        max_width=12,
+    )
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
+html_theme_path = [csp.get_theme_dir()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -148,7 +183,7 @@ html_static_path = ['_static']
 html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+html_show_sphinx = False
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 #html_show_copyright = True

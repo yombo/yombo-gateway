@@ -26,7 +26,7 @@ the users data, Yombo keeps it private.
   Module developers and users should not use this library independantly
   without consulting with Yombo support as a feature enhancement.
   This is listed here for completeness. Use a :mod:`helpers` function
-   to get what is needed.
+  to get what is needed.
 
 :TODO: The gateway needs to check for a non-responsive server or
 if it doesn't get a response in a timely manor. It should respond

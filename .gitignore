@@ -25,6 +25,7 @@ MANIFEST
 build/
 dist/
 docs/build/
+docs/*.sh
 webroot/*
 yombo/lib/html5*
 yombo/lib/old*

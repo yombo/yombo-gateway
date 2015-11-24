@@ -16,7 +16,8 @@ logger = getLogger("module.empty")
 
 class Empty(YomboModule):
     """
-    Empty base module
+    This is an empty module used to bootstrap your own module. Simply copy/paste this
+    directory to a new directy. Be sure to edit the __init__.py to match the new name.
     """
     def _init_(self):
         """
@@ -24,10 +25,14 @@ class Empty(YomboModule):
         setup functions of the base YomboModule class.
         
         Startup phase 1 of 3.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 22,33-36
         """
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "http://yombo.net"
+        self._ModUrl = "https://yombo.net"
 
     def _load_(self):
         """
@@ -38,6 +43,10 @@ class Empty(YomboModule):
         This load function doesn't really do anything.
         
         Startup phase 2 of 3.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 37,51-64
         """
         logger.debug("Empty module is loading.")
         if self._ModVariables != {}:
@@ -63,6 +72,10 @@ class Empty(YomboModule):
         Due to asyncronous style of Twisted, the callLater cannot guarantee this
         is called exactly in two seconds.  It won't be called earlier, but may
         be called later if there was blocking code.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 66,80
         """
         logger.debug("yombo.modules.empty.loaded() has been called.")
     
@@ -74,6 +87,10 @@ class Empty(YomboModule):
         message sending from within our module.
         
         Startup phase 3 of 3.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 83,95-99
         """
         logger.debug("Is Light: %s", self._Times.isLight)
         logger.debug("Is Dark: %s", self._Times.isDark)
@@ -85,6 +102,10 @@ class Empty(YomboModule):
         """
         Stop sending messages.  Other components are unable to receive
         messages.  Queue up or pause functionality.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 101,110
         """
         pass
     
@@ -92,6 +113,10 @@ class Empty(YomboModule):
         """
         Called just before the gateway is about to shutdown
         or reload all the modules.  Should assume gateway is going down.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 112,121
         """
         pass
 
@@ -99,5 +124,9 @@ class Empty(YomboModule):
         """
         Incomming Yombo Messages from the gateway or remote sources will
         be sent here.
+
+        .. literalinclude:: ../../../yombo/modules/empty/empty.py
+           :language: python
+           :lines: 123,132
         """
         pass

@@ -4,12 +4,13 @@
 
 .. currentmodule:: yombo.modules.empty
 
-The empty module is a basic shell of a module. This module fully works, however
-it doesn't do very much. This module is typically used for creating a new
-module...or a template.
+The empty module fully works, however it doesn't do very much. This module is typically
+used as a starting template. Simply copy/paste this module into a new directory to get
+started.
+
 
 For more on developing modules, visit
-`Projects.Yombo.net <http://projects.yombo.net/projects/modules>`_ .
+`Projects.Yombo.net <https://projects.yombo.net/projects/modules/wiki>`_ .
 
 ==========================================
 Empty Module (yombo.modules.empty)
@@ -20,4 +21,5 @@ Empty  Class
 ============================
 .. autoclass:: Empty
    :members:
-
+   :member-order: bysource
+   :private-members:

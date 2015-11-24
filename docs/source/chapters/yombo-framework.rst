@@ -39,10 +39,10 @@ features to be used by libraries and modules.
    ../core/helpers
    ../core/library
    ../core/log
+   ../core/maxdict
    ../core/message
    ../core/module
    ../core/sqldict
-   ../core/yombodict
 
 .. _lib:
 
@@ -66,7 +66,9 @@ Times libararies.
    ../lib/devices.rst
    ../lib/downloadmodules.rst
    ../lib/loader.rst
+   ../lib/messages.rst
    ../lib/startup.rst
+   ../lib/statistics.rst
    ../lib/times.rst
    ../lib/voicecmds.rst
 

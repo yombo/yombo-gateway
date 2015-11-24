@@ -17,6 +17,7 @@ Select your operating system.
 .. toctree::
    :maxdepth: 1
 
-   ../prepare-operating-system/debian
-   ../prepare-operating-system/raspberry-pi
-   ../prepare-operating-system/windows
+   ../install/debian
+   ../install/raspberry-pi
+   ../install/windows
+   ../install/manual-install

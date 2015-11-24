@@ -4,32 +4,18 @@
 Installing Gateway
 ##################
 
-This is the second step to installing the Yombo Gateway software. Be sure
-to :doc:`install python and required modules <prepare-operating-system>` first.
+To install the Yombo Gateway, select your operating system:
 
-The following 3 methods are used to get the software. We recommend option #1:
+1. Select the operating system below for installation instructions:
 
-1. :doc:`Use GIT <../install/install-gateway-git>`
-
-  * Easily upgrade the gateway software with a single command.
-  * Quickly download the software and get started.
-
-2. :doc:`Download zip file <../install/install-gateway-zip>`
-
-  * Requires manually downloading zipfiles in the future to upgrade the software.
-  * Difficult to upgrade, but quickly download the software and get started.
-  
-3. :doc:`Fork GIT repo (intermediate) <../install/install-gateway-fork>`
-
-  * Easily upgrade the gateway software with a single command.
-  * Quickly download the software and get started.
-  * Contribute code changes back to the community.
+  * :doc:`Debian (Including Mint and Ubuntu) <../install/debian>`
+  * :doc:`Raspberry PI/PI2 <../install/raspberry-pi>`
+  * :doc:`Manual Install <../install/manual>`
 
 .. toctree::
    :hidden:
    :maxdepth: 1
 
-   ../install/install-gateway-git
-   ../install/install-gateway-zip
-   ../install/install-gateway-fork
-
+   ../install/debian
+   ../install/raspberry-pi
+   ../install/manual-install

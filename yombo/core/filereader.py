@@ -15,7 +15,6 @@ send any new lines of text to the function define on setup.
 .. code-block:: python
 
    from yombo.core.filereader import FileReader  #load at the top of the file.
-
   
    class MyModule(YomboModule):
    # don't forget "def init(self)"

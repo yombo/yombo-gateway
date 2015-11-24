@@ -10,6 +10,7 @@ issue has been submitted for it. You can also just create it and contribute
 the code.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
@@ -226,7 +227,7 @@ def setConfigValue(section, key, value):
 def getComponent(name):
     """
     Return loaded component (module or library). This can be used to find
-    other modules or libraries. The getComponent uses the FuzzySearch_
+    other modules or libraries. The getComponent uses the :ref:`FuzzySearch <fuzzysearch>`
     class to make searching easier, but can only be off one or two letters
     due to importance of selecting the correct library or module.
 
@@ -278,7 +279,7 @@ def getDevices():
     **Short Usage**:
 
         >>> self._Devices['137ab129da9318']  #by uuid
-    or:
+        or:
         >>> self._Devices['living room light']  #by name
 
     **Full Usage**:
@@ -364,7 +365,7 @@ def getCommands():
     **Short Usage**:
 
         >>> self._Commands['se74yhsdSd283']  #by uuid, preferred
-    or:
+        or:
         >>> self._Commands['off']  #by name
 
     **Full Usage**:
@@ -392,7 +393,7 @@ def getCommand(commandSearch):
 
     .. note::
 
-       This shouldn't be used by modules, instead, use the pre-set point of
+       This shouldn't be used by modules, instead, use the pre-defined pointer
        *self._Commands*, see: :py:func:`getCommands`.
 
     :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
@@ -438,7 +439,7 @@ def getCronTab():
     **Short Usage**:
 
         >>> self._CronTab['se74yhsdSd283']  #by uuid, preferred
-    or:
+        or:
         >>> self._CronTab['modules.myModule.myCronTabLabel']  #by name
 
     :return: The pointer to the crontab dictionary.
@@ -457,8 +458,8 @@ def getVoiceCommands():
 
        from yombo.core.helpers import getVoiceCommands
        allVoiceCmds = getVoiceCommands()
-    
-    :see: VoiceCommands_
+
+    :see: :ref:`Voice Commands <voice-commands>`
     :return: Devices object;
     :rtype: object
     """

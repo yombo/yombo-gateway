@@ -6,16 +6,17 @@ Welcome to the open source Yombo Gateway documentation.
 
 TL;DR Quick Start Guide
 =======================
-Get your gateway up and running in no time.  Just three steps:
+Get your gateway up and running in no time.  Just two steps:
 
-1. Install python and others: (:doc:`Debian/Mint/Ubuntu <prepare-operating-system/debian>` or :doc:`Raspberry PI/PI2 <prepare-operating-system/raspberry-pi>`)
-2. :doc:`Download the gateway <install/install-gateway-basic>`
-3. :doc:`Configure and run your gateway <chapters/configuring-the-gateway>`
+1. Install the requirements and gateway software:
+  * :doc:`Debian/Mint/Ubuntu <install/debian>`
+  * :doc:`Raspberry PI/PI2 <install/raspberry-pi>`
+2. :doc:`Configure and run your gateway <chapters/configuring-the-gateway>`
 
 Other Resouces
 ==============
-* `Yombo.net <http://yombo.net/>`_ - Main website for Yombo
-* `Projects.Yombo.net <http://projects.yombo.net/>`_ - Forums, submit tickets,
+* `Yombo.net <https://yombo.net/>`_ - Main website for Yombo
+* `Projects.Yombo.net <https://projects.yombo.net/>`_ - Forums, submit tickets,
   feature requests, wiki.
 * `bitbucket.org/yombo/ <https://bitbucket.org/yombo/>`_ - Where all the Yombo open source
   code lives.
@@ -28,7 +29,6 @@ Table of Contents
    :numbered:
    :includehidden:
 
-   chapters/prepare-operating-system.rst
    chapters/install-gateway.rst
    chapters/configuring-the-gateway.rst
    chapters/updating.rst
@@ -59,6 +59,6 @@ Index and search
 License Information
 ===================
 
-:Homepage: http://yombo.net/
+:Homepage: https://yombo.net/
 :Copyright: 2013-2015 Yombo
 :License: For the open source license, see the LICENSE file or http://yombo.net/policies/licensing
