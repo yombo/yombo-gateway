@@ -235,7 +235,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         if props.correlation_id in self.factory.sentCorrelationIDs:
             self.factory.sentCorrelationIDs[props.correlation_id]['time_recieved'] = datetime.now()
 
-        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
+#        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
         if props.correlation_id == None or not isinstance(props.correlation_id, basestring):
             logger.info("!!!")
@@ -278,7 +278,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
           logger.info("Some other exception: %s" % e)
           raise Exception
         else:
-          logger.info('Calling callback: %s ' % callback)
+          logger.trace('Calling callback: %s ' % callback)
 
           d = defer.maybeDeferred(callback, deliver, props, msg)
           if not queue_no_ack:
@@ -297,7 +297,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
 
 
     def validate_incoming(self, deliver, props, msg):
-        logger.info("validate_incoming")
+        logger.debug("validate_incoming")
         if props.correlation_id == None or not isinstance(props.correlation_id, basestring):
             raise YomboWarning("correlation_id must be present and be a string.")
 
@@ -318,7 +318,6 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 logger.info("################# list of ids: %s " % self.factory.sentCorrelationIDs)
                 raise YomboWarning("Recieved request %s, but never asked for it. Discarding" % props.correlation_id)
 
-        logger.info('validate good')
         return deliver, props, msg
 
     def _read_item_err(self, error):
@@ -495,7 +494,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             self.do_incoming(deliver, properties, msg)
 
     def do_incoming(self, deliver, properties, msg):
-        logger.info("do_incoming item")
+        logger.debug("do_incoming item")
         if msg['Code'] != 200:
             raise YomboWarning("Yombo service responsed with code %s: %s" %(msg['Code'], msg['Message']))
 
@@ -736,7 +735,7 @@ class AMQPYombo(YomboLibrary):
         to the Yombo Servers. Modules can use this with caution for performance reasons or a specific need to
         bypass the messaging system.
         """
-        logger.info("library:sendDirectMessage: %s" % kwargs)
+        logger.trace("library:sendDirectMessage: %s" % kwargs)
         callback = kwargs.get('callback', None)
         if callback == None:
             raise YomboWarning("AMQP.sendDirectMessage must have a 'callback'")

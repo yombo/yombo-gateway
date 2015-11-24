@@ -596,7 +596,8 @@ def getModuleVariables(moduleName):
     global yombodbtools
     if yombodbtools == None:
         yombodbtools = get_dbtools()
-    return yombodbtools.getVariableModules(moduleName)
+    # TODO: change this to look up moduleUUID for the requested module to pass this into the DB call.
+    return yombodbtools.getModuleVariables(moduleName)
 
 #TODO: Rewrite this function to use AMQP, remove sleep!
 def getUserGWToken(username, gwtokenid, fetchRemote=False):

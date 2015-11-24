@@ -141,7 +141,7 @@ class Loader(YomboLibrary):
         Load component of given name. Can be a core library, or a module.
         """
         pymodulename = pathName.lower()
-        logger.info("Importing: '%s', with full name: %s. pymodulename: %s", pathName, componentName, pymodulename)
+        logger.trace("Importing: '%s', with full name: %s. pymodulename: %s", pathName, componentName, pymodulename)
         try:
             pyclassname = ReSearch("(?<=\.)([^.]+)$", pathName).group(1)
         except AttributeError:
@@ -211,9 +211,9 @@ class Loader(YomboLibrary):
         logger.trace("Imported libraries: %s", self.loadedLibraries)
         logger.trace("Imported components: %s", self.loadedComponents)
         for index, name in enumerate(HARD_LOAD):
+            logger.trace("Calling init function for library: %s" % componentName)
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.info("Calling init function for library: %s" % componentName)
             if hasattr(library, '_init_') and callable(library._init_) and self.getMethodDefinitionLevel(library._init_) != 'yombo.core.module.YomboModule':
 #                library._init_(self)
 #                continue
@@ -272,7 +272,7 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
-            logger.info("Calling start function for component: %s", componentName)
+            logger.trace("Calling start function for component: %s", componentName)
             if hasattr(library, '_start_') and callable(library._start_) and self.getMethodDefinitionLevel(library._start_) != 'yombo.core.module.YomboModule':
 #                library._start_()
 #                continue
@@ -351,7 +351,7 @@ class Loader(YomboLibrary):
         logger.info("Calling init functions of modules.")
         moduleLibrary = self.loadedLibraries['yombo.gateway.lib.modules']
         for name, module in self.loadedModules.iteritems():
-            logger.info("ModuleLibrary: %s" % moduleLibrary)
+            logger.trace("ModuleLibrary: %s" % moduleLibrary)
             moduleLibrary.addModule(modules[module._Name]['moduleuuid'], modules[module._Name]['machinelabel'].lower(), self.loadedModules[name])
 
             # if varibles set by localmodules, use those variables.
@@ -359,7 +359,7 @@ class Loader(YomboLibrary):
                 module._ModVariables = self.__localModuleVars[module._Name.lower()]
             module._Loader(modules[module._Name])
 
-            logger.info("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
+            logger.trace("Calling init function of module: %s, %s ", name, modules[module._Name]['moduleuuid'])
             if hasattr(module, '_init_') and callable(module._init_) and self.getMethodDefinitionLevel(module._init_) != 'yombo.core.module.YomboModule':
 #                module._init_()
 #                continue
@@ -394,7 +394,7 @@ class Loader(YomboLibrary):
     def startModules(self):
         logger.info("Calling start functions of modules.")
         for name, module in self.loadedModules.iteritems():
-            logger.info("Calling start function of module: %s, %s", name, module)
+            logger.trace("Calling start function of module: %s, %s", name, module)
             if hasattr(module, '_start_') and callable(module._start_) and self.getMethodDefinitionLevel(module._start_) != 'yombo.core.module.YomboModule':
 #              module._start_()
 #              continue

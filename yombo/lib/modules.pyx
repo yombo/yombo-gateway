@@ -41,6 +41,8 @@ class Modules(YomboLibrary):
     _moduleDeviceTypesByUUID = {}
     _moduleDeviceTypesByName = FuzzySearch({}, .92)
 
+    _deviceTypeRoutingByType = {}
+
     _modules = {}  # Stores a list of modules. Populated by the loader module at startup.
     def _init_(self, loader):
         """
@@ -59,7 +61,7 @@ class Modules(YomboLibrary):
         """
         Starts the library and calls self.LoadData()
         """
-        self.devicesLib = getComponent('yombo.gateway.lib.devices')
+        self._devicesLib = getComponent('yombo.gateway.lib.devices')
         self.LoadData()
 
 
@@ -111,7 +113,7 @@ class Modules(YomboLibrary):
             self._moduleDeviceTypesByName[mdt['modulelabel']][mdt['devicetypeuuid']].append(mdt['devicetypeuuid'])
 
             # Compile a list of devices for a particular module
-            devices = self.devicesLib.getDevicesByDeviceType(mdt['devicetypeuuid'])
+            devices = self._devicesLib.getDevicesByDeviceType(mdt['devicetypeuuid'])
             for deviceuuid in devices:
                 if mdt['moduleuuid'] not in self._moduleDevicesByUUID:
                     self._moduleDevicesByUUID[mdt['moduleuuid']] = {}
@@ -125,6 +127,15 @@ class Modules(YomboLibrary):
 #                        self._moduleDevicesByName[mdt['moduleuuid']][device['label']] = {}
                 self._moduleDevicesByName[mdt['moduleuuid']][devices[deviceuuid].label] = devices[deviceuuid].deviceUUID
 
+            # For routing messages to modules
+            if mdt['devicetypeuuid'] not in self._deviceTypeRoutingByType:
+                self._deviceTypeRoutingByType[mdt['devicetypeuuid']] = {}
+            self._deviceTypeRoutingByType[mdt['devicetypeuuid']][mdt['moduletype']] = mdt['modulelabel']
+#            self._deviceTypeRouting[mdt['devicetypeuuid']].append([mdt['moduletype']] = mdt['modulelabel']
+
+
+#        logger.info("self._moduleDeviceTypesByUUID: %s" % self._moduleDeviceTypesByUUID)
+
     def _stop_(self):
         """
         Stop library - stop the looping call.
@@ -137,6 +148,20 @@ class Modules(YomboLibrary):
     def addModule(self, moduleUUID, moduleLabel, modulePointer):
         self._modulesByUUID[moduleUUID] = modulePointer
         self._modulesByName[moduleLabel] = moduleUUID
+
+    def getRoutingModule(self, deviceType, routeType):
+        """
+        Finds the module to route a message to based on type of message. EG: command messages should go to "command"
+        type modules.
+
+        :param routeType: Select what type of lookup this is. One of: Command, Interface, Logic
+        :type type: string
+        :return: string
+        """
+        if deviceType in self._deviceTypeRoutingByType:
+            if 'routeType' in self._deviceTypeRoutingByType[deviceType]:
+                return self._deviceTypeRoutingByType[deviceType][routeType]
+        return None
 
     def getModule(self, requestedItem):
         """
@@ -208,7 +233,6 @@ class Modules(YomboLibrary):
         :rtype: module
         """
         logger.trace("requestedItem: %s" % requestedItem)
-        logger.trace("self._moduleDeviceTypesByUUID: %s" % self._moduleDeviceTypesByUUID)
         if requestedItem in self._moduleDeviceTypesByUUID:
             return self._moduleDeviceTypesByUUID[requestedItem]
         else:

@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python gateway automation
+# software.  Details can be found at https://yombo.net
 """
 A database API to SQLite3.
 
@@ -36,6 +36,7 @@ logger = getLogger('core.db')
 yombodbpool = None
 yombotoolsdb = None
 
+
 def get_dbtools():
     """
     Return connection to database.
@@ -49,6 +50,7 @@ class DBConnectionPool:
     Create a connection pool between the SQL requests and the actual database
     itself.
     """
+
     def connect(self):
         SQLITE3_PATH = "usr/sql/config.sqlite3"
         self.pool = sqlite3.connect(SQLITE3_PATH)
@@ -65,7 +67,7 @@ class DBConnectionPool:
         for table in ALLTABLES:
             lines = table.sql()
             for line in lines:
-#                logger.info("line: %s" % line)
+                #                logger.info("line: %s" % line)
                 self.cur.execute(line)
         self.pool.commit()
 
@@ -89,32 +91,35 @@ class DBConnectionPool:
             data.append(dict(zip(fields, row)))
         return data
 
-    def _returnResult(self, deferred, count = None):
+    def _returnResult(self, deferred, count=None):
         if count:
             return self.pool.fetchmany(count)
         else:
             return self.pool.fetchall()
 
-    def execSql(self, sql, params = {}):
+    def execSql(self, sql, params={}):
         def run(sql, params):
             return self.pool.runQuery(sql, params)
+
         d = run(sql, params)
         d.addErrback(self.returnFailure)
         d.addCallback(self.returnResult)
         return d
 
-    def fetch(self, sql, params = {}):
+    def fetch(self, sql, params={}):
         def run(sql, params):
             return self.pool.runQuery(sql, params)
+
         logger.trace("fetch: %s", sql)
         d = run(sql, params)
         d.addCallback(self.returnResult)
         d.addErrback(self.returnFailure)
         return d
 
-    def fetchDict(self, sql, fields, params = {}):
+    def fetchDict(self, sql, fields, params={}):
         def run(sql, params):
             return self.pool.runQuery(sql, params)
+
         d = run(sql, params)
         d.addCallback(self.returnResultDict, fields)
         d.addErrback(self.returnFailure)
@@ -139,8 +144,8 @@ class DBConnectionPool:
             additional,
         )
 
-#        if isinstance(positional, str):
-#            positional = (positional,)
+        #        if isinstance(positional, str):
+        #            positional = (positional,)
 
         logger.trace("SQL: '%s", query)
         return self.fetchDict(query, fields)
@@ -165,6 +170,7 @@ class DBTools:
     Various DB tools. Usses the DB pool above to perform the actual
     work.
     """
+
     def __init__(self, dbpool=None):
         if dbpool is None:
             self.dbpool = get_dbconnection()
@@ -197,7 +203,7 @@ class DBTools:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
-    
+
     def get_module_by_name(self, modulelabel):
         c = self.dbpool.cursor()
         c.execute('SELECT * FROM modules WHERE machinelabel = ?', (modulelabel,))
@@ -209,7 +215,10 @@ class DBTools:
 
     def getModuleDeviceTypes(self):
         c = self.dbpool.cursor()
-        c.execute('SELECT * FROM moduleDeviceTypes join deviceTypes on moduleDeviceTypes.deviceTypeUUID = deviceTypes.deviceTypeUUID')
+        c.execute('SELECT * FROM moduleDeviceTypes ' +
+                  'JOIN deviceTypes on moduleDeviceTypes.deviceTypeUUID = deviceTypes.deviceTypeUUID ' +
+                  'GROUP BY moduleDeviceTypes.deviceTypeUUID, moduleDeviceTypes.moduleType ' +
+                  'ORDER BY priority DESC')
         data = c.fetchall()
         if data is None:
             return None
@@ -273,15 +282,15 @@ class DBTools:
             records.append(dict(izip(field_names, row)))
         return records
 
-    def getVariableModules(self, modulelabel):
+    def getModuleVariables(self, modulelabel):
         from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
         module = self.get_module_by_name(modulelabel)
         if module is None:
             return {}
 
-        c.execute('SELECT * FROM variableModules WHERE moduleuuid = ? order by weight ASC, dataWeight ASC',
-                  (module["moduleuuid"], ))
+        c.execute('SELECT * FROM moduleVariables WHERE moduleuuid = ? order by weight ASC, dataWeight ASC',
+                  (module["moduleuuid"],))
         data = c.fetchall()
         if data is None or len(data) == 0:
             return {}
@@ -289,20 +298,10 @@ class DBTools:
         field_names = [d[0].lower() for d in c.description]
         for row in data:
             record = dict(izip(field_names, row))
-#            c = 0
-            varnames = cPickle.loads(str(record['varnames']))
-            varvalues = cPickle.loads(str(record['varvalues']))
-            logger.trace("varnames = %s", varnames)
-            logger.trace("varvalues = %s", varvalues)
-            items = []
-            for namekey in varnames:
-                if namekey not in varvalues:
-                    continue
-                items.append(varvalues[namekey])
-                if varnames[namekey] not in records:
-                    records[varnames[namekey]] = []
-                records[varnames[namekey]].append(pgpDecrypt(varvalues[namekey]))
-#        logger.debug("variable_modules = %s", records)
+#            varnames = cPickle.loads(str(record['varnames']))
+#            varvalues = cPickle.loads(str(record['varvalues']))
+#            logger.info("variable_modules = %s", record)
+            records[record['machinelabel']] = record
         return records
 
     def getUserGWToken(self, username, gwtokenid):
@@ -319,7 +318,8 @@ class DBTools:
         from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
 
-        c.execute('SELECT * FROM variableDevices WHERE deviceUUID = ? order by weight ASC, dataWeight ASC', (deviceuuid, ))
+        c.execute('SELECT * FROM variableDevices WHERE deviceUUID = ? order by weight ASC, dataWeight ASC',
+                  (deviceuuid,))
         data = c.fetchall()
         if data is None or len(data) == 0:
             return None
@@ -327,11 +327,10 @@ class DBTools:
         field_names = [d[0].lower() for d in c.description]
         for row in data:
             record = dict(izip(field_names, row))
-            c = 0
             varnames = cPickle.loads(str(record['varnames']))
             varvalues = cPickle.loads(str(record['varvalues']))
-#            logger.trace("varnames = %s", varnames)
-#            logger.trace("varvalues = %s", varvalues)
+            #            logger.trace("varnames = %s", varnames)
+            #            logger.trace("varvalues = %s", varvalues)
             items = []
             for namekey in varnames:
                 if namekey not in varvalues:
@@ -340,41 +339,29 @@ class DBTools:
                 if varnames[namekey] not in records:
                     records[varnames[namekey]] = []
                 records[varnames[namekey]].append(pgpDecrypt(varvalues[namekey]))
-#        logger.info("variable_modules = %s", records)
+            #        logger.info("variable_modules = %s", records)
         return records
 
-    def get_moduleInterface(self, moduleSearch):
-        c = self.dbpool.cursor()
-        c.execute("SELECT moduleLabel FROM moduleInterfaces, modules WHERE moduleInterfaces.moduleUUID = '%s' and moduleInterfaces.interfaceUUID = modules.moduleUUID" % (moduleSearch,))
-        row = c.fetchone()
-        if row is None:
-            return None
-#        logger.info("@#: %s", row)
-        field_names = [d[0].lower() for d in c.description]
-        record = dict(izip(field_names, row))
-#        logger.info("@#@@: %s", record)
-        return record['modulelabel']
-
-    def get_module_data_by_key(self, modulename, key1, key2 = '', type = 'data'):
+    def get_module_data_by_key(self, modulename, key1, key2='', type='data'):
         if key1 == '':
             return False
         c = self.dbpool.cursor()
         sql = "SELECT rowid, data1 FROM moduleData WHERE key1 = '%s'" % (key1,)
         if key1 != '':
             sql = sql + " AND key2 = '%s'" % (key2,)
-#        logger.debug("get_moduledData: %s", sql)
+        #        logger.debug("get_moduledData: %s", sql)
         c.execute(sql)
         row = c.fetchone()
         if row is None:
             return None
         field_names = [d[0].lower() for d in c.description]
         record = dict(izip(field_names, row))
-        if type != 'data': 
+        if type != 'data':
             return record['rowid']
         else:
             return record['data1']
-        
-    def set_module_data_by_key(self, modulename, key1, key2 = '', data1 = None):
+
+    def set_module_data_by_key(self, modulename, key1, key2='', data1=None):
         if key1 == '' or data1 is None:
             return False
 
@@ -382,35 +369,39 @@ class DBTools:
         c = self.dbpool.cursor()
         if rowid is False:
             c.execute("""
-                update moduleData set data1=? where rowid=?;""", (data1, rowid) )
+                update moduleData set data1=? where rowid=?;""", (data1, rowid))
         else:
             c.execute("""
                 replace into moduleData (key1, key2, data1)
                 values  (?, ?, ?);""", (key1, key2, data1))
-#"""   """
+        # """   """
 
     def saveSQLDict(self, module, dictname, key1, data1):
         c = self.dbpool.cursor()
 
-        c.execute("select rowid from sqldict where key1='%s' and module='%s' and dictname='%s'" % (key1, module, dictname))
+        c.execute(
+            "select rowid from sqldict where key1='%s' and module='%s' and dictname='%s'" % (key1, module, dictname))
         row = c.fetchone()
         if row:
             field_names = [d[0].lower() for d in c.description]
             record = dict(izip(field_names, row))
-            c.execute("update sqldict set data1=?, updated=? where rowid=?;", (data1, int(time.time()), record['rowid']) )
+            c.execute("update sqldict set data1=?, updated=? where rowid=?;",
+                      (data1, int(time.time()), record['rowid']))
         else:
             c.execute("""
                 replace into sqldict (created, updated, module, dictname, key1, data1)
                 values  (?, ?, ?, ?, ?, ?);""", (int(time.time()), int(time.time()), module, dictname, key1, data1))
-#"""   """
+        # """   """
 
     def commit(self):
         self.dbpool.commit()
 
+
 class BaseColumn:
     is_id = False
+
     def __init__(self, update=True, index=False, unique=False,
-        primary_key=False, name=None):
+                 primary_key=False, name=None):
         self.update = update
         self.index = index
         self.unique = unique
@@ -421,9 +412,9 @@ class BaseColumn:
 
     def __repr__(self):
         return "<Column '%s' affinity:;%s%s%s%s>" % (self.name, self.affinity,
-            " index" if self.index else "",
-            " unique" if self.unique else "",
-            " primary_key" if self.primary_key else "")
+                                                     " index" if self.index else "",
+                                                     " unique" if self.unique else "",
+                                                     " primary_key" if self.primary_key else "")
 
     def sql(self):
         modifiers = [self.name]
@@ -440,39 +431,44 @@ class BaseColumn:
 
 
 class TextColumn(BaseColumn):
-    affinity="TEXT"
+    affinity = "TEXT"
 
 
 class NumericColumn(BaseColumn):
-    affinity="NUMERIC"
+    affinity = "NUMERIC"
 
 
 class IntegerColumn(BaseColumn):
-    affinity="INTEGER"
+    affinity = "INTEGER"
+
 
 class BlobColumn(BaseColumn):
-    affinity="BLOB"
+    affinity = "BLOB"
 
 
-class RealColumn(BaseColumn): # floating type
-    affinity="REAL"
+class RealColumn(BaseColumn):  # floating type
+    affinity = "REAL"
 
 
 class BooleanColumn(IntegerColumn):
     pass
+
 
 class IntegerPKColumn(IntegerColumn):
     def __init__(self, *args, **kwargs):
         kwargs['primary_key'] = True
         IntegerColumn.__init__(self, *args, **kwargs)
 
+
 class TextPKColumn(TextColumn):
     def __init__(self, *args, **kwargs):
         kwargs['primary_key'] = True
         TextColumn.__init__(self, *args, **kwargs)
 
+
 class ForeignKeyColumn(IntegerColumn):
     pass
+
 
 class TableMeta(type):
     def __new__(cls, class_name, bases, attrs):
@@ -491,7 +487,7 @@ class TableMeta(type):
 
         if "indexes" in new_attrs:
             if isinstance(new_attrs["indexes"], list):
-               indexes =  new_attrs["indexes"]
+                indexes = new_attrs["indexes"]
 
         table_name = class_name[:class_name.rfind("Table")]
         if table_name != "":
@@ -525,7 +521,7 @@ class Table:
         output.append("CREATE TABLE IF NOT EXISTS `%s` (\n%s\n);\n" % (
             cls.table_name,
             ',\n'.join(column.sql() for column in cls.columns)
-            ))
+        ))
         if len(cls.indexes) != 0:
             output.extend(cls.indexes)
         return output
@@ -584,15 +580,15 @@ class DevicesTable(Table):
     voiceCmd = TextColumn()
     voiceCmdOrder = TextColumn()
     VoiceCmdSrc = TextColumn()
-    deviceTypeUUID = TextColumn()  #TODO: Change all references to 'modulelabel'
+    deviceTypeUUID = TextColumn()  # TODO: Change all references to 'modulelabel'
     pinCode = TextColumn()
     pinRequired = BooleanColumn()
     pinTimeout = IntegerColumn()
-#    liveUpdate = IntegerColumn()
+    #    liveUpdate = IntegerColumn()
     created = IntegerColumn()
     updated = IntegerColumn()
     status = IntegerColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)] #for joins
+    indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name)]  # for joins
 
 
 class DeviceTypesTable(Table):
@@ -612,6 +608,7 @@ class DeviceTypesTable(Table):
     created = IntegerColumn()
     updated = IntegerColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name)]
+
 
 class DeviceTypeCommandsTable(Table):
     """
@@ -639,7 +636,8 @@ class DeviceStatusTable(Table):
     source = TextColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS deviceUUID_idx ON %s (deviceUUID);" % (table_name)]
 
-#class InterfacesTable(Table):
+
+# class InterfacesTable(Table):
 #    table_name = 'interfaces'
 #    moduleUUID = TextPKColumn()
 #    interfaceUUID = TextColumn()
@@ -676,7 +674,7 @@ class ModulesTable(Table):
     description = TextColumn()
     installNotes = TextColumn()
     docLink = TextColumn()
-#    installBranch = TextColumn()
+    installBranch = TextColumn()
     prodVersion = TextColumn()
     devVersion = TextColumn()
     public = IntegerColumn()
@@ -686,28 +684,20 @@ class ModulesTable(Table):
     indexes = ["CREATE INDEX IF NOT EXISTS machineLabel_idx ON %s (machineLabel);" % (table_name)]
 
 
-class ModuleInterfacesTable(Table):
-    """
-    Tells the API/Command modules what module to use for it's interface module.
-    """
-    tableVersion = 15
-    table_name = 'moduleInterfaces'
-    moduleUUID = TextPKColumn()
-    interfaceUUID = TextColumn()
-#    indexes = ["CREATE INDEX IF NOT EXISTS module_idx ON %s (module);" % (table_name)]
-
-
 class ModuleDeviceTypesTable(Table):
     """
     Maps devices to a module using deviceTypes.
     """
     tableVersion = 20
     table_name = 'moduleDeviceTypes'
-    deviceTypeUUID = TextPKColumn()
+    deviceTypeUUID = TextColumn()
+    priority = IntegerColumn()
     moduleUUID = TextColumn()
     moduleLabel = TextColumn()
+    moduleType = TextColumn()
     indexes = ["CREATE INDEX IF NOT EXISTS deviceTypeUUID_idx ON %s (deviceTypeUUID);" % (table_name),
-               "CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
+               "CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name),
+               "CREATE INDEX IF NOT EXISTS dt_m_idx ON %s (deviceTypeUUID, moduleUUID);" % (table_name)]
 
 
 class ModulesInstalledTable(Table):
@@ -720,7 +710,26 @@ class ModulesInstalledTable(Table):
     installedVersion = TextColumn()
     installTime = IntegerColumn()
     lastCheck = IntegerColumn()
-#    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
+# indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
+
+
+class ModuleVariablesTable(Table):
+    """
+    Stores variables for modules. Variables are set by the server, and read here. Not a two-way sync (yet?).
+    """
+    tableVersion = 20
+    table_name = 'moduleVariables'
+    moduleUUID = TextColumn()
+    variableUUID = TextColumn()
+    weight = IntegerColumn()
+    dataWeight = IntegerColumn()
+    machineLabel = TextColumn()
+    label = TextColumn()
+    value = TextColumn()
+    updated = IntegerColumn()
+    created = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name),
+               "CREATE INDEX IF NOT EXISTS variableUUID_idx ON %s (variableUUID);" % (table_name)]
 
 
 class SQLDictTable(Table):
@@ -754,25 +763,14 @@ class VariableDevicesTable(Table):
     indexes = ["CREATE INDEX IF NOT EXISTS deviceUUID_idx ON %s (deviceUUID);" % (table_name)]
 
 
-class VariableModulesTable(Table):
-    tableVersion = 15
-    table_name = 'variableModules'
-    moduleUUID = TextColumn()
-    variableUUID = TextColumn()
-    weight = IntegerColumn()
-    dataWeight = IntegerColumn()
-    varNames = BlobColumn()
-    varValues = BlobColumn()
-    updated = IntegerColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
-
-
 class UsersTable(Table):
     tableVersion = 15
     table_name = 'users'
     username = TextPKColumn()
     hash = TextColumn()
-#    indexes = ["CREATE INDEX IF NOT EXISTS username_idx ON %s (username);" % (table_name)]
+
+
+# indexes = ["CREATE INDEX IF NOT EXISTS username_idx ON %s (username);" % (table_name)]
 
 
 class LogsTable(Table):
@@ -791,17 +789,15 @@ ALLTABLES = [
     DeviceTypesTable,
     DeviceTypeCommandsTable,
     DeviceStatusTable,
-#    InterfacesTable,
+    #    InterfacesTable,
     LogsTable,
     gwTokensTable,
     ModulesTable,
-    ModuleInterfacesTable,
     ModuleDeviceTypesTable,
     ModulesInstalledTable,
+    ModuleVariablesTable,
     SQLDictTable,
-
     VariableDevicesTable,
-    VariableModulesTable,
     UsersTable,
 ]
 
@@ -811,16 +807,15 @@ CONFTABLES = [
     DevicesTable,
     DeviceTypesTable,
     DeviceTypeCommandsTable,
-#    InterfacesTable,
     gwTokensTable,
     ModulesTable,
-    ModuleInterfacesTable,
     ModuleDeviceTypesTable,
+    ModuleVariablesTable,
 
     VariableDevicesTable,
-    VariableModulesTable,
     UsersTable,
 ]
+
 
 class AllTabless:
     global ALLTABLES

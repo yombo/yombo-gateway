@@ -196,8 +196,8 @@ class Messages(YomboLibrary):
 
     def beforeSendMessage(self, message):
         """
-        This is called by the message instance to let use know it's going to
-        send itself now.  We'll use this later to capture stats, but for now..
+        This is called by the message instance to let us know it's going to
+        send itself now.  We'll use this later to capture stats, sent to hooks, etc.
         We will check if the message is in the delayQueue, if it is, we'll
         delete that and clean up the reactors list.
         """

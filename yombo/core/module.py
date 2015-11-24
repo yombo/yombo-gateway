@@ -134,6 +134,7 @@ class YomboModule:
         self._Times = getTimes()
 
         self._ModuleLibrary = getComponent('yombo.gateway.lib.modules')
+        self._DeviceLibrary = getComponent('yombo.gateway.lib.devices')
 
         self._DevicesByType = getDevicesByDeviceType()  # returns a callable (function)
 

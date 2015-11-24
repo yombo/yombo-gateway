@@ -214,6 +214,7 @@ class ConfigurationUpdate(YomboLibrary):
                 'DocLink' : 'docLink',
                 'ProdVersion' : 'prodVersion',
                 'DevVersion' : 'devVersion',
+                'InstallBranch' : 'installBranch',
                 'Public' : 'public',
                 'Created' : 'created',
                 'Updated' : 'updated',
@@ -223,27 +224,34 @@ class ConfigurationUpdate(YomboLibrary):
                 'UUID' : 'deviceTypeUUID',
                 'ModuleUUID' : 'moduleUUID',
                 'ModuleLabel' : 'moduleLabel',
+                'ModuleType' : 'moduleType',
+                'Priority' : 'priority',
             }},
+            'ModuleConfigs' : {'table': "ModuleVariablesTable", 'map' : {
+                'ModuleUUID' : 'moduleUUID',
+                'VariableUUID' : 'variableUUID',
+                'Weight' : 'weight',
+                'DataWeight' : 'dataWeight',
+                'MachineLabel' : 'machineLabel',
+                'Label' : 'label',
+                'Value' : 'value',
+                'Updated' : 'updated',
+                'Created' : 'created',
+            }},
+
 #            "GatewayDetails",
 #            "GatewayModules",
-#            "GatewayModuleInterfaces",
 #            "GatewayUserTokens",
 #            "GatewayVariables",
 #            "GatewayModuleDeviceTypes",
 #            "GatewayUsers",
         }
         cmdmap = {
-            'getfullgatewaydetailsresponse': {'type': "GatewayDetailsResponse"},
             'getfullgatewayusertokensresponse': {'table': "gwTokensTable", 'type': "fullConfig"},
-            'getfullgatewayvariablesresponse': {'type': "GatewayVariablesResponse"},
-            'getfullgatewaymoduleinterfacesresponse': {'table': "ModuleInterfacesTable", 'type': "fullConfig"},
-            'getfulldevicesresponse': {'table': "DevicesTable", 'type': "fullConfig"},
-            'getfulldevicetypecommandsresponse': {'table': "DeviceTypeCommandsTable", 'type': "fullConfig"},
-            'getfullmoduledevicetypesresponse': {'table': "ModuleDeviceTypesTable", 'type': "fullConfig"},
-            'getfullmodulesresponse': {'table': "ModulesTable", 'type': "fullConfig"},
             'getfullvariablemodulesresponse': {'table': "VariableModulesTable", 'type': "fullConfig"},
             'getfullvariabledevicesresponse': {'table': "VariableDevicesTable", 'type': "fullConfig"},
-            'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}}
+            'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}
+        }
 
         # make sure the command exists
         if configType not in configTypes:
@@ -295,6 +303,20 @@ class ConfigurationUpdate(YomboLibrary):
                 else:
                     raise YomboWarning("Cannot process configuration update")
 
+            # Preprocessing for various configTypes
+            if configType == 'GatewayModules':
+                if configStatus == "Full":  # DeviceTypeCommands is included in full update.
+                    c.execute("DELETE FROM devicetypes")
+                    c.execute("DELETE FROM devicetypecommands")
+                    c.execute("DELETE FROM moduleDeviceTypes")
+                    self.dbconnection.pool.commit()
+
+            tempConfig = {}  # Usef for various tracking. Variable depends on configType being processed.
+            tempIndex = {}  # Usef for various tracking. Variable depends on configType being processed.
+            tempStorage = {}  # Usef for various tracking. Variable depends on configType being processed.
+#            tempIndex2 = []  # Usef for various tracking. Variable depends on configType being processed.
+#            tempStorage2 = []  # Usef for various tracking. Variable depends on configType being processed.
+
             for record in data:
                 items = record.items()
                 savecols = []
@@ -318,45 +340,91 @@ class ConfigurationUpdate(YomboLibrary):
                     temp = (col, val)
                     saveitems.append(temp)
 
-#                logger.info('items: %s', items)
-#                logger.info('savecols: %s', savecols)
-#                logger.info('saveitems: %s', saveitems)
                 sql = "insert into %s (%s) values (%s)" % (upd_table.table_name,
                     ", ".join(i for i in savecols),
                     ", ".join('?' for i in saveitems),
                     )
 #                logger.info('sql: %s', sql)
-#                logger.info([i[1] for i in saveitems])
                 c.execute(sql, [i[1] for i in saveitems])
 
-                logger.info("Pre checking nested %s" % configType)
+                logger.trace("Pre checking nested %s" % configType)
                 # process any nested items here.
                 if configType == 'GatewayModules':
-                    if configStatus == "Full":  # DeviceTypeCommands is included in full update.
-                        c.execute("DELETE FROM devicetypes")
-                        c.execute("DELETE FROM devicetypecommands")
-                        c.execute("DELETE FROM moduleDeviceTypes")
-                        self.dbconnection.pool.commit()
+                    if '1' not in tempConfig:
+                        tempConfig['1'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'ModuleDeviceTypes',
+                        }
+                        tempConfig['2'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'DeviceTypeCommands',
+                        }
+                        tempConfig['3'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'DeviceTypes',
+                        }
+                        tempConfig['4'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'ModuleConfigs',
+                        }
+                        tempIndex['1'] = []  # ModuleDeviceTypes
+                        tempIndex['2'] = []  # DeviceTypeCommands
+                        tempIndex['3'] = []  # DeviceTypes
+                        tempIndex['4'] = []  # ModuleConfigs
+                        tempStorage['1'] = []
+                        tempStorage['2'] = []
+                        tempStorage['3'] = []
+                        tempStorage['4'] = []
 
-#                    logger.info("Call nested: %s" % record)
-                    moduleRecords = []
-                    for dt in record['DeviceTypes']:
-                        moduleRecords.append({
-                            'UUID' : dt['UUID'],
-                            'ModuleUUID' : record['UUID'],  # record = module
-                            'ModuleLabel' : record['MachineLabel']
-                        })
+#                    logger.info("devicetypes: %s" % record['DeviceTypes'][)
+                    if 'DeviceTypes' in record:
+                        for tempDT in record['DeviceTypes']:
+                            if tempDT['UUID'] not in tempIndex['3']:
+                                tempIndex['3'].append(tempDT['UUID'])
+                                tempStorage['3'].append(tempDT)
 
-                        deviceTypeCommandRecords = []
-                        for dtc in dt['Commands']:
-                            deviceTypeCommandRecords.append({
-                                'UUID' : dt['UUID'],    #dt = devicetype
-                                'CmdUUID' : dtc['UUID'],  #dtc = devicetypecommands
-                            })
-                        self.processConfig('nested', 'DeviceTypeCommands', 'Incremental', deviceTypeCommandRecords)
-                    self.processConfig('nested', 'DeviceTypes', configStatus, record['DeviceTypes'])
-                    self.processConfig('nested', 'ModuleDeviceTypes', configStatus, moduleRecords)
+    #                    logger.info("Call nested: %s" % record)
+                        for dt in record['DeviceTypes']:
+                            if dt['UUID'] not in tempIndex['1']:
+                                tempStorage['1'].append({
+                                    'UUID' : dt['UUID'],
+                                    'Priority' : dt['Priority'],
+                                    'ModuleUUID' : record['UUID'],  # record = module
+                                    'ModuleLabel' : record['MachineLabel'],
+                                    'ModuleType' : record['ModuleType'],
+                                })
+
+                            for dtc in dt['Commands']:
+                                if dt['UUID'] not in tempIndex['2']:
+                                    tempStorage['2'].append({
+                                        'UUID' : dt['UUID'],    #dt = devicetype
+                                        'CmdUUID' : dtc['UUID'],  #dtc = devicetypecommands
+                                    })
+
+                    # ModuleConfigs
+                    if 'ModuleConfigs' in record:
+                        for tempGroup in record['ModuleConfigs']:
+                            for tempField in tempGroup['Fields']:
+                                if tempField['FieldUUID'] not in tempIndex['4']:
+                                    tempIndex['4'].append(tempField['FieldUUID'])
+
+                                field = {
+                                    'ModuleUUID' : record['UUID'],  # record = module
+                                    'VariableUUID' : tempGroup['VariableUUID'],
+                                    'Weight' : tempGroup['Weight'],
+                                    'DataWeight' : tempField['Weight'],
+                                    'MachineLabel' : tempField['MachineLabel'],
+                                    'Label' : tempField['Label'],
+                                    'Value' : tempField['Value'],
+                                    'Updated' : tempField['Updated'],
+                                    'Created' : tempField['Created'],
+                                }
+                                tempStorage['4'].append(field)
                 # end if configType == 'GatewayModules'
+
+            for key, value in tempStorage.iteritems():
+#                logger.info("key: %s, value: %s" %(key, value))
+                self.processConfig(tempConfig[key]['inputType'], tempConfig[key]['configType'], configStatus, tempStorage[key])
 
             self.dbconnection.pool.commit()
 #            if cmdmap[cmd]["table"] == "gwTokensTable":
@@ -393,13 +461,12 @@ class ConfigurationUpdate(YomboLibrary):
             "GetGatewayDevices",
             "GetGatewayModules", # includes ModuleDeviceTypes, DeviceTypeCommands
             "GetGatewayConfigs",
-#            "getGatewayModuleInterfaces",
+#            "GetModuleVariables",
 #            "getGatewayUserTokens",
-#            "getGatewayVariables",
 #            "getGatewayUsers",
         ]
         for item in allCommands:
-            logger.info("sending command: %s"  % item)
+            logger.trace("sending command: %s"  % item)
 
             self._appendFullDownloadQueue(item)
             self.AMQPYombo.sendDirectMessage(**self._generateRequest(item, "All"))
@@ -430,10 +497,10 @@ class ConfigurationUpdate(YomboLibrary):
             self.__pendingUpdates.append(table)
 
     def _removeFullDownloadQueue(self, table):
-        logger.info("Removing table to request queue: %s" % table)
+        logger.debug("Removing table to request queue: %s" % table)
         if table in self.__pendingUpdates:
             self.__pendingUpdates.remove(table)
-        logger.info("Configs pending: %s", self.__pendingUpdates)
+        logger.debug("Configs pending: %s", self.__pendingUpdates)
 
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs == True:
             self.__doingfullconfigs = False
