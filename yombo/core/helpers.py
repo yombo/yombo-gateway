@@ -1,11 +1,11 @@
-#This file was created by Yombo for use with Yombo Gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Various helper functions to 'get stuff done'. These range from simple
 function wrappers to larger functions.  Look here first for a function that
 may do what you need. Next, look for a library that may contain what you
 need.  If you still can't find the function you are looking for look through
-http://projects.yombo.net/projects/gateway to see if a feature request or
+https://projects.yombo.net/projects/gateway to see if a feature request or
 issue has been submitted for it. You can also just create it and contribute
 the code.
 
@@ -288,8 +288,8 @@ def getDevices():
        # Get the living room device using the fuzzy search feature.
        livingRoom = self._Devices['living room light']
 
-       # now we can turn on the lamp without needing a pinnumber.
-       livingRoom.sendCmd(self, array('skippinnumber':True, 'cmd': 'on'))
+       # now we can turn on the lamp without needing a pincode.
+       livingRoom.sendCmd(self, array('skippincode':True, 'cmd': 'on'))
 
     :return: A dictionary of pointers of all devices.
     :rtype: dict
@@ -312,9 +312,10 @@ def getDevice(deviceSearch):
     """
     return getComponent('yombo.gateway.lib.devices')._search(deviceSearch)
 
-def getDevicesByType():
+def getDevicesByDeviceType():
     """
-    Returns a pointer to a **function** to get all devices for a given deviceTypeUUID.
+    Returns a pointer to a **function** to get all devices for a given deviceType UUID or MachineLabel. Modules
+    should use the built in function ``self._DevicesByDeviceType``.
     
     .. note::
 
@@ -323,7 +324,7 @@ def getDevicesByType():
     
     **Short Usage**:
 
-        >>> self._DevicesByType('137ab129da9318')  #by device type UUID, this is a function.
+        >>> deviceList = self._DevicesByDeviceType('137ab129da9318')  #by device type UUID, this is a function.
 
     **Usage**:
 
@@ -334,15 +335,15 @@ def getDevicesByType():
 
        # Turn off all x10 lamps
        for lamp in allX10Lamps:
-           lamp.sendCmd(self, array('skippinnumber':True, 'cmd': 'off'))
+           lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
 
-    :param deviceTypeUUID: The deviceTypeUUID to search for.
-    :type deviceTypeUUID: string (uuid)
+    :param deviceType: The deviceType to search for, either a UUID or Machinelabel
+    :type deviceTypeUUID: string
     :return: Returns a pointer to function that can be called to fetch
         all devices belonging to a device type UUID.
     :rtype: 
     """
-    return getattr(getComponent('yombo.gateway.lib.devices'), "getDevicesByType")
+    return getattr(getComponent('yombo.gateway.lib.devices'), "getDevicesByDeviceType")
 
 def getCommands():
     """
@@ -464,31 +465,6 @@ def getVoiceCommands():
     """
     return getComponent('yombo.gateway.lib.voicecmds')
 
-def getModule(name):
-    """
-    Can be used in place of :py:func:`getComponent` to search for
-    a module by name or by the module UUID.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.core.helpers import getModule
-       self.someOtherModule = getComponent("Homevision")
-
-    :raises KeyError: When requested module is not found.
-    :param name: The name of the module to find.  Returns a
-        pointer to the object so it's functions can be called.
-    :type name: string
-    :return: The requested object.
-    :rtype: Object pointer
-    """
-    if not hasattr(getModule, 'components'):
-        from yombo.lib.loader import getLoader
-        getModule.theLoader = getLoader()
-
-    return getModule.theLoader.getModule(name)
-
 def getTimes():
     """
     Returns a pointer to the Times library. This can be used to get various of
@@ -507,7 +483,7 @@ def getTimes():
        motionDevice = message.payaload['deviceobj'] # get the device from the message
        if times.isDark and motionDevice.status['high']: # it's high if motion detected
          sideYardLight = self._Devices('side yard light')
-         sideYardLight.sendCmd(self, array('skippinnumber':True, 'cmd': 'on'))
+         sideYardLight.sendCmd(self, array('skippincode':True, 'cmd': 'on'))
     
     :return: The pointer to the times object.
     :rtype: object
@@ -620,7 +596,8 @@ def getModuleVariables(moduleName):
     global yombodbtools
     if yombodbtools == None:
         yombodbtools = get_dbtools()
-    return yombodbtools.getVariableModules(moduleName)
+    # TODO: change this to look up moduleUUID for the requested module to pass this into the DB call.
+    return yombodbtools.getModuleVariables(moduleName)
 
 #TODO: Rewrite this function to use AMQP, remove sleep!
 def getUserGWToken(username, gwtokenid, fetchRemote=False):
@@ -814,18 +791,18 @@ def pgpDownloadRoot():
     environment = getConfigValue("server", 'environment', "production")
     uri = ''
     if getConfigValue("server", 'gpgidtxt', "") != "":
-        uri = "http://%s/" % getConfigValue("server", 'gpgidtxt')
+        uri = "https://%s/" % getConfigValue("server", 'gpgidtxt')
     else:
         if(environment == "production"):
-            uri = "http://yombo.net/gpgid.txt"
+            uri = "https://yombo.net/gpgid.txt"
         elif (environment == "staging"):
-            uri = "http://wwwstg.yombo.net/gpgid.txt"
+            uri = "https://wwwstg.yombo.net/gpgid.txt"
         elif (environment == "development"):
-            uri = "http://wwwdev.yombo.net/gpgid.txt"
+            uri = "https://wwwdev.yombo.net/gpgid.txt"
         else:
-            uri = "http://yombo.net/gpgid.txt"
+            uri = "https://yombo.net/gpgid.txt"
 
-    uri = "http://yombo.net/gpgid.txt"
+    uri = "https://yombo.net/gpgid.txt"
     deferred = getPage(uri)
     deferred.addCallback(pgpCheckRoot)
 

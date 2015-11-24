@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 The Yombo Message is a key component or concept for the Yombo system. It's primarily
 used within the Yombo gateway to communication between libraries and modules. Libraries
@@ -243,11 +243,11 @@ class Message:
         self.sentTo = []
 
         self.gwUUID = getConfigValue("core", "gwuuid")
-        if self.msgUUID == None:
-          if self.newMessage:
-            self.msgUUID = str(generateUUID(mainType=self.uuidType, subType=self.uuidSubType))
-          else:
-            raise YomboMessageError("Existing message should have a msgUUID", 'Message API::Create message.')
+        if self.msgUUID is None:
+            if self.newMessage:
+                self.msgUUID = str(generateUUID(mainType=self.uuidType, subType=self.uuidSubType))
+            else:
+                raise YomboMessageError("Existing message should have a msgUUID", 'Message API::Create message.')
 
     def __getitem__(self, key):
         """
@@ -270,7 +270,6 @@ class Message:
         :return: A dictionary containing the key values of the message. Can be
             used to create a new message.
         :rtype: dict
-
         """
         return {'msgOrigin'     : str(self.msgOrigin),
                 'msgDestination': str(self.msgDestination),
@@ -297,9 +296,9 @@ class Message:
 
         Ensures the message has full Origin and Destination routes.  Creates GPG signature and stores in msgAuth.
         """
-        if self.validateMsgOriginFull() == False:
+        if self.validateMsgOriginFull() is False:
             YomboMessageError("Cannot dump message to external without full Origin path.")
-        if self.validateMsgDestinationFull() == False:
+        if self.validateMsgDestinationFull() is False:
             YomboMessageError("Cannot dump message to external without full Destination path.")
 
         newmsg = {
@@ -345,7 +344,6 @@ class Message:
             return True
         raise YomboMessageError("msgDestination is in unknown state")
 
-
     def getReply(self, **kwargs):
         """
         Using the current message, generate a new message skeleton most fields
@@ -388,10 +386,10 @@ class Message:
         :return: True if sent, otherwise will toss an exception.
         ":rtype: bool
         """
-        if self.validateMessage() == False:
+        if self.validateMessage() is False:
             raise YomboMessageError("You should never see this message. If you do.  Please tell supprt@yombo.net about it!", 'Message API::Catchall')
 
-        if self.checkDestinationAsLocal() == False:
+        if self.checkDestinationAsLocal() is False:
             gc = getComponent('yombo.gateway.lib.gatewaycontrol')
             gc.message(self)
             logger.info("message is not marked for local. Sending to server for processing!")
@@ -399,10 +397,11 @@ class Message:
         if self.msgType == "control": # control messages
             if self.cmd == "disconnectSvc":
 # TODO: finish this!
+                pass
                 self.loader.loadedComponents['yombo.gateway.lib.GatewayControlProtocol']
 
                 
-        if self.libMessages.processing == False:
+        if self.libMessages.processing is False:
             logger.debug("Message::send - Queuing message for later")
             self.libMessages.queue.appendleft(self)
             return
@@ -474,9 +473,9 @@ class Message:
 
         components = parts[0]
         if component[:13] == "yombo.gateway":
-           component = "%s:%s" % (component, self.gwUUID)
+            component = "%s:%s" % (component, self.gwUUID)
         else:
-           raise YomboMessageError("Component name must start with 'yombo.gateway'.", 'Message API')
+            raise YomboMessageError("Component name must start with 'yombo.gateway'.", 'Message API')
         
         self.msgPath[str(uuid4)] = {'component' : component, 'external' : external}
         
@@ -526,7 +525,7 @@ class Message:
             elif k == "maxDelay":
                 self.maxDelay = v
             else:
-              raise YomboMessageError("Item '%s' is not a valid message component" % (k,), 'message API')
+                raise YomboMessageError("Item '%s' is not a valid message component" % (k,), 'message API')
 
     def validateMessage(self):
         """
@@ -548,14 +547,14 @@ class Message:
 #todo: update for routing messages to other gateways
 
         if self.msgType == "cmd":  # commands for devices
-          self.__validateCmd()
+            self.__validateCmd()
         elif self.msgType == "status": #device status changes
-          self.__validateStatus()
+            self.__validateStatus()
 #        elif self.msgType == "event": #device status changes
-#          return self.__validateEvent()
+#            return self.__validateEvent()
 
         # if origin isn't local, check for msgAuth and validate it.
-        if self.checkOriginAsLocal() == False:
+        if self.checkOriginAsLocal() is False:
             self.validateMsgAuth()
         return True
 
@@ -576,7 +575,8 @@ class Message:
             if str(self.msgDestination[:13]).lower() == "yombo.gateway" and dest[1] == self.gwUUID:
                 isLocal = True
         else:
-            raise YomboMessageError('msgDestination is missing or invalid. msgDestination: %s' % self.msgDestination, 'Message API')
+            raise YomboMessageError('msgDestination is missing or invalid. msgDestination: %s' % self.msgDestination,
+                                    'Message API')
         return isLocal
 
     def checkOriginAsLocal(self):
@@ -595,12 +595,13 @@ class Message:
             parts = origin.split(":")
             if len(parts) == 1:
                 if str(self.msgOrigin[:13]).lower() != "yombo.gateway":
-                    return False # it's not even a gateway, so can't be us
+                    return False  # it's not even a gateway, so can't be us
             elif len(parts) == 2:
                 if str(self.msgOrigin[:13]).lower() != "yombo.gateway" and parts[1] != self.gwUUID:
                     return False  # It's not us!
             else:
-                raise YomboMessageError('msgOrigin is missing or invalid. msgOrigin: %s' % self.msgOrigin, 'Message API')
+                raise YomboMessageError('msgOrigin is missing or invalid. msgOrigin: %s' % self.msgOrigin,
+                                        'Message API')
         return True
 
     def __validateCmd(self):
@@ -618,27 +619,26 @@ class Message:
 
         if 'cmdobj' in self.payload:
             if isinstance(self.payload['cmdobj'], Command):
-              self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
-              self.payload['cmd'] = self.payload['cmdobj'].cmd
+                self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
+                self.payload['cmd'] = self.payload['cmdobj'].cmd
             else:
-              raise YomboMessageError("if 'cmdobj' specified', it must be a command instance.", 'Message API::ValidateCMD')
+                raise YomboMessageError("if 'cmdobj' specified', it must be a command instance.", 'Message API::ValidateCMD')
         elif 'cmdUUID' in self.payload:
             try:
-              self.payload['cmdobj'] = getCommand(self.payload['cmdUUID'])
-              self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
-              self.payload['cmd'] = self.payload['cmdobj'].cmd
+                self.payload['cmdobj'] = getCommand(self.payload['cmdUUID'])
+                self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
+                self.payload['cmd'] = self.payload['cmdobj'].cmd
             except:
-              raise YomboMessageError("Couldn't find specified cmdUUID.", 'Message API::ValidateCMD')
+                raise YomboMessageError("Couldn't find specified cmdUUID.", 'Message API::ValidateCMD')
         elif 'cmd' in self.payload:
             try:
-              self.payload['cmdobj'] = getCommand(self.payload['cmd'])
-              self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
-              self.payload['cmd'] = self.payload['cmdobj'].cmd
+                self.payload['cmdobj'] = getCommand(self.payload['cmd'])
+                self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
+                self.payload['cmd'] = self.payload['cmdobj'].cmd
             except:
-              raise YomboMessageError("Couldn't find specified cmd.", 'Message API')
+                raise YomboMessageError("Couldn't find specified cmd.", 'Message API')
         else:
             raise YomboMessageError("'cmdobj', cmdUUID', or 'cmd' not found in payload. Required for commands.", 'Message API::ValidateCMD')
-        
 
         # only perform the following checks if message is for local gateway!!
         localParts = self.msgDestination.split(":")
@@ -648,22 +648,22 @@ class Message:
         # check deviceUUID
         if 'deviceobj' in self.payload:
             if isinstance(self.payload['deviceobj'], Device):
-              self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
-              self.payload['device'] = self.payload['deviceobj'].label
+                self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                self.payload['device'] = self.payload['deviceobj'].label
             else:
-              raise YomboMessageError("if 'deviceobj' specified', it must be a device instance.", 'Message API::ValidateCMD')
+                raise YomboMessageError("if 'deviceobj' specified', it must be a device instance.", 'Message API::ValidateCMD')
         elif 'deviceUUID' in self.payload:
             try:
-              self.payload['deviceobj'] = getDevice(self.payload['deviceUUID'])
-              self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
-              self.payload['device'] = self.payload['deviceobj'].label
+                self.payload['deviceobj'] = getDevice(self.payload['deviceUUID'])
+                self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                self.payload['device'] = self.payload['deviceobj'].label
             except:
-              raise YomboMessageError("Couldn't find specified deviceUUID.", 'Message API')
+                raise YomboMessageError("Couldn't find specified deviceUUID.", 'Message API')
         elif 'device' in self.payload:
             try:
-              self.payload['deviceobj'] = getDevice(self.payload['device'])
-              self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
-              self.payload['device'] = self.payload['deviceobj'].label
+                self.payload['deviceobj'] = getDevice(self.payload['device'])
+                self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                self.payload['device'] = self.payload['deviceobj'].label
             except:
               raise YomboMessageError("Couldn't find specified deviceUUID.", 'Message API')
         else:
@@ -678,7 +678,7 @@ class Message:
         # force delivery to the correct module.
         if(self.msgStatus == "new"):
             moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].moduleLabel.lower()
-            if(self.msgDestination != moduleLabel):
+            if self.msgDestination != moduleLabel :
                 self.msgDestination = moduleLabel
 
     def __validateStatus(self):
@@ -727,23 +727,23 @@ class Message:
         Validates that the message authentication is valid.
         """
         if 'signature' in self.msgAuth:
-            hash = loads(pgpVerify(self.msgAuth['signature']))
-            logger.trace(hash)
-            if self.msgOrigin != hash['msgOrigin']:
+            hashed = loads(pgpVerify(self.msgAuth['signature']))
+            logger.trace(hashed)
+            if self.msgOrigin != hashed['msgOrigin']:
                 raise YomboMessageError("msgOrigin doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if self.msgDestination != hash['msgDestination']:
+            if self.msgDestination != hashed['msgDestination']:
                 raise YomboMessageError("msgDestination doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if str(self.msgType) != hash['msgType']:
+            if str(self.msgType) != hashed['msgType']:
                 raise YomboMessageError("msgType doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if str(self.msgStatus) != hash['msgStatus']:
+            if str(self.msgStatus) != hashed['msgStatus']:
                 raise YomboMessageError("msgStatus doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if str(self.msgStatusExtra) != hash['msgStatusExtra']:
+            if str(self.msgStatusExtra) != hashed['msgStatusExtra']:
                 raise YomboMessageError("msgStatusExtra doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if str(self.msgUUID) != hash['msgUUID']:
+            if str(self.msgUUID) != hashed['msgUUID']:
                 raise YomboMessageError("msgUUID doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if str(self.msgAuth['username']) != hash['msgAuth']['username']:
+            if str(self.msgAuth['username']) != hashed['msgAuth']['username']:
                 raise YomboMessageError("username doesn't match hash.", 'Message API::ValidateMsgAuth')
-            if str(self._generatePayloadHash()) != hash['payload']:
+            if str(self._generatePayloadHash()) != hashed['payload']:
                 raise YomboMessageError("payload doesn't match hash.", 'Message API::ValidateMsgAuth')
 
     def _generatePayloadHash(self):

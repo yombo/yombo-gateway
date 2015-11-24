@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 A shell for module developers to get basic items configured for modules.
 
@@ -44,7 +44,7 @@ Modules have 2 phases of shutdown: _stop, _unload
        def _init_(self):
            self._ModDescription = "Insteon API command interface"
            self._ModAuthor = "Mitch Schwenk @ Yombo"
-           self._ModUrl = "http://www.yombo.net/SomeUrlForDetailsAboutThisModule"
+           self._ModUrl = "https://yombo.net/SomeUrlForDetailsAboutThisModule"
 
            self._RegisterDistributions = ['cmd'] # register to get all CMD messages.
            self._RegisterVoiceCommands = [
@@ -85,9 +85,10 @@ documentation.
 """
 # Import Yombo libraries
 #from yombo.core.component import IModule
-from yombo.core.helpers import getModuleVariables, getDevices, getCommands, getDevicesByType, getModuleDeviceTypes, getCronTab, getTimes
+from yombo.core.helpers import getModuleVariables, getDevicesByDeviceType, getCommands, getCronTab, getTimes, getComponent
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
+
 
 class YomboModule:
     """
@@ -131,8 +132,11 @@ class YomboModule:
         self._Commands = getCommands()
         self._CronTab = getCronTab()
         self._Times = getTimes()
-        self._Devices = getDevices()
-        self._DevicesByType = getDevicesByType()
+
+        self._ModuleLibrary = getComponent('yombo.gateway.lib.modules')
+        self._DeviceLibrary = getComponent('yombo.gateway.lib.devices')
+
+        self._DevicesByType = getDevicesByDeviceType()  # returns a callable (function)
 
         self._LocalDevicesByUUID = {}
         self._LocalDeviceTypesByUUID = {}
@@ -149,14 +153,12 @@ class YomboModule:
         """
         self._ModType = moduleDetails['moduletype']
         self._ModuleUUID = moduleDetails['moduleuuid']
-        deviceTypes = getModuleDeviceTypes(moduleDetails['moduleuuid'])
-        for dtype in deviceTypes:
-            self._LocalDeviceTypesByUUID[dtype['devicetypeuuid']] = dtype['label']
-            self._LocalDeviceTypesByName[dtype['label']] = dtype['devicetypeuuid']
-            self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
-            for device in self._LocalDevicesByDeviceTypeUUID[dtype['devicetypeuuid']]:
-              self._LocalDevicesByUUID[device.deviceUUID] = device
+        self._Devices = self._ModuleLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
+        self._DevicesByName = {}
+        self._DeviceTypes = self._ModuleLibrary.getModuleDeviceTypes(self._ModuleUUID)
+        for device in self._Devices:
+            self._DevicesByName[self._Devices[device].label] = self._Devices[device].deviceUUID
 
     def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
         """
@@ -167,20 +169,23 @@ class YomboModule:
         :param newDeviceType: Updated or new device type. If deleted, this would be None.
         """
 
+        #TODO This entire thing is broken. DTYPE is not defined. What's up with that?
+
         #Handle updated first
-        if oldDeviceType != None and newDeviceType != None:
+        if oldDeviceType is not None and newDeviceType is None:
             self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']] = newDeviceType['label']
             del self._LocalDeviceTypesByName[oldDeviceType['label']]
             self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
 
         #handle new deviceTypes
-        elif oldDeviceType == None and newDeviceType != None:
+        elif oldDeviceType is None and newDeviceType is not None:
             self._LocalDeviceTypesByUUID[newDeviceType['devicetypeuuid']] = newDeviceType['label']
             self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
-            self._LocalDevicesByDeviceTypeUUID[newDeviceType['devicetypeuuid']] = self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
+            self._LocalDevicesByDeviceTypeUUID[newDeviceType['devicetypeuuid']] = \
+                self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
 
         #handle deleting a device type
-        elif oldDeviceType != None and newDeviceType == None:
+        elif oldDeviceType is not None and newDeviceType is None:
             del self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']]
             del self._LocalDeviceTypesByName[oldDeviceType['label']]
             del self._LocalDevicesByDeviceTypeUUID[oldDeviceType['devicetypeuuid']]
@@ -200,19 +205,18 @@ class YomboModule:
         :param newDevice: Updated or new device. If deleted, this would be Non.
         """
         #Handle updated first
-        if oldDevice != None and newDevice != None:
+        if oldDevice is not None and newDevice is not None:
             self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
 
         #handle new  (same as updating in this use case)
-        elif oldDeviceType == None and newDeviceType != None:
+        elif oldDevice is None and newDevice is not None:
             self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
 
         #handle deleting
-        elif oldDeviceType != None and newDeviceType == None:
+        elif oldDevice is not None and newDevice is None:
             del self._LocalDevicesByUUID[oldDevice.deviceUUID]
 
-        self._UpdateDevice_(oldDevice, newDevice)
-
+#        self._UpdateDevice_(oldDevice, newDevice)
 
     def _UpdateDeviceTypes_(self, oldDeviceType, newDeviceType):
         """

@@ -1,4 +1,6 @@
 # cython: embedsignature=True
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Allows for creation of a dictionary with a maximum size.
 

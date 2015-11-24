@@ -13,17 +13,19 @@ Documentation
 Installation instructions, getting started and in-depth API documentation can
 be found here:
 
-http://yombo.net/docs/gateway/current/
+https://yombo.net/docs/gateway/html/current/index.html
 
 ===========
 Quick Start
 ===========
 
-1. You must have a `Yombo account <http://yombo.net>`_ .
-2. Prepare your OS. Need to install python and various python modules.
-   See http://yombo.net/docs/gateway/current/chapters/prepare-operating-system.html
-3. See the ``install`` folder. Look for a file matching your operating with "OSVERSION-setup.ext".
-   For exmaple, Debian users can use ``debian-setup.sh`` to setup their system.
+1. Create an account at `Yombo account <https://yombo.net>`_ .
+2. Create a gateway at `app.yombo.net <https://app.yombo.net`_.
+3A. If you haven't downloaded the gateway software: See
+   https://yombo.net/docs/gateway/html/current/chapters/install-gateway.html
+3B. If you have the gateway software installed, see the ``install`` folder.
+   Look for a file matching your operating system. Run the "-setup" version.
+   For example: "debian-setup.sh".
 4. Configure the gateway: ./config.py
 5. You can run the Gateway from the local directory (thumb drive, etc)
    or install and have it start at bootup. The install folder contains
@@ -53,4 +55,4 @@ If you do not wish to release your source code of the software you build using Y
 Gateway as the base, you may use Yombo Gateway source and/or binaries under the Yombo
 Gateway Private License as described here:
 
-http://yombo.net/policies/licensing/yombo-private-license
+https://yombo.net/policies/licensing/yombo-private-license

@@ -1,6 +1,6 @@
 # cython: embedsignature=True
 #This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#software.  Details can be found at https://yombo.net
 """
 Handles getting configuration updates from the Yombo servers.
 
@@ -15,23 +15,23 @@ Handles getting configuration updates from the Yombo servers.
 """
 # Import python libraries
 from collections import deque
-import cPickle # to store dictionaries
+import cPickle  # to store dictionaries
 from sqlite3 import Binary as sqlite3Binary
 from time import time
 
 # Import twisted libraries
-from twisted.internet import defer, reactor
+from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
-from yombo.core.message import Message
+#from yombo.core.message import Message
 import yombo.core.db
 from yombo.core.db import get_dbconnection
-from yombo.core.helpers import getConfigValue, setConfigValue, getComponent, getConfigTime, generateRandom
+from yombo.core.helpers import getConfigValue, setConfigValue, getConfigTime
 from yombo.core.log import getLogger
 from yombo.core import getComponent
-from yombo.core.maxdict import MaxDict
+#from yombo.core.maxdict import MaxDict
 from yombo.core.exceptions import YomboWarning
 
 logger = getLogger('library.configurationupdate')
@@ -56,7 +56,6 @@ class ConfigurationUpdate(YomboLibrary):
         :type loader: :mod:`~yombo.lib.loader`
         """
         self.loader = loader
-        self.ampq_request_ids = MaxDict(200)
 
         self.__incomingConfigQueue = deque([])
         self.__incomingConfigQueueLoop = LoopingCall(self.__incomingConfigQueueCheck)
@@ -68,9 +67,9 @@ class ConfigurationUpdate(YomboLibrary):
         self.gwuuid = getConfigValue("core", "gwuuid")
 
         self.dbconnection = get_dbconnection()
-        if self.loader.unittest: # if we are testing, don't try to download configs
-          return
-        self.amqp = getComponent('yombo.gateway.lib.AMQPYombo')
+        if self.loader.unittest:  # if we are testing, don't try to download configs
+            return
+        self.AMQPYombo = getComponent('yombo.gateway.lib.AMQPYombo')
         self.loadDefer = defer.Deferred()
         self.loadDefer.addCallback(self.__loadFinish)
         self.getAllConfigs()
@@ -130,110 +129,141 @@ class ConfigurationUpdate(YomboLibrary):
             config = self.__incomingConfigQueue.pop()
             self.processConfig(config)
 
-    def amqp_direct_incoming(self, sendInfo, deliver, props, msg):
+    def amqpDirectIncoming(self, sendInfo, deliver, props, msg):
         # do nothing on requests for now.... in future if we ever accept requests, we will.
-        if props.headers['Type'] == "Response":
-                dt = sendInfo['time_sent'] - sendInfo['time_created']
-                ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-                logger.info("Delay between create and send: %s ms" % ms)
-        else:
-            raise YomboWarning("ConfigurationUpdate::amqp_direct_incoming only accepts 'Response' type message.")
+        if props.headers['Type'] != "Response":
+            raise YomboWarning("ConfigurationUpdate::amqpDirectIncoming only accepts 'Response' type message.") # For now...
+
         # if a response, lets make sure it's something we asked for!
+#        logger.info("received: %s, deliver: %s, props: %s, msg: %s" % (sendInfo, deliver, props, msg))
+#                dt = sendInfo['time_sent'] - sendInfo['time_created']
+#                ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
+#                logger.info("Delay between create and send: %s ms" % ms)
+        configType = props.headers['ConfigItem']
+        configStatus = props.headers['ConfigStatus']
+        inputType = props.headers['Type']
+ #       try:
+        self.processConfig(inputType, configType, configStatus, msg)
+#        except:
+#            raise YomboWarning("Unable to pre")
 
+    def processConfig(self, inputType, configType, configStatus, msg):
+        logger.info("processing configType: %s" % configType)
+        configTypes = {
+            'Commands' : {'table': "CommandsTable", 'map' : {
+                'Uri' : 'uri',
+                'UUID' : 'cmdUUID',
+                'voiceCmd' : 'voiceCmd',
+                'machineLabel' : 'machineLabel',
+                'label' : 'label',
+                'description' : 'description',
+                'inputtype' : 'inputTypeUUID',
+                'liveupdate' : 'liveUpdate',
+                'created' : 'created',
+                'updated' : 'updated',
+                'status' : 'status',
+                'public' : 'public',
+#                '' : '',
+            }},
+            'DeviceTypes' : {'table': "DeviceTypesTable", 'map' : {
+                'UUID' : 'deviceTypeUUID',
+                'Uri' : 'uri',
+                'MachineLabel' : 'machineLabel',
+                'Label' : 'label',
+                'Description' : 'description',
+                'LiveUpdate' : 'liveUpdate',
+                'Public' : 'public',
+                'Created' : 'created',
+                'Updated' : 'updated',
+                'Status' : 'status',
+#                '' : '',
+            }},
+            'DeviceTypeCommands' : {'table': "DeviceTypeCommandsTable", 'map' : {
+                'UUID' : 'deviceTypeUUID',
+                'CmdUUID' : 'cmdUUID',
+            }},
+            'GatewayConfigs' : {}, # Processed with it's own catch.
+            'GatewayDevices' : {'table': "DevicesTable", 'map' : {
+                'Uri' : 'uri',
+                'UUID' : 'deviceUUID',
+#                'machineLabel' : 'machineLabel',  #Not implemented yet.
+                'Label' : 'label',
+                'Description' : 'description',
+                'GatewayUUID' : 'gatewayUUID',
+                'Notes' : 'notes',
+                'VoiceCmd' : 'voiceCmd',
+                'VoiceCmdOrder' : 'voiceCmdOrder',
+                'VoiceCmdSrc' : 'VoiceCmdSrc',
+                'DeviceTypeUUID' : 'deviceTypeUUID',
+                'PinCode' : 'pinCode',
+                'PinRequired' : 'pinRequired',
+                'PinTimeout' : 'pinTimeout',
+                'Created' : 'created',
+                'Updated' : 'updated',
+                'Status' : 'status',
+#                '' : '',
+            }},
+            'GatewayModules' : {'table': "ModulesTable", 'map' : {
+                'UUID' : 'moduleUUID',
+                'Uri' : 'uri',
+                'MachineLabel' : 'machineLabel',
+                'ModuleType' : 'moduleType',
+                'Label' : 'label',
+                'Description' : 'description',
+                'InstallNotes' : 'installNotes',
+                'DocLink' : 'docLink',
+                'ProdVersion' : 'prodVersion',
+                'DevVersion' : 'devVersion',
+                'InstallBranch' : 'installBranch',
+                'Public' : 'public',
+                'Created' : 'created',
+                'Updated' : 'updated',
+                'Status' : 'status',
+            }},
+            'ModuleDeviceTypes' : {'table': "ModuleDeviceTypesTable", 'map' : {
+                'UUID' : 'deviceTypeUUID',
+                'ModuleUUID' : 'moduleUUID',
+                'ModuleLabel' : 'moduleLabel',
+                'ModuleType' : 'moduleType',
+                'Priority' : 'priority',
+            }},
+            'ModuleConfigs' : {'table': "ModuleVariablesTable", 'map' : {
+                'ModuleUUID' : 'moduleUUID',
+                'VariableUUID' : 'variableUUID',
+                'Weight' : 'weight',
+                'DataWeight' : 'dataWeight',
+                'MachineLabel' : 'machineLabel',
+                'Label' : 'label',
+                'Value' : 'value',
+                'Updated' : 'updated',
+                'Created' : 'created',
+            }},
 
-    def processConfig(self, msg):
-#        cfg = getComponent("yombo.lib.Configuration")
-        payload = msg['payload']
-        cmd = payload['cmd'].lower()
-        allCommands = [
-            "getCommands",
-            "getDevices",
-            "getDeviceTypeCommands",
-            "getGatewayDetails",
-            "getGatewayModules",
-            "getGatewayModuleInterfaces",
-            "getGatewayUserTokens",
-            "getGatewayVariables",
-            "getGatewayModuleDeviceTypes",
-            "getGatewayUsers",
-        ]
-
+#            "GatewayDetails",
+#            "GatewayModules",
+#            "GatewayUserTokens",
+#            "GatewayVariables",
+#            "GatewayModuleDeviceTypes",
+#            "GatewayUsers",
+        }
         cmdmap = {
-            'getfullconfigs': {'type': "GetFullConfigs"},
-            'getfullgatewaydetailsresponse': {'type': "GatewayDetailsResponse"},
             'getfullgatewayusertokensresponse': {'table': "gwTokensTable", 'type': "fullConfig"},
-            'getfullgatewayvariablesresponse': {'type': "GatewayVariablesResponse"},
-            'getfullcommandsresponse': {'table': "CommandsTable", 'type': "fullConfig"},
-            'getfullgatewaymoduleinterfacesresponse': {'table': "ModuleInterfacesTable", 'type': "fullConfig"},
-            'getfulldevicesresponse': {'table': "DevicesTable", 'type': "fullConfig"},
-            'getfulldevicetypecommandsresponse': {'table': "DeviceTypeCommandsTable", 'type': "fullConfig"},
-            'getfullmoduledevicetypesresponse': {'table': "ModuleDeviceTypesTable", 'type': "fullConfig"},
-            'getfullmodulesresponse': {'table': "ModulesTable", 'type': "fullConfig"},
             'getfullvariablemodulesresponse': {'table': "VariableModulesTable", 'type': "fullConfig"},
             'getfullvariabledevicesresponse': {'table': "VariableDevicesTable", 'type': "fullConfig"},
-            'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}}
+            'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}
+        }
 
-        logger.trace("Config Type: %s", cmdmap[cmd]['type'])
         # make sure the command exists
-        if cmd not in cmdmap:
-            logger.warning("ConfigurationUpdate::processConfig - Command '%s' doesn't exist. Skipping.", cmd)
+        if configType not in configTypes:
+            logger.warning("ConfigurationUpdate::processConfig - '%s' is not a valid configuration item. Skipping.", configType)
             return
-        elif 'type' not in cmdmap[cmd]:
-            logger.warning("ConfigurationUpdate::processConfig - Invalid commandMap. Skipping.")
-            return
-        elif cmdmap[cmd]["type"] == "fullConfig":
-            logger.trace("ConfigurationUpdate::processConfig - 'fullConfig' - %s.", cmdmap[cmd]["table"])
-            upd_table = getattr(yombo.core.db, cmdmap[cmd]["table"])
-            c = self.dbconnection.cursor()
-            if not upd_table:
-                logger.error("ConfigurationUpdate::processConfig - Invalid table to update: %s", upd_table.table_name)
-                return
-            c.execute("DELETE FROM " + upd_table.table_name)
-
-            logger.debug("ProcessConfig payload: %s", upd_table.table_name)
-
-            for record in payload["configdata"]:
-                items = record.items()
-                saveitems = []
-                for col, val in items:
-                    col_to_update = None
-                    for col_ in upd_table.columns:
-                        if col_.name == col:
-                            col_to_update = col_
-                    if not col_to_update:
-                        logger.error("ConfigurationUpdate::processConfig - Error while updating table: %s", upd_table.table_name)
-                        logger.error("ConfigurationUpdate::processConfig - Invalid column: %s", col)
-                        return 
-                    logger.trace("type = %s, col = '%s', val = '%s'", type(val), col, val)
-                    if type(val) is dict:
-                        val = sqlite3Binary(cPickle.dumps(val, cPickle.HIGHEST_PROTOCOL))
-#                    temp = (col, decryptPGP(val))
-                    temp = (col, val)
-                    saveitems.append(temp)
-
-                logger.trace('items: %s', items)
-                logger.trace('saveitems: %s', saveitems)
-                sql = "insert into %s (%s) values (%s)" % (upd_table.table_name,
-                    ", ".join(i[0] for i in items),
-                    ", ".join('?' for i in saveitems),
-                    )
-                logger.trace('sql: %s', sql)
-                logger.trace([i[1] for i in saveitems])
-                c.execute(sql, [i[1] for i in saveitems])               
-            self.dbconnection.pool.commit()
-            self._removeFullTableQueue(cmdmap[cmd]["table"])
-            if cmdmap[cmd]["table"] == "gwTokensTable":
-              setConfigValue('local', 'lastUserTokens', int(time()) )
-        elif cmdmap[cmd]["type"] == "partialConfig":
-            logger.error("ConfigurationUpdate::processConfig - 'partialConfig'.")
-        elif cmdmap[cmd]["type"] == "GatewayDetailsResponse":
-            record = payload["configdata"][0]
-            items = record.items()
-            for col, val in items:
-                setConfigValue("core", col, val)
-            self._removeFullTableQueue('GatewayDetailsTable')
-        elif cmdmap[cmd]["type"] == "GatewayVariablesResponse":
-            records = payload["configdata"]
+        elif configType == "GatewayConfigs":
+            payload = msg['Data']
+            for section in payload:
+                for key in section['Values']:
+                   setConfigValue(section['Section'], key['Key'], key['Value'])
+        elif configType == "GatewayVariable":
+            records = msg['Data']["configdata"]
             sendUpdates = []
             for record in records:
                 if getConfigTime(record['section'], record['item']) > record['updated']:
@@ -246,12 +276,164 @@ class ConfigurationUpdate(YomboLibrary):
 # needs to be implemented on server first!!
 #            if len(sendUpdates):
 #              self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'setGatewayVariables', 'configdata':sendUpdates}))
-            self._removeFullTableQueue('GatewayVariablesTable')
-        elif cmdmap[cmd]["type"] == "GetFullConfigs":
-            logger.info("Requesting full configuration update VIA process config.")
-            logger.trace("doing GetFullConfigs!  %s", msg)
-            self.getAllConfigs()
+#            self._removeFullTableQueue('GatewayVariablesTable')
+        elif configType in configTypes:
+            logger.trace("ConfigurationUpdate::processConfig - Doing config for: %s" % configType)
+            upd_table = getattr(yombo.core.db, configTypes[configType]["table"])
+            c = self.dbconnection.cursor()
+            if not upd_table:
+                logger.error("ConfigurationUpdate::processConfig - Invalid table to update: %s", upd_table.table_name)
+                return
+            if configStatus == "Full":  #Todo: Currently, this can only work when first started. Need to implement update while running.
+                c.execute("DELETE FROM " + upd_table.table_name)
 
+            data = []
+            if 'DataType' in msg:
+                if msg['DataType'] == 'Object': # a single response
+                    logger.debug("Processing single object config response.")
+                    data.append(msg['Data'])
+                elif msg['DataType'] == 'Objects': # An array of responses
+                    logger.debug("Processing multiple object config response.")
+                    data = msg['Data']
+            else:
+                if isinstance(msg, list):
+                    data = msg
+                elif isinstance(msg, dict):
+                    data = data.append(msg)
+                else:
+                    raise YomboWarning("Cannot process configuration update")
+
+            # Preprocessing for various configTypes
+            if configType == 'GatewayModules':
+                if configStatus == "Full":  # DeviceTypeCommands is included in full update.
+                    c.execute("DELETE FROM devicetypes")
+                    c.execute("DELETE FROM devicetypecommands")
+                    c.execute("DELETE FROM moduleDeviceTypes")
+                    self.dbconnection.pool.commit()
+
+            tempConfig = {}  # Usef for various tracking. Variable depends on configType being processed.
+            tempIndex = {}  # Usef for various tracking. Variable depends on configType being processed.
+            tempStorage = {}  # Usef for various tracking. Variable depends on configType being processed.
+#            tempIndex2 = []  # Usef for various tracking. Variable depends on configType being processed.
+#            tempStorage2 = []  # Usef for various tracking. Variable depends on configType being processed.
+
+            for record in data:
+                items = record.items()
+                savecols = []
+                saveitems = []
+
+                for col, val in items:
+                    col_to_update = None
+                    if col not in configTypes[configType]['map']:
+                        logger.debug("## Col (%s) not in table.." % col)
+                        continue
+                    tableCol = configTypes[configType]['map'][col]
+                    savecols.append(configTypes[configType]['map'][col])
+
+                    if upd_table.columnsByName[configTypes[configType]['map'][col]] == "INTEGER":
+                        val=int(val)
+                    elif upd_table.columnsByName[configTypes[configType]['map'][col]] == "REAL":
+                        val=float(val)
+                    elif type(val) is dict:
+                        val = sqlite3Binary(cPickle.dumps(val, cPickle.HIGHEST_PROTOCOL))
+#                    temp = (col, decryptPGP(val))
+                    temp = (col, val)
+                    saveitems.append(temp)
+
+                sql = "insert into %s (%s) values (%s)" % (upd_table.table_name,
+                    ", ".join(i for i in savecols),
+                    ", ".join('?' for i in saveitems),
+                    )
+#                logger.info('sql: %s', sql)
+                c.execute(sql, [i[1] for i in saveitems])
+
+                logger.trace("Pre checking nested %s" % configType)
+                # process any nested items here.
+                if configType == 'GatewayModules':
+                    if '1' not in tempConfig:
+                        tempConfig['1'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'ModuleDeviceTypes',
+                        }
+                        tempConfig['2'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'DeviceTypeCommands',
+                        }
+                        tempConfig['3'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'DeviceTypes',
+                        }
+                        tempConfig['4'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'ModuleConfigs',
+                        }
+                        tempIndex['1'] = []  # ModuleDeviceTypes
+                        tempIndex['2'] = []  # DeviceTypeCommands
+                        tempIndex['3'] = []  # DeviceTypes
+                        tempIndex['4'] = []  # ModuleConfigs
+                        tempStorage['1'] = []
+                        tempStorage['2'] = []
+                        tempStorage['3'] = []
+                        tempStorage['4'] = []
+
+#                    logger.info("devicetypes: %s" % record['DeviceTypes'][)
+                    if 'DeviceTypes' in record:
+                        for tempDT in record['DeviceTypes']:
+                            if tempDT['UUID'] not in tempIndex['3']:
+                                tempIndex['3'].append(tempDT['UUID'])
+                                tempStorage['3'].append(tempDT)
+
+    #                    logger.info("Call nested: %s" % record)
+                        for dt in record['DeviceTypes']:
+                            if dt['UUID'] not in tempIndex['1']:
+                                tempStorage['1'].append({
+                                    'UUID' : dt['UUID'],
+                                    'Priority' : dt['Priority'],
+                                    'ModuleUUID' : record['UUID'],  # record = module
+                                    'ModuleLabel' : record['MachineLabel'],
+                                    'ModuleType' : record['ModuleType'],
+                                })
+
+                            for dtc in dt['Commands']:
+                                if dt['UUID'] not in tempIndex['2']:
+                                    tempStorage['2'].append({
+                                        'UUID' : dt['UUID'],    #dt = devicetype
+                                        'CmdUUID' : dtc['UUID'],  #dtc = devicetypecommands
+                                    })
+
+                    # ModuleConfigs
+                    if 'ModuleConfigs' in record:
+                        for tempGroup in record['ModuleConfigs']:
+                            for tempField in tempGroup['Fields']:
+                                if tempField['FieldUUID'] not in tempIndex['4']:
+                                    tempIndex['4'].append(tempField['FieldUUID'])
+
+                                field = {
+                                    'ModuleUUID' : record['UUID'],  # record = module
+                                    'VariableUUID' : tempGroup['VariableUUID'],
+                                    'Weight' : tempGroup['Weight'],
+                                    'DataWeight' : tempField['Weight'],
+                                    'MachineLabel' : tempField['MachineLabel'],
+                                    'Label' : tempField['Label'],
+                                    'Value' : tempField['Value'],
+                                    'Updated' : tempField['Updated'],
+                                    'Created' : tempField['Created'],
+                                }
+                                tempStorage['4'].append(field)
+                # end if configType == 'GatewayModules'
+
+            for key, value in tempStorage.iteritems():
+#                logger.info("key: %s, value: %s" %(key, value))
+                self.processConfig(tempConfig[key]['inputType'], tempConfig[key]['configType'], configStatus, tempStorage[key])
+
+            self.dbconnection.pool.commit()
+#            if cmdmap[cmd]["table"] == "gwTokensTable":
+#              setConfigValue('local', 'lastUserTokens', int(time()) )
+        else:
+            raise YomboWarning("Unknown type on processing configuration update.")
+
+        if inputType == "Response" and configStatus == "Full":
+            self._removeFullDownloadQueue("Get" + configType)
         self.__incomingConfigQueueCheck()
         
     def getAllConfigs(self):
@@ -274,63 +456,53 @@ class ConfigurationUpdate(YomboLibrary):
         logger.trace("dogetallconfigs.....")
 
         allCommands = [
-            "getCommands",
-            "getDevices",
-            "getDeviceTypeCommands",
-            "getGatewayDetails",
-            "getGatewayModules",
-            "getGatewayModuleInterfaces",
-            "getGatewayUserTokens",
-            "getGatewayVariables",
-            "getGatewayModuleDeviceTypes",
-            "getGatewayUsers",
+            "GetCommands",
+            "GetDeviceTypes",
+            "GetGatewayDevices",
+            "GetGatewayModules", # includes ModuleDeviceTypes, DeviceTypeCommands
+            "GetGatewayConfigs",
+#            "GetModuleVariables",
+#            "getGatewayUserTokens",
+#            "getGatewayUsers",
         ]
-        for command in allCommands:
-            logger.info("sending command: %s"  % command)
-            requestContent = {"RequestType": command}
-            rand = generateRandom(length=12)
-            self.ampq_request_ids[rand] = requestContent
-            self.amqp.send_direct_message(**self._generateMessage(rand, requestContent))
+        for item in allCommands:
+            logger.trace("sending command: %s"  % item)
 
-    def _generateMessage(self, requestID, requestContent):
+            self._appendFullDownloadQueue(item)
+            self.AMQPYombo.sendDirectMessage(**self._generateRequest(item, "All"))
+        #todo: Put in a looping call and track re-requests for 'lost' items'.
+
+    def _generateRequest(self, request_type, requestContent):
         request = {
-              "DataType": "Object",
-              "Request": requestContent,
-            }
+            "exchange_name"  : "gw_config",
+            "source"        : "yombo.gateway.lib.configurationupdate",
+            "destination"   : "yombo.server.configs",
+            "callback" : self.amqpDirectIncoming,
+            "body"          : {
+              "DataType"        : "Object",
+              "Request"         : requestContent,
+            },
+            "request_type"   : request_type,
+        }
+        return self.AMQPYombo.generateRequest(**request)
 
-        requestmsg = {
-            "exchange_name"    : "gw_config",
-            "routing_key"      : '*',
-            "body"             : request,
-            "properties" : {
-                "correlation_id" : requestID,
-                "user_id"        : self.gwuuid,
-                "headers"        : {
-                    "Source"        : "yombo.gateway.lib.configurationupdate:" + self.gwuuid,
-                    "Destination"   : "yombo.server.configs",
-                    "Type"          : "Request",
-                    },
-                },
-            "callback"          : self.amqp_direct_incoming,
-            }
-        return requestmsg
-
-    def _appendFullTableQueue(self, table):
+    def _appendFullDownloadQueue(self, table):
         """
         Adds an item to pending table queue.
         
         Will be removed as each config item is returned by _removeFullTableQueue.
         """
-        logger.trace("_appendFullTableQueue:before - table: %s", table)
         if table not in self.__pendingUpdates:
+            logger.trace("Adding table to request queue: %s" % table)
             self.__pendingUpdates.append(table)
 
-    def _removeFullTableQueue(self, table):
+    def _removeFullDownloadQueue(self, table):
+        logger.debug("Removing table to request queue: %s" % table)
         if table in self.__pendingUpdates:
             self.__pendingUpdates.remove(table)
+        logger.debug("Configs pending: %s", self.__pendingUpdates)
 
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs == True:
             self.__doingfullconfigs = False
             self.loadDefer.callback(10) # a made up number.
-        logger.trace("Configs pending: %s", self.__pendingUpdates)
-            
+

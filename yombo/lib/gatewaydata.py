@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://www.yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Establishes a connection the Yombo servers to send bulk data transfers.
 Having a seperate connection allows commands to be send on the control
@@ -11,7 +11,7 @@ and data control is handled is handled by
 L{GatewayControl<yombo.lib.gatewaycontrol.GatewayControl>}.
 
 @author: U{Mitch Schwenk<mitch-api@yombo.net>}
-@organization: U{Yombo <http://www.yombo.net>}
+@organization: U{Yombo <http://yombo.net>}
 @copyright: 2010-2012 Yombo
 @license: see LICENSE.TXT from Yombo Gateway Software distribution
 @contact: U{Yombo Support <support-api@yombo.net>}
