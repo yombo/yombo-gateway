@@ -126,7 +126,7 @@ def resetLogLevels():
     """
     Used to reset the logs to their proper levels after
     configurations are downloaded. Also called when
-    recieved a config update.
+    received a config update.
     """
     from yombo.core.helpers import getConfigValue
     global loggers

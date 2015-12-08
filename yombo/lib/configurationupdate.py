@@ -474,7 +474,7 @@ class ConfigurationUpdate(YomboLibrary):
 
     def _generateRequest(self, request_type, requestContent):
         request = {
-            "exchange_name"  : "gw_config",
+            "exchange_name"  : "ysrv.e.gw_config",
             "source"        : "yombo.gateway.lib.configurationupdate",
             "destination"   : "yombo.server.configs",
             "callback" : self.amqpDirectIncoming,

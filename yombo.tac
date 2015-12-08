@@ -26,7 +26,7 @@ if not os.path.exists('usr/sql'):
     os.makedirs('usr/sql')
 #Misc items are stored here.
 if not os.path.exists('usr/etc'):
-    os.makedirs('usr/etct')
+    os.makedirs('usr/etc')
 #logging directory
 if not os.path.exists('usr/log'):
     os.makedirs('usr/log')

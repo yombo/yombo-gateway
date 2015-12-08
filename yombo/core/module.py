@@ -14,7 +14,7 @@ Modules have 3 phases of startup: _init, _load, _start.
       should wait until the module has completed it's init phase.
     - Load - All modules have completed init phase.  Now it's time to get the
       module ready to receive messages. By the time Load() finishes, the
-      module should be able to recieve messages - even if it queue for later.
+      module should be able to receive messages - even if it queue for later.
       A deferred can be returned if the :ref:`Loader`
       should wait until the module has completed it's load phase.
     - Start - The module should already be running by now. The module can 
@@ -31,7 +31,7 @@ Modules have 2 phases of shutdown: _stop, _unload
       should no longer send messages.  It can still receive them after this
       function ends.
     - Unload - This module should stop everything, close connections, close
-      files, save any work. The module will no longer recieve any messages
+      files, save any work. The module will no longer receive any messages
       during this phase of shutdown.
 
 **Usage**:
@@ -75,7 +75,7 @@ Modules have 2 phases of shutdown: _stop, _unload
             
 
 The module can register to any distribution that is a valid message type as
-well "all" to recieve all message types. See
+well "all" to receive all message types. See
 *msgType* details in the :py:meth:`yombo.core.message.Message.__init__`
 documentation.
 

@@ -58,7 +58,7 @@ class LogReader(YomboModule):
 
     def newContent(self, linein):
         """
-        Recieves new lines of text from the FileReader here.
+        Receives new lines of text from the FileReader here.
         """
         self.YomboBot.incoming(returncall=self.yomboBotReturn, linein=linein, msgid=generateUUID(), sessionid='logreaderSession')
 

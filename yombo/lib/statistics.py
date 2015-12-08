@@ -47,7 +47,7 @@ class Statistics(YomboLibrary):
     * lib.messages.count.status
     * lib.messages.count.command
     * lib.amqp.count.sent
-    * lib.amqp.count.recieved
+    * lib.amqp.count.received
     * core.yombo.memory.used
     * core.yombo.memory.free
 

@@ -96,7 +96,7 @@ class ListenerProtocol(basic.NetstringReceiver):
 
     def connectionMade(self):
         """
-        Called when a new connection is recieved from a client.
+        Called when a new connection is received from a client.
         """
         self.snonce = generateRandom()
         self.session = generateRandom(length=24)
