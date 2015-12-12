@@ -182,8 +182,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.trace("requestedItem: %s" % requestedItem)
-        logger.trace("self._modulesByUUID: %s" % self._modulesByUUID)
+        logger.debug("requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("self._modulesByUUID: {modulesByUUID}", modulesByUUID=self._modulesByUUID)
         if requestedItem in self._modulesByUUID:
             return self._modulesByUUID[requestedItem]
         else:
@@ -208,6 +208,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
+        logger.info("requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.info("_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
         if requestedItem in self._moduleDevicesByUUID:
             return self._moduleDevicesByUUID[requestedItem]
         else:
@@ -232,12 +234,12 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.trace("requestedItem: %s" % requestedItem)
+        logger.debug("requestedItem: {requestedItem}", requestedItem=requestedItem)
         if requestedItem in self._moduleDeviceTypesByUUID:
             return self._moduleDeviceTypesByUUID[requestedItem]
         else:
             try:
-                logger.trace("self._moduleDeviceTypesByName: %s" % self._moduleDeviceTypesByName)
+                logger.debug("self._moduleDeviceTypesByName: {moduleDeviceTypesByName}", moduleDeviceTypesByName=self._moduleDeviceTypesByName)
                 requestedUUID = self._moduleDeviceTypesByName[requestedItem.lower()]
                 return self._moduleDeviceTypesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:

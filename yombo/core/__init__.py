@@ -8,6 +8,9 @@
 :copyright: 2012-2015 by Yombo
 :license: LICENSE for details.
 """
+from yombo.core.log import getLogger
+
+logger = getLogger('core')
 
 
 def getComponent(name):

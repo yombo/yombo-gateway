@@ -12,9 +12,6 @@ Used by the Yombo Gateway framework to set up it's libraries.
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-#import zope.interface
-from yombo.core.component import IModule
-
 class YomboLibrary:
     """
     Define a basic class that setup basic library class variables.

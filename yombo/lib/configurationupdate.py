@@ -124,7 +124,7 @@ class ConfigurationUpdate(YomboLibrary):
         """
         Checks the incoming config queue 
         """
-#        logger.warning("configQueueCheck was just called.")
+#        logger.warn("configQueueCheck was just called.")
         while self.__incomingConfigQueue:
             config = self.__incomingConfigQueue.pop()
             self.processConfig(config)
@@ -255,7 +255,7 @@ class ConfigurationUpdate(YomboLibrary):
 
         # make sure the command exists
         if configType not in configTypes:
-            logger.warning("ConfigurationUpdate::processConfig - '%s' is not a valid configuration item. Skipping.", configType)
+            logger.warn("ConfigurationUpdate::processConfig - '%s' is not a valid configuration item. Skipping.", configType)
             return
         elif configType == "GatewayConfigs":
             payload = msg['Data']
@@ -278,7 +278,7 @@ class ConfigurationUpdate(YomboLibrary):
 #              self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'setGatewayVariables', 'configdata':sendUpdates}))
 #            self._removeFullTableQueue('GatewayVariablesTable')
         elif configType in configTypes:
-            logger.trace("ConfigurationUpdate::processConfig - Doing config for: %s" % configType)
+            logger.debug("ConfigurationUpdate::processConfig - Doing config for: %s" % configType)
             upd_table = getattr(yombo.core.db, configTypes[configType]["table"])
             c = self.dbconnection.cursor()
             if not upd_table:
@@ -347,7 +347,7 @@ class ConfigurationUpdate(YomboLibrary):
 #                logger.info('sql: %s', sql)
                 c.execute(sql, [i[1] for i in saveitems])
 
-                logger.trace("Pre checking nested %s" % configType)
+                logger.debug("Pre checking nested %s" % configType)
                 # process any nested items here.
                 if configType == 'GatewayModules':
                     if '1' not in tempConfig:
@@ -439,7 +439,7 @@ class ConfigurationUpdate(YomboLibrary):
     def getAllConfigs(self):
         # don't over do it on the the full config download. Might be a quick restart of gateway.
         logger.info("About to do getAllConfigs")
-        if self.__doingfullconfigs == True:
+        if self.__doingfullconfigs is True:
             return False
         lastTime = getConfigValue("core", "lastFullConfigDownload", 1)
         if int(lastTime) > (int(time() - 10)):
@@ -453,7 +453,7 @@ class ConfigurationUpdate(YomboLibrary):
         self.doGetAllConfigs()
 
     def doGetAllConfigs(self, junk=None):
-        logger.trace("dogetallconfigs.....")
+        logger.debug("dogetallconfigs.....")
 
         allCommands = [
             "GetCommands",
@@ -466,7 +466,7 @@ class ConfigurationUpdate(YomboLibrary):
 #            "getGatewayUsers",
         ]
         for item in allCommands:
-            logger.trace("sending command: %s"  % item)
+            logger.debug("sending command: %s"  % item)
 
             self._appendFullDownloadQueue(item)
             self.AMQPYombo.sendDirectMessage(**self._generateRequest(item, "All"))
@@ -493,7 +493,7 @@ class ConfigurationUpdate(YomboLibrary):
         Will be removed as each config item is returned by _removeFullTableQueue.
         """
         if table not in self.__pendingUpdates:
-            logger.trace("Adding table to request queue: %s" % table)
+            logger.debug("Adding table to request queue: %s" % table)
             self.__pendingUpdates.append(table)
 
     def _removeFullDownloadQueue(self, table):
@@ -502,7 +502,7 @@ class ConfigurationUpdate(YomboLibrary):
             self.__pendingUpdates.remove(table)
         logger.debug("Configs pending: %s", self.__pendingUpdates)
 
-        if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs == True:
+        if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs is True:
             self.__doingfullconfigs = False
             self.loadDefer.callback(10) # a made up number.
 

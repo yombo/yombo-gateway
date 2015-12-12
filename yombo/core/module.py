@@ -88,6 +88,9 @@ documentation.
 from yombo.core.helpers import getModuleVariables, getDevicesByDeviceType, getCommands, getCronTab, getTimes, getComponent
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
+from yombo.core.log import getLogger
+
+logger = getLogger('library.yombomodule')
 
 
 class YomboModule:
@@ -134,6 +137,7 @@ class YomboModule:
         self._Times = getTimes()
 
         self._ModuleLibrary = getComponent('yombo.gateway.lib.modules')
+        logger.info("self._moduleLibrary = {moduleLibrary}", moduleLibrary=self._ModuleLibrary)
         self._DeviceLibrary = getComponent('yombo.gateway.lib.devices')
 
         self._DevicesByType = getDevicesByDeviceType()  # returns a callable (function)
@@ -153,12 +157,16 @@ class YomboModule:
         """
         self._ModType = moduleDetails['moduletype']
         self._ModuleUUID = moduleDetails['moduleuuid']
-
+        logger.info("moduleuuid = {moduleuuid}", moduleuuid=self._ModuleUUID)
+        logger.info("_ModuleLbrary = {ModuleLbrary}", ModuleLbrary=self._ModuleLibrary)
         self._Devices = self._ModuleLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
-        self._DevicesByName = {}
+#        self._DevicesByName = FuzzySearch({}, .95)
+#        for device in self._Devices:
+#            self._DevicesByName[self._Devices[device].label] = self._Devices[device].deviceUUID
+
         self._DeviceTypes = self._ModuleLibrary.getModuleDeviceTypes(self._ModuleUUID)
-        for device in self._Devices:
-            self._DevicesByName[self._Devices[device].label] = self._Devices[device].deviceUUID
+
+        logger.info("devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
 
     def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
         """

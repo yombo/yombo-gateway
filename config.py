@@ -48,11 +48,11 @@ gwpin = None
 apikey = 'asdf'
 
 #ensure we are working in the directory where yombo is installed
-if os.path.isfile('yombo.tac') == False:
+if os.path.isfile('yombo.tac') is False:
   print "Configuration tool must execute in same folder as Yombo Gateway."
   sys.exit(1)
 
-if os.path.isfile('twistd.pid') == True:
+if os.path.isfile('twistd.pid') is True:
   print "It appears Yombo Gateway is already running.  Cannot run this tool at same time."
   sys.exit(1)
 
@@ -227,7 +227,7 @@ def deleteIni():
     """
     global yomboini
     global yomboconfig
-    if os.path.isfile('yombo.tac') == True:
+    if os.path.isfile('yombo.tac') is True:
         os.remove('yombo.ini')
 
 def deleteSql():
@@ -237,7 +237,7 @@ def deleteSql():
     global yomboini
     global yomboconfig
     try:
-        if os.path.isfile('usr/sql/config.sqlite3') == True:
+        if os.path.isfile('usr/sql/config.sqlite3') is True:
             os.remove('usr/sql/config.sqlite3')
     except:
         raise Exception("Error with yombo.ini file, cannot write to file. Have permission?")
@@ -252,7 +252,7 @@ def testIni():
     global gwhash
     global yomboconfig
     yomboini = 'yombo.ini'
-    if os.path.isfile(yomboini) == False:
+    if os.path.isfile(yomboini) is False:
         yomboconfig = ConfigParser.SafeConfigParser()
         yomboconfig.add_section('core')
         yomboconfig.add_section('local')
@@ -331,7 +331,7 @@ def setConfig(cfgSection, cfgKey, cfgValue, saveIt=True):
       updateItem = cfgSection + "_+_" + cfgKey + "_+_hash"
       yomboconfig.set('updateinfo', updateItem, hashlib.sha224(str(cfgValue)).hexdigest() )
 
-    if saveIt == True:
+    if saveIt is True:
         saveIni()
     return True
 
@@ -397,7 +397,7 @@ def updateBundle(bundle, location, section, item, value, setmeta=True):
   if section not in bundle[location]:
       bundle[location][section] = {}
   bundle[location][section][item] = value
-  if setmeta == True:
+  if setmeta is True:
     bundle['meta']['dirtyIni'] = True
     bundle['meta']['dirtyApi'] = True
 
@@ -408,7 +408,7 @@ def loadBundleFromFile(bundle=None):
   readIni()
 
   gwuuid = getConfig('core', 'gwuuid')
-  if bundle == None:
+  if bundle is None:
     bundle = setupBundle()
 
   for section in yomboconfig.sections():
@@ -420,7 +420,7 @@ def loadBundleFromFile(bundle=None):
   return bundle
 
 def updateBundleFromAPI(gwuuid, bundle=None):
-  bundle = setupBundle() if bundle == None else bundle
+  bundle = setupBundle() if bundle is None else bundle
   response = gatewayFetchDetail(gwuuid)
   variables = response['variables']
 
@@ -469,7 +469,7 @@ def saveBundleToAPI(bundle, newgw=False):
         'variables' : variables,
       }
 
-  if newgw == False:
+  if newgw is False:
 #    print "in savebundletoapi - posting update!"
 #    print("/api/v1/gateway_registered/%s :: %s :: %s" % (gwuuid, upload, 'patch'))
     yomboSend("/api/v1/gateway_registered/%s" % gwuuid, upload, 'patch')
@@ -793,16 +793,16 @@ def gatewaySelectExisting():
             if privkeys[key]['keyid'][-8:] == existingKey[-8:]:
                 localKeyFound = True
 
-    if localKeyFound == False:
+    if localKeyFound is False:
         print "\n\rReceived a GPG / PGP key id that was not found in your keyring."
         print "Select an existing key or generate a new key for this gateway."
         print "**OR** copy the existing key to this computer and re-run this tool."
-        if GPGKeySelect(bundle) == False:
+        if GPGKeySelect(bundle) is False:
             raise Exception("Problem with encryption key pair selection")
 #        updateBundle(bundle, 'both', 'core', 'gpgkeyid', results['gpgkeyid'])
 #        updateBundle(bundle, 'both', 'core', 'gpgkeyascii', results['gpgkeyascii'])
 
-    if localKeyFound == False:
+    if localKeyFound is False:
         sendKey(results['gpgkeyid'], results['gpgkeyascii'])
     else:
         print "Key reported from server was found on this computer. Great!"
@@ -881,7 +881,7 @@ def menuGateway(**kwargs):
       print "Invalid command.  Try again.\n\r"
 
 def checkIfDirty(bundle):
-    if bundle['meta']['dirtyApi'] == True or bundle['meta']['dirtyIni'] == True:
+    if bundle['meta']['dirtyApi'] is True or bundle['meta']['dirtyIni'] is True:
         print "Changes haven't been saved. Changes will be lost if not saved."
         doContinue = True
         while doContinue:
@@ -915,15 +915,15 @@ def gatewayNew():
   bundle = setupBundle()
   updateBundle(bundle, 'both', 'backup', 'devicehistory', 1)
   
-  if gatewayLabel(bundle) == False:
+  if gatewayLabel(bundle) is False:
       print "Error collecting basic information, not creating new gateway."
       return
   
-  if gatewayLocation(bundle) == False:
+  if gatewayLocation(bundle) is False:
       print "Error collecting location and timezone information, not creating new gateway."
       return
 
-  if GPGKeySelect(bundle) == False:
+  if GPGKeySelect(bundle) is False:
       print "Error with encryption keys, not creating new gateway."
       return
 
@@ -943,7 +943,7 @@ def gatewayLabel(bundle):
   newLabel = ''
   newDesc = ''
   while doContinu + "&format=json"e:
-    if doSkip == False:
+    if doSkip is False:
       print "\n\rBasic gateway information."
       newLabel = raw_input('Gateway label [%s]: ' % (newLabel if newLabel != '' else label,))
       showDesc = newDesc[0:20] if newDesc != '' else desc[0:20]
@@ -1122,9 +1122,9 @@ def checkLoginCredentials():
     accounthash = getConfig('local','accounthash')
     accountsession = getConfig('local','accountsession')
 
-    if account == None:
+    if account is None:
       return False
-    if accountsession != None:
+    if accountsession is not None:
       response = yomboGetUrl("/api/v1/user_validatesession?sessionid=%s" % (accountsession,))
       if response['result'] == 'success':
         print "Valid account found at Yombo."
@@ -1132,7 +1132,7 @@ def checkLoginCredentials():
         return True
       else:
         return False
-    if accounthash != None:
+    if accounthash is not None:
       response = yomboGetUrl("/api/v1/user_loginwithhash?apikey=%s&username=%s&userhash=%s" % (apikey, account, accounthash))
       if response['result'] == 'success':
         print "User has a valid userhash. Saving session id, clearing userhash."
@@ -1152,7 +1152,7 @@ def promptForString(promptDescription, promptLine, showInput=True, required=True
             theinput = raw_input("%s:" % promptLine)
         else:
             theinput = getpass.getpass("%s:" % promptLine)
-        if len(theinput) == 0 and required == False:
+        if len(theinput) == 0 and required is False:
           doAsk = False
           return theinput
         else:
@@ -1217,7 +1217,7 @@ def promptLoginCredentials():
 #       This will reqire user to use mobile app or website to request gateway pin setup.
 
 
-if testIni() == False:  # a new gateway setup
+if testIni() is False:  # a new gateway setup
     print "\n\rIt appears this is a new gateway installation or the configuration has been wipped.\n\r"
     print "You will need the one-time Gateway setup PIN code. This is provided when a new Gateway is\n\r"
     print "created. This PIN code is good for only one use. If you new a new PIN, use the Yombo APP and\n\r"

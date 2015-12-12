@@ -52,25 +52,25 @@ except ImportError:
     HASMSGPACK = False
 
 import pika
-from pika import spec
-from pika import exceptions
+#from pika import spec
+#from pika import exceptions
 from pika.adapters import twisted_connection
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet import ssl, protocol, defer, reactor
+from twisted.internet import ssl, protocol, defer
 from twisted.python import log
 from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical, YomboMessageError
-from yombo.core.helpers import getConfigValue, setConfigValue, generateRandom, sleep
+from yombo.core.helpers import getConfigValue, generateRandom, percentage, getComponent
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.maxdict import MaxDict
 from yombo.core.message import Message
 
-logger = getLogger('library.AMQPYombo')
+logger = getLogger('library.amqpyombo')
 
 PREFETCH_COUNT = 10  # determine how many messages should be received/inflight
                      # before yombo servers stop sending us messages. Shoul ACK/NACK
@@ -92,6 +92,9 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         self.factory = factory
         self._consumers = {}
         super(PikaProtocol, self).__init__(self.factory.AMQPYombo.parameters)
+        self.startupRequestID = generateRandom(length=12) #gw
+
+        self.incoming_queue = []
 
     @inlineCallbacks
     def connected(self, connection):
@@ -100,7 +103,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
 
         :param connection: The connection to Yombo AMQP server.
         """
-        logger.info("In PikaProtocol connected")
+        self.logLocation("debug", "PikaProtocol::connected")
         self.connection = connection
         self.channel = yield connection.channel()
 
@@ -112,21 +115,68 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         yield self.channel.basic_qos(prefetch_count=PREFETCH_COUNT)
         logger.info("!!!!! Setting AMQP connected to true.")
         self.connected = True
-        self.send()
 
-        self.factory.connected()
+        register = {
+                    "queue_name"           : "ygw.q." + self.factory.AMQPYombo.gwuuid,
+                    "queue_no_ack"         : False,
+                    "callback"             : self.factory.incoming,
+                    "yamqp_register_persist" : False,
+                   }
+        self.setup_register_consumer(**register)
+
+        request = {
+              "DataType": "Object",
+              "Request": {
+                    "LocalIPAddress"    : getConfigValue("core", "localipaddress"),
+                    "ExternalIPAddress" : getConfigValue("core", "externalipaddress"),
+              },
+            }
+
+        requestmsg = {
+            "exchange_name"    : "ysrv.e.gw_config",
+            "routing_key"      : '*',
+            "body"             : request,
+            "properties" : {
+                "correlation_id" : self.startupRequestID,
+                "user_id"        : self.factory.AMQPYombo.gwuuid,
+                "headers"        : {
+                    "Source"        : "yombo.gateway.lib.amqpyombo:" + self.factory.AMQPYombo.gwuuid,
+                    "Destination"   : "yombo.server.amqpyombo",
+                    "Type"          : "Request",
+                    "RequestType"   : "Startup",
+                    },
+                },
+            "callback"          : None,
+            "correlation_type"  : "local",
+            }
+
+        self.factory.sentCorrelationIDs[self.startupRequestID] = {
+            "time_created"      : datetime.now(),
+            'time_sent'         : None,
+            "time_received"     : None,
+            "callback"          : None,
+            "correlation_type"  : "local",
+        }
+
+        requestmsg['properties'] = pika.BasicProperties(**requestmsg['properties'])
+        self.sendMessage(**requestmsg)
 
     def close(self):
-        logger.info("In PikaProtocol close - trying to close!!!!!!!!!!!")
+        self.logLocation("debug", "PikaProtocol::close", "Trying to close!")
         try:
             self.channel.close()
         except:
             pass
 
+    def logLocation(self, level, location, msg=""):
+        logit = func = getattr(logger, level)
+        logit("In {location} : {msg}", location=location, msg=msg)
+
     def register_consumer(self):
         """
         Bind to a queue
         """
+        self.logLocation("debug", "PikaProtocol::setup_register_consumer")
         if self.connected == True:
             for key in self.factory.consumer_list.keys():
                 if self.factory.consumer_list[key]['yaqmp_registered'] == False:
@@ -140,7 +190,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         """
         Sets up the actual binding.
         """
-        logger.info("#$########: in setup_register_consumer")
+        self.logLocation("debug", "PikaProtocol::setup_register_consumer")
         (queue, consumer_tag,) = yield self.channel.basic_consume(queue=kwargs['queue_name'], no_ack=kwargs['queue_no_ack'])
         d = queue.get()
         d.addCallback(self._read_item, queue, kwargs['queue_no_ack'], kwargs['callback'])
@@ -159,7 +209,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         Callback function which is called when an item is read. Forwards the item received
         to the correct callback method.
         """
-        logger.info("In PikaProtocol _read_item")
+        self.logLocation("debug", "PikaProtocol::setup_unregister_consumer")
         d = queue.get()
         d.addCallback(self._read_item, queue, queue_no_ack, callback)
         d.addErrback(self._read_item_err)
@@ -167,29 +217,45 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         if props.correlation_id in self.factory.sentCorrelationIDs:
             self.factory.sentCorrelationIDs[props.correlation_id]['time_received'] = datetime.now()
 
-        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
+#        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
-#        if props.correlation_id == None or not isinstance(props.correlation_id, basestring):
-#            logger.info("!!!")
-#            raise YomboWarning("correlation_id must be present and be a string.")
         try:
+            # do nothing on requests for now.... in future if we ever accept requests, we will.
+            if props.headers['Type'] == 'Request':
+                raise YomboWarning("Currently not accepting requests.")
+            # if a response, lets make sure it's something we asked for!
+            elif props.headers['Type'] == "Response":
+                if props.correlation_id is None or not isinstance(props.correlation_id, basestring):
+                    raise YomboWarning("Correlation_id must be present for 'Response' types, and must be a string.")
+                if props.correlation_id not in self.factory.sentCorrelationIDs:
+                    logger.debug("{correlation_id} not in list of ids: {sentCorrelationIDs} ", correlation_id= props.correlation_id, sentCorrelationIDs=self.factory.sentCorrelationIDs)
+                    raise YomboWarning("Received request {correlation_id}, but never asked for it. Discarding", correlation_id=props.correlation_id)
+            else:
+                raise YomboWarning("Unknown message type recieved.")
 
-            if props.user_id == None:
+            if props.user_id is None:
                 raise YomboWarning("user_id missing.")
-            if props.content_type == None:
+            if props.content_type is None:
                 raise YomboWarning("content_type missing.")
-            if props.content_encoding == None:
+            if props.content_encoding is None:
                 raise YomboWarning("content_encoding missing.")
             if props.content_encoding != 'text' and props.content_encoding != 'zlib':
                 raise YomboWarning("Content Encoding must be either  'text' or 'zlib'. Got: " + props.content_encoding)
             if props.content_type != 'text/plain' and props.content_type != 'application/msgpack' and  props.content_type != 'application/json':
                 logger.warn('Error with contentType!')
-                raise YomboWarning("Content type must be 'msgpack', 'string' or 'json'. Got: " + props.content_type)
+                raise YomboWarning("Content type must be 'application/msgpack', 'application/json' or 'text/plain'. Got: " + props.content_type)
 
+            self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.recieved")
             if props.content_encoding == 'zlib':
+                beforeZlib = len(msg)
                 msg = zlib.decompress(msg)
+                afterZlib = len(msg)
+                self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.compressed")
+                self.factory.StatisticsLibrary.timing("lib.amqpyombo.amqp.compressed", percentage(afterZlib, beforeZlib))
 
-            logger.info("aaa")
+            else:
+                self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.uncompressed")
+
             if props.content_type == 'application/json':
                 if self.is_json(msg):
                     msg = json.loads(msg)
@@ -201,7 +267,6 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 else:
                     raise YomboWarning("Received msg reported msgpack, but isn't.")
 
-            logger.info("bbb")
             # do nothing on requests for now.... in future if we ever accept requests, we will.
             if props.headers['Type'] == 'Request':
                 raise YomboWarning("Currently not accepting requests.")
@@ -212,59 +277,33 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
 
             deliver, props, msg = self.validate_incoming(deliver, props, msg)
         except YomboWarning as e:
-          logger.info("_read_item is bad: %s" % e)
           if not queue_no_ack:
-            logger.info("Sending NACK due to invalid request. Tag: %s" % deliver.delivery_tag)
+            logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}", status='NACK', tag=deliver.delivery_tag)
             channel.basic_nack(deliver.delivery_tag, False, False)
         except Exception as e:
-          logger.info("Some other exception: %s" % e)
-          channel.basic_nack(deliver.delivery_tag, False, False)
+          if not queue_no_ack:
+            logger.debug("AMQP Sending {status} due to unknown exception. Tag: {tag}", status='NACK', tag=deliver.delivery_tag)
+            channel.basic_nack(deliver.delivery_tag, False, False)
           raise Exception
         else:
-          logger.trace('Calling callback: %s ' % callback)
-
-          d = defer.maybeDeferred(callback, deliver, props, msg)
+          logger.info('Calling callback: {callback}', callback=callback)
+          d = defer.maybeDeferred(callback, deliver, props, gmsg)
           if not queue_no_ack:
-            logger.trace("ACK: Activating delivery tag: %s" % deliver.delivery_tag)
+            # if it gets here, it's passed basic checks. Lets either store the message for later or pass it on.
+            logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}", status='ACK', tag=deliver.delivery_tag)
             d.addCallback(self._basic_ack, channel, deliver.delivery_tag)
             d.addErrback(self._basic_nack, channel, deliver.delivery_tag)
 
     def _basic_ack(self, tossaway, channel, tag):
-        logger.info("In ack: %s" % tag)
+        self.logLocation("debug", "PikaProtocol::_basic_ack", "Tag: %s" % tag)
         channel.basic_ack(tag)
 
     def _basic_nack(self, error, channel, tag):
-        logger.info("Error: %s" % error)
-        logger.info("In nack: %s" % tag)
+        self.logLocation("debug", "PikaProtocol::_basic_nack", "Tag: %s" % tag)
         channel.basic_nack(tag, False, False)
 
-
-    def validate_incoming(self, deliver, props, msg):
-        logger.debug("validate_incoming")
-        if props.correlation_id == None or not isinstance(props.correlation_id, basestring):
-            raise YomboWarning("correlation_id must be present and be a string.")
-
-        if props.user_id == None:
-            raise YomboWarning("user_id missing.")
-        if props.content_type == None:
-            raise YomboWarning("content_type missing.")
-        if props.content_type != 'text/plain' and props.content_type != 'application/msgpack' and  props.content_type != 'application/json':
-            logger.warn('Error with contentType!')
-            raise YomboWarning("Content type must be 'msgpack', 'string' or 'json'. Got: " + props.content_type)
-
-        # do nothing on requests for now.... in future if we ever accept requests, we will.
-        if props.headers['Type'] == 'Request':
-            raise YomboWarning("Currently not accepting requests.")
-        # if a response, lets make sure it's something we asked for!
-        elif props.headers['Type'] == "Response":
-            if props.correlation_id not in self.factory.sentCorrelationIDs:
-                logger.info("################# list of ids: %s " % self.factory.sentCorrelationIDs)
-                raise YomboWarning("Received request %s, but never asked for it. Discarding" % props.correlation_id)
-
-        return deliver, props, msg
-
     def _read_item_err(self, error):
-        logger.debug("In PikaProtocol _read_item_err: %s" % error)
+        self.logLocation("debug", "PikaProtocol::_read_item_err", "Error: %s" % error)
 
     def send(self):
         """
@@ -273,21 +312,21 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         #TODO: Add timestamp to a message and check against TTL. Ensure message
           isn't expired before being sent.
         """
-        logger.trace("In PikaProtocol send %s" % self.connected)
+        self.logLocation("debug", "PikaProtocol::send")
         if self.connected:
-            while len(self.factory.queued_messages) > 0:
-                message = self.factory.queued_messages.pop(0)
-                self.send_message(**message)
+            while len(self.factory.outgoing_queue) > 0:
+                message = self.factory.outgoing_queue.pop(0)
+                self.sendMessage(**message)
 
     @inlineCallbacks
-    def send_message(self, **kwargs):
+    def sendMessage(self, **kwargs):
         """
         Send a single message.
         """
-#        logger.trace("In PikaProtocol send_message a: %s" % kwargs['properties'].correlation_id)
+#        logger.debug("In PikaProtocol sendMessage a: %s" % kwargs['properties'].correlation_id)
 #        prop = spec.BasicProperties(delivery_mode=2)
 
-        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
+#        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
         if HASMSGPACK:
             kwargs['body'] = msgpack.dumps(kwargs['body'])
             kwargs['properties'].content_type = "application/msgpack"
@@ -304,10 +343,10 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         try:
             if kwargs['properties'].correlation_id in self.factory.sentCorrelationIDs:
                 self.factory.sentCorrelationIDs[kwargs['properties'].correlation_id]['time_sent'] = datetime.now()
-            logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
+#            logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
             yield self.channel.basic_publish(exchange=kwargs['exchange_name'], routing_key=kwargs['routing_key'], body=kwargs['body'], properties=kwargs['properties'])
         except Exception as error:
-            logger.warn('Error while sending message: %s' % error)
+            logger.warn('Error while sending message: {error}', error=error)
 
     def is_json(self, myjson):
         try:
@@ -330,9 +369,9 @@ class PikaFactory(protocol.ReconnectingClientFactory):
     AMQPProtocol = None #
 
     def __init__(self, AMQPYombo):
-        logger.trace("In PikaFactory __init__")
+        self.logLocation("debug", "PikaFactory::__init__")
         self._Name = "PikaFactory"
-        self._FullName = "yombo.server.lib.PikaFactory"
+        self._FullName = "yombo.gateway.lib.PikaFactory"
         # DO NOT CHANGE THESE!  Mitch Schwenk @ yombo.net
         # Reconnect sort-of fast, but random. ~25 second max wait
         # This is set incase a server reboots, don't DDOS the servers!
@@ -341,108 +380,53 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.factor = 1.82503912
         self.maxDelay = 25 # this puts retrys around 17-26 seconds
 
+        self.StatisticsLibrary = getComponent('yombo.gateway.lib.statistics')
         self.AMQPYombo = AMQPYombo
         self.AMQPProtocol = None
-        self.queued_messages = []
-
-        self.exchange_list = {}
-        self.queue_list = {}
-        self.queue_bind_list = {}
-        self.consumer_list = {}
-
-        self.fullyConnected = False  # connected to AMQP, and ready to send messages.   #gw
-        self.startupRequestID = generateRandom(length=12) #gw
+        self.outgoing_queue = []
+        self.outgoing_persistent_queue = [] #to use? if so, make into sqldict
         self.incoming_queue = []
 
+        self.fullyConnected = False  # connected to AMQP, and ready to send messages.   #gw
+
+    def logLocation(self, level, location, msg=""):
+        logit = func = getattr(logger, level)
+        logit("In {location} : {msg}", location=location, msg=msg)
+
     def startedConnecting(self, connector):
-        logger.trace("In PikaFactory startedConnecting")
+        self.logLocation("debug", "PikaFactory::startedConnecting")
 
     def buildProtocol(self, addr):
-        logger.trace("In PikaFactory buildProtocol")
+        self.logLocation("debug", "PikaFactory::buildProtocol")
         self.resetDelay()
         self.AMQPProtocol = PikaProtocol(self)
         self.AMQPProtocol.factory = self
         self.AMQPProtocol.ready.addCallback(self.AMQPProtocol.connected)
         return self.AMQPProtocol
 
-#    @inlineCallbacks
-    def connected(self):  #gw
-        logger.info("Connected to AMQP service. Saying hello.")
-
-        register = {
-                    "queue_name"           : "ygw.q." + self.AMQPYombo.gwuuid,
-                    "queue_no_ack"         : False,
-                    "callback"             : self.incoming,
-                    "yamqp_register_persist" : False,
-                   }
-        self.register_consumer(**register)
-
-        request = {
-              "DataType": "Object",
-              "Request": {
-                    "LocalIPAddress"    : getConfigValue("core", "localipaddress"),
-                    "ExternalIPAddress" : getConfigValue("core", "externalipaddress"),
-              },
-            }
-
-        requestmsg = {
-            "exchange_name"    : "ysrv.e.gw_config",
-            "routing_key"      : '*',
-            "body"             : request,
-            "properties" : {
-                "correlation_id" : self.startupRequestID,
-                "user_id"        : self.AMQPYombo.gwuuid,
-                "headers"        : {
-                    "Source"        : "yombo.gateway.lib.amqpyombo:" + self.AMQPYombo.gwuuid,
-                    "Destination"   : "yombo.server.amqpyombo",
-                    "Type"          : "Request",
-                    "RequestType"   : "Startup",
-                    },
-                },
-            "callback"          : None,
-            "correlation_type"  : "local",
-            }
-
-        self.sentCorrelationIDs[requestmsg['properties']['correlation_id']] = {
-            "time_created"      : datetime.now(),
-            'time_sent'         : None,
-            "time_received"     : None,
-            "callback"          : None,
-            "correlation_type"  : "local",
-        }
-
-        requestmsg['properties'] = pika.BasicProperties(**requestmsg['properties'])
-        self.AMQPProtocol.send_message(**requestmsg)
+    def connected(self):
+        #todo: do incoming and outgoing queues!
+        for queue_item in self.incoming_queue:
+            logger.info("Incoming loop....")
+            d = defer.maybeDeferred(self.do_incoming, queue_item['deliver'], queue_item['properties'], queue_item['message'])
+        self.incoming_queue = []
 
     def incoming(self, deliver, properties, msg):
-        """
-        Incoming from Yombo AMQP server.
-        """
-        #logger.info("deliver (%s), props (%s), message (%s)" % (deliver, properties, message,))
-        logger.info("do incoming")
-
         item = {
             "deliver" : deliver,
             "properties" : properties,
             "message" : msg,
         }
 
-#        logger.info("item: %s" % item)
-
         # first, lets process a startup complete if available.
-        logger.info("pppp")
         if self.fullyConnected == False:
-            logger.info("pppp1 %s == %s && %s" % (self.startupRequestID, properties.correlation_id, properties.headers['ResponseType']))
-            if (self.startupRequestID == properties.correlation_id and
+            if (self.AMQPProtocol.startupRequestID == properties.correlation_id and
                 properties.headers['ResponseType'] == 'Startup'):
-                logger.info("pppp2")
-                logger.info("msg: %s" % msg)
+                logger.debug("msg: {msg}", msg=msg)
                 if msg['Startup'] == 'Ok':
-                    logger.info("pppp3")
                     self.fullyConnected = True
-#                    self.AMQPProtocol.setup_unregister_consumer()
                     logger.info("Fully connected")
-
+                    self.connected()
                     self.AMQPYombo.connected()
                     self.AMQPProtocol.send()
                 else:
@@ -451,14 +435,18 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 self.incoming_queue.append(item)
             return
         else:
+            self.do_incoming(deliver, properties, msg)
             for queue_item in self.incoming_queue:
                 logger.info("Incoming loop....")
-                self.do_incoming(queue_item['deliver'], queue_item['properties'], queue_item['message'])
+                d = defer.maybeDeferred(queue_item['callback'], queue_item['deliver'], queue_item['props'], queue_item['msg'])
+
             self.incoming_queue = []
-            self.do_incoming(deliver, properties, msg)
 
     def do_incoming(self, deliver, properties, msg):
-        logger.debug("do_incoming item")
+        """
+        Incoming from Yombo AMQP server.
+        """
+        self.logLocation("debug", "PikaFactory::do_incoming")
         if msg['Code'] != 200:
             raise YomboWarning("Yombo service responsed with code %s: %s" %(msg['Code'], msg['Message']))
 
@@ -469,20 +457,20 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         elif properties.headers['Type'] == "Response":
             dt = self.sentCorrelationIDs[properties.correlation_id]['time_received'] - self.sentCorrelationIDs[properties.correlation_id]['time_sent']
             ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-            logger.info("Message Response time: %s ms" % ms)
+            logger.info("Message Response time: {mesageResponseTime} ms", mesageResponseTime=ms)
             self.do_incoming_response(deliver, properties, msg)
         # Route to Yombo Message system for delivery.
         elif properties.headers['Type'] == "Message":
             self.AMQPYombo.amqpTomsg(deliver, properties, msg)
         # nothing else to do. Bad message!
         else:
-            raise YomboWarning("Unknown message type (%s), dropping." % properties.headers['Type'] )
+            raise YomboWarning("Unknown message type ({messageType), dropping.", messageType=properties.headers['Type'] )
 
     def do_incoming_response(self, deliver, properties, msg):
         """
         Handle incoming responses. If the message gets here, it's in response to a request.
         """
-        logger.debug("in do_incoming_response")
+        self.logLocation("debug", "PikaFactory::do_incoming_response")
         if properties.correlation_id in self.sentCorrelationIDs:
             # Handle messages that were directly sent from an external library.
             if self.sentCorrelationIDs[properties.correlation_id]['correlation_type'] == "direct_send":
@@ -500,33 +488,21 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         pass
 
     def close(self):
-        logger.debug("In PikaFactory close ########################")
+        self.logLocation("debug", "PikaFactory::close")
         self.AMQPProtocol.close()
 
-    def _resetRegistrationItems(self):
-        for key in self.exchange_list:
-            self.exchange_list[key]['yaqmp_registered'] = False
-        for key in self.queue_list:
-            self.queue_list[key]['yaqmp_registered'] = False
-        for key in self.queue_bind_list:
-            self.queue_bind_list[key]['yaqmp_registered'] = False
-        for key in self.consumer_list:
-            self.consumer_list[key]['yaqmp_registered'] = False
-
     def clientConnectionLost(self, connector, reason):
-        logger.debug("In PikaFactory clientConnectionLost. Reason: %s" % reason)
+        logger.debug("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
         self._resetRegistrationItems()
-        self.fullyConnected = False
         protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
-        logger.debug("In PikaFactory clientConnectionFailed. Reason: %s" % reason)
+        logger.debug("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
         self._resetRegistrationItems()
-        self.fullyConnected = False
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
-    def send_message(self, **kwargs):
-        logger.debug("In PikaFactory send_message")
+    def sendMessage(self, **kwargs):
+        logger.debug("In PikaFactory sendMessage")
 #        if(kwargs[properties][headers][Type] == "Request") {
 
 #        }
@@ -538,61 +514,22 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             "correlation_type"  : kwargs.get('correlation_type', None),
         }
 
-        self.queued_messages.append((kwargs))
-        logger.trace("In PikaFactory send_message client: %s" % self.AMQPProtocol)
-        if self.AMQPProtocol is not None:
+        self.outgoing_queue.append((kwargs))
+        logger.debug("In PikaFactory sendMessage client: %s" % self.AMQPProtocol)
+        if self.AMQPProtocol is not None and self.AMQPProtocol.fullyConnected is True:
             self.AMQPProtocol.send()
-
-    def register_exchange(self, **kwargs):
-        """
-        Configure an exchange.
-        """
-        logger.trace("In PikaFactory register_exchange %s" % kwargs)
-        self.exchange_list[kwargs['exchange_name']] = {"kwargs" : kwargs, "yaqmp_registered" : False, "yamqp_register_persist" : kwargs['yamqp_register_persist']}
-        if self.AMQPProtocol is not None:
-            self.AMQPProtocol.register_exchange()
-
-    def register_queue(self, **kwargs):
-        """
-        Configure a queue.
-        """
-        logger.trace("In PikaFactory register_queue %s" % kwargs)
-        self.queue_list[kwargs['queue_name']] = {"kwargs" : kwargs, "yaqmp_registered" : False, "yamqp_register_persist" : kwargs['yamqp_register_persist']}
-        if self.AMQPProtocol is not None:
-            self.AMQPProtocol.register_queue()
-
-    def register_queue_bind(self, **kwargs):
-        """
-        Binds a queue to an exchange.
-        """
-        logger.trace("in PikaFactory register_queue_bind: %s" % kwargs)
-        self.queue_bind_list[kwargs['exchange_name'] + kwargs['queue_name']] = {"kwargs" : kwargs, "yaqmp_registered" : False, "yamqp_register_persist" : kwargs['yamqp_register_persist']}
-        logger.trace("in PikaFactory register_queue_bind - client: %s " % self.AMQPProtocol)
-        if self.AMQPProtocol is not None:
-            self.AMQPProtocol.register_queue_bind()
-
-    def register_consumer(self, **kwargs):
-        """
-        Consumes a queue
-        """
-        logger.trace("in PikaFactory register_consumer: %s" % kwargs)
-        self.consumer_list[kwargs['queue_name']] = {"kwargs" : kwargs, "yaqmp_registered" : False, "yamqp_register_persist" : kwargs['yamqp_register_persist']}
-        if self.AMQPProtocol is not None:
-            self.AMQPProtocol.register_consumer()
 
 class AMQPYombo(YomboLibrary):
     """
     Yombo library to aandle connection to RabbitMQ.
     """
     def _init_(self, loader):
-        logger.trace("In AMQPYombo _init_")
+        self.logLocation("debug", "AMQPYombo::_init_")
         self.loader = loader
         self._connecting = False
         self._connected = False  # connected to AMQP
-        self.PFactory = None
+        self.PFactory =  PikaFactory(self)
         self.gwuuid = "gw_" + getConfigValue("core", "gwuuid")
-        self.checking_queued_mesasge = False
-        self.queued_messages = []  # for other libraries/modules
         self.headerSourceCallbacks = {} # register callbacks to local gateway modules
         self.messageCallbacks = {} # register callbacks to local gateway modules
 
@@ -605,13 +542,15 @@ class AMQPYombo(YomboLibrary):
         pass
 
     def _stop_(self):
-        logger.trace("In AMQPYombo close.")
+        self.logLocation("debug", "AMQPYombo::_stop_")
         self.PFactory.close()
 
     def _unload_(self):
-        logger.debug("Disonnecting due to unload.")
-#        if self._connection != None:
-#            self.disconnect()
+        pass
+
+    def logLocation(self, level, location, msg=""):
+        logit = func = getattr(logger, level)
+        logit("In {location} : {msg}", location=location, msg=msg)
 
     def registerCallback(self, type, locator, callback):
         """
@@ -650,9 +589,9 @@ class AMQPYombo(YomboLibrary):
         """
         Called during startup to connect to the Yombo AQMP message service.
         """
-        logger.trace("in AMQPYombo connect")
-        if self._connecting == True:
-            logger.trace("Already trying to connect, connect attempt aborted.")
+        self.logLocation("debug", "AMQPYombo::connect")
+        if self._connecting is True:
+            logger.debug("Already trying to connect, connect attempt aborted.")
             return
         self._connecting = True
 
@@ -678,8 +617,6 @@ class AMQPYombo(YomboLibrary):
             ssl=True,
             credentials=creds
         )
-        self.PFactory = PikaFactory(self)
-
         self.myreactor =  reactor.connectSSL("projects.yombo.net", 5671, self.PFactory,
              ssl.ClientContextFactory())
 
@@ -687,11 +624,10 @@ class AMQPYombo(YomboLibrary):
         """
         Called when connected to Yombo AMQP service.
         """
-        logger.debug("AMQPYombo connected")
+        self.logLocation("debug", "AMQPYombo::connected")
         self._connected = True
         self._connecting = False
         self.timeout_reconnect_task = False
-        self.checkSendMessages()
 
     def sendDirectMessage(self, **kwargs):
         """
@@ -699,17 +635,17 @@ class AMQPYombo(YomboLibrary):
         to the Yombo Servers. Modules can use this with caution for performance reasons or a specific need to
         bypass the messaging system.
         """
-        logger.trace("library:sendDirectMessage: %s" % kwargs)
+        self.logLocation("debug", "AMQPYombo::connected", "Message: %s" % kwargs)
         callback = kwargs.get('callback', None)
-        if callback == None:
+        if callback is None:
             raise YomboWarning("AMQP.sendDirectMessage must have a 'callback'")
 
         exchange_name = kwargs.get('exchange_name', None)
-        if exchange_name == None:
+        if exchange_name is None:
             raise YomboWarning("AMQP.sendDirectMessage must have an 'exchange_name'")
 
         body = kwargs.get('body', None)
-        if body == None:
+        if body is None:
             raise YomboWarning("AMQP.sendDirectMessage must have a 'body'")
 
         time_created = kwargs.get("time_created", datetime.now())
@@ -726,8 +662,7 @@ class AMQPYombo(YomboLibrary):
         kwargs['correlation_id'] = correlation_id
         kwargs['correlation_type'] = "direct_send"
 
-        self.queued_messages.append((kwargs))
-        self.checkSendMessages()
+        self.PFactory.sendMessage(**kwargs)
 
     def generateRequest(self, **kwargs):
         """
@@ -776,17 +711,17 @@ class AMQPYombo(YomboLibrary):
         destination = kwargs.get('destination', None)
         callback = kwargs.get('callback', None)
 
-        if exchange_name == None:
+        if exchange_name is None:
             raise YomboWarning("AMQP.generateRequest requires 'exchange_name'.")
-        if body == None:
+        if body is None:
             raise YomboWarning("AMQP.generateRequest requires 'body'.")
-        if source == None:
+        if source is None:
             raise YomboWarning("AMQP.generateRequest requires 'source'.")
-        if destination == None:
+        if destination is None:
             raise YomboWarning("AMQP.generateRequest requires 'destination'.")
-        if callback == None:
+        if callback is None:
             raise YomboWarning("AMQP.generateRequest requires 'callback'.")
-        if request_type == None:
+        if request_type is None:
             raise YomboWarning("AMQP.generateRequest requires 'request_type'.")
 
         requestID = generateRandom(length=12)
@@ -808,27 +743,6 @@ class AMQPYombo(YomboLibrary):
             "callback"          : callback,
             }
         return requestmsg
-
-    def checkSendMessages(self):
-        """
-        Checks if any messages are pending to be sent to Yombo AMQP service. Called when connected or new messages are
-        sent.
-        """
-        logger.info("check_send_message: %s " % self.PFactory.fullyConnected)
-        if self.PFactory.fullyConnected:
-            while len(self.queued_messages) > 0:
-                message = self.queued_messages.pop(0)
-                self.PFactory.send_message(**message)
-        elif self.checking_queued_mesasge == False:
-            self.checking_queued_mesasge = True
-            reactor.callLater(0.5, self._do_check_send_message)
-
-    def _do_check_send_message(self):
-        """
-        Helper function for checkSendMessage.
-        """
-        self.checking_queued_mesasge = False
-        self.checkSendMessages()
 
     def disconnect(self):
         """
@@ -857,7 +771,7 @@ class AMQPYombo(YomboLibrary):
         """
         raise YomboWarning("amqpToMesasge - Incoming message routing not implmented")
 
-        if message.checkDestinationAsLocal() != True: # in future, if we become a router, this will change
+        if message.checkDestinationAsLocal() is not True: # in future, if we become a router, this will change
             raise YomboMessageError("Received a message not meant for us, dropping.")
 
         #this is first stab - need error checking.
@@ -877,11 +791,11 @@ class AMQPYombo(YomboLibrary):
         raise YomboWarning("message -> AMQP - Outgoing message routing not implmented")
 
 
-        if message.checkDestinationAsLocal() == False:
+        if message.checkDestinationAsLocal() is False:
             raise YomboMessageError("Tried to send a local message externally. Dropping.")
-        if message.validateMsgOriginFull() == False:
+        if message.validateMsgOriginFull() is False:
             raise YomboMessageError("Full msgOrigin needs full path.")
-        if message.validateMsgDestinationFull() == False:
+        if message.validateMsgDestinationFull() is False:
             raise YomboMessageError("Full msgDestination needs full path.")
 
 

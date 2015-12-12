@@ -168,7 +168,7 @@ class Commands(YomboLibrary):
             record = (dict(itertools.izip(field_names, row)))
             self._addCommand(record)
             row = c.fetchone()
-        logger.trace("Done load_commands: %s", self.__yombocommands)
+        logger.debug("Done load_commands: {yombocommands}", yombocommands=self.__yombocommands)
 
     def _addCommand(self, record, testCommand = False):
         """
@@ -180,7 +180,7 @@ class Commands(YomboLibrary):
         :type testCommand: bool
         :returns: Pointer to new device. Only used during unittest
         """
-        logger.trace("record: %s" % record)
+        logger.debug("record: {record}", record=record)
         cmdUUID = record["cmduuid"]
         self.__yombocommands[cmdUUID] = Command(record)
         self.__yombocommandsByName[record["label"]] = self.__yombocommands[cmdUUID]
@@ -210,7 +210,7 @@ class Command:
         :type command: dict
 
         """
-        logger.trace("command info: %s", command)
+        logger.debug("command info: {command}", command=command)
 
         self.cmdUUID = command["cmduuid"]
         self.uri = command["uri"]

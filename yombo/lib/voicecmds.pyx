@@ -83,12 +83,9 @@ import re
 
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
 from yombo.core.exceptions import YomboException
 from yombo.core.message import Message
-from yombo.core.helpers import getCommands, getCommandsByVoice, getDevices
-
-logger = getLogger('library.voicecmds')
+from yombo.core.helpers import  getCommandsByVoice, getDevices
 
 class VoiceCmds(FuzzySearch, YomboLibrary):
     """
@@ -151,7 +148,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                  - deviceUUID: (string) The deviceUUID of the item if exists.
                  - order: (string) Order of the voice command.  One of: both, nounverb, verbnoun.
         """
-        if voiceString == None or voiceString == None:
+        if voiceString is None or voiceString is None:
             raise YomboException("VoiceString or destination is mising.", 1000, 'voicecmd', 'core')
 
         tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))

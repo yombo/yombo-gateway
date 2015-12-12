@@ -133,7 +133,7 @@ class Devices(YomboLibrary):
         for key in self._toSaveStatus.keys():
             ss = self._toSaveStatus[key]
             statusExtra = cPickle.dumps(ss.statusextra)
-            logger.trace("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (%s, %s, %s, %s, %s)" %  (key, ss.status, statusExtra, ss.time, ss.source) )
+            logger.debug("INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values ({key}, {status}, {statusExtra}, {time}, {source})", key=key, status=ss.status, statusExtra=statusExtra, time=ss.time, source=ss.source)
             c.execute("""INSERT INTO devicestatus (deviceuuid, status, statusextra, settime, source) values (?, ?, ?, ?, ?)""",
                 ( key, ss.status, statusExtra, ss.time, ss.source) )
             del self._toSaveStatus[key]
@@ -179,7 +179,7 @@ class Devices(YomboLibrary):
             self._addDevice(record)
             row = c.fetchone()
 
-    def _addDevice(self, record, testDevice = False):
+    def _addDevice(self, record, testDevice=False):
         """
         Add a device based on data from a row in the SQL database.
 
@@ -201,7 +201,7 @@ class Devices(YomboLibrary):
         if deviceUUID not in self._devicesByDeviceTypeByName[record['devicetypemachinelabel']]:
             self._devicesByDeviceTypeByName[record['devicetypemachinelabel']][deviceUUID] = deviceUUID
 
-        logger.trace("_addDevice::_yomboDevicesByTypeUUID=%s" % self._devicesByDeviceTypeByUUID)
+        logger.debug("_addDevice::_yomboDevicesByTypeUUID={devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID)
         if testDevice:
             return self._devicesByUUID[deviceUUID]
 
@@ -241,15 +241,15 @@ class Devices(YomboLibrary):
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
-        logger.trace("## _devicesByDeviceTypeByUUID: %s " % self._devicesByDeviceTypeByUUID)
-        logger.trace("## deviceTypeRequested: %s" % deviceTypeRequested)
+        logger.debug("## _devicesByDeviceTypeByUUID: {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID)
+        logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
         if deviceTypeRequested in self._devicesByDeviceTypeByUUID:
-            logger.trace("## %s" % self._devicesByDeviceTypeByUUID[deviceTypeRequested])
+            logger.debug("## {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID[deviceTypeRequested])
             return self._devicesByDeviceTypeByUUID[deviceTypeRequested]
         else:
             try:
                 requestedUUID = self._devicesByDeviceTypeByName[deviceTypeRequested]
-                logger.trace("## requestedUUID: %s" % requestedUUID)
+                logger.debug("## requestedUUID: {requestedUUID}", requestedUUID=requestedUUID)
                 return self._devicesByDeviceTypeByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
                 raise YomboDeviceError('Searched for device type %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
@@ -293,7 +293,7 @@ class Device:
             values entered by the user.
         :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
         """
-        logger.trace("New device - info: %s", device)
+        logger.debug("New device - info: {device}", device=device)
         self.__dbpool = get_dbconnection()
 
         self.Status = namedtuple('Status', "time, status, statusextra, source")
@@ -405,7 +405,7 @@ class Device:
                     if self.pincode != kwargs["pincode"]:
                         raise YomboPinCodeError("'pincode' supplied is incorrect.")
 
-        logger.debug("device kwargs: %s", kwargs)
+        logger.debug("device kwargs: {kwargs}", kwargs=kwargs)
         cmdobj = None
         try:
           if 'cmdobj' in kwargs:
@@ -422,7 +422,7 @@ class Device:
         except:
             raise YomboDeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do??", errorno=103)
 
-        if self.validateCommand(cmdobj.cmdUUID) != True:
+        if self.validateCommand(cmdobj.cmdUUID) is not True:
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         payloadValues = {}
@@ -508,13 +508,13 @@ class Device:
             - payload *(dict)* - a dict to be appended to the payload portion of the
               status message.
         """
-        logger.info("setStatus called...: %s", kwargs)
+        logger.info("setStatus called...: {kwargs}", kwargs=kwargs)
         self._setStatus(**kwargs)
         if 'silent' not in kwargs:
             self.sendStatus(**kwargs)
 
     def _setStatus(self, **kwargs):
-        logger.trace("_setStatus called...")
+        logger.debug("_setStatus called...")
         status = None
         statusExtra = None
         if 'status' in kwargs:
@@ -526,7 +526,7 @@ class Device:
 
         source = kwargs.get('source', 'unknown')
 
-        logger.trace("_setStatus is saving status...")
+        logger.debug("_setStatus is saving status...")
         newStatus = self.Status(time(), status, statusExtra, source.lower())
         self.status.appendleft(newStatus)
         if self.testDevice is False:
@@ -535,7 +535,7 @@ class Device:
                 self._allDevices._saveStatus()
 
     def sendStatus(self, **kwargs):
-        logger.trace("sendStatus called...")
+        logger.debug("sendStatus called...")
         if 'dest' in kwargs:
             dest = kwargs['dest']
         else:
@@ -592,7 +592,7 @@ class Device:
             (self.deviceUUID, howmany))
         row = c.fetchone()
         if row is None:  #lets set at least one status, it can be blank!
-            logger.debug("No device history found for %s,  deviceUUID: %s" % (self.label, self.deviceUUID))
+            logger.debug("No device history found for {label},  deviceUUID: {deviceUUID}", label=self.label, deviceUUID=self.deviceUUID)
             self.status.append(self.Status(0, '', {}, ''))
             return
         field_names = [d[0].lower() for d in c.description]
@@ -607,7 +607,7 @@ class Device:
             self.status.appendleft(self.Status(record['settime'], record['status'], cPickle.loads(str(record['statusextra'])), record['source']))
             row = c.fetchone()
 
-        logger.trace("Device load history: %s -- %s" % (self.deviceUUID, self.status) )
+        logger.debug("Device load history: {deviceUUID} -- {status}", deviceUUID=self.deviceUUID, status=self.status)
 
     def getHistory(self, history=0):
         return {"status": self.status[history]}

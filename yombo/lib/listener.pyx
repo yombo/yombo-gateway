@@ -126,7 +126,7 @@ class ListenerProtocol(basic.NetstringReceiver):
         :param msg: A dictionary of the message to send TO the yombo server.
         :type msg: dict
         """
-        logger.trace("send to yombo: %s", message)
+        logger.debug("send to yombo: %s", message)
         if type(message) is dict:
             json_string = json.dumps(message)
             self.sendString(json_string)
@@ -152,22 +152,22 @@ class ListenerProtocol(basic.NetstringReceiver):
         try:
             msg = json.loads(string)
         except ValueError, e:
-            if self.authenticated == False:
-                logger.warning("Client sent an invalid json message, disconnecting due to non-auth.")
+            if self.authenticated is False:
+                logger.warn("Client sent an invalid json message, disconnecting due to non-auth.")
                 self.transport.write("{'error': 'Invalid syntax. Good bye.'}")
                 self.transport.loseConnection()
             else:
                 self.badStringCount = self.badStringCount + 1
                 if self.badStringCount > 5:
-                  logger.warning("Client sent an invalid json message, disconnecting due too many bad strings.")
+                  logger.warn("Client sent an invalid json message, disconnecting due too many bad strings.")
                   self.transport.write("{'error': 'You sent too many bad messages. Good bye.'}")
                   self.transport.loseConnection()
                 else:
-                  logger.warning("Client sent an invalid json message, discarding bad string")
+                  logger.warn("Client sent an invalid json message, discarding bad string")
                   self.transport.write("{'error': 'Invalid JSON syntax.'}")
             return
 
-        if self.authenticated == False:
+        if self.authenticated is False:
             try:
                 self.doAuth(msg)
             except AuthError, e:
@@ -183,7 +183,7 @@ class ListenerProtocol(basic.NetstringReceiver):
                 self.transport.loseConnection()
                 e.exit()
         else:
-            logger.trace("got message: %s", msg)
+            logger.debug("got message: %s", msg)
 
         try:            
             message = Message(msg)
@@ -194,7 +194,7 @@ class ListenerProtocol(basic.NetstringReceiver):
             self.lastValidMsg = int(time.time())
             message.send()
         except:
-            logger.warning("Message couldn't be created and/or sent due to error")
+            logger.warn("Message couldn't be created and/or sent due to error")
 
     def doAuth(self, msg):
         """
@@ -237,55 +237,55 @@ class ListenerProtocol(basic.NetstringReceiver):
             return
 
         if "username" not in msg:
-            logger.warning("Client didn't provide a username.  Dropping.")
+            logger.warn("Client didn't provide a username.  Dropping.")
             self.transport.write("{'error': 'No username.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
 
         if "gwtokenid" not in msg:
-            logger.warning("Client didn't provide a username.  Dropping.")
+            logger.warn("Client didn't provide a username.  Dropping.")
             self.transport.write("{'error': 'No username.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
 
         if "authtoken" not in msg:
-            logger.warning("Client didn't provide an authtoken.  Dropping.")
+            logger.warn("Client didn't provide an authtoken.  Dropping.")
             self.transport.write("{'error': 'No authtoken.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
 
         if "appdeviceuuid" not in msg:
-            logger.warning("Client didn't provide an appdeviceuuid.  Dropping.")
+            logger.warn("Client didn't provide an appdeviceuuid.  Dropping.")
             self.transport.write("{'error': 'No application device UUID.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
 
         if "cnonce" not in msg:
-            logger.warning("Client didn't provide a cnonce.  Dropping.")
+            logger.warn("Client didn't provide a cnonce.  Dropping.")
             self.transport.write("{'error': 'No cnonce found.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
 
-        if validateNonce(msg['cnonce']) == False:
-            logger.warning("Client didn't provide a valid cnonce.  Dropping.")
+        if validateNonce(msg['cnonce']) is False:
+            logger.warn("Client didn't provide a valid cnonce.  Dropping.")
             self.transport.write("{'error': 'Invalid cnonce.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
 
         if re.match('^[\w-]+$', msg['appdeviceuuid']) is None:
-            logger.warning("Client provided a malformed appdeviceuuid.  Dropping.")
+            logger.warn("Client provided a malformed appdeviceuuid.  Dropping.")
             self.sendMessage({'error': 'Invalid appdeviceuuid.'})
             self.transport.loseConnection()
             return
 
         if re.match('^[\w-]+$', msg['gwtokenid']) is None:
-            logger.warning("Client provided a mailformed gwtokenid.  Dropping.")
+            logger.warn("Client provided a mailformed gwtokenid.  Dropping.")
             self.sendMessage({'error': 'Invalid gwtokenid.'})
             self.transport.loseConnection()
             return
 
         if "protocolversion" not in msg:
-            logger.warning("Client didn't provide a valid protocol version.  Dropping.")
+            logger.warn("Client didn't provide a valid protocol version.  Dropping.")
             self.transport.write("{'error': 'Invalid or missing protocol version.'}")
             reactor.callLater(.5, self.transport.loseConnection)
             return
@@ -309,7 +309,7 @@ class ListenerProtocol(basic.NetstringReceiver):
               self.factory.gwclients[self.appdeviceuuid] = self.session
               return
 
-        logger.warning("Client auth is bad.")
+        logger.warn("Client auth is bad.")
         outline = {'cmd' : "authfailed"}
         self.sendMessage(outline)
         self.transport.loseConnection()
@@ -365,7 +365,7 @@ class ListenerFactory(ServerFactory):
       self.users = {}
       self.appdeviceuuid = {}
 
-      logger.trace('Listener Factory Init')
+      logger.debug('Listener Factory Init')
 
     def shutDown(self):
         for client in self.gwclients:

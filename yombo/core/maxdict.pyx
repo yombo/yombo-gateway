@@ -20,11 +20,6 @@ Allows for creation of a dictionary with a maximum size.
 # Import python libraries
 import collections
 
-# Import Yombo libraries
-from yombo.core.log import getLogger
-
-logger = getLogger('core.maxdict')
-
 class MaxDict(collections.MutableMapping):
     """
     A size limited dictionary.

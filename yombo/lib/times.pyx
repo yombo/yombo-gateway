@@ -164,11 +164,11 @@ class Times(YomboLibrary):
         self._CalcDayNight()
         if self.isDay:
             setTime = self.sunSet() - time()
-            logger.trace("NowNight3 event in: %s", setTime)
+            logger.debug("NowNight event in: {setTime}", setTime=setTime)
             self.CLnowNight = reactor.callLater(setTime, self._sendStatus, 'nowNight')
         else:
             setTime = self.sunRise() -time()
-            logger.trace("NowDay4 event in: %s", setTime)
+            logger.debug("NowDay event in: {setTime}", setTime=setTime)
             self.CLnowDay = reactor.callLater(setTime, self._sendStatus, 'nowDay')
 
         #set a callLater to redo isday/night, and setup next broadcast.
@@ -196,14 +196,14 @@ class Times(YomboLibrary):
             riseTime = self.sunRise() - time()
             
             twTime = min (setTime, riseTime)
-            logger.trace("nowNotTwilight event in: %s", twTime)
+            logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
             self.CLnowNotTwilight = reactor.callLater(twTime, self._sendStatus, 'nowNotTwilight')
         else:
             setTime = self.sunSet() - time()
             riseTime = self.sunRiseTwilight() - time()
             twTime = min(setTime, riseTime)
                 
-            logger.trace("nowTwilight event in: %s", twTime)
+            logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
             self.CLnowTwilight = reactor.callLater(twTime, self._sendStatus, 'nowTwilight')
 
         reactor.callLater(twTime+self.time_ajust, self._setupNextTwilightEvents)                
@@ -228,7 +228,7 @@ class Times(YomboLibrary):
         sunrise_end = self.sunRise() # for today
         sunset_end = self.sunSetTwilight()  # for today
         
-        logger.debug("_setupNextDawnDuskEvent ------------------------ %s --", sunset)
+        logger.debug("_setupNextDawnDuskEvent - Sunset: {sunset}", sunset=sunset)
         #print "t = %s" % datetime.fromtimestamp(time())
         curtime = time()
             
@@ -254,7 +254,7 @@ class Times(YomboLibrary):
                 self.CLnowDusk = reactor.callLater(secsSet, self._sendNowDusk) # set a timer for is dusk
                 reactor.callLater(secsSet+self.time_ajust, self._setupNextDawnDuskEvent)                
         
-        logger.trace("Start next twilight in: rise begins %s (set begins %s), stop next twilight: rise ends %s(set ends %s)", secsRise, secsSet, secsRiseEnd, secsSetEnd)
+        logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})", secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
 
     def _sendNowDawn(self):
         """
@@ -304,7 +304,7 @@ class Times(YomboLibrary):
                'uuidSubType'    : "040",
                'payload'        : {},
                }
-        logger.debug("Time event: %s", msg)
+        logger.debug("Time event: {msg}", msg=msg)
         message = Message(**msg)
         message.send()
 

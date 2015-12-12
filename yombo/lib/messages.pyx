@@ -24,18 +24,14 @@ from collections import deque
 import time
 
 # Import twisted libraries
-
-
 from twisted.internet import reactor
 
+# Import Yombo libraries
 from yombo.core.exceptions import YomboMessageError
-from yombo.core.helpers import getCommand, getDevice
+#from yombo.core.helpers import getCommand, getDevice
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
 from yombo.core.message import Message
 from yombo.core.sqldict import SQLDict  #load at the top of the file.
-
-logger = getLogger('library.messages')
 
 class Messages(YomboLibrary):
     """
@@ -86,7 +82,6 @@ class Messages(YomboLibrary):
            if float(msg.notBefore) < time.time():
                if time.time() - float(msg.notBefore) > float(msg.maxDelay):
                   # we're too late, just delete it.
-                  logger.info("Deleting old message...")
                   del self.delayQueue[msg]
                   continue
                else:
@@ -176,14 +171,14 @@ class Messages(YomboLibrary):
                 self.reactors[msgUUID].cancel()
             del self.reactors[msgUUID]
         else:
-            isGood == False
+            isGood is False
        
         if msgUUID in self.delayQueue:
             del self.delayQueue[msgUUID]
         else:
             raise YomboMessageError("msgUUID not found in delay queue.", 'Messages Library')
 
-        if isGood == False:
+        if isGood is False:
             raise YomboMessageError("msgUUID not found in reactors.", 'Messages Library')
 
     def checkDelay(self, msgUUID):

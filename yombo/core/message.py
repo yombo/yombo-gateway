@@ -426,7 +426,7 @@ class Message:
             del allComponents[self.msgDestination]
         else:
             if destParts[2] != "all":
-                logger.error("Send message: Invalid destination for message. Asked to send it to: %s", self.msgDestination)
+                logger.error("Send message: Invalid destination for message. Asked to send it to: {msgDestination}", msgDestination=self.msgDestination)
                 # TODO: Perhaps send reponse to sender...security??
                 return
 
@@ -441,7 +441,7 @@ class Message:
                         del allComponents[componentName]  # remove, won't send again
 
         #third, send to distrubution "all" last.
-        logger.debug("message - sending to all distro list: %s", self.libMessages.distributions)
+        logger.debug("message - sending to all distro list: {distributions}", distributions=self.libMessages.distributions)
         if "all" in self.libMessages.distributions and (self.msgStatus == 'new' or self.msgType == 'event'):  # make sure dist exists
             for componentName in self.libMessages.distributions["all"]:
                 if componentName in allComponents:   # make sure it's not already sent
@@ -499,7 +499,7 @@ class Message:
         :param updateDict: A dictionary of various message class components to update.
         :type updateDict: dict
         """
-        logger.trace("MESAGE.update(%s)", updateDict)
+        logger.debug("MESAGE.update({updateDict})", updateDict=updateDict)
         checkLocalDest = False
         for k, v in updateDict.iteritems():
             if k == "msgOrigin":
@@ -611,7 +611,7 @@ class Message:
         if self.msgStatus != 'new':
             return True
         
-        logger.trace("validcmd payload: %s" % self.payload)
+        logger.debug("validcmd payload: {payload}", payload=self.payload)
 
         #for testing with isinstance. Can't include at startup - loop!
         from yombo.lib.devices import Device
@@ -669,8 +669,8 @@ class Message:
         else:
             raise YomboMessageError("'deviceUUID' or 'device' not found in payload. Required for commands.", 'Message API::ValidateCMD')
 
-        logger.trace("availablecommands: %s" % self.payload['deviceobj'].availableCommands)
-        logger.trace("self.payload['cmdobj']" % self.payload['cmdobj'])
+        logger.debug("availablecommands: {availableCommands}", availableCommands=self.payload['deviceobj'].availableCommands, )
+        logger.debug("self.payload['{cmdobj}']", cmdobj=self.payload['cmdobj'])
         # check that command is possible for given deviceUUID
         if self.payload['cmdobj'].cmdUUID not in self.payload['deviceobj'].availableCommands:
            raise YomboMessageError("Invalid cmdUUID for this deviceUUID.", 'Message API::ValidateCMD')
@@ -728,7 +728,7 @@ class Message:
         """
         if 'signature' in self.msgAuth:
             hashed = loads(pgpVerify(self.msgAuth['signature']))
-            logger.trace(hashed)
+            logger.debug("{hashed}", hashed=hashed)
             if self.msgOrigin != hashed['msgOrigin']:
                 raise YomboMessageError("msgOrigin doesn't match hash.", 'Message API::ValidateMsgAuth')
             if self.msgDestination != hashed['msgDestination']:

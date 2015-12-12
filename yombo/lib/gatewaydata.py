@@ -166,14 +166,14 @@ class GatwayData(YomboLibrary):
     def connect(self):
         logger.debug("Yombo Client trying to connect to Yombo service server...")
         if self._connecting == True:
-            logger.trace("Already trying to connect, connect attempt aborted.")
+            logger.debug("Already trying to connect, connect attempt aborted.")
             return
         self._connecting = True
 
         host = getConfigValue("svcsvr", "yombosvchost", "localhost")
         port = int(getConfigValue("svcsvr", "yombosvcport", "5600"))
 
-        logger.trace("Going to connect to Yombo server at %s:%d " % (host, port) )
+        logger.debug("Going to connect to Yombo server at %s:%d " % (host, port) )
 
         self.yombofactory = GatewayDataFactory(self)
         self.myreactor =  reactor.connectSSL(host, port, self.yombofactory,
@@ -207,29 +207,29 @@ class GatwayData(YomboLibrary):
         dest = message.msgDestination.split(":")
         if len(dest) == 1:
             if dest[0][:10].lower() != "yombo.gateway":
-                logger.trace("Forwarded non-gateway message to Yombo server for processing.")
+                logger.debug("Forwarded non-gateway message to Yombo server for processing.")
                 self._connection.sendMessage(message.dump())
                 return
         elif len(dest) == 2:
             if dest[1] == self.gwuuid:
-                logger.warning("Not routing message to Yombo Service since the message is for us.: %s", message.dump())
+                logger.warn("Not routing message to Yombo Service since the message is for us.: %s", message.dump())
                 return
             else:
-                logger.trace("Forwarded message to Yombo Service for processing.")
+                logger.debug("Forwarded message to Yombo Service for processing.")
                 self._connection.sendMessage(message.dump())
         else:
-            logger.trace("Message has too few or too many parts.  Dropping.")
+            logger.debug("Message has too few or too many parts.  Dropping.")
             return
 
     def sendQueueAdd(self, message):
         if type(message) is not dict:
             message = message.dump()
-        logger.trace("Adding command to queue: %s", message)
+        logger.debug("Adding command to queue: %s", message)
         self.sendQueue.appendleft(message)
         self.sendQueueCheck()
 
     def sendQueueCheck(self):
-        logger.trace("Yombo Gateway Data::sendQueueCheck(). Connecting: %s Count: %d" % (self._connecting, len(self.sendQueue) ) )
+        logger.debug("Yombo Gateway Data::sendQueueCheck(). Connecting: %s Count: %d" % (self._connecting, len(self.sendQueue) ) )
         if len(self.sendQueue) == 0:
             return
 
@@ -241,5 +241,5 @@ class GatwayData(YomboLibrary):
                     break
         else:
             if not self._connecting:
-                logger.trace("trying to connect from sendQueueCheck")
+                logger.debug("trying to connect from sendQueueCheck")
                 self.connect()

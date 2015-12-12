@@ -354,7 +354,7 @@ class CronJob(object):
         if it's linked.
         """
         self.enabled = False
-        if self.crontab != None:
+        if self.crontab is not None:
           self.crontab.remove(self.cronUUID)
 
     def enable(self):
@@ -380,7 +380,7 @@ class CronJob(object):
                 (t.weekday()  in self.dow))
 
     def check(self, t):
-        if self.enabled == True and self.matchtime(t):
+        if self.enabled is True and self.matchtime(t):
             self.action(*self.args, **self.kwargs)
 
     def runNow(self):

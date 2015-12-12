@@ -79,7 +79,7 @@ class DBConnectionPool:
         return True
 
     def returnFailure(self, o):
-        logger.warning("returnfailure: %s", o)
+        logger.warn("returnfailure: {o}", o=o)
         return False
 
     def returnResult(self, result):
@@ -110,7 +110,7 @@ class DBConnectionPool:
         def run(sql, params):
             return self.pool.runQuery(sql, params)
 
-        logger.trace("fetch: %s", sql)
+        logger.debug("fetch: {sql}", sql=sql)
         d = run(sql, params)
         d.addCallback(self.returnResult)
         d.addErrback(self.returnFailure)
@@ -147,7 +147,7 @@ class DBConnectionPool:
         #        if isinstance(positional, str):
         #            positional = (positional,)
 
-        logger.trace("SQL: '%s", query)
+        logger.debug("SQL: {sql}", sql=query)
         return self.fetchDict(query, fields)
 
 
@@ -329,8 +329,8 @@ class DBTools:
             record = dict(izip(field_names, row))
             varnames = cPickle.loads(str(record['varnames']))
             varvalues = cPickle.loads(str(record['varvalues']))
-            #            logger.trace("varnames = %s", varnames)
-            #            logger.trace("varvalues = %s", varvalues)
+            #            logger.debug("varnames = %s", varnames)
+            #            logger.debug("varvalues = %s", varvalues)
             items = []
             for namekey in varnames:
                 if namekey not in varvalues:

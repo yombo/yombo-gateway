@@ -42,10 +42,7 @@ from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFileError
-from yombo.core.log import getLogger
 from yombo.core.sqldict import SQLDict
-
-logger = getLogger("core.filewatcher")
 
 class BlankFileReader(object):
     pass
@@ -129,10 +126,10 @@ class FileReader:
         """
         Call to close the file from being monitored.
         """
-        if self.timer != None:
+        if self.timer is not None:
             self.timer.stop()
 
-        if self.fp_in != None:
+        if self.fp_in is not None:
             self.fp_in.close()
 
     def _watch(self):

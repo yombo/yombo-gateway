@@ -1,6 +1,6 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+#This file was created by Yombo for use with Yombo Python gateway automation
+#software.  Details can be found at http://yombo.net
 """
 Allows fuzzy key search on dictionary keys, expands on the base dictionary class.
 
@@ -38,10 +38,8 @@ import operator
 from itertools import islice
 
 # Import Yombo libraries
-from yombo.core.log import getLogger
 from yombo.core.exceptions import YomboFuzzySearchError
 
-logger = getLogger('core.fuzzysearch')
 
 class FuzzySearch(dict):
     """
@@ -51,7 +49,7 @@ class FuzzySearch(dict):
     
     To use, just create a new object of this class and treat it like a dictionary.
     """
-    def __init__(self, seed = None, limiter = .75):
+    def __init__(self, seed=None, limiter=.75):
         """
         Construct a new fuzzy search dictionary
         
@@ -77,12 +75,12 @@ class FuzzySearch(dict):
 
         # short wrapper around some super (dict) methods
         self._dict_contains = lambda key: \
-            super(FuzzySearch,self).__contains__(key)
+            super(FuzzySearch, self).__contains__(key)
 
         self._dict_getitem = lambda key: \
-            super(FuzzySearch,self).__getitem__(key)
+            super(FuzzySearch, self).__getitem__(key)
 
-    def search(self, searchFor, limiterOverride = None):
+    def search(self, searchFor, limiterOverride=None):
         """
         What key to search for.  It returns 5 variables as a dictionary:
             - valid - True if ratio match is above the limiter.
@@ -101,15 +99,15 @@ class FuzzySearch(dict):
         """
         results = self._search(searchFor, limiterOverride)
         return {
-          'valid' : results[0],
-          'key' : results[1],
-          'value'  : results[2],
-          'ratio'   : results[3],
-          'others' : results[4],
-          'searchFor' : searchFor,
+            'valid' : results[0],
+            'key' : results[1],
+            'value'  : results[2],
+            'ratio'   : results[3],
+            'others' : results[4],
+            'searchFor' : searchFor,
         }
 
-    def _search(self, searchFor, limiterOverride = None):
+    def _search(self, searchFor, limiterOverride=None):
         """
         **Don't use this function directly** - Performs the actual search.
 
@@ -122,7 +120,7 @@ class FuzzySearch(dict):
         :return: See :func:`~yombo.lib.fuzzysearch.search` for details
         :rtype: dict
         """
-        logger.trace("searching for: %s", searchFor)
+#        logger.debug("searching for: %s", searchFor)
         # if it's here, just return that
         if self._dict_contains(searchFor):
             return True, searchFor, self._dict_getitem(searchFor), 1, {}
@@ -146,11 +144,10 @@ class FuzzySearch(dict):
                 continue                # might get here, even though it's not a string. Catch it!
 
             try:
-            # get the match ratio
+                # get the match ratio
                 curRatio = stringDiffLib.ratio()
             except TypeError:
                 break
-
 
             # if this is the best ratio so far - save it and the value
             if curRatio > best_ratio:
@@ -163,7 +160,7 @@ class FuzzySearch(dict):
             sorted_list = self.take(5, sorted(key_list.iteritems(), key=operator.itemgetter(0), reverse=True))
 
         limiter = None
-        if limiterOverride != None:
+        if limiterOverride is not None:
             if limiterOverride > .99999999999:
                 limiterOverride = .99
             elif limiterOverride < .10:

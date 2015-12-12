@@ -62,24 +62,27 @@ class Statistics(YomboLibrary):
 
     def _init_(self, loader):
         self.loader = loader
-        self.count = {}
-        self.timing = {}
-        self.gauge = {}
+        self._count = {}
+        self._timing = {}
+        self._gauge = {}
         self.gwuuid = getConfigValue("core", "gwuuid")
+        self.countDuration = 3 # 5 minutes for count buckets
+        self.timingDuration = 3 # 5 minutes for timing buckets
 
-        self.enabled = getConfigValue('statistics', 'enabled', "True")
+        self.enabled = getConfigValue('statistics', 'enabled', False)
 
     def _load_(self):
         pass
 
     def _start_(self):
-        if self.enabled == True:
+        logger.info("Statistice enabled/disabled: {enabled}", enabled=self.enabled)
+        if self.enabled is True:
             self.sendDataLoop = LoopingCall(self.sendData)
             self.sendDataLoop.start(self.countDuration, False)
             return
 
     def _stop_(self):
-        if self.enabled == True:
+        if self.enabled is True:
             self.sendData()
 
     def _unload_(self):
@@ -155,14 +158,14 @@ class Statistics(YomboLibrary):
         :param value: A numbered value to set.
         :type value: int
         """
-        if self.enabled == True:
+        if self.enabled is not True:
             return
 
         self._validateName(name)
         bucket = datetime.datetime.now().strftime('%s')
         if bucket not in self.data:
-            self.gauge[bucket] = {}
-            self.gauge[bucket][name] = value
+            self._gauge[bucket] = {}
+        self._gauge[bucket][name] = value
 
     def count(self, name, value):
         """
@@ -173,16 +176,16 @@ class Statistics(YomboLibrary):
         :param value: A numbered value to set.
         :type value: int
         """
-        if self.enabled == True:
+        if self.enabled is not True:
             return
 
         self._validateName(name)
 
-        bucket = self._getTime()
+        bucket = self._getTime('count')
 
         if bucket not in self.data:
-            self.count[bucket] = {}
-            self.count[bucket][name] = value
+            self._count[bucket] = {}
+        self._count[bucket][name] = value
 
     def increment(self, name, count=1):
         """
@@ -193,19 +196,19 @@ class Statistics(YomboLibrary):
         :param count: How many to increment by, defaults to 1.
         :type count: int
         """
-        if self.enabled == True:
+        if self.enabled is not True:
             return
-
         self._validateName(name)
 
-        bucket = self._getTime()
+        bucket = self._getTime('count')
 
-        if bucket not in self.count:
-            self.count[bucket] = {}
-            if name not in self.count[bucket]:
-                self.count[bucket][name] = count
-            else:
-                self.count[bucket][name] += count
+        if bucket not in self._count:
+            self._count[bucket] = {}
+
+        if name not in self._count[bucket]:
+                self._count[bucket][name] = count
+        else:
+                self._count[bucket][name] += count
 
     def decrement(self, name, count=1):
         """
@@ -216,69 +219,69 @@ class Statistics(YomboLibrary):
         :param count: How many to increment by, defaults to -1.
         :type count: int
         """
-        if self.enabled == True:
+        if self.enabled is not True:
             return
 
         self._validateName(name)
 
-        bucket = self._getTime()
+        bucket = self._getTime('count')
 
-        if bucket not in self.count:
-            self.count[bucket] = {}
-        if name not in self.count[bucket]:
-            self.count[bucket][name] = - count
+        if bucket not in self._count:
+            self._count[bucket] = {}
+        if name not in self._count[bucket]:
+            self._count[bucket][name] = - count
         else:
             self.data[bucket][name] -= count
 
     def timing(self, name, duration):
         """
         Set a time on how long something took to complete in milliseconds. A single timer can be set many times, but
-        it will be averaged per bucket size.
+        it will be averaged per bucket.
 
         :param name: Name of the statistic to save.
         :type name: string
         :param duration: How long something took in milliseconds.
         :type duration: int
         """
-        if self.enabled == True:
+        if self.enabled is not True:
             return
 
         self._validateName(name)
 
-        bucket = self._getTime()
+        bucket = self._getTime('timing')
 
-        if bucket not in self.timing:
-            self.timing[bucket] = {}
+        if bucket not in self._timing:
+            self._timing[bucket] = {}
 
-        if name not in self.timing[bucket]:
-            self.timing[bucket][name] = [duration]
+        if name not in self._timing[bucket]:
+            self._timing[bucket][name] = [duration]
         else:
-            self.timing[bucket][name].append(count)
+            self._timing[bucket][name].append(duration)
 
     def sendData(self, full=False):
         """
         Sends stats to the Yombo servers periodically. Typically only sends all but the
         last time bucket in case this function is called between time buckets.
         """
-        if self.enabled == True:
+        if self.enabled is not True:
             return
 
-        bucket = self._getTime()
-
+        bucket = self._getTime('count')
         bucketsSent = []
-
         amqpBody = []
-        for key, items in self.count:
+        logger.info("stats. count: {count}", count=self._count)
+        for key, items in self._count.iteritems():
             if (key <= (bucket - (self.countDuration +10))):
-                bucket.append(key)
+#                bucket.append(key)
                 for name, value in items:
                     amqpBody.append({"name":name, "value": value, "timestamp": key})
 
         for time in bucketsSent:
-            del self.count[time]
+            del self._count[time]
 
+        bucket = self._getTime('timing')
         bucketsSent = []
-        for key, items in self.timing:
+        for key, items in self._timing.iteritems():
             if key <= bucket - (self.timingDuration +10):
                 bucketsSent.append(key)
                 sortedItem = sorted(items)
@@ -310,21 +313,22 @@ class Statistics(YomboLibrary):
                 amqpBody.append({"name":name + ".median_90", "value" : median_90, "timestamp": key})
 
         for time in bucketsSent:
-            del self.timing[time]
+            del self._timing[time]
 
-        amqpBody = []
-        for key, items in self.gauge:
+        for key, items in self._gauge:
             for name, value in items:
                 amqpBody.append({"name":name, "value" : value , "timestamp": key})
 
         #TODO: Send to AMQP library for actual sending.
         request = {
               "DataType": "Objects",
-              "Request": requestContent,
+              "Request": amqpBody,
             }
 
+        logger.info("Request (senddata): {request}", request=request)
+
         requestmsg = {
-            "exchange_name"    : "gw_statistics",
+            "exchange_name"    : "ysrv.e.gw_stats",
             "routing_key"      : '*',
             "body"             : request,
             "properties" : {
@@ -333,11 +337,12 @@ class Statistics(YomboLibrary):
                 "headers"        : {
                     "Source"        : "yombo.gateway.lib.statistics:" + self.gwuuid,
                     "Destination"   : "yombo.server.configs",
-                    "Type"          : "Request",
+                    "Type"          : "Stats",
                     },
                 },
-            "callback"          : self.amqp_direct_incoming,
+            "callback"          : None,
             }
+
         return requestmsg
 
     def percentile(N, percent, key=lambda x:x):

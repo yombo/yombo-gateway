@@ -35,14 +35,14 @@ class LogReader(YomboModule):
         try:
             self.YomboBot = getComponent('yombo.gateway.modules.yombobot')
         except:
-            logger.warning("Jabber module can't start due to no YomboBot module loaded.")
+            logger.warn("Jabber module can't start due to no YomboBot module loaded.")
             return
 
         # Get a file name to monitor.
         if "logfile" in self._ModVariables:
           self.fileName = self._ModVariables["logfile"][0]
         else:
-          logger.warning("No 'logfile' set for logreader, using default: 'logreader.txt'")
+          logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
           self.fileName = "logreader.txt"
 
         # Register with YomboBot.
@@ -54,7 +54,7 @@ class LogReader(YomboModule):
             self.isRunning = True
         except YomboFileError, e:
             self.fileReader = None
-            logger.warning("Error with FileReader: %s" % e)
+            logger.warn("Error with FileReader: %s" % e)
 
     def newContent(self, linein):
         """

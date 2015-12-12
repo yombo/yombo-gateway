@@ -177,7 +177,7 @@ class DownloadModules(YomboLibrary):
                     row = m.fetchone()
                     continue
  
-                logger.debug("Adding to download module queue: %s (%s)", modulelabel, data['zipuri'])
+                logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zipuri'])
                
                 d = self.mysemaphore.run(downloadPage, data['zipuri'], data['zipfile'])
                 self.allDownloads.append(d)
@@ -203,10 +203,10 @@ class DownloadModules(YomboLibrary):
         """
         Helper function to download the module as a zip file.
         """
-        logger.debug("!! Downlod version:::  %s", data)
+        logger.debug("!! Downlod version:::  {data}", data=data)
         zipuri =  data['zipuri']
         zipfile =  data['zipfile']
-        logger.debug("getting uri: %s  saving to:%s", zipuri,zipfile)
+        logger.debug("getting uri: {uri}  saving to:{zilfile}", zipuri=zipuri, zipfile=zipfile)
         d = downloadPage(data['zipuri'], data['zipfile'])
         return d
 
@@ -215,7 +215,7 @@ class DownloadModules(YomboLibrary):
         Helper function for cleanup is called when the download failed.  Won't
         continue processing the zip file.
         """
-        logger.warning("Couldn't download the file...")
+        logger.warn("Couldn't download the file...")
         return defer.fail()
 
     def unzipVersion(self, tossaway, data):
@@ -230,7 +230,7 @@ class DownloadModules(YomboLibrary):
         """
         moduleLabel = data['module']['modulelabel']
         moduleLabel = moduleLabel.lower()
-        logger.debug("Modulelabel = %s", moduleLabel)
+        logger.debug("Modulelabel = {moduleLabel}", moduleLabel=moduleLabel)
         zipFile = data['zipfile']
         modDir = 'yombo/modules/' + moduleLabel
 
@@ -252,7 +252,7 @@ class DownloadModules(YomboLibrary):
         Helper function for cleanup when the zip process fails
         or unable to move the module to it's final destination.
         """
-        logger.warning("unzip failed (%s) (%s)" % (data, data2))
+        logger.warn("unzip failed ({data}) ({data2})", data=data, data2=data2)
         if data != None:
           return defer.fail()
 
@@ -275,6 +275,6 @@ class DownloadModules(YomboLibrary):
         """
         Helper function for cleanup is called when unable to update the database.
         """
-        logger.warning("Download Version, updateDatabase failed (%s) (%s)" % (data, data2))
+        logger.warn("Download Version, updateDatabase failed ({data}) ({data2})", data=data, data2=data2)
         if data != None:
           return defer.fail()

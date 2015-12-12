@@ -163,7 +163,7 @@ class Configuration(YomboLibrary):
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        logger.trace("config stopping...Cache hits: %d, cacheMisses: %d", self.cacheHits, self.cacheMisses)
+        logger.debug("config stopping...Cache hits: %d, cacheMisses: %d", self.cacheHits, self.cacheMisses)
         logger.info("saving config file...")
         
         Config = ConfigParser.ConfigParser()
@@ -193,7 +193,7 @@ class Configuration(YomboLibrary):
         :param message: A yombo message.
         :type message: :ref:`message`
         """
-        logger.warning("A message was sent to configuration module.  No messages allowed.")
+        logger.warn("A message was sent to configuration module.  No messages allowed.")
 
     def getConfigTime(self, section, key):
         updateItem = section + "_+_" + key + "_+_time"
@@ -233,7 +233,7 @@ class Configuration(YomboLibrary):
         self.cacheMisses += 1
         output = self._readDB(section, key)
 
-        if output == False:
+        if output is False:
             self.write(section,key, default) # save to ini so user can play
             return default
 

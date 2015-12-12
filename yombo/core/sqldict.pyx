@@ -35,6 +35,7 @@ from yombo.core.log import getLogger
 
 logger = getLogger('core.sqldict')
 
+
 class SQLDict(dict):
     """
     A persistent database backed dictionary
@@ -70,7 +71,7 @@ class SQLDict(dict):
         c = self.__dbpool.cursor()
         c.execute('SELECT key1, data1 FROM sqldict WHERE module = ? AND dictname = ?', (self.__moduleName, self.__dictName))
         data = c.fetchall()
-        if data == None or len(data) == 0:
+        if data is None or len(data) == 0:
             self.__init = False        
             return
         records = []
@@ -78,7 +79,7 @@ class SQLDict(dict):
         for row in data:
             row = dict(izip(field_names, row))
             mydata = cPickle.loads(str(row['data1']))
-            logger.debug("key === %s  data = %s", row['key1'], mydata )
+            logger.debug("key === %s  data = %s", row['key1'], mydata)
             self[row['key1']] = mydata
 
         self.__init = False        
@@ -94,7 +95,7 @@ class SQLDict(dict):
         """
         Update the database with new data. Use the loader library to handle this.
         """
-        if self.__init == True:
+        if self.__init is True:
             return True
         pdata = sqlite3Binary(cPickle.dumps(value, cPickle.HIGHEST_PROTOCOL))
 

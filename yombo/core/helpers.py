@@ -85,7 +85,7 @@ def generateRandom(**kwargs):
     if not hasattr(generateRandom, 'randomStuff'):
         generateRandom.randomStuff = random.SystemRandom()
 
-    if letters == None:
+    if letters is None:
         lst = [generateRandom.randomStuff.choice(string.ascii_letters + string.digits) for n in xrange(length)]
         return "".join(lst)
     else:
@@ -165,7 +165,7 @@ def getConfigTime(section, key):
     :type key: string
     """
     global yomboconfigs
-    if yomboconfigs == None:
+    if yomboconfigs is None:
         yomboconfigs = getComponent('yombo.gateway.lib.configuration')
     return yomboconfigs.getConfigTime(section, key)
 
@@ -194,7 +194,7 @@ def getConfigValue(section, key, default=None):
     :rtype: string, int, default, or None
     """
     global yomboconfigs
-    if yomboconfigs == None:
+    if yomboconfigs is None:
         yomboconfigs = getComponent('yombo.gateway.lib.configuration')
     return yomboconfigs.read(section, key, default)
 
@@ -220,7 +220,7 @@ def setConfigValue(section, key, value):
     :type value: string or int
     """
     global yomboconfigs
-    if yomboconfigs == None:
+    if yomboconfigs is None:
         yomboconfigs = getComponent('yombo.lib.Configuration')
     return yomboconfigs.write(section, key, value)
 
@@ -498,13 +498,12 @@ def getInterfaceModule(module):
     Used by Command/API modules to find it's interface module.
     """
     global yombodbtools
-    if yombodbtools == None:
+    if yombodbtools is None:
         yombodbtools = get_dbtools()
     iModule = yombodbtools.get_moduleInterface(module._ModuleUUID)
     if (iModule is None):
       return None
     else:
-      logger.debug("@#@#:  %s", iModule)
       return 'yombo.gateway.modules.' + iModule.lower()
 
 def getLocalIPAddress():
@@ -595,7 +594,7 @@ def getModuleVariables(moduleName):
     :type moduleName: string
     """
     global yombodbtools
-    if yombodbtools == None:
+    if yombodbtools is None:
         yombodbtools = get_dbtools()
     # TODO: change this to look up moduleUUID for the requested module to pass this into the DB call.
     return yombodbtools.getModuleVariables(moduleName)
@@ -612,10 +611,10 @@ def getUserGWToken(username, gwtokenid, fetchRemote=False):
     :type gwtokenid: string
     """
     global yombodbtools
-    if yombodbtools == None:
+    if yombodbtools is None:
         yombodbtools = get_dbtools()
     record = yombodbtools.getUserGWToken(username, gwtokenid)
-    if record == None:
+    if record is None:
       if fetchRemote == True:
         logger.info("Requesting user tokens.")
         beforeTime = getConfigValue('local', 'lastUserTokens')
@@ -637,7 +636,7 @@ def getUserGWToken(username, gwtokenid, fetchRemote=False):
           afterTime = getConfigValue('local', 'lastUserTokens')
           if beforeTime != beforeTime:
             recordNew = yombodbtools.getUserGWToken(username, gwtokenid)
-            if recordNew != None:
+            if recordNew is not None:
               return recordNew
             else:
               return None
@@ -653,9 +652,21 @@ def getModuleDeviceTypes(moduleuuid):
     :type moduleuuid: string
     """
     global yombodbtools
-    if yombodbtools == None:
+    if yombodbtools is None:
         yombodbtools = get_dbtools()
     return yombodbtools.getModuleDeviceTypes(moduleuuid)
+
+def percentage(part, whole):
+    """
+    Return a float representing a percentage of part against the whole.
+
+    For example: percentage(7, 12) returns: 58.333333333333336
+
+    :param part:
+    :param whole:
+    :return:
+    """
+    return 100 * float(part)/float(whole)
 
 def pgpEncrypt(inText, destination):
     """
@@ -837,7 +848,7 @@ def pgpCheckRoot(result):
         if key['keyid'] != rootID:
           pgpCheckRoot.previousID = key['keyid']
         else:
-          logger.trace("key (%s) trust:: %s", key['keyid'], key['ownertrust'])
+          logger.debug("key ({key}) trust:: {ownertrust}", key=key['keyid'], ownertrust=key['ownertrust'])
           haveRootKey = True
           if key['ownertrust'] == 'u':
             pass
@@ -849,9 +860,9 @@ def pgpCheckRoot(result):
 
     if haveRootKey == False:
         importResult = pgpCheckRoot.gpg.recv_keys("keys.yombo.net", rootID)
-        logger.debug("Yombo Root key import result: %s", importResult)
+        logger.debug("Yombo Root key import result: {importResults}", importResult=importResult)
         pgpTrustKey(key['fingerprint'])
-    logger.debug("Yombo Root key. Avail(%s)", haveRootKey)
+    logger.debug("Yombo Root key: {haveRootKey}", haveRootKey=haveRootKey)
 
 def pgpCheckKeyTrust(fingerprint):
     """
@@ -871,7 +882,7 @@ def pgpCheckKeyTrust(fingerprint):
     
     keys = pgpCheckKeyTrust.gpg.list_keys()
 
-    logger.info("my keys: %s", keys)
+    logger.info("my keys: {keys}", keys=keys)
 #    return
 #    for key in keys:
 #      if key['uids'][0][0:12] == "Yombo (Root)":
@@ -893,7 +904,7 @@ def pgpFetchKey(searchKey):
         pgpFetchKey.gpg = gnupg.GPG()
 
     importResult = pgpFetchKey.gpg.recv_keys("keys.yombo.net", searchKey)
-    logger.debug("GPG Import result for %s: %s", searchKey, importResult)
+    logger.debug("GPG Import result for {searchKey}: {importResult}", searchKey=searchKey, importResult=importResult)
 
 def pgpTrustKey(fingerprint, trustLevel = 5):
     """
@@ -906,4 +917,4 @@ def pgpTrustKey(fingerprint, trustLevel = 5):
     child_stdin.close()
 
     result = child_stdout.read()
-    logger.info("GPG Trust change: %s", result)
+    logger.info("GPG Trust change: {result}", result=result)
