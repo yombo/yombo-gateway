@@ -81,11 +81,14 @@ the fuzzysearch phase of voice command lookup.
 """
 import re
 
-from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.library import YomboLibrary
 from yombo.core.exceptions import YomboException
-from yombo.core.message import Message
+from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.helpers import  getCommandsByVoice, getDevices
+from yombo.core.library import YomboLibrary
+from yombo.core.log import getLogger
+from yombo.core.message import Message
+
+logger = getLogger('library.vociecmds')
 
 class VoiceCmds(FuzzySearch, YomboLibrary):
     """
@@ -148,6 +151,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                  - deviceUUID: (string) The deviceUUID of the item if exists.
                  - order: (string) Order of the voice command.  One of: both, nounverb, verbnoun.
         """
+        logger.warn("^^^^^^^^^^^^^^^^^^adding: {voiceString}", voiceString=voiceString)
         if voiceString is None or voiceString is None:
             raise YomboException("VoiceString or destination is mising.", 1000, 'voicecmd', 'core')
 
@@ -175,6 +179,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         if len(verbs) == 0:
             raise YomboException("No verbs found in VoiceString.", 1000, 'voicecmd', 'core')
 
+        logger.warn("^^^^^^^^^^^ commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
         for verb in verbs:
             command = self.commandsByVoice[verb]
             a = {}

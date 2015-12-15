@@ -35,6 +35,7 @@ import ConfigParser
 import inspect
 import traceback
 import sys
+import hashlib
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred
@@ -44,7 +45,6 @@ from twisted.internet.task import LoopingCall
 from yombo.core.db import DBTools
 from yombo.core.exceptions import YomboCritical, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 
@@ -119,7 +119,7 @@ class Loader(YomboLibrary):
 
     def start(self):
         self._saveSQLDictLoop = LoopingCall(self._saveSQLDictDB)
-        self._saveSQLDictLoop.start(6)
+        self._saveSQLDictLoop.start(3)
 
     def unload(self):
         """
@@ -167,11 +167,11 @@ class Loader(YomboLibrary):
         except ImportError as detail:
             self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("--------==(Error: Library or Module not found)==--------")
-            logger.error("----Name: %s,   Details: %s" % (pathName, detail))
+            logger.error("----Name: {pathName},   Details: {detail}", pathName=pathName, detail=detail)
             logger.error("--------------------------------------------------------")
-            logger.error(sys.exc_info())
+            logger.error("{error}", error=sys.exc_info())
             logger.error("---------------==(Traceback)==--------------------------")
-            logger.error(traceback.print_exc(file=sys.stdout))
+            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
             logger.error("--------------------------------------------------------")
             return
 
@@ -228,8 +228,8 @@ class Loader(YomboLibrary):
             library = self.loadedLibraries[componentName]
             self.logLoader('debug', componentName, 'library', 'init', 'About to call _init_.')
             if hasattr(library, '_init_') and callable(library._init_) and self.getMethodDefinitionLevel(library._init_) != 'yombo.core.module.YomboModule':
-                library._init_(self)
-                continue
+#                library._init_(self)
+#                continue
                 try:
                     d = yield maybeDeferred(library._init_, self)
                 except YomboCritical, e:
@@ -260,8 +260,8 @@ class Loader(YomboLibrary):
             library = self.loadedLibraries[componentName]
             self.logLoader('debug', componentName, 'library', 'load', 'About to call _load_.')
             if hasattr(library, '_load_') and callable(library._load_) and self.getMethodDefinitionLevel(library._load_) != 'yombo.core.module.YomboModule':
-                library._load_()
-                continue
+#                library._load_()
+#                continue
                 try:
                     d = yield maybeDeferred(library._load_)
                 except:
@@ -330,12 +330,12 @@ class Loader(YomboLibrary):
                 else:
                     mType = 'other'
                     options.remove('type')
-                    
-                modules[section] = { 
+
+                modules[section] = {
                   'machinelabel' : mLabel,
                   'enabled' : "1",
                   'moduletype' : mType,
-                  'moduleuuid' :  generateRandom(),
+                  'moduleuuid' :  hashlib.md5("module" + mLabel).hexdigest(),
                   'installsource' : 'local',
                 }
                 
@@ -438,8 +438,8 @@ class Loader(YomboLibrary):
         # Used as a way to broadcast messages.
         if hasattr(component, '_RegisterVoiceCommands'):
             for list in component._RegisterVoiceCommands:
-                logger.debug("For module '%s', adding voicecmd: %s, order: %s", list['voiceCmd'], component._FullName, list['order'])
-                self.loadedLibraries['yombo.gateway.lib.voicecmds'].add(list['voiceCmd'], component._FullName, 0, list['order'])
+                logger.debug("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=component._FullName, order=list['order'])
+                self.loadedLibraries['yombo.gateway.lib.voicecmds'].add(list['voiceCmd'], component._FullName, None, list['order'])
 
     def unloadModules(self, junk, callwhenDone):
         """
@@ -515,6 +515,18 @@ class Loader(YomboLibrary):
         return self.receive_all_components
 
     def saveSQLDict(self, module, dictname, key1, data1):
+        """
+        Called by sqldict to save a dictionary to the SQL database.
+
+        This allows multiple updates to happen to a dictionary without the overhead of constantly updating the
+        matching SQL record. This can lead to some data loss.
+
+        :param module:
+        :param dictname:
+        :param key1:
+        :param data1:
+        :return:
+        """
         if module not in self._SQLDictUpdates:
             self._SQLDictUpdates[module] = {}
         if dictname not in self._SQLDictUpdates[module]:
@@ -522,14 +534,15 @@ class Loader(YomboLibrary):
         self._SQLDictUpdates[module][dictname][key1] = data1
 
     def _saveSQLDictDB(self):
-        logger.debug("Saving SQLDictDB")
-        for module in self._SQLDictUpdates:
-            for dictname in self._SQLDictUpdates[module]:
-                for key1 in self._SQLDictUpdates[module][dictname]:
-                    self.dbtools.saveSQLDict(module, dictname, key1, self._SQLDictUpdates[module][dictname][key1])
+        if len(self._SQLDictUpdates):
+            logger.debug("Saving SQLDictDB")
+            for module in self._SQLDictUpdates.keys():
+                for dictname in self._SQLDictUpdates[module]:
+                    for key1 in self._SQLDictUpdates[module][dictname]:
+                        self.dbtools.saveSQLDict(module, dictname, key1, self._SQLDictUpdates[module][dictname][key1])
+                del self._SQLDictUpdates[module]
 
-        self.dbtools.commit()
-        self._SQLDictUpdates.clear()
+            self.dbtools.commit()
 
 
 _loader = None

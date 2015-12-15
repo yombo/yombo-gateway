@@ -35,7 +35,7 @@ logFormat = lambda event: u"{0} [{1}]: {2}".format(formatTime(event["log_time"])
 
 @provider(ILogObserver)
 def consoleLogObserver(event):
-    print u"[{0}]: {1}".format(event["log_level"].name.upper(), formatEvent(event))
+    print u"[{0}-{1}]: {2}".format(event["log_level"].name.upper(), event["log_namespace"], formatEvent(event))
 
 
 def getLogger(logname='yombolog', **kwargs):
@@ -93,8 +93,10 @@ def getLogger(logname='yombolog', **kwargs):
           iniLogLevel = configCache[logname].lower()
         else:
           iniLogLevel = 'info'
+          iniLogLevel = False
         print "iniLogLevel: %s, logname: %s" % (iniLogLevel, logname)
-        logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
+        if iniLogLevel is not False:
+            logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
         invalidLogLevel = False
     except InvalidLogLevelError:
         logFilter.setLogLevelForNamespace(logname, LogLevel.info)

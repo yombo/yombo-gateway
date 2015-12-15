@@ -90,7 +90,7 @@ from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import getLogger
 
-logger = getLogger('library.yombomodule')
+logger = getLogger('core.module')
 
 
 class YomboModule:
@@ -140,7 +140,7 @@ class YomboModule:
         logger.info("self._moduleLibrary = {moduleLibrary}", moduleLibrary=self._ModuleLibrary)
         self._DeviceLibrary = getComponent('yombo.gateway.lib.devices')
 
-        self._DevicesByType = getDevicesByDeviceType()  # returns a callable (function)
+        self._DevicesByType = getattr(self._DeviceLibrary, "getDevicesByDeviceType")  # returns a callable (function)
 
         self._LocalDevicesByUUID = {}
         self._LocalDeviceTypesByUUID = {}
@@ -155,7 +155,7 @@ class YomboModule:
           and set online.
         :type moduleDetails: dict
         """
-        self._ModType = moduleDetails['moduletype']
+        self._ModuleType = moduleDetails['moduletype']
         self._ModuleUUID = moduleDetails['moduleuuid']
         logger.info("moduleuuid = {moduleuuid}", moduleuuid=self._ModuleUUID)
         logger.info("_ModuleLbrary = {ModuleLbrary}", ModuleLbrary=self._ModuleLibrary)
@@ -166,7 +166,7 @@ class YomboModule:
 
         self._DeviceTypes = self._ModuleLibrary.getModuleDeviceTypes(self._ModuleUUID)
 
-        logger.info("devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
+        logger.info("!!!!!!!!!!!!!!!!!!!devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
 
     def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
         """

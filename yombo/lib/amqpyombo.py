@@ -209,17 +209,19 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         Callback function which is called when an item is read. Forwards the item received
         to the correct callback method.
         """
-        self.logLocation("debug", "PikaProtocol::setup_unregister_consumer")
+        self.logLocation("debug", "PikaProtocol::_read_item")
         d = queue.get()
         d.addCallback(self._read_item, queue, queue_no_ack, callback)
         d.addErrback(self._read_item_err)
         (channel, deliver, props, msg,) = item
+        self.logLocation("debug", "PikaProtocol::_read_item2")
         if props.correlation_id in self.factory.sentCorrelationIDs:
             self.factory.sentCorrelationIDs[props.correlation_id]['time_received'] = datetime.now()
 
 #        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
         try:
+            self.logLocation("debug", "PikaProtocol::_read_item3")
             # do nothing on requests for now.... in future if we ever accept requests, we will.
             if props.headers['Type'] == 'Request':
                 raise YomboWarning("Currently not accepting requests.")
@@ -233,6 +235,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
             else:
                 raise YomboWarning("Unknown message type recieved.")
 
+            self.logLocation("debug", "PikaProtocol::_read_item4")
             if props.user_id is None:
                 raise YomboWarning("user_id missing.")
             if props.content_type is None:
@@ -275,7 +278,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 if props.correlation_id not in self.factory.sentCorrelationIDs:
                     raise YomboWarning("Received request %s, but never asked for it. Discarding" % props.correlation_id)
 
-            deliver, props, msg = self.validate_incoming(deliver, props, msg)
+            self.logLocation("debug", "PikaProtocol::_read_item5")
         except YomboWarning as e:
           if not queue_no_ack:
             logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}", status='NACK', tag=deliver.delivery_tag)
@@ -287,7 +290,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
           raise Exception
         else:
           logger.info('Calling callback: {callback}', callback=callback)
-          d = defer.maybeDeferred(callback, deliver, props, gmsg)
+          d = defer.maybeDeferred(callback, deliver, props, msg)
           if not queue_no_ack:
             # if it gets here, it's passed basic checks. Lets either store the message for later or pass it on.
             logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}", status='ACK', tag=deliver.delivery_tag)

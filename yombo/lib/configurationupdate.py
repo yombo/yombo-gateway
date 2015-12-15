@@ -126,7 +126,7 @@ class ConfigurationUpdate(YomboLibrary):
         """
 #        logger.warn("configQueueCheck was just called.")
         while self.__incomingConfigQueue:
-            config = self.__incomingConfigQueue.pop()
+            config = self.__incomingConlibrary.configurationupdatefigQueue.pop()
             self.processConfig(config)
 
     def amqpDirectIncoming(self, sendInfo, deliver, props, msg):
@@ -325,7 +325,7 @@ class ConfigurationUpdate(YomboLibrary):
                 for col, val in items:
                     col_to_update = None
                     if col not in configTypes[configType]['map']:
-                        logger.debug("## Col (%s) not in table.." % col)
+#                        logger.debug("## Col (%s) not in table.." % col)
                         continue
                     tableCol = configTypes[configType]['map'][col]
                     savecols.append(configTypes[configType]['map'][col])
@@ -347,7 +347,7 @@ class ConfigurationUpdate(YomboLibrary):
 #                logger.info('sql: %s', sql)
                 c.execute(sql, [i[1] for i in saveitems])
 
-                logger.debug("Pre checking nested %s" % configType)
+#                logger.debug("Pre checking nested %s" % configType)
                 # process any nested items here.
                 if configType == 'GatewayModules':
                     if '1' not in tempConfig:
@@ -498,9 +498,10 @@ class ConfigurationUpdate(YomboLibrary):
 
     def _removeFullDownloadQueue(self, table):
         logger.debug("Removing table to request queue: %s" % table)
+        logger.debug("Configs pending: {pendingUpdates}", pendingUpdates=self.__pendingUpdates)
         if table in self.__pendingUpdates:
             self.__pendingUpdates.remove(table)
-        logger.debug("Configs pending: %s", self.__pendingUpdates)
+        logger.debug("Configs pending: {pendingUpdates}", pendingUpdates=self.__pendingUpdates)
 
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs is True:
             self.__doingfullconfigs = False

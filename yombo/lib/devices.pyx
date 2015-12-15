@@ -191,6 +191,7 @@ class Devices(YomboLibrary):
         self._devicesByUUID[deviceUUID] = Device(record, self)
         self._devicesByName[record["label"]] = deviceUUID
 
+        logger.info("_addDevice: {record}", record=record)
         if record['devicetypeuuid'] not in self._devicesByDeviceTypeByUUID:
             self._devicesByDeviceTypeByUUID[record['devicetypeuuid']] = {}
         if deviceUUID not in self._devicesByDeviceTypeByUUID[record['devicetypeuuid']]:
@@ -252,7 +253,8 @@ class Devices(YomboLibrary):
                 logger.debug("## requestedUUID: {requestedUUID}", requestedUUID=requestedUUID)
                 return self._devicesByDeviceTypeByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-                raise YomboDeviceError('Searched for device type %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
+                logger.warn("e={e}", e=e)
+                return {}
 
 class Device:
     """

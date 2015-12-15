@@ -79,7 +79,7 @@ class SQLDict(dict):
         for row in data:
             row = dict(izip(field_names, row))
             mydata = cPickle.loads(str(row['data1']))
-            logger.debug("key === %s  data = %s", row['key1'], mydata)
+            logger.debug("key === {key}  data = {mydata}", key=row['key1'], data=mydata)
             self[row['key1']] = mydata
 
         self.__init = False        

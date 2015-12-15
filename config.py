@@ -117,6 +117,7 @@ def yomboGetUrl(url):
   Simple wrapper to webGet(), used for calling yombo API.
   """
   global apiurl
+  print apiurl + url
   return webGet(apiurl + url)
 
 def webGet(url):
@@ -484,16 +485,17 @@ def saveBundleToAPI(bundle, newgw=False):
 
 def gatewayFetchDetail(gwuuid):
       global accountsession
-      return yomboGetUrl("/api/v1/gateway_registered/%s?sessionid=%s" % (gwuuid, accountsession))
+      return yomboGetUrl("/api/v1/gateway/%s?sessionid=%s" % (gwuuid, accountsession))
 
 def gatewayFetchList():
       global accountsession
       global apigwdata
-      response = yomboGetUrl("/api/v1/gateway_registered?sessionid=%s" % (accountsession,))
-      if 'objects' in response:
+      response = yomboGetUrl("/api/v1/gateway")
+      print response
+      if 'Response' in response:
         apigwdata = {}
-        for (i, item) in enumerate(response['objects']):
-          apigwdata[item['gwuuid']] = item
+        for (i, item) in enumerate(response['Response']['Gateway']):
+          apigwdata[item['UUID']] = item
       else:
         print "Error with session: %s" % response['errormessage']
         raise Exception("Error fetching gateway list.")
@@ -668,7 +670,7 @@ def menuStart(**kwargs):
       print "\n\rError: Invalid configuration file. Create a new gateway or Assign (download) and existing gateway."
       gwuuid = None
     else:
-      gwlabel = apigwdata[gwuuid]['label']
+      gwlabel = apigwdata[gwuuid]['Label']
   else:
       gwlabel = "*None*"
 
@@ -680,7 +682,7 @@ def menuStart(**kwargs):
           print "\n\rError: Invalid configuration file. Create a new gateway or Assign (download) and existing gateway."
           gwuuid = None
         else:
-          gwlabel = apigwdata[gwuuid]['label']
+          gwlabel = apigwdata[gwuuid]['Label']
       else:
           gwlabel = "*None*"
 
@@ -942,7 +944,7 @@ def gatewayLabel(bundle):
   desc = bundle['both']['core']['description']
   newLabel = ''
   newDesc = ''
-  while doContinu + "&format=json"e:
+  while doContinue:
     if doSkip is False:
       print "\n\rBasic gateway information."
       newLabel = raw_input('Gateway label [%s]: ' % (newLabel if newLabel != '' else label,))
@@ -1218,7 +1220,7 @@ def promptLoginCredentials():
 
 
 if testIni() is False:  # a new gateway setup
-    print "\n\rIt appears this is a new gateway installation or the configuration has been wipped.\n\r"
+    print "\n\rIt appears this is a new gateway installation or the configuration has been removed.\n\r"
     print "You will need the one-time Gateway setup PIN code. This is provided when a new Gateway is\n\r"
     print "created. This PIN code is good for only one use. If you new a new PIN, use the Yombo APP and\n\r"
     print "select the gateway you wish to setup. Go into the Gateway configurations and select\n\r"
@@ -1227,16 +1229,17 @@ if testIni() is False:  # a new gateway setup
     configMode = "PINSetup"
 
     doPrompt = True
+
     while doPrompt:
         gatewayPIN = promptForString("", "Gateway PIN Code")
-        response = yomboGetUrl("/api/v1/gateway!setupPin?apikey=%s&pincode=%s" % (apikey, gatewayPIN) )
-      if response['result'] == 'Success':
-        print "\n\rValid gateway PIN code found. Configuring gateway."
-        setConfig('core','gwuuid', response['Response']['Gateway']['gwuuid'])
-        setConfig('core','gwhash', response['Response']['Gateway']['gwhash'])
-        doPrompt = False
-      else:
-        print "\n\rYombo reports problem with gateway PIN Code.\n\r"
+        response = yomboGetUrl("/api/v1/gatewaysetup/pin?apikey=%s&pincode=%s" % (apikey, gatewayPIN) )
+        if response['result'] == 'Success':
+            print "\n\rValid gateway PIN code found. Configuring gateway."
+            setConfig('core','gwuuid', response['Response']['Gateway']['gwuuid'])
+            setConfig('core','gwhash', response['Response']['Gateway']['gwhash'])
+            doPrompt = False
+        else:
+            print "\n\rYombo reports problem with gateway PIN Code.\n\r"
 
 
     # setup GPG keys now.

@@ -35,7 +35,7 @@ class LogReader(YomboModule):
         try:
             self.YomboBot = getComponent('yombo.gateway.modules.yombobot')
         except:
-            logger.warn("Jabber module can't start due to no YomboBot module loaded.")
+            logger.warn("Logreader module can't start due to no YomboBot module loaded.")
             return
 
         # Get a file name to monitor.

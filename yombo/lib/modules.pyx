@@ -36,14 +36,14 @@ class Modules(YomboLibrary):
     _modulesByName = FuzzySearch({}, .92)
 
     _moduleDevicesByUUID = {}
-    _moduleDevicesByName = FuzzySearch({}, .90)
+    _moduleDevicesByName = FuzzySearch({}, .92)
 
     _moduleDeviceTypesByUUID = {}
     _moduleDeviceTypesByName = FuzzySearch({}, .92)
 
     _deviceTypeRoutingByType = {}
-
     _modules = {}  # Stores a list of modules. Populated by the loader module at startup.
+
     def _init_(self, loader):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
@@ -80,6 +80,7 @@ class Modules(YomboLibrary):
 #                self._moduleDevicesByName[mdt['modulelabel']] = []
 #            self._moduleDevicesByName[mdt['modulename']].append(mdt)
 
+        logger.warn("################# Load Data!!!")
         #lets clear any data, but we have to do this carefully incase of new data...
         for module in self._moduleDeviceTypesByUUID:
             for dt in self._moduleDeviceTypesByUUID[module]:
@@ -114,11 +115,14 @@ class Modules(YomboLibrary):
 
             # Compile a list of devices for a particular module
             devices = self._devicesLib.getDevicesByDeviceType(mdt['devicetypeuuid'])
+            logger.info("devices = {devices}", devices=devices)
             for deviceuuid in devices:
+                logger.debug("Adding deviceUUID({deviceUUID} to self._moduleDevicesByUUID.", deviceUUID=devices[deviceuuid].deviceUUID)
                 if mdt['moduleuuid'] not in self._moduleDevicesByUUID:
                     self._moduleDevicesByUUID[mdt['moduleuuid']] = {}
 #                    if device['deviceuuid'] not in self._moduleDevicesByUUID[mdt['moduleuuid']]:
 #                        self._moduleDevicesByUUID[mdt['moduleuuid']][device['label']] = {}
+                logger.debug("Adding deviceUUID({deviceUUID} to self._moduleDevicesByUUID.", deviceUUID=devices[deviceuuid].deviceUUID)
                 self._moduleDevicesByUUID[mdt['moduleuuid']][devices[deviceuuid].deviceUUID] = devices[deviceuuid]
 
                 if mdt['moduleuuid'] not in self._moduleDevicesByName:
@@ -135,6 +139,7 @@ class Modules(YomboLibrary):
 
 
 #        logger.info("self._moduleDeviceTypesByUUID: %s" % self._moduleDeviceTypesByUUID)
+        logger.warn("################# Load Data - Done!!!")
 
     def _stop_(self):
         """
@@ -208,8 +213,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.info("requestedItem: {requestedItem}", requestedItem=requestedItem)
-        logger.info("_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
+        logger.info("getModuleDevices::requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.info("getModuleDevices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
         if requestedItem in self._moduleDevicesByUUID:
             return self._moduleDevicesByUUID[requestedItem]
         else:
@@ -217,7 +222,7 @@ class Modules(YomboLibrary):
                 requestedUUID = self._moduleDevicesByName[requestedItem.lower()]
                 return self._moduleDevicesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-                raise KeyError('Module not found, looking for devices.')
+                return {} # no devices setup for a requested module.
 
     def getModuleDeviceTypes(self, requestedItem):
         """
@@ -234,7 +239,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.debug("requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("getModuleDeviceTypes::requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("getModuleDeviceTypes::_moduleDeviceTypesByUUID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
         if requestedItem in self._moduleDeviceTypesByUUID:
             return self._moduleDeviceTypesByUUID[requestedItem]
         else:
@@ -243,4 +249,5 @@ class Modules(YomboLibrary):
                 requestedUUID = self._moduleDeviceTypesByName[requestedItem.lower()]
                 return self._moduleDeviceTypesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-                raise KeyError('Module not found, looking for device types.')
+                logger.warn("No module found for a given device type")
+                return {}
