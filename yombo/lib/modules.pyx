@@ -38,6 +38,9 @@ class Modules(YomboLibrary):
     _moduleDevicesByUUID = {}
     _moduleDevicesByName = FuzzySearch({}, .92)
 
+    _moduleDeviceRouting = {}
+    _moduleDeviceRoutingByName = FuzzySearch({}, .95)
+
     _moduleDeviceTypesByUUID = {}
     _moduleDeviceTypesByName = FuzzySearch({}, .92)
 
@@ -49,7 +52,7 @@ class Modules(YomboLibrary):
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
         self.loader = loader
-        self.dbtools = get_dbtools()
+        self._DBTools = get_dbtools()
 
     def _load_(self):
         """
@@ -62,15 +65,14 @@ class Modules(YomboLibrary):
         Starts the library and calls self.LoadData()
         """
         self._devicesLib = getComponent('yombo.gateway.lib.devices')
-        self.LoadData()
+        self.loadData()
 
-
-    def LoadData(self):
+    def loadData(self):
         """
         Load up loads of data about modules, and module devices. Makes it easy for modules to get data about what
         devices and device types they manage.
         """
-#        for mdt in self.dbtools.getModuleDevice():
+#        for mdt in self._DBTools.getModuleDevice():
 
 #            if mdt['moduleuuid'] not in self._moduleDevicesByUUID:
 #                self._moduleDevicesByUUID[mdt['moduleuuid']] = []
@@ -80,42 +82,53 @@ class Modules(YomboLibrary):
 #                self._moduleDevicesByName[mdt['modulelabel']] = []
 #            self._moduleDevicesByName[mdt['modulename']].append(mdt)
 
-        logger.warn("################# Load Data!!!")
         #lets clear any data, but we have to do this carefully incase of new data...
         for module in self._moduleDeviceTypesByUUID:
-            for dt in self._moduleDeviceTypesByUUID[module]:
-                del self._moduleDeviceTypesByUUID[module][:]
+            del self._moduleDeviceTypesByUUID[module][:]
 
         for module in self._moduleDeviceTypesByName:
-            for dt in self._moduleDeviceTypesByName[module]:
-                del self._moduleDeviceTypesByName[module][:]
+            del self._moduleDeviceTypesByName[module][:]
 
         for module in self._moduleDevicesByUUID:
-            for dt in self._moduleDevicesByUUID[module]:
-                self._moduleDevicesByUUID[module].clear()
+            self._moduleDevicesByUUID[module].clear()
 
         for module in self._moduleDevicesByName:
-            for dt in self._moduleDevicesByName[module]:
-                self._moduleDevicesByName[module].clear()
+            self._moduleDevicesByName[module].clear()
 
-        for mdt in self.dbtools.getModuleDeviceTypes():
+        self._moduleDeviceRouting.clear()
+
+        for mdt in self._DBTools.getModuleRouting():
             # Create list of DeviceType by UUID, so a module can find all it's deviceTypes
             if mdt['moduleuuid'] not in self._moduleDeviceTypesByUUID:
                 self._moduleDeviceTypesByUUID[mdt['moduleuuid']] = {}
             if mdt['devicetypeuuid'] not in self._moduleDeviceTypesByUUID[mdt['moduleuuid']]:
                 self._moduleDeviceTypesByUUID[mdt['moduleuuid']][mdt['devicetypeuuid']] = []
             self._moduleDeviceTypesByUUID[mdt['moduleuuid']][mdt['devicetypeuuid']].append(mdt)
-
             # Pointers to the above, used when searching.
             if mdt['modulelabel'] not in self._moduleDeviceTypesByName:
                 self._moduleDeviceTypesByName[mdt['modulelabel']] = {}
             if mdt['devicetypeuuid'] not in self._moduleDeviceTypesByName[mdt['modulelabel']]:
-                self._moduleDeviceTypesByName[mdt['modulelabel']][mdt['devicetypeuuid']] = []
-            self._moduleDeviceTypesByName[mdt['modulelabel']][mdt['devicetypeuuid']].append(mdt['devicetypeuuid'])
+                self._moduleDeviceTypesByName[mdt['modulelabel'].lower()][mdt['devicetypeuuid']] = []
+            self._moduleDeviceTypesByName[mdt['modulelabel'].lower()][mdt['devicetypeuuid']].append(mdt['devicetypeuuid'])
+
+            # How to route device types - It's here to detere what module to send to from existing modules
+            if mdt['devicetypeuuid'] not in self._moduleDeviceRouting:
+                self._moduleDeviceRouting[mdt['devicetypeuuid']] = {}
+            self._moduleDeviceRouting[mdt['devicetypeuuid']][mdt['moduletype']] = {
+                'moduleUUID' : mdt['moduleuuid'],
+                'moduleLabel' : mdt['modulelabel'],
+                }
+            # Pointers to the above, used when searching.
+            if mdt['devicetypelabel'] not in self._moduleDeviceRoutingByName:
+                self._moduleDeviceRoutingByName[mdt['devicetypelabel'].lower()] = {}
+            self._moduleDeviceRoutingByName[mdt['devicetypelabel'].lower()][mdt['moduletype']] = {
+                'moduleUUID' : mdt['moduleuuid'],
+                'moduleLabel' : mdt['modulelabel'],
+                }
 
             # Compile a list of devices for a particular module
             devices = self._devicesLib.getDevicesByDeviceType(mdt['devicetypeuuid'])
-            logger.info("devices = {devices}", devices=devices)
+            logger.debug("devices = {devices}", devices=devices)
             for deviceuuid in devices:
                 logger.debug("Adding deviceUUID({deviceUUID} to self._moduleDevicesByUUID.", deviceUUID=devices[deviceuuid].deviceUUID)
                 if mdt['moduleuuid'] not in self._moduleDevicesByUUID:
@@ -137,9 +150,12 @@ class Modules(YomboLibrary):
             self._deviceTypeRoutingByType[mdt['devicetypeuuid']][mdt['moduletype']] = mdt['modulelabel']
 #            self._deviceTypeRouting[mdt['devicetypeuuid']].append([mdt['moduletype']] = mdt['modulelabel']
 
+        logger.debug("self._moduleDeviceTypesByUUID = {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
+        logger.debug("self._moduleDeviceTypesByName = {moduleDeviceTypesByName}", moduleDeviceTypesByName=self._moduleDeviceTypesByName)
+        logger.debug("self._moduleDeviceRouting = {moduleDeviceRouting}", moduleDeviceRouting=self._moduleDeviceRouting)
+        logger.debug("self._moduleDeviceRoutingByName = {moduleDeviceRoutingByName}", moduleDeviceRoutingByName=self._moduleDeviceRoutingByName)
 
 #        logger.info("self._moduleDeviceTypesByUUID: %s" % self._moduleDeviceTypesByUUID)
-        logger.warn("################# Load Data - Done!!!")
 
     def _stop_(self):
         """
@@ -151,33 +167,22 @@ class Modules(YomboLibrary):
         pass
 
     def addModule(self, moduleUUID, moduleLabel, modulePointer):
+        logger.debug("adding module: {moduleUUID}:{moduleLabel}", moduleUUID=moduleUUID, moduleLabel=moduleLabel)
         self._modulesByUUID[moduleUUID] = modulePointer
         self._modulesByName[moduleLabel] = moduleUUID
 
-    def getRoutingModule(self, deviceType, routeType):
-        """
-        Finds the module to route a message to based on type of message. EG: command messages should go to "command"
-        type modules.
-
-        :param routeType: Select what type of lookup this is. One of: Command, Interface, Logic
-        :type type: string
-        :return: string
-        """
-        if deviceType in self._deviceTypeRoutingByType:
-            if 'routeType' in self._deviceTypeRoutingByType[deviceType]:
-                return self._deviceTypeRoutingByType[deviceType][routeType]
-        return None
+    def delModule(self, moduleUUID):
+        del self._modulesByName[self._modulesByUUID[moduleUUID]._FullName]
+        del self._modulesByUUID[moduleUUID]
 
     def getModule(self, requestedItem):
         """
         Attempts to find the module requested using a couple of methods. Use the already defined pointer within a
         module to find another other:
 
-
-
-            >>> someModule = self._ModuleLibrary.getModule('137ab129da9318')  #by uuid
+            >>> someModule = self._ModulesLibrary.getModule('137ab129da9318')  #by uuid
         or:
-            >>> someModule = self._ModuleLibrary.getModule('Homevision')  #by name
+            >>> someModule = self._ModulesLibrary.getModule('Homevision')  #by name
 
         See: :func:`yombo.core.helpers.getModule` for usage example.
 
@@ -187,8 +192,7 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.debug("requestedItem: {requestedItem}", requestedItem=requestedItem)
-        logger.debug("self._modulesByUUID: {modulesByUUID}", modulesByUUID=self._modulesByUUID)
+        logger.debug("Looking for {requestedItem} in {modulesByUUID}", requestedItem=requestedItem, modulesByUUID=self._modulesByUUID)
         if requestedItem in self._modulesByUUID:
             return self._modulesByUUID[requestedItem]
         else:
@@ -203,9 +207,9 @@ class Modules(YomboLibrary):
         Returns all devices for a given module uuid or module name, This is used by the module library to setup a
         list of devices on startup.
 
-            >>> getModuleDevices('137ab129da9318')  #by uuid
+            >>> devices = self._ModulesLibrary.getModuleDevices('137ab129da9318')  #by uuid
         or:
-            >>> getModuleDevices('Homevision')  #by name
+            >>> devices = self._ModulesLibrary.getModuleDevices('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -213,8 +217,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.info("getModuleDevices::requestedItem: {requestedItem}", requestedItem=requestedItem)
-        logger.info("getModuleDevices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
+        logger.debug("getModuleDevices::requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("getModuleDevices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
         if requestedItem in self._moduleDevicesByUUID:
             return self._moduleDevicesByUUID[requestedItem]
         else:
@@ -229,9 +233,9 @@ class Modules(YomboLibrary):
         Returns all device types for a given module uuid or module name, This is used by the module library to setup a
         list of device types on startup.
 
-            >>> getModuleDeviceTypes('137ab129da9318')  #by uuid
+            >>> deviceTypes = self._ModulesLibrary.getModuleDeviceTypes('137ab129da9318')  #by uuid
         or:
-            >>> getModuleDeviceTypes('Homevision')  #by name
+            >>> deviceTypes = self._ModulesLibrary.getModuleDeviceTypes('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -249,5 +253,79 @@ class Modules(YomboLibrary):
                 requestedUUID = self._moduleDeviceTypesByName[requestedItem.lower()]
                 return self._moduleDeviceTypesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-                logger.warn("No module found for a given device type")
+                logger.debug("No module found for a given device type {deviceType}", deviceType=requestedItem)
                 return {}
+
+    def getDeviceRouting(self, requestedItem, moduleType, returnType = 'moduleUUID'):
+        """
+        Device routing is used by the gateway to route a device command to the correct module. For example, a
+        Z-Wave applicance module should be routed to the Z-Wave command module. From there, it needs to be routed
+        to the Z-Wave interface module (the interface module is what bridges the command module to the outside world
+        such as though a USB/Serial/Network interface).
+
+        This function allows you to get the ``moduleUUID``, ``moduleLabel`` or a pointer to the ``module`` itself.
+
+            >>> moduleUUID = self._ModulesLibrary.getDeviceRouting('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
+        or:
+            >>> deviceTypes = self._ModulesLibrary.getDeviceRouting('X10 Appliance', 'Command', 'moduleUUID')  #by name, get the moduleUUID
+        or:
+            >>> moduleUUID = self._ModulesLibrary.getDeviceRouting('137ab129da9318', 'Interface', 'moduleLabel')  #by uuid. get the moduleLabel
+
+        :raises KeyError: Raised when module cannot be found.
+        :param requestedItem: The module UUID or module name to search for.
+        :type requestedItem: string
+        :param moduleType: The module type to return. One of: Command, Interface, Logic, Other
+        :type moduleType: string
+        :param returnType: What type of string to return. One of: moduleUUID, moduleLabel, module
+        :type returnType: string
+        :return: Pointer to module.
+        :rtype: module or string
+        """
+#        logger.debug("getModuleDeviceTypes::requestedItem: {requestedItem}", requestedItem=requestedItem)
+#        logger.debug("getModuleDeviceTypes::_moduleDeviceTypesByUUID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
+        temp = None
+        if requestedItem in self._moduleDeviceRouting:
+            temp = self._moduleDeviceRouting[requestedItem]
+        else:
+            try:
+                temp = self._moduleDeviceRoutingByName[requestedItem.lower()]
+            except YomboFuzzySearchError, e:
+                logger.debug("No route for {requestedItem}", requestedItem=requestedItem)
+                return None
+
+        if moduleType == "Command":
+            if 'Command' in temp:
+                temp = temp['Command']
+            elif 'Interface' in temp:
+                temp = temp['Interface']
+            elif 'Logic' in temp:
+                temp = temp['Logic']
+            elif 'Other' in temp:
+                temp = temp['Other']
+        elif moduleType == "Interface":
+             if 'Interface' in temp:
+                temp = temp['Interface']
+             elif 'Logic' in temp:
+                temp = temp['Logic']
+             elif 'Other' in temp:
+                temp = temp['Other']
+        elif moduleType == "Logic":
+            if 'Logic' in temp:
+                temp = temp['Logic']
+            elif 'Other' in temp:
+                temp = temp['Other']
+        elif moduleType == "Other":
+            if 'Other' in temp:
+                temp = temp['Other']
+
+        logger.debug("temp2 = {temp2}", temp2=temp)
+        logger.debug("returnValue = {returnType}", returnType=returnType)
+
+        if returnType in ("moduleUUID", "moduleLabel"):
+            if temp is not None:
+                return temp[returnType]
+        elif returnType is 'module':
+            if temp is not None:
+                return self.getModule(temp['moduleUUID'])
+        return None
+

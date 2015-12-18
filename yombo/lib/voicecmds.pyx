@@ -88,7 +88,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
 
-logger = getLogger('library.vociecmds')
+logger = getLogger('library.voicecmds')
 
 class VoiceCmds(FuzzySearch, YomboLibrary):
     """
@@ -151,7 +151,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                  - deviceUUID: (string) The deviceUUID of the item if exists.
                  - order: (string) Order of the voice command.  One of: both, nounverb, verbnoun.
         """
-        logger.warn("^^^^^^^^^^^^^^^^^^adding: {voiceString}", voiceString=voiceString)
+        logger.debug("Adding voice command: {voiceString}", voiceString=voiceString)
         if voiceString is None or voiceString is None:
             raise YomboException("VoiceString or destination is mising.", 1000, 'voicecmd', 'core')
 
@@ -179,8 +179,10 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         if len(verbs) == 0:
             raise YomboException("No verbs found in VoiceString.", 1000, 'voicecmd', 'core')
 
-        logger.warn("^^^^^^^^^^^ commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
+#        logger.warn("^^^^^^^^^^^ commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
         for verb in verbs:
+            if verb not in self.commandsByVoice:
+                continue
             command = self.commandsByVoice[verb]
             a = {}
             if order == 'both':

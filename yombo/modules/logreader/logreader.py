@@ -1,3 +1,18 @@
+"""
+This module demonstrates two features of the Yombo Gateway:
+
+1. Using the pre-made FileReader to open a file for reading. The FileReader opens
+  the file in a non-blocking style and sends new lines back to the module.
+  The FileReader also keeps track of where it left off between restarts so
+  duplicate lines are not sent. It's smart enough to start at the top if the
+  file is smaller than were it left off before.
+
+2. Treats the incoming logfile as a stream of commands. This provides a simple method to allow
+   other processes to trigger actions, such as "open garage door".
+
+:copyright: 2013-2015 Yombo
+:license: GPL
+"""
 from yombo.core.exceptions import YomboFileError
 from yombo.core.filereader import FileReader
 from yombo.core.module import YomboModule
@@ -6,16 +21,23 @@ from yombo.core.log import getLogger
 
 logger = getLogger("modules.logreader")
 
+
 class LogReader(YomboModule):
     """
     Monitors a file for voice commands and send them to yombobot for processing.
+
+    :ivar fileReader: A yombo :doc:`FileReader <../core/filereader>` that reads text files
+      delivers lines of text to callable.
     """
     def _init_(self):
+        """
+        Init the module.
+        """
         self._ModDescription = "Logread monitors a file for voice commands."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "http://www.yombo.net"
 
-        self.fileReader = None # Used to test if file reader is running on stop.
+        self.fileReader = None  # Used to test if file reader is running on stop.
 
     def _load_(self):
         """
@@ -40,10 +62,10 @@ class LogReader(YomboModule):
 
         # Get a file name to monitor.
         if "logfile" in self._ModVariables:
-          self.fileName = self._ModVariables["logfile"][0]
+            self.fileName = self._ModVariables["logfile"]['value'][0]
         else:
-          logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
-          self.fileName = "logreader.txt"
+            logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
+            self.fileName = "logreader.txt"
 
         # Register with YomboBot.
         self.YomboBot.registerConnection(source=self, sessionid='logreader', authuser="UNKNOWN", remoteuser='None')
@@ -59,23 +81,16 @@ class LogReader(YomboModule):
     def newContent(self, linein):
         """
         Receives new lines of text from the FileReader here.
-        """
-        self.YomboBot.incoming(returncall=self.yomboBotReturn, linein=linein, msgid=generateUUID(), sessionid='logreaderSession')
 
-    def yomboBotReturn(self, **kwargs):
+        Just pass the raw string to YomboBot for parsing.
         """
-        Had to tell YomboBot where to return results, however, we don't really care about them.
-        Just discard it. All is good.
-        """
-        pass
-
 
     def _stop_(self):
         """
         Module is shutting down. If a FileReader was setup, delete it. FileReader will close the file
         and save it's current location. This will be used next time as a starting point.
         """
-        if self.fileReader != None:
+        if self.fileReader is not None:
             self.fileReader.close()
 
     def _unload_(self):

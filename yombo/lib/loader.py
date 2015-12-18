@@ -35,7 +35,9 @@ import ConfigParser
 import inspect
 import traceback
 import sys
-import hashlib
+#import hashlib
+from time import time
+#from collections import OrderedDict
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred
@@ -45,6 +47,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.db import DBTools
 from yombo.core.exceptions import YomboCritical, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
+from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 
@@ -95,12 +98,11 @@ class Loader(YomboLibrary):
 
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
         self.loadedLibraries = {}
-        self.loadedModules = {}
         self.moduleNames = {}
         self.libraryNames = {}
         self.__localModuleVars = {}
         self._SQLDictUpdates = {}
-        self.dbtools = DBTools()
+        self._DBTools = DBTools()
 
     def load(self):  #on startup, load libraried, then modules
         """
@@ -149,7 +151,7 @@ class Loader(YomboLibrary):
     def setYomboService(self, yomboservice):
         self.YomboService = yomboservice
 
-    def _importComponent(self, pathName, componentName, componentType):
+    def _importComponent(self, pathName, componentName, componentType, componentUUID=None):
         """
         Load component of given name. Can be a core library, or a module.
         """
@@ -192,12 +194,14 @@ class Loader(YomboLibrary):
             else:
                 # Instantiate the class
                 moduleinst = klass()  # start the class, only libraries get the loader
-                self.loadedModules[str(componentName.lower())] = moduleinst
                 self.loadedComponents[str(componentName.lower())] = moduleinst
 
                 # this is mostly for manhole module, but maybe useful elsewhere?
                 temp = componentName.split(".")
                 self.moduleNames[temp[-1]] = moduleinst
+
+                self._moduleLibrary.addModule(componentUUID, str(componentName.lower()), moduleinst)
+
 
         except YomboCritical, e:
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -277,6 +281,8 @@ class Loader(YomboLibrary):
         """
         Called the "load" function of libraries.
         """
+        self._moduleLibrary = self.loadedLibraries['yombo.gateway.lib.modules']
+
         logger.info("Calling start function of libraries.")
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
@@ -306,7 +312,7 @@ class Loader(YomboLibrary):
         """
         Load modules configured to run at startup.
         """
-        if len(self.loadedModules) > 0:
+        if len(self._moduleLibrary._modulesByUUID) > 0:
             logger.warn("Modules already loaded, why again??")
             return
 
@@ -314,10 +320,11 @@ class Loader(YomboLibrary):
         try:
             fp = open("localmodules.ini")
             ini = ConfigParser.SafeConfigParser()
+            ini.optionxform=str
             ini.readfp(fp)
             for section in ini.sections():
                 options = ini.options(section)
-                mLabel = ''
+                mLabel = section
                 mType = ''
                 if 'label' in options:
                     mLabel = ini.get(section, 'label')
@@ -327,45 +334,58 @@ class Loader(YomboLibrary):
 
                 if 'type' in options:
                     mType = ini.get(section, 'type')
+                    options.remove('type')
                 else:
                     mType = 'other'
-                    options.remove('type')
 
                 modules[section] = {
                   'machinelabel' : mLabel,
                   'enabled' : "1",
                   'moduletype' : mType,
-                  'moduleuuid' :  hashlib.md5("module" + mLabel).hexdigest(),
+                  'moduleuuid' :  generateRandom(),
                   'installsource' : 'local',
                 }
-                
-                self.__localModuleVars[section.lower()] = {}
+
+                self.__localModuleVars[section] = {}
                 for item in options:
-                    self.__localModuleVars[section.lower()][item.lower()] = (ini.get(section, item),)
+                    logger.debug("Adding module from localmodule.ini: {item}", item=item)
+                    values = ini.get(section, item)
+                    values = values.split(",")
+                    vardata = {
+                        'updated': int(time()),
+                        'machinelabel': item.lower(),
+                        'weight': 0,
+                        'created': int(time()),
+                        'value': values,
+                        'label': item,
+                        'dataweight': 0,
+                        'moduleuuid': modules[section]['moduleuuid'],
+                        'variableuuid': 'xxx',
+                    }
+
+                    self.__localModuleVars[section][item] = vardata.copy()
+            logger.debug("localmodule vars: {lvars}", lvars=self.__localModuleVars)
             fp.close()
         except IOError as (errno, strerror):
             logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
 
-        modulesDB = self.dbtools.getModules()
+        modulesDB = self._DBTools.getModules()
         for module in modulesDB:
             modules[module["machinelabel"]] = module
 
         logger.debug("Complete list of modules, before import: {modules}", modules=modules)
 
-        for module in modules:
-            pathName = "yombo.modules.%s" % module
-            componentName = "yombo.gateway.modules.%s" % module
-            self._importComponent(pathName, componentName, 'module')
+        for name, module in modules.iteritems():
+            pathName = "yombo.modules.%s" % name
+            componentName = "yombo.gateway.modules.%s" % name
+            self._importComponent(pathName, componentName, 'module', module['moduleuuid'])
 
         logger.info("Calling init functions of modules.")
-        moduleLibrary = self.loadedLibraries['yombo.gateway.lib.modules']
-        for name, module in self.loadedModules.iteritems():
-            moduleLibrary.addModule(modules[module._Name]['moduleuuid'], modules[module._Name]['machinelabel'].lower(), self.loadedModules[name])
-
+        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
             # if varibles set by localmodules, use those variables.
-            if module._Name.lower() in self.__localModuleVars:
-                module._ModVariables = self.__localModuleVars[module._Name.lower()]
-            module._Loader(modules[module._Name])
+            if module._Name in self.__localModuleVars:
+                module._ModVariables = self.__localModuleVars[module._Name]
+            module._preinit_(modules[module._Name])
 
             self.logLoader('debug', componentName, 'module', 'init', 'About to call _init_.')
             if hasattr(module, '_init_') and callable(module._init_) and self.getMethodDefinitionLevel(module._init_) != 'yombo.core.module.YomboModule':
@@ -383,7 +403,7 @@ class Loader(YomboLibrary):
                 logger.error("----==(Module doesn't have _init_ function: {name})==-----", name=name)
 
         logger.debug("Calling load functions of modules.")
-        for name, module in self.loadedModules.iteritems():
+        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
             self.logLoader('debug', componentName, 'module', 'load', 'About to call _load_.')
             if hasattr(module, '_load_') and callable(module._load_) and self.getMethodDefinitionLevel(module._load_) != 'yombo.core.module.YomboModule':
 #                module._load_()
@@ -400,7 +420,7 @@ class Loader(YomboLibrary):
 
     def startModules(self):
         logger.debug("Calling start functions of modules.")
-        for name, module in self.loadedModules.iteritems():
+        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
             self.logLoader('debug', name, 'module', 'start', 'About to call _start_.')
             if hasattr(module, '_start_') and callable(module._start_) and self.getMethodDefinitionLevel(module._start_) != 'yombo.core.module.YomboModule':
 #              module._start_()
@@ -447,25 +467,25 @@ class Loader(YomboLibrary):
         modules.
         """
         logger.info("Unloading user modules.")
-        for name, module in self.loadedModules.items():
-            self.logLoader('debug', componentName, 'module', 'stop', 'About to call _stop_.')
+        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
+            self.logLoader('debug', name, 'module', 'stop', 'About to call _stop_.')
             if hasattr(module, '_stop_') and callable(module._stop_) and self.getMethodDefinitionLevel(module._stop_) != 'yombo.core.module.YomboModule':
                 try:
                     module._stop_()
                 except AttributeError:
                     logger.warn("Module '{moduleName}' doesn't have _stop_ function defined.", moduleName=name)
 
-        for name, module in self.loadedModules.items():
-            self.logLoader('debug', componentName, 'module', 'unload', 'About to call _unload_.')
+        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
+            self.logLoader('debug', name, 'module', 'unload', 'About to call _unload_.')
             if hasattr(module, '_unload_') and callable(module._unload_) and self.getMethodDefinitionLevel(module._unload_) != 'yombo.core.module.YomboModule':
                 try:
                     module._unload_()
                 except AttributeError:
                     logger.warn("Module '{moduleName}' doesn't have _unload_ function defined.", moduleName=name)
+                finally:
+                    self._moduleLibrary.delModule(module._ModuleUUID)
 
             del self.loadedComponents[name]
-
-        self.loadedModules.clear()
 
         self.loadedComponents['yombo.gateway.lib.messages'].clearDistributions()
         callwhenDone()
@@ -539,10 +559,10 @@ class Loader(YomboLibrary):
             for module in self._SQLDictUpdates.keys():
                 for dictname in self._SQLDictUpdates[module]:
                     for key1 in self._SQLDictUpdates[module][dictname]:
-                        self.dbtools.saveSQLDict(module, dictname, key1, self._SQLDictUpdates[module][dictname][key1])
+                        self._DBTools.saveSQLDict(module, dictname, key1, self._SQLDictUpdates[module][dictname][key1])
                 del self._SQLDictUpdates[module]
 
-            self.dbtools.commit()
+            self._DBTools.commit()
 
 
 _loader = None

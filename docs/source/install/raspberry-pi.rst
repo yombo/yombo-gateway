@@ -89,7 +89,6 @@ Now, delete the pi user:
 .. code-block:: bash
 
   $ sudo deluser -remove-home pi
-  $ sudo deluser -remove-home pi
   Looking for files to backup/remove ...
   Removing files ...
   Removing user `pi' ...
@@ -104,7 +103,7 @@ to the dialout group to access any USB <-> serial devices:
 
 .. code-block:: bash
 
-  $ sudo usermod -a -G dialout user
+  $ sudo usermod -a -G dialout joe
 
 Update Raspberry Firmware and OS
 --------------------------------
@@ -138,10 +137,10 @@ This example downloads and installs as user "yombo" into "/opt/yombo-gateway":
 .. code-block:: bash
 
   cd /opt
-  curl -sS https://bitbucket.org/yombo/yombo-gateway/raw/master/install/debian-setup.sh | sudo bash
+  su yobmo
+  curl -sS https://get.yombo.net/debian | sudo bash
 
-Next steps
-==========
+.. rubric:: Next steps
 
 Your system is ready to be configured.
 Next: :doc:`Configuration <../chapters/configuring-the-gateway>`.

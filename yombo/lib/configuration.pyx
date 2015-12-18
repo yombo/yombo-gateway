@@ -163,7 +163,7 @@ class Configuration(YomboLibrary):
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        logger.debug("config stopping...Cache hits: %d, cacheMisses: %d", self.cacheHits, self.cacheMisses)
+        logger.debug("config stopping...Cache hits: {cacheHits}, cacheMisses: {cacheMisses}", cacheHits=self.cacheHits, cacheMisses=self.cacheMisses)  # todo: add to stats
         logger.info("saving config file...")
         
         Config = ConfigParser.ConfigParser()

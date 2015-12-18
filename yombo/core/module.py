@@ -95,7 +95,7 @@ logger = getLogger('core.module')
 
 class YomboModule:
     """
-    Defines basic items for all modules and helps with consistency.
+    Setups a module to assist the developer write modules quickly. Pre-defines several items.
 
     :cvar _Name: (string) Name of the class (aka module name). EG: x10api
     :cvar _FullName: (string) Name **full** of the class for routing. EG: yombo.modules.x10api
@@ -103,23 +103,24 @@ class YomboModule:
     :cvar _ModAuthor: (string) Module author, needs to be set in the module's init() function.
     :cvar _ModUrl: (string) URL for additional information about this
       module, needs to be set in the module's init() function.
-    :cvar _ModVariables: (dict) Dictionary of the module level variables as defined online
-      and set as per the user.
-    :cvar _ModType: (string) Type of module (interface, command, logic, other). Defined here,
+    :cvar _Commands: preloaded pointer to all configured commands.
+    :cvar _CronTab: preloaded pointer to Cron Tab library.
+    :cvar _DeviceTypes: (list) List of device types that are registered for this module.
+    :cvar _Devices: (dict) Dictionary to all devices this module controls.
+    :cvar _DevicesByType: preloaded pointer getDeviceByDeviceType to quickly get all devices for a specific type.
+    :cvar _DevicesLibrary: preloaded pointer to Devices library.
+    :cvar _Times: preloaded pointer to Times library.
+    :cvar _ModuleType: (string) Type of module (Interface, Command, Logic, Other). Defined here,
       but set in _Loader(), which is called just before the module's init().
     :cvar _ModuleUUID (string) UUID of this module.
-    :cvar _LocalDevices: (dict) Dictionary to all devices this module controls.
-    :cvar _LocalDeviceTypes: (list) List of device types that are registered for this module.
-    :cvar _LocalDevicesByType: (dict) Dictionary of devices this module controls, broken down by device type
-    :cvar _Commands: preloaded pointer to all configured commands.
-    :cvar _Devices: preloaded pointer to all configured devices.
-    :cvar _DevicesByType: preloaded pointer to all configured devices by type.
+    :cvar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
+      and set as per the user.
+    :cvar _ModulesLibrary: preloaded pointer to Modules library.
     :cvar _RegisterDistributions: (list) Defined by the module author. Used to subscribe
       to any message distribution lists. Typically use for "cmd" and "status" distros.
     :cvar _RegisterVoiceCommands: (list) Register voice commands to be used to send
       commands to the module.
     """
-
     def __init__(self):
         """
         Setup basic class items. See variables list for specific information
@@ -130,43 +131,36 @@ class YomboModule:
         self._ModDescription = "NA"
         self._ModAuthor = "NA"
         self._ModURL = "NA"
-        self._ModuleUUID = ""
-        self._ModVariables = getModuleVariables(self._Name)
         self._Commands = getCommands()
         self._CronTab = getCronTab()
         self._Times = getTimes()
 
-        self._ModuleLibrary = getComponent('yombo.gateway.lib.modules')
-        logger.info("self._moduleLibrary = {moduleLibrary}", moduleLibrary=self._ModuleLibrary)
-        self._DeviceLibrary = getComponent('yombo.gateway.lib.devices')
+        self._ModulesLibrary = getComponent('yombo.gateway.lib.modules')
+        self._DevicesLibrary = getComponent('yombo.gateway.lib.devices')
 
-        self._DevicesByType = getattr(self._DeviceLibrary, "getDevicesByDeviceType")  # returns a callable (function)
+        self._DevicesByType = getattr(self._DevicesLibrary, "getDevicesByDeviceType")  # returns a callable (function)
 
         self._LocalDevicesByUUID = {}
         self._LocalDeviceTypesByUUID = {}
         self._LocalDeviceTypesByName = FuzzySearch({}, .95)
         self._LocalDevicesByDeviceTypeUUID = {}
 
-    def _Loader(self, moduleDetails):
+    def _preinit_(self, moduleDetails):
         """
-        Called by the loader to set some module details.
-        
+        This is called between __init__ and _init_.
+
         :param moduleDetails: Various details about the module, which was stored in the database
           and set online.
         :type moduleDetails: dict
         """
+        logger.debug("In _preinit_: {moduleDetails}", moduleDetails=moduleDetails)
         self._ModuleType = moduleDetails['moduletype']
         self._ModuleUUID = moduleDetails['moduleuuid']
-        logger.info("moduleuuid = {moduleuuid}", moduleuuid=self._ModuleUUID)
-        logger.info("_ModuleLbrary = {ModuleLbrary}", ModuleLbrary=self._ModuleLibrary)
-        self._Devices = self._ModuleLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
-#        self._DevicesByName = FuzzySearch({}, .95)
-#        for device in self._Devices:
-#            self._DevicesByName[self._Devices[device].label] = self._Devices[device].deviceUUID
+        self._Devices = self._ModulesLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
+        self._DeviceTypes = self._ModulesLibrary.getModuleDeviceTypes(self._ModuleUUID)
+        self._ModuleVariables = getModuleVariables(self._ModuleUUID)
 
-        self._DeviceTypes = self._ModuleLibrary.getModuleDeviceTypes(self._ModuleUUID)
-
-        logger.info("!!!!!!!!!!!!!!!!!!!devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
+#        logger.info("!!!!!!!!!!!!!!!!!!!devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
 
     def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
         """

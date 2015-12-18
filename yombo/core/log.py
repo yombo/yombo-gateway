@@ -62,7 +62,6 @@ def getLogger(logname='yombolog', **kwargs):
 
     # A simple cache or existing loggers...
     if logname in loggers:
-        print "returning cached logger!"
         return loggers[logname]
 
     global configCache
@@ -91,12 +90,11 @@ def getLogger(logname='yombolog', **kwargs):
     try:
         if logname in configCache:
           iniLogLevel = configCache[logname].lower()
-        else:
-          iniLogLevel = 'info'
-          iniLogLevel = False
-        print "iniLogLevel: %s, logname: %s" % (iniLogLevel, logname)
-        if iniLogLevel is not False:
-            logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
+          logFilter.setLogLevelForNamespace(logname, LogLevel.levelWithName(iniLogLevel))
+#        else:
+#          iniLogLevel = 'info'
+#          iniLogLevel = False
+#        print "iniLogLevel: %s, logname: %s" % (iniLogLevel, logname)
         invalidLogLevel = False
     except InvalidLogLevelError:
         logFilter.setLogLevelForNamespace(logname, LogLevel.info)

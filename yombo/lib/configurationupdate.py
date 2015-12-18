@@ -148,7 +148,7 @@ class ConfigurationUpdate(YomboLibrary):
 #            raise YomboWarning("Unable to pre")
 
     def processConfig(self, inputType, configType, configStatus, msg):
-        logger.info("processing configType: %s" % configType)
+        logger.debug("processing configType: %s" % configType)
         configTypes = {
             'Commands' : {'table': "CommandsTable", 'map' : {
                 'Uri' : 'uri',

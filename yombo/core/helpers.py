@@ -311,7 +311,7 @@ def getDevice(deviceSearch):
     :return: The pointer to the requested device.
     :rtype: object
     """
-    return getComponent('yombo.gateway.lib.devices')._search(deviceSearch)
+    return getComponent('yombo.gateway.lib.devices').getDevice(deviceSearch)
 
 def getDevicesByDeviceType():
     """

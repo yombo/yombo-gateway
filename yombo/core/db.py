@@ -37,25 +37,17 @@ yombodbpool = None
 yombotoolsdb = None
 
 
-def get_dbtools():
-    """
-    Return connection to database.
-    """
-    global yombotoolsdb
-    return yombotoolsdb
-
-
 class DBConnectionPool:
     """
     Create a connection pool between the SQL requests and the actual database
     itself.
     """
-
     def connect(self):
         SQLITE3_PATH = "usr/sql/config.sqlite3"
         self.pool = sqlite3.connect(SQLITE3_PATH)
         self.cur = self.pool.cursor()
         self._create_tables_if_not_exist()
+        self._create_views_if_not_exist()
 
     def cursor(self):
         return self.pool.cursor()
@@ -69,6 +61,23 @@ class DBConnectionPool:
             for line in lines:
                 #                logger.info("line: %s" % line)
                 self.cur.execute(line)
+        self.pool.commit()
+
+    def _create_views_if_not_exist(self):
+        c = self.cursor()
+        c.execute("SELECT name FROM sqlite_master WHERE type='view'")
+        views = []
+        data = c.fetchall()
+        if data is None:
+            views = []
+        field_names = [d[0].lower() for d in c.description]
+        for row in data:
+            item = dict(izip(field_names, row))
+            views.append(item['name'])
+
+        for view in ALLVIEWS:
+            if view not in views:
+                c.execute("CREATE VIEW %s as %s" % (view, ALLVIEWS[view]))
         self.pool.commit()
 
     def loadall(self, data):
@@ -150,6 +159,12 @@ class DBConnectionPool:
         logger.debug("SQL: {sql}", sql=query)
         return self.fetchDict(query, fields)
 
+def get_dbtools():
+    """
+    Return connection to database.
+    """
+    global yombotoolsdb
+    return yombotoolsdb
 
 def get_dbconnection():
     """
@@ -170,7 +185,6 @@ class DBTools:
     Various DB tools. Usses the DB pool above to perform the actual
     work.
     """
-
     def __init__(self, dbpool=None):
         if dbpool is None:
             self.dbpool = get_dbconnection()
@@ -282,15 +296,11 @@ class DBTools:
             records.append(dict(izip(field_names, row)))
         return records
 
-    def getModuleVariables(self, modulelabel):
+    def getModuleVariables(self, moduleUUID):
         from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
-        module = self.get_module_by_name(modulelabel)
-        if module is None:
-            return {}
-
         c.execute('SELECT * FROM moduleVariables WHERE moduleuuid = ? order by weight ASC, dataWeight ASC',
-                  (module["moduleuuid"],))
+                  (moduleUUID,))
         data = c.fetchall()
         if data is None or len(data) == 0:
             return {}
@@ -298,10 +308,14 @@ class DBTools:
         field_names = [d[0].lower() for d in c.description]
         for row in data:
             record = dict(izip(field_names, row))
-#            varnames = cPickle.loads(str(record['varnames']))
-#            varvalues = cPickle.loads(str(record['varvalues']))
-#            logger.info("variable_modules = %s", record)
-            records[record['machinelabel']] = record
+            value = record['value']
+
+            if record['machinelabel'] not in records:
+                record['value'] = []
+                records[record['machinelabel']] = record
+
+            records[record['machinelabel']]['value'].append(value)
+#            records[record['machinelabel']] = record
         return records
 
     def getUserGWToken(self, username, gwtokenid):
@@ -314,7 +328,15 @@ class DBTools:
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
 
-    def getVariableDevices(self, deviceuuid):
+    def getDeviceVariables(self, deviceuuid):
+        """
+        Gets available variables for a given deviceuuid.
+
+        Called by: library.Devices::_init_
+
+        :param deviceuuid:
+        :return:
+        """
         from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
 
@@ -342,43 +364,20 @@ class DBTools:
             #        logger.info("variable_modules = %s", records)
         return records
 
-    def get_module_data_by_key(self, modulename, key1, key2='', type='data'):
-        if key1 == '':
-            return False
-        c = self.dbpool.cursor()
-        sql = "SELECT rowid, data1 FROM moduleData WHERE key1 = '%s'" % (key1,)
-        if key1 != '':
-            sql = sql + " AND key2 = '%s'" % (key2,)
-        #        logger.debug("get_moduledData: %s", sql)
-        c.execute(sql)
-        row = c.fetchone()
-        if row is None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        record = dict(izip(field_names, row))
-        if type != 'data':
-            return record['rowid']
-        else:
-            return record['data1']
-
-    def set_module_data_by_key(self, modulename, key1, key2='', data1=None):
-        if key1 == '' or data1 is None:
-            return False
-
-        rowid = self.get_module_data_by_key(modulename, key1, key2, 'rowid')
-        c = self.dbpool.cursor()
-        if rowid is False:
-            c.execute("""
-                update moduleData set data1=? where rowid=?;""", (data1, rowid))
-        else:
-            c.execute("""
-                replace into moduleData (key1, key2, data1)
-                values  (?, ?, ?);""", (key1, key2, data1))
-        # """   """
-
     def saveSQLDict(self, module, dictname, key1, data1):
-        c = self.dbpool.cursor()
+        """
+        Used to save SQLDicts to the database. This is from a loopingcall as well as
+        shutdown of the gateway.
 
+        Called by: lib.Loader::saveSQLDict
+
+        :param module: Module/Library that is storing the data.
+        :param dictname: Name of the dictionary that is used within the module/library
+        :param key1: Key
+        :param data1: Data
+        :return: None
+        """
+        c = self.dbpool.cursor()
         c.execute(
             "select rowid from sqldict where key1='%s' and module='%s' and dictname='%s'" % (key1, module, dictname))
         row = c.fetchone()
@@ -391,7 +390,32 @@ class DBTools:
             c.execute("""
                 replace into sqldict (created, updated, module, dictname, key1, data1)
                 values  (?, ?, ?, ?, ?, ?);""", (int(time.time()), int(time.time()), module, dictname, key1, data1))
-        # """   """
+
+    def getModuleRouting(self, where = None):
+        """
+        Used to load a list of deviceType routing information.
+
+        Called by: lib.Modules::loadData
+
+        :param where: Optional - Can be used to append a where statement
+        :type returnType: string
+        :return: Modules used for routing device message packets
+        :rtype: list
+        """
+        c = self.dbpool.cursor()
+
+        if where is None:
+            c.execute('SELECT * FROM moduleRouting_view')
+        else:
+            c.execute('SELECT * FROM moduleRouting_view WHERE %s' % where)
+        data = c.fetchall()
+        if data is None:
+            return None
+        records = []
+        field_names = [d[0].lower() for d in c.description]
+        for row in data:
+            records.append(dict(izip(field_names, row)))
+        return records
 
     def commit(self):
         self.dbpool.commit()
@@ -750,7 +774,7 @@ class SQLDictTable(Table):
                "CREATE INDEX IF NOT EXISTS module_idx ON %s (module);" % (table_name)]
 
 
-class VariableDevicesTable(Table):
+class DeviceVariablesTable(Table):
     tableVersion = 15
     table_name = 'variableDevices'
     deviceUUID = TextColumn()
@@ -797,7 +821,7 @@ ALLTABLES = [
     ModulesInstalledTable,
     ModuleVariablesTable,
     SQLDictTable,
-    VariableDevicesTable,
+    DeviceVariablesTable,
     UsersTable,
 ]
 
@@ -812,14 +836,15 @@ CONFTABLES = [
     ModuleDeviceTypesTable,
     ModuleVariablesTable,
 
-    VariableDevicesTable,
+    DeviceVariablesTable,
     UsersTable,
 ]
 
+ALLVIEWS = {
+    "moduleRouting_view" : """SELECT mdt.deviceTypeUUID, MAX(priority) AS priority, dt.machineLabel AS deviceTypeLabel, moduleUUID, moduleLabel, moduleType
+FROM moduledevicetypes AS mdt
+JOIN deviceTypes AS dt ON mdt.deviceTypeUUID = dt.deviceTypeUUID
+WHERE moduletype IN (SELECT distinct(moduleType) FROM moduledevicetypes)
+GROUP BY mdt.deviceTypeUUID, moduleType""",
 
-class AllTabless:
-    global ALLTABLES
-    alltablessss = ALLTABLES
-
-    def __init__(self):
-        pass
+}

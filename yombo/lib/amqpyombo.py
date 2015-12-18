@@ -113,7 +113,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         self.channel.add_on_close_callback(closeConnection)
 
         yield self.channel.basic_qos(prefetch_count=PREFETCH_COUNT)
-        logger.info("!!!!! Setting AMQP connected to true.")
+        logger.info("Setting AMQP connected to true.")
         self.connected = True
 
         register = {
@@ -289,7 +289,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
             channel.basic_nack(deliver.delivery_tag, False, False)
           raise Exception
         else:
-          logger.info('Calling callback: {callback}', callback=callback)
+          logger.debug('Calling callback: {callback}', callback=callback)
           d = defer.maybeDeferred(callback, deliver, props, msg)
           if not queue_no_ack:
             # if it gets here, it's passed basic checks. Lets either store the message for later or pass it on.
@@ -460,7 +460,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         elif properties.headers['Type'] == "Response":
             dt = self.sentCorrelationIDs[properties.correlation_id]['time_received'] - self.sentCorrelationIDs[properties.correlation_id]['time_sent']
             ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-            logger.info("Message Response time: {mesageResponseTime} ms", mesageResponseTime=ms)
+            logger.debug("Message Response time: {mesageResponseTime} ms", mesageResponseTime=ms)  # todo: add to stats
             self.do_incoming_response(deliver, properties, msg)
         # Route to Yombo Message system for delivery.
         elif properties.headers['Type'] == "Message":
@@ -496,12 +496,10 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
     def clientConnectionLost(self, connector, reason):
         logger.debug("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
-        self._resetRegistrationItems()
         protocol.ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
         logger.debug("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
-        self._resetRegistrationItems()
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
     def sendMessage(self, **kwargs):

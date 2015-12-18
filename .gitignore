@@ -18,6 +18,7 @@ twistd.pid
 yombo.ini*
 builddocs.sh*
 localmodules.ini*
+*.freeze
 
 # Building / Documentation #
 ############################

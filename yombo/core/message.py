@@ -41,6 +41,7 @@ from json import dumps, loads
 from uuid import uuid4
 import copy
 import time
+import sys
 
 # Import twisted libraries
 from twisted.internet.reactor import callLater
@@ -223,7 +224,7 @@ class Message:
         self.msgDestination = kwargs['msgDestination']
         self.msgType        = kwargs['msgType']
         self.msgStatus      = kwargs['msgStatus']
-        self.msgStatusExtra = kwargs.get('msgStatusExtra')
+        self.msgStatusExtra = kwargs.get('msgStatusExtra', None)
         self.textStatus     = kwargs.get('textStatus')
         self.uuidType       = kwargs.get('uuidType', 'z')
         self.uuidSubType    = kwargs.get('uuidSubType', 'z')
@@ -611,7 +612,7 @@ class Message:
         if self.msgStatus != 'new':
             return True
         
-        logger.debug("validcmd payload: {payload}", payload=self.payload)
+        logger.warn("validcmd payload: {payload}", payload=self.payload)
 
         #for testing with isinstance. Can't include at startup - loop!
         from yombo.lib.devices import Device
@@ -653,12 +654,16 @@ class Message:
             else:
                 raise YomboMessageError("if 'deviceobj' specified', it must be a device instance.", 'Message API::ValidateCMD')
         elif 'deviceUUID' in self.payload:
-            try:
+#            try:
+                logger.warn("aaaa1: {payload}", payload=self.payload)
                 self.payload['deviceobj'] = getDevice(self.payload['deviceUUID'])
+                logger.warn("aaaa2: {payload}", payload=self.payload)
                 self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                logger.warn("aaaa3: {payload}", payload=self.payload)
                 self.payload['device'] = self.payload['deviceobj'].label
-            except:
-                raise YomboMessageError("Couldn't find specified deviceUUID.", 'Message API')
+                logger.warn("aaaa4: {payload}", payload=self.payload)
+ #           except:
+ #               raise YomboMessageError("Couldn't find specified deviceUUID. %s " % sys.exc_info()[0], 'Message API')
         elif 'device' in self.payload:
             try:
                 self.payload['deviceobj'] = getDevice(self.payload['device'])
@@ -677,7 +682,8 @@ class Message:
 
         # force delivery to the correct module.
         if(self.msgStatus == "new"):
-            moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].moduleLabel.lower()
+            logger.warn("what? {pay}", pay=self.payload['deviceobj'].dump())
+            moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].getRouting('Command')
             if self.msgDestination != moduleLabel :
                 self.msgDestination = moduleLabel
 

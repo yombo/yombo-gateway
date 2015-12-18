@@ -13,19 +13,19 @@ This module demonstrates two features of the Yombo Gateway:
   file is smaller than were it left off before.
   
 2. Treats the incoming logfile as a stream of commands. This provides a simple method to allow
-   other processes to trigger actions.
+   other processes to trigger actions, such as "open garage door".
 
 For more on developing modules, visit
 `Projects.Yombo.net <https://projects.yombo.net/projects/modules/wiki>`_ .
 
-==========================================
-Empty Module (yombo.modules.logreader)
-==========================================
+========================================================
+Logreader - Read a file and parse as automation commands
+========================================================
 .. automodule:: yombo.modules.logreader
 
-Empty  Class
+LogReader  Class
 ============================
-.. autoclass:: logreader
+.. autoclass:: LogReader
    :members:
    :member-order: bysource
    :private-members:

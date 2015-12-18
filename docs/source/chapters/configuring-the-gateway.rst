@@ -16,34 +16,41 @@ This tool can perform the following functions:
   are handled through the mobile or desktop applications.
 * Reset the gateway back to it's default settings.
 
+**If are you setting up a new gateway, you are done.** The remaining sections
+explain making configuration changes that can normally be performed though the
+mobile or desktop applications.
+
 yombo.ini
 =========
 
+.. rst-class:: floater
+
 .. warning::
 
-  If you want to delete all the settings, deleting the yombo.ini alone will
-  not do this. Run the ``./config`` tool to complete this action.
+  Deleting the yombo.ini alone will not delete all settings. Run the
+  ``./config`` tool to complete this action.
 
 .. rst-class:: floater
 
 .. warning::
 
   If you update the yombo.ini file while the **gateway is running**, any changes
-  will be lost.
+  will be **lost**.
 
-The yombo.ini file contains various configuration data to run the gateway. For
-details about it's contents see the Yombo Wiki for
+The majority of the time, the default settings will work fine. However, the
+gateway exposes many settings that allows various options to be tweaked. Some
+caution is needed: *you can break things!*
+
+The yombo.ini file contains various configuration settings. For details about
+it's contents see the Yombo Wiki for
 `yombo.ini <https://projects.yombo.net/projects/gateway/wiki/Yomboini>`_
 
 Only the basic configurations are stored in the yombo.ini file, the remaining
-configurations are stored in a local database file managed by the gateway.
-
-
-Changing Settings
------------------
+configurations (devices, commands, etc) are stored in a local database file
+managed by the gateway.
 
 The gateway was designed to be easily updated using various tools, including
-the mobile app or through the Yombo API. It's recommended to use thse tools
+the mobile app or through the Yombo API. It's recommended to use those tools
 instead of directly modifying the yombo.ini file.
 
 Running the gateway
@@ -71,27 +78,16 @@ Advanced configurations
 Creating Local Modules
 ----------------------
 
-This file allows the loading and running of locally installed modules and bypasses
-the Yombo infrastructure. This allows the gateway to run modules inside of the
-Yombo Gateway framework without registering the module.
+For those wanting to create a local module and not make it publicly available,
+you can instruct the gateway to load it by creating a ``localmodules.ini``
+at gateway root directory. This allows the gateway to run modules inside of
+the Yombo Gateway framework without registering the module.
 
-Use of this should be reserved for custom logic modules, or for developing a module
-for publishing/posting later. See `Building your first module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_.
+To get started building your first module, see:
+`Building your first module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_.
 
-The ``localmodules.ini`` is placed at gateway root directory.
-
-For each module to load, edit the ``localmodules.ini`` file and create a new section.
-Within the section, the label is the class name of of the modules, which is
-typically the module name with mixed case.  Also, there is a "type"
-field, which is one of:
-
-* logic - Used to denote it's some sort of automation logic control.
-* More to be defined later.
-
-Anything other than "label" and "type" are considered module variables and will
-be accessable by the standard module methods. See :ref:`YomboModule` for details.
-
-Example section:
+For each module to load, edit the ``localmodules.ini`` file and create a new
+section. Within the section. Here's an example:
 
 .. code-block:: guess
 
@@ -100,3 +96,14 @@ Example section:
    type=logic
    logfile="logreader.log"
 
+The ``label`` is the class name of the module, which is typically the module
+name, but with mixed case. Type is one of:
+
+* logic - Used to denote it's some sort of automation logic control.
+* command - A command processor - such as X10, insteon, Z Wave commands.
+* interface - A module that bridges a command module to some interface - such
+  as a USB port or network location.
+
+Anything other than "label" and "type" are considered module variables and will
+be accessable inside the module through: ``self._ModVariables['variable_name']``
+See :ref:`YomboModule` for details.

@@ -48,7 +48,6 @@ class Devices(YomboLibrary):
         - :func:`getDevicesByDeviceType` - Get all device for a certain deviceType (UUID or MachineLabel)
         - :func:`search` - Get a pointer to a device, using deviceUUID or device label.
     """
-
     def __getitem__(self, deviceRequested):
         """
         Attempts to find the device requested using a couple of methods.
@@ -79,8 +78,8 @@ class Devices(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
-        self._messageLib = getComponent('yombo.gateway.lib.messages')
-        self._modulesLib = getComponent('yombo.gateway.lib.modules')
+        self._MessageLibrary = getComponent('yombo.gateway.lib.messages')
+        self._ModulesLibrary = getComponent('yombo.gateway.lib.modules')
 
         self.loader = loader
         self._devicesByUUID = {}
@@ -172,6 +171,7 @@ class Devices(YomboLibrary):
         field_names = [d[0].lower() for d in c.description]
         while row is not None:
             record = (dict(izip(field_names, row)))
+            logger.debug("Loading device: {record}", record=record)
             try:
                 self.voiceCmds.add(record["voicecmd"], "", record["deviceuuid"], record["voicecmdorder"])
             except:
@@ -191,7 +191,7 @@ class Devices(YomboLibrary):
         self._devicesByUUID[deviceUUID] = Device(record, self)
         self._devicesByName[record["label"]] = deviceUUID
 
-        logger.info("_addDevice: {record}", record=record)
+        logger.debug("_addDevice: {record}", record=record)
         if record['devicetypeuuid'] not in self._devicesByDeviceTypeByUUID:
             self._devicesByDeviceTypeByUUID[record['devicetypeuuid']] = {}
         if deviceUUID not in self._devicesByDeviceTypeByUUID[record['devicetypeuuid']]:
@@ -202,7 +202,6 @@ class Devices(YomboLibrary):
         if deviceUUID not in self._devicesByDeviceTypeByName[record['devicetypemachinelabel']]:
             self._devicesByDeviceTypeByName[record['devicetypemachinelabel']][deviceUUID] = deviceUUID
 
-        logger.debug("_addDevice::_yomboDevicesByTypeUUID={devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID)
         if testDevice:
             return self._devicesByUUID[deviceUUID]
 
@@ -223,6 +222,8 @@ class Devices(YomboLibrary):
         :return: Pointer to array of all devices.
         :rtype: dict
         """
+        logger.info("looking for: {deviceuuid}", deviceuuid=deviceRequested)
+        logger.info("inside: {devicesByUUID}", devicesByUUID=self._devicesByUUID)
         if deviceRequested in self._devicesByUUID:
             return self._devicesByUUID[deviceRequested]
         else:
@@ -253,7 +254,7 @@ class Devices(YomboLibrary):
                 logger.debug("## requestedUUID: {requestedUUID}", requestedUUID=requestedUUID)
                 return self._devicesByDeviceTypeByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-                logger.warn("e={e}", e=e)
+#                logger.debug("e={e}", e=e)
                 return {}
 
 class Device:
@@ -285,7 +286,6 @@ class Device:
             status updates.
         :ivar pinrequired: *(bool)* - If a pin is required to access this device.
         :ivar pincode: *(string)* - The device pin number.
-        :ivar moduleLabel: *(string)* - The module that handles this devices. Used by the message
             system to deliver commands and status update requests.
         :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
         :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
@@ -318,18 +318,8 @@ class Device:
         self.status = deque({}, 30)
         self._allDevices = allDevices
 
-        self.moduleLabel = ""
-        if "modulelabel" in device:
-            self.moduleLabel = device["modulelabel"] = device["modulelabel"]
-        else:
-            self.moduleLabel = self._allDevices._modulesLib.getRoutingModule(self.deviceTypeUUID, 'Command')
-            if self.moduleLabel is None:
-                self.moduleLabel = self._allDevices._modulesLib.getRoutingModule(self.deviceTypeUUID, 'Logic')
-                if self.moduleLabel is None:
-                    self.moduleLabel = self._allDevices._modulesLib.getRoutingModule(self.deviceTypeUUID, 'Interface')
-
         dbtools = get_dbtools()
-        self.deviceVariables = dbtools.getVariableDevices(self.deviceUUID)
+        self.deviceVariables = dbtools.getDeviceVariables(self.deviceUUID)
         self.availableCommands = dbtools.getCommandsForDeviceType(self.deviceTypeUUID)
         self.testDevice = testDevice
         if self.testDevice is False:
@@ -354,7 +344,6 @@ class Device:
                 'pincode'        : "********",
                 'pinrequired'    : int(self.pinrequired),
                 'pintimeout'     : int(self.pintimeout),
-                'moduleLabel'    : str(self.moduleLabel),
                 'voiceCmd'       : str(self.voiceCmd),
                 'voiceCmdOrder'  : str(self.voiceCmdOrder),
                 'created'        : int(self.created),
@@ -438,9 +427,11 @@ class Device:
 
         payload.update(payloadValues)
 
+        route = self._allDevices._ModulesLibrary.getDeviceRouting(self.deviceTypeUUID, 'Command')
+
         msg = {
                'msgOrigin'      : sourceComponent._FullName.lower(),
-               'msgDestination' : "yombo.gateway.modules.%s" % (self.moduleLabel),
+               'msgDestination' : "yombo.gateway.modules.%s" % route['moduleLabel'],
                'msgType'        : "cmd",
                'msgStatus'      : "new",
                'uuidType'       : "1",
@@ -577,7 +568,7 @@ class Device:
         relates to this device.  Easy, just tell the messages library to 
         do that for us.
         """
-        self._allDevices._messageLib.deviceDelayCancel(self.deviceUUID)
+        self._allDevices._MessageLibrary.deviceDelayCancel(self.deviceUUID)
 
     def getDelayed(self):
         """
@@ -585,7 +576,7 @@ class Device:
         relates to this device.  Easy, just tell the messages library to 
         do that for us.
         """
-        self._allDevices._messageLib.deviceDelayList(self.deviceUUID)
+        self._allDevices._MessageLibrary.deviceDelayList(self.deviceUUID)
 
     def loadHistory(self, howmany=15):
         c = self.__dbpool.cursor()

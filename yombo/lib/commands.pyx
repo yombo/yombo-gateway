@@ -155,7 +155,6 @@ class Commands(YomboLibrary):
         """
         import itertools
 
-        logger.info("Loading commands!")
         self._clear_()
 
         c = self.__dbpool.cursor()

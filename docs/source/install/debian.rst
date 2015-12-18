@@ -16,8 +16,9 @@ This example downloads and installs as user "yombo" into "/opt/yombo-gateway":
 
 .. code-block:: bash
 
-  $ cd /opt
-  $ curl -sS https://bitbucket.org/yombo/yombo-gateway/raw/master/install/debian-setup.sh | sudo bash
+  cd /opt
+  su yobmo
+  curl -sS https://get.yombo.net/debian | sudo bash
 
 .. rubric:: Next steps
 

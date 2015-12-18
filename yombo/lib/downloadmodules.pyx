@@ -139,6 +139,7 @@ class DownloadModules(YomboLibrary):
               ( record['devversion'] != '' and record['devversion'] != None and record['devversion'] != "*INVALID*") ) and
 #              record['installbranch'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
               record['installbranch'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
+                logger.warn("Module doesn't have freeze: yombo/modules/{modulelabel}/.freeze", modulelabel=modulelabel)
                 gm.execute("SELECT moduleuuid, installedversion, installtime FROM modulesinstalled WHERE moduleuuid = '%s'" % (moduleuuid))
                 gmrow = gm.fetchone()
                 gmfield_names = []
