@@ -218,7 +218,8 @@ class Message:
         :type newMessage: bool
         """
         self.loader = getLoader()
-        self.libMessages = getComponent('yombo.gateway.lib.messages')
+        self._MessagesLibrary = getComponent('yombo.gateway.lib.messages')
+        self._ModulesLibrary = getComponent('yombo.gateway.lib.modules')
 
         self.msgOrigin      = kwargs['msgOrigin']
         self.msgDestination = kwargs['msgDestination']
@@ -402,18 +403,18 @@ class Message:
                 self.loader.loadedComponents['yombo.gateway.lib.GatewayControlProtocol']
 
                 
-        if self.libMessages.processing is False:
+        if self._MessagesLibrary.processing is False:
             logger.debug("Message::send - Queuing message for later")
-            self.libMessages.queue.appendleft(self)
+            self._MessagesLibrary.queue.appendleft(self)
             return
 
         # if message is to be delievered later, send to queue
         if self.notBefore > time.time():
-            self.libMessages.addToDelay(self)
+            self._MessagesLibrary.addToDelay(self)
             return
 
         # Now we are ready to send the message.  First tell messages library.
-        self.libMessages.beforeSendMessage(self)
+        self._MessagesLibrary.beforeSendMessage(self)
 
         #first send to target, then to distro lists
         destParts = self.msgDestination.split(".")
@@ -433,8 +434,8 @@ class Message:
 
         #second, send to distribution lists. If list exists, and not already sent.
         if self.msgType != "unknown":
-            if self.msgType in self.libMessages.distributions:  # make sure dist exists
-                for componentName in self.libMessages.distributions[self.msgType]:
+            if self.msgType in self._MessagesLibrary.distributions:  # make sure dist exists
+                for componentName in self._MessagesLibrary.distributions[self.msgType]:
                     if componentName in allComponents:   # make sure it's not already sent
                         component = allComponents[componentName]
                         callLater(0.00001, component.message, self)
@@ -442,9 +443,9 @@ class Message:
                         del allComponents[componentName]  # remove, won't send again
 
         #third, send to distrubution "all" last.
-        logger.debug("message - sending to all distro list: {distributions}", distributions=self.libMessages.distributions)
-        if "all" in self.libMessages.distributions and (self.msgStatus == 'new' or self.msgType == 'event'):  # make sure dist exists
-            for componentName in self.libMessages.distributions["all"]:
+        logger.debug("message - sending to all distro list: {distributions}", distributions=self._MessagesLibrary.distributions)
+        if "all" in self._MessagesLibrary.distributions and (self.msgStatus == 'new' or self.msgType == 'event'):  # make sure dist exists
+            for componentName in self._MessagesLibrary.distributions["all"]:
                 if componentName in allComponents:   # make sure it's not already sent
                     component = allComponents[componentName]
                     callLater(0.00001, component.message, self)
@@ -655,13 +656,13 @@ class Message:
                 raise YomboMessageError("if 'deviceobj' specified', it must be a device instance.", 'Message API::ValidateCMD')
         elif 'deviceUUID' in self.payload:
 #            try:
-                logger.warn("aaaa1: {payload}", payload=self.payload)
+#                logger.warn("aaaa1: {payload}", payload=self.payload)
                 self.payload['deviceobj'] = getDevice(self.payload['deviceUUID'])
-                logger.warn("aaaa2: {payload}", payload=self.payload)
+#                logger.warn("aaaa2: {payload}", payload=self.payload)
                 self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
-                logger.warn("aaaa3: {payload}", payload=self.payload)
+#                logger.warn("aaaa3: {payload}", payload=self.payload)
                 self.payload['device'] = self.payload['deviceobj'].label
-                logger.warn("aaaa4: {payload}", payload=self.payload)
+#                logger.warn("aaaa4: {payload}", payload=self.payload)
  #           except:
  #               raise YomboMessageError("Couldn't find specified deviceUUID. %s " % sys.exc_info()[0], 'Message API')
         elif 'device' in self.payload:
@@ -682,8 +683,8 @@ class Message:
 
         # force delivery to the correct module.
         if(self.msgStatus == "new"):
-            logger.warn("what? {pay}", pay=self.payload['deviceobj'].dump())
-            moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].getRouting('Command')
+#            logger.warn("what? {pay}", pay=self.payload['deviceobj'].dump())
+            moduleLabel = "yombo.gateway.modules." + self._ModulesLibrary.getDeviceRouting(self.payload['deviceobj'].deviceTypeUUID, 'Command', 'moduleLabel').lower()
             if self.msgDestination != moduleLabel :
                 self.msgDestination = moduleLabel
 

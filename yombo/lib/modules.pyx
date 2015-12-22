@@ -106,7 +106,7 @@ class Modules(YomboLibrary):
             self._moduleDeviceTypesByUUID[mdt['moduleuuid']][mdt['devicetypeuuid']].append(mdt)
             # Pointers to the above, used when searching.
             if mdt['modulelabel'] not in self._moduleDeviceTypesByName:
-                self._moduleDeviceTypesByName[mdt['modulelabel']] = {}
+                self._moduleDeviceTypesByName[mdt['modulelabel']] = FuzzySearch({}, .92)
             if mdt['devicetypeuuid'] not in self._moduleDeviceTypesByName[mdt['modulelabel']]:
                 self._moduleDeviceTypesByName[mdt['modulelabel'].lower()][mdt['devicetypeuuid']] = []
             self._moduleDeviceTypesByName[mdt['modulelabel'].lower()][mdt['devicetypeuuid']].append(mdt['devicetypeuuid'])
@@ -120,7 +120,7 @@ class Modules(YomboLibrary):
                 }
             # Pointers to the above, used when searching.
             if mdt['devicetypelabel'] not in self._moduleDeviceRoutingByName:
-                self._moduleDeviceRoutingByName[mdt['devicetypelabel'].lower()] = {}
+                self._moduleDeviceRoutingByName[mdt['devicetypelabel'].lower()] = FuzzySearch({}, .92)
             self._moduleDeviceRoutingByName[mdt['devicetypelabel'].lower()][mdt['moduletype']] = {
                 'moduleUUID' : mdt['moduleuuid'],
                 'moduleLabel' : mdt['modulelabel'],
@@ -139,7 +139,7 @@ class Modules(YomboLibrary):
                 self._moduleDevicesByUUID[mdt['moduleuuid']][devices[deviceuuid].deviceUUID] = devices[deviceuuid]
 
                 if mdt['moduleuuid'] not in self._moduleDevicesByName:
-                    self._moduleDevicesByName[mdt['moduleuuid']] = {}
+                    self._moduleDevicesByName[mdt['moduleuuid']] = FuzzySearch({}, .92)
 #                    if device['label'] not in self._moduleDevicesByName[mdt['moduleuuid']]:
 #                        self._moduleDevicesByName[mdt['moduleuuid']][device['label']] = {}
                 self._moduleDevicesByName[mdt['moduleuuid']][devices[deviceuuid].label] = devices[deviceuuid].deviceUUID

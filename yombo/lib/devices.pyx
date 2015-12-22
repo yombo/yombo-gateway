@@ -85,7 +85,7 @@ class Devices(YomboLibrary):
         self._devicesByUUID = {}
         self._devicesByName = FuzzySearch({}, .89)
         self._devicesByDeviceTypeByUUID = {}
-        self._devicesByDeviceTypeByName = FuzzySearch({}, .93)
+        self._devicesByDeviceTypeByName = FuzzySearch({}, .94)
         self._toSaveStatus = {}
         self._saveStatusLoop = None
 
@@ -191,19 +191,20 @@ class Devices(YomboLibrary):
         self._devicesByUUID[deviceUUID] = Device(record, self)
         self._devicesByName[record["label"]] = deviceUUID
 
-        logger.debug("_addDevice: {record}", record=record)
+        logger.warn("_addDevice: {record}", record=record)
         if record['devicetypeuuid'] not in self._devicesByDeviceTypeByUUID:
             self._devicesByDeviceTypeByUUID[record['devicetypeuuid']] = {}
         if deviceUUID not in self._devicesByDeviceTypeByUUID[record['devicetypeuuid']]:
             self._devicesByDeviceTypeByUUID[record['devicetypeuuid']][deviceUUID] = self._devicesByUUID[deviceUUID]
 
         if record['devicetypemachinelabel'] not in self._devicesByDeviceTypeByName:
-            self._devicesByDeviceTypeByName[record['devicetypemachinelabel']] = {}
-        if deviceUUID not in self._devicesByDeviceTypeByName[record['devicetypemachinelabel']]:
-            self._devicesByDeviceTypeByName[record['devicetypemachinelabel']][deviceUUID] = deviceUUID
+            self._devicesByDeviceTypeByName[record['devicetypemachinelabel']] = record['devicetypeuuid']
 
         if testDevice:
             return self._devicesByUUID[deviceUUID]
+
+    def listDevices(self):
+        return list(self._devicesByName.keys())
 
     def getDevice(self, deviceRequested):
         """
@@ -223,12 +224,13 @@ class Devices(YomboLibrary):
         :rtype: dict
         """
         logger.info("looking for: {deviceuuid}", deviceuuid=deviceRequested)
-        logger.info("inside: {devicesByUUID}", devicesByUUID=self._devicesByUUID)
+        logger.info("inside1: {devicesByUUID}", devicesByUUID=self._devicesByUUID)
         if deviceRequested in self._devicesByUUID:
             return self._devicesByUUID[deviceRequested]
         else:
             try:
                 requestedUUID = self._devicesByName[deviceRequested]
+                logger.info("inside3: {devicesByUUID}", devicesByUUID=self._devicesByUUID[requestedUUID])
                 return self._devicesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
                 raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
@@ -244,14 +246,17 @@ class Devices(YomboLibrary):
         :rtype: dict
         """
         logger.debug("## _devicesByDeviceTypeByUUID: {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID)
-        logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
+#        logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
         if deviceTypeRequested in self._devicesByDeviceTypeByUUID:
             logger.debug("## {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID[deviceTypeRequested])
             return self._devicesByDeviceTypeByUUID[deviceTypeRequested]
         else:
             try:
                 requestedUUID = self._devicesByDeviceTypeByName[deviceTypeRequested]
-                logger.debug("## requestedUUID: {requestedUUID}", requestedUUID=requestedUUID)
+#                logger.debug("## _devicesByDeviceTypeByUUID: {requestedUUID}", requestedUUID=self._devicesByDeviceTypeByUUID)
+#                logger.debug("## _devicesByDeviceTypeByName: {requestedUUID}", requestedUUID=self._devicesByDeviceTypeByName)
+#                logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
+#                logger.debug("## requestedUUID: {requestedUUID}", requestedUUID=requestedUUID)
                 return self._devicesByDeviceTypeByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
 #                logger.debug("e={e}", e=e)
@@ -304,6 +309,7 @@ class Device:
         self.callAfterChange = []
         self.deviceUUID = device["deviceuuid"]
         self.deviceTypeUUID = device["devicetypeuuid"]
+        self.deviceTypeLabel = device["devicetypemachinelabel"]
         self.label = device["label"]
         self.description = device["description"]
         self.enabled = int(device["status"])
@@ -319,7 +325,7 @@ class Device:
         self._allDevices = allDevices
 
         dbtools = get_dbtools()
-        self.deviceVariables = dbtools.getDeviceVariables(self.deviceUUID)
+        self.deviceVariables = dbtools.getDeviceConfigs(self.deviceUUID)
         self.availableCommands = dbtools.getCommandsForDeviceType(self.deviceTypeUUID)
         self.testDevice = testDevice
         if self.testDevice is False:

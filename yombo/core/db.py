@@ -191,55 +191,17 @@ class DBTools:
         else:
             self.dbpool = dbpool
 
-    def get_cmd_by_uuid(self, cmdid):
+    def get_messageDelayed(self):
         c = self.dbpool.cursor()
-        c.execute('SELECT * FROM commands WHERE cmdUUID = ?', (cmdid,))
-        row = c.fetchone()
-        if row is None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        return dict(izip(field_names, row))
-
-    def get_cmduuid_by_cmd(self, cmd):
-        c = self.dbpool.cursor()
-        c.execute('SELECT * FROM commands WHERE cmd = "?"', (cmd,))
-        row = c.fetchone()
-        if row is None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        return dict(izip(field_names, row))
-
-    def get_cmduuid_by_voicecmd(self, voicecmd):
-        c = self.dbpool.cursor()
-        c.execute("SELECT * FROM commands WHERE voiceCmd = '%s'" % (voicecmd,))
-        row = c.fetchone()
-        if row is None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        return dict(izip(field_names, row))
-
-    def get_module_by_name(self, modulelabel):
-        c = self.dbpool.cursor()
-        c.execute('SELECT * FROM modules WHERE machinelabel = ?', (modulelabel,))
-        row = c.fetchone()
-        if row is None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        return dict(izip(field_names, row))
-
-    def getModuleDeviceTypes(self):
-        c = self.dbpool.cursor()
-        c.execute('SELECT * FROM moduleDeviceTypes ' +
-                  'JOIN deviceTypes on moduleDeviceTypes.deviceTypeUUID = deviceTypes.deviceTypeUUID ' +
-                  'GROUP BY moduleDeviceTypes.deviceTypeUUID, moduleDeviceTypes.moduleType ' +
-                  'ORDER BY priority DESC')
+        c.execute("SELECT * FROM messageDelayed")
         data = c.fetchall()
         if data is None:
             return None
         records = []
         field_names = [d[0].lower() for d in c.description]
         for row in data:
-            records.append(dict(izip(field_names, row)))
+            item = dict(izip(field_names, row))
+            records.append(item['message'])
         return records
 
     def getCommandsForDeviceType(self, deviceuuid):
@@ -255,31 +217,35 @@ class DBTools:
             records.append(item['cmduuid'])
         return records
 
-    def get_messageDelayed(self):
+    def getDeviceConfigs(self, deviceUUID):
+        """
+        Gets available variables for a given deviceuuid.
+
+        Called by: library.Devices::_init_
+
+        :param deviceuuid:
+        :return:
+        """
+        from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
-        c.execute("SELECT * FROM messageDelayed")
+        c.execute('SELECT * FROM deviceVariables WHERE deviceuuid = ? order by weight ASC, dataWeight ASC',
+                  (deviceUUID,))
         data = c.fetchall()
-        if data is None:
-            return None
-        records = []
+        if data is None or len(data) == 0:
+            return {}
+        records = {}
         field_names = [d[0].lower() for d in c.description]
         for row in data:
-            item = dict(izip(field_names, row))
-            records.append(item['message'])
-        return records
+            record = dict(izip(field_names, row))
+            value = record['value']
 
-    def validateDeviceTypeUUID(self, cmduuid, devicetypeuuid):
-        """
-        Used in the message clas to verify if a given devicetypeuud and cmduuid are valid.
-        """
-        c = self.dbpool.cursor()
-        c.execute("select deviceTypeUUID from deviceTypeCommands where cmdUUID = '%s' and deviceTypeUUID = '%s'" %
-                  (cmduuid, devicetypeuuid))
-        row = c.fetchone()
-        if row is None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        return dict(izip(field_names, row))
+            if record['machinelabel'] not in records:
+                record['value'] = []
+                records[record['machinelabel']] = record
+
+            records[record['machinelabel']]['value'].append(value)
+#            records[record['machinelabel']] = record
+        return records
 
     def getModules(self, getAll=False):
         c = self.dbpool.cursor()
@@ -296,7 +262,7 @@ class DBTools:
             records.append(dict(izip(field_names, row)))
         return records
 
-    def getModuleVariables(self, moduleUUID):
+    def getModuleConfigs(self, moduleUUID):
         from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
         c.execute('SELECT * FROM moduleVariables WHERE moduleuuid = ? order by weight ASC, dataWeight ASC',
@@ -318,6 +284,34 @@ class DBTools:
 #            records[record['machinelabel']] = record
         return records
 
+    def getModuleDeviceTypes(self):
+        c = self.dbpool.cursor()
+        c.execute('SELECT * FROM moduleDeviceTypes ' +
+                  'JOIN deviceTypes on moduleDeviceTypes.deviceTypeUUID = deviceTypes.deviceTypeUUID ' +
+                  'GROUP BY moduleDeviceTypes.deviceTypeUUID, moduleDeviceTypes.moduleType ' +
+                  'ORDER BY priority DESC')
+        data = c.fetchall()
+        if data is None:
+            return None
+        records = []
+        field_names = [d[0].lower() for d in c.description]
+        for row in data:
+            records.append(dict(izip(field_names, row)))
+        return records
+
+    def validateDeviceTypeUUID(self, cmduuid, devicetypeuuid):
+        """
+        Used in the message clas to verify if a given devicetypeuud and cmduuid are valid.
+        """
+        c = self.dbpool.cursor()
+        c.execute("select deviceTypeUUID from deviceTypeCommands where cmdUUID = '%s' and deviceTypeUUID = '%s'" %
+                  (cmduuid, devicetypeuuid))
+        row = c.fetchone()
+        if row is None:
+            return None
+        field_names = [d[0].lower() for d in c.description]
+        return dict(izip(field_names, row))
+
     def getUserGWToken(self, username, gwtokenid):
         c = self.dbpool.cursor()
 
@@ -328,40 +322,30 @@ class DBTools:
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
 
-    def getDeviceVariables(self, deviceuuid):
+    def getModuleRouting(self, where = None):
         """
-        Gets available variables for a given deviceuuid.
+        Used to load a list of deviceType routing information.
 
-        Called by: library.Devices::_init_
+        Called by: lib.Modules::loadData
 
-        :param deviceuuid:
-        :return:
+        :param where: Optional - Can be used to append a where statement
+        :type returnType: string
+        :return: Modules used for routing device message packets
+        :rtype: list
         """
-        from yombo.core.helpers import pgpDecrypt
         c = self.dbpool.cursor()
 
-        c.execute('SELECT * FROM variableDevices WHERE deviceUUID = ? order by weight ASC, dataWeight ASC',
-                  (deviceuuid,))
+        if where is None:
+            c.execute('SELECT * FROM moduleRouting_view')
+        else:
+            c.execute('SELECT * FROM moduleRouting_view WHERE %s' % where)
         data = c.fetchall()
-        if data is None or len(data) == 0:
+        if data is None:
             return None
-        records = {}
+        records = []
         field_names = [d[0].lower() for d in c.description]
         for row in data:
-            record = dict(izip(field_names, row))
-            varnames = cPickle.loads(str(record['varnames']))
-            varvalues = cPickle.loads(str(record['varvalues']))
-            #            logger.debug("varnames = %s", varnames)
-            #            logger.debug("varvalues = %s", varvalues)
-            items = []
-            for namekey in varnames:
-                if namekey not in varvalues:
-                    continue
-                items.append(varvalues[namekey])
-                if varnames[namekey] not in records:
-                    records[varnames[namekey]] = []
-                records[varnames[namekey]].append(pgpDecrypt(varvalues[namekey]))
-            #        logger.info("variable_modules = %s", records)
+            records.append(dict(izip(field_names, row)))
         return records
 
     def saveSQLDict(self, module, dictname, key1, data1):
@@ -390,32 +374,6 @@ class DBTools:
             c.execute("""
                 replace into sqldict (created, updated, module, dictname, key1, data1)
                 values  (?, ?, ?, ?, ?, ?);""", (int(time.time()), int(time.time()), module, dictname, key1, data1))
-
-    def getModuleRouting(self, where = None):
-        """
-        Used to load a list of deviceType routing information.
-
-        Called by: lib.Modules::loadData
-
-        :param where: Optional - Can be used to append a where statement
-        :type returnType: string
-        :return: Modules used for routing device message packets
-        :rtype: list
-        """
-        c = self.dbpool.cursor()
-
-        if where is None:
-            c.execute('SELECT * FROM moduleRouting_view')
-        else:
-            c.execute('SELECT * FROM moduleRouting_view WHERE %s' % where)
-        data = c.fetchall()
-        if data is None:
-            return None
-        records = []
-        field_names = [d[0].lower() for d in c.description]
-        for row in data:
-            records.append(dict(izip(field_names, row)))
-        return records
 
     def commit(self):
         self.dbpool.commit()
@@ -661,11 +619,23 @@ class DeviceStatusTable(Table):
     indexes = ["CREATE INDEX IF NOT EXISTS deviceUUID_idx ON %s (deviceUUID);" % (table_name)]
 
 
-# class InterfacesTable(Table):
-#    table_name = 'interfaces'
-#    moduleUUID = TextPKColumn()
-#    interfaceUUID = TextColumn()
-##    indexes = ["CREATE INDEX IF NOT EXISTS moduleUUID_idx ON %s (moduleUUID);" % (table_name)]
+class DeviceVariablesTable(Table):
+    """
+    Stores variables for devices. Variables are set by the server, and read here. Not a two-way sync (yet?).
+    """
+    tableVersion = 20
+    table_name = 'deviceVariables'
+    deviceUUID = TextColumn()
+    variableUUID = TextColumn()
+    weight = IntegerColumn()
+    dataWeight = IntegerColumn()
+    machineLabel = TextColumn()
+    label = TextColumn()
+    value = TextColumn()
+    updated = IntegerColumn()
+    created = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS deviceUUID_idx ON %s (deviceUUID);" % (table_name),
+               "CREATE INDEX IF NOT EXISTS variableUUID_idx ON %s (variableUUID);" % (table_name)]
 
 
 class gwTokensTable(Table):
@@ -774,19 +744,6 @@ class SQLDictTable(Table):
                "CREATE INDEX IF NOT EXISTS module_idx ON %s (module);" % (table_name)]
 
 
-class DeviceVariablesTable(Table):
-    tableVersion = 15
-    table_name = 'variableDevices'
-    deviceUUID = TextColumn()
-    variableUUID = TextColumn()
-    weight = IntegerColumn()
-    dataWeight = IntegerColumn()
-    varNames = BlobColumn()
-    varValues = BlobColumn()
-    updated = IntegerColumn()
-    indexes = ["CREATE INDEX IF NOT EXISTS deviceUUID_idx ON %s (deviceUUID);" % (table_name)]
-
-
 class UsersTable(Table):
     tableVersion = 15
     table_name = 'users'
@@ -813,7 +770,7 @@ ALLTABLES = [
     DeviceTypesTable,
     DeviceTypeCommandsTable,
     DeviceStatusTable,
-    #    InterfacesTable,
+    DeviceVariablesTable,
     LogsTable,
     gwTokensTable,
     ModulesTable,
@@ -821,7 +778,7 @@ ALLTABLES = [
     ModulesInstalledTable,
     ModuleVariablesTable,
     SQLDictTable,
-    DeviceVariablesTable,
+
     UsersTable,
 ]
 
@@ -831,12 +788,12 @@ CONFTABLES = [
     DevicesTable,
     DeviceTypesTable,
     DeviceTypeCommandsTable,
+    DeviceVariablesTable,
     gwTokensTable,
     ModulesTable,
     ModuleDeviceTypesTable,
     ModuleVariablesTable,
 
-    DeviceVariablesTable,
     UsersTable,
 ]
 

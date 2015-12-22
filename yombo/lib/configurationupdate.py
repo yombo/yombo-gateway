@@ -148,7 +148,7 @@ class ConfigurationUpdate(YomboLibrary):
 #            raise YomboWarning("Unable to pre")
 
     def processConfig(self, inputType, configType, configStatus, msg):
-        logger.debug("processing configType: %s" % configType)
+        logger.debug("processing configType: {configType}", configType=configType)
         configTypes = {
             'Commands' : {'table': "CommandsTable", 'map' : {
                 'Uri' : 'uri',
@@ -203,6 +203,17 @@ class ConfigurationUpdate(YomboLibrary):
                 'Status' : 'status',
 #                '' : '',
             }},
+            'DeviceConfigs' : {'table': "DeviceVariablesTable", 'map' : {
+                'DeviceUUID' : 'deviceUUID',
+                'VariableUUID' : 'variableUUID',
+                'Weight' : 'weight',
+                'DataWeight' : 'dataWeight',
+                'MachineLabel' : 'machineLabel',
+                'Label' : 'label',
+                'Value' : 'value',
+                'Updated' : 'updated',
+                'Created' : 'created',
+            }},
             'GatewayModules' : {'table': "ModulesTable", 'map' : {
                 'UUID' : 'moduleUUID',
                 'Uri' : 'uri',
@@ -246,16 +257,14 @@ class ConfigurationUpdate(YomboLibrary):
 #            "GatewayModuleDeviceTypes",
 #            "GatewayUsers",
         }
-        cmdmap = {
-            'getfullgatewayusertokensresponse': {'table': "gwTokensTable", 'type': "fullConfig"},
-            'getfullvariablemodulesresponse': {'table': "VariableModulesTable", 'type': "fullConfig"},
-            'getfullvariabledevicesresponse': {'table': "VariableDevicesTable", 'type': "fullConfig"},
-            'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}
-        }
+#        cmdmap = {
+#            'getfullgatewayusertokensresponse': {'table': "gwTokensTable", 'type': "fullConfig"},
+#            'getfullusersresponse': {'table': "UsersTable", 'type': "fullConfig"}
+#        }
 
         # make sure the command exists
         if configType not in configTypes:
-            logger.warn("ConfigurationUpdate::processConfig - '%s' is not a valid configuration item. Skipping.", configType)
+            logger.warn("ConfigurationUpdate::processConfig - '{configType}' is not a valid configuration item. Skipping.", configType=onfigType)
             return
         elif configType == "GatewayConfigs":
             payload = msg['Data']
@@ -278,11 +287,11 @@ class ConfigurationUpdate(YomboLibrary):
 #              self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'setGatewayVariables', 'configdata':sendUpdates}))
 #            self._removeFullTableQueue('GatewayVariablesTable')
         elif configType in configTypes:
-            logger.debug("ConfigurationUpdate::processConfig - Doing config for: %s" % configType)
+            logger.debug("ConfigurationUpdate::processConfig - Doing config for: {configType}", configType=configType)
             upd_table = getattr(yombo.core.db, configTypes[configType]["table"])
             c = self.dbconnection.cursor()
             if not upd_table:
-                logger.error("ConfigurationUpdate::processConfig - Invalid table to update: %s", upd_table.table_name)
+                logger.error("ConfigurationUpdate::processConfig - Invalid table to update: {table_name}", table_name=upd_table.table_name)
                 return
             if configStatus == "Full":  #Todo: Currently, this can only work when first started. Need to implement update while running.
                 c.execute("DELETE FROM " + upd_table.table_name)
@@ -344,7 +353,7 @@ class ConfigurationUpdate(YomboLibrary):
                     ", ".join(i for i in savecols),
                     ", ".join('?' for i in saveitems),
                     )
-#                logger.info('sql: %s', sql)
+#                logger.info('sql: {sql} : {vals}', sql=sql, vals=[i[1] for i in saveitems])
                 c.execute(sql, [i[1] for i in saveitems])
 
 #                logger.debug("Pre checking nested %s" % configType)
@@ -400,7 +409,6 @@ class ConfigurationUpdate(YomboLibrary):
                                         'UUID' : dt['UUID'],    #dt = devicetype
                                         'CmdUUID' : dtc['UUID'],  #dtc = devicetypecommands
                                     })
-
                     # ModuleConfigs
                     if 'ModuleConfigs' in record:
                         for tempGroup in record['ModuleConfigs']:
@@ -422,8 +430,35 @@ class ConfigurationUpdate(YomboLibrary):
                                 tempStorage['4'].append(field)
                 # end if configType == 'GatewayModules'
 
+                elif configType == 'GatewayDevices':
+                    if '1' not in tempConfig:
+                        tempConfig['1'] = {
+                            'inputType' : 'nested',
+                            'configType' : 'DeviceConfigs',
+                        }
+                        tempIndex['1'] = []  # DeviceConfigs
+                        tempStorage['1'] = []
+                    # DeviceConfigs
+                    if 'DeviceConfigs' in record:
+                        for tempGroup in record['DeviceConfigs']:
+                            for tempField in tempGroup['Fields']:
+                                if tempField['FieldUUID'] not in tempIndex['1']:
+                                    tempIndex['1'].append(tempField['FieldUUID'])
+
+                                field = {
+                                    'DeviceUUID' : record['UUID'],  # record = device
+                                    'VariableUUID' : tempGroup['VariableUUID'],
+                                    'Weight' : tempGroup['Weight'],
+                                    'DataWeight' : tempField['Weight'],
+                                    'MachineLabel' : tempField['MachineLabel'],
+                                    'Label' : tempField['Label'],
+                                    'Value' : tempField['Value'],
+                                    'Updated' : tempField['Updated'],
+                                    'Created' : tempField['Created'],
+                                }
+                                tempStorage['1'].append(field)
             for key, value in tempStorage.iteritems():
-#                logger.info("key: %s, value: %s" %(key, value))
+#                logger.info("key: {key}, value: {value}", key=key, value=value)
                 self.processConfig(tempConfig[key]['inputType'], tempConfig[key]['configType'], configStatus, tempStorage[key])
 
             self.dbconnection.pool.commit()
@@ -466,7 +501,7 @@ class ConfigurationUpdate(YomboLibrary):
 #            "getGatewayUsers",
         ]
         for item in allCommands:
-            logger.debug("sending command: %s"  % item)
+            logger.debug("sending command: {item}", item=item)
 
             self._appendFullDownloadQueue(item)
             self.AMQPYombo.sendDirectMessage(**self._generateRequest(item, "All"))
@@ -493,11 +528,11 @@ class ConfigurationUpdate(YomboLibrary):
         Will be removed as each config item is returned by _removeFullTableQueue.
         """
         if table not in self.__pendingUpdates:
-            logger.debug("Adding table to request queue: %s" % table)
+            logger.debug("Adding table to request queue: {table}", table=table)
             self.__pendingUpdates.append(table)
 
     def _removeFullDownloadQueue(self, table):
-        logger.debug("Removing table to request queue: %s" % table)
+        logger.debug("Removing table to request queue: {table}", table=table)
         logger.debug("Configs pending: {pendingUpdates}", pendingUpdates=self.__pendingUpdates)
         if table in self.__pendingUpdates:
             self.__pendingUpdates.remove(table)

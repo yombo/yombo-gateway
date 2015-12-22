@@ -162,7 +162,7 @@ class Loader(YomboLibrary):
         except AttributeError:
             self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
-            raise YomboImportCritical("Library or Module not found: %s", pathName)
+            raise YomboCritical("Library or Module not found: %s", pathName)
 
         try:
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
@@ -392,12 +392,22 @@ class Loader(YomboLibrary):
 #                module._init_()
 #                continue
                 try:
+#                    exc_info = sys.exc_info()
                     d = yield maybeDeferred(module._init_)
                     self._register_voicecmds(module)
                     self._register_distributions(module)
                 except:
+                    logger.failure("Math is hard!")
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
                     logger.error("------==(ERROR During _init_ of module: {name})==-------", name=name)
-                    traceback.print_exc(file=sys.stdout)
+                    logger.error("1:: {e}", e=sys.exc_info())
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=traceback.print_exc())
+                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                              limit=5, file=sys.stdout)))
                     logger.error("--------------------------------------------------------")
             else:
                 logger.error("----==(Module doesn't have _init_ function: {name})==-----", name=name)

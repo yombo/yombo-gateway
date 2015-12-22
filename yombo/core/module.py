@@ -85,7 +85,7 @@ documentation.
 """
 # Import Yombo libraries
 #from yombo.core.component import IModule
-from yombo.core.helpers import getModuleVariables, getDevicesByDeviceType, getCommands, getCronTab, getTimes, getComponent
+from yombo.core.helpers import getModuleConfigs, getCommands, getCronTab, getTimes, getComponent
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import getLogger
@@ -140,10 +140,10 @@ class YomboModule:
 
         self._DevicesByType = getattr(self._DevicesLibrary, "getDevicesByDeviceType")  # returns a callable (function)
 
-        self._LocalDevicesByUUID = {}
-        self._LocalDeviceTypesByUUID = {}
-        self._LocalDeviceTypesByName = FuzzySearch({}, .95)
-        self._LocalDevicesByDeviceTypeUUID = {}
+        self._LocalDevicesByUUID = {} # to be deleted
+        self._LocalDeviceTypesByUUID = {} # to be deleted
+        self._LocalDeviceTypesByName = FuzzySearch({}, .95) # to be deleted
+        self._LocalDevicesByDeviceTypeUUID = {} # to be deleted
 
     def _preinit_(self, moduleDetails):
         """
@@ -158,7 +158,7 @@ class YomboModule:
         self._ModuleUUID = moduleDetails['moduleuuid']
         self._Devices = self._ModulesLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
         self._DeviceTypes = self._ModulesLibrary.getModuleDeviceTypes(self._ModuleUUID)
-        self._ModuleVariables = getModuleVariables(self._ModuleUUID)
+        self._ModuleVariables = getModuleConfigs(self._ModuleUUID)
 
 #        logger.info("!!!!!!!!!!!!!!!!!!!devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
 

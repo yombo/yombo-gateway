@@ -554,6 +554,19 @@ def getExternalIPAddress():
     import urllib2
     return urllib2.urlopen('http://wtfismyip.com/text').read()
 
+def isyesno(self, input):
+    """
+    Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
+    returns "No". Useful to convert something to human Yes/No.
+    :param self:
+    :param input:
+    :return:
+    """
+    if input in ("1", 1, True, "open", "on", "running"):
+        return "Yes"
+    else:
+        return "No"
+
 def findKey(symbol_dic, val):
     """
     Find a key of a dictionary for a given key.
@@ -584,7 +597,7 @@ def testBit(int_type, offset):
       return 0
     return(int_type & mask)
 
-def getModuleVariables(moduleName):
+def getModuleConfigs(moduleName):
     """
     Returns a dictionary of all configurated variables for a module. Modules
     shouldn't call this function as it's already done and set as
@@ -597,7 +610,7 @@ def getModuleVariables(moduleName):
     if yombodbtools is None:
         yombodbtools = get_dbtools()
     # TODO: change this to look up moduleUUID for the requested module to pass this into the DB call.
-    return yombodbtools.getModuleVariables(moduleName)
+    return yombodbtools.getModuleConfigs(moduleName)
 
 #TODO: Rewrite this function to use AMQP, remove sleep!
 def getUserGWToken(username, gwtokenid, fetchRemote=False):
