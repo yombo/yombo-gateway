@@ -170,6 +170,7 @@ class ConfigurationUpdate(YomboLibrary):
                 'Uri' : 'uri',
                 'MachineLabel' : 'machineLabel',
                 'Label' : 'label',
+                'DeviceClass' : 'deviceClass',
                 'Description' : 'description',
                 'LiveUpdate' : 'liveUpdate',
                 'Public' : 'public',

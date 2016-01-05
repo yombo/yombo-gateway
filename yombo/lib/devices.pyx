@@ -160,7 +160,7 @@ class Devices(YomboLibrary):
         logger.info("Loading devices")
 
         c = self.__dbpool.cursor()
-        c.execute("SELECT devices.*, deviceTypes.machineLabel AS deviceTypeMachineLabel "
+        c.execute("SELECT devices.*, deviceTypes.machineLabel AS deviceTypeMachineLabel, deviceTypes.deviceClass as deviceClass "
             "FROM devices JOIN deviceTypes ON devices.deviceTypeUUID = deviceTypes.deviceTypeUUID")
 
         # for debugging:
@@ -311,6 +311,7 @@ class Device:
         self.deviceTypeUUID = device["devicetypeuuid"]
         self.deviceTypeLabel = device["devicetypemachinelabel"]
         self.label = device["label"]
+        self.deviceClass = device["deviceclass"]
         self.description = device["description"]
         self.enabled = int(device["status"])
         self.pinrequired = int(device["pinrequired"])

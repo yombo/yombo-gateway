@@ -583,6 +583,7 @@ class DeviceTypesTable(Table):
     uri = TextColumn()
     machineLabel = TextColumn()
     label = TextColumn()
+    deviceClass = TextColumn()
     description = TextColumn()
     liveUpdate = IntegerColumn()
     public = IntegerColumn()

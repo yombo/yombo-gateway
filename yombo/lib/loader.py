@@ -433,8 +433,8 @@ class Loader(YomboLibrary):
         for name, module in self._moduleLibrary._modulesByUUID.iteritems():
             self.logLoader('debug', name, 'module', 'start', 'About to call _start_.')
             if hasattr(module, '_start_') and callable(module._start_) and self.getMethodDefinitionLevel(module._start_) != 'yombo.core.module.YomboModule':
-#              module._start_()
-#              continue
+#                module._start_()
+#                continue
                 try:
                     module._start_()
                 except:
@@ -458,7 +458,7 @@ class Loader(YomboLibrary):
     def _register_distributions(self, component):
         # libraries and classes can register message distributions
         # Used as a way to broadcast messages.
-        if hasattr(component, '_RegisterDistributions'):
+        if hasattr(component, '_RegisterDistributions') and component._RegisterDistributions is not None:
             for list in component._RegisterDistributions:
                 logger.debug("For module {fullName}', adding distro: {list}", fullName=component._FullName, list=list)
                 self.loadedComponents['yombo.gateway.lib.messages'].updateSubscription("add", list, component._FullName)
@@ -466,7 +466,7 @@ class Loader(YomboLibrary):
     def _register_voicecmds(self, component):
         # libraries and classes can register message distributions
         # Used as a way to broadcast messages.
-        if hasattr(component, '_RegisterVoiceCommands'):
+        if hasattr(component, '_RegisterVoiceCommands') and component._RegisterVoiceCommands is not None:
             for list in component._RegisterVoiceCommands:
                 logger.debug("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=component._FullName, order=list['order'])
                 self.loadedLibraries['yombo.gateway.lib.voicecmds'].add(list['voiceCmd'], component._FullName, None, list['order'])

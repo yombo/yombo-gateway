@@ -18,7 +18,8 @@ Manages all modules within the system. Provides a single reference to perform mo
 
 # Import Yombo libraries
 from yombo.core.db import get_dbtools
-from yombo.core.exceptions import YomboFuzzySearchError
+from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError
+
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.helpers import getComponent
 from yombo.core.library import YomboLibrary
@@ -327,5 +328,5 @@ class Modules(YomboLibrary):
         elif returnType is 'module':
             if temp is not None:
                 return self.getModule(temp['moduleUUID'])
-        return None
+        raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(requestedItem) + " (" + str(moduleType + ")"))
 
