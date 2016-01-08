@@ -191,7 +191,7 @@ class Devices(YomboLibrary):
         self._devicesByUUID[deviceUUID] = Device(record, self)
         self._devicesByName[record["label"]] = deviceUUID
 
-        logger.warn("_addDevice: {record}", record=record)
+        logger.debug("_addDevice: {record}", record=record)
         if record['devicetypeuuid'] not in self._devicesByDeviceTypeByUUID:
             self._devicesByDeviceTypeByUUID[record['devicetypeuuid']] = {}
         if deviceUUID not in self._devicesByDeviceTypeByUUID[record['devicetypeuuid']]:

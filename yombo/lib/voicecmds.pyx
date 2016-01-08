@@ -179,7 +179,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         if len(verbs) == 0:
             raise YomboException("No verbs found in VoiceString.", 1000, 'voicecmd', 'core')
 
-        logger.warn("^^^^^^^^^^^ commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
+        logger.debug("commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
         for verb in verbs:
             if verb not in self.commandsByVoice:
                 continue

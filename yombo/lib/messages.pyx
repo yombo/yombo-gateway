@@ -16,7 +16,7 @@ will delivery itself here automatically and this library will call the
 send function of a message when needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -32,6 +32,9 @@ from yombo.core.exceptions import YomboMessageError
 from yombo.core.library import YomboLibrary
 from yombo.core.message import Message
 from yombo.core.sqldict import SQLDict  #load at the top of the file.
+from yombo.core.log import getLogger
+
+logger = getLogger('library.times')
 
 class Messages(YomboLibrary):
     """
@@ -43,7 +46,7 @@ class Messages(YomboLibrary):
         """
         self.loader = loader
         self.distributions = {}  # For message broadcasting lists.
-        self.queue = deque()     # Placeholder for startup message queues
+        self.queue = deque()    # Placeholder for startup message queues
         self.processing = False
 
     def _load_(self):
@@ -61,7 +64,28 @@ class Messages(YomboLibrary):
         """
         pass
 
-    def modulesStarted(self):
+    def _stop_(self):
+        """
+        Stop library - stop the looping call.
+        """
+        pass
+
+    def _unload_(self):
+        pass
+
+    def _module_load_(self, **kwargs):
+        return
+        # libraries and classes can register message distributions
+        # Used as a way to broadcast messages.
+        modulesLibrary = kwargs['_modulesLibrary']
+        subscriptionsToAdd = modulesLibrary.module_invoke_all("message_subscriptions")
+
+        for moduleName, subscriptions in subscriptionsToAdd.iteritems():
+            for list in subscriptions:
+                logger.debug("For module {fullName}', adding distro: {list}", fullName=component._FullName, list=list)
+                self.updateSubscription("add", list, component._FullName)
+
+    def _module_started_(self):
         """
         On start, sends all queued messages. Then, check delayed messages
         for any messages that were missed. Send old messages
@@ -79,32 +103,31 @@ class Messages(YomboLibrary):
         # otherwise delete them.  If time is in future, setup a new
         # reactor to send in future.
         for msg in self.delayQueue:
-           if float(msg.notBefore) < time.time():
-               if time.time() - float(msg.notBefore) > float(msg.maxDelay):
+          if float(msg.notBefore) < time.time():
+              if time.time() - float(msg.notBefore) > float(msg.maxDelay):
                   # we're too late, just delete it.
                   del self.delayQueue[msg]
                   continue
-               else:
-                 #we're good, lets hydrate the message and send it.
-                 toSend = Message(**self.delayQueue[msg])
-                 del self.delayQueue[msg]
-                 toSend.send()
-           else: # now lets setup messages for the future. Gotta wear shades.
+              else:
+                #we're good, lets hydrate the message and send it.
+                toSend = Message(**self.delayQueue[msg])
+                del self.delayQueue[msg]
+                toSend.send()
+          else: # now lets setup messages for the future. Gotta wear shades.
 
-               self.reactors[msg] = reactor.callLater(2, self.loaded)
-               #Hydrate the message and prep it to send.
-               toSend = Message(**self.delayQueue[msg])
-               when = float(msg.notBefore) - time.time()
-               reactor.callLater(when, toSend.send)
+              self.reactors[msg] = reactor.callLater(2, self.loaded)
+              #Hydrate the message and prep it to send.
+              toSend = Message(**self.delayQueue[msg])
+              when = float(msg.notBefore) - time.time()
+              reactor.callLater(when, toSend.send)
 
-    def _stop_(self):
+    def _module_unload_(self):
         """
-        Stop library - stop the looping call.
+        Used by the loader module to clear all library and module subscriptions.
         """
-        pass
-
-    def _unload_(self):
-        pass
+        logger.warn("Message - _module_unload_....!")
+        if hasattr(self, 'distributions'): # used incase GW stops premature.
+            self.distributions.clear()
 
     def addToDelay(self, message):
         """
@@ -172,7 +195,6 @@ class Messages(YomboLibrary):
             del self.reactors[msgUUID]
         else:
             isGood is False
-       
         if msgUUID in self.delayQueue:
             del self.delayQueue[msgUUID]
         else:
@@ -199,7 +221,7 @@ class Messages(YomboLibrary):
         try:
           self.cancelDelay(message.msgUUID)
         except:
-          pass        
+          pass
 
     def message(self, message):
         """
@@ -233,11 +255,4 @@ class Messages(YomboLibrary):
                 self.distributions[list].remove(moduleName)
             except:
                 pass
-
-    def clearDistributions(self):
-        """
-        Used by the loader module to clear all library and module subscriptions.
-        """
-        if hasattr(self, 'distributions'): # used incase GW stops premature.
-            self.distributions.clear()
 

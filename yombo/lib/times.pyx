@@ -28,11 +28,10 @@ See usage below on using this module within your module.
 
 .. todo::
   Redo many parts of this module. Doesn't seem to be working.
-  
   Polar region debug (some strange glitches like nowNight message when it is polar day (I think we need variables for polar day and night begin/end)
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 
@@ -44,7 +43,7 @@ from datetime import datetime, date, timedelta
 from twisted.internet import reactor
 
 from yombo.core.exceptions import YomboTimeError
-from yombo.core.helpers import getConfigValue
+from yombo.core.helpers import getConfigValue, generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
@@ -62,7 +61,7 @@ class Times(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
-        self.loader = loader	
+        self.loader = loader
         if PatchEnvironment: self.runned_for_tests()
 
         self.time_ajust = 300.0
@@ -80,26 +79,97 @@ class Times(YomboLibrary):
 
         self.isTwilight = None
         self.isLight = None
-        self.isDark = None        
+        self.isDark = None
         self.isDay = None
         self.isNight = None
         self.isDawn = None
         self.isDusk = None
 
+        self.__StatesPassword = generateRandom(length=10)
+        self._States.set('isTwilight', None, writeKey=self.__StatesPassword)
+        self._States.set('isTwilight', None, writeKey=self.__StatesPassword)
+        self._States.set('isDark', None, writeKey=self.__StatesPassword)
+        self._States.set('isDay', None, writeKey=self.__StatesPassword)
+        self._States.set('isNight', None, writeKey=self.__StatesPassword)
+        self._States.set('isDawn', None, writeKey=self.__StatesPassword)
+        self._States.set('isDusk', None, writeKey=self.__StatesPassword)
+
         self.CLnowLight = None
         self.CLnowDark = None
         self.CLnowDay = None
         self.CLnowNight = None
-        
         self.CLnowNotDawn = None
         self.CLnowNotDusk = None
         self.CLnowDawn = None
         self.CLnowDusk = None
 
-        self._setupLightDarkEvents()
-        self._setupDayNightEvents()
-        self._setupNextTwilightEvents() # needs to be called before setupNextDawnDuskEvent
-        self._setupNextDawnDuskEvent()
+        self._setup_light_dark_events()
+        self._setup_day_night_events()
+        self._setup_next_twilight_events() # needs to be called before setupNextDawnDuskEvent
+        self._setup_next_dawn_dusk_event()
+
+    @property
+    def isTwilight(self):
+        return self.__isTwilight
+
+    @isTwilight.setter
+    def isTwilight(self, val):
+        self._States.set('isTwilight', val, self.__StatesPassword)
+        self.__isTwilight = val
+
+    @property
+    def isLight(self):
+        return self.__isLight
+
+    @isLight.setter
+    def isLight(self, val):
+        self._States.set('isLight', val, self.__StatesPassword)
+        self.__isLight = val
+
+    @property
+    def isDark(self):
+        return self.__isDark
+
+    @isDark.setter
+    def isDark(self, val):
+        self._States.set('isDark', val, self.__StatesPassword)
+        self.__isDark = val
+
+    @property
+    def isDay(self):
+        return self.__isDay
+
+    @isDay.setter
+    def isDay(self, val):
+        self._States.set('isDay', val, self.__StatesPassword)
+        self.__isDay = val
+
+    @property
+    def isNight(self):
+        return self.__isNight
+
+    @isNight.setter
+    def isNight(self, val):
+        self._States.set('i', val, self.__StatesPassword)
+        self.__isNight = val
+
+    @property
+    def isDawn(self):
+        return self.__isDawn
+
+    @isDawn.setter
+    def isDawn(self, val):
+        self._States.set('isDawn', val, self.__StatesPassword)
+        self.__isDawn = val
+
+    @property
+    def isDusk(self):
+        return self.__isDusk
+
+    @isDusk.setter
+    def isDusk(self, val):
+        self._States.set('isDusk', val, self.__StatesPassword)
+        self.__isDusk = val
 
     def _load_(self):
         """
@@ -125,12 +195,11 @@ class Times(YomboLibrary):
         """
         pass
 
-    def _setupLightDarkEvents(self):
+    def _setup_light_dark_events(self):
         """
         Setup events to be called when isLight and isDark needs to change.
         Two callLater's are setup: one to send a broadcast event of the change
         the second callLater is to come back to this function and redo it all.
-       
         This is different than day/night since it accounts for twilight.
         """
         self._CalcLightDark() # setup isLight & isDark
@@ -140,24 +209,22 @@ class Times(YomboLibrary):
         if self.isLight:
             setTime = self.sunSetTwilight() - time()
             #print "%d = %d - %d" % (setTime, self.sunSetTwilight(),time())
-            self.CLnowDark = reactor.callLater(setTime, self._sendStatus, 'nowDark')
-            #print "self.CLnowDark = reactor.callLater(setTime, self._sendStatus, 'nowDark')"
+            self.CLnowDark = reactor.callLater(setTime, self._send_status, 'nowDark')
+            #print "self.CLnowDark = reactor.callLater(setTime, self._send_status, 'nowDark')"
         else:
             setTime = self.sunRiseTwilight() - time()
             #print "setTime = self.sunRiseTwilight()"
             #print "%d = %d - %d" % (setTime, self.sunRiseTwilight(),time())
-            self.CLnowLight = reactor.callLater(setTime, self._sendStatus, 'nowLight')
+            self.CLnowLight = reactor.callLater(setTime, self._send_status, 'nowLight')
 
         #set a callLater to redo islight/dark, and setup next broadcast.
-        reactor.callLater(setTime+self.time_ajust, self._setupLightDarkEvents)
+        reactor.callLater(setTime+self.time_ajust, self._setup_light_dark_events)
 
-
-    def _setupDayNightEvents(self):
+    def _setup_day_night_events(self):
         """
         Setup events to be called when isDay and isNight needs to change.
         Two callLater's are setup: one to send a broadcast event of the change
         the second callLater is to come back to this function and redo it all.
-       
         This is different than light/dark since this doesn't account
         for twilight.
         """
@@ -165,50 +232,44 @@ class Times(YomboLibrary):
         if self.isDay:
             setTime = self.sunSet() - time()
             logger.debug("NowNight event in: {setTime}", setTime=setTime)
-            self.CLnowNight = reactor.callLater(setTime, self._sendStatus, 'nowNight')
+            self.CLnowNight = reactor.callLater(setTime, self._send_status, 'nowNight')
         else:
             setTime = self.sunRise() -time()
             logger.debug("NowDay event in: {setTime}", setTime=setTime)
-            self.CLnowDay = reactor.callLater(setTime, self._sendStatus, 'nowDay')
+            self.CLnowDay = reactor.callLater(setTime, self._send_status, 'nowDay')
 
         #set a callLater to redo isday/night, and setup next broadcast.
-        reactor.callLater(setTime+self.time_ajust, self._setupDayNightEvents)
+        reactor.callLater(setTime+self.time_ajust, self._setup_day_night_events)
 
     ###  This function is not complete.  Need to calculate when the next
     ###  twilight period is. I just copied setupDayNightEvents to here for now.
-    # When fixed, remove self._CalcTwilight() from def _setupNextDawnDuskEvent
-    
-    def _setupNextTwilightEvents(self):
+    # When fixed, remove self._CalcTwilight() from def_setup_next_dawn_dusk_event
+    def _setup_next_twilight_events(self):
         """
         Setup events to be called when isTwilight needs to change.
         Two callLater's are setup: one to send a broadcast event of the change
         the second callLater is to come back to this function and redo it all.
-       
         This is different than light/dark since this doesn't account
         for twilight.
         """
         pass  ## we are out of service for now..
         self._CalcTwilight()  #is it twilight right now?
-        
-
-        if self.isTwilight:            
+        if self.isTwilight:
             setTime = self.sunSetTwilight() - time()
             riseTime = self.sunRise() - time()
-            
             twTime = min (setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowNotTwilight = reactor.callLater(twTime, self._sendStatus, 'nowNotTwilight')
+            self.CLnowNotTwilight = reactor.callLater(twTime, self._send_status, 'nowNotTwilight')
         else:
             setTime = self.sunSet() - time()
             riseTime = self.sunRiseTwilight() - time()
             twTime = min(setTime, riseTime)
-                
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowTwilight = reactor.callLater(twTime, self._sendStatus, 'nowTwilight')
+            self.CLnowTwilight = reactor.callLater(twTime, self._send_status, 'nowTwilight')
 
-        reactor.callLater(twTime+self.time_ajust, self._setupNextTwilightEvents)                
+        reactor.callLater(twTime+self.time_ajust, self._setup_next_twilight_events)
 
-    def _setupNextDawnDuskEvent(self):
+    def _setup_next_dawn_dusk_event(self):
         """
         Setup events to be called when it's either dawn, notdawn, dusk,
         and notdusk.
@@ -219,78 +280,68 @@ class Times(YomboLibrary):
         self.CLnowNotDusk = None
         self.CLnowDawn = None
         self.CLnowDusk = None
-        
         self._CalcTwilight()  #is it twilight right now?
-        
         sunrise = self.sunRiseTwilight() # for today
         sunset = self.sunSet()  # for today
 
         sunrise_end = self.sunRise() # for today
         sunset_end = self.sunSetTwilight()  # for today
-        
-        logger.debug("_setupNextDawnDuskEvent - Sunset: {sunset}", sunset=sunset)
+        logger.debug("_setup_next_dawn_dusk_event - Sunset: {sunset}", sunset=sunset)
         #print "t = %s" % datetime.fromtimestamp(time())
         curtime = time()
-            
         # First, determine we are closer to sunrise or sunset
         secsRise = sunrise - curtime#here
         secsSet = sunset - curtime
 
         secsRiseEnd = sunrise_end - curtime#here
-        secsSetEnd = sunset_end - curtime        
-        
+        secsSetEnd = sunset_end - curtime
         if self.isTwilight == True:
             if secsRiseEnd < secsSetEnd: #  it's dawn right now = twilight + closer to sunrise's end
-                self.CLnowNotDawn = reactor.callLater(secsRiseEnd, self._sendNowNotDawn) # set a timer for no more dawn
-                reactor.callLater(secsRiseEnd+self.time_ajust, self._setupNextDawnDuskEvent)
+                self.CLnowNotDawn = reactor.callLater(secsRiseEnd, self._send_now_not_dawn) # set a timer for no more dawn
+                reactor.callLater(secsRiseEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
             else: # else, closer to sunset.
-                self.CLnowNotDusk = reactor.callLater(secsSetEnd, self._sendNowNotDusk) # set a timer for no more dusk
-                reactor.callLater(secsSetEnd+self.time_ajust, self._setupNextDawnDuskEvent)                
+                self.CLnowNotDusk = reactor.callLater(secsSetEnd, self._send_now_not_dusk) # set a timer for no more dusk
+                reactor.callLater(secsSetEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
         else: # it's not twilight, we need to set a time for it to start.
             if secsRise < secsSet: #  it's going to be dawn next = no twilight + closer to sunrise
-                self.CLnowDawn = reactor.callLater(secsRise, self._sendNowDawn) # set a timer for is dawn
-                reactor.callLater(secsRise+self.time_ajust, self._setupNextDawnDuskEvent)                
+                self.CLnowDawn = reactor.callLater(secsRise, self._send_now_dawn) # set a timer for is dawn
+                reactor.callLater(secsRise+self.time_ajust, self._setup_next_dawn_dusk_event)
             else: # else, we are closer to sunset!
-                self.CLnowDusk = reactor.callLater(secsSet, self._sendNowDusk) # set a timer for is dusk
-                reactor.callLater(secsSet+self.time_ajust, self._setupNextDawnDuskEvent)                
-        
+                self.CLnowDusk = reactor.callLater(secsSet, self._send_now_dusk) # set a timer for is dusk
+                reactor.callLater(secsSet+self.time_ajust, self._setup_next_dawn_dusk_event)
         logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})", secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
 
-    def _sendNowDawn(self):
+    def _send_now_dawn(self):
         """
         Called by timer when it's nowDawn.
         """
         self.isDawn = True
-        self._sendStatus('nowDawn')
-        #        self._setupNextTwilightEvents()
-        
-    def _sendNowNotDawn(self):
+        self._send_status('nowDawn')
+
+    def _send_now_not_dawn(self):
         """
         Called by timer when it's nowNotDawn. Calls _setupNextTwlightEvents
         to setup the next twilight cycle for dusk.
         """
         self.isDawn = False
-        self._sendStatus('nowNotDawn')
-        #self._setupNextTwilightEvents()
+        self._send_status('nowNotDawn')
 
-    def _sendNowDusk(self):
+    def _send_now_dusk(self):
         """
         Called by timer when it's nowDusk.
         """
         self.isDusk = True
-        self._sendStatus('nowDusk')
-        #self._setupNextTwilightEvents()
-        
-    def _sendNowNotDusk(self):
+        self._send_status('nowDusk')
+
+    def _send_now_not_dusk(self):
         """
         Called by timer when it's nowNotDusk. Calles _setupNextTwlightEvents
         to setup the next twilight cycle for dawn.
         """
         self.isDusk = False
-        self._sendStatus('nowNotDusk')
-        #self._setupNextTwilightEvents()
-        
-    def _sendStatus(self, msgstatus):
+        self._send_status('nowNotDusk')
+
+    def _send_status(self, msgstatus):
         """
         Generate an "event" message of status type being the time
         event name.
@@ -298,7 +349,7 @@ class Times(YomboLibrary):
         msg = {
                'msgOrigin'      : self._FullName,
                'msgDestination' : "yombo.gateway.all",
-               'msgType'        : 'event', 
+               'msgType'        : 'event',
                'msgStatus'      : msgstatus,
                'uuidType'       : "0",
                'uuidSubType'    : "040",
@@ -325,7 +376,7 @@ class Times(YomboLibrary):
         -->>>----Time flow--->>>>-----
 
                |TWILIGHT    |     NIGHT         |TWILIG|   DAY        |TWILIGHT|       NIGHT       |TWILIGHT |   DAY        |TWILIGHT  |    NIGHT
-               |            |                   |      |              |        |                   |         |              |          |        
+               |            |                   |      |              |        |                   |         |              |          |
               set                                     rise           set                                    rise           set
                |---------------------------------------|              |--------------------------------------|              |---------------------------------------
                |      N(set)>N(rise)                   |N(set)<N(rise)|       N(set)>N(rise)                 |N(set)<N(rise)|        N(set)>N(rise)
@@ -336,10 +387,9 @@ class Times(YomboLibrary):
 
         So the TWILIGHT events occur when (N(set)>N(rise) AND  N(Tset)<N(Trise))
         This condition should work on polar day/night also.
-        
         """
         self.obs.date = datetime.utcnow()
-        self.obsTwilight.date = datetime.utcnow()        
+        self.obsTwilight.date = datetime.utcnow()
 
         if self._next_setting(self.obsTwilight,ephem.Sun(),use_center=True) < self._next_rising(self.obsTwilight,ephem.Sun(),use_center=True) \
           and \
@@ -355,7 +405,7 @@ class Times(YomboLibrary):
         """
         self.obs.date = datetime.utcnow()
         self.obsTwilight.date = datetime.utcnow()
-        #logger.info("isLight: %s < %s", self._previous_rising(self.obsTwilight,ephem.Sun(),use_center=True), 
+        #logger.info("isLight: %s < %s", self._previous_rising(self.obsTwilight,ephem.Sun(),use_center=True),
         #            self._previous_setting(self.obsTwilight,ephem.Sun(),use_center=True))
 
         if self._previous_rising(self.obsTwilight,ephem.Sun(),use_center=True) < self._previous_setting(self.obsTwilight,ephem.Sun(),use_center=True):
@@ -403,9 +453,7 @@ class Times(YomboLibrary):
         Returns a true if the given object is above the horizon.
 
         **Usage**:
-        
         .. code-block:: python
-          
             from yombo.core.helpers import getTimes
             time = getTimes()
             saturnVisible = time.objVisible('Saturn') # Is Saturn above the horizon? (True/False)
@@ -424,7 +472,6 @@ class Times(YomboLibrary):
             obj = getattr(ephem, object)
         except AttributeError:
             raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
-            
         self.obs.date = datetime.utcnow()
 
         #if it is rised and not set, then it is visible
@@ -432,15 +479,12 @@ class Times(YomboLibrary):
             return False
         else:
             return True
-            
     def objRise(self, **kwargs):
         """
         Returns when an item/object rises.
 
         **Usage**:
-        
         .. code-block:: python
-          
             from yombo.core.helpers import getTime
             time = getTimes()
             saturnRise = time.objRise(dayOffset=1, object='Saturn') # the NEXT (1) rising of Saturn.
@@ -464,19 +508,15 @@ class Times(YomboLibrary):
             obj = getattr(ephem, object)
         except AttributeError:
             raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
-            
         self.obs.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obs,obj())
         return self._timegm (temp)
-    
     def objSet(self, **kwargs):
         """
         Returns when an item/object sets.
 
         **Usage**:
-        
         .. code-block:: python
-          
             from yombo.core.helpers import getTime
             time = getTimes()
             saturnRise = time.objRise(dayOffset=1, object='Saturn') # the NEXT (1) rising of Saturn.
@@ -500,7 +540,6 @@ class Times(YomboLibrary):
             obj = getattr(ephem, object)
         except AttributeError:
             raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
-            
         # we want the date part only, but date.today() isn't UTC.
         dt = datetime.utcnow()+timedelta(days=dayOffset)
         self.obs.date = dt
@@ -511,7 +550,6 @@ class Times(YomboLibrary):
         """
         Return sunrise, optionaly returns sunrise +/- # days. The offset of "0" would be
         for the next sunrise.
-        
         :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
         :type dayOffset: int
         :param object: Default='Sun'. PyEphem object to search for and return results for.
@@ -520,7 +558,7 @@ class Times(YomboLibrary):
         dayOffset = 0
         if 'dayOffset' in kwargs:
             dayOffset = kwargs['dayOffset']
-        object = 'Sun'        
+        object = 'Sun'
         if 'object' in kwargs:
             object = kwargs['object']
 
@@ -543,7 +581,7 @@ class Times(YomboLibrary):
         dayOffset = 0
         if 'dayOffset' in kwargs:
             dayOffset = kwargs['dayOffset']
-        object = 'Sun'        
+        object = 'Sun'
         if 'object' in kwargs:
             object = kwargs['object']
 
@@ -566,7 +604,7 @@ class Times(YomboLibrary):
         dayOffset = 0
         if 'dayOffset' in kwargs:
             dayOffset = kwargs['dayOffset']
-        object = 'Sun'        
+        object = 'Sun'
         if 'object' in kwargs:
             object = kwargs['object']
 
@@ -574,7 +612,6 @@ class Times(YomboLibrary):
             obj = getattr(ephem, object)
         except AttributeError:
             raise YomboTimeError("Couldn't not find PyEphem object: %s" % object)
-            
         self.obsTwilight.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obsTwilight,obj(),use_center=True)
         return self._timegm(temp)
@@ -586,7 +623,7 @@ class Times(YomboLibrary):
         dayOffset = 0
         if 'dayOffset' in kwargs:
             dayOffset = kwargs['dayOffset']
-        object = 'Sun'        
+        object = 'Sun'
         if 'object' in kwargs:
             object = kwargs['object']
 
@@ -613,9 +650,8 @@ class Times(YomboLibrary):
 
     def _next_setting(self, observer, object, use_center=False):
         return self._riset_wrapper(observer,'next_setting',object,use_center=use_center)
-        
-    def _riset_wrapper(self, observer, obsf_name, obj,use_center=False):                
-        save_date = observer.date #we need to save this date to compare with later                
+    def _riset_wrapper(self, observer, obsf_name, obj,use_center=False):
+        save_date = observer.date #we need to save this date to compare with later
         while True:
             try:
                 dt = getattr(observer,obsf_name)(obj,use_center=use_center)
@@ -660,76 +696,67 @@ class Times(YomboLibrary):
             self.mutex.release()
 
         self._reactor_callLater = getattr(reactor,'callLater')
-        setattr(reactor, 'callLater', callLaterMy)            
+        setattr(reactor, 'callLater', callLaterMy)
 
-            
         self.year_array = [0]*(365*24)
         self.start_time = time()
-            
-        def _sendStatusMy(a):
-            #print '_sendStatus %s on %s' % (a, datetime.fromtimestamp(time()))
+        def _send_status_my(a):
+            #print '_send_status %s on %s' % (a, datetime.fromtimestamp(time()))
             ct = int ((time() - self.start_time) / 60 / 60)
-            
-            #print '_sendStatus %s on %s' % (a, datetime.fromtimestamp(time()))            
+            #print '_send_status %s on %s' % (a, datetime.fromtimestamp(time()))
             if (ct >= (365*24)):
                 return
-            
             if (a == 'nowDark'):
                 assert (self.year_array[ct] & 1) == 0, "nowDark duplicate"
                 self.year_array[ct] = self.year_array[ct] | 1
             if (a == 'nowLight'):
-                assert (self.year_array[ct] & 2) == 0, "nowLight duplicate"                
+                assert (self.year_array[ct] & 2) == 0, "nowLight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 2
             if (a == 'nowNight'):
-                assert (self.year_array[ct] & 4) == 0, "nowNight duplicate"                
+                assert (self.year_array[ct] & 4) == 0, "nowNight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 4
             if (a == 'nowDay'):
-                assert (self.year_array[ct] & 8) == 0, "nowDay duplicate"                
-                self.year_array[ct] = self.year_array[ct] | 8                
+                assert (self.year_array[ct] & 8) == 0, "nowDay duplicate"
+                self.year_array[ct] = self.year_array[ct] | 8
             if (a == 'nowTwilight'):
-                assert (self.year_array[ct] & 16) == 0, "nowTwilight duplicate"                
+                assert (self.year_array[ct] & 16) == 0, "nowTwilight duplicate"
                 self.year_array[ct] = self.year_array[ct] | 16
             if (a == 'nowNotTwilight'):
-                assert (self.year_array[ct] & 32) == 0, "nowNotTwilight duplicate"                
-                self.year_array[ct] = self.year_array[ct] | 32                
+                assert (self.year_array[ct] & 32) == 0, "nowNotTwilight duplicate"
+                self.year_array[ct] = self.year_array[ct] | 32
             if (a == 'nowDawn'):
-                assert (self.year_array[ct] & 64) == 0, "nowDawn duplicate"                
+                assert (self.year_array[ct] & 64) == 0, "nowDawn duplicate"
                 self.year_array[ct] = self.year_array[ct] | 64
             if (a == 'nowNotDawn'):
-                assert (self.year_array[ct] & 128) == 0, "nowNotDawn duplicate"                
-                self.year_array[ct] = self.year_array[ct] | 128                
+                assert (self.year_array[ct] & 128) == 0, "nowNotDawn duplicate"
+                self.year_array[ct] = self.year_array[ct] | 128
             if (a == 'nowDusk'):
-                assert (self.year_array[ct] & 256) == 0, "nowDusk duplicate"                
+                assert (self.year_array[ct] & 256) == 0, "nowDusk duplicate"
                 self.year_array[ct] = self.year_array[ct] | 256
             if (a == 'nowNotDusk'):
-                assert (self.year_array[ct] & 512) == 0, "nowNotDusk duplicate"                
-                self.year_array[ct] = self.year_array[ct] | 512                                
-            
-            
-        self._sendStatus_old = getattr(self,'_sendStatus')
-        setattr(self, '_sendStatus', _sendStatusMy)
+                assert (self.year_array[ct] & 512) == 0, "nowNotDusk duplicate"
+                self.year_array[ct] = self.year_array[ct] | 512
+        self._send_status_old = getattr(self,'_send_status')
+        setattr(self, '_send_status', _send_status_my)
 
     def finish_tests(self):
         setattr(reactor, 'callLater', self._reactor_callLater)
-        setattr(self, '_sendStatus', self._sendStatus_old)        
-        
+        setattr(self, '_send_status', self._send_status_old)
 
-                
     def run_inner_tests_chk_year(self, set_olddt, set_newdt, lat, lon):
         print '************check year: lat = %s, lon = %s *********************' % (lat,lon)
 
         globals()['time'] = lambda:t
-        
         self.obs.lat = lat
         self.obs.lon = lon
         self.obsTwilight.lat = lat
         self.obsTwilight.lon = lon
 
-        #        globals()['datetime'] = old_datetime        
+        #        globals()['datetime'] = old_datetime
         set_olddt()
         midnight_utc = datetime.utcnow().date()
-        midday_utc = datetime.utcnow().date() + timedelta(hours=12)        
-        #        globals()['datetime'] = DateTime        
+        midday_utc = datetime.utcnow().date() + timedelta(hours=12)
+        #        globals()['datetime'] = DateTime
         set_newdt()
         t = CalTimegm (midnight_utc.timetuple())
 
@@ -739,28 +766,26 @@ class Times(YomboLibrary):
             #midnight
             self._CalcDayNight()
             if (self.isNight): print '.',
-            else: 
+            else:
                 print 'x',
                 err = err + 1
             t = t + 60*60*12
             #midday
             self._CalcDayNight()
             if (self.isDay): print '.',
-            else: 
+            else:
                 print 'X',
-                err = err + 1  
+                err = err + 1
             t = t + 60*60*12
 
-        print 'Errors:', err        
+        print 'Errors:', err
 
         # parameters: latm lon, date that day, twilight begin time, sunrise, sunset, twilight end time
     def table_check(self,lat,lon,dt,twb,psr,nss,twe,msg,sun_hor='0'):
         print 'checking table times for ', msg
         print 'lat = %s, lon = %s, dt = %s, twb = %s, psr = %s, nss = %s, twe = %s, horizon correction = %s' % (lat,lon,dt,twb,psr,nss,twe,sun_hor)
         d = lambda x:datetime.strptime(x,'%Y/%m/%d %H:%M:%S')
-        
         t = CalTimegm(d(dt).timetuple())
-        
         globals()['time'] = lambda:t
 
         #to check tables we should regulate pressure
@@ -770,7 +795,7 @@ class Times(YomboLibrary):
         self.obs.lon = lon
         self.obs.horizon = sun_hor
         self.obsTwilight.temp = 0
-        self.obsTwilight.pressure = 0        
+        self.obsTwilight.pressure = 0
         self.obsTwilight.horizon = '-6'
         self.obsTwilight.lat = lat
         self.obsTwilight.lon = lon
@@ -780,23 +805,19 @@ class Times(YomboLibrary):
         assert (abs(err_ss) < 120), "time skew is more than 2 minutes for sunset (%s) calculated(lt) = %s should be(lt) = %s" % (msg,datetime.fromtimestamp(self.sunSet ()),datetime.fromtimestamp(CalTimegm(d(nss).timetuple())))
         assert (abs(err_twe) < 120), "time skew is more than 2 minutes for twilight finish (%s) calculated(lt) = %s should be(lt) = %s" % (msg,
                                                                                                                                            datetime.fromtimestamp(self.sunSetTwilight ()),
-                                                                                                                                           datetime.fromtimestamp(CalTimegm(d(twe).timetuple())))        
+                                                                                                                                           datetime.fromtimestamp(CalTimegm(d(twe).timetuple())))
 
         err_sr = CalTimegm(self._previous_rising(self.obs,ephem.Sun()).tuple()) - CalTimegm(d(psr).timetuple())
         err_twb = CalTimegm(self._previous_rising(self.obsTwilight,ephem.Sun(),use_center=True).tuple()) - CalTimegm(d(twb).timetuple())
 
         assert (abs(err_sr) < 120), "time skew is more than 2 minutes for sunrise (%s)" % msg
-        assert (abs(err_twb) < 120), "time skew is more than 2 minutes for twilight start (%s)" % msg                
-        
+        assert (abs(err_twb) < 120), "time skew is more than 2 minutes for twilight start (%s)" % msg
         print 'table check passed'
         self.obs.pressure = 1010
         self.obsTwilight.pressure = 1010
         self.obs.horizon='0'
         self.obs.temp = 15
         self.obsTwilight.temp = 15
-        
-        
-
     def run_inner_tests(self):
         print self.obs
         print self.obsTwilight
@@ -804,14 +825,13 @@ class Times(YomboLibrary):
         print 'sr', self.sunRise()
         print 'ss', self.sunSet()
         print 'srt', self.sunRiseTwilight()
-        print 'sst', self.sunSetTwilight()                        
+        print 'sst', self.sunSetTwilight()
         assert (self.sunRise()>time()),"next rise after current time"
         assert (self.sunSet()>time()),"next set after current time"
         assert (self.sunRiseTwilight()>time()),"next twilight rise after current time"
         assert (self.sunSetTwilight()>time()),"next twilight set after current time"
 
         print '************Year check midnights********************'
-        
         old_time=globals()['time']
         old_datetime = globals()['datetime']
         class DateTime(datetime):
@@ -820,27 +840,22 @@ class Times(YomboLibrary):
                 return datetime.utcfromtimestamp(time())
             @staticmethod
             def now():
-                return datetime.fromtimestamp(time())            
+                return datetime.fromtimestamp(time())
             def timetuple(self):
                 return(self.year, self.month, self.day, self.hour, self.minute, self.second + self.microsecond / 1000000.0)
-                
         globals()['datetime'] = DateTime
-                
         globals()['time'] = lambda:t
-
-
 
         print '************adding day*********************'
 
         globals()['datetime'] = old_datetime
         t = CalTimegm (datetime.utcnow().timetuple()) + 24*60*60
-        globals()['datetime'] = DateTime        
-        
+        globals()['datetime'] = DateTime
         print 'time()', time()
         print 'sr', self.sunRise()
         print 'ss', self.sunSet()
         print 'srt', self.sunRiseTwilight()
-        print 'sst', self.sunSetTwilight()       
+        print 'sst', self.sunSetTwilight()
 
         def _set_dt(dt):
             globals()['datetime'] = dt
@@ -852,54 +867,38 @@ class Times(YomboLibrary):
         self.run_inner_tests_chk_year(set_olddt, set_newdt, '0', '0')
 
         #Murmansk lat
-        self.run_inner_tests_chk_year(set_olddt, set_newdt, '69', '0')        
+        self.run_inner_tests_chk_year(set_olddt, set_newdt, '69', '0')
 
         #near north pole
-        #        self.run_inner_tests_chk_year(set_olddt, set_newdt, '89:30', '0')                
+        #        self.run_inner_tests_chk_year(set_olddt, set_newdt, '89:30', '0')
 
-        #check Atlanta 
+        #check Atlanta
         self.obs.lat = '33.8'
-        self.obs.lon = '-84.4'        
+        self.obs.lon = '-84.4'
         self.obsTwilight.lat = '33.8'
         self.obsTwilight.lon = '-84.4'
-        
         t = CalTimegm (datetime (2009,9,6,17,0).timetuple())
 
         globals()['time'] = lambda:t #renew closure
 
-
         print '************table check********************'
 
         self.table_check('33.8','-84.4','2009/09/06 17:00:00','2009/09/06 10:50:00','2009/09/06 11:15:00','2009/09/06 23:56:00','2009/09/07 00:21:00','Atlanta','-0:34')
-        #        self.table_check('68.95','33.1','2013/08/12 12:00:00','2013/08/11 22:18:13','2013/08/12 00:44:48','2013/08/12 19:03:14','2013/08/12 21:10:48','Murmansk','-0:50')        
+        #        self.table_check('68.95','33.1','2013/08/12 12:00:00','2013/08/11 22:18:13','2013/08/12 00:44:48','2013/08/12 19:03:14','2013/08/12 21:10:48','Murmansk','-0:50')
 
-        
-        #globals()['datetime'] = DateTime                
+        print '************callLater check********************'
 
-        #self._setupLightDarkEvents()
-        #self._setupDayNightEvents()
-        #self._setupNextTwilightEvents() # needs to be called before setupNextDawnDuskEvent
-        #self._setupNextDawnDuskEvent()    
-
-        print '************callLater check********************'        
-
-
-        
         self.obs.lat = '33.8'
-        self.obs.lon = '-84.4'        
+        self.obs.lon = '-84.4'
         self.obs.pressure = 0
         self.obs.temp = 0
         self.obs.pressure = 0
-        self.obs.horizon = '-0:34'        
+        self.obs.horizon = '-0:34'
         self.obsTwilight.lat = '33.8'
         self.obsTwilight.lon = '-84.4'
         self.obsTwilight.pressure = 0
-        self.obsTwilight.temp = 0        
-        self.obsTwilight.horizon = '-6:0'                
-        
-
-        
-
+        self.obsTwilight.temp = 0
+        self.obsTwilight.horizon = '-6:0'
         self.mutex.acquire()
         self.call_dict = {} #reset call array
         self.mutex.release()
@@ -927,7 +926,7 @@ class Times(YomboLibrary):
             def prnDict():
                 for s in self.call_dict.keys():
                     print 'dict[%s]:' % datetime.fromtimestamp(s)
-                    c_l = self.call_dict[s]                    
+                    c_l = self.call_dict[s]
                     for (a,b,c,d) in c_l:
                         #print 'check ', c
                         print "%s --- func = %s, param = %s" % (d,b,c)
@@ -936,10 +935,9 @@ class Times(YomboLibrary):
             t_corr_l = list(self.call_dict.keys())
             assert (t_corr_l[0] > 0), "bad value of seconds in laterCall: %s" % t_corr_l[0]
 
-
             #check dict (there should not be fully duplicate events (or should?))
             to_call_list = []
-            #print 'dict check: ', t_corr_l            
+            #print 'dict check: ', t_corr_l
             for s in self.call_dict.keys():
                 #print 'check second = %s' % s
                 c_l = self.call_dict[s]
@@ -948,7 +946,6 @@ class Times(YomboLibrary):
                     #print 'check ', c
                     assert ((a,b,c) not in old_events), "laterCall is duplicated:%s,%s,%s (u=%s)" % (a,b,c,d)
                     old_events = old_events + [(a,b,c)]
-                    
             self.call_dict = {} #clear call dict
 
             #print 'dict calls'
@@ -962,7 +959,6 @@ class Times(YomboLibrary):
                 else:
                     func(par)
             t = old_t
-
 
         ya = self.year_array
         print "Year table:"
@@ -984,31 +980,25 @@ class Times(YomboLibrary):
                 elif (c & 8) > 0 : l = l + 'D'
                 else: l = l + ' '
 
-                if (c & 48) == 48: l = l + '+'                    
+                if (c & 48) == 48: l = l + '+'
                 elif (c & 16) > 0 : l = l + 'W'
                 elif (c & 32) > 0 : l = l + 'w'
                 else: l = l + ' '
 
-                if (c & 192) == 192: l = l + '/'                    
+                if (c & 192) == 192: l = l + '/'
                 elif (c & 64) > 0 : l = l + 'A'
                 elif (c & 128) > 0 : l = l + 'a'
                 else: l = l + ' '
 
-                if (c & 768) == 768: l = l + '\\'                                        
+                if (c & 768) == 768: l = l + '\\'
                 elif (c & 256) > 0 : l = l + 'U'
                 elif (c & 512) > 0 : l = l + 'u'
-                else: l = l + ' '                    
-                    
+                else: l = l + ' '
                 print "%s"%l,
             print
 
         print 'indeces in result count: 0-Dark,1-Light,2-Night,3-Day,4-Twilight,5-NotTwi,6-Dawn,7-NotDawn,8-Dusk,9-NotDusk'
         print 'result count = ', rc
-        
-
         globals()['time']=old_time
         globals()['datetime'] = old_datetime
         self.finish_tests() #revert reactor.callLater patch
-
-            
-                

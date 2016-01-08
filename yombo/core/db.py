@@ -639,6 +639,18 @@ class DeviceVariablesTable(Table):
                "CREATE INDEX IF NOT EXISTS variableUUID_idx ON %s (variableUUID);" % (table_name)]
 
 
+class gpgKeysTable(Table):
+    """
+    Used for quick access to GPG keys. This is better as no system calls are required for key operations.
+    """
+    tableVersion = 20
+    table_name = 'gpgKeys'
+    keyid = TextPKColumn()
+    keyhash = TextColumn()
+    created = IntegerColumn()
+    indexes = ["CREATE INDEX IF NOT EXISTS keyid_idx ON %s (keyid);" % (table_name)]
+
+
 class gwTokensTable(Table):
     """
     User access tokens to login to this gateway directly.
@@ -773,6 +785,7 @@ ALLTABLES = [
     DeviceStatusTable,
     DeviceVariablesTable,
     LogsTable,
+    gpgKeysTable,
     gwTokensTable,
     ModulesTable,
     ModuleDeviceTypesTable,

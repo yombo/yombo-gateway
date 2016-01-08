@@ -21,18 +21,16 @@ Stops components in the following phases. Modules first, then libraries.
 
 .. warning::
 
-   Module developers and users should not access any of these functions
-   or variables.  This is listed here for completeness. Use a :ref:`Helpers`
-   function to get what is needed.
+  Module developers and users should not access any of these functions
+  or variables.  This is listed here for completeness. Use a :ref:`Helpers`
+  function to get what is needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
 from re import search as ReSearch
-import ConfigParser
-import inspect
 import traceback
 import sys
 #import hashlib
@@ -40,20 +38,23 @@ from time import time
 #from collections import OrderedDict
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.db import DBTools
-from yombo.core.exceptions import YomboCritical, YomboNoSuchLoadedComponentError
+from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
+import yombo.utils
 
 logger = getLogger('library.loader')
 
 HARD_LOAD = [
+    "Atoms",
+    "States",
     "CronTab",
     "Configuration",
     "Startup",
@@ -67,16 +68,13 @@ HARD_LOAD = [
     "VoiceCmds",
     "Devices",
     "Messages",
-#    "Listener",
 ]
 
 HARD_UNLOAD = [
-#    "Listener",
     "DownloadModules"
     "Messages",
-    "AMQPYombo",
-    "Controller",
     "Devices",
+    "AMQPYombo",
     "Configuration",
     "Statistics",
     "Modules",
@@ -84,10 +82,11 @@ HARD_UNLOAD = [
 
 class Loader(YomboLibrary):
     """
-    Responsible for loading libraries, loads and reloads and modules.
-    
+    Responsible for loading libraries, and then delegating loading modules to
+    the modules library.
+
     Libraries are never reloaded, however, during a reconfiguration,
-    modules are unloaded, and then reloaded after configurations are down
+    modules are unloaded, and then reloaded after configurations are done
     being downloaded.
     """
 #    zope.interface.implements(ILibrary)
@@ -97,12 +96,13 @@ class Loader(YomboLibrary):
         YomboLibrary.__init__(self)
 
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
-        self.loadedLibraries = {}
-        self.moduleNames = {}
+        self.loadedLibraries = FuzzySearch({self._FullName.lower(): self}, .95)
+#        self.moduleNames = {}
         self.libraryNames = {}
         self.__localModuleVars = {}
         self._SQLDictUpdates = {}
         self._DBTools = DBTools()
+        self._moduleLibrary = None
 
     def load(self):  #on startup, load libraried, then modules
         """
@@ -111,13 +111,14 @@ class Loader(YomboLibrary):
         This function is called when the gateway is to startup. In turn,
         this function will load all the components and modules of the gateway.
         """
-        try:
-            self.importLibraries() # import and init all libraries
-        except YomboCritical, e:
-            logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            logger.debug("{e}", e=e)
-            logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            e.exit()
+        self.import_libraries() # import and init all libraries
+#        try:
+#            self.import_libraries() # import and init all libraries
+#        except YomboCritical, e:
+#            logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+#            logger.debug("{e}", e=e)
+#            logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+#            e.exit()
 
     def start(self):
         self._saveSQLDictLoop = LoopingCall(self._saveSQLDictDB)
@@ -129,7 +130,7 @@ class Loader(YomboLibrary):
 
         First, unload all modules, then unload all components.
         """
-        self.unloadModules("junk", getattr(self, "unloadComponents"))
+        self._moduleLibrary.unload_modules("junk", getattr(self, "unload_components"))
 
         self._saveSQLDictDB()
         self._saveSQLDictLoop.stop()
@@ -151,72 +152,8 @@ class Loader(YomboLibrary):
     def setYomboService(self, yomboservice):
         self.YomboService = yomboservice
 
-    def _importComponent(self, pathName, componentName, componentType, componentUUID=None):
-        """
-        Load component of given name. Can be a core library, or a module.
-        """
-        pymodulename = pathName.lower()
-        self.logLoader('debug', componentName, componentType, 'import', 'About to import.')
-        try:
-            pyclassname = ReSearch("(?<=\.)([^.]+)$", pathName).group(1)
-        except AttributeError:
-            self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
-            logger.error("Library or Module not found: {pathName}", pathName=pathName)
-            raise YomboCritical("Library or Module not found: %s", pathName)
-
-        try:
-            module_root = __import__(pymodulename, globals(), locals(), [], 0)
-        except ImportError as detail:
-            self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
-            logger.error("--------==(Error: Library or Module not found)==--------")
-            logger.error("----Name: {pathName},   Details: {detail}", pathName=pathName, detail=detail)
-            logger.error("--------------------------------------------------------")
-            logger.error("{error}", error=sys.exc_info())
-            logger.error("---------------==(Traceback)==--------------------------")
-            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
-            logger.error("--------------------------------------------------------")
-            return
-
-        module_tail = reduce(lambda p1,p2:getattr(p1, p2),
-            [module_root,]+pymodulename.split('.')[1:])
-        klass = getattr(module_tail, pyclassname)
-
-        # Put the component into various lists for mgmt
-        try:
-            if componentType == 'library':
-                # Instantiate the class
-                moduleinst = klass() # start class and pass the loader
-                self.loadedLibraries[str(componentName.lower())] = moduleinst
-                self.loadedComponents[str(componentName.lower())] = moduleinst
-                # this is mostly for manhole module, but maybe useful elsewhere?
-                temp = componentName.split(".")
-                self.libraryNames[temp[-1]] = moduleinst
-            else:
-                # Instantiate the class
-                moduleinst = klass()  # start the class, only libraries get the loader
-                self.loadedComponents[str(componentName.lower())] = moduleinst
-
-                # this is mostly for manhole module, but maybe useful elsewhere?
-                temp = componentName.split(".")
-                self.moduleNames[temp[-1]] = moduleinst
-
-                self._moduleLibrary.addModule(componentUUID, str(componentName.lower()), moduleinst)
-
-
-        except YomboCritical, e:
-            logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            logger.debug("{e}", e=e)
-            logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            e.exit()
-            raise
-
-    def getMethodDefinitionLevel(self, meth):
-      for cls in inspect.getmro(meth.im_class):
-        if meth.__name__ in cls.__dict__: return str(cls)
-      return None
-
     @inlineCallbacks
-    def importLibraries(self):
+    def import_libraries(self):
         """
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
@@ -224,14 +161,16 @@ class Loader(YomboLibrary):
         for component in HARD_LOAD:
             pathName = "yombo.lib.%s" % component
             componentName = "yombo.gateway.lib.%s" % component
-            self._importComponent(pathName, componentName, 'library')
+            self.import_component(pathName, componentName, 'library')
 
         logger.debug("Calling init functions of libraries.")
         for index, name in enumerate(HARD_LOAD):
             componentName = 'yombo.gateway.lib.%s' % name.lower()
             library = self.loadedLibraries[componentName]
             self.logLoader('debug', componentName, 'library', 'init', 'About to call _init_.')
-            if hasattr(library, '_init_') and callable(library._init_) and self.getMethodDefinitionLevel(library._init_) != 'yombo.core.module.YomboModule':
+            library._Atoms = self.loadedLibraries['yombo.lib.atoms']
+            library._States = self.loadedLibraries['yombo.lib.states']
+            if hasattr(library, '_init_') and callable(library._init_) and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
 #                library._init_(self)
 #                continue
                 try:
@@ -251,33 +190,20 @@ class Loader(YomboLibrary):
 
             else:
                 logger.error("----==(Library doesn't have init function: {name})==-----", name=name)
-        self.loadLibraries()
+        self.load_libraries()
 
-    @inlineCallbacks
-    def loadLibraries(self):
+    def load_libraries(self):
         """
         Calls the "load" function of libraries.  Calls "startLibraries" when done.
         """
         logger.debug("Calling load functions of libraries.")
         for index, name in enumerate(HARD_LOAD):
-            componentName = 'yombo.gateway.lib.%s' % name.lower()
-            library = self.loadedLibraries[componentName]
-            self.logLoader('debug', componentName, 'library', 'load', 'About to call _load_.')
-            if hasattr(library, '_load_') and callable(library._load_) and self.getMethodDefinitionLevel(library._load_) != 'yombo.core.module.YomboModule':
-#                library._load_()
-#                continue
-                try:
-                    d = yield maybeDeferred(library._load_)
-                except:
-                    logger.error( sys.exc_info() )
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
-            else:
-                logger.error("----==(Library doesn't have _load_ function: {componentName})==-----", componentName=componentName)
-        self.startLibraries()
+             libraryName = 'yombo.gateway.lib.%s' % name.lower()
+             self.library_invoke(libraryName, "_load_")
 
-    def startLibraries(self):
+        self.start_libraries()
+
+    def start_libraries(self):
         """
         Called the "load" function of libraries.
         """
@@ -285,121 +211,43 @@ class Loader(YomboLibrary):
 
         logger.info("Calling start function of libraries.")
         for index, name in enumerate(HARD_LOAD):
-            componentName = 'yombo.gateway.lib.%s' % name.lower()
-            library = self.loadedLibraries[componentName]
-            self.logLoader('debug', componentName, 'library', 'start', 'About to call _start_.')
-            if hasattr(library, '_start_') and callable(library._start_) and self.getMethodDefinitionLevel(library._start_) != 'yombo.core.module.YomboModule':
-#                library._start_()
-#                continue
-                try:
-                    startResults = library._start_()
-                except:
-                    logger.error("----==(Error in _start_ function for library: {componentName})==-----", componentName=componentName)
-                    logger.error("1:: {e}", e=sys.exc_info())
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
-            else:
-                logger.error("----==(Library doesn't have _start_ function: {componetName})==-----", componentName=componentName)
+             libraryName = 'yombo.gateway.lib.%s' % name.lower()
+             self.library_invoke(libraryName, "_start_")
 
         if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
           self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
         else:
-          self.loadModules()
+          self._moduleLibrary.load_modules()
 
     @inlineCallbacks
-    def loadModules(self):
+    def library_invoke(self, requestedLibrary, hook, **kwargs):
         """
-        Load modules configured to run at startup.
+        Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
-        if len(self._moduleLibrary._modulesByUUID) > 0:
-            logger.warn("Modules already loaded, why again??")
-            return
+        kwargs['_modulesLibrary'] = self._moduleLibrary
 
-        modules = {}
-        try:
-            fp = open("localmodules.ini")
-            ini = ConfigParser.SafeConfigParser()
-            ini.optionxform=str
-            ini.readfp(fp)
-            for section in ini.sections():
-                options = ini.options(section)
-                mLabel = section
-                mType = ''
-                if 'label' in options:
-                    mLabel = ini.get(section, 'label')
-                    options.remove('label')
-                else:
-                    mLabel = section
-
-                if 'type' in options:
-                    mType = ini.get(section, 'type')
-                    options.remove('type')
-                else:
-                    mType = 'other'
-
-                modules[section] = {
-                  'machinelabel' : mLabel,
-                  'enabled' : "1",
-                  'moduletype' : mType,
-                  'moduleuuid' :  generateRandom(),
-                  'installsource' : 'local',
-                }
-
-                self.__localModuleVars[section] = {}
-                for item in options:
-                    logger.debug("Adding module from localmodule.ini: {item}", item=item)
-                    values = ini.get(section, item)
-                    values = values.split(",")
-                    vardata = {
-                        'updated': int(time()),
-                        'machinelabel': item.lower(),
-                        'weight': 0,
-                        'created': int(time()),
-                        'value': values,
-                        'label': item,
-                        'dataweight': 0,
-                        'moduleuuid': modules[section]['moduleuuid'],
-                        'variableuuid': 'xxx',
-                    }
-
-                    self.__localModuleVars[section][item] = vardata.copy()
-            logger.debug("localmodule vars: {lvars}", lvars=self.__localModuleVars)
-            fp.close()
-        except IOError as (errno, strerror):
-            logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
-
-        modulesDB = self._DBTools.getModules()
-        for module in modulesDB:
-            modules[module["machinelabel"]] = module
-
-        logger.debug("Complete list of modules, before import: {modules}", modules=modules)
-
-        for name, module in modules.iteritems():
-            pathName = "yombo.modules.%s" % name
-            componentName = "yombo.gateway.modules.%s" % name
-            self._importComponent(pathName, componentName, 'module', module['moduleuuid'])
-
-        logger.info("Calling init functions of modules.")
-        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
-            # if varibles set by localmodules, use those variables.
-            if module._Name in self.__localModuleVars:
-                module._ModVariables = self.__localModuleVars[module._Name]
-            module._preinit_(modules[module._Name])
-
-            self.logLoader('debug', componentName, 'module', 'init', 'About to call _init_.')
-            if hasattr(module, '_init_') and callable(module._init_) and self.getMethodDefinitionLevel(module._init_) != 'yombo.core.module.YomboModule':
-#                module._init_()
-#                continue
+        library = self.loadedLibraries[requestedLibrary]
+        if requestedLibrary == 'yombo.core.lib.Loader':
+            returnValue(None)
+        if not (hook.startswith("_") and hook.endswith("_")):
+            hook = library._FullName + "_" + hook
+        if hasattr(library, hook):
+            method = getattr(library, hook)
+            self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'About to call: %s' % hook)
+            if callable(method):
+#                return method(**kwargs)
                 try:
-#                    exc_info = sys.exc_info()
-                    d = yield maybeDeferred(module._init_)
-                    self._register_voicecmds(module)
-                    self._register_distributions(module)
+                    results = yield maybeDeferred(method, **kwargs)
+                    returnValue(results)
+                except YomboCritical, e:
+                    logger.error("---==(Critical Server Error in {hook} function for library: {name})==----", hook=hook, name=library._FullName)
+                    logger.error("--------------------------------------------------------")
+                    logger.error("Error message: {e}", e=e)
+                    logger.error("--------------------------------------------------------")
+                    e.exit()
                 except:
-                    logger.failure("Math is hard!")
                     exc_type, exc_value, exc_traceback = sys.exc_info()
-                    logger.error("------==(ERROR During _init_ of module: {name})==-------", name=name)
+                    logger.error("------==(ERROR in function: {hook} in Library: {library})==-------", hook=hook, library=library._FullName)
                     logger.error("1:: {e}", e=sys.exc_info())
                     logger.error("---------------==(Traceback)==--------------------------")
                     logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
@@ -410,97 +258,78 @@ class Loader(YomboLibrary):
                               limit=5, file=sys.stdout)))
                     logger.error("--------------------------------------------------------")
             else:
-                logger.error("----==(Module doesn't have _init_ function: {name})==-----", name=name)
+                logger.error("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
+                raise YomboWarning("Hook is not callable: %s" % hook)
 
-        logger.debug("Calling load functions of modules.")
-        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
-            self.logLoader('debug', componentName, 'module', 'load', 'About to call _load_.')
-            if hasattr(module, '_load_') and callable(module._load_) and self.getMethodDefinitionLevel(module._load_) != 'yombo.core.module.YomboModule':
-#                module._load_()
-#                continue
-                try:
-                    d = yield maybeDeferred(module._load_)
-                except:
-                    logger.error("------==(ERROR During _load_ of module: {name})==-------", name=name)
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
-            else:
-                logger.error("----==(Module doesn't have _load_ function: {name})==-----", name=name)
-        self.startModules()
-
-    def startModules(self):
-        logger.debug("Calling start functions of modules.")
-        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
-            self.logLoader('debug', name, 'module', 'start', 'About to call _start_.')
-            if hasattr(module, '_start_') and callable(module._start_) and self.getMethodDefinitionLevel(module._start_) != 'yombo.core.module.YomboModule':
-#                module._start_()
-#                continue
-                try:
-                    module._start_()
-                except:
-                    logger.error("------==(ERROR During _start_ of module: {name})==-------", name=name)
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
-            else:
-                logger.error("----==(Module doesn't have _load_ function: {name})==-----", name=name)
-
-        # send queued and delayed messages after all libraried and modules are started
-        self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
-
-    def connect(self):
-        self.loadedComponents['yombo.gateway.lib.gatewaycontrol'].connect()
-
-    def _handleError(self, err):
-#        logger.error("Error caught: %s", err.getErrorMessage())
-#        logger.error("Error type: %s  %s", err.type, err.value)
-        err.raiseException()
-
-    def _register_distributions(self, component):
-        # libraries and classes can register message distributions
-        # Used as a way to broadcast messages.
-        if hasattr(component, '_RegisterDistributions') and component._RegisterDistributions is not None:
-            for list in component._RegisterDistributions:
-                logger.debug("For module {fullName}', adding distro: {list}", fullName=component._FullName, list=list)
-                self.loadedComponents['yombo.gateway.lib.messages'].updateSubscription("add", list, component._FullName)
-
-    def _register_voicecmds(self, component):
-        # libraries and classes can register message distributions
-        # Used as a way to broadcast messages.
-        if hasattr(component, '_RegisterVoiceCommands') and component._RegisterVoiceCommands is not None:
-            for list in component._RegisterVoiceCommands:
-                logger.debug("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=component._FullName, order=list['order'])
-                self.loadedLibraries['yombo.gateway.lib.voicecmds'].add(list['voiceCmd'], component._FullName, None, list['order'])
-
-    def unloadModules(self, junk, callwhenDone):
+    def library_invoke_all(self, hook, **kwargs):
         """
-        Called when shutting down, durring reconfiguration, or downloading updated
-        modules.
+        Calls library_invoke for all loaded libraries.
         """
-        logger.info("Unloading user modules.")
-        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
-            self.logLoader('debug', name, 'module', 'stop', 'About to call _stop_.')
-            if hasattr(module, '_stop_') and callable(module._stop_) and self.getMethodDefinitionLevel(module._stop_) != 'yombo.core.module.YomboModule':
-                try:
-                    module._stop_()
-                except AttributeError:
-                    logger.warn("Module '{moduleName}' doesn't have _stop_ function defined.", moduleName=name)
+        results = {}
+        for libraryName, library in self.loadedLibraries.iteritems():
+            try:
+                results[libraryName] = self.library_invoke(libraryName, hook, **kwargs)
+            except YomboWarning:
+                results[libraryName] = None
 
-        for name, module in self._moduleLibrary._modulesByUUID.iteritems():
-            self.logLoader('debug', name, 'module', 'unload', 'About to call _unload_.')
-            if hasattr(module, '_unload_') and callable(module._unload_) and self.getMethodDefinitionLevel(module._unload_) != 'yombo.core.module.YomboModule':
-                try:
-                    module._unload_()
-                except AttributeError:
-                    logger.warn("Module '{moduleName}' doesn't have _unload_ function defined.", moduleName=name)
-                finally:
-                    self._moduleLibrary.delModule(module._ModuleUUID)
+    def import_component(self, pathName, componentName, componentType, componentUUID=None):
+        """
+        Load component of given name. Can be a core library, or a module.
+        """
+        pymodulename = pathName.lower()
+        self.logLoader('debug', componentName, componentType, 'import', 'About to import.')
+        try:
+            pyclassname = ReSearch("(?<=\.)([^.]+)$", pathName).group(1)
+        except AttributeError:
+            self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
+            logger.error("Library or Module not found: {pathName}", pathName=pathName)
+            raise YomboCritical("Library or Module not found: %s", pathName)
 
-            del self.loadedComponents[name]
+        try:
+            module_root = __import__(pymodulename, globals(), locals(), [], 0)
+        except ImportError as detail:
+            self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
+            logger.error("--------==(Error: Library or Module not found)==--------")
+            logger.error("----Name: {pathName},  Details: {detail}", pathName=pathName, detail=detail)
+            logger.error("--------------------------------------------------------")
+            logger.error("{error}", error=sys.exc_info())
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
+            logger.error("--------------------------------------------------------")
+            return
 
-        self.loadedComponents['yombo.gateway.lib.messages'].clearDistributions()
-        callwhenDone()
+        module_tail = reduce(lambda p1,p2:getattr(p1, p2),
+            [module_root,]+pymodulename.split('.')[1:])
+        class_ = getattr(module_tail, pyclassname)
 
-    def unloadComponents(self):
+        # Put the component into various lists for mgmt
+        try:
+            if componentType == 'library':
+                # Instantiate the class
+                moduleinst = class_() # start class and pass the loader
+                self.loadedLibraries[str(componentName.lower())] = moduleinst
+                self.loadedComponents[str(componentName.lower())] = moduleinst
+                # this is mostly for manhole module, but maybe useful elsewhere?
+                temp = componentName.split(".")
+                self.libraryNames[temp[-1]] = moduleinst
+            else:
+                # Instantiate the class
+                moduleinst = class_()  # start the class, only libraries get the loader
+                self.loadedComponents[str(componentName.lower())] = moduleinst
+
+                # this is mostly for manhole module, but maybe useful elsewhere?
+                temp = componentName.split(".")
+#                self.moduleNames[temp[-1]] = moduleinst
+                self._moduleLibrary.add_module(componentUUID, str(componentName.lower()), moduleinst)
+
+        except YomboCritical, e:
+            logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logger.debug("{e}", e=e)
+            logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            e.exit()
+            raise
+
+    def unload_components(self):
         """
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
@@ -513,7 +342,7 @@ class Loader(YomboLibrary):
             if componentName in self.loadedComponents:
 #                self.logLoader('debug', componentName, 'library', 'stop', 'About to call _stop_.')
                 LCCN = self.loadedComponents[componentName]
-                if hasattr(LCCN, '_stop_') and callable(LCCN._stop_) and self.getMethodDefinitionLevel(LCCN._stop_) != 'yombo.core.module.YomboModule':
+                if hasattr(LCCN, '_stop_') and callable(LCCN._stop_) and yombo.util.get_method_definition_level(LCCN._stop_) != 'yombo.core.module.YomboModule':
                     self.loadedComponents[componentName]._stop_()
 
         logger.info("Unloading libraries.")
@@ -523,8 +352,22 @@ class Loader(YomboLibrary):
             if componentName in self.loadedComponents:
 #                self.logLoader('debug', componentName, 'library', 'unload', 'About to call _unload_.')
                 LCCN = self.loadedComponents[componentName]
-                if hasattr(LCCN, '_unload_') and callable(LCCN._unload_) and self.getMethodDefinitionLevel(LCCN._unload_) != 'yombo.core.module.YomboModule':
+                if hasattr(LCCN, '_unload_') and callable(LCCN._unload_) and yombo.util.get_method_definition_level(LCCN._unload_) != 'yombo.core.module.YomboModule':
                     self.loadedComponents[componentName]._unload_()
+
+    def _handleError(self, err):
+#        logger.error("Error caught: %s", err.getErrorMessage())
+#        logger.error("Error type: %s  %s", err.type, err.value)
+        err.raiseException()
+
+    def _register_voicecmds(self, component):
+        # libraries and classes can register message distributions
+        # Used as a way to broadcast messages.
+        if hasattr(component, '_RegisterVoiceCommands') and component._RegisterVoiceCommands is not None:
+            for list in component._RegisterVoiceCommands:
+                logger.debug("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=component._FullName, order=list['order'])
+                self.loadedLibraries['yombo.gateway.lib.voicecmds'].add(list['voiceCmd'], component._FullName, None, list['order'])
+
 
     def getLoadedComponent(self, name):
         """
@@ -541,8 +384,6 @@ class Loader(YomboLibrary):
         """
         return self.loadedComponents
 
-    def getReceiveAllComponents(self):
-        return self.receive_all_components
 
     def saveSQLDict(self, module, dictname, key1, data1):
         """
@@ -573,7 +414,6 @@ class Loader(YomboLibrary):
                 del self._SQLDictUpdates[module]
 
             self._DBTools.commit()
-
 
 _loader = None
 

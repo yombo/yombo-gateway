@@ -17,8 +17,10 @@ Modules have 3 phases of startup: _init, _load, _start.
       module should be able to receive messages - even if it queue for later.
       A deferred can be returned if the :ref:`Loader`
       should wait until the module has completed it's load phase.
-    - Start - The module should already be running by now. The module can 
+      A _preload_ function exists and will be called before _load_.
+    - Start - The module should already be running by now. The module can
       now start sending messages to other components for processing.
+      A _prestart_ function exists and will be called before _start_.
 
 .. warning::
 
@@ -34,31 +36,42 @@ Modules have 2 phases of shutdown: _stop, _unload
       files, save any work. The module will no longer receive any messages
       during this phase of shutdown.
 
+*Advanced Developer Hooks*
+
+Yombo's module system also implements a concept of "hooks". A hook is a
+python function that is example_bar(), where "example" is the name of the
+module and "bar" is name the hook. Within any documentation, the string
+"hook" is a placeholder for the module name.
+
+For example, the messages library will call hook_subscriptions to get a list
+of messages subscriptions. The voicecmds library will call
+hook_voicecmds.
+
+Any hooks ending in "_alter" will will send in a dictionary of items that
+allows a module to manipulate any values. For example, the messages library
+will call hook_subscriptions_alter after hook_subscriptions. This would allow
+a module to alter any subscriptions as needed.
+
 **Usage**:
 
 .. code-block:: python
 
    from yombo.core.module import YomboModule
-    
    class ExampleModule(YomboModule):
        def _init_(self):
            self._ModDescription = "Insteon API command interface"
            self._ModAuthor = "Mitch Schwenk @ Yombo"
            self._ModUrl = "https://yombo.net/SomeUrlForDetailsAboutThisModule"
 
-           self._RegisterDistributions = ['cmd'] # register to get all CMD messages.
            self._RegisterVoiceCommands = [
              {'voiceCmd': "insteon [reset]", 'order' : 'nounverb'}
              ]
-            
        def _load_(self):
            pass    #do stuff on loading of the module.
                    #modules can't send messages at this point, but after load completes
                    #it should be able to receive messages for processing.
-
         def _start_(self):
             pass    #do stuff when module can now send and receive messages.
-            
         def _stop_(self):
             pass    # the first phase of module gateway shut down. Should no longer
                     # send messages to other modules/components like normal run time
@@ -69,10 +82,12 @@ Modules have 2 phases of shutdown: _stop, _unload
 
         def _unload_(self):
             pass    #the gateway is on final phase of shutdown. Must quit now!
-
+        def ExampleModule_message_subscriptions(self, **kwargs):
+           return ['cmd'] # register to get all CMD messages.
+        def ExampleModule_voicecmds(self, **kwargs):
+           return [ {'voiceCmd': "homevision [reset]", 'order' : 'nounverb'} ] # register new voice commands
         def message(self, message):
             pass    #process an incoming message.
-            
 
 The module can register to any distribution that is a valid message type as
 well "all" to receive all message types. See
@@ -80,18 +95,17 @@ well "all" to receive all message types. See
 documentation.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import Yombo libraries
 #from yombo.core.component import IModule
-from yombo.core.helpers import getModuleConfigs, getCommands, getCronTab, getTimes, getComponent
+from yombo.core.helpers import getCommands, getCronTab
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import getLogger
 
 logger = getLogger('core.module')
-
 
 class YomboModule:
     """
@@ -116,8 +130,6 @@ class YomboModule:
     :cvar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
       and set as per the user.
     :cvar _ModulesLibrary: preloaded pointer to Modules library.
-    :cvar _RegisterDistributions: (list) Defined by the module author. Used to subscribe
-      to any message distribution lists. Typically use for "cmd" and "status" distros.
     :cvar _RegisterVoiceCommands: (list) Register voice commands to be used to send
       commands to the module.
     """
@@ -131,106 +143,19 @@ class YomboModule:
         self._ModDescription = "NA"
         self._ModAuthor = "NA"
         self._ModURL = "NA"
+        self._ModuleType = None
+        self._ModuleUUID = None
+
         self._Commands = getCommands()
         self._CronTab = getCronTab()
-        self._Times = getTimes()
 
-        self._ModulesLibrary = getComponent('yombo.gateway.lib.modules')
-        self._DevicesLibrary = getComponent('yombo.gateway.lib.devices')
+        self._Devices = None
+        self._DeviceTypes = None
+        self._DevicesLibrary = None
+        self._DevicesByType = None  # A callable (function)
 
-        self._DevicesByType = getattr(self._DevicesLibrary, "getDevicesByDeviceType")  # returns a callable (function)
-
-        self._LocalDevicesByUUID = {} # to be deleted
-        self._LocalDeviceTypesByUUID = {} # to be deleted
-        self._LocalDeviceTypesByName = FuzzySearch({}, .95) # to be deleted
-        self._LocalDevicesByDeviceTypeUUID = {} # to be deleted
-
-    def _preinit_(self, moduleDetails):
-        """
-        This is called between __init__ and _init_.
-
-        :param moduleDetails: Various details about the module, which was stored in the database
-          and set online.
-        :type moduleDetails: dict
-        """
-        logger.debug("In _preinit_: {moduleDetails}", moduleDetails=moduleDetails)
-        self._ModuleType = moduleDetails['moduletype']
-        self._ModuleUUID = moduleDetails['moduleuuid']
-        self._Devices = self._ModulesLibrary.getModuleDevices(self._ModuleUUID) # returns an array of pointers to devices
-        self._DeviceTypes = self._ModulesLibrary.getModuleDeviceTypes(self._ModuleUUID)
-        self._ModuleVariables = getModuleConfigs(self._ModuleUUID)
-
-#        logger.info("!!!!!!!!!!!!!!!!!!!devicetypes: {deviceTypes}", deviceTypes=self._DeviceTypes)
-
-    def _UpdateDeviceTypes(self, oldDeviceType, newDeviceType):
-        """
-        Updates the local module pointers to devicetypes when an updates/deleted/new device type is registered. This
-        would happen when a new an update is made from the server.
-
-        :param oldDeviceType: If not new, this would be the information from the old deviceType information
-        :param newDeviceType: Updated or new device type. If deleted, this would be None.
-        """
-
-        #TODO This entire thing is broken. DTYPE is not defined. What's up with that?
-
-        #Handle updated first
-        if oldDeviceType is not None and newDeviceType is None:
-            self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']] = newDeviceType['label']
-            del self._LocalDeviceTypesByName[oldDeviceType['label']]
-            self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
-
-        #handle new deviceTypes
-        elif oldDeviceType is None and newDeviceType is not None:
-            self._LocalDeviceTypesByUUID[newDeviceType['devicetypeuuid']] = newDeviceType['label']
-            self._LocalDeviceTypesByName[newDeviceType['label']] = newDeviceType['devicetypeuuid']
-            self._LocalDevicesByDeviceTypeUUID[newDeviceType['devicetypeuuid']] = \
-                self._DevicesByType(deviceTypeUUID=dtype['devicetypeuuid'])
-
-        #handle deleting a device type
-        elif oldDeviceType is not None and newDeviceType is None:
-            del self._LocalDeviceTypesByUUID[oldDeviceType['devicetypeuuid']]
-            del self._LocalDeviceTypesByName[oldDeviceType['label']]
-            del self._LocalDevicesByDeviceTypeUUID[oldDeviceType['devicetypeuuid']]
-
-        #Some Error
-        else:
-            raise YomboWarning("Error updating device type in module: %s" % self._FullName)
-
-        self._UpdateDeviceTypes_(oldDeviceType, newDeviceType)
-
-    def _UpdateDevice(self, oldDevice, newDevice):
-        """
-        Updates the local module pointers to devices when an updates/deleted/new device is registered. This
-        would happen when a new an update is made from the server.
-
-        :param oldDevice: If not new, this would be the information from the old deviceType information
-        :param newDevice: Updated or new device. If deleted, this would be Non.
-        """
-        #Handle updated first
-        if oldDevice is not None and newDevice is not None:
-            self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
-
-        #handle new  (same as updating in this use case)
-        elif oldDevice is None and newDevice is not None:
-            self._LocalDevicesByUUID[newDevice.deviceUUID] = newDevice
-
-        #handle deleting
-        elif oldDevice is not None and newDevice is None:
-            del self._LocalDevicesByUUID[oldDevice.deviceUUID]
-
-#        self._UpdateDevice_(oldDevice, newDevice)
-
-    def _UpdateDeviceTypes_(self, oldDeviceType, newDeviceType):
-        """
-        When device types are updated, let the module know that it should handle any updates itself.
-        """
-        pass
-
-    def _UpdateDeviceTypes_(self, oldDeviceType, newDeviceType):
-        """
-        When devices are updated, let the module know that it should handle any updates itself.
-        """
-        pass
+        self._ModuleVariables = None
+        self._ModulesLibrary = None
 
     def _init_(self):
         """

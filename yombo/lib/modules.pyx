@@ -4,28 +4,31 @@
 """
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
+Also calls module hooks as requested by other libraries and modules.
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
 #from collections import deque
 #import re
-#import time
+import sys
+import traceback
+from time import time
+import ConfigParser
 
 # Import twisted libraries
 #from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.db import get_dbtools
-from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError
-
+from yombo.core.db import get_dbtools, DBTools
+from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError, YomboWarning, YomboCritical
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.helpers import getComponent
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
-#from yombo.core.message import Message
-#from yombo.core.sqldict import SQLDict  #load at the top of the file.
+import yombo.utils
 
 logger = getLogger('library.modules')
 
@@ -33,6 +36,9 @@ class Modules(YomboLibrary):
     """
     A single place for modudule management and reference.
     """
+
+    _rawModulesList = {}
+
     _modulesByUUID = {}
     _modulesByName = FuzzySearch({}, .92)
 
@@ -47,6 +53,8 @@ class Modules(YomboLibrary):
 
     _deviceTypeRoutingByType = {}
     _modules = {}  # Stores a list of modules. Populated by the loader module at startup.
+
+    _localModuleVars = {}  # Used to store modules variables from file import
 
     def _init_(self, loader):
         """
@@ -65,24 +73,255 @@ class Modules(YomboLibrary):
         """
         Starts the library and calls self.LoadData()
         """
-        self._devicesLib = getComponent('yombo.gateway.lib.devices')
-        self.loadData()
+#        self._ModulesLibrary = self.loader.loadedComponents['yombo.gateway.lib.modules']
+#        self._DevicesLibrary = self.loader.loadedComponents['yombo.gateway.lib.devices']
+        self.load_module_data()
 
-    def loadData(self):
+    def _stop_(self):
+        """
+        Stop library - stop the looping call.
+        """
+        pass
+
+    def _unload_(self):
+        pass
+
+    def __len__(self):
+        return len(self._modulesByUUID)
+
+    def __getitem__(self, moduleRequested):
+        """
+        Attempts to find the modules requested using a couple of methods.
+
+        See get_module()
+        """
+        return self.get_module(moduleRequested)
+
+    def __iter__(self):
+        return self._modulesByUUID.__iter__()
+
+    def __contains__(self, moduleRequested):
+        try:
+            val = self.get_module(moduleRequested)
+            return True
+        except:
+            return False
+
+    def load_modules(self):
+        self.build_raw_module_list()  # Create a list of modules
+        self.load_module_data()  # Load various details about modules.
+        self.import_modules()  # Just call "import moduleName"
+
+        # Init
+        self.loader.library_invoke_all("_module_init_")
+        self.module_init_invoke()  # Call "_init_" of modules
+        self.loader.library_invoke_all("_module_inited_")
+
+        # Load
+        self.module_invoke_all("_preload_")
+        self.loader.library_invoke_all("_module_load_")
+        self.module_invoke_all("_load_")
+        self.loader.library_invoke_all("_module_loaded_")
+
+        # Start
+        self.module_invoke_all("_prestart_")
+        self.loader.library_invoke_all("_module_start_")
+        self.module_invoke_all("_start_")
+        self.loader.library_invoke_all("_module_started_")
+
+    def stop_modules(self, junk, callWhenDone):
+        """
+        Called when shutting down, durring reconfiguration, or downloading updated
+        modules.
+        """
+        self.loader.library_invoke_all("_module_stop_")
+        self.module_invoke_all("_stop_")
+        self.loader.library_invoke_all("_module_stopped_")
+
+        callWhenDone()
+
+    def unload_modules(self, junk, callWhenDone):
+        for moduleUUID, module in self._modulesByUUID.iteritems():
+            try:
+                self.loader.library_invoke_all("_module_unload_")
+                self.module_invoke(module._Name, "_unload_")
+                self.loader.library_invoke_all("_module_unloaded_")
+            except YomboWarning:
+                pass
+            finally:
+                self.del_module(module._ModuleUUID)
+                del self.loader.loadedComponents[moduleUUID]
+
+        callWhenDone()
+
+    def build_raw_module_list(self):
+        try:
+            fp = open("localmodules.ini")
+            ini = ConfigParser.SafeConfigParser()
+            ini.optionxform=str
+            ini.readfp(fp)
+            for section in ini.sections():
+                options = ini.options(section)
+                mLabel = section
+                mType = ''
+                if 'label' in options:
+                    mLabel = ini.get(section, 'label')
+                    options.remove('label')
+                else:
+                    mLabel = section
+
+                if 'type' in options:
+                    mType = ini.get(section, 'type')
+                    options.remove('type')
+                else:
+                    mType = 'other'
+
+                self._rawModulesList[section] = {
+                  'machinelabel' : mLabel,
+                  'enabled' : "1",
+                  'moduletype' : mType,
+                  'moduleuuid' :  yombo.utils.random_string(),
+                  'installsource' : 'local',
+                }
+
+                self._localModuleVars[section] = {}
+                for item in options:
+                    logger.debug("Adding module from localmodule.ini: {item}", item=item)
+                    values = ini.get(section, item)
+                    values = values.split(",")
+                    vardata = {
+                        'updated': int(time()),
+                        'machinelabel': item.lower(),
+                        'weight': 0,
+                        'created': int(time()),
+                        'value': values,
+                        'label': item,
+                        'dataweight': 0,
+                        'moduleuuid': self._rawModulesList[section]['moduleuuid'],
+                        'variableuuid': 'xxx',
+                    }
+
+                    self._localModuleVars[section][item] = vardata.copy()
+            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
+            fp.close()
+        except IOError as (errno, strerror):
+            logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
+
+        modulesDB = self._DBTools.getModules()
+        for module in modulesDB:
+            self._rawModulesList[module["machinelabel"]] = module
+
+        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
+
+    def import_modules(self):
+        for name, module in self._rawModulesList.iteritems():
+            pathName = "yombo.modules.%s" % name
+            componentName = "yombo.gateway.modules.%s" % name
+            component = self.loader.import_component(pathName, componentName, 'module', module['moduleuuid'])
+
+    def module_init_invoke(self):
+        """
+        Calls the _init_ functions of modules. Can't use basic hook for this due to complex items.
+        """
+        logger.info("Calling init functions of modules.")
+        for moduleUUID, module in self._modulesByUUID.iteritems():
+            self.logLoader('debug', moduleUUID, 'module', 'init', 'About to call _init_.')
+            if yombo.util.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
+#                module._init_()
+#                continue
+                try:
+                    d = yield maybeDeferred(module._init_)
+                    self._register_voicecmds(module)
+                except YomboCritical, e:
+                    logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
+                    logger.error("--------------------------------------------------------")
+                    logger.error("Error message: {e}", e=e)
+                    logger.error("--------------------------------------------------------")
+                    e.exit()
+                except:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    logger.error("------==(ERROR During _init_ of module: {module})==-------", module=module._FullName)
+                    logger.error("1:: {e}", e=sys.exc_info())
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=traceback.print_exc())
+                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                              limit=5, file=sys.stdout)))
+                    logger.error("--------------------------------------------------------")
+
+                # Get variables, and merge with any local variable settings
+                module._ModuleVariables = DBTools.getModuleConfigs(moduleUUID)
+                if module._Name in self._localModuleVars:
+                    module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
+
+                module._Atoms = self.loader.loadedLibraries['yombo.lib.atoms']
+                module._States = self.loader.loadedLibraries['yombo.lib.states']
+
+                module._Modules = self._moduleDevicesByName
+                module._Libraries = self.loader.loadedLibraries
+
+                module._Devices = self.get_module_devices(module['moduleuuid'])
+                module._DevicesByType = getattr(self._DevicesLibrary, "getDevicesByDeviceType")
+                module._DeviceTypes = self.get_module_device_types(module['moduleuuid'])
+                module._ModuleType = module['moduletype']
+                module._ModuleUUID = module['moduleuuid']
+
+    def module_invoke(self, requestedModule, hook, **kwargs):
+        """
+        Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
+        """
+        module = self.get_module(requestedModule)
+        if module._Name == 'yombo.core.module.YomboModule':
+            raise YomboWarning("Cannot call YomboModule hooks")
+        if not (hook.startswith("_") and hook.endswith("_")):
+            hook = module._Name + "_" + hook
+        if hasattr(module, hook):
+            method = getattr(module, hook)
+            if callable(method):
+#                returnValue(method(**kwargs))
+                try:
+                    results = yield maybeDeferred(method, **kwargs)
+                    returnValue(results)
+                except YomboCritical, e:
+                    logger.error("---==(Critical Server Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
+                    logger.error("--------------------------------------------------------")
+                    logger.error("Error message: {e}", e=e)
+                    logger.error("--------------------------------------------------------")
+                    e.exit()
+                except:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    logger.error("------==(ERROR During {hooke} of module: {name})==-------", hook=hook, name=module._FullName)
+                    logger.error("1:: {e}", e=sys.exc_info())
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=traceback.print_exc())
+                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                              limit=5, file=sys.stdout)))
+                    logger.error("--------------------------------------------------------")
+            else:
+                logger.error("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
+                raise YomboWarning("Hook is not callable: %s" % hook)
+
+    def module_invoke_all(self, hook, **kwargs):
+        """
+        Calls module_invoke for all loaded modules.
+        """
+        results = {}
+        for moduleUUID, module in self._modulesByUUID.iteritems():
+            try:
+                results[module._FullName] = self.module_invoke(module._Name, hook, **kwargs)
+            except YomboWarning:
+                results[module._FullName] = None
+
+    def load_module_data(self):
         """
         Load up loads of data about modules, and module devices. Makes it easy for modules to get data about what
         devices and device types they manage.
         """
-#        for mdt in self._DBTools.getModuleDevice():
-
-#            if mdt['moduleuuid'] not in self._moduleDevicesByUUID:
-#                self._moduleDevicesByUUID[mdt['moduleuuid']] = []
-#            self._moduleDevicesByUUID[mdt['moduleuuid']].appen(mdt)
-
-#            if mdt['modulelabel'] not in self._moduleDevicesByName:
-#                self._moduleDevicesByName[mdt['modulelabel']] = []
-#            self._moduleDevicesByName[mdt['modulename']].append(mdt)
-
         #lets clear any data, but we have to do this carefully incase of new data...
         for module in self._moduleDeviceTypesByUUID:
             del self._moduleDeviceTypesByUUID[module][:]
@@ -158,32 +397,23 @@ class Modules(YomboLibrary):
 
 #        logger.info("self._moduleDeviceTypesByUUID: %s" % self._moduleDeviceTypesByUUID)
 
-    def _stop_(self):
-        """
-        Stop library - stop the looping call.
-        """
-        pass
-
-    def _unload_(self):
-        pass
-
-    def addModule(self, moduleUUID, moduleLabel, modulePointer):
+    def add_module(self, moduleUUID, moduleLabel, modulePointer):
         logger.debug("adding module: {moduleUUID}:{moduleLabel}", moduleUUID=moduleUUID, moduleLabel=moduleLabel)
         self._modulesByUUID[moduleUUID] = modulePointer
         self._modulesByName[moduleLabel] = moduleUUID
 
-    def delModule(self, moduleUUID):
+    def del_module(self, moduleUUID):
         del self._modulesByName[self._modulesByUUID[moduleUUID]._FullName]
         del self._modulesByUUID[moduleUUID]
 
-    def getModule(self, requestedItem):
+    def get_module(self, requestedItem):
         """
         Attempts to find the module requested using a couple of methods. Use the already defined pointer within a
         module to find another other:
 
-            >>> someModule = self._ModulesLibrary.getModule('137ab129da9318')  #by uuid
+            >>> someModule = self._Modules['137ab129da9318']  #by uuid
         or:
-            >>> someModule = self._ModulesLibrary.getModule('Homevision')  #by name
+            >>> someModule = self._Modules['Homevision']  #by name
 
         See: :func:`yombo.core.helpers.getModule` for usage example.
 
@@ -203,14 +433,14 @@ class Modules(YomboLibrary):
             except YomboFuzzySearchError, e:
                 raise KeyError('Module not found.')
 
-    def getModuleDevices(self, requestedItem):
+    def get_module_devices(self, requestedItem):
         """
         Returns all devices for a given module uuid or module name, This is used by the module library to setup a
         list of devices on startup.
 
-            >>> devices = self._ModulesLibrary.getModuleDevices('137ab129da9318')  #by uuid
+            >>> devices = self._ModulesLibrary.get_module_devices('137ab129da9318')  #by uuid
         or:
-            >>> devices = self._ModulesLibrary.getModuleDevices('Homevision')  #by name
+            >>> devices = self._ModulesLibrary.get_module_devices('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -218,8 +448,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.debug("getModuleDevices::requestedItem: {requestedItem}", requestedItem=requestedItem)
-        logger.debug("getModuleDevices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
+        logger.debug("get_module_devices::requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("get_module_devices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
         if requestedItem in self._moduleDevicesByUUID:
             return self._moduleDevicesByUUID[requestedItem]
         else:
@@ -229,14 +459,14 @@ class Modules(YomboLibrary):
             except YomboFuzzySearchError, e:
                 return {} # no devices setup for a requested module.
 
-    def getModuleDeviceTypes(self, requestedItem):
+    def get_module_device_types(self, requestedItem):
         """
         Returns all device types for a given module uuid or module name, This is used by the module library to setup a
         list of device types on startup.
 
-            >>> deviceTypes = self._ModulesLibrary.getModuleDeviceTypes('137ab129da9318')  #by uuid
+            >>> deviceTypes = self._ModulesLibrary.get_module_device_types('137ab129da9318')  #by uuid
         or:
-            >>> deviceTypes = self._ModulesLibrary.getModuleDeviceTypes('Homevision')  #by name
+            >>> deviceTypes = self._ModulesLibrary.get_module_device_types('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -244,8 +474,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.debug("getModuleDeviceTypes::requestedItem: {requestedItem}", requestedItem=requestedItem)
-        logger.debug("getModuleDeviceTypes::_moduleDeviceTypesByUUID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
+        logger.debug("get_module_device_types::requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("get_module_device_types::_moduleDeviceTypesByUUID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
         if requestedItem in self._moduleDeviceTypesByUUID:
             return self._moduleDeviceTypesByUUID[requestedItem]
         else:
@@ -257,7 +487,7 @@ class Modules(YomboLibrary):
                 logger.debug("No module found for a given device type {deviceType}", deviceType=requestedItem)
                 return {}
 
-    def getDeviceRouting(self, requestedItem, moduleType, returnType = 'moduleUUID'):
+    def get_device_routing(self, requestedItem, moduleType, returnType = 'moduleUUID'):
         """
         Device routing is used by the gateway to route a device command to the correct module. For example, a
         Z-Wave applicance module should be routed to the Z-Wave command module. From there, it needs to be routed
@@ -304,11 +534,11 @@ class Modules(YomboLibrary):
             elif 'Other' in temp:
                 temp = temp['Other']
         elif moduleType == "Interface":
-             if 'Interface' in temp:
+            if 'Interface' in temp:
                 temp = temp['Interface']
-             elif 'Logic' in temp:
+            elif 'Logic' in temp:
                 temp = temp['Logic']
-             elif 'Other' in temp:
+            elif 'Other' in temp:
                 temp = temp['Other']
         elif moduleType == "Logic":
             if 'Logic' in temp:
@@ -329,4 +559,3 @@ class Modules(YomboLibrary):
             if temp is not None:
                 return self.getModule(temp['moduleUUID'])
         raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(requestedItem) + " (" + str(moduleType + ")"))
-
