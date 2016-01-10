@@ -36,7 +36,7 @@ from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzz
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
-from yombo.core.helpers import getCommand, getComponent, sleep
+from yombo.core.helpers import getCommand, sleep
 
 logger = getLogger('library.devices')
 
@@ -78,10 +78,11 @@ class Devices(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
-        self._MessageLibrary = getComponent('yombo.gateway.lib.messages')
-        self._ModulesLibrary = getComponent('yombo.gateway.lib.modules')
-
         self.loader = loader
+        self._MessageLibrary = self.loader.loadedLibraries['messages']
+        self._ModulesLibrary = self.loader.loadedLibraries['modules']
+        self.voiceCmds = self.loader.loadedLibraries['voicecmds']
+
         self._devicesByUUID = {}
         self._devicesByName = FuzzySearch({}, .89)
         self._devicesByDeviceTypeByUUID = {}
@@ -94,7 +95,6 @@ class Devices(YomboLibrary):
         Get pointer to voice commands, get db connection.
         """
         self.__dbpool = get_dbconnection()
-        self.voiceCmds = self.loader.loadedLibraries['yombo.gateway.lib.voicecmds']
         self.__loadDevices()
 
     def _start_(self):

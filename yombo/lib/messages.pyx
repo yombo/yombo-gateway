@@ -33,8 +33,9 @@ from yombo.core.library import YomboLibrary
 from yombo.core.message import Message
 from yombo.core.sqldict import SQLDict  #load at the top of the file.
 from yombo.core.log import getLogger
+from yombo.utils import global_invoke_all
 
-logger = getLogger('library.times')
+logger = getLogger('library.messages')
 
 class Messages(YomboLibrary):
     """
@@ -73,17 +74,28 @@ class Messages(YomboLibrary):
     def _unload_(self):
         pass
 
-    def _module_load_(self, **kwargs):
-        return
-        # libraries and classes can register message distributions
-        # Used as a way to broadcast messages.
-        modulesLibrary = kwargs['_modulesLibrary']
-        subscriptionsToAdd = modulesLibrary.module_invoke_all("message_subscriptions")
+    def _module_loaded_(self, **kwargs):
+        """
+        Implements the hook_message_subscriptions and is called after _load_ is called for all the modules.
 
-        for moduleName, subscriptions in subscriptionsToAdd.iteritems():
+        Excpects a list of events to subscribe to.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           def ModuleName_message_subscriptions(self, **kwargs):
+               return ['status']
+        """
+        subscriptions_to_add = global_invoke_all('message_subscriptions')
+        logger.debug("message: subscriptionstoadd: {subToAdd}", subToAdd=subscriptions_to_add)
+
+        for component, subscriptions in subscriptions_to_add.iteritems():
+            if subscriptions is None:
+                continue
             for list in subscriptions:
-                logger.debug("For module {fullName}', adding distro: {list}", fullName=component._FullName, list=list)
-                self.updateSubscription("add", list, component._FullName)
+                logger.debug("For module {component}, adding distro: {list}", component=component, list=list)
+                self.updateSubscription("add", list, component)
 
     def _module_started_(self):
         """
@@ -194,7 +206,7 @@ class Messages(YomboLibrary):
                 self.reactors[msgUUID].cancel()
             del self.reactors[msgUUID]
         else:
-            isGood is False
+            isGood = False
         if msgUUID in self.delayQueue:
             del self.delayQueue[msgUUID]
         else:

@@ -42,7 +42,7 @@ from datetime import datetime, date, timedelta
 
 from twisted.internet import reactor
 
-from yombo.core.exceptions import YomboTimeError
+from yombo.core.exceptions import YomboTimeError, YomboStateNoAccess
 from yombo.core.helpers import getConfigValue, generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
@@ -84,15 +84,14 @@ class Times(YomboLibrary):
         self.isNight = None
         self.isDawn = None
         self.isDusk = None
-
         self.__StatesPassword = generateRandom(length=10)
-        self._States.set('isTwilight', None, writeKey=self.__StatesPassword)
-        self._States.set('isTwilight', None, writeKey=self.__StatesPassword)
-        self._States.set('isDark', None, writeKey=self.__StatesPassword)
-        self._States.set('isDay', None, writeKey=self.__StatesPassword)
-        self._States.set('isNight', None, writeKey=self.__StatesPassword)
-        self._States.set('isDawn', None, writeKey=self.__StatesPassword)
-        self._States.set('isDusk', None, writeKey=self.__StatesPassword)
+        self._States.set('isTwilight', None, self.__StatesPassword)
+        self._States.set('isTwilight', None, self.__StatesPassword)
+        self._States.set('isDark', None, self.__StatesPassword)
+        self._States.set('isDay', None, self.__StatesPassword)
+        self._States.set('isNight', None, self.__StatesPassword)
+        self._States.set('isDawn', None, self.__StatesPassword)
+        self._States.set('isDusk', None, self.__StatesPassword)
 
         self.CLnowLight = None
         self.CLnowDark = None

@@ -15,8 +15,8 @@ import re
 # Import 3rd-party libs
 import yombo.ext.six as six
 
-
 # Import Yombo libraries
+#from yombo.utils.decorators import memoize_
 
 def clean_kwargs(**kwargs):
     """
@@ -70,7 +70,42 @@ def dict_merge(original, changes):
             dict_merge(value,changes[key])
     return changes
 
-def get_method_definition_level(self, meth):
+def get_component(name):
+    """
+    Return loaded component (module or library). This can be used to find
+    other modules or libraries. The getComponent uses the :ref:`FuzzySearch <fuzzysearch>`
+    class to make searching easier, but can only be off one or two letters
+    due to importance of selecting the correct library or module.
+
+    All component names are stored in lower case, the search will convert
+    requests to lower case.
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.core.helpers import getComponent
+       someOtherModule = getComponent("Yombo.Gateway.module.someOtherModule")
+       someOtherModule.setDisplay("Hello world.") # this module would set the
+                                                  # display and send a device
+                                                  # status message
+
+    :raises YomboNoSuchLoadedComponentError: When the requested component cannot be found.
+    :param name: The name of the component (library or module) to find.  Returns a
+        pointer to the object so it's functions and attributes can be accessed.
+    :type name: string
+    :return: Pointer to requested library or module.
+    :rtype: Object reference
+    """
+    if not hasattr(get_component, 'components'):
+        from yombo.lib.loader import getTheLoadedComponents
+        get_component.components = getTheLoadedComponents()
+    try:
+        return get_component.components[name.lower()]
+    except KeyError:
+        raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
+
+def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.im_class):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
@@ -106,3 +141,20 @@ def random_string(**kwargs):
     else:
         lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
         return "".join(lst)
+
+def global_invoke_all(hook, **kwargs):
+    """
+    Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
+    methods.
+
+    :param hook: The hookname to call.
+    :param kwargs: kwargs to send to the function.
+    :return: a dictionary of results.
+    """
+
+    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook)
+    return modules_results
+
+    # we cut this off here for now...
+#    lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook)
+    return dict_merge(modules_results, lib_results)

@@ -12,7 +12,7 @@ class LogWriter(YomboModule):
 
     :author: U{Mitch Schwenk<mitch@ahx.me>}
     :organization: U{Automated Home Exchange (AHX)<http://www.ahx.me>}
-    :copyright: 2010-2013 Yombo
+    :copyright: 2010-2016 Yombo
     :license: see LICENSE.TXT from Yombo Gateway Software distribution
     """
 
@@ -65,6 +65,17 @@ class LogWriter(YomboModule):
             self.fp_out.close()
           except:
             pass
+
+    def YomboBot_message_subscriptions(self, **kwargs):
+        """
+        hook_message_subscriptions called by the messages library to get a list of message types to be delivered here.
+
+        YomboBot wants status messages to deliever to connected clients. Allows clients to get updates on device status.
+
+        :param kwargs:
+        :return:
+        """
+        return ['status']
 
     def message(self, message):
         """

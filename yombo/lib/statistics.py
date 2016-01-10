@@ -75,7 +75,7 @@ class Statistics(YomboLibrary):
         pass
 
     def _start_(self):
-        logger.info("Statistice enabled/disabled: {enabled}", enabled=self.enabled)
+        logger.info("Stats module enabled? {enabled}", enabled=self.enabled)
         if self.enabled is True:
             self.sendDataLoop = LoopingCall(self.sendData)
             self.sendDataLoop.start(self.countDuration, False)

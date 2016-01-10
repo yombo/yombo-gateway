@@ -73,9 +73,9 @@ class States(YomboLibrary):
         self._ModDescription = "Yombo States API"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
-        self.__States = SQLDict(self, 'States')
+        self.__States = {}
         self.__History = SQLDict(self, 'History')
-        logger.info("Recovered YomboStates: {states}", states=self.__States)
+#        logger.info("Recovered YomboStates: {states}", states=self.__States)
 
     def _load_(self):
         pass
@@ -112,6 +112,10 @@ class States(YomboLibrary):
     def __repr__(self):
         return "member of Test"
 
+    def exists(self, key):
+        if key in self.__States:
+            return True
+        return False
 
     def getTime(self, key):
         if key in self.__States:
@@ -120,7 +124,6 @@ class States(YomboLibrary):
             raise YomboStateNotFound("Cannot get state time: %s not found" % key)
 
     def get(self, key=None, password=None):
-        logger.info("getting key: {key}", key=key)
         if key is None:
             results = {}
             for item in self.__States:
@@ -136,7 +139,7 @@ class States(YomboLibrary):
                     raise YomboStateNoAccess("State read password is invalid.")
             return self.__States[key]['value']
         else:
-            raise YomboStateNotFound("Cannot get state: %s not found" % key)
+            return None
 
     def set(self, key, value, password=None):
         if key in self.__States:
@@ -188,8 +191,6 @@ class States(YomboLibrary):
                 elif self.__States[key]['writeKey'] != password:
                     raise YomboStateNoAccess("State write password is invalid.")
                 del self.__States[key]
-        else:
-            raise YomboStateNotFound("Cannot delete state: %s not found" % key)
 
     def setReadPassword(self, key, password):
         if key not in self.__States:

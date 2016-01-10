@@ -46,7 +46,7 @@ Usage example
    self.MyCron.label = "modules.myModule.Lunchtime on Sundays"
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2013-2015 by Yombo.
+:copyright: Copyright 2013-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries

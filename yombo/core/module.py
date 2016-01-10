@@ -157,6 +157,19 @@ class YomboModule:
         self._ModuleVariables = None
         self._ModulesLibrary = None
 
+    def dump(self):
+        return self.__str__()
+    def __str__(self):
+        return {
+            '_Name': self._Name,
+            '_FullName': self._FullName,
+            '_ModDescription': self._ModDescription,
+            '_ModAuthor': self._ModAuthor,
+            '_ModuleType': self._ModuleType,
+            '_ModuleUUID': self._ModuleUUID,
+
+        }
+
     def _init_(self):
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.

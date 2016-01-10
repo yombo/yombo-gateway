@@ -76,7 +76,7 @@ the fuzzysearch phase of voice command lookup.
      voicecmds["desklamb off"] # it's misspelled, but it will still be found.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 import re
@@ -87,6 +87,7 @@ from yombo.core.helpers import  getCommandsByVoice, getDevices
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
+from yombo.utils import global_invoke_all
 
 logger = getLogger('library.voicecmds')
 
@@ -112,6 +113,8 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         self.loader = loader
         super(VoiceCmds, self).__init__(None, .8)
         self.commandsByVoice = getCommandsByVoice()
+        self._Name = self.__class__.__name__
+        self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
     def _load_(self):
         """
@@ -136,6 +139,29 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         Nothing to do.
         """
         pass
+
+    def _module_loaded_(self, **kwargs):
+        """
+        Implements the voicecmds_load and is called after _load_ is called for all the modules.
+
+        Excpects a list of events to subscribe to.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           def ModuleName_voicecmds_load(self, **kwargs):
+               return ['status']
+        """
+        voicecommands_to_add = global_invoke_all('voicecmds_load')
+        logger.info("voicecommands_to_add: {voicecmds}", voicecmds=voicecommands_to_add)
+
+        for componentName, voicecmds in voicecommands_to_add.iteritems():
+            if voicecmds is None:
+                continue
+            for list in voicecmds:
+                logger.info("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=componentName, order=list['order'])
+                self.add(list['voiceCmd'], componentName, None, list['order'])
 
     def add(self, voiceString, destination, deviceUUID = None, order = 'both'):
         """

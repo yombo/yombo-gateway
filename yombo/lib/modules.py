@@ -11,10 +11,8 @@ Also calls module hooks as requested by other libraries and modules.
 :license: LICENSE for details.
 """
 # Import python libraries
-#from collections import deque
-#import re
-import sys
-import traceback
+#import sys
+#import traceback
 from time import time
 import ConfigParser
 
@@ -23,7 +21,7 @@ import ConfigParser
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.db import get_dbtools, DBTools
+from yombo.core.db import get_dbtools
 from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError, YomboWarning, YomboCritical
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
@@ -69,12 +67,29 @@ class Modules(YomboLibrary):
         """
         pass
 
+    def _reload_(self):
+        for module in self._moduleDeviceTypesByUUID:
+            for subitem in self._moduleDeviceTypesByUUID[module]:
+                del self._moduleDeviceTypesByUUID[module][subitem]
+
+        for module in self._moduleDeviceTypesByName:
+            for subitem in self._moduleDeviceTypesByName[module]:
+                del self._moduleDeviceTypesByName[module][subitem]
+
+        for module in self._moduleDevicesByUUID:
+            self._moduleDevicesByUUID[module].clear()
+
+        for module in self._moduleDevicesByName:
+            self._moduleDevicesByName[module].clear()
+
+        self._moduleDeviceRouting.clear()
+
     def _start_(self):
         """
         Starts the library and calls self.LoadData()
         """
 #        self._ModulesLibrary = self.loader.loadedComponents['yombo.gateway.lib.modules']
-#        self._DevicesLibrary = self.loader.loadedComponents['yombo.gateway.lib.devices']
+        self._DevicesLibrary = self.loader.loadedComponents['yombo.gateway.lib.devices']
         self.load_module_data()
 
     def _stop_(self):
@@ -97,27 +112,30 @@ class Modules(YomboLibrary):
         """
         return self.get_module(moduleRequested)
 
-    def __iter__(self):
-        return self._modulesByUUID.__iter__()
+#    def __iter__(self):
+#        return self._modulesByUUID.__iter__()
 
     def __contains__(self, moduleRequested):
         try:
-            val = self.get_module(moduleRequested)
+            self.get_module(moduleRequested)
             return True
         except:
             return False
 
     def load_modules(self):
+        logger.debug("starting modules::load_modules !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         self.build_raw_module_list()  # Create a list of modules
         self.load_module_data()  # Load various details about modules.
         self.import_modules()  # Just call "import moduleName"
 
+        logger.debug("starting modules::init....")
         # Init
         self.loader.library_invoke_all("_module_init_")
         self.module_init_invoke()  # Call "_init_" of modules
         self.loader.library_invoke_all("_module_inited_")
 
         # Load
+        logger.debug("starting modules::load....")
         self.module_invoke_all("_preload_")
         self.loader.library_invoke_all("_module_load_")
         self.module_invoke_all("_load_")
@@ -149,7 +167,7 @@ class Modules(YomboLibrary):
             except YomboWarning:
                 pass
             finally:
-                self.del_module(module._ModuleUUID)
+                self.del_module(module._Name.lower())
                 del self.loader.loadedComponents[moduleUUID]
 
         callWhenDone()
@@ -176,12 +194,14 @@ class Modules(YomboLibrary):
                 else:
                     mType = 'other'
 
-                self._rawModulesList[section] = {
-                  'machinelabel' : mLabel,
-                  'enabled' : "1",
-                  'moduletype' : mType,
-                  'moduleuuid' :  yombo.utils.random_string(),
-                  'installsource' : 'local',
+                newUUID = yombo.utils.random_string()
+                self._rawModulesList[newUUID] = {
+                  'localsection': section,
+                  'machinelabel': mLabel,
+                  'enabled': "1",
+                  'moduletype': mType,
+                  'moduleuuid': newUUID,
+                  'installsource': 'local',
                 }
 
                 self._localModuleVars[section] = {}
@@ -197,7 +217,7 @@ class Modules(YomboLibrary):
                         'value': values,
                         'label': item,
                         'dataweight': 0,
-                        'moduleuuid': self._rawModulesList[section]['moduleuuid'],
+                        'moduleuuid': newUUID,
                         'variableuuid': 'xxx',
                     }
 
@@ -209,64 +229,64 @@ class Modules(YomboLibrary):
 
         modulesDB = self._DBTools.getModules()
         for module in modulesDB:
-            self._rawModulesList[module["machinelabel"]] = module
+            self._rawModulesList[module["moduleuuid"]] = module
 
         logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
     def import_modules(self):
-        for name, module in self._rawModulesList.iteritems():
-            pathName = "yombo.modules.%s" % name
-            componentName = "yombo.gateway.modules.%s" % name
-            component = self.loader.import_component(pathName, componentName, 'module', module['moduleuuid'])
+        for moduleuuid, module in self._rawModulesList.iteritems():
+            pathName = "yombo.modules.%s" % module['machinelabel']
+            self.loader.import_component(pathName, module['machinelabel'], 'module', module['moduleuuid'])
 
+    @inlineCallbacks
     def module_init_invoke(self):
         """
         Calls the _init_ functions of modules. Can't use basic hook for this due to complex items.
         """
-        logger.info("Calling init functions of modules.")
+        logger.debug("Calling init functions of modules. {modules}", modules=self._modulesByUUID)
         for moduleUUID, module in self._modulesByUUID.iteritems():
-            self.logLoader('debug', moduleUUID, 'module', 'init', 'About to call _init_.')
-            if yombo.util.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
+            self.modules_invoke_log('debug', moduleUUID, 'module', 'init', 'About to call _init_.')
+            if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
+#                logger.warn("self.get_module_devices(module['{moduleuuid}'])", moduleuuid=module.dump())
+                module._ModuleType = self._rawModulesList[moduleUUID]['moduletype']
+                module._ModuleUUID = moduleUUID
+
+                module._Atoms = self.loader.loadedLibraries['atoms']
+                module._States = self.loader.loadedLibraries['states']
+                module._Modules = self._moduleDevicesByName
+                module._Libraries = self.loader.loadedLibraries
+
+                module._Devices = self.get_module_devices(moduleUUID)
+                module._DevicesByType = getattr(self._DevicesLibrary, "getDevicesByDeviceType")
+                module._DeviceTypes = self.get_module_device_types(moduleUUID)
+
+                # Get variables, and merge with any local variable settings
+                module._ModuleVariables = self._DBTools.getModuleConfigs(moduleUUID)
+                if module._Name in self._localModuleVars:
+                    module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
+
 #                module._init_()
 #                continue
                 try:
                     d = yield maybeDeferred(module._init_)
-                    self._register_voicecmds(module)
                 except YomboCritical, e:
                     logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
                     logger.error("--------------------------------------------------------")
                     logger.error("Error message: {e}", e=e)
                     logger.error("--------------------------------------------------------")
                     e.exit()
-                except:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    logger.error("------==(ERROR During _init_ of module: {module})==-------", module=module._FullName)
-                    logger.error("1:: {e}", e=sys.exc_info())
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
-                    logger.error("{e}", e=traceback.print_exc())
-                    logger.error("--------------------------------------------------------")
-                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                              limit=5, file=sys.stdout)))
-                    logger.error("--------------------------------------------------------")
-
-                # Get variables, and merge with any local variable settings
-                module._ModuleVariables = DBTools.getModuleConfigs(moduleUUID)
-                if module._Name in self._localModuleVars:
-                    module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
-
-                module._Atoms = self.loader.loadedLibraries['yombo.lib.atoms']
-                module._States = self.loader.loadedLibraries['yombo.lib.states']
-
-                module._Modules = self._moduleDevicesByName
-                module._Libraries = self.loader.loadedLibraries
-
-                module._Devices = self.get_module_devices(module['moduleuuid'])
-                module._DevicesByType = getattr(self._DevicesLibrary, "getDevicesByDeviceType")
-                module._DeviceTypes = self.get_module_device_types(module['moduleuuid'])
-                module._ModuleType = module['moduletype']
-                module._ModuleUUID = module['moduleuuid']
+                # except:
+                #     exc_type, exc_value, exc_traceback = sys.exc_info()
+                #     logger.error("------==(ERROR During _init_ of module: {module})==-------", module=module._FullName)
+                #     logger.error("1:: {e}", e=sys.exc_info())
+                #     logger.error("---------------==(Traceback)==--------------------------")
+                #     logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+                #     logger.error("--------------------------------------------------------")
+                #     logger.error("{e}", e=traceback.print_exc())
+                #     logger.error("--------------------------------------------------------")
+                #     logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                #               limit=5, file=sys.stdout)))
+                #     logger.error("--------------------------------------------------------")
 
     def module_invoke(self, requestedModule, hook, **kwargs):
         """
@@ -277,45 +297,49 @@ class Modules(YomboLibrary):
             raise YomboWarning("Cannot call YomboModule hooks")
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = module._Name + "_" + hook
+        self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
+#        kwargs['_modulesLibrary'] = self
         if hasattr(module, hook):
             method = getattr(module, hook)
             if callable(method):
-#                returnValue(method(**kwargs))
+#                return method(**kwargs)
                 try:
-                    results = yield maybeDeferred(method, **kwargs)
-                    returnValue(results)
+#                    results = yield maybeDeferred(method, **kwargs)
+                    return method(**kwargs)
                 except YomboCritical, e:
                     logger.error("---==(Critical Server Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
                     logger.error("--------------------------------------------------------")
                     logger.error("Error message: {e}", e=e)
                     logger.error("--------------------------------------------------------")
                     e.exit()
-                except:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    logger.error("------==(ERROR During {hooke} of module: {name})==-------", hook=hook, name=module._FullName)
-                    logger.error("1:: {e}", e=sys.exc_info())
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
-                    logger.error("{e}", e=traceback.print_exc())
-                    logger.error("--------------------------------------------------------")
-                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                              limit=5, file=sys.stdout)))
-                    logger.error("--------------------------------------------------------")
+#                except:
+#                    exc_type, exc_value, exc_traceback = sys.exc_info()
+#                    logger.error("------==(ERROR During {hooke} of module: {name})==-------", hook=hook, name=module._FullName)
+#                    logger.error("1:: {e}", e=sys.exc_info())
+#                    logger.error("---------------==(Traceback)==--------------------------")
+#                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+#                    logger.error("--------------------------------------------------------")
+#                    logger.error("{e}", e=traceback.print_exc())
+#                    logger.error("--------------------------------------------------------")
+#                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+#                              limit=5, file=sys.stdout)))
+#                    logger.error("--------------------------------------------------------")
             else:
                 logger.error("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
-                raise YomboWarning("Hook is not callable: %s" % hook)
 
     def module_invoke_all(self, hook, **kwargs):
         """
         Calls module_invoke for all loaded modules.
         """
+        logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
         results = {}
         for moduleUUID, module in self._modulesByUUID.iteritems():
             try:
-                results[module._FullName] = self.module_invoke(module._Name, hook, **kwargs)
+                results[module._FullName.lower()] = self.module_invoke(module._Name, hook)
             except YomboWarning:
-                results[module._FullName] = None
+                pass
+
+        return results
 
     def load_module_data(self):
         """
@@ -323,20 +347,6 @@ class Modules(YomboLibrary):
         devices and device types they manage.
         """
         #lets clear any data, but we have to do this carefully incase of new data...
-        for module in self._moduleDeviceTypesByUUID:
-            del self._moduleDeviceTypesByUUID[module][:]
-
-        for module in self._moduleDeviceTypesByName:
-            del self._moduleDeviceTypesByName[module][:]
-
-        for module in self._moduleDevicesByUUID:
-            self._moduleDevicesByUUID[module].clear()
-
-        for module in self._moduleDevicesByName:
-            self._moduleDevicesByName[module].clear()
-
-        self._moduleDeviceRouting.clear()
-
         for mdt in self._DBTools.getModuleRouting():
             # Create list of DeviceType by UUID, so a module can find all it's deviceTypes
             if mdt['moduleuuid'] not in self._moduleDeviceTypesByUUID:
@@ -367,7 +377,7 @@ class Modules(YomboLibrary):
                 }
 
             # Compile a list of devices for a particular module
-            devices = self._devicesLib.getDevicesByDeviceType(mdt['devicetypeuuid'])
+            devices = self._DevicesLibrary.getDevicesByDeviceType(mdt['devicetypeuuid'])
             logger.debug("devices = {devices}", devices=devices)
             for deviceuuid in devices:
                 logger.debug("Adding deviceUUID({deviceUUID} to self._moduleDevicesByUUID.", deviceUUID=devices[deviceuuid].deviceUUID)
@@ -403,6 +413,7 @@ class Modules(YomboLibrary):
         self._modulesByName[moduleLabel] = moduleUUID
 
     def del_module(self, moduleUUID):
+        logger.debug("deleting moduleUUID: {moduleUUID} from this list: {list}", moduleUUID=moduleUUID, list=self._modulesByUUID)
         del self._modulesByName[self._modulesByUUID[moduleUUID]._FullName]
         del self._modulesByUUID[moduleUUID]
 
@@ -423,7 +434,7 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.debug("Looking for {requestedItem} in {modulesByUUID}", requestedItem=requestedItem, modulesByUUID=self._modulesByUUID)
+#        logger.info("Looking for {requestedItem} avail: {modules}", requestedItem=requestedItem, modules=self._modulesByName)
         if requestedItem in self._modulesByUUID:
             return self._modulesByUUID[requestedItem]
         else:
@@ -448,8 +459,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-        logger.debug("get_module_devices::requestedItem: {requestedItem}", requestedItem=requestedItem)
-        logger.debug("get_module_devices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
+#        logger.info("get_module_devices::requestedItem: {requestedItem}", requestedItem=requestedItem)
+#        logger.info("get_module_devices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
         if requestedItem in self._moduleDevicesByUUID:
             return self._moduleDevicesByUUID[requestedItem]
         else:
@@ -496,11 +507,11 @@ class Modules(YomboLibrary):
 
         This function allows you to get the ``moduleUUID``, ``moduleLabel`` or a pointer to the ``module`` itself.
 
-            >>> moduleUUID = self._ModulesLibrary.getDeviceRouting('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
+            >>> moduleUUID = self._ModulesLibrary.get_device_routing('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
         or:
-            >>> deviceTypes = self._ModulesLibrary.getDeviceRouting('X10 Appliance', 'Command', 'moduleUUID')  #by name, get the moduleUUID
+            >>> deviceTypes = self._ModulesLibrary.get_device_routing('X10 Appliance', 'Command', 'moduleUUID')  #by name, get the moduleUUID
         or:
-            >>> moduleUUID = self._ModulesLibrary.getDeviceRouting('137ab129da9318', 'Interface', 'moduleLabel')  #by uuid. get the moduleLabel
+            >>> moduleUUID = self._ModulesLibrary.get_device_routing('137ab129da9318', 'Interface', 'moduleLabel')  #by uuid. get the moduleLabel
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -549,7 +560,6 @@ class Modules(YomboLibrary):
             if 'Other' in temp:
                 temp = temp['Other']
 
-        logger.debug("temp2 = {temp2}", temp2=temp)
         logger.debug("returnValue = {returnType}", returnType=returnType)
 
         if returnType in ("moduleUUID", "moduleLabel"):
@@ -557,5 +567,19 @@ class Modules(YomboLibrary):
                 return temp[returnType]
         elif returnType is 'module':
             if temp is not None:
-                return self.getModule(temp['moduleUUID'])
+                return self.get_module(temp['moduleUUID'])
         raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(requestedItem) + " (" + str(moduleType + ")"))
+
+    def modules_invoke_log(self, level, label, type, method, msg=""):
+        """
+        A common log format for loading/unloading libraries and modules.
+
+        :param level: Log level - debug, info, warn...
+        :param label: Module label "x10", "messages"
+        :param type: Type of item being loaded: library, module
+        :param method: Method being called.
+        :param msg: Optional message to include.
+        :return:
+        """
+        logit = func = getattr(logger, level)
+        logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
