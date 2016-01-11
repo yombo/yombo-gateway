@@ -28,7 +28,6 @@ except ImportError:
 
 import platform
 import re
-import sys
 
 from platform import _supported_dists
 _supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
@@ -38,6 +37,8 @@ from time import time
 
 from yombo.core.log import getLogger
 from yombo.core.library import YomboLibrary
+import yombo.utils
+
 logger = getLogger("library.YomboStates")
 
 _REPLACE_LINUX_RE = re.compile(r'linux', re.IGNORECASE)
@@ -182,10 +183,10 @@ class Atoms(YomboLibrary):
             memory = psutil.virtual_memory()
             atoms['mem_total'] = memory['total']
 
-        if is_windows():
+        if yombo.utils.is_windows():
             atoms['os'] = 'Windows'
             atoms['os_family'] = 'Windows'
-        elif is_linux():
+        elif yombo.utils.is_linux():
             atoms['os'] = 'Linux'
             atoms['os_family'] = 'Linux'
 
@@ -217,23 +218,11 @@ class Atoms(YomboLibrary):
 
         return atoms
 
+    def Atoms_automation_trigger_list(self, **kwargs):
+        """
+        hook_automation_trigger called by the automation library.
 
-def is_freebsd():
+        :param kwargs:
+        :return:
         """
-        Returns if the host is linus or not
-        """
-        return sys.platform.startswith('freebsd')
-
-
-def is_linux():
-        """
-        Returns if the host is linus or not
-        """
-        return sys.platform.startswith('linux')
-
-
-def is_windows():
-        """
-        Returns if the host is windows or not
-        """
-        return sys.platform.startswith('win')
+        pass

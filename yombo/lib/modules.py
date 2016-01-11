@@ -132,17 +132,21 @@ class Modules(YomboLibrary):
         # Init
         self.loader.library_invoke_all("_module_init_")
         self.module_init_invoke()  # Call "_init_" of modules
-        self.loader.library_invoke_all("_module_inited_")
+
+        # Pre-Load
+        logger.debug("starting modules::pre-load....")
+        self.loader.library_invoke_all("_module_preload_")
+        self.module_invoke_all("_preload_")
 
         # Load
-        logger.debug("starting modules::load....")
-        self.module_invoke_all("_preload_")
         self.loader.library_invoke_all("_module_load_")
         self.module_invoke_all("_load_")
-        self.loader.library_invoke_all("_module_loaded_")
+
+        # Pre-Start
+        self.loader.library_invoke_all("_module_prestart_")
+        self.module_invoke_all("_prestart_")
 
         # Start
-        self.module_invoke_all("_prestart_")
         self.loader.library_invoke_all("_module_start_")
         self.module_invoke_all("_start_")
         self.loader.library_invoke_all("_module_started_")
@@ -327,15 +331,16 @@ class Modules(YomboLibrary):
             else:
                 logger.error("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
 
-    def module_invoke_all(self, hook, **kwargs):
+    def module_invoke_all(self, hook, fullName=False, **kwargs):
         """
         Calls module_invoke for all loaded modules.
         """
         logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
         results = {}
         for moduleUUID, module in self._modulesByUUID.iteritems():
+            label = module._FullName.lower() if fullName else module._Name.lower()
             try:
-                results[module._FullName.lower()] = self.module_invoke(module._Name, hook)
+                results[label] = self.module_invoke(module._Name, hook)
             except YomboWarning:
                 pass
 

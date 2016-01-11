@@ -38,7 +38,7 @@ from time import time
 #from collections import OrderedDict
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, waitForDeferred, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -244,6 +244,7 @@ class Loader(YomboLibrary):
                 try:
                     if isCoreFunction:
                         results = yield maybeDeferred(method)
+
                     else:
                         results = method(**kwargs)
                         returnValue(results)
@@ -270,16 +271,23 @@ class Loader(YomboLibrary):
                 logger.error("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
                 raise YomboWarning("Hook is not callable: %s" % hook)
 
-    def library_invoke_all(self, hook, **kwargs):
+    def library_invoke_all(self, hook, fullName=False, **kwargs):
         """
         Calls library_invoke for all loaded libraries.
         """
         results = {}
         for libraryName, library in self.loadedLibraries.iteritems():
+            label = library._FullName.lower() if fullName else library._Name.lower()
+            logger.debug("invoke all:{libraryName} -> {hook}", libraryName=libraryName, hook=hook )
             try:
-                results[libraryName] = self.library_invoke(libraryName, hook, **kwargs)
+                d = self.library_invoke(libraryName, hook, **kwargs)
+                if isinstance(d, Deferred):
+                    result = getattr(d, 'result', None)
+                    if result is not None:
+#                      logger.warn("1111aaa:: {libraryName} {hook} {result}", libraryName=libraryName, hook=hook, result=result)
+                      results[label] = result
             except YomboWarning:
-                results[libraryName] = None
+                pass
         return results
 
     def import_component(self, pathName, componentName, componentType, componentUUID=None):

@@ -74,11 +74,11 @@ class Messages(YomboLibrary):
     def _unload_(self):
         pass
 
-    def _module_loaded_(self, **kwargs):
+    def _module_prestart_(self, **kwargs):
         """
-        Implements the hook_message_subscriptions and is called after _load_ is called for all the modules.
+        Implements the _module_prestart_ and is called after _load_ is called for all the modules.
 
-        Excpects a list of events to subscribe to.
+        Expects a list of events to subscribe to.
 
         **Usage**:
 
@@ -88,7 +88,7 @@ class Messages(YomboLibrary):
                return ['status']
         """
         subscriptions_to_add = global_invoke_all('message_subscriptions')
-        logger.debug("message: subscriptionstoadd: {subToAdd}", subToAdd=subscriptions_to_add)
+        logger.info("message: subscriptionstoadd: {subToAdd}", subToAdd=subscriptions_to_add)
 
         for component, subscriptions in subscriptions_to_add.iteritems():
             if subscriptions is None:

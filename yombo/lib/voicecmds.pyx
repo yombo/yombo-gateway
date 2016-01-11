@@ -140,11 +140,11 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         """
         pass
 
-    def _module_loaded_(self, **kwargs):
+    def _module_prestart_(self, **kwargs):
         """
-        Implements the voicecmds_load and is called after _load_ is called for all the modules.
+        Implements the _module_prestart_ and is called after _load_ is called for all the modules.
 
-        Excpects a list of events to subscribe to.
+        Expects a list of events to subscribe to.
 
         **Usage**:
 
@@ -154,7 +154,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                return ['status']
         """
         voicecommands_to_add = global_invoke_all('voicecmds_load')
-        logger.info("voicecommands_to_add: {voicecmds}", voicecmds=voicecommands_to_add)
+#        logger.info("voicecommands_to_add: {voicecmds}", voicecmds=voicecommands_to_add)
 
         for componentName, voicecmds in voicecommands_to_add.iteritems():
             if voicecmds is None:
