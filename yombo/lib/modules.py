@@ -163,16 +163,19 @@ class Modules(YomboLibrary):
         callWhenDone()
 
     def unload_modules(self, junk, callWhenDone):
-        for moduleUUID, module in self._modulesByUUID.iteritems():
+        keys = self._modulesByUUID.keys()
+        self.loader.library_invoke_all("_module_unload_")
+        for moduleUUID in keys:
+            module = self._modulesByUUID[moduleUUID]
             try:
-                self.loader.library_invoke_all("_module_unload_")
                 self.module_invoke(module._Name, "_unload_")
-                self.loader.library_invoke_all("_module_unloaded_")
             except YomboWarning:
                 pass
             finally:
-                self.del_module(module._Name.lower())
-                del self.loader.loadedComponents[moduleUUID]
+                self.loader.library_invoke_all("_module_unloaded_")
+                delete_component = module._FullName
+                self.del_module(moduleUUID, module._Name.lower())
+                del self.loader.loadedComponents[delete_component.lower()]
 
         callWhenDone()
 
@@ -340,7 +343,9 @@ class Modules(YomboLibrary):
         for moduleUUID, module in self._modulesByUUID.iteritems():
             label = module._FullName.lower() if fullName else module._Name.lower()
             try:
-                results[label] = self.module_invoke(module._Name, hook)
+                 result = self.module_invoke(module._Name, hook)
+                 if result is not None:
+                     results[label] = result
             except YomboWarning:
                 pass
 
@@ -417,10 +422,10 @@ class Modules(YomboLibrary):
         self._modulesByUUID[moduleUUID] = modulePointer
         self._modulesByName[moduleLabel] = moduleUUID
 
-    def del_module(self, moduleUUID):
-        logger.debug("deleting moduleUUID: {moduleUUID} from this list: {list}", moduleUUID=moduleUUID, list=self._modulesByUUID)
-        del self._modulesByName[self._modulesByUUID[moduleUUID]._FullName]
-        del self._modulesByUUID[moduleUUID]
+    def del_module(self, module_uuid, module_name):
+        logger.debug("deleting moduleUUID: {module_uuid} from this list: {list}", module_uuid=module_uuid, list=self._modulesByUUID)
+        del self._modulesByName[module_name]
+        del self._modulesByUUID[module_uuid]
 
     def get_module(self, requestedItem):
         """
@@ -439,14 +444,16 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-#        logger.info("Looking for {requestedItem} avail: {modules}", requestedItem=requestedItem, modules=self._modulesByName)
         if requestedItem in self._modulesByUUID:
+            logger.debug("Looking for {requestedItem} by UUID!", requestedItem=requestedItem)
             return self._modulesByUUID[requestedItem]
         else:
             try:
                 requestedUUID = self._modulesByName[requestedItem.lower()]
+                logger.debug("Looking for {requestedItem}, found: {modules}", requestedItem=requestedItem, modules=requestedUUID)
                 return self._modulesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
+                logger.info("get_module:: not found!!! requestedItem: {requestedItem}", requestedItem=requestedItem)
                 raise KeyError('Module not found.')
 
     def get_module_devices(self, requestedItem):

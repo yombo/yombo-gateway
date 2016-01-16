@@ -22,13 +22,11 @@ import re
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import 3rd-party libs
-from yombo.core.exceptions import YomboNoSuchLoadedComponentError
 from yombo.utils.decorators import memoize_
 import yombo.ext.six as six
 
 # Import Yombo libraries
-#from yombo.utils.decorators import memoize_
-
+from yombo.core.exceptions import YomboNoSuchLoadedComponentError
 
 def clean_kwargs(**kwargs):
     """
@@ -40,6 +38,123 @@ def clean_kwargs(**kwargs):
             data[key] = val
     return data
 
+def dict_has_key(dictionary, keys):
+    """
+    Check if a dictionary has the given list of keys
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import dict_has_key
+       a_dictionary = {'identity': {'location': {'state': 'California'}}}
+       a_list = ['identity', 'location', 'state']
+       has_state = dict_has_value(a_dictionary, a_list)
+       #has_state is now: True
+
+    :param dictionary: A dictionary to check
+    :type dictionary: dict
+    :param key: A list of keys
+    :type key: list
+    """
+    if not isinstance(keys, list):
+        keys = [keys]
+    try:
+        for key in keys:
+             dictionary = dictionary[key]
+    except KeyError:
+        return False
+    except TypeError:
+        return False
+    else:
+        return True
+
+def dict_has_value(dictionary, keys, value):
+    """
+    Check if a dictionary has the value based on a given list of keys
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import dict_has_value
+       a_dictionary = {'identity': {'location': {'state': 'California'}}}
+       a_list = ['identity', 'location', 'state']
+       has_california = dict_has_value(a_dictionary, a_list, 'California')
+       #has_california is now: True
+
+    :param dictionary: A dictionary to check
+    :type dictionary: dict
+    :param key: A list of keys
+    :type key: list
+    :param value: The value to test for
+    :type value: Any value a dictionary can hold.
+    """
+    if not isinstance(keys, list):
+        keys = [keys]
+    try:
+        for key in keys[:-1]:
+             dictionary = dictionary[key]
+        if dictionary[keys[-1]] == value:
+            return True
+    except KeyError:
+        return False
+    except TypeError:
+        return False
+    else:
+        return False
+
+def dict_set_value(dictionary, keys, value):
+    """
+    Set dictionary value based on a given list of keys
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import dict_set_value
+       a_dictionary = {}
+       a_list = ['identity', 'location', 'state']
+       dict_set_value(a_dictionary, a_list, 'California')
+       #a_dictionary now: {'identity': {'location': {'state': 'California'}}}
+
+    :param dictionary: A dictionary to update
+    :type dictionary: dict
+    :param key: A list of keys
+    :type key: list
+    :param value: The value to set
+    :type value: Any value a dictionary can hold.
+    """
+    if not isinstance(keys, list):
+        keys = [keys]
+    for key in keys[:-1]:
+         dictionary = dictionary.setdefault(key, {})
+    dictionary[keys[-1]] = value
+
+def dict_get_value(dictionary, keys):
+    """
+    Get dictionary value based on a given list of keys
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import dict_get_value
+       a_dictionary = {}
+       a_list = ['identity', 'location', 'state']
+       value = dict_get_value(a_dictionary, a_list)
+       #value = 'California'
+
+    :param dictionary: A dictionary to update
+    :type dictionary: dict
+    :param key: A list of keys
+    :type key: list
+    """
+    if not isinstance(keys, list):
+        keys = [keys]
+    for key in keys[:-1]:
+         dictionary = dictionary.setdefault(key, {})
+    return dictionary[keys[-1]]
 
 def dict_merge(original, changes):
     """
@@ -83,7 +198,6 @@ def dict_merge(original, changes):
             dict_merge(value, changes[key])
     return changes
 
-
 def fopen(*args, **kwargs):
     """
     A help function that wraps around python open() function.
@@ -113,7 +227,6 @@ def fopen(*args, **kwargs):
         old_flags = fcntl.fcntl(fhandle.fileno(), fcntl.F_GETFD)
         fcntl.fcntl(fhandle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
     return fhandle
-
 
 def get_component(name):
     """
@@ -150,12 +263,10 @@ def get_component(name):
     except KeyError:
         raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
 
-
 def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.im_class):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
-
 
 def random_string(**kwargs):
     """
@@ -189,23 +300,18 @@ def random_string(**kwargs):
         lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
         return "".join(lst)
 
-#@inlineCallbacks
 def global_invoke_all(hook, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
     methods.
 
-    :param hook: The hookname to call.
+    :param hook: The hook name to call.
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True)
-    #return modules_results
-
-    # we cut this off here for now...
     lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True)
+    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True)
     return dict_merge(modules_results, lib_results)
-
 
 @memoize_
 def is_freebsd():
@@ -214,14 +320,12 @@ def is_freebsd():
     """
     return sys.platform.startswith('freebsd')
 
-
 @memoize_
 def is_linux():
     """
     Returns if the host is linus or not
     """
     return sys.platform.startswith('linux')
-
 
 @memoize_
 def is_windows():
@@ -230,14 +334,12 @@ def is_windows():
     """
     return sys.platform.startswith('win')
 
-
 @memoize_
 def is_sunos():
     """
     Returns if the host is sunos or not
     """
     return sys.platform.startswith('sunos')
-
 
 @memoize_
 def is_fcntl_available(check_sunos=False):

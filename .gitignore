@@ -18,6 +18,7 @@ twistd.pid
 yombo.ini*
 builddocs.sh*
 localmodules.ini*
+automation.txt*
 *.freeze
 
 # Building / Documentation #
@@ -46,7 +47,6 @@ mymodules/*
 /.project
 /.pydevproject
 x10testout.txt
-ahx.ini*
 mitchlog.*
 old/*
 .idea/*

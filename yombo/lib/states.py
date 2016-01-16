@@ -65,7 +65,7 @@ from yombo.core.sqldict import SQLDict
 from yombo.core.library import YomboLibrary
 logger = getLogger("library.YomboStates")
 
-class States(YomboLibrary):
+class States(YomboLibrary, object):
     """
     Provides a base API to store common states among libraries and modules.
     """
@@ -124,10 +124,12 @@ class States(YomboLibrary):
             raise YomboStateNotFound("Cannot get state time: %s not found" % key)
 
     def get(self, key=None, password=None):
+#        logger.info("States: {state}", state=self.__States)
+#        logger.info("State ggget: {key}  pass: {password}", key=key, password=password)
         if key is None:
             results = {}
             for item in self.__States:
-                if self.__States[item]['writeKey'] is None:
+                if self.__States[item]['readKey'] is None:
                     results[item] = self.__States[item]['value']
             return results
 
@@ -142,6 +144,7 @@ class States(YomboLibrary):
             return None
 
     def set(self, key, value, password=None):
+#        logger.info("State set: {key} = {value}  pass: {password}", key=key, value=value, password=password)
         if key in self.__States:
             if self.__States[key]['writeKey'] is not None:
                 if password is None:

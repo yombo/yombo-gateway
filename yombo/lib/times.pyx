@@ -34,14 +34,16 @@ See usage below on using this module within your module.
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 import ephem
 from time import time
 from calendar import timegm as CalTimegm
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 
+# Import twisted libraries
 from twisted.internet import reactor
 
+# Import Yombo libraries
 from yombo.core.exceptions import YomboTimeError, YomboStateNoAccess
 from yombo.core.helpers import getConfigValue, generateRandom
 from yombo.core.library import YomboLibrary
@@ -50,10 +52,11 @@ from yombo.core.message import Message
 
 logger = getLogger('library.times')
 
-class Times(YomboLibrary):
+class Times(YomboLibrary, object):
     """
     Provide various rise/set of the sun, moon, and all things heavenly.
     """
+    _StatesPassword = generateRandom(length=10)
     def _init_(self, loader, PatchEnvironment = False):
         """
         Setup various common objects, setup frame work if isday/night/dark/twilight.
@@ -84,14 +87,14 @@ class Times(YomboLibrary):
         self.isNight = None
         self.isDawn = None
         self.isDusk = None
-        self.__StatesPassword = generateRandom(length=10)
-        self._States.set('isTwilight', None, self.__StatesPassword)
-        self._States.set('isTwilight', None, self.__StatesPassword)
-        self._States.set('isDark', None, self.__StatesPassword)
-        self._States.set('isDay', None, self.__StatesPassword)
-        self._States.set('isNight', None, self.__StatesPassword)
-        self._States.set('isDawn', None, self.__StatesPassword)
-        self._States.set('isDusk', None, self.__StatesPassword)
+#        self.
+        self._States.set('isTwilight', None, self._StatesPassword)
+        self._States.set('isTwilight', None, self._StatesPassword)
+        self._States.set('isDark', None, self._StatesPassword)
+        self._States.set('isDay', None, self._StatesPassword)
+        self._States.set('isNight', None, self._StatesPassword)
+        self._States.set('isDawn', None, self._StatesPassword)
+        self._States.set('isDusk', None, self._StatesPassword)
 
         self.CLnowLight = None
         self.CLnowDark = None
@@ -113,7 +116,7 @@ class Times(YomboLibrary):
 
     @isTwilight.setter
     def isTwilight(self, val):
-        self._States.set('isTwilight', val, self.__StatesPassword)
+        self._States.set('isTwilight', val, self._StatesPassword)
         self.__isTwilight = val
 
     @property
@@ -122,7 +125,7 @@ class Times(YomboLibrary):
 
     @isLight.setter
     def isLight(self, val):
-        self._States.set('isLight', val, self.__StatesPassword)
+        self._States.set('isLight', val, self._StatesPassword)
         self.__isLight = val
 
     @property
@@ -131,7 +134,7 @@ class Times(YomboLibrary):
 
     @isDark.setter
     def isDark(self, val):
-        self._States.set('isDark', val, self.__StatesPassword)
+        self._States.set('isDark', val, self._StatesPassword)
         self.__isDark = val
 
     @property
@@ -140,7 +143,7 @@ class Times(YomboLibrary):
 
     @isDay.setter
     def isDay(self, val):
-        self._States.set('isDay', val, self.__StatesPassword)
+        self._States.set('isDay', val, self._StatesPassword)
         self.__isDay = val
 
     @property
@@ -149,7 +152,7 @@ class Times(YomboLibrary):
 
     @isNight.setter
     def isNight(self, val):
-        self._States.set('i', val, self.__StatesPassword)
+        self._States.set('isNight', val, self._StatesPassword)
         self.__isNight = val
 
     @property
@@ -158,7 +161,7 @@ class Times(YomboLibrary):
 
     @isDawn.setter
     def isDawn(self, val):
-        self._States.set('isDawn', val, self.__StatesPassword)
+        self._States.set('isDawn', val, self._StatesPassword)
         self.__isDawn = val
 
     @property
@@ -167,7 +170,7 @@ class Times(YomboLibrary):
 
     @isDusk.setter
     def isDusk(self, val):
-        self._States.set('isDusk', val, self.__StatesPassword)
+        self._States.set('isDusk', val, self._StatesPassword)
         self.__isDusk = val
 
     def _load_(self):

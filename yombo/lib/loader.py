@@ -33,19 +33,15 @@ Stops components in the following phases. Modules first, then libraries.
 from re import search as ReSearch
 import traceback
 import sys
-#import hashlib
-from time import time
-#from collections import OrderedDict
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, waitForDeferred, Deferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.db import DBTools
 from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 import yombo.utils
@@ -53,12 +49,12 @@ import yombo.utils
 logger = getLogger('library.loader')
 
 HARD_LOAD = [
+    "Configuration",
+    "Modules",
+    "Startup",
     "Atoms",
     "States",
     "CronTab",
-    "Configuration",
-    "Startup",
-    "Modules",
     "Statistics",
     "AMQPYombo",
     "ConfigurationUpdate",
@@ -68,6 +64,7 @@ HARD_LOAD = [
     "VoiceCmds",
     "Devices",
     "Messages",
+    "Automation",
 ]
 
 HARD_UNLOAD = [
@@ -169,9 +166,11 @@ class Loader(YomboLibrary):
             self.logLoader('debug', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._States = self.loadedLibraries['states']
+            library._Modules = self._moduleLibrary
+            library._Libraries = self.loadedLibraries
             if hasattr(library, '_init_') and callable(library._init_) and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
-                library._init_(self)
-                continue
+#                library._init_(self)
+#                continue
                 try:
                     d = yield maybeDeferred(library._init_, self)
                 except YomboCritical, e:
@@ -322,17 +321,18 @@ class Loader(YomboLibrary):
 
         # Put the component into various lists for mgmt
         try:
+            # Instantiate the class
+            moduleinst = class_()  # start the class, only libraries get the loader
             if componentType == 'library':
-                # Instantiate the class
-                moduleinst = class_() # start class and pass the loader
+                if componentName.lower() == 'modules':
+                    self._moduleLibrary = moduleinst
+
                 self.loadedComponents["yombo.gateway.lib." + str(componentName.lower())] = moduleinst
                 self.loadedLibraries[str(componentName.lower())] = moduleinst
                 # this is mostly for manhole module, but maybe useful elsewhere?
                 temp = componentName.split(".")
                 self.libraryNames[temp[-1]] = moduleinst
             else:
-                # Instantiate the class
-                moduleinst = class_()  # start the class, only libraries get the loader
                 self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
 
                 self._moduleLibrary.add_module(componentUUID, str(componentName.lower()), moduleinst)
@@ -355,7 +355,7 @@ class Loader(YomboLibrary):
             if componentName in self.loadedComponents:
 #                self.logLoader('debug', componentName, 'library', 'stop', 'About to call _stop_.')
                 LCCN = self.loadedComponents[componentName]
-                if hasattr(LCCN, '_stop_') and callable(LCCN._stop_) and yombo.util.get_method_definition_level(LCCN._stop_) != 'yombo.core.module.YomboModule':
+                if hasattr(LCCN, '_stop_') and callable(LCCN._stop_) and yombo.utils.get_method_definition_level(LCCN._stop_) != 'yombo.core.module.YomboModule':
                     self.loadedComponents[componentName]._stop_()
 
         logger.debug("Unloading libraries.")
@@ -365,7 +365,7 @@ class Loader(YomboLibrary):
             if componentName in self.loadedComponents:
 #                self.logLoader('debug', componentName, 'library', 'unload', 'About to call _unload_.')
                 LCCN = self.loadedComponents[componentName]
-                if hasattr(LCCN, '_unload_') and callable(LCCN._unload_) and yombo.util.get_method_definition_level(LCCN._unload_) != 'yombo.core.module.YomboModule':
+                if hasattr(LCCN, '_unload_') and callable(LCCN._unload_) and yombo.utils.get_method_definition_level(LCCN._unload_) != 'yombo.core.module.YomboModule':
                     self.loadedComponents[componentName]._unload_()
 
     def _handleError(self, err):
