@@ -26,7 +26,7 @@ from yombo.utils.decorators import memoize_
 import yombo.ext.six as six
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboNoSuchLoadedComponentError
+from yombo.core.exceptions import YomboNoSuchLoadedComponentError, YomboWarning
 
 def clean_kwargs(**kwargs):
     """
@@ -312,6 +312,22 @@ def global_invoke_all(hook, **kwargs):
     lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True)
     modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True)
     return dict_merge(modules_results, lib_results)
+
+def is_string_bool(value=None):
+    """
+    Returns a True/False/None based on the string. If nothing is found, "YomboWarning" is raised.
+    Returns a boolean value representing the "truth" of the value passed. The
+    rules for what is a "True" value are:
+        2. The string values "True" and "true"
+    """
+    if isinstance(value, six.string_types):
+        if str(value).lower() == 'true':
+            return True
+        elif str(value).lower() == 'false':
+            return False
+        elif str(value).lower() == 'none':
+            return None
+    raise YomboWarning("String is not true, false, or none.")
 
 @memoize_
 def is_freebsd():

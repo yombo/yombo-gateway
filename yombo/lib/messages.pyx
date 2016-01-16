@@ -88,7 +88,7 @@ class Messages(YomboLibrary):
                return ['status']
         """
         subscriptions_to_add = global_invoke_all('message_subscriptions')
-        logger.info("message: subscriptionstoadd: {subToAdd}", subToAdd=subscriptions_to_add)
+#        logger.debug("subscriptionstoadd: {subToAdd}", subToAdd=subscriptions_to_add)
 
         for component, subscriptions in subscriptions_to_add.iteritems():
             if subscriptions is None:

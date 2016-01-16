@@ -160,7 +160,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
             if voicecmds is None:
                 continue
             for list in voicecmds:
-                logger.info("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=componentName, order=list['order'])
+                logger.debug("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=componentName, order=list['order'])
                 self.add(list['voiceCmd'], componentName, None, list['order'])
 
     def add(self, voiceString, destination, deviceUUID = None, order = 'both'):

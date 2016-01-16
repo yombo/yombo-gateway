@@ -205,7 +205,7 @@ class Automation(YomboLibrary):
         rule['rule_id'] = yombo.utils.random_string(length=15)
         rule_id = rule['rule_id']
 
-        logger.debug("Automation rules, after basic checks: {rules}", rules=self._rulesParse)
+        logger.debug("Automation rule, after basic checks: {rule}", rule=rule)
 
         # for each rule, make sure the trigger, condition, and action checker is valid.
 #        print "^1111 ^^^: %s" % rule
@@ -243,10 +243,6 @@ class Automation(YomboLibrary):
             self.triggers[rule['trigger']['source']['platform']] = []
         self.triggers[rule['trigger']['source']['platform']].append(rule_id)
         self.rules[rule_id] = rule
-
-
-        logger.info("######################333 triggers: {triggers}", triggers=self.triggers)
-#        logger.info("################# added rule: {rule}", rule=rule)
 
     def _check_source_platform(self, rule, source, trigger_required=False):
         """
@@ -343,7 +339,7 @@ class Automation(YomboLibrary):
         if len(rule_ids) == 0:
             logger.warn("There should be rules, but found none!")
             return False
-        logger.info("found rule IDs {rule_ids}", rule_ids=rule_ids)
+        logger.debug("found rule IDs {rule_ids}", rule_ids=rule_ids)
 
         # We now have at least one trigger. Check the filters and return any rule IDs.
         rules_should_fire = []
@@ -374,7 +370,7 @@ class Automation(YomboLibrary):
 
         :return:
         """
-        logger.info("doing condition...ruleid: {rule}", rule=rule_id)
+        logger.debug("doing automation_check_conditions on rule_id: {rule}", rule=rule_id)
         condition_type = 'and'
 
         rule = self.rules[rule_id]
@@ -387,15 +383,14 @@ class Automation(YomboLibrary):
         if 'condition' in rule:
             condition = rule['condition']
             for item in range(len(condition)):
-                # get values
+                # get value(s)
                 method = self.sources[condition[item]['source']['platform']]['get_value_callback']
                 value = method(rule, condition[item]['source']['name'])
 
-                # check values
+                # check value(s)
                 try:
                     result = self.automation_check_filter(rule_id, condition[item]['filter'], value)
-                    if result:
-                        condition_results.append(result)
+                    condition_results.append(result)
                 except YomboAutomationWarning:
                     pass
 
@@ -404,9 +399,11 @@ class Automation(YomboLibrary):
             else:
                 is_valid = any(condition_results)
 
-        # if we get here, we should now run the actions!
         if is_valid:
+            logger.debug("Condition check passed for: {rule}", rule=self.rules[rule_id]['name'])
             return self.automation_action(rule_id)
+        else:
+            logger.debug("Condition check failed for: {rule}", rule=self.rules[rule_id]['name'])
 
 
     def automation_action(self, rule_id):

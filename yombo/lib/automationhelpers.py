@@ -7,9 +7,10 @@ Helpers for automation items.
 """
 
 # Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
-import yombo.utils
+from yombo.utils import is_string_bool
 
 logger = getLogger("library.automationhelper")
 
@@ -154,9 +155,13 @@ class AutomationHelpers(YomboLibrary):
         :param kwargs: None
         :return:
         """
-
         filter = kwargs['filter']
         trigger_value = filter['value']
+        try:
+            trigger_value = is_string_bool(trigger_value)
+        except YomboWarning:
+            pass
+
         new_value = kwargs['new_value']
         if new_value == trigger_value:
             return True

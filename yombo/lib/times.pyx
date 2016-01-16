@@ -88,13 +88,13 @@ class Times(YomboLibrary, object):
         self.isDawn = None
         self.isDusk = None
 #        self.
-        self._States.set('isTwilight', None, self._StatesPassword)
-        self._States.set('isTwilight', None, self._StatesPassword)
-        self._States.set('isDark', None, self._StatesPassword)
-        self._States.set('isDay', None, self._StatesPassword)
-        self._States.set('isNight', None, self._StatesPassword)
-        self._States.set('isDawn', None, self._StatesPassword)
-        self._States.set('isDusk', None, self._StatesPassword)
+        self._States.set('is_twilight', None, self._StatesPassword)
+        self._States.set('is_light', None, self._StatesPassword)
+        self._States.set('is_dark', None, self._StatesPassword)
+        self._States.set('is_day', None, self._StatesPassword)
+        self._States.set('is_night', None, self._StatesPassword)
+        self._States.set('is_dawn', None, self._StatesPassword)
+        self._States.set('is_dusk', None, self._StatesPassword)
 
         self.CLnowLight = None
         self.CLnowDark = None
@@ -116,7 +116,7 @@ class Times(YomboLibrary, object):
 
     @isTwilight.setter
     def isTwilight(self, val):
-        self._States.set('isTwilight', val, self._StatesPassword)
+        self._States.set('is_twilight', val, self._StatesPassword)
         self.__isTwilight = val
 
     @property
@@ -125,7 +125,7 @@ class Times(YomboLibrary, object):
 
     @isLight.setter
     def isLight(self, val):
-        self._States.set('isLight', val, self._StatesPassword)
+        self._States.set('is_light', val, self._StatesPassword)
         self.__isLight = val
 
     @property
@@ -134,7 +134,7 @@ class Times(YomboLibrary, object):
 
     @isDark.setter
     def isDark(self, val):
-        self._States.set('isDark', val, self._StatesPassword)
+        self._States.set('is_dark', val, self._StatesPassword)
         self.__isDark = val
 
     @property
@@ -143,7 +143,7 @@ class Times(YomboLibrary, object):
 
     @isDay.setter
     def isDay(self, val):
-        self._States.set('isDay', val, self._StatesPassword)
+        self._States.set('is_day', val, self._StatesPassword)
         self.__isDay = val
 
     @property
@@ -152,7 +152,7 @@ class Times(YomboLibrary, object):
 
     @isNight.setter
     def isNight(self, val):
-        self._States.set('isNight', val, self._StatesPassword)
+        self._States.set('is_night', val, self._StatesPassword)
         self.__isNight = val
 
     @property
@@ -161,7 +161,7 @@ class Times(YomboLibrary, object):
 
     @isDawn.setter
     def isDawn(self, val):
-        self._States.set('isDawn', val, self._StatesPassword)
+        self._States.set('is_dawn', val, self._StatesPassword)
         self.__isDawn = val
 
     @property
@@ -170,7 +170,7 @@ class Times(YomboLibrary, object):
 
     @isDusk.setter
     def isDusk(self, val):
-        self._States.set('isDusk', val, self._StatesPassword)
+        self._States.set('is_dusk', val, self._StatesPassword)
         self.__isDusk = val
 
     def _load_(self):

@@ -125,7 +125,7 @@ class States(YomboLibrary, object):
 
     def get(self, key=None, password=None):
 #        logger.info("States: {state}", state=self.__States)
-#        logger.info("State ggget: {key}  pass: {password}", key=key, password=password)
+#        logger.info("State pass: {password}", key=key, password=password)
         if key is None:
             results = {}
             for item in self.__States:
@@ -139,6 +139,7 @@ class States(YomboLibrary, object):
                     raise YomboStateNoAccess("State is read protected with password. Use self.__States.get(key, password) to read.")
                 elif self.__States[key]['readKey'] != password:
                     raise YomboStateNoAccess("State read password is invalid.")
+#            logger.info("State get2: {key}  value: {value}", key=key, value=self.__States[key]['value'])
             return self.__States[key]['value']
         else:
             return None
@@ -224,3 +225,50 @@ class States(YomboLibrary, object):
             self.__States[key]['writeKey'] = None
         else:
             YomboStateNotFound("Invalid state write password supplied.")
+
+    def States_automation_source_list(self, **kwargs):
+        """
+        hook_automation_source_list called by the automation library to get a list of possible sources.
+
+        :param kwargs: None
+        :return:
+        """
+        return [
+            { 'platform': 'states',
+              'add_trigger_callback': self.states_add_trigger_callback,  # function to call to add a trigger
+              'validate_callback': self.states_validate_callback,  # function to call to validate a trigger
+              'get_value_callback': self.states_get_value_callback,  # get a value
+            }
+         ]
+
+    def states_add_trigger_callback(self, rule, **kwargs):
+        """
+        Called to add a trigger.  We simply use the automation library for the heavy lifting.
+
+        :param rule: The potential rule being added.
+        :param kwargs: None
+        :return:
+        """
+        self.automation.track_trigger_basic_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
+
+    def states_validate_callback(self, rule, **kwargs):
+        """
+        A callback to check if a provided source is valid before being added as a possible source.
+
+        :param kwargs: None
+        :return:
+        """
+        if all( required in rule['trigger']['source'] for required in ['platform', 'name']):
+            return True
+        return False
+
+    def states_get_value_callback(self, rule, key_name, **kwargs):
+        """
+        A callback to the value for platform "atom". We simply just do a get based on key_name.
+
+        :param rule: The potential rule being added.
+        :param key_name: The atom key we'll get get the value.
+        :param kwargs: None
+        :return:
+        """
+        return self.get(key_name)

@@ -38,7 +38,7 @@ from yombo.core.log import getLogger
 from yombo.core.library import YomboLibrary
 import yombo.utils
 
-logger = getLogger("library.Atoms")
+logger = getLogger("library.atoms")
 
 _REPLACE_LINUX_RE = re.compile(r'linux', re.IGNORECASE)
 
@@ -218,83 +218,69 @@ class Atoms(YomboLibrary):
 
     def check_trigger(self, key, keys, value):
         """
-        Checks if a trigger should be fired.
+        Called when a an Atom value is changed. Checks if a trigger should be fired. Uses the automation helper
+        function for the heavy lifting.
         """
         results = self.automation.track_trigger_check_triggers('atoms', key, value)
         if results != False:
-            logger.info("I have a match! {results}", results=results)
+            logger.debug("I have a match! {results}", results=results)
             self.automation.track_trigger_basic_do_actions(results)
         else:
-            logger.info("trigger didn't match any trigger filters")
+            logger.debug("trigger didn't match any trigger filters")
 
     def Atoms_automation_source_list(self, **kwargs):
         """
-        hook_automation_source_list called by the automation library to get a list of possible sources and triggers.
+        hook_automation_source_list called by the automation library to get a list of possible sources.
 
         :param kwargs: None
         :return:
         """
         return [
-            { 'platform': 'atom',
-              'add_trigger_callback': self.add_trigger_callback,  # function to call to add a trigger
-              'validate_callback': self.automation_source_validate,  # function to call to validate a trigger
-              'get_value_callback': self.automation_get_value,  # get a value
+            { 'platform': 'atoms',
+              'add_trigger_callback': self.atoms_add_trigger_callback,  # function to call to add a trigger
+              'validate_callback': self.atoms_validate_callback,  # function to call to validate a trigger
+              'get_value_callback': self.atoms_get_value_callback,  # get a value
             }
          ]
 
-    def add_trigger_callback(self, rule, **kwargs):
+    def atoms_add_trigger_callback(self, rule, **kwargs):
         """
-        Called to add a trigger.
+        Called to add a trigger.  We simply use the automation library for the heavy lifting.
 
+        :param rule: The potential rule being added.
         :param kwargs: None
         :return:
         """
         self.automation.track_trigger_basic_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
 
-    def automation_source_validate(self, rule, **kwargs):
+    def atoms_validate_callback(self, rule, **kwargs):
         """
-        A callback to check if a provided trigger is valid before being added.
+        A callback to check if a provided source is valid before being added as a possible source.
 
         :param kwargs: None
         :return:
         """
-        trigger = rule['trigger']['source']
-        if all( required in trigger for required in ['platform', 'name']):
+        if all( required in rule['trigger']['source'] for required in ['platform', 'name']):
             return True
         return False
 
-    def automation_get_value(self, rule, key_name, **kwargs):
-        return self.get(key_name)
-
-    def Atoms_automation_condjjition_check(self, rule, **kwargs):
+    def atoms_get_value_callback(self, rule, key_name, **kwargs):
         """
-        A callback to check if a provided condition is valid before an action is triggered.
+        A callback to the value for platform "atom". We simply just do a get based on key_name.
 
+        :param rule: The potential rule being added.
+        :param key_name: The atom key we'll get get the value.
         :param kwargs: None
         :return:
         """
-        condition_type = 'and'
-        if 'condition_type' in rule:
-            condition_type = rule['condition_type']
-
-#        platform = kwargs['platform']
-        conditions = kwargs['conditions']
-        results = []
-        for condition in conditions:
-            keys = condition['name'].split(':')
-            if yombo.utils.dict_has_value(self.__Atoms, keys, condition['value']):
-                results.append(True)
-            else:
-                results.append(False)
-
-        if condition_type == 'and':
-            return all(results)
-        else:
-            return any(results)
+        return self.get(key_name)
 
     def Atoms_automation_action_list(self, **kwargs):
         """
-        hook_automation_action_list called by the automation library to list possible actions.
+        hook_automation_action_list called by the automation library to list possible actions this module can
+        perform.
+
+        *untested*
 
         :param kwargs: None
         :return:
