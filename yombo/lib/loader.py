@@ -65,6 +65,7 @@ HARD_LOAD = [
     "Devices",
     "Messages",
     "Automation",
+    "AutomationHelpers",
 ]
 
 HARD_UNLOAD = [

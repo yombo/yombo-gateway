@@ -220,106 +220,53 @@ class Atoms(YomboLibrary):
         """
         Checks if a trigger should be fired.
         """
-        results = self.automation.track_trigger_basic_check('atoms', key, value)
+        results = self.automation.track_trigger_check_triggers('atoms', key, value)
         if results != False:
             logger.info("I have a match! {results}", results=results)
-            self.automation.track_trigger_basic_do(results)
+            self.automation.track_trigger_basic_do_actions(results)
         else:
-            logger.info("trigger didn't match value")
+            logger.info("trigger didn't match any trigger filters")
 
-    def Atoms_automation_trigger_list(self, **kwargs):
+    def Atoms_automation_source_list(self, **kwargs):
         """
-        hook_automation_trigger_list called by the automation library to get a list of possible triggers.
+        hook_automation_source_list called by the automation library to get a list of possible sources and triggers.
 
         :param kwargs: None
         :return:
         """
         return [
-            { 'type': 'atom',
-              'add_callback': self.automation_trigger_add,  # function to call to add a trigger
-              'validation_callback': self.automation_trigger_validation  # function to call to validate a trigger
+            { 'platform': 'atom',
+              'add_trigger_callback': self.add_trigger_callback,  # function to call to add a trigger
+              'validate_callback': self.automation_source_validate,  # function to call to validate a trigger
+              'get_value_callback': self.automation_get_value,  # get a value
             }
          ]
 
-    def automation_trigger_validation(self, rule, **kwargs):
-        """
-        A callback to check if a provided trigger is valid before being added.
-
-        :param kwargs: None
-        :return:
-        """
-        trigger = rule['trigger']
-        if all( required in trigger for required in ['name', 'value']):
-            return True
- #           keys = trigger['name'].split(':')
-#            return yombo.utils.dict_has_key(self.__Atoms, keys)
-        return False
-
-    def automation_trigger_add(self, rule, **kwargs):
+    def add_trigger_callback(self, rule, **kwargs):
         """
         Called to add a trigger.
 
         :param kwargs: None
         :return:
         """
-        self.automation.track_trigger_basic_add(rule['rule_id'], 'atoms', rule['trigger']['name'], rule['trigger']['value'])
+        self.automation.track_trigger_basic_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
 
-#        keys = rule['trigger']['name'].split(':')
-#        trigger_items = {
-#            'condition_callback': kwargs['condition_callback'],
-#            'rule_id': rule['rule_id'],
-#            'value': rule['trigger']['value'],
-#        }
-#        yombo.utils.dict_set_value(self.triggers, keys, trigger_items)
-#        logger.info("atoms current triggers: {triggers}", triggers=self.triggers)
-
-    def Atoms_automation_conditions_list(self, **kwargs):
+    def automation_source_validate(self, rule, **kwargs):
         """
-        hook_automation_condition_list called by the automation library to list possible conditions.
+        A callback to check if a provided trigger is valid before being added.
 
         :param kwargs: None
         :return:
         """
-        return [
-            { 'type': 'atom',
-              'validation_callback': self.automation_condition_validation,  # function to call to validate a condition is possible.
-              'check_callback': self.Atoms_automation_condition_check,  # function to check if a rule's action should fire.
-            }
-         ]
+        trigger = rule['trigger']['source']
+        if all( required in trigger for required in ['platform', 'name']):
+            return True
+        return False
 
-    def automation_condition_validation(self, rule, **kwargs):
-        """
-        A callback to check if a provided condition is valid before being added as a possible condition.
+    def automation_get_value(self, rule, key_name, **kwargs):
+        return self.get(key_name)
 
-        :param kwargs: None
-        :return:
-        """
-#        type_ = kwargs['type']
-        actions = kwargs['actions']
-        for action in actions:
-            if all( required in action for required in ['name', 'value']):
-                keys = action['name'].split(':')
-                if not yombo.utils.dict_has_key(self.__Atoms, keys):
-                    return False
-            else:
-                return False
-        return True
-
-#        type_ = kwargs['type']
-        print "999999 ZZ"
-        conditions = kwargs['condition']
-        if 'condition_type' in rule:
-            if rule['condition_type'] not in ['or', 'and']:
-                logger.warn("Invalid 'condition_type': {condition_type}", condition_type=rule['condition_type'])
-                return False
-
-        for condition in conditions:
-            if not all( required in condition for required in ['name', 'value']):
-                logger.warn("Invalid 'condition': {condition}, required: name, value", condition=condition)
-                return False
-        return True
-
-    def Atoms_automation_condition_check(self, rule, **kwargs):
+    def Atoms_automation_condjjition_check(self, rule, **kwargs):
         """
         A callback to check if a provided condition is valid before an action is triggered.
 
@@ -330,7 +277,7 @@ class Atoms(YomboLibrary):
         if 'condition_type' in rule:
             condition_type = rule['condition_type']
 
-#        type_ = kwargs['type']
+#        platform = kwargs['platform']
         conditions = kwargs['conditions']
         results = []
         for condition in conditions:
@@ -353,7 +300,7 @@ class Atoms(YomboLibrary):
         :return:
         """
         return [
-            { 'type': 'atom',
+            { 'platform': 'atom',
               'validation_callback': self.automation_action_validation,  # function to call to validate an action is possible.
               'do_action_callback': self.automation_do_action  # function to be called to perform an action
             }
@@ -369,13 +316,9 @@ class Atoms(YomboLibrary):
         item = kwargs['item']
         action = rule['condition'][item]
 
-        print "one %s" % action['type']
-        if action['type'] == 'call_function':
-            print "one"
+        if action['platform'] == 'call_function':
             if 'component_callback' in action:
-                print "one2"
                 if not callable(action['component_callback']):
-                    print "one3"
                     logger.warn("Rule '{rule_name}' is not callable by reference: 'component_callback': {callback}", rule_name=rule['name'], callback=action['component_callback'])
                     return False
                 else:
@@ -416,7 +359,7 @@ class Atoms(YomboLibrary):
         return True
 
 
-#        type_ = kwargs['type']
+#        platform = kwargs['platform']
         actions = kwargs['actions']
         for action in actions:
             if all( required in action for required in ['name', 'value']):
