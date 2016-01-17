@@ -39,6 +39,7 @@ features to be used by libraries and modules.
    ../core/helpers
    ../core/library
    ../core/log
+   ../core/lookupdict
    ../core/maxdict
    ../core/message
    ../core/module
@@ -59,6 +60,9 @@ Times libararies.
    :maxdepth: 1
 
    ../lib/amqpyombo.rst
+   ../lib/atoms.rst
+   ../lib/automation.rst
+   ../lib/automationhelpers.rst
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/configurationupdate.rst
@@ -67,8 +71,38 @@ Times libararies.
    ../lib/downloadmodules.rst
    ../lib/loader.rst
    ../lib/messages.rst
+   ../lib/modules.rst
    ../lib/startup.rst
+   ../lib/states.rst
    ../lib/statistics.rst
    ../lib/times.rst
    ../lib/voicecmds.rst
 
+.. _util:
+
+Utils
+*****
+
+Various utilities to help the Yombo Gateway get things done.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../utils/utils.rst
+   ../utils/decorators.rst
+
+.. _ext:
+
+Ext
+***
+
+This directory contains external modules that ship with Yombo to support
+the framework features. They are governed under their respective
+licenses. See the COPYING file included with this distribution for more
+information.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../ext/hjson.rst
+   ../ext/six.rst

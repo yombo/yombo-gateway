@@ -59,12 +59,12 @@ HARD_LOAD = [
     "AMQPYombo",
     "ConfigurationUpdate",
     "DownloadModules",
+    "Automation",
     "Times",
     "Commands",
     "VoiceCmds",
     "Devices",
     "Messages",
-    "Automation",
     "AutomationHelpers",
 ]
 

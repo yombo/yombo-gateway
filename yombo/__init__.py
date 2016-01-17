@@ -6,5 +6,3 @@ Yombo Gateway developers API documentation.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 """
-
-

@@ -156,6 +156,7 @@ class AutomationHelpers(YomboLibrary):
         :return:
         """
         filter = kwargs['filter']
+        logger.debug("Checking filter: {filter}", filter=filter)
         trigger_value = filter['value']
         try:
             trigger_value = is_string_bool(trigger_value)
@@ -163,6 +164,7 @@ class AutomationHelpers(YomboLibrary):
             pass
 
         new_value = kwargs['new_value']
+#        logger.debug("Checking new = old: {new_value} = {trigger_value}", new_value=new_value, trigger_value=trigger_value)
         if new_value == trigger_value:
             return True
         return False

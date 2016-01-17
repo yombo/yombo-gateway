@@ -1,5 +1,5 @@
 """
-Function decorators.
+Various function decorators.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.

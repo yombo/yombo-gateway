@@ -73,6 +73,8 @@ class States(YomboLibrary, object):
         self._ModDescription = "Yombo States API"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
+        self.automation = self._Libraries['automation']
+
         self.__States = {}
         self.__History = SQLDict(self, 'History')
 #        logger.info("Recovered YomboStates: {states}", states=self.__States)
@@ -163,6 +165,7 @@ class States(YomboLibrary, object):
                 'writeKey' : password
             }
             self.__setHistory(key, self.__States[key]['value'], self.__States[key]['updated'])
+        self.check_trigger(key, value)
 
     def __setHistory(self, key, value, updated):
         data = {'value' : value, 'updated' : updated}
@@ -225,6 +228,18 @@ class States(YomboLibrary, object):
             self.__States[key]['writeKey'] = None
         else:
             YomboStateNotFound("Invalid state write password supplied.")
+
+    def check_trigger(self, key, value):
+        """
+        Called when a an State value is changed. Checks if a trigger should be fired. Uses the automation helper
+        function for the heavy lifting.
+        """
+        results = self.automation.track_trigger_check_triggers('states', key, value)
+        if results != False:
+            logger.debug("I have a match! {results}", results=results)
+            self.automation.track_trigger_basic_do_actions(results)
+        else:
+            logger.debug("trigger didn't match any trigger filters")
 
     def States_automation_source_list(self, **kwargs):
         """

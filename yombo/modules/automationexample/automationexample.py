@@ -1,5 +1,5 @@
 """
-A simple module to test autoamtion.
+A simple module to test and demonstrate various automation hooks.
 
 :copyright: 2016 Yombo
 :license: MIT
@@ -13,13 +13,13 @@ logger = getLogger("module.automationexample")
 
 class AutomationExample(YomboModule):
     """
-    A simple demo for automation rules.
+    This module adds a couple rules and toggles
     """
     def _init_(self):
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
-        self._Atoms['automationexample'] = 0
+        self._States['automationexample'] = 0
 
     def _load_(self):
         # in 3 seconds from now, change the state - test the trigger
@@ -31,7 +31,7 @@ class AutomationExample(YomboModule):
                 'name': 'Empty test 0',
                 'trigger': {
                     'source': {
-                        'platform': 'atoms',
+                        'platform': 'states',
                         'name': 'automationexample',
                     },
                     'filter': {
@@ -77,7 +77,7 @@ class AutomationExample(YomboModule):
                 'name': 'Empty test 1',
                 'trigger': {
                     'source': {
-                        'platform': 'atoms',
+                        'platform': 'states',
                         'name': 'automationexample',
                     },
                     'filter': {
@@ -103,10 +103,10 @@ class AutomationExample(YomboModule):
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
 
     def set_high(self):
-        self._Atoms['automationexample'] = 1
+        self._States['automationexample'] = 1
 
     def set_low(self):
-        self._Atoms['automationexample'] = 0
+        self._States['automationexample'] = 0
 
     def call_when_high(self, **kwargs):
         logger.info("it's now high! {kwargs}", kwargs=kwargs)

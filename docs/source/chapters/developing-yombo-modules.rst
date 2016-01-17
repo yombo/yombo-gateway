@@ -14,7 +14,10 @@ The example modules will guide you through the key concepts:
   :ref:`messages <message>` when valid voice command is found in a file.
 * :ref:`LogWriter <logwriter>` - Demonstrates subscribing to all messages in a gateway. This
   module logs everything it receives to a file.
-* A more complex example that performs various activities based on time of day is documented at Yombo Projects: `Building Your First Module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_
+* :ref:`AutomationExample <automationexample>` - Demonstrates adding rules to the automation system.
+* :ref:`AutomationHelpers <automationhelpers>` - Demonstrates extending the automation using various hooks.
+* A more complex example that performs various activities based on time of day is documented at Yombo Projects:
+  `Building Your First Module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_
 
 .. toctree::
    :maxdepth: 1
@@ -23,3 +26,4 @@ The example modules will guide you through the key concepts:
    ../examples/logreader
    ../examples/logwriter
    ../examples/mynightmode
+   ../examples/automationexample

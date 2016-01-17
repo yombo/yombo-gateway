@@ -208,13 +208,11 @@ class Automation(YomboLibrary):
         logger.debug("Automation rule, after basic checks: {rule}", rule=rule)
 
         # for each rule, make sure the trigger, condition, and action checker is valid.
-#        print "^1111 ^^^: %s" % rule
         if not self._check_source_platform(rule, rule['trigger']['source'], True):
             return False
         if not self._check_filter_platform(rule, rule['trigger']['filter']):
             return False
 
-#        print "^2222 ^^^: %s" % rule
         if 'condition' in rule:
             if 'condition_type' in rule:
                 if not any(section.lower() in rule['condition_type'] for section in ['and', 'or']):
@@ -352,6 +350,8 @@ class Automation(YomboLibrary):
                     rules_should_fire.append(rule_id)
             except YomboAutomationWarning:
                 pass
+
+#        print "rules that should fire: %s" % rules_should_fire
         return rules_should_fire
 
     def track_trigger_basic_do_actions(self, rule_ids):
@@ -382,6 +382,7 @@ class Automation(YomboLibrary):
         is_valid = True
         if 'condition' in rule:
             condition = rule['condition']
+#            print "testing conditons: %s" % condition
             for item in range(len(condition)):
                 # get value(s)
                 method = self.sources[condition[item]['source']['platform']]['get_value_callback']
@@ -390,6 +391,7 @@ class Automation(YomboLibrary):
                 # check value(s)
                 try:
                     result = self.automation_check_filter(rule_id, condition[item]['filter'], value)
+ #                   print "result of condition check filter: %s" % result
                     condition_results.append(result)
                 except YomboAutomationWarning:
                     pass
