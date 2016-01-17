@@ -1,0 +1,15 @@
+.. index:: modules
+
+.. _modules::
+
+.. currentmodule:: yombo.lib.modules
+
+====================================
+Modules (yombo.lib.modules)
+====================================
+.. automodule:: yombo.lib.modules
+
+Modules Class
+================
+.. autoclass:: Modules
+   :members:

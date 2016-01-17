@@ -9,7 +9,7 @@ and anything in between.
 Navigating the framework
 ************************
 
-The gateway framework is split into four directories:
+The gateway framework is split into a few directories:
 
  * core - The most basic of functions to get stuff done. Module developers
    will mostly care about the helpers file.
@@ -19,6 +19,8 @@ The gateway framework is split into four directories:
    starting/stopping the service.
  * modules - Where downloaded or manually installed modules go.
  * usr - User data. Log files, database, cache, etc.
+ * utils - Various utilities for getting things done.
+ * ext - 3rd party extensions
 
 .. _core:
 

@@ -2,8 +2,6 @@
 A starting point to creating your own module. This is a simple,
 nearly empty starter module.
 
-This module requests the _Times_ library to display various times on startup.
-
 :copyright: 2012-2015 Yombo
 :license: GPL
 """
@@ -28,11 +26,13 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 22,33-36
+           :lines: 20,31-34
         """
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
+
+        self._Times = self._Libraries['times']  # So we can access some time functions
 
     def _load_(self):
         """
@@ -46,7 +46,7 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 37,51-64
+           :lines: 37,51-60
         """
         logger.debug("Empty module is loading.")
         if self._ModVariables != {}:
@@ -92,10 +92,10 @@ class Empty(YomboModule):
            :language: python
            :lines: 83,95-99
         """
-        logger.debug("Is Light: %s", self._Times.isLight)
-        logger.debug("Is Dark: %s", self._Times.isDark)
-        logger.debug("Is Day: %s", self._Times.isDay)
-        logger.debug("Is Night: %s", self._Times.isNight)
+        logger.debug("Is Light: %s", self._States['is_light'])
+        logger.debug("Is Dark: %s", self._States['is_dark'])
+        logger.debug("Is Day: %s", self._States['is_day'])
+        logger.debug("Is Night: %s", self._States['is_night'])
         logger.debug("Mars Next Rise: %s", self._Times.objRise(dayOffset=1, object='Mars'))
     
     def _stop_(self):

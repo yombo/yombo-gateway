@@ -71,7 +71,7 @@ class AutomationHelpers(YomboLibrary):
                 else:
                     rule['action'][item]['_my_callback'] = action['component_callback']
             else:
-                if all( required in action for required in ['component_type', 'component_name', 'component_function']):
+                if all(required in action for required in ['component_type', 'component_name', 'component_function']):
                     if action['component_type'] == 'library':
                         if action['component_name'] not in self._Libraries:
                             return False
@@ -138,26 +138,27 @@ class AutomationHelpers(YomboLibrary):
         """
         A callback to check if a provided condition is valid before being added as a possible condition.
 
+        :param rule: The rule. We don't use this here.
         :param kwargs: None
         :return:
         """
-        filter = kwargs['filter']
-        logger.debug("Validating filter: {filter}", filter=filter)
-        if not all( required in filter for required in ['platform', 'value']):
+        filter_ = kwargs['filter']
+        logger.debug("Validating filter: {filter}", filter=filter_)
+        if not all( required in filter_ for required in ['platform', 'value']):
             return False
         return True
 
-# needs trigger:filter or condition:filter
     def basic_values_filter_check(self, rule, **kwargs):
         """
         A callback to check if a provided condition is valid before being added as a possible condition.
 
+        :param rule: The rule. We don't use this here.
         :param kwargs: None
         :return:
         """
-        filter = kwargs['filter']
-        logger.debug("Checking filter: {filter}", filter=filter)
-        trigger_value = filter['value']
+        filter_ = kwargs['filter']
+        logger.debug("Checking filter: {filter}", filter=filter_)
+        trigger_value = filter_['value']
         try:
             trigger_value = is_string_bool(trigger_value)
         except YomboWarning:

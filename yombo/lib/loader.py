@@ -7,17 +7,17 @@ Starts libraries and modules (components) in the following phases.  These
 phases are first completed for libraries.  After "start" phase has completed
 then modules startup in the same method.
 
-# Import all components
-# Call "init" for all components
-#* Get the component ready, but not do any actual work yet.
-#* Components can now see a full list of components there were imported.
-# Call "load" for all components
-# Call "start" for all components
+#. Import all components
+#. Call "init" for all components
+  * Get the component ready, but not do any actual work yet.
+  * Components can now see a full list of components there were imported.
+#. Call "load" for all components
+#. Call "start" for all components
 
 Stops components in the following phases. Modules first, then libraries.
 
-# Call "stop" for all components
-# Call "unload" for all components
+#. Call "stop" for all components
+#. Call "unload" for all components
 
 .. warning::
 

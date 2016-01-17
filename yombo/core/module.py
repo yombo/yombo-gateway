@@ -36,21 +36,12 @@ Modules have 2 phases of shutdown: _stop, _unload
       files, save any work. The module will no longer receive any messages
       during this phase of shutdown.
 
-*Advanced Developer Hooks*
+**Hooks**
 
 Yombo's module system also implements a concept of "hooks". A hook is a
-python function that is example_bar(), where "example" is the name of the
-module and "bar" is name the hook. Within any documentation, the string
-"hook" is a placeholder for the module name.
+python function that is can be called from other libraries or modules.
 
-For example, the messages library will call hook_subscriptions to get a list
-of messages subscriptions. The voicecmds library will call
-hook_voicecmds.
-
-Any hooks ending in "_alter" will will send in a dictionary of items that
-allows a module to manipulate any values. For example, the messages library
-will call hook_subscriptions_alter after hook_subscriptions. This would allow
-a module to alter any subscriptions as needed.
+See :ref:`Hooks <hooks>` for details on usage and examples.
 
 **Usage**:
 
@@ -62,10 +53,6 @@ a module to alter any subscriptions as needed.
            self._ModDescription = "Insteon API command interface"
            self._ModAuthor = "Mitch Schwenk @ Yombo"
            self._ModUrl = "https://yombo.net/SomeUrlForDetailsAboutThisModule"
-
-           self._RegisterVoiceCommands = [
-             {'voiceCmd': "insteon [reset]", 'order' : 'nounverb'}
-             ]
        def _load_(self):
            pass    #do stuff on loading of the module.
                    #modules can't send messages at this point, but after load completes
@@ -79,7 +66,6 @@ a module to alter any subscriptions as needed.
                     # call.  After this function completes, should no longer send
                     # messages, but is required to continue to process messages
                     # until the unload() function is called.
-
         def _unload_(self):
             pass    #the gateway is on final phase of shutdown. Must quit now!
         def ExampleModule_message_subscriptions(self, **kwargs):
@@ -117,21 +103,19 @@ class YomboModule:
     :cvar _ModAuthor: (string) Module author, needs to be set in the module's init() function.
     :cvar _ModUrl: (string) URL for additional information about this
       module, needs to be set in the module's init() function.
+    :cvar _Atoms: (object/dict) The Yombo Atoms library, but can accessed as a dictionary or object.
     :cvar _Commands: preloaded pointer to all configured commands.
-    :cvar _CronTab: preloaded pointer to Cron Tab library.
-    :cvar _DeviceTypes: (list) List of device types that are registered for this module.
     :cvar _Devices: (dict) Dictionary to all devices this module controls.
-    :cvar _DevicesByType: preloaded pointer getDeviceByDeviceType to quickly get all devices for a specific type.
+    :cvar _DevicesByType: (callback) A function to quickly get all devices for a specific device type.
+    :cvar _DeviceTypes: (list) List of device types that are registered for this module.
     :cvar _DevicesLibrary: preloaded pointer to Devices library.
-    :cvar _Times: preloaded pointer to Times library.
-    :cvar _ModuleType: (string) Type of module (Interface, Command, Logic, Other). Defined here,
-      but set in _Loader(), which is called just before the module's init().
-    :cvar _ModuleUUID (string) UUID of this module.
+    :cvar _Libraries: (dict) A dictionary of all modules. Returns pointers.
+    :cvar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
+    :cvar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
+    :cvar _ModuleUUID: (string) The UUID of the module.
     :cvar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
       and set as per the user.
-    :cvar _ModulesLibrary: preloaded pointer to Modules library.
-    :cvar _RegisterVoiceCommands: (list) Register voice commands to be used to send
-      commands to the module.
+    :cvar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
     """
     def __init__(self):
         """
@@ -147,7 +131,6 @@ class YomboModule:
         self._ModuleUUID = None
 
         self._Commands = getCommands()
-        self._CronTab = getCronTab()
 
         self._Devices = None
         self._DeviceTypes = None

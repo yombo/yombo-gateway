@@ -7,7 +7,7 @@ A database API to SQLite3.
 
    These functions, variables, and classes **should not** be accessed directly
    by modules. These are documented here for completeness. Use (or create) a
-   :ref:`helpers` function to get what is needed.
+   :ref:`utils <utils>` function to get what is needed.
 
    If additional information is needed to/from the database, open a feature
    request at `<https://projects.yombo.net/>` under the Gateway Project.

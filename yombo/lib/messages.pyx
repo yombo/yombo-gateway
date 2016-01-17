@@ -76,9 +76,7 @@ class Messages(YomboLibrary):
 
     def _module_prestart_(self, **kwargs):
         """
-        Implements the _module_prestart_ and is called after _load_ is called for all the modules.
-
-        Expects a list of events to subscribe to.
+        Called after _load_ is called for all the modules. Return a simple list of messages to subscribe to.
 
         **Usage**:
 

@@ -153,7 +153,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
            def ModuleName_voicecmds_load(self, **kwargs):
                return ['status']
         """
-        voicecommands_to_add = global_invoke_all('voicecmds_load')
+        voicecommands_to_add = global_invoke_all('voicecmds_add')
 #        logger.info("voicecommands_to_add: {voicecmds}", voicecmds=voicecommands_to_add)
 
         for componentName, voicecmds in voicecommands_to_add.iteritems():
