@@ -28,7 +28,7 @@ class CommandsTests(ExpectingTestCase):
                   'cmd'            : "testcmd1",
                   'label'          : "Test Cmd 1",
                   'inputtypeid'    : 1,
-                  'voicecmd'       : "test command 1",
+                  'voice_cmd'       : "test command 1",
                  }
 
         cmd = self._Commands._addCommand(record, True)
@@ -42,7 +42,7 @@ class CommandsTests(ExpectingTestCase):
         self.expectEqual(record['cmd'], cmd.cmd, "Command didn't init with correct cmd.")
         self.expectEqual(record['label'], cmd.label, "Command didn't init with correct label.")
         self.expectEqual(record['inputtypeid'], cmd.inputTypeID, "Command didn't init with correct inputtypeid.")
-        self.expectEqual(record['voicecmd'], cmd.voiceCmd, "Command didn't init with correct voicecmd.")
+        self.expectEqual(record['voice_cmd'], cmd.voice_cmd, "Command didn't init with correct voice_cmd.")
 
     def testCommandDump(self):
         """
@@ -56,7 +56,7 @@ class CommandsTests(ExpectingTestCase):
                   'cmd'            : "testcmd2",
                   'label'          : "Test Cmd 2",
                   'inputtypeid'    : 1,
-                  'voicecmd'       : "test command 2",
+                  'voice_cmd'       : "test command 2",
                  }
 
         cmd = self._Commands._addCommand(record, True)
@@ -71,7 +71,7 @@ class CommandsTests(ExpectingTestCase):
         self.expectEqual(record['cmd'], dump['cmd'], "Command didn't init with correct cmd.")
         self.expectEqual(record['label'], dump['label'], "Command didn't init with correct label.")
         self.expectEqual(record['inputtypeid'], dump['inputTypeID'], "Command didn't init with correct inputTypeID.")
-        self.expectEqual(record['voicecmd'], dump['voiceCmd'], "Command didn't init with correct voicecmd.")
+        self.expectEqual(record['voice_cmd'], dump['voice_cmd'], "Command didn't init with correct voice_cmd.")
 
 if __name__ == '__main__':
     main()

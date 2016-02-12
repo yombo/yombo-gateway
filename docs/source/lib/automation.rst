@@ -9,9 +9,9 @@ Automation (yombo.lib.automation)
 ===========================================
 .. automodule:: yombo.lib.automation
 
-Automation class
+Automation Class
 ===========================================
 .. autoclass:: Automation
    :members:
 
-   .. automethod:: __init__
+   .. automethod:: _module_prestart_

@@ -24,7 +24,7 @@ class LogWriter(YomboModule):
 
         # Get a file name save data to..
         if "logfile" in self._ModVariables:
-          self.fileName = self._ModVariables["logfile"][0]
+          self.fileName = self._ModVariables["logfile"][0]['value']
         else:
           logger.warn("No 'logfile' set for log writing, using default: 'logwriter.txt'")
           self.fileName = "logwriter.txt"
@@ -86,6 +86,6 @@ class LogWriter(YomboModule):
           msg['payload']['cmdUUID'] = msg['payload']['cmdobj'].cmdUUID
           del msg['payload']['cmdobj']
         if 'deviceobj' in msg['payload']:
-          msg['payload']['deviceUUID'] = msg['payload']['deviceobj'].deviceUUID
+          msg['payload']['device_id'] = msg['payload']['deviceobj'].device_id
           del msg['payload']['deviceobj']
         self.fp_out.write("%s\n" % json.dumps({'time':int(time.time()),'message':msg}) )

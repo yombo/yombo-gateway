@@ -3,7 +3,7 @@ import pyximport; pyximport.install()
 import time
 import mock
 
-from yombo.core.exceptions import YomboPinCodeError, DeviceError
+from yombo.core.exceptions import Yombopin_codeError, DeviceError
 from yombo.core.helpers import getComponent
 from yombo.lib.devices import Device
 
@@ -24,16 +24,16 @@ class DevicesTests(ExpectingTestCase):
         record = {'description'    : "Test device 1.",
                   'created'        : int(time.time())-10,
                   'updated'        : int(time.time()),
-                  'devicetypeuuid' : "zZzZzZzZzZzZzZzZzZzZzZ01",
-                  'pintimeout'     : 100,
-                  'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZ01",
+                  'device_type_id' : "zZzZzZzZzZzZzZzZzZzZzZ01",
+                  'pin_required'    : 0,
+                  'pin_code'      : "1234",
+                  'pin_timeout'     : 100,
+                  'device_id'     : "01zZzZzZzZzZzZzZzZzZzZ01",
                   'label'          : "tstdvc1",
-                  'pincode'      : "1234",
                   'status'         : 1, #device enabled or not, not device status
-                  'pinrequired'    : 0,
-                  'modulelabel'    : "ModuleUnitTest",
-                  'voicecmd'       : "tstdvc01 [on, off, open, close]",
-                  'voicecmdorder'  : "verbnoun",
+                  'module_label'    : "ModuleUnitTest",
+                  'voice_cmd'       : "tstdvc01 [on, off, open, close]",
+                  'voice_cmdorder'  : "verbnoun",
                  }
 
         dev = self._Devices._addDevice(record, True)
@@ -42,15 +42,15 @@ class DevicesTests(ExpectingTestCase):
         self.expectEqual(record['description'], dev.description, "Device didn't init with correct description.")
         self.expectEqual(record['created'], dev.created, "Device didn't init with correct create time.")
         self.expectEqual(record['updated'], dev.updated, "Device didn't init with correct update time.")
-        self.expectEqual(record['devicetypeuuid'], dev.deviceTypeUUID, "Device didn't init with correct devicetypeuuid.")
-        self.expectEqual(record['pintimeout'], dev.pintimeout, "Device didn't init with correct pintimeout.")
-        self.expectEqual(record['deviceuuid'], dev.deviceUUID, "Device didn't init with correct deviceuuid.")
+        self.expectEqual(record['device_type_id'], dev.device_type_id, "Device didn't init with correct device_type_id.")
+        self.expectEqual(record['pin_timeout'], dev.pin_timeout, "Device didn't init with correct pin_timeout.")
+        self.expectEqual(record['device_id'], dev.device_id, "Device didn't init with correct device_id.")
         self.expectEqual(record['label'], dev.label, "Device didn't init with correct label.")
-        self.expectEqual(record['pincode'], dev.pincode, "Device didn't init with correct pincode.")
-        self.expectEqual(record['pinrequired'], dev.pinrequired, "Device didn't init with correct pinrequired.")
-        self.expectEqual(record['modulelabel'], dev.moduleLabel, "Device didn't init with correct modulelabel.")
-        self.expectEqual(record['voicecmd'], dev.voiceCmd, "Device didn't init with correct voicecmd.")
-        self.expectEqual(record['voicecmdorder'], dev.voiceCmdOrder, "Device didn't init with correct voicecmdorder.")
+        self.expectEqual(record['pin_code'], dev.pin_code, "Device didn't init with correct pin_code.")
+        self.expectEqual(record['pin_required'], dev.pin_required, "Device didn't init with correct pin_required.")
+        self.expectEqual(record['module_label'], dev.module_label, "Device didn't init with correct module_label.")
+        self.expectEqual(record['voice_cmd'], dev.voice_cmd, "Device didn't init with correct voice_cmd.")
+        self.expectEqual(record['voice_cmdorder'], dev.voice_cmdOrder, "Device didn't init with correct voice_cmdorder.")
         self.expectEqual(record['status'], dev.enabled, "Device didn't init with correct enable status.")
 
     def testDeviceDump(self):
@@ -60,16 +60,17 @@ class DevicesTests(ExpectingTestCase):
         record = {'description'    : "Test device 2.",
                   'created'        : int(time.time())-9,
                   'updated'        : int(time.time()),
-                  'devicetypeuuid' : "zZzZzZzZzZzZzZzZzZzZzZ02",
-                  'pintimeout'     : 100,
-                  'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZ02",
+                  'device_type_id' : "zZzZzZzZzZzZzZzZzZzZzZ02",
+                  'pin_required'   : 0,
+                  'pin_timeout'    : 100,
+                  'pin_code'       : "1234",
+                  'device_id'      : "01zZzZzZzZzZzZzZzZzZzZ02",
                   'label'          : "tstdvc2",
-                  'pincode'        : "1234",
                   'status'         : 1, #device enabled or not, not device status
-                  'pinrequired'    : 0,
-                  'modulelabel'    : "ModuleUnitTest",
-                  'voicecmd'       : "tstdvc01 [on, off, open, close]",
-                  'voicecmdorder'  : "verbnoun",
+                  'module_label'    : "ModuleUnitTest",
+                  'voice_cmd'      : "tstdvc01 [on, off, open, close]",
+                  'voice_cmd_order' : "verbnoun",
+                  'Voice_cmd_src'  : "manual",
                  }
 
         dev = self._Devices._addDevice(record, True)
@@ -79,14 +80,14 @@ class DevicesTests(ExpectingTestCase):
         self.expectEqual(record['description'], dump['description'], "Device didn't init with correct description.")
         self.expectEqual(record['created'], dump['created'], "Device didn't init with correct create time.")
         self.expectEqual(record['updated'], dump['updated'], "Device didn't init with correct update time.")
-        self.expectEqual(record['devicetypeuuid'], dump['deviceTypeUUID'], "Device didn't init with correct devicetypeuuid.")
-        self.expectEqual(record['pintimeout'], dump['pintimeout'], "Device didn't init with correct pintimeout.")
-        self.expectEqual(record['deviceuuid'], dump['deviceUUID'], "Device didn't init with correct deviceuuid.")
+        self.expectEqual(record['device_type_id'], dump['device_type_id'], "Device didn't init with correct device_type_id.")
+        self.expectEqual(record['pin_timeout'], dump['pin_timeout'], "Device didn't init with correct pin_timeout.")
+        self.expectEqual(record['device_id'], dump['device_id'], "Device didn't init with correct device_id.")
         self.expectEqual(record['label'], dump['label'], "Device didn't init with correct label.")
-        self.expectEqual(record['pinrequired'], dump['pinrequired'], "Device didn't init with correct pinrequired.")
-        self.expectEqual(record['modulelabel'], dump['moduleLabel'], "Device didn't init with correct modulelabel.")
-        self.expectEqual(record['voicecmd'], dump['voiceCmd'], "Device didn't init with correct voicecmd.")
-        self.expectEqual(record['voicecmdorder'], dump['voiceCmdOrder'], "Device didn't init with correct voicecmdorder.")
+        self.expectEqual(record['pin_required'], dump['pin_required'], "Device didn't init with correct pin_required.")
+        self.expectEqual(record['module_label'], dump['module_label'], "Device didn't init with correct module_label.")
+        self.expectEqual(record['voice_cmd'], dump['voice_cmd'], "Device didn't init with correct voice_cmd.")
+        self.expectEqual(record['voice_cmdorder'], dump['voice_cmdOrder'], "Device didn't init with correct voice_cmdorder.")
 #        self.expectEqual(record['status'], dev.enabled, "Device didn't init with correct enable status.")
 
 
@@ -97,24 +98,24 @@ class DevicesTests(ExpectingTestCase):
         record = {'description'    : "Test device 2.",
                   'created'        : int(time.time())-9,
                   'updated'        : int(time.time()),
-                  'devicetypeuuid' : "zZzZzZzZzZzZzZzZzZzZzZ03",
-                  'pintimeout'     : 100,
-                  'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZ03",
+                  'device_id'     : "01zZzZzZzZzZzZzZzZzZzZ03",
+                  'device_type_id' : "zZzZzZzZzZzZzZzZzZzZzZ03",
+                  'pin_required'    : 1,
+                  'pin_timeout'     : 100,
+                  'pin_code'        : "1234",
                   'label'          : "tstdvc3",
-                  'pincode'        : "1234",
                   'status'         : 1, #device enabled or not, not device status
-                  'pinrequired'    : 1,
-                  'modulelabel'    : "ModuleUnitTest",
-                  'voicecmd'       : "tstdvc01 [on, off, open, close]",
-                  'voicecmdorder'  : "verbnoun",
+                  'module_label'    : "ModuleUnitTest",
+                  'voice_cmd'       : "tstdvc01 [on, off, open, close]",
+                  'voice_cmdorder'  : "verbnoun",
                  }
 
         dev = self._Devices._addDevice(record, True)  # create dummy device
-        with self.expectRaises(YomboPinCodeError):       # Pin is required, so, it should toss an error
+        with self.expectRaises(Yombopin_codeError):       # Pin is required, so, it should toss an error
             dev.getMessage('yombo.gateway.tests.devices')
 
         with self.expectRaises(DeviceError): # no cmd, cmdUUID, or cmdobj submitted.
-            dev.getMessage('yombo.gateway.tests.devices', pincode="1234")
+            dev.getMessage('yombo.gateway.tests.devices', pin_code="1234")
 
         command = {'description'    : "Test command 3.",
 #                  'created'        : int(time.time())-10,
@@ -124,7 +125,7 @@ class DevicesTests(ExpectingTestCase):
                   'cmd'            : "testcmd3",
                   'label'          : "Test Cmd 3",
                   'inputtypeid'    : 1,
-                  'voicecmd'       : "test command 3",
+                  'voice_cmd'       : "test command 3",
                  }
 
         _Commands = getComponent("yombo.gateway.lib.commands")
@@ -134,7 +135,7 @@ class DevicesTests(ExpectingTestCase):
         
         tempObj = mock.Mock()
         tempObj._FullName = "yombo.gateway.tests.devices"
-        dev.getMessage(tempObj, pincode="1234", cmd="Test Cmd 3")
+        dev.getMessage(tempObj, pin_code="1234", cmd="Test Cmd 3")
 
 if __name__ == '__main__':
     main()

@@ -28,9 +28,12 @@ import cPickle
 from itertools import izip
 from sqlite3 import Binary as sqlite3Binary
 
+
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks
+
 # Import Yombo libraries
 from yombo.lib.loader import getLoader
-from yombo.core.db import get_dbconnection
 from yombo.core.log import getLogger
 
 logger = getLogger('core.sqldict')
@@ -50,39 +53,32 @@ class SQLDict(dict):
     If the dictionary for the given "dictname" exists, it will be populated
     from the database, otherwise it will be created.
     """
-    def __init__(self, moduleObj, dictname):
+    def __init__(self, moduleObj, dict_name):
         """
-        On init, construct a new dictionary. If there is an existing 'dictname' for
+        On init, construct a new dictionary. If there is an existing 'dict_name' for
         the given 'moduleObj', then it will be loaded.
 
         Update SQL on any updates/deletes.
         :param moduleObj: The module object that is using this data.
         :type moduleObj: Module Object
-        :param dictname: Name of the dictionary to store in the database.
-        :type dictname: string
+        :param dict_name: Name of the dictionary to store in the database.
+        :type dict_name: string
         """
         super(SQLDict, self).__init__()
         self.__init = True  # only true when loaded, don't save what was just loaded.
-        self.__dbpool = get_dbconnection()
-        self.__moduleName = moduleObj._FullName.lower()
-        self.__dictName = dictname
+        self.__module_name = moduleObj._FullName.lower()
+        self.__dict_name = dict_name
         self.__loader = getLoader()
 
-        c = self.__dbpool.cursor()
-        c.execute('SELECT key1, data1 FROM sqldict WHERE module = ? AND dictname = ?', (self.__moduleName, self.__dictName))
-        data = c.fetchall()
-        if data is None or len(data) == 0:
-            self.__init = False        
-            return
-        records = []
-        field_names = [d[0].lower() for d in c.description]
-        for row in data:
-            row = dict(izip(field_names, row))
-            mydata = cPickle.loads(str(row['data1']))
-            logger.debug("key === {key}  data = {mydata}", key=row['key1'], data=mydata)
-            self[row['key1']] = mydata
-
         self.__init = False        
+
+    @inlineCallbacks
+    def load(self):
+        data = yield self.__loader.loadedLibraries['localdb'].get_sql_dict(self.__module_name, self.__dict_name)
+        mydata = cPickle.loads(str(data.dict_data))
+        logger.debug("key === {key}  data = {mydata}", key=data.data_key, data=mydata)
+        self[data.dict_key] = mydata
+
 
     def __setitem__(self, key, value):
         """
@@ -99,7 +95,7 @@ class SQLDict(dict):
             return True
         pdata = sqlite3Binary(cPickle.dumps(value, cPickle.HIGHEST_PROTOCOL))
 
-        self.__loader.saveSQLDict(self.__moduleName, self.__dictName, key, pdata)
+        self.__loader.saveSQLDict(self.__module_name, self.__dict_name, key, pdata)
 
     def setdefault(self, key, value=None):
         if key not in self:

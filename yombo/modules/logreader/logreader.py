@@ -62,7 +62,7 @@ class LogReader(YomboModule):
 
         # Get a file name to monitor.
         if "logfile" in self._ModuleVariables:
-            self.fileName = self._ModuleVariables["logfile"]['value'][0]
+            self.fileName = self._ModuleVariables["logfile"][0]['value']
         else:
             logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
             self.fileName = "logreader.txt"

@@ -34,8 +34,8 @@ _supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
 from collections import deque
 from time import time
 
-from yombo.core.log import getLogger
 from yombo.core.library import YomboLibrary
+from yombo.core.log import getLogger
 import yombo.utils
 
 logger = getLogger("library.atoms")

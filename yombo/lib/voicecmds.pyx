@@ -25,7 +25,7 @@ XAP, microphone with speech to text processing capabilities, etc.
     Noun: living room desk lamp
     Verb: off
 
-Two primary actions the voicecmd class can do::
+Two primary actions the voice_cmd class can do::
 
 #. Add voice commands
 #. Search for voice commands
@@ -45,7 +45,7 @@ call the add function with a "command string". The format can either be
 'noun [list of verbs]' or '[list of verbs] noun'. The command string
 will be parsed the same, regardless of input styple
 
-Can associate a command string to a specific deviceUUID if desired,
+Can associate a command string to a specific device_id if desired,
 however most modules will not set this and leave is as 0. Lastly, the
 format, or order, of the voice command can be set. For noun/verb order,
 such as "desklamp off", set the "order" variable to "nounverb". For
@@ -63,17 +63,17 @@ the fuzzysearch phase of voice command lookup.
 
      from yombo.core.helpers import getVoiceCommands
             
-     voicecmds = getVoiceCommands()
-     voicecmds.add("computer [sleep, hibernate, reset, power off]", 'module.computerTools', 0, 'nounverb')
+     voice_cmds = getVoiceCommands()
+     voice_cmds.add("computer [sleep, hibernate, reset, power off]", 'module.computerTools', 0, 'nounverb')
 
-  Search for the deviceuuid for the desklamp and get the cmdUUID based on the action:
+  Search for the device_id for the desklamp and get the cmdUUID based on the action:
   
   .. code-block:: python
 
      from yombo.core.helpers import getVoiceCommands
             
-     voicecmds = getVoiceCommands()
-     voicecmds["desklamb off"] # it's misspelled, but it will still be found.
+     voice_cmds = getVoiceCommands()
+     voice_cmds["desklamb off"] # it's misspelled, but it will still be found.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2016 by Yombo.
@@ -89,7 +89,7 @@ from yombo.core.log import getLogger
 from yombo.core.message import Message
 from yombo.utils import global_invoke_all
 
-logger = getLogger('library.voicecmds')
+logger = getLogger('library.voice_cmds')
 
 class VoiceCmds(FuzzySearch, YomboLibrary):
     """
@@ -99,13 +99,13 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
     all possible noun/verb combinations, and provides an ability to *not* have
     to be 100% accurate when looking up noun/verb pairs.
 
-    Convert "voicecmd" strings into voice commands.
+    Convert "voice_cmd" strings into voice commands.
 
     Also, provides searching for voice commands.
     """
     def _init_(self, loader):
         """
-        Construct a new VoiceCmds Instance
+        Construct a new voice_cmds Instance
 
         items is an dictionary to copy items from (optional)
         limiter is the match ratio below which mathes should not be considered
@@ -150,20 +150,20 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
 
         .. code-block:: python
 
-           def ModuleName_voicecmds_load(self, **kwargs):
+           def ModuleName_voice_cmds_load(self, **kwargs):
                return ['status']
         """
-        voicecommands_to_add = global_invoke_all('voicecmds_add')
-#        logger.info("voicecommands_to_add: {voicecmds}", voicecmds=voicecommands_to_add)
+        voicecommands_to_add = global_invoke_all('voice_cmds_add')
+#        logger.info("voicecommands_to_add: {voice_cmds}", voice_cmds=voicecommands_to_add)
 
-        for componentName, voicecmds in voicecommands_to_add.iteritems():
-            if voicecmds is None:
+        for componentName, voice_cmds in voicecommands_to_add.iteritems():
+            if voice_cmds is None:
                 continue
-            for list in voicecmds:
-                logger.debug("For module '{fullName}', adding voicecmd: {voiceCmd}, order: {order}", voiceCmd=list['voiceCmd'], fullName=componentName, order=list['order'])
-                self.add(list['voiceCmd'], componentName, None, list['order'])
+            for list in voice_cmds:
+                logger.debug("For module '{fullName}', adding voice_cmd: {voice_cmd}, order: {order}", voice_cmd=list['voice_cmd'], fullName=componentName, order=list['order'])
+                self.add(list['voice_cmd'], componentName, None, list['order'])
 
-    def add(self, voiceString, destination, deviceUUID = None, order = 'both'):
+    def add(self, voiceString, destination, device_id = None, order = 'both'):
         """
         Add a voice command to the available voice commands.
 
@@ -174,12 +174,12 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         :type destination: string
         :param kwargs: Multiple key/value pairs.
 
-                 - deviceUUID: (string) The deviceUUID of the item if exists.
+                 - device_id: (string) The device_id of the item if exists.
                  - order: (string) Order of the voice command.  One of: both, nounverb, verbnoun.
         """
         logger.debug("Adding voice command: {voiceString}", voiceString=voiceString)
         if voiceString is None or voiceString is None:
-            raise YomboException("VoiceString or destination is mising.", 1000, 'voicecmd', 'core')
+            raise YomboException("VoiceString or destination is mising.", 1000, 'voice_cmd', 'core')
 
         tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))
         stringParts = tag_re.split(voiceString)
@@ -189,7 +189,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         verbs = []
 
         if len(stringParts) > 2:
-            raise YomboException("Cannot have more then 2 string parts for VoiceString.", 1000, 'voicecmd', 'core')
+            raise YomboException("Cannot have more then 2 string parts for VoiceString.", 1000, 'voice_cmd', 'core')
 
         for part in range(len(stringParts)):
             stringParts[part] = stringParts[part].strip()
@@ -203,7 +203,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                 noun = stringParts[part]
 
         if len(verbs) == 0:
-            raise YomboException("No verbs found in VoiceString.", 1000, 'voicecmd', 'core')
+            raise YomboException("No verbs found in VoiceString.", 1000, 'voice_cmd', 'core')
 
         logger.debug("commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
         for verb in verbs:
@@ -214,7 +214,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
             if order == 'both':
               a = { "%s %s" % (noun, verb) : { 'noun' : noun, 
                                           'verb' : verb,
-                                    'deviceUUID' : deviceUUID,
+                                    'device_id' : device_id,
                                        'cmdUUID' : command.cmdUUID,
                                           'order': 'nounverb',
                                    'destination' : destination,
@@ -223,7 +223,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
 
               a = { "%s %s" % (verb, noun) : { 'noun' : noun, 
                                           'verb' : verb,
-                                    'deviceUUID' : deviceUUID,
+                                    'device_id' : device_id,
                                        'cmdUUID' : command.cmdUUID,
                                           'order': 'nounverb',
                                    'destination' : destination,
@@ -233,7 +233,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
             elif order == 'nounverb':
               a = { "%s %s" % (noun, verb) : { 'noun' : noun, 
                                           'verb' : verb,
-                                    'deviceUUID' : deviceUUID,
+                                    'device_id' : device_id,
                                        'cmdUUID' : command.cmdUUID,
                                           'order': 'nounverb',
                                    'destination' : destination,
@@ -243,7 +243,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
             else:
               a = { "%s %s" % (verb, noun) : { 'noun' : noun, 
                                           'verb' : verb,
-                                    'deviceUUID' : deviceUUID,
+                                    'device_id' : device_id,
                                        'cmdUUID' : command.cmdUUID,
                                           'order': 'nounverb',
                                    'destination' : destination,
@@ -251,21 +251,21 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                                         } }
               self.update(a)
 
-    def getMessage(self, voiceCmd, origin = "yombo.gateway.lib.voicecmds"):
+    def getMessage(self, voice_cmd, origin = "yombo.gateway.lib.voice_cmds"):
         """
         Generates a message that is ready to be sent.
 
-        :param voiceCmd: The result of a voiceCmd search. This will be the payload of the message.
-        :type voiceCmd: voiceCmd search results.
+        :param voice_cmd: The result of a voice_cmd search. This will be the payload of the message.
+        :type voice_cmd: voice_cmd search results.
         :return: The generated msdUUID
         """
-        payload = { 'deviceUUID' : voiceCmd['value']['deviceUUID'],
-                    'cmdUUID' : voiceCmd['value']['cmdUUID'],
+        payload = { 'device_id' : voice_cmd['value']['device_id'],
+                    'cmdUUID' : voice_cmd['value']['cmdUUID'],
                   }
-        if voiceCmd['value']['deviceUUID'] != None:
+        if voice_cmd['value']['device_id'] != None:
             msg = {
             'msgOrigin'      : origin,
-            'msgDestination' : "yombo.gateway.modules.%s" % voiceCmd['value']['destination'],
+            'msgDestination' : "yombo.gateway.modules.%s" % voice_cmd['value']['destination'],
             'msgType'        : "cmd",
             'msgStatus'      : "new",
             'msgStatusExtra' : '',
@@ -274,5 +274,5 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
             message = Message(**msg)
             return message
         else:
-            return self._Devices[voiceCmd['value']['deviceUUID']].getMessage(self, cmdid=voiceCmd['value']['cmdUUID'])
+            return self._Devices[voice_cmd['value']['device_id']].getMessage(self, cmdid=voice_cmd['value']['cmdUUID'])
         

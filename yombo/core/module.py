@@ -165,21 +165,21 @@ class YomboModule:
         function completes, it should be able to accept and process messages. Doesn't send
         messages at this stage.
         """
-        raise NotImplementedError()
+        pass
 
     def _start_(self):
         """
         Phase 3 of 3 for statup - Called when this module should start processing and is
         now able to send messages to other components.
         """
-        raise NotImplementedError()
+        pass
 
     def _stop_(self):
         """
         Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incomming
         messages for processing.
         """
-        raise NotImplementedError()
+        pass
 
     def _unload_(self):
         """
@@ -187,11 +187,11 @@ class YomboModule:
         to this module. Close all connections/items. Once this function ends, it's
         possible that the process will terminate.
         """
-        raise NotImplementedError()
+        pass
 
     def message(self, message):
         """
         Incoming messeages from other components (internal and external to the gateway) will
         be sent to this method.
         """
-        raise NotImplementedError()
+        pass

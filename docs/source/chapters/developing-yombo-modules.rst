@@ -19,10 +19,11 @@ The example modules will guide you through the key concepts:
 * A more complex example that performs various activities based on time of day is documented at Yombo Projects:
   `Building Your First Module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_
 
-Other Topics
-############
+.. rubric:: Other Topics
 
 * :ref:`Hooks <hooks>` - System to extend the gateway software feature set.
+
+.. rubric:: List of demo modules
 
 .. toctree::
    :maxdepth: 1
@@ -32,4 +33,5 @@ Other Topics
    ../examples/logwriter
    ../examples/mynightmode
    ../examples/automationexample
-   hooks.rst
+
+

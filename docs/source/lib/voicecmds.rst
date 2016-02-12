@@ -13,3 +13,5 @@ VoiceCmds Class
 ================
 .. autoclass:: VoiceCmds
    :members:
+
+   .. automethod:: _module_prestart_

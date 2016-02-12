@@ -4,33 +4,30 @@
 Hooks
 ##################
 
-Yombo's module system also implements a concept of "hooks". A hook is a
-python function that is can be called from other libraries or modules.
+Hooks allow modules to interact with the framework core.
 
-Hooks are typically used for two primary reasons:
-1. Allows a module or library to modify something before an action takes place
-2. By API type modules and libraries that extend the funcationality of
-  the gateway.
+Yombo's module system also implements a concept of "hooks". A hook is a python function that is can be called from
+other libraries or modules.
 
-A hook is a specially named function, sus as "example_bar()", where
-"example" is the name of the module and "bar" is name the hook.
-Within any documentation, the string "hook" is a placeholder for the module name.
+A hook is a specially named function, such as "example_bar()", where "example" is the name of the module and "bar" is
+the name of the hook. Within any documentation, the string "hook" is a placeholder for the module name.
 
-For example, the messages library will call hook_subscriptions to get a list
-of messages subscriptions. The voicecmds library will call
-hook_voicecmds. The automation module will call several hooks to look for
-rules, source and filter processors, action handlers, etc.
+To extend Yombo, a module simply needs to implement a hook. When Yombo wishes to allow intervention from modules, it
+determines which modules implement a hook and calls them
 
-Any hooks ending in "_alter" will will send in a dictionary of items that
-allows a module to manipulate any values. For example, the messages library
-will call hook_subscriptions_alter after hook_subscriptions. This would allow
-a module to alter any subscriptions as needed.
+The available hooks defined as a core feature are explained here in the Hooks section of the developer documentation.
 
-=========================== ========================================================================= ========================== ==============================================================
-Source                      Hook Name                                                                 When Called                Description
-=========================== ========================================================================= ========================================== ==============================================================
-Automation                  :meth:`automation_source_list <automation_source_list>`                   module_prestart            Add value sources for triggers and conditions
-Automation                  automation_filter_list                                                    module_prestart            Add filter processors for triggers and conditions
-Automation                  automation_action_list                                                    module_prestart            Add actions available for rules
-Messages                    message_subscriptions                                                     module_prestart            Add subscriptions for messages.
-VoiceCmds                   voicecmds_add                                                             module_prestart            Add add voice commands
+Any hooks ending in "_alter" will will send in a dictionary of items that is about to be processed. This allows a
+module to make various modifications on that data. No data needs to be returns as the data will be updated due being
+passed in by reference.
+
+=========================== ================================================================================================== ========================== ==============================================================
+Source                      Hook Name                                                                                          When Called                Description
+=========================== ================================================================================================== ========================== ==============================================================
+Automation                  :py:meth:`automation_source_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add value sources for triggers and conditions
+Automation                  :py:meth:`automation_filter_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add filter processors for triggers and conditions
+Automation                  :py:meth:`automation_action_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add actions available for rules
+Automation                  :py:meth:`automation_rules_list <yombo.lib.automation.Automation._module_prestart_>`               module_prestart            Add rules
+Messages                    :py:meth:`message_subscriptions <yombo.lib.automation.Automation._module_prestart_>`               module_prestart            Add subscriptions for messages.
+VoiceCmds                   :py:meth:`voicecmds_add <yombo.lib.automation.Automation._module_prestart_>`                       module_prestart            Add add voice commands
+=========================== ================================================================================================== ========================== ==============================================================

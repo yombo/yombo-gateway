@@ -10,3 +10,5 @@ FuzzySearch (yombo.core.fuzzysearch)
 
 .. automodule:: yombo.core.fuzzysearch
    :members:
+
+   .. automethod:: __init__

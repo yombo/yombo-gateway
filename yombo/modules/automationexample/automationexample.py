@@ -23,7 +23,8 @@ class AutomationExample(YomboModule):
 
     def _load_(self):
         # in 3 seconds from now, change the state - test the trigger
-        reactor.callLater(3, self.set_low)
+#        reactor.callLater(3, self.set_low)
+        pass
 
     def AutomationExample_automation_rules_list(self, **kwargs):
         return {'rules': [
@@ -110,11 +111,11 @@ class AutomationExample(YomboModule):
 
     def call_when_high(self, **kwargs):
         logger.info("it's now high! {kwargs}", kwargs=kwargs)
-        reactor.callLater(2, self.set_low)
+        reactor.callLater(10, self.set_low)
 
     def call_when_low(self, **kwargs):
         logger.info("it's now low! {kwargs}", kwargs=kwargs)
-        reactor.callLater(2, self.set_high)
+        reactor.callLater(10, self.set_high)
 
     def _stop_(self):
         pass

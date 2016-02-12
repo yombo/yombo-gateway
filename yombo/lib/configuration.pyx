@@ -22,12 +22,15 @@ are kept to a minimum.
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 import ConfigParser
 import hashlib
 import time
 
-from yombo.core.db import get_dbconnection
+# Import twisted libraries
+from twisted.internet.task import LoopingCall
+
+# Import Yombo libraries
 from yombo.core.exceptions import YomboCritical
 from yombo.core.helpers import getExternalIPAddress
 from yombo.core.log import getLogger
@@ -41,13 +44,10 @@ class Configuration(YomboLibrary):
     """
     Configuration storage module for the gateway service.
 
-    This class manages the yombo.ini file.  It reads this file on startup and
-    stores the configuration items into the config table of the database. When
-    the gateway shuts down, it replaces the yombo.ini file with the current
-    configuration set.  This makes it possible for end users to make changes,
-    if needed; however this should be rare.
+    This class manages the yombo.ini file. It reads this file on startup and
+    stores the configuration items into a cache. The configuration is never
+    stored in the database.
     """
-
     MAX_KEY = 100
     MAX_VALUE = 5001
 
@@ -60,17 +60,14 @@ class Configuration(YomboLibrary):
         :param loader: The loader module.
         :type loader: loader
         """
-        self.cache = {}  # simple database cache.
+        self.cache = {'core':{}}  # simple cache
         self.cacheMisses = 0
         self.cacheHits = 0
-        
+
         self.loader = loader
+        self.cacheDirty = False
         
-        self.dbpool = get_dbconnection()
-        self.cursor = self.dbpool.cursor()
-
         config_parser = ConfigParser.SafeConfigParser()
-
 
         try:
             fp = open('yombo.ini')
@@ -78,11 +75,6 @@ class Configuration(YomboLibrary):
             ini = config_parser
             fp.close()
 
-            # check if "deletedbconfigs" is in the local section - remove configs from db
-            if ini.has_section('local') and ini.has_option('local', 'deletedbconfigs'):
-                if ini.get('local', 'deletedbconfigs').lower() == "true":
-                    self.cursor.execute("DELETE FROM config")
-                    ini.get('local', 'deletedbconfigs', "false")
             for section in ini.sections():
                 if section == 'updateinfo':
                     continue
@@ -96,29 +88,8 @@ class Configuration(YomboLibrary):
                           value = float(value)
                         except:
                           value = str(value)
-                    updateItem = section + "_+_" + option + "_+_hash"
-                    hashValue = ""
+                    self.cache[section][option] = value
 
-                    # check hash in the DB, if not there or not match, update
-                    theValue = self._readDB(section, option)
-                    if theValue != False:
-                        hashValue = hashlib.sha224( str(theValue) ).hexdigest()
-                        try:
-                            # compare hash, if same, then check time.
-                            if hashValue == ini.get('updateinfo', updateItem):
-                                updateItem = section + "_+_" + option + "_+_time"
-                                theValue = self._readDB('updateinfo', updateItem)
-
-                                #last place with higher time wins.
-                                if theValue != False:
-                                    if ini.get('updateinfo', updateItem) < theValue:
-                                        self.cache[section][option] = value
-                                        continue
-                        except:
-                            pass
-                    # if here, then hash doesn't match and time in .ini is newer        
-                    self.write(section, option, value)
-            self.dbpool.commit()
         except IOError:
             raise YomboCritical("ERROR: yombo.ini doesn't exist. Use ./config to setup.", 503, "startup")
         except ConfigParser.NoSectionError:
@@ -128,18 +99,26 @@ class Configuration(YomboLibrary):
         if 'local' in self.cache:
             if 'deletedelayedmessages' in self.cache['local']:
                 if self.cache['local']['deletedelayedmessages'].lower() == "true":
-                    self.cursor.execute("DELETE FROM sqldict WHERE module='yombo.gateway.lib.messages'")
-                self.write('local', 'deletedelayedmessages', 'false')
+                    self._Libraries['localdb'].delete('sqldict', ['module = ?', 'yombo.gateway.lib.messages'])
+                self.cache['local']['deletedelayedmessages'] = 'false'
+                self.cacheDirty = True
+
             if 'deletedevicehistory' in self.cache['local']:
                 if self.cache['local']['deletedevicehistory'].lower() == "true":
-                    self.cursor.execute("DELETE FROM devicestatus")
-                self.write('local', 'deletedevicehistory', 'false')
+                    self._Libraries['localdb'].truncage('devicestatus')
+                self.cache['local']['deletedevicehistory'] = 'false'
+                self.cacheDirty = True
+        if 'externalIPAddressTime' in self.cache['core']:
+            if int(self.cache['core']['externalIPAddressTime']) < int(time.time()) - 12000:
+              self.write("core", "externalIPAddress", getExternalIPAddress())
+              self.write("core", "externalIPAddressTime", int(time.time()))
+        else:
+            self.write("core", "externalIPAddress", getExternalIPAddress())
+            self.write("core", "externalIPAddressTime", int(time.time()))
 
-        lastTime = self.read("core", "externalIPAddressTime", 1000)
-        if int(lastTime) < int(time.time()) - 12000:
-          self.write("core", "externalIPAddress", getExternalIPAddress())
-          self.write("core", "externalIPAddressTime", int(time.time()))
-          
+        self.periodic_save_ini = LoopingCall(self._save_ini)
+        self.periodic_save_ini.start(300, False)
+
     def _load_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
@@ -150,6 +129,8 @@ class Configuration(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
+#        self._save_ini_ptr = LoopingCall(self._save_init)
+#        self._save_ini_ptr.start(30)
         pass
   
     def _stop_(self):
@@ -165,26 +146,24 @@ class Configuration(YomboLibrary):
         """
         logger.debug("config stopping...Cache hits: {cacheHits}, cacheMisses: {cacheMisses}", cacheHits=self.cacheHits, cacheMisses=self.cacheMisses)  # todo: add to stats
         logger.info("saving config file...")
-        
-        Config = ConfigParser.ConfigParser()
+        self._save_ini(True)
 
-        for section in self.cache:
-            Config.add_section(section)
-            for item in self.cache[section]:
-                Config.set(section, item, self.cache[section][item])
+    def _save_ini(self, force_save=False):
+        """
+        Save the configuration cache to the INI file.
 
-        configfile = open("yombo.ini",'w')
-        Config.write(configfile)
+        #Todo: convert to fdesc for non-blocking. Need example of usage.
+        """
+        if self.cacheDirty is True or force_save is True:
+            Config = ConfigParser.ConfigParser()
+            for section in self.cache:
+                Config.add_section(section)
+                for item in self.cache[section]:
+                    Config.set(section, item, self.cache[section][item])
 
-        # Now, lets delete all the configuration items from the database.
-        # This way the user can edit the yombo.ini file, which includes
-        # deleting entries.
-        # The DB is used to make sure configurations are persisted if the
-        # gateway is terminated unexpectedly. The yombo.ini will be
-        # updated on the next successful termination.
-        # DB calls are faster the writing entire files on each config update.
-        self.cursor.execute("DELETE FROM config")
-        self.dbpool.commit()
+            configfile = open("yombo.ini",'w')
+            Config.write(configfile)
+            configfile.close()
 
     def message(self, message):
         """
@@ -228,36 +207,19 @@ class Configuration(YomboLibrary):
         if section in self.cache:
             if key in self.cache[section]:
                 self.cacheHits += 1
+#                returnValue(self.cache[section][key])
                 return self.cache[section][key]
-        
+
         self.cacheMisses += 1
-        output = self._readDB(section, key)
 
-        if output is False:
-            self.write(section,key, default) # save to ini so user can play
+        # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
+        if default is not None:
+            if section not in self.cache:
+               self.cache[section] = {}
+            self.cache[section][key] = default
             return default
-
-        if section not in self.cache:
-            self.cache[section] = {}
-        self.cache[section][key] = output
-        return output
-
-    def _readDB(self, section, key):
-        c = self.dbpool.cursor()
-        c.execute("select configValue from config where configPath='%s' AND configKey='%s'" % (section, key))
-        row = c.fetchone()
-        output = None
-        if row:
-            input = row[0]
-            try:
-                output = int(input)
-            except:
-                try:
-                  output = float(input)
-                except:
-                  output = str(input)
-            return output
-        return False
+        else:
+            return None
 
     def write(self, section, key, value):
         """
@@ -290,49 +252,13 @@ class Configuration(YomboLibrary):
         if 'updateinfo' not in self.cache:
             self.cache['updateinfo'] = {}
 
-        c = self.dbpool.cursor()
-        if section != 'local': # don't save local items to the DB
-            c.execute("select configid from config where configPath='%s' AND configKey='%s'" % (section, key))
-            row = c.fetchone()
-
-            if row:
-                configid = row[0]
-                c.execute("""
-                    update config set configValue=?, updated=? where configPath=? AND configId=?;""", (value, int(time.time()), section, configid) )
-            else:
-                c.execute("""
-                    replace into config (configPath, configKey, configValue, updated)
-                    values  (?, ?, ?, ?);""", (section, key, value, int(time.time())) )
-
         updateItem = section + "_+_" + key + "_+_time"
         self.cache['updateinfo'][updateItem] = int( time.time() )
-
-        c.execute("select configid from config where configPath='updateinfo' AND configKey='%s'" % (updateItem))
-        row = c.fetchone()
-
-        if row:
-            configid = row[0]
-            c.execute("""
-                update config set configValue=?, updated=? where configPath=? AND configId=?;""", (self.cache['updateinfo'][updateItem], int(time.time()), 'updateinfo', updateItem) )
-        else:
-            c.execute("""
-                replace into config (configPath, configKey, configValue, updated)
-                values  (?, ?, ?, ?);""", ('updateinfo', updateItem, self.cache['updateinfo'][updateItem], int(time.time())) )
 
         updateItem = section + "_+_" + key + "_+_hash"
         self.cache['updateinfo'][updateItem] = hashlib.sha224( str(value) ).hexdigest()
 
-        c.execute("select configid from config where configPath='updateinfo' AND configKey='%s'" % (updateItem))
-        row = c.fetchone()
-
-        if row:
-            configid = row[0]
-            c.execute("""
-                update config set configValue=?, updated=? where configPath=? AND configId=?;""", (self.cache['updateinfo'][updateItem], int(time.time()), 'updateinfo', updateItem) )
-        else:
-            c.execute("""
-                replace into config (configPath, configKey, configValue, updated)
-                values  (?, ?, ?, ?);""", ('updateinfo', updateItem, self.cache['updateinfo'][updateItem], int(time.time())) )
+        self.cacheDirty = True
 
     def delete(self, section, key):
         """
@@ -350,6 +276,6 @@ class Configuration(YomboLibrary):
 
         if section == 'local': # don't save local items to the DB
           return
-
-        c = self.dbpool.cursor()
-        c.execute("DELETE FROM config WHERE  configPath='%s' AND configKey='%s'" % (section, key))
+        if section in self.cache:
+            if key in self.cache[section]:
+                del self.cache[section][key]

@@ -2,10 +2,10 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://yombo.net
 """
-Allows fuzzy key search on dictionary keys, expands on the base dictionary class.
+Allows fuzzy, non-exact, key search on dictionary keys. This expands on the base dictionary class.
 
-This class is helpful for finding dictionary keys when the key only needs
-to be approximate and not exact.
+This class is helpful for finding dictionary keys when the key only needs to be approximate and not exact. The search
+exactness can be fine tuned using a percent value from .99 - .10, the default 75%.
 
 **Usage**:
 
@@ -14,12 +14,12 @@ to be approximate and not exact.
    from yombo.core.fuzzysearch import FuzzySearch
     
    items = FuzzySearch({'mom' : 'Jane', 'dad' : 'Joe'}, .95) # Lets be strict, much match 95%
-   items['brother'] = 'Jeff'   # add an additional entry.
+   items['brother'] = 'Jeff'  # add an additional entry.
    
    momName = ''
    try:
        momName = items['mum']  #this will result in a YomboFuzzySearchError due to our 95% requirement
-                               #if we lowered the requirement to 70%, it would find it.
+                               #if we lowered the requirement to 90%, it would find it.
    catch YomboFuzzySearchError, e:  #e contains a bunch of attributes that are useful.
            momName = e.value   #Use the highest value that was found.
    print momName               #this will output Jane
@@ -29,7 +29,7 @@ to be approximate and not exact.
    Search, but only require 50% match.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -45,16 +45,13 @@ class FuzzySearch(dict):
     """
     Fuzzy searches on dictionary keys.
 
-    Allows for searching on keys, but doesn't require to be 100% accurate.
-    
-    To use, just create a new object of this class and treat it like a dictionary.
     """
     def __init__(self, seed=None, limiter=.75):
         """
         Construct a new fuzzy search dictionary
         
-        seed a dictionary to seed the fuzzy search with
-        limiter is the match ratio below which mathes should not be considered
+        The dictionary can be started like any other dictionary, just pass it. The limiter is match ratio cut-off. High
+        values make matching more strict.
         
         :param seed: A starting dictionary.
         :type seed: dict
@@ -80,6 +77,37 @@ class FuzzySearch(dict):
         self._dict_getitem = lambda key: \
             super(FuzzySearch, self).__getitem__(key)
 
+    def __contains__(self, searchFor):
+        """
+        Overides python dict __contains__ - Return true if searchFor is
+        found in the dict key space, using fuzzy search.
+
+        :param searchFor: The key of the dictionary to search for.
+        :type searchFor: int or string
+        :return: If close key is found, True, otherwise false.
+        :rtype: bool
+        """
+        if self._search(searchFor, True)[0]:
+            return True
+        else:
+            return False
+
+    def __getitem__(self, searchFor):
+        """
+        Overides python dict __getitem__ - Try to return exact match first, then do
+        fuzzy search of the dict key space.
+
+        :param searchFor: The key of the dictionary to search for.
+        :type searchFor: int or string
+        :return: The value of from the dict[searchFor]
+        """
+        found, key, item, ratio, others = self._search(searchFor)
+
+        if not found:
+            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
+
+        return item
+
     def search(self, searchFor, limiterOverride=None):
         """
         What key to search for.  It returns 5 variables as a dictionary:
@@ -93,7 +121,7 @@ class FuzzySearch(dict):
         :param searchFor: The key of the dictionary to search for.
         :type searchFor: int or string
         :param limiterOverride: temporarily override the limiter for only this search.
-        :type limiterOverride
+        :type float
         :return: See description for details
         :rtype: dict
         """
@@ -189,38 +217,7 @@ class FuzzySearch(dict):
         """
         return list(islice(iterable, n))
 
-    def __contains__(self, searchFor):
-        """
-        Overides python dict __contains__ - Return true if searchFor is
-        found in the dict key space, using fuzzy search.
-
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :return: If close key is found, True, otherwise false.
-        :rtype: bool
-        """
-        if self._search(searchFor, True)[0]:
-            return True
-        else:
-            return False
-
-    def __getitem__(self, searchFor):
-        """
-        Overides python dict __getitem__ - Try to return exact match first, then do
-        fuzzy search of the dict key space.
-        
-        :param searchFor: The key of the dictionary to search for.
-        :type searchFor: int or string
-        :return: The value of from the dict[searchFor]
-        """
-        found, key, item, ratio, others = self._search(searchFor)
-
-        if not found:
-            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
-
-        return item
-
-    def getKey(self, searchFor):
+    def get_key(self, searchFor):
         """
         Returns the closest key of this dictionary for 'searchFor'.
         

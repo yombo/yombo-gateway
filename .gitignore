@@ -20,6 +20,7 @@ builddocs.sh*
 localmodules.ini*
 automation.txt*
 *.freeze
+*test.db
 
 # Building / Documentation #
 ############################

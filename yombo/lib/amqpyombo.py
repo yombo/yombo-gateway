@@ -52,14 +52,11 @@ except ImportError:
     HASMSGPACK = False
 
 import pika
-#from pika import spec
-#from pika import exceptions
 from pika.adapters import twisted_connection
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet import ssl, protocol, defer
-from twisted.python import log
 from twisted.internet import reactor
 
 # Import Yombo libraries
@@ -230,7 +227,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 if props.correlation_id is None or not isinstance(props.correlation_id, basestring):
                     raise YomboWarning("Correlation_id must be present for 'Response' types, and must be a string.")
                 if props.correlation_id not in self.factory.sentCorrelationIDs:
-                    logger.debug("{correlation_id} not in list of ids: {sentCorrelationIDs} ", correlation_id= props.correlation_id, sentCorrelationIDs=self.factory.sentCorrelationIDs)
+                    logger.debug("{correlation_id} not in list of ids: {sentCorrelationIDs} ", correlation_id=props.correlation_id, sentCorrelationIDs=self.factory.sentCorrelationIDs.keys())
                     raise YomboWarning("Received request {correlation_id}, but never asked for it. Discarding", correlation_id=props.correlation_id)
             else:
                 raise YomboWarning("Unknown message type recieved.")
@@ -287,13 +284,13 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
           if not queue_no_ack:
             logger.debug("AMQP Sending {status} due to unknown exception. Tag: {tag}", status='NACK', tag=deliver.delivery_tag)
             channel.basic_nack(deliver.delivery_tag, False, False)
-          raise Exception
+#          raise Exception
         else:
           logger.debug('Calling callback: {callback}', callback=callback)
           d = defer.maybeDeferred(callback, deliver, props, msg)
           if not queue_no_ack:
             # if it gets here, it's passed basic checks. Lets either store the message for later or pass it on.
-            logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}", status='ACK', tag=deliver.delivery_tag)
+            logger.debug("AMQP Sending {status} due to valid request. Tag: {tag}", status='ACK', tag=deliver.delivery_tag)
             d.addCallback(self._basic_ack, channel, deliver.delivery_tag)
             d.addErrback(self._basic_nack, channel, deliver.delivery_tag)
 
@@ -450,6 +447,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         Incoming from Yombo AMQP server.
         """
         self.logLocation("debug", "PikaFactory::do_incoming")
+        self.logLocation("debug", "Msg:{msg}", msg=msg)
         if msg['Code'] != 200:
             raise YomboWarning("Yombo service responsed with code %s: %s" %(msg['Code'], msg['Message']))
 
@@ -517,7 +515,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         self.outgoing_queue.append((kwargs))
         logger.debug("In PikaFactory sendMessage client: %s" % self.AMQPProtocol)
-        if self.AMQPProtocol is not None and self.AMQPProtocol.fullyConnected is True:
+        if self.AMQPProtocol is not None and self.fullyConnected is True:
             self.AMQPProtocol.send()
 
 class AMQPYombo(YomboLibrary):

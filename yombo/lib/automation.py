@@ -39,9 +39,10 @@ class Automation(YomboLibrary):
         self._ModDescription = "Easy Automation for everyone"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
+        self.loader = loader
+
         self._rulesRaw = {}  # Used to store raw input from reading file.
         self._rulesParse = {}  # Used to store raw input from reading file.
-        self.loader = loader
         self.rules = {}   # Store processed rules
         self.triggers = {}  # Track various triggers - help find what rules to fire whena trigger matches.
 
@@ -116,6 +117,8 @@ class Automation(YomboLibrary):
                    'validate_callback': callBackFunction  # function to call to validate an action
                  }
                ]
+
+        For "automation_rules_list" hook, see the :ref:`Automation Example <automationexample>` example module.
 
         """
         automation_sources = yombo.utils.global_invoke_all('automation_source_list')

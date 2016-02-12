@@ -7,11 +7,9 @@
 ===========================================
 AutomationHelpers (yombo.lib.automations)
 ===========================================
-.. automodule:: yombo.lib.automations
+.. automodule:: yombo.lib.automationhelpers
 
-AutomationHelpers class
+AutomationHelpers Class
 ===========================================
 .. autoclass:: AutomationHelpers
    :members:
-
-   .. automethod:: __init__

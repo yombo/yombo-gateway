@@ -20,6 +20,7 @@ import datetime
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning

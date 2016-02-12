@@ -17,9 +17,11 @@ import inspect
 import random
 import string
 import sys
-import re
+#import re
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+#from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.task import deferLater
+from twisted.internet import reactor
 
 # Import 3rd-party libs
 from yombo.utils.decorators import memoize_
@@ -33,8 +35,20 @@ def clean_kwargs(**kwargs):
     Returns a dictionary without any keys starting with "__" (double underscore).
     """
     data = {}
+    start = kwargs.get('start', '__')
     for key, val in six.iteritems(kwargs):
-        if not key.startswith('__'):
+        if not key.startswith(start):
+            data[key] = val
+    return data
+
+def clean_dict(dictionary, **kwargs):
+    """
+    Returns a dictionary without any keys starting with kwargs['start'] (default '_' underscore).
+    """
+    data = {}
+    start = kwargs.get('start', '_')
+    for key, val in six.iteritems(dictionary):
+        if not key.startswith(start):
             data[key] = val
     return data
 
@@ -228,6 +242,22 @@ def fopen(*args, **kwargs):
         fcntl.fcntl(fhandle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
     return fhandle
 
+def get_command(commandSearch):
+    """
+    Returns a pointer to a command.
+
+    .. note::
+
+       This shouldn't be used by modules, instead, use the pre-defined pointer
+       *self._Commands*, see: :py:func:`get_commands`.
+
+    :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
+    :type commandSearch: string - Command UUID or Command Label.
+    :return: The pointer to a single command.
+    :rtype: object
+    """
+    return get_command('yombo.gateway.lib.commands')._search(commandSearch)
+
 def get_component(name):
     """
     Return loaded component (module or library). This can be used to find
@@ -262,6 +292,55 @@ def get_component(name):
         return get_component.components[name.lower()]
     except KeyError:
         raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
+
+def get_device(deviceSearch):
+    """
+    Returns a pointer to device.
+
+    .. note::
+
+       This shouldn't be used by modules, instead, use the pre-set point of
+       *self._Devices*, see: :py:func:`getDevices`.
+
+    :param deviceSearch: Which device to search for.  device_id or Device Label. device_id preferred.
+    :type deviceSearch: string - Device UUID or Device Label.
+    :return: The pointer to the requested device.
+    :rtype: object
+    """
+    return getComponent('yombo.gateway.lib.devices').get_device(deviceSearch)
+
+def get_devices_by_device_type():
+    """
+    Returns a pointer to a **function** to get all devices for a given device_type_id or MachineLabel. Modules
+    should use the built in function ``self._DevicesByDeviceType``.
+
+    .. note::
+
+       For modules, there is already a pre-defined function for getting all devices
+       of a specific type. It's "self._DevicesByType".
+
+    **Short Usage**:
+
+        >>> deviceList = self._DevicesByDeviceType('137ab129da9318')  #by device_type_id, this is a function.
+
+    **Usage**:
+
+    .. code-block:: python
+
+       # A simple all x10 lights off (regardless of house / unit code)
+       allX10Lamps = self._DevicesByType('137ab129da9318')
+
+       # Turn off all x10 lamps
+       for lamp in allX10Lamps:
+           lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
+
+    :param deviceType: The deviceType to search for, either a UUID or Machinelabel
+    :type device_type_id: string
+    :return: Returns a pointer to function that can be called to fetch
+        all devices belonging to a device type UUID.
+    :rtype:
+    """
+    return getattr(getComponent('yombo.gateway.lib.devices'), "get_devices_by_device_type")
 
 def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.im_class):
@@ -328,6 +407,34 @@ def is_string_bool(value=None):
         elif str(value).lower() == 'none':
             return None
     raise YomboWarning("String is not true, false, or none.")
+
+class ViewAsObject(object):
+    def __init__(self, d):
+        self.__dict__ = d
+
+def sleep(secs):
+    """
+    A simple non-blocking sleep function.  This generates a twisted
+    deferred. You have to decorate your function to make the yield work
+    properly.
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from twisted.internet import defer
+       from yombo.core.helpers import sleep
+
+       @defer.inlineCallbacks
+       def myFunction(self):
+           logger.info("About to sleep.")
+           yield sleep(5.4) # sleep 5.4 seconds.
+           logger.info("I'm refreshed.")
+
+    :param secs: Number of seconds (whole or partial) to sleep for.
+    :type secs: int of float
+    """
+    return deferLater(reactor, secs, lambda: None)
 
 @memoize_
 def is_freebsd():

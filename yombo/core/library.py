@@ -26,10 +26,10 @@ class YomboLibrary:
         Called when a library should start running its process
         operations. 
         """
-        raise NotImplementedError()
+        pass
 
     def _unload_(self):
         """
         Called when a library is about to be unloaded. 
         """
-        raise NotImplementedError()
+        pass

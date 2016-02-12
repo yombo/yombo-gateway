@@ -247,58 +247,6 @@ class DBTools:
 #            records[record['machinelabel']] = record
         return records
 
-    def getModules(self, getAll=False):
-        c = self.dbpool.cursor()
-        if getAll is False:
-            c.execute("SELECT * FROM modules WHERE status = 1")
-        else:
-            c.execute("SELECT * FROM modules WHERE")
-        data = c.fetchall()
-        if data is None:
-            return None
-        records = []
-        field_names = [d[0].lower() for d in c.description]
-        for row in data:
-            records.append(dict(izip(field_names, row)))
-        return records
-
-    def getModuleConfigs(self, moduleUUID):
-        from yombo.core.helpers import pgpDecrypt
-        c = self.dbpool.cursor()
-        c.execute('SELECT * FROM moduleVariables WHERE moduleuuid = ? order by weight ASC, dataWeight ASC',
-                  (moduleUUID,))
-        data = c.fetchall()
-        if data is None or len(data) == 0:
-            return {}
-        records = {}
-        field_names = [d[0].lower() for d in c.description]
-        for row in data:
-            record = dict(izip(field_names, row))
-            value = record['value']
-
-            if record['machinelabel'] not in records:
-                record['value'] = []
-                records[record['machinelabel']] = record
-
-            records[record['machinelabel']]['value'].append(value)
-#            records[record['machinelabel']] = record
-        return records
-
-    def getModuleDeviceTypes(self):
-        c = self.dbpool.cursor()
-        c.execute('SELECT * FROM moduleDeviceTypes ' +
-                  'JOIN deviceTypes on moduleDeviceTypes.deviceTypeUUID = deviceTypes.deviceTypeUUID ' +
-                  'GROUP BY moduleDeviceTypes.deviceTypeUUID, moduleDeviceTypes.moduleType ' +
-                  'ORDER BY priority DESC')
-        data = c.fetchall()
-        if data is None:
-            return None
-        records = []
-        field_names = [d[0].lower() for d in c.description]
-        for row in data:
-            records.append(dict(izip(field_names, row)))
-        return records
-
     def validateDeviceTypeUUID(self, cmduuid, devicetypeuuid):
         """
         Used in the message clas to verify if a given devicetypeuud and cmduuid are valid.
@@ -321,59 +269,6 @@ class DBTools:
             return None
         field_names = [d[0].lower() for d in c.description]
         return dict(izip(field_names, row))
-
-    def getModuleRouting(self, where = None):
-        """
-        Used to load a list of deviceType routing information.
-
-        Called by: lib.Modules::loadData
-
-        :param where: Optional - Can be used to append a where statement
-        :type returnType: string
-        :return: Modules used for routing device message packets
-        :rtype: list
-        """
-        c = self.dbpool.cursor()
-
-        if where is None:
-            c.execute('SELECT * FROM moduleRouting_view')
-        else:
-            c.execute('SELECT * FROM moduleRouting_view WHERE %s' % where)
-        data = c.fetchall()
-        if data is None:
-            return None
-        records = []
-        field_names = [d[0].lower() for d in c.description]
-        for row in data:
-            records.append(dict(izip(field_names, row)))
-        return records
-
-    def saveSQLDict(self, module, dictname, key1, data1):
-        """
-        Used to save SQLDicts to the database. This is from a loopingcall as well as
-        shutdown of the gateway.
-
-        Called by: lib.Loader::saveSQLDict
-
-        :param module: Module/Library that is storing the data.
-        :param dictname: Name of the dictionary that is used within the module/library
-        :param key1: Key
-        :param data1: Data
-        :return: None
-        """
-        c = self.dbpool.cursor()
-        c.execute(
-            "select rowid from sqldict where key1='%s' and module='%s' and dictname='%s'" % (key1, module, dictname))
-        row = c.fetchone()
-        if row:
-            field_names = [d[0].lower() for d in c.description]
-            record = dict(izip(field_names, row))
-            c.execute("update sqldict set data1=?, updated=? where rowid=?;",
-                      (data1, int(time.time()), record['rowid']))
-        else:
-            c.execute("""
-                replace into sqldict (created, updated, module, dictname, key1, data1)
-                values  (?, ?, ?, ?, ?, ?);""", (int(time.time()), int(time.time()), module, dictname, key1, data1))
 
     def commit(self):
         self.dbpool.commit()

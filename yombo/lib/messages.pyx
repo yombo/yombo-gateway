@@ -151,44 +151,44 @@ class Messages(YomboLibrary):
           temp['payload']['cmdUUID'] = temp['payload']['commandobj'].cmdUUID
           del temp['payload']['commandobj']
         if 'deviceobj' in temp['payload']:
-          temp['payload']['deviceUUID'] = temp['payload']['deviceobj'].deviceUUID
+          temp['payload']['device_id'] = temp['payload']['deviceobj'].device_id
           del temp['payload']['deviceobj']
 
         when = time.time() - message.notBefore
         self.reactors = reactor.callLater(when, message.send)
 
-        if temp['payload']['deviceUUID'] not in self.deviceList:
-          self.deviceList[temp['payload']['deviceUUID']] = []
+        if temp['payload']['device_id'] not in self.deviceList:
+          self.deviceList[temp['payload']['device_id']] = []
         self.deviceList.append(message.msgUUID)
 
         self.delayQueue[message.msgUUID] = temp  # dehydrate for persistence
         reply = message.getReply(msgStatus="delayed")
         reply.send()
 
-    def deviceDelayCancel(self, deviceUUID):
+    def deviceDelayCancel(self, device_id):
         """
-        Cancel any pending messages for a given deviceUUID.
-        :param deviceUUID: The msgUUID to be removed.
-        :type deviceUUID: string
+        Cancel any pending messages for a given device_id.
+        :param device_id: The msgUUID to be removed.
+        :type device_id: string
         """
 
-        if deviceUUID in self.deviceList:
-          for key in range(len(self.deviceList[deviceUUID])):
+        if device_id in self.deviceList:
+          for key in range(len(self.deviceList[device_id])):
               try:
-                self.cancelDelay(self.deviceList[deviceUUID][key])
+                self.cancelDelay(self.deviceList[device_id][key])
               except:
                 pass
-              del self.deviceList[deviceUUID][key]
-        del self.deviceList[deviceUUID]
+              del self.deviceList[device_id][key]
+        del self.deviceList[device_id]
 
-    def deviceDelayList(self, deviceUUID):
+    def deviceDelayList(self, device_id):
         """
-        Return a list of messageUUID's for delayed messages for a given deviceUUID.
-        :param deviceUUID: The msgUUID to be removed.
-        :type deviceUUID: string
+        Return a list of messageUUID's for delayed messages for a given device_id.
+        :param device_id: The msgUUID to be removed.
+        :type device_id: string
         """
-        if deviceUUID in self.deviceList:
-          return self.deviceList[deviceUUID]
+        if device_id in self.deviceList:
+          return self.deviceList[device_id]
 
     def cancelDelay(self, msgUUID):
         """

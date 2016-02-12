@@ -31,15 +31,14 @@ Stops components in the following phases. Modules first, then libraries.
 """
 # Import python libraries
 from re import search as ReSearch
-import traceback
 import sys
+import traceback
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.db import DBTools
 from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError
 from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
@@ -49,6 +48,7 @@ import yombo.utils
 logger = getLogger('library.loader')
 
 HARD_LOAD = [
+    "LocalDB",
     "Configuration",
     "Modules",
     "Startup",
@@ -95,13 +95,12 @@ class Loader(YomboLibrary):
 
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
         self.loadedLibraries = FuzzySearch({self._FullName.lower(): self}, .95)
-#        self.moduleNames = {}
         self.libraryNames = {}
         self.__localModuleVars = {}
         self._SQLDictUpdates = {}
-        self._DBTools = DBTools()
         self._moduleLibrary = None
 
+    @inlineCallbacks
     def load(self):  #on startup, load libraried, then modules
         """
         This is effectively the main start function.
@@ -109,7 +108,13 @@ class Loader(YomboLibrary):
         This function is called when the gateway is to startup. In turn,
         this function will load all the components and modules of the gateway.
         """
-        self.import_libraries() # import and init all libraries
+        yield self.import_libraries() # import and init all libraries
+        logger.info("Calling load functions of libraries.")
+        for index, name in enumerate(HARD_LOAD):
+             libraryName = name.lower()
+             yield self.library_invoke(libraryName, "_load_")
+        yield self.start_libraries()
+
 #        try:
 #            self.import_libraries() # import and init all libraries
 #        except YomboCritical, e:
@@ -170,7 +175,7 @@ class Loader(YomboLibrary):
             library._Modules = self._moduleLibrary
             library._Libraries = self.loadedLibraries
             if hasattr(library, '_init_') and callable(library._init_) and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
-#                library._init_(self)
+#                stuff = yield library._init_(self)
 #                continue
                 try:
                     d = yield maybeDeferred(library._init_, self)
@@ -189,18 +194,7 @@ class Loader(YomboLibrary):
 
             else:
                 logger.error("----==(Library doesn't have init function: {name})==-----", name=name)
-        self.load_libraries()
 
-    def load_libraries(self):
-        """
-        Calls the "load" function of libraries.  Calls "startLibraries" when done.
-        """
-        logger.debug("Calling load functions of libraries.")
-        for index, name in enumerate(HARD_LOAD):
-             libraryName = name.lower()
-             self.library_invoke(libraryName, "_load_")
-
-        self.start_libraries()
 
     def start_libraries(self):
         """
@@ -236,15 +230,15 @@ class Loader(YomboLibrary):
             method = getattr(library, hook)
             self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'About to call: %s' % hook)
             if callable(method):
-                # if isCoreFunction:
-                #     results = yield maybeDeferred(method)
-                # else:
-                #     results = yield maybeDeferred(method, **kwargs)
-                # returnValue(results)
+#                if isCoreFunction:
+#                    results = yield maybeDeferred(method)
+#                else:
+#                    results = yield maybeDeferred(method, **kwargs)
+#                returnValue(results)
                 try:
                     if isCoreFunction:
                         results = yield maybeDeferred(method)
-
+#                        results = method()
                     else:
                         results = method(**kwargs)
                         returnValue(results)
@@ -302,9 +296,10 @@ class Loader(YomboLibrary):
             self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
             raise YomboCritical("Library or Module not found: %s", pathName)
-
+#        module_root = __import__(pymodulename, globals(), locals(), [], 0)
         try:
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
+            pass
         except ImportError as detail:
             self.logLoader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("--------==(Error: Library or Module not found)==--------")
@@ -403,22 +398,22 @@ class Loader(YomboLibrary):
         :param data1:
         :return:
         """
+        return
         if module not in self._SQLDictUpdates:
             self._SQLDictUpdates[module] = {}
         if dictname not in self._SQLDictUpdates[module]:
             self._SQLDictUpdates[module][dictname] = {}
         self._SQLDictUpdates[module][dictname][key1] = data1
 
+    @inlineCallbacks
     def _saveSQLDictDB(self):
         if len(self._SQLDictUpdates):
             logger.debug("Saving SQLDictDB")
             for module in self._SQLDictUpdates.keys():
                 for dictname in self._SQLDictUpdates[module]:
                     for key1 in self._SQLDictUpdates[module][dictname]:
-                        self._DBTools.saveSQLDict(module, dictname, key1, self._SQLDictUpdates[module][dictname][key1])
+                        yield self.loadedLibraries['localdb'].set_sql_dict(module, dictname, key1, self._SQLDictUpdates[module][dictname][key1])
                 del self._SQLDictUpdates[module]
-
-            self._DBTools.commit()
 
 _loader = None
 

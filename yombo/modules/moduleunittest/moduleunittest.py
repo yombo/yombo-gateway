@@ -50,7 +50,7 @@ class ModuleUnitTest(YomboModule):
         self.devices = {}
         
         # track messages we send.  Give it structure
-        self.outMsg = namedtuple('outMsg', "time, deviceUUID, message")
+        self.outMsg = namedtuple('outMsg', "time, device_id, message")
         self.outMessages = {}
 
     def _load_(self):
@@ -72,15 +72,15 @@ class ModuleUnitTest(YomboModule):
         record = {'description'    : "Test device 1.",
                   'created'        : int(time.time())-10,
                   'updated'        : int(time.time()),
-                  'devicetypeuuid' : "zZzZzZzZzZzZzZzZzZzZzZ01",
-                  'pintimeout'     : 100,
-                  'deviceuuid'     : "01zZzZzZzZzZzZzZzZzZzZzZ",
+                  'device_type_id' : "zZzZzZzZzZzZzZzZzZzZzZ01",
+                  'pin_timeout'     : 100,
+                  'device_id'     : "01zZzZzZzZzZzZzZzZzZzZzZ",
                   'label'          : "tstdvc1",
-                  'pincode'        : "1234",
-                  'pinrequired'    : 0,
-                  'modulelabel'    : "ModuleUnitTest",
-                  'voicecmd'       : "tstdvc01 [on, off, open, close]",
-                  'voicecmdorder'  : "verbnoun",
+                  'pin_code'        : "1234",
+                  'pin_required'    : 0,
+                  'module_label'    : "ModuleUnitTest",
+                  'voice_cmd'       : "tstdvc01 [on, off, open, close]",
+                  'voice_cmd_order'  : "verbnoun",
                   'status'         : 1,
                  }
        
@@ -90,15 +90,15 @@ class ModuleUnitTest(YomboModule):
         record = {'description'   : "Test device 2.  Number in front t test fuzzy searches.",
                   'created'       : int(time.time()),
                   'updated'        : int(time.time()),
-                  'devicetypeuuid': "zZzZzZzZzZzZzZzZzZzZzZ01",
-                  'pintimeout'    : 100,
-                  'deviceuuid'    : "02zZzZzZzZzZzZzZzZzZzZzZ",
+                  'device_type_id': "zZzZzZzZzZzZzZzZzZzZzZ01",
+                  'pin_timeout'    : 100,
+                  'device_id'    : "02zZzZzZzZzZzZzZzZzZzZzZ",
                   'label'         : "2dvctst",
-                  'pincode'       : "1234",
-                  'pinrequired'   : 0,
-                  'modulelabel'   : "ModuleUnitTest",
-                  'voicecmd'      : "2dvctst [on, off, open, close]",
-                  'voicecmdorder'  : "nounverb",
+                  'pin_code'       : "1234",
+                  'pin_required'   : 0,
+                  'module_label'   : "ModuleUnitTest",
+                  'voice_cmd'      : "2dvctst [on, off, open, close]",
+                  'voice_cmd_order'  : "nounverb",
                   'status'         : 1,
                  }
        
@@ -141,10 +141,10 @@ class ModuleUnitTest(YomboModule):
         if self.libraries['Times'].isDay == self.libraries['Times'].isNight:
             logger.error("It can't be day and night at same time!!")
 
-#        self.outMsg = namedtuple('outMsg', "time, deviceUUID, message")
+#        self.outMsg = namedtuple('outMsg', "time, device_id, message")
 #        self.outMessages = {}
         msg = self.devices[1].getMessage(self, cmdobj=self.availableCommands['open'])
-        self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].deviceUUID, msg)
+        self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].device_id, msg)
         
     
     def _stop_(self):

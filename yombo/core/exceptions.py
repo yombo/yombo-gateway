@@ -5,7 +5,7 @@ Create various exceptions to be used throughout the Yombo
 gateway.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 
@@ -301,22 +301,22 @@ class YomboDeviceError(Exception):
         
     kwargs accepts and processes the following:
         
-        - deviceUUID - The deviceUUID the error is about.
+        - device_id - The device_id the error is about.
         - errorno - An error number for further sorting/processing.
         
     Additionally, if this is the result of a search exception, it may also
     contain some of the error components of the :class:`YomboFuzzySearchError`,
     such as:
         
-        - key: The best matching key, in this case would be the deviceUUID (string).
+        - key: The best matching key, in this case would be the device_id (string).
         - value: The best matchin value, in this case would be the device instance (object).
         - ratio: The ratio as a percent of closeness. IE: .32
         - others: Other top 5 choices in a dictionary to choose from.  Each with the
           key, value, and ratio values as above.  The key for each dictionary is the match ratio.
 
-    :cvar deviceUUID: (string) The deviceUUID if known, otherwise will be None.
+    :cvar device_id: (string) The device_id if known, otherwise will be None.
     :cvar errorno: (int) An error number for further error sorting/handling.
-    :cvar key: (string) If from a fuzzy search exception, will be the best possible deviceUUID.
+    :cvar key: (string) If from a fuzzy search exception, will be the best possible device_id.
     :cvar others: (dict) If from a fuzzy search exception, will be a dictionary of other alternatives.
     :cvar searchFor: (string) If from a fuzzy search exception, will be the requested search key.
     :cvar ratio: (float) If from a fuzzy search exception, the match confidence in percent as .80 for 80%.
@@ -336,10 +336,10 @@ class YomboDeviceError(Exception):
         else:
             self.errorno = None
 
-        if 'deviceUUID' in kwargs:
-            self.deviceUUID = kwargs['deviceUUID']
+        if 'device_id' in kwargs:
+            self.device_id = kwargs['device_id']
         else:
-            self.deviceUUID = None
+            self.device_id = None
 
         if 'key' in kwargs:
             self.searchFor = kwargs['searchFor']
@@ -400,9 +400,9 @@ class YomboFuzzySearchError(Exception):
     Extends *Exception* - A non-fatal FuzzySearch error. Occurs when something happened
     with a fuzzy search.
 
-    :cvar deviceUUID: (string) The deviceUUID if known, otherwise will be None.
+    :cvar device_id: (string) The device_id if known, otherwise will be None.
     :cvar errorno: (int) An error number for further error sorting/handling.
-    :cvar key: (string) If from a fuzzy search exception, will be the best possible deviceUUID.
+    :cvar key: (string) If from a fuzzy search exception, will be the best possible device_id.
     :cvar others: (dict) If from a fuzzy search exception, will be a dictionary of other alternatives.
     :cvar searchFor: (string) If from a fuzzy search exception, will be the requested search key.
     :cvar ratio: (float) If from a fuzzy search exception, the match confidence in percent as .80 for 80%.

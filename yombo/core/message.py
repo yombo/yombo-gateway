@@ -87,9 +87,9 @@ class Message:
 
             * "cmd" - Used for sending commands to various devices. It is best
               to use Device library to complete this.
-            * "voiceCmd" - Used by the voiceCmd module to send a registered
-              voiceCmd to a module. This is used if the voiceCmd doesn't match
-              a deviceUUID.
+            * "voice_cmd" - Used by the voice_cmd module to send a registered
+              voice_cmd to a module. This is used if the voice_cmd doesn't match
+              a device_id.
             * "event" - Used to send various system events. # TODO: make a list!
             * "status" - Used for sending device status.  This is typically used
               by Device object to send status when something is changed.
@@ -167,11 +167,11 @@ class Message:
                    * "cmd" to identify what command
 
                    * Must also include "device" (a reference to a device object) or
-                     "deviceUUID".
+                     "device_id".
 
                * status message: Must include: 
 
-                   * "deviceUUID"
+                   * "device_id"
                    * "status" (namedtuple::Status) Contains time, statusextra, settime, source.
                    * "prevStatus" (string) The previous status.
 
@@ -535,9 +535,9 @@ class Message:
 
         For command (cmd) type messages, it makes sure the message makes sense.
         For example, it checks that the cmd and cmdUUID match, and that command
-        is legitimate for the given deviceUUID.
+        is legitimate for the given device_id.
 
-        Also checks valid deviceUUID, etc.
+        Also checks valid device_id, etc.
         :return: True if the message is valid.
         :rtype: bool
         """
@@ -647,44 +647,44 @@ class Message:
         if(len(localParts) != 1):
             return True
 
-        # check deviceUUID
+        # check device_id
         if 'deviceobj' in self.payload:
             if isinstance(self.payload['deviceobj'], Device):
-                self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                self.payload['device_id'] = self.payload['deviceobj'].device_id
                 self.payload['device'] = self.payload['deviceobj'].label
             else:
                 raise YomboMessageError("if 'deviceobj' specified', it must be a device instance.", 'Message API::ValidateCMD')
-        elif 'deviceUUID' in self.payload:
+        elif 'device_id' in self.payload:
 #            try:
 #                logger.warn("aaaa1: {payload}", payload=self.payload)
-                self.payload['deviceobj'] = getDevice(self.payload['deviceUUID'])
+                self.payload['deviceobj'] = getDevice(self.payload['device_id'])
 #                logger.warn("aaaa2: {payload}", payload=self.payload)
-                self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                self.payload['device_id'] = self.payload['deviceobj'].device_id
 #                logger.warn("aaaa3: {payload}", payload=self.payload)
                 self.payload['device'] = self.payload['deviceobj'].label
 #                logger.warn("aaaa4: {payload}", payload=self.payload)
  #           except:
- #               raise YomboMessageError("Couldn't find specified deviceUUID. %s " % sys.exc_info()[0], 'Message API')
+ #               raise YomboMessageError("Couldn't find specified device_id. %s " % sys.exc_info()[0], 'Message API')
         elif 'device' in self.payload:
             try:
                 self.payload['deviceobj'] = getDevice(self.payload['device'])
-                self.payload['deviceUUID'] = self.payload['deviceobj'].deviceUUID
+                self.payload['device_id'] = self.payload['deviceobj'].device_id
                 self.payload['device'] = self.payload['deviceobj'].label
             except:
-              raise YomboMessageError("Couldn't find specified deviceUUID.", 'Message API')
+              raise YomboMessageError("Couldn't find specified device_id.", 'Message API')
         else:
-            raise YomboMessageError("'deviceUUID' or 'device' not found in payload. Required for commands.", 'Message API::ValidateCMD')
+            raise YomboMessageError("'device_id' or 'device' not found in payload. Required for commands.", 'Message API::ValidateCMD')
 
         logger.debug("availablecommands: {availableCommands}", availableCommands=self.payload['deviceobj'].availableCommands, )
         logger.debug("self.payload['{cmdobj}']", cmdobj=self.payload['cmdobj'])
-        # check that command is possible for given deviceUUID
+        # check that command is possible for given device_id
         if self.payload['cmdobj'].cmdUUID not in self.payload['deviceobj'].availableCommands:
-           raise YomboMessageError("Invalid cmdUUID for this deviceUUID.", 'Message API::ValidateCMD')
+           raise YomboMessageError("Invalid cmdUUID for this device_id.", 'Message API::ValidateCMD')
 
         # force delivery to the correct module.
         if(self.msgStatus == "new"):
 #            logger.warn("what? {pay}", pay=self.payload['deviceobj'].dump())
-            moduleLabel = "yombo.gateway.modules." + self._ModulesLibrary.get_device_routing(self.payload['deviceobj'].deviceTypeUUID, 'Command', 'moduleLabel').lower()
+            moduleLabel = "yombo.gateway.modules." + self._ModulesLibrary.get_device_routing(self.payload['deviceobj'].device_type_id, 'Command', 'moduleLabel').lower()
             if self.msgDestination != moduleLabel :
                 self.msgDestination = moduleLabel
 

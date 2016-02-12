@@ -56,9 +56,14 @@ All variables should start with the the type of state being stored, such as: wea
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 from collections import deque
 from time import time
 
+# Import Yombo libraries
+from twisted.internet.defer import inlineCallbacks
+
+# Import Yombo libraries
 from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound
 from yombo.core.log import getLogger
 from yombo.core.sqldict import SQLDict
@@ -69,6 +74,7 @@ class States(YomboLibrary, object):
     """
     Provides a base API to store common states among libraries and modules.
     """
+    @inlineCallbacks
     def _init_(self, loader):
         self._ModDescription = "Yombo States API"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
@@ -76,7 +82,7 @@ class States(YomboLibrary, object):
         self.automation = self._Libraries['automation']
 
         self.__States = {}
-        self.__History = SQLDict(self, 'History')
+        self.__History = yield SQLDict(self, 'History')
 #        logger.info("Recovered YomboStates: {states}", states=self.__States)
 
     def _load_(self):

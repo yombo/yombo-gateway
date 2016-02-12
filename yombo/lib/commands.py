@@ -16,12 +16,15 @@ The private online repository can be used to recover previous command
 usage statistics.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
-from yombo.core.db import get_dbconnection
-from yombo.core.fuzzysearch import FuzzySearch
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks
+
+# Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCommandError
+from yombo.core.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 
@@ -51,6 +54,7 @@ class Commands(YomboLibrary):
         """
         return self._search(commandRequested)
 
+    @inlineCallbacks
     def _init_(self, loader):
         """
         Setups up the basic framework. Nothing is loaded in here until the
@@ -60,13 +64,13 @@ class Commands(YomboLibrary):
         :type loader: Instance of Loader
         """
         self.loader = loader
-        self.__dbpool = get_dbconnection()
 
         self.__yombocommands = {}
         self.__yombocommandsByName = FuzzySearch(None, .92)
         self.__yombocommandsByVoice = FuzzySearch(None, .92)
 
-        self.__loadCommands()
+        self.local_db = self._Libraries['localdb']
+        yield self.__loadCommands()
         
     def _load_(self):
         """
@@ -148,6 +152,7 @@ class Commands(YomboLibrary):
             except YomboFuzzySearchError, e:
                 raise YomboCommandError('Searched for %s, but no good matches found.' % e.searchFor)
 
+    @inlineCallbacks
     def __loadCommands(self):
         """
         Load the commands into memory. Set up various dictionaries support libraries to manage
@@ -157,16 +162,9 @@ class Commands(YomboLibrary):
 
         self._clear_()
 
-        c = self.__dbpool.cursor()
-        c.execute("SELECT * FROM commands")
-        row = c.fetchone()
-        if row == None:
-            return None
-        field_names = [d[0].lower() for d in c.description]
-        while row is not None:
-            record = (dict(itertools.izip(field_names, row)))
-            self._addCommand(record)
-            row = c.fetchone()
+        commands = yield self.local_db.get_commands()
+        for command in commands:
+            self._addCommand(command)
         logger.debug("Done load_commands: {yombocommands}", yombocommands=self.__yombocommands)
 
     def _addCommand(self, record, testCommand = False):
@@ -180,13 +178,13 @@ class Commands(YomboLibrary):
         :returns: Pointer to new device. Only used during unittest
         """
         logger.debug("record: {record}", record=record)
-        cmdUUID = record["cmduuid"]
-        self.__yombocommands[cmdUUID] = Command(record)
-        self.__yombocommandsByName[record["label"]] = self.__yombocommands[cmdUUID]
-        if len(record["voicecmd"]) >= 2:
-            self.__yombocommandsByVoice[record["voicecmd"]] = self.__yombocommands[cmdUUID]
-        if testCommand:
-            return self.__yombocommands[cmdUUID]
+        cmd_id = record.id
+        self.__yombocommands[cmd_id] = Command(record)
+        self.__yombocommandsByName[record.label] = self.__yombocommands[cmd_id]
+        if record.voice_cmd is not None:
+            self.__yombocommandsByVoice[record.voice_cmd] = self.__yombocommands[cmd_id]
+#        if testCommand:
+#            return self.__yombocommands[cmdUUID]
 
 
 class Command:
@@ -195,7 +193,7 @@ class Command:
     :ivar label: Command label
     :ivar description: The description of the command.
     :ivar inputTypeID: The type of input that is required as a variable.
-    :ivar voiceCmd: The voice command of the command.
+    :ivar voice_cmd: The voice command of the command.
     """
 
     def __init__(self, command):
@@ -211,17 +209,17 @@ class Command:
         """
         logger.debug("command info: {command}", command=command)
 
-        self.cmdUUID = command["cmduuid"]
-        self.uri = command["uri"]
-        self.voiceCmd = command["voicecmd"]
-        self.cmd = command["machinelabel"]
-        self.label = command["label"]
-        self.description = command["description"]
-        self.inputTypeUUID = command["inputtypeuuid"]
-        self.public = command["public"]
-        self.status = command["status"]
-        self.created = command["created"]
-        self.updated = command["updated"]
+        self.cmdUUID = command.id
+        self.uri = command.uri
+        self.voice_cmd = command.voice_cmd
+        self.cmd = command.machine_label
+        self.label = command.label
+        self.description = command.description
+        self.input_type_id = command.input_type_id
+        self.public = command.public
+        self.status = command.status
+        self.created = command.created
+        self.updated = command.updated
 
     def __str__(self):
         """
@@ -237,11 +235,11 @@ class Command:
         return {
             'cmdUUID'       : str(self.cmdUUID),
             'uri'           : str(self.uri),
-            'voiceCmd'      : str(self.voiceCmd),
+            'voice_cmd'      : str(self.voice_cmd),
             'cmd'           : str(self.cmd), # AKA machineLabel
             'label'         : str(self.label),
             'description'   : str(self.description),
-            'inputTypeUUID' : int(self.inputTypeUUID),
+            'input_type_id' : int(self.input_type_id),
             'public'        : int(self.public),
             'status'        : int(self.status),
             'created'       : int(self.created),

@@ -23,42 +23,15 @@ from subprocess import Popen, PIPE
 
 # Import twisted libraries
 from twisted.internet import defer, reactor
+#from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
-from yombo.core.db import get_dbtools
 from yombo.core.log import getLogger
 from yombo.core.exceptions import YomboNoSuchLoadedComponentError
 
 logger = getLogger('core.helpers')
 
 yomboconfigs = None
-yombodbtools = None
-
-def sleep(secs):
-    """
-    A simple non-blocking sleep function.  This generates a twisted  
-    deferred. You have to decorate your function to make the yield work  
-    properly.  
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from twisted.internet import defer
-       from yombo.core.helpers import sleep
-
-       @defer.inlineCallbacks
-       def myFunction(self):
-           logger.info("About to sleep.")
-           yield sleep(5.4) # sleep 5.4 seconds.
-           logger.info("I'm refreshed.")
-
-    :param secs: Number of seconds (whole or partial) to sleep for.
-    :type secs: int of float
-    """
-    d = defer.Deferred()
-    reactor.callLater(secs, d.callback, None)
-    return d
 
 def generateRandom(**kwargs):
     """
@@ -169,6 +142,7 @@ def getConfigTime(section, key):
         yomboconfigs = getComponent('yombo.gateway.lib.configuration')
     return yomboconfigs.getConfigTime(section, key)
 
+#@inlineCallbacks
 def getConfigValue(section, key, default=None):
     """
     Get a configuration value. These were the initial configurations loaded
@@ -196,7 +170,8 @@ def getConfigValue(section, key, default=None):
     global yomboconfigs
     if yomboconfigs is None:
         yomboconfigs = getComponent('yombo.gateway.lib.configuration')
-    return yomboconfigs.read(section, key, default)
+    results = yomboconfigs.read(section, key, default)
+    return results
 
 def setConfigValue(section, key, value):
     """
@@ -306,45 +281,13 @@ def getDevice(deviceSearch):
        This shouldn't be used by modules, instead, use the pre-set point of
        *self._Devices*, see: :py:func:`getDevices`.
 
-    :param deviceSearch: Which device to search for.  DeviceUUID or Device Label. UUID preferred.
+    :param deviceSearch: Which device to search for.  device_id or Device Label. UUID preferred.
     :type deviceSearch: string - Device UUID or Device Label.
     :return: The pointer to the requested device.
     :rtype: object
     """
     return getComponent('yombo.gateway.lib.devices').getDevice(deviceSearch)
 
-def getDevicesByDeviceType():
-    """
-    Returns a pointer to a **function** to get all devices for a given deviceType UUID or MachineLabel. Modules
-    should use the built in function ``self._DevicesByDeviceType``.
-    
-    .. note::
-
-       For modules, there is already a pre-defined function for getting all devices
-       of a specific type. It's "self._DevicesByType".
-    
-    **Short Usage**:
-
-        >>> deviceList = self._DevicesByDeviceType('137ab129da9318')  #by device type UUID, this is a function.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       # A simple all x10 lights off (regardless of house / unit code)
-       allX10Lamps = self._DevicesByType('137ab129da9318')
-
-       # Turn off all x10 lamps
-       for lamp in allX10Lamps:
-           lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
-
-    :param deviceType: The deviceType to search for, either a UUID or Machinelabel
-    :type deviceTypeUUID: string
-    :return: Returns a pointer to function that can be called to fetch
-        all devices belonging to a device type UUID.
-    :rtype: 
-    """
-    return getattr(getComponent('yombo.gateway.lib.devices'), "getDevicesByDeviceType")
 
 def getCommands():
     """
@@ -491,21 +434,6 @@ def getTimes():
     """    
     return getComponent('yombo.gateway.lib.times')
 
-def getInterfaceModule(module):
-    """
-    This function is not fully implemented yet!
-
-    Used by Command/API modules to find it's interface module.
-    """
-    global yombodbtools
-    if yombodbtools is None:
-        yombodbtools = get_dbtools()
-    iModule = yombodbtools.get_moduleInterface(module._ModuleUUID)
-    if (iModule is None):
-      return None
-    else:
-      return 'yombo.gateway.modules.' + iModule.lower()
-
 def getLocalIPAddress():
     """
     Get the ip address of the local machine.
@@ -597,20 +525,6 @@ def testBit(int_type, offset):
       return 0
     return(int_type & mask)
 
-def getModuleConfigs(moduleName):
-    """
-    Returns a dictionary of all configurated variables for a module. Modules
-    shouldn't call this function as it's already done and set as
-    self._ModVariables.
-
-    :param moduleName: Name of module to search for.
-    :type moduleName: string
-    """
-    global yombodbtools
-    if yombodbtools is None:
-        yombodbtools = get_dbtools()
-    # TODO: change this to look up moduleUUID for the requested module to pass this into the DB call.
-    return yombodbtools.getModuleConfigs(moduleName)
 
 #TODO: Rewrite this function to use AMQP, remove sleep!
 def getUserGWToken(username, gwtokenid, fetchRemote=False):
@@ -656,18 +570,6 @@ def getUserGWToken(username, gwtokenid, fetchRemote=False):
         return None
     else:
       return record
-
-def getModuleDeviceTypes(moduleuuid):
-    """
-    Returns a dictionary of all device types for a given moduleuuid.
-
-    :param moduleuuid: UUID of the module.
-    :type moduleuuid: string
-    """
-    global yombodbtools
-    if yombodbtools is None:
-        yombodbtools = get_dbtools()
-    return yombodbtools.getModuleDeviceTypes(moduleuuid)
 
 def percentage(part, whole):
     """

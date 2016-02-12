@@ -63,7 +63,7 @@ On startup the gateway will:
 * Read to the yombo.ini file
 * Connect to Yombo Servers for any configuration updates
 * Download any required modules
-* Begin processing autoamtion tasks
+* Begin processing automation tasks
 
 Advanced configurations
 =======================================
