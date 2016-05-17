@@ -125,9 +125,9 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def load_modules(self):
-        logger.debug("starting modules::load_modules !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+#        logger.debug("starting modules::load_modules !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         yield self.build_raw_module_list()  # Create a list of modules
-        yield self.load_module_data()  # Load various details about modules.
+#        yield self.load_module_data()  # Load various details about modules.
         yield self.import_modules()  # Just call "import moduleName"
 
         logger.debug("starting modules::init....")
@@ -261,7 +261,7 @@ class Modules(YomboLibrary):
         """
         logger.debug("Calling init functions of modules. {modules}", modules=self._modulesByUUID)
         for module_id, module in self._modulesByUUID.iteritems():
-            self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
+            self.modules_invoke_log('info', module._FullName, 'module', 'init', 'About to call _init_.')
             if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
 #                logger.warn("self.get_module_devices(module['{module_id}'])", module_id=module.dump())
                 module._ModuleType = self._rawModulesList[module_id]['module_type']
@@ -278,36 +278,15 @@ class Modules(YomboLibrary):
 
                 # Get variables, and merge with any local variable settings
                 module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
+                module._ModuleVariables = module_variables
 
-                module._ModuleVariables = {}
-                if len(module_variables) > 0:
-                    for variable in module_variables:
-#                        logger.debug("Adding module from localmodule.ini: {item}", item=item)
-                        vardata = {
-                            'machine_label': variable.machine_label,
-                            'value': variable.value,
-                            'weight': variable.weight,
-                            'data_weight': variable.data_weight,
-                            'module_id': variable.foreign_id,
-                            'variable_id': variable.id,
-                            'created': variable.created,
-                            'updated': variable.updated,
-                        }
-                    if variable.machine_label not in module._ModuleVariables:
-                        module._ModuleVariables[variable.machine_label] =[]
-                    module._ModuleVariables[variable.machine_label].append(vardata)
-
-                else:
-                    self._ModuleVariables = {}
 
                 if module._Name in self._localModuleVars:
                     module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
                     del self._localModuleVars[module._Name]
-#                print "9879873213213213213213213213213213232321321"
 #                module._init_()
 #                continue
                 try:
-#                    print "3213213213213213213213213213232321321"
                     d = maybeDeferred(module._init_)
 #                    d.errback(self.SomeError)
                     yield d
@@ -401,6 +380,7 @@ class Modules(YomboLibrary):
         Load up lots of data about modules, and module devices. Makes it easy for modules to get data about what
         devices and device types they manage.
         """
+#        logger.info("starting modules::load_module_data !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         #lets clear any data, but we have to do this carefully incase of new data...
         records = yield self._LocalDBLibrary.get_module_routing()
         for mdt in records:
@@ -521,8 +501,8 @@ class Modules(YomboLibrary):
         :return: Pointer to module.
         :rtype: module
         """
-#        logger.info("get_module_devices::requestedItem: {requestedItem}", requestedItem=requestedItem)
-#        logger.info("get_module_devices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
+        logger.debug("get_module_devices::requestedItem: {requestedItem}", requestedItem=requestedItem)
+        logger.debug("get_module_devices::_moduleDevicesByUUID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByUUID)
         if requestedItem in self._moduleDevicesByUUID:
             return self._moduleDevicesByUUID[requestedItem]
         else:
@@ -588,7 +568,7 @@ class Modules(YomboLibrary):
 #        logger.debug("getModuleDeviceTypes::requestedItem: {requestedItem}", requestedItem=requestedItem)
 #        logger.debug("getModuleDeviceTypes::_moduleDeviceTypesByUUID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
         temp = None
-        print "looking for device routing..."
+#        print "looking for device routing..."
         if requestedItem in self._moduleDeviceRouting:
             temp = self._moduleDeviceRouting[requestedItem]
         else:

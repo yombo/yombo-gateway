@@ -24,6 +24,7 @@ A database API to SQLite3.
 """
 # Import python libraries
 from time import time
+from collections import OrderedDict
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -32,7 +33,7 @@ from yombo.ext.twistar.exceptions import ImaginaryTableError
 
 # Import twisted libraries
 from twisted.enterprise import adbapi
-from twisted.internet.defer import inlineCallbacks, returnValue, gatherResults
+from twisted.internet.defer import inlineCallbacks, returnValue, gatherResults, waitForDeferred
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
@@ -312,7 +313,28 @@ class LocalDB(YomboLibrary):
         :return:
         """
         records = yield Variable.find(where=['variable_type = ? AND foreign_id =?', variable_type, foreign_id], orderby='weight ASC, data_weight ASC')
-        returnValue(records)
+        variables = {}
+        for record in records:
+            if record.machine_label not in variables:
+                variables[record.machine_label] = {
+                    'machine_label': record.machine_label,
+                    'label': record.label,
+                    'updated': record.updated,
+                    'created': record.created,
+                    'weight': record.weight,
+                    'data_weight': record.data_weight,
+                    'foreign_id': record.foreign_id,
+                    'id': record.id,
+                    'value': [],
+                }
+
+            variables[record.machine_label]['value'].append(record.value)
+#                print record.__dict__
+        returnValue(variables)
+
+
+
+#        returnValue(variables)
 
     @inlineCallbacks
     def delete(self, table, where=None):

@@ -230,37 +230,37 @@ class Loader(YomboLibrary):
             method = getattr(library, hook)
             self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'About to call: %s' % hook)
             if callable(method):
-#                if isCoreFunction:
-#                    results = yield maybeDeferred(method)
-#                else:
-#                    results = yield maybeDeferred(method, **kwargs)
-#                returnValue(results)
-                try:
-                    if isCoreFunction:
-                        results = yield maybeDeferred(method)
-#                        results = method()
-                    else:
-                        results = method(**kwargs)
-                        returnValue(results)
-                    returnValue(results)
-                except YomboCritical, e:
-                    logger.error("---==(Critical Server Error in {hook} function for library: {name})==----", hook=hook, name=library._FullName)
-                    logger.error("--------------------------------------------------------")
-                    logger.error("Error message: {e}", e=e)
-                    logger.error("--------------------------------------------------------")
-                    e.exit()
-#                except:
-#                    exc_type, exc_value, exc_traceback = sys.exc_info()
-#                    logger.error("------==(ERROR in function: {hook} in Library: {library})==-------", hook=hook, library=library._FullName)
-#                    logger.error("1:: {e}", e=sys.exc_info())
-#                    logger.error("---------------==(Traceback)==--------------------------")
-#                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-#                    logger.error("--------------------------------------------------------")
-#                    logger.error("{e}", e=traceback.print_exc())
-#                    logger.error("--------------------------------------------------------")
-#                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-#                              limit=5, file=sys.stdout)))
-#                    logger.error("--------------------------------------------------------")
+               if isCoreFunction:
+                   results = yield maybeDeferred(method)
+               else:
+                   results = yield maybeDeferred(method, **kwargs)
+               returnValue(results)
+#                 try:
+#                     if isCoreFunction:
+#                         results = yield maybeDeferred(method)
+# #                        results = method()
+#                     else:
+#                         results = method(**kwargs)
+#                         returnValue(results)
+#                     returnValue(results)
+#                 except YomboCritical, e:
+#                     logger.error("---==(Critical Server Error in {hook} function for library: {name})==----", hook=hook, name=library._FullName)
+#                     logger.error("--------------------------------------------------------")
+#                     logger.error("Error message: {e}", e=e)
+#                     logger.error("--------------------------------------------------------")
+#                     e.exit()
+# #                except:
+# #                    exc_type, exc_value, exc_traceback = sys.exc_info()
+# #                    logger.error("------==(ERROR in function: {hook} in Library: {library})==-------", hook=hook, library=library._FullName)
+# #                    logger.error("1:: {e}", e=sys.exc_info())
+# #                    logger.error("---------------==(Traceback)==--------------------------")
+# #                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+# #                    logger.error("--------------------------------------------------------")
+# #                    logger.error("{e}", e=traceback.print_exc())
+# #                    logger.error("--------------------------------------------------------")
+# #                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+# #                              limit=5, file=sys.stdout)))
+# #                    logger.error("--------------------------------------------------------")
             else:
                 logger.error("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
                 raise YomboWarning("Hook is not callable: %s" % hook)
@@ -330,7 +330,6 @@ class Loader(YomboLibrary):
                 self.libraryNames[temp[-1]] = moduleinst
             else:
                 self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
-
                 self._moduleLibrary.add_module(componentUUID, str(componentName.lower()), moduleinst)
 
         except YomboCritical, e:

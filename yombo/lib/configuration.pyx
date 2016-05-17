@@ -38,8 +38,6 @@ from yombo.core.library import YomboLibrary
 
 logger = getLogger('library.configuration')
 
-yombomasterdb = None
-
 class Configuration(YomboLibrary):
     """
     Configuration storage module for the gateway service.
@@ -50,6 +48,11 @@ class Configuration(YomboLibrary):
     """
     MAX_KEY = 100
     MAX_VALUE = 5001
+
+    # Yombo constants. Used for versioning and misc tracking.
+    yombo_vars = {
+        'version': '0.10.0',
+    }
 
     def _init_(self, loader):
         """
@@ -201,9 +204,14 @@ class Configuration(YomboLibrary):
         if len(key) > self.MAX_KEY:
             raise ValueError("key cannot be more than %d chars" % self.MAX_KEY)
 
+        if section == 'yombo':
+            if key in self.yombo_vars:
+                return self.yombo_vars[key]
+            else:
+                return None
+
         section = section.lower()
         key = key.lower()
-
         if section in self.cache:
             if key in self.cache[section]:
                 self.cacheHits += 1
@@ -213,6 +221,7 @@ class Configuration(YomboLibrary):
         self.cacheMisses += 1
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
+        print "444 = %s" % default
         if default is not None:
             if section not in self.cache:
                self.cache[section] = {}
@@ -237,6 +246,11 @@ class Configuration(YomboLibrary):
         """
         if len(key) > self.MAX_KEY:
             raise ValueError("key (%s) cannot be more than %d chars" % (key, self.MAX_KEY) )
+
+        # Can't set value!
+        if section == 'yombo':
+            raise ValueError("Not allowed to set value")
+
         if isinstance(value, str):
             if section != 'updateinfo' and (len(value) > self.MAX_VALUE):
                 raise ValueError("value cannot be more than %d chars" %

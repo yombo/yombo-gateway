@@ -444,6 +444,7 @@ class ConfigurationUpdate(YomboLibrary):
         if self.__doingfullconfigs is True:
             returnValue(False)
         lastTime = getConfigValue("core", "lastFullConfigDownload", 1)
+        print lastTime
         if int(lastTime) > (int(time() - 10)):
             logger.debug("Not downloading fullconfigs due to race condition.")
             returnValue(None)

@@ -28,6 +28,8 @@ import json
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
+from twisted.internet.defer import inlineCallbacks, returnValue, gatherResults, DeferredList, Deferred
+
 
 # Import Yombo libraries
 from yombo.lib.commands import Command # used to test if isinstance
@@ -95,6 +97,15 @@ class Devices(YomboLibrary):
         Get pointer to voice commands, get db connection.
         """
         self.__load_devices()
+        self.loadDefer = Deferred()
+
+        return self.loadDefer
+
+    def __loadFinish(self, nextSteps):
+        """
+        Called when all the configurations have been received from the Yombo servers.
+        """
+        return 1
 
     def _start_(self):
         """
@@ -103,7 +114,6 @@ class Devices(YomboLibrary):
         """
         self._saveStatusLoop = LoopingCall(self._save_status)
         self._saveStatusLoop.start(120, False)
-        pass
 
     def _stop_(self):
         """
@@ -119,46 +129,66 @@ class Devices(YomboLibrary):
         self._save_status()
 
     def _reload_(self):
-        self.__load_devices()
+        return self.__load_devices()
 
-#    @inlineCallbacks
+    @inlineCallbacks
     def __load_devices(self):
         """
         Load the devices into memory. Set up various dictionaries to manage
         devices. This also setups all the voice commands for all the devices.
         """
-        d =  self._Libraries['LocalDB'].get_devices()
-        d.addCallback(self.__do_load_devices)
-        # returnValue(None)
-        # if records is not None:
-        #     print "############################3 records: %s" % records
-        #     for record in records:
-        #         logger.debug("Loading device: {record}", record=record)
-        #         try:
-        #             self.voice_cmds.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
-        #         except:
-        #             pass
-        #         self._add_device(record)
-#        return None
-#        returnValue(None)
+        devices = yield self._Libraries['LocalDB'].get_devices()
+        self.__do_load_devices(devices)
 
+    def gotException(self, failure):
+       print "Exception: %r" % failure
+       return 100  # squash exception, use 0 as value for next stage
+
+    @inlineCallbacks
     def __do_load_devices(self, records):
         """
         Load the devices into memory. Set up various dictionaries to manage
         devices. This also setups all the voice commands for all the devices.
         """
+#        print "777 %s" % records
         logger.debug("Loading devices:::: {records}", records=records)
         if len(records) > 0:
-#            print "############################3 records: %s" % records
             for record in records:
                 logger.debug("Loading device: {record}", record=record)
                 try:
                     self.voice_cmds.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
                 except:
                     pass
-                self._add_device(record)
-#        return None
-#        returnValue(None)
+                d = yield self._add_device(record)
+
+        self.loadDefer.callback(10)
+
+#    @inlineCallbacks
+    def _add_device(self, record, testDevice=False):
+        """
+        Add a device based on data from a row in the SQL database.
+
+        :param record: Row of items from the SQLite3 database.
+        :type record: dict
+        :returns: Pointer to new device. Only used during unittest
+        """
+        device_id = record["id"]
+        self._devicesByUUID[device_id] = Device(record, self)
+        d = self._devicesByUUID[device_id]._init_()
+        self._devicesByName[record["label"]] = device_id
+
+        logger.debug("_add_device: {record}", record=record)
+        if record['device_type_id'] not in self._devicesByDeviceTypeByUUID:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']] = {}
+        if device_id not in self._devicesByDeviceTypeByUUID[record['device_type_id']]:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']][device_id] = self._devicesByUUID[device_id]
+
+        if record['device_type_machine_label'] not in self._devicesByDeviceTypeByName:
+            self._devicesByDeviceTypeByName[record['device_type_machine_label']] = record['device_type_id']
+
+        return d
+#        if testDevice:
+#            returnValue(self._devicesByUUID[device_id])
 
     def _save_status(self):
         """
@@ -185,30 +215,6 @@ class Devices(YomboLibrary):
         self._devicesByName.clear()
         self._devicesByDeviceTypeByUUID.clear()
         self._devicesByDeviceTypeByName.clear()
-
-    def _add_device(self, record, testDevice=False):
-        """
-        Add a device based on data from a row in the SQL database.
-
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
-        :returns: Pointer to new device. Only used during unittest
-        """
-        device_id = record["id"]
-        self._devicesByUUID[device_id] = Device(record, self)
-        self._devicesByName[record["label"]] = device_id
-
-        logger.debug("_add_device: {record}", record=record)
-        if record['device_type_id'] not in self._devicesByDeviceTypeByUUID:
-            self._devicesByDeviceTypeByUUID[record['device_type_id']] = {}
-        if device_id not in self._devicesByDeviceTypeByUUID[record['device_type_id']]:
-            self._devicesByDeviceTypeByUUID[record['device_type_id']][device_id] = self._devicesByUUID[device_id]
-
-        if record['device_type_machine_label'] not in self._devicesByDeviceTypeByName:
-            self._devicesByDeviceTypeByName[record['device_type_machine_label']] = record['device_type_id']
-
-        if testDevice:
-            return self._devicesByUUID[device_id]
 
     def listDevices(self):
         return list(self._devicesByName.keys())
@@ -328,12 +334,40 @@ class Device:
         self.lastCmd = deque({}, 30)
         self.status = deque({}, 30)
         self._allDevices = allDevices
-
-        self.availableCommands = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
-        self.deviceVariables = self._allDevices._Libraries['localdb'].get_variables('device', self.device_id)
         self.testDevice = testDevice
+        self.availableCommands = []
+        self.deviceVariables = {'asdf':'qwer'}
+
+#    @inlineCallbacks
+    def _init_(self):
+        """
+        Performs items that required deferreds.
+        :return:
+        """
+        def setCommands(commands):
+#            print "wwww1 %s" % commands
+            self.availableCommands = commands
+
+        def setVariables(vars):
+#            print "wwww2 %s" % vars
+            self.deviceVariables = vars
+
+        def gotException(failure):
+           print "Exception : %r" % failure
+           return 100  # squash exception, use 0 as value for next stage
+
+        d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
+        d.addCallback(setCommands)
+        d.addErrback(gotException)
+
+        d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
+        d.addErrback(gotException)
+        d.addCallback(setVariables)
+        d.addErrback(gotException)
+
         if self.testDevice is False:
-            self.load_history(35)
+            d.addCallback(lambda ignored: self.load_history(35))
+        return d
 
     def __str__(self):
         """
@@ -595,6 +629,7 @@ class Device:
     def load_history(self, howmany=35):
         d =  self._allDevices._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=howmany)
         d.addCallback(self._do_load_history)
+        return d
 
     def _do_load_history(self, records):
 #        print records
