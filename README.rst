@@ -27,17 +27,13 @@ Quick Start
 ===========
 
 1. Create an account at `Yombo account <https://yombo.net>`_ .
-2. Create a gateway at `app.yombo.net <https://app.yombo.net`_.
-3A. If you haven't downloaded the gateway software: See
-   https://yombo.net/docs/gateway/html/current/chapters/install-gateway.html
-3B. If you have the gateway software installed, see the ``install`` folder.
-   Look for a file matching your operating system. Run the "-setup" version.
-   For example: "debian-setup.sh".
+2. Create a gateway using the mobile app (not completed yet).
+3. Install the Getting the software.  See https://yombo.net/docs/gateway/html/current/chapters/install-gateway.html
 4. Configure the gateway: ./config.py
 5. You can run the Gateway from the local directory (thumb drive, etc)
    or install and have it start at bootup. The install folder contains
    OS-install-service script to setup the Gateway software and requests the
-   system start it up bootup. Run with: `sudo ./OSVERSION-install-service.sh`
+   system start it up bootup. Run with: `sudo .install/debian-install-service.sh`
 
 ===============================
 Getting Help / Other Resources
