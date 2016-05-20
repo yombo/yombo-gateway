@@ -52,6 +52,7 @@ HARD_LOAD = [
     "Configuration",
     "Modules",
     "Startup",
+    "GPG",
     "Atoms",
     "States",
     "CronTab",
@@ -169,7 +170,7 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             component = name.lower()
             library = self.loadedLibraries[component]
-            self.logLoader('debug', component, 'library', 'init', 'About to call _init_.')
+            self.logLoader('info', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._States = self.loadedLibraries['states']
             library._Modules = self._moduleLibrary
@@ -234,6 +235,7 @@ class Loader(YomboLibrary):
                    results = yield maybeDeferred(method)
                else:
                    results = yield maybeDeferred(method, **kwargs)
+               self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'Finished with call: %s' % hook)
                returnValue(results)
 #                 try:
 #                     if isCoreFunction:

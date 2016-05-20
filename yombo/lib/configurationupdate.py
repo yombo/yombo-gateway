@@ -169,7 +169,7 @@ class ConfigurationUpdate(YomboLibrary):
             return
         self.AMQPYombo = getComponent('yombo.gateway.lib.AMQPYombo')
         self.loadDefer = defer.Deferred()
-        self.loadDefer.addCallback(self.__loadFinish)
+#        self.loadDefer.addCallback(self.__loadFinish)
         self._LocalDBLibrary = self._Libraries['localdb']
         self.get_all_configs()
 
@@ -181,11 +181,11 @@ class ConfigurationUpdate(YomboLibrary):
         """
         pass
     
-    def __loadFinish(self, nextSteps):
-        """
-        Called when all the configurations have been received from the Yombo servers.
-        """
-        return 1
+    # def __loadFinish(self, nextSteps):
+    #     """
+    #     Called when all the configurations have been received from the Yombo servers.
+    #     """
+    #     return 1
 
     def _start_(self):
         """
@@ -429,6 +429,7 @@ class ConfigurationUpdate(YomboLibrary):
             if len(save_records) > 0:
 #                for record in save_records:
 #                    yield self._LocalDBLibrary.insert(configs_db['table'], record)
+#                print "saving records: (%s): %s" % (configs_db['table'], save_records)
                 yield self._LocalDBLibrary.insert_many(configs_db['table'], save_records)
         else:
             raise YomboWarning("Unknown type on processing configuration update.")
@@ -444,7 +445,6 @@ class ConfigurationUpdate(YomboLibrary):
         if self.__doingfullconfigs is True:
             returnValue(False)
         lastTime = getConfigValue("core", "lastFullConfigDownload", 1)
-        print lastTime
         if int(lastTime) > (int(time() - 10)):
             logger.debug("Not downloading fullconfigs due to race condition.")
             returnValue(None)

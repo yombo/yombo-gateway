@@ -16,9 +16,27 @@ This tool can perform the following functions:
   are handled through the mobile or desktop applications.
 * Reset the gateway back to it's default settings.
 
-**If are you setting up a new gateway, you are done.** The remaining sections
-explain making configuration changes that can normally be performed though the
-mobile or desktop applications.
+Running the gateway
+===================
+
+The gateway can be started by executing the ``./yombo.sh`` or ``yombod.bat`` file.
+
+On startup the gateway will:
+
+* Read to the yombo.ini file
+* Connect to Yombo Servers for any configuration updates
+* Download any required modules
+* Begin processing automation tasks
+
+.. note::
+
+  If are you setting up a new gateway, you are done.
+
+.. warning::
+
+  The information below if for advanced settings and can break things. It's recommended that
+  you stop here. The remaining sections explain making configuration changes that can normally
+  be performed though the mobile or desktop applications.
 
 yombo.ini
 =========
@@ -30,16 +48,16 @@ yombo.ini
   Deleting the yombo.ini alone will not delete all settings. Run the
   ``./config`` tool to complete this action.
 
+The majority of the time, the default settings will work fine. However, the
+gateway exposes many settings that allows various options to be tweaked. Some
+caution is needed: *you can break things!*
+
 .. rst-class:: floater
 
 .. warning::
 
   If you update the yombo.ini file while the **gateway is running**, any changes
   will be **lost**.
-
-The majority of the time, the default settings will work fine. However, the
-gateway exposes many settings that allows various options to be tweaked. Some
-caution is needed: *you can break things!*
 
 The yombo.ini file contains various configuration settings. For details about
 it's contents see the Yombo Wiki for
@@ -53,17 +71,6 @@ The gateway was designed to be easily updated using various tools, including
 the mobile app or through the Yombo API. It's recommended to use those tools
 instead of directly modifying the yombo.ini file.
 
-Running the gateway
-===================
-
-The gateway can be started by executing the ``./yombo.sh`` or ``yombod.bat`` file.
-
-On startup the gateway will:
-
-* Read to the yombo.ini file
-* Connect to Yombo Servers for any configuration updates
-* Download any required modules
-* Begin processing automation tasks
 
 Advanced configurations
 =======================================
@@ -72,19 +79,19 @@ Advanced configurations
 
 .. note::
 
-  Using the features listed below should only be used if  you are developing
-  a module.
+  Using the features listed below should only be used if you are developing
+  a new module that hasn't been published yet.
 
 Creating Local Modules
 ----------------------
+
+To get started building your first module, see:
+`Building your first module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_.
 
 For those wanting to create a local module and not make it publicly available,
 you can instruct the gateway to load it by creating a ``localmodules.ini``
 at gateway root directory. This allows the gateway to run modules inside of
 the Yombo Gateway framework without registering the module.
-
-To get started building your first module, see:
-`Building your first module <https://projects.yombo.net/projects/modules/wiki/Building_your_first_module>`_.
 
 For each module to load, edit the ``localmodules.ini`` file and create a new
 section. Within the section. Here's an example:

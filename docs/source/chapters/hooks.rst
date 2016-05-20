@@ -24,10 +24,10 @@ passed in by reference.
 =========================== ================================================================================================== ========================== ==============================================================
 Source                      Hook Name                                                                                          When Called                Description
 =========================== ================================================================================================== ========================== ==============================================================
-Automation                  :py:meth:`automation_source_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add value sources for triggers and conditions
-Automation                  :py:meth:`automation_filter_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add filter processors for triggers and conditions
 Automation                  :py:meth:`automation_action_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add actions available for rules
+Automation                  :py:meth:`automation_filter_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add filter processors for triggers and conditions
 Automation                  :py:meth:`automation_rules_list <yombo.lib.automation.Automation._module_prestart_>`               module_prestart            Add rules
+Automation                  :py:meth:`automation_source_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add value sources for triggers and conditions
 Messages                    :py:meth:`message_subscriptions <yombo.lib.automation.Automation._module_prestart_>`               module_prestart            Add subscriptions for messages.
 VoiceCmds                   :py:meth:`voicecmds_add <yombo.lib.automation.Automation._module_prestart_>`                       module_prestart            Add add voice commands
 =========================== ================================================================================================== ========================== ==============================================================

@@ -129,9 +129,8 @@ class LocalDB(YomboLibrary):
         self._ModUrl = "https://yombo.net"
         self.loader = loader
         self.db_model = {}  #store generated database model here.
-
         # Connect to the DB
-        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "test.db", check_same_thread = False)
+        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/sql/yombo.db", check_same_thread = False)
         self.dbconfig = Registry.getConfig()
 
         self.schema_version = 0
@@ -139,14 +138,10 @@ class LocalDB(YomboLibrary):
             results = yield Schema_Version.find(where=['table_name = ?', 'core'])
             self.schema_version = results[0].version
         except:
-            # database doesn't exist yet
-            pass
+            logger.info("Creating new database file.")
 
         start_schema_version = self.schema_version
-#        print "Current Database version: %s" % self.schema_version
-#        print "Latest Database version: %s" % LATEST_SCHEMA_VERSION
         for z in range(self.schema_version+1, LATEST_SCHEMA_VERSION+1):
-#                print "Processing update: %s" % z
                 script = __import__("yombo.utils.db."+str(z), globals(), locals(), ['upgrade'], 0)
                 results = yield script.upgrade(Registry)
 
@@ -174,13 +169,11 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def load_test_data(self):
-        print "loading test data"
+        logger.info("Loading databsae test data")
 
         command = yield Command.find('command1')
         if command is None:
           command = yield Command(id='command1', machine_label='6on', label='O6n', public=1, status=1, created=1, updated=1).save()
-#          results = yield command.save()
-          print "command save results: %s" % command
 
         device = yield Device.find('device1')
         if device is None:
@@ -194,10 +187,8 @@ class LocalDB(YomboLibrary):
           yield self.dbconfig.insert('command_device_types', args)
 
         device = yield Device.find('device1')
-        print "device === %s" % device
         results = yield Variable.find(where=['variable_type = ? AND foreign_id = ?', 'device', device.id])
 #          results = yield DeviceType.find(where=['id = ?', device.device_variables.get()
-        print "device vars: %s" % results
 
     @inlineCallbacks
     def get_commands(self):
@@ -247,6 +238,57 @@ class LocalDB(YomboLibrary):
     def get_devices(self):
         records = yield self.dbconfig.select("devices_view")
         returnValue(records)
+
+    @inlineCallbacks
+    def get_gpg_key(self, **kwargs):
+        records = None
+        if 'gwuuid' in kwargs:
+            records = yield self.dbconfig.select("gpg_keys", where=['gwuuid = ?', kwargs['gwuuid']])
+        elif 'keyid' in kwargs:
+            records = yield self.dbconfig.select("gpg_keys", where=['key_id = ?', kwargs['keyid']])
+        elif 'fingerprint' in kwargs:
+            records = yield self.dbconfig.select("gpg_keys", where=['fingerprint = ?', kwargs['fingerprint']])
+        else:
+            records = yield self.dbconfig.select("gpg_keys")
+
+        variables = {}
+        for record in records:
+            if record['gwuuid'] not in variables:
+                variables[record['gwuuid']] = {
+                    'gwuuid': record['gwuuid'],
+                    'keys': {},
+                }
+            key = {
+                'gwuuid': record['gwuuid'],
+                'key_id': record['key_id'],
+                'fingerprint': record['fingerprint'],
+                'created': record['created'],
+            }
+            variables[record['gwuuid']]['keys'][record['fingerprint']] = key
+        returnValue(variables)
+
+    @inlineCallbacks
+    def insert_gpg_key(self, gwkey, **kwargs):
+#        print "adding: %s" % gwkey
+        args = {
+            'gwuuid': gwkey['gwuuid'],
+            'key_id': gwkey['key_id'],
+            'fingerprint': gwkey['fingerprint'],
+            'created': gwkey['created'],
+        }
+        key = GpgKey()
+        key.gwuuid = gwkey['gwuuid']
+        key.key_id = gwkey['key_id']
+        key.fingerprint = gwkey['fingerprint']
+        key.length = gwkey['length']
+        key.expires = gwkey['expires']
+        key.created = gwkey['created']
+ #       print key
+        yield key.save()
+ #       print key
+
+#        yield self.dbconfig.insert('gpg_keys', args)
+#        yield self.dbconfig.insert('gpg_keys', args, None, 'OR IGNORE' )
 
     @inlineCallbacks
     def get_modules(self, get_all=False):

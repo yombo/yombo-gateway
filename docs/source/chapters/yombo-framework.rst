@@ -24,6 +24,15 @@ The gateway framework is split into a few directories:
 
 .. _core:
 
+Hooks
+*****
+
+Hooks allow modules to interact with the framework core and allows functions to be called during specific events. For
+example, when a new message is about to be sent or when a device connects to the framework.
+
+See :doc:`hooks documentation <../chapters/hooks>` for full list of available hooks provided by the framework. Note:
+modules can extend and implement additional hooks not listed here.
+
 Core
 ****
 

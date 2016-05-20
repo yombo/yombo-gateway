@@ -24,6 +24,13 @@ logLevels = (
     "error",
 )
 
+bcolor = {'debug':'\033[94m',
+        'info':'\033[92m',
+        'warn':'\033[93m',
+        'error':'\033[91m',
+        'default':'\033[33m',
+        }
+
 @provider(ILogObserver)
 def simpleObserver(event):
 #    event['log_system'] = "asdf"
@@ -35,7 +42,7 @@ logFormat = lambda event: u"{0} [{1}]: {2}".format(formatTime(event["log_time"])
 
 @provider(ILogObserver)
 def consoleLogObserver(event):
-    print u"[{0}-{1}]: {2}".format(event["log_level"].name.upper(), event["log_namespace"], formatEvent(event))
+    print u"[{0}{1}\033[39m-{2}]: {3}".format(bcolor[event["log_level"].name.lower()], event["log_level"].name.upper(), event["log_namespace"], formatEvent(event))
 
 
 def getLogger(logname='yombolog', **kwargs):

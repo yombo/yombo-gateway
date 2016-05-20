@@ -179,7 +179,7 @@ class Atoms(YomboLibrary):
         if HAS_PSUTIL:
             atoms['cpu_count'] = psutil.cpu_count()
             memory = psutil.virtual_memory()
-            atoms['mem_total'] = memory['total']
+            atoms['mem_total'] = memory.total
 
         if yombo.utils.is_windows():
             atoms['os'] = 'Windows'

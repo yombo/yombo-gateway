@@ -137,6 +137,8 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 "correlation_id" : self.startupRequestID,
                 "user_id"        : self.factory.AMQPYombo.gwuuid,
                 "headers"        : {
+                    "ClientType"    : "ygw",
+                    "ClientType"    : "ygw",
                     "Source"        : "yombo.gateway.lib.amqpyombo:" + self.factory.AMQPYombo.gwuuid,
                     "Destination"   : "yombo.server.amqpyombo",
                     "Type"          : "Request",
@@ -735,6 +737,7 @@ class AMQPYombo(YomboLibrary):
                 "headers"        : {
                     "Source"        : source + ":" + self.gwuuid,
                     "Destination"   : destination,
+                    "ClientType"          : "ygw",
                     "Type"          : "Request",
                     "RequestType"   : request_type,
                     },

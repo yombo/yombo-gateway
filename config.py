@@ -31,12 +31,11 @@ import json
 import getpass
 import time
 import hashlib
-#@TODO: Change later with advanced menu...
+import sqlite3
 
 apiurl = "https://api.yombo.net"
 requests.adapters.DEFAULT_RETRIES = 5
 
-gpg = gnupg.GPG()  #:Build the gpg interface once.
 yomboconfig = None
 yomboini = ''
 account = ''
@@ -68,6 +67,11 @@ if not os.path.exists('usr/opt'):
 #logging directory
 if not os.path.exists('usr/log'):
     os.makedirs('usr/log')
+if not os.path.exists('usr/etc/gpg'):
+    os.makedirs('usr/etc/gpg')
+os.chmod('usr/etc/gpg', 0700)
+
+gpg = gnupg.GPG(homedir="usr/etc/gpg")  #:Build the gpg interface once.
 
 class _Getch:
     """
@@ -238,8 +242,8 @@ def deleteSql():
     global yomboini
     global yomboconfig
     try:
-        if os.path.isfile('usr/sql/config.sqlite3') is True:
-            os.remove('usr/sql/config.sqlite3')
+        if os.path.isfile('usr/sql/yombo.db') is True:
+            os.remove('usr/sql/yombo.db')
     except:
         raise Exception("Error with yombo.ini file, cannot write to file. Have permission?")
 
@@ -472,7 +476,8 @@ def saveBundleToAPI(bundle, newgw=False):
 
   if newgw is False:
 #    print "in savebundletoapi - posting update!"
-#    print("/api/v1/gateway_registered/%s :: %s :: %s" % (gwuuid, upload, 'patch'))
+#    print("/api/v1/gateway_registered/%s
+# :: %s :: %s" % (gwuuid, upload, 'patch'))
     yomboSend("/api/v1/gateway_registered/%s" % gwuuid, upload, 'patch')
   else:
 #    print "in savebundletoapi - posting new!"
@@ -523,7 +528,7 @@ def GPGKeyGenerate(**kwargs):
         print "A GPG keypair already exists, or at least Yombo Gateway software says it does.\n\r"
         doContinue = True
         while doContinue:
-          print "Do you want to force a new one to be generated? (y/n/?): "
+          print "Do you want to force a new one to be generated? (y/n/?): ",
           command = getch()
           command = command.lower()
           if command == 'y':
@@ -542,10 +547,12 @@ def GPGKeyGenerate(**kwargs):
         name_email=gwuuid + "@yombo.net",
         name_real="Yombo Gateway",
         name_comment=gwuuid,
-        key_length=2048)
+        key_type='RSA',
+        key_length=4096,
+        expire_date='5y')
 
     newkey = gpg.gen_key(input_data)
-#    print "\n\rGenerated key: '%s'\n\r" % newkey
+    print "\n\rGenerated key: '%s'\n\r" % newkey
 
     if newkey == '':
         print "\n\rERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?\n\r"
@@ -649,6 +656,8 @@ def sendKey(keyid, asciiArmoredPublicKey):
     Sends your *public* key to keys.yombo.net.  This permits other
     services and gateways to send encrypted commands to this gateway.
     """
+    return
+    #todo: convert to API calls
     cmd = ['gpg', '--send-keys', '--keyserver', 'keys.yombo.net', keyid]
     result = subprocess.check_call(cmd)
 #    if result == 0:
@@ -690,12 +699,12 @@ def menuStart(**kwargs):
       print "Main Menu"
       print "========="
       print "Select a function"
-      print "N) ** Create a new gateway and configure it"
       if gwuuid != None:
-        print "C) Configure current gateway: % s" % gwlabel
-      print "A) ** Assign an existing gateway to this machine"
-      print "P) ** Purge gateway database and yombo.ini configurations"
-      print "    ** = This deletes any local configurations and device history."
+        print "C ) Configure current gateway: % s" % gwlabel
+      print "N*) Create a new gateway and configure it"
+      print "A*) Assign an existing gateway to this machine"
+      print "P*)  Purge gateway database and yombo.ini configurations"
+      print "    * = This deletes any local configurations and device history."
       print "Q) Quit"
       print "Enter a command: ",
       command = getch()
@@ -839,7 +848,7 @@ def menuGateway(**kwargs):
       print "C) Change Label & Description"
       print "B) Basic Configuration"
       print "L) Change Location"
-      print "M) Manage keys"
+      print "M) Manage GPG encryption keys"
       print "V) Validate configuration"
       print "D) Delete local configuration & device history and refresh from online"
       print "- - Navigation - -"
@@ -880,7 +889,7 @@ def menuGateway(**kwargs):
       checkIfDirty(bundle)
       myExit()
     else:
-      print "Invalid command.  Try again.\n\r"
+      print "\n\rInvalid command '%s'.  Try again.\n\r" % command
 
 def checkIfDirty(bundle):
     if bundle['meta']['dirtyApi'] is True or bundle['meta']['dirtyIni'] is True:

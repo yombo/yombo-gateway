@@ -13,7 +13,7 @@ import os
 from subprocess import Popen, PIPE
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
 from yombo.core.helpers import getConfigValue, getComponent
@@ -31,27 +31,70 @@ class GPG(YomboLibrary):
         """
         Get the GnuPG subsystem up and loaded.
         """
+        self.initDefer = Deferred()
         self.mykeyid = getConfigValue('gpg', 'gpgkeyid')
-        self.gpg = gnupg.GPG(homedir="usr/etc")
+        self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
+        logger.debug("syncing gpg keys into db")
+        self.sync_keyring_to_db()
+        return self.initDefer
+
+    @inlineCallbacks
+    def sync_keyring_to_db(self):
+        self.local_db = self._Libraries['localdb']
+        db_keys = yield self.local_db.get_gpg_key()
+        self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
+        gpg_keys = yield self.gpg.list_keys()
+        gpg_keys = self.format_gen_keys(gpg_keys)
+#        print db_keys
+#        print gpg_keys
+        for gwuuid, data in gpg_keys.iteritems():
+            if gwuuid not in db_keys:
+                for gwkey in gpg_keys[gwuuid]['keys']:
+                    if int(gpg_keys[gwuuid]['keys'][gwkey]['length']) < 20048:
+                        logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable", length=gpg_keys[gwuuid]['keys'][gwkey]['length'])
+                    else:
+                        yield self.local_db.insert_gpg_key(gpg_keys[gwuuid]['keys'][gwkey])
+        self.initDefer.callback(10)
+
+
+
+    def format_gen_keys(self, keys):
+        variables = {}
+        for record in keys:
+            uid = record['uids'][0]
+            gwuuid = uid[uid.find("(")+1:uid.find(")")]
+            if gwuuid not in variables:
+                variables[gwuuid] = {
+                    'gwuuid': gwuuid,
+                    'keys': {},
+                }
+            key = {
+                'gwuuid': gwuuid,
+                'key_id': record['keyid'],
+                'fingerprint': record['fingerprint'],
+                'expires' : record['expires'],
+                'sigs' : record['sigs'],
+                'subkeys' : record['subkeys'],
+                'length' : record['length'],
+                'ownertrust' : record['ownertrust'],
+                'algo' : record['algo'],
+                'created' : record['date'],
+                'trust' : record['trust'],
+                'type' : record['type'],
+                'uids' : record['uids'],
+            }
+            variables[gwuuid]['keys'][record['fingerprint']] = key
+        return variables
+#[{'dummy': u'', 'keyid': u'CDAADDFAA405F78F', 'expires': u'1495090800', 'sigs': {u'Yombo Gateway (L2rwJHeKuRSUQoxQFOQP7RnB) <L2rwJHeKuRSUQoxQFOQP7RnB@yombo.net>': []}, 'subkeys': [], 'length': u'4096',
+#  'ownertrust': u'u', 'algo': u'1', 'fingerprint': u'F7ADD4CD09A0DC9CC5F63B5ACDAADDFAA405F78F', 'date': u'1463636545', 'trust': u'u', 'type': u'pub',
+#  'uids': [u'Yombo Gateway (L2rwJHeKuRSUQoxQFOQP7RnB) <L2rwJHeKuRSUQoxQFOQP7RnB@yombo.net>']},
 
 #    @inlineCallbacks
     def _load_(self):
         """
         Get the root cert from database and make sure it's in our public keyring.
         """
-        self.database = getComponent("yombo.server.lib.mariadb")
-        self.dbpool = self.database.getPool()
-        d = self.dbpool.select('gpg_keys', ['id', 'keyid', 'keyhash', 'public_key', 'root_key_id', 'root_signed_time', 'expire_time', 'revoked'] , "where referer_type='root' AND referer_id=1 ORDER BY id")
-        def dbResults(data):
-#          logger.info("gpg data: {data}", data=data)
-          if data != False:
-            for key in data:
-              if key['revoked']:
-                break
-              self.gpgRoot = key
-              self.importKey(key, 6)
-        d.addCallback(dbResults)
-        return d
+        pass
 
     def _start_(self):
         """
@@ -79,6 +122,26 @@ class GPG(YomboLibrary):
         :type message: :ref:`message`
         """
         pass
+
+    def remoteGetKey(self, keyHash):
+        """
+        Send a request to AMQP server to get a key. When something comes back, add it to the key store.
+
+        :param keyHash:
+        :return:
+        """
+        request = {
+            "exchange_name"  : "ysrv.e.gw_config",
+            "source"        : "yombo.gateway.lib.configurationupdate",
+            "destination"   : "yombo.server.configs",
+            "callback" : self.amqpDirectIncoming,
+            "body"          : {
+              "DataType"        : "Object",
+              "Request"         : keyHash,
+            },
+            "request_type"   : "GPGGetKey",
+        }
+        self.AMQPYombo.sendDirectMessage(**self._generateRequest(item, "All"))
 
     def getKey(self, keyHash):
         d = self.dbpool.select('gpg_keys', ['id', 'keyid', 'keyhash', 'public_key', 'root_key_id', 'root_signed_time', 'expire_time', 'revoked'] , "WHERE keyhash=%s", keyHash)

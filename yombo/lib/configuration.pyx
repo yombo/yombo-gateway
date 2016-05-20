@@ -221,7 +221,6 @@ class Configuration(YomboLibrary):
         self.cacheMisses += 1
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
-        print "444 = %s" % default
         if default is not None:
             if section not in self.cache:
                self.cache[section] = {}

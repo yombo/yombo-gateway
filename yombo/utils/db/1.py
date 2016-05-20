@@ -137,13 +137,17 @@ def upgrade(Registry, **kwargs):
 
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
-     `id`     TEXT NOT NULL,
+     `id`     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `gwuuid`     TEXT NOT NULL,
      `key_id`     TEXT NOT NULL,
-     `key_hash`     TEXT NOT NULL,
-     `in_key_ring`     INTEGER NOT NULL,
-     `created`     INTEGER NOT NULL,
-     PRIMARY KEY(key_id));"""
+     `fingerprint`     TEXT NOT NULL,
+     `length`     INTEGER NOT NULL,
+     `expires`     INTEGER NOT NULL,
+     `created`     INTEGER NOT NULL
+     );"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'gwuuid'))
+    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
 
     # To be completed
     table = """CREATE TABLE `logs` (

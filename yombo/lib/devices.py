@@ -24,11 +24,10 @@ from collections import deque, namedtuple
 from time import time
 import copy
 import cPickle
-import json
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
-from twisted.internet.defer import inlineCallbacks, returnValue, gatherResults, DeferredList, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 
 # Import Yombo libraries
@@ -98,14 +97,7 @@ class Devices(YomboLibrary):
         """
         self.__load_devices()
         self.loadDefer = Deferred()
-
         return self.loadDefer
-
-    def __loadFinish(self, nextSteps):
-        """
-        Called when all the configurations have been received from the Yombo servers.
-        """
-        return 1
 
     def _start_(self):
         """
@@ -150,7 +142,6 @@ class Devices(YomboLibrary):
         Load the devices into memory. Set up various dictionaries to manage
         devices. This also setups all the voice commands for all the devices.
         """
-#        print "777 %s" % records
         logger.debug("Loading devices:::: {records}", records=records)
         if len(records) > 0:
             for record in records:
@@ -163,7 +154,6 @@ class Devices(YomboLibrary):
 
         self.loadDefer.callback(10)
 
-#    @inlineCallbacks
     def _add_device(self, record, testDevice=False):
         """
         Add a device based on data from a row in the SQL database.
@@ -338,18 +328,15 @@ class Device:
         self.availableCommands = []
         self.deviceVariables = {'asdf':'qwer'}
 
-#    @inlineCallbacks
     def _init_(self):
         """
         Performs items that required deferreds.
         :return:
         """
         def setCommands(commands):
-#            print "wwww1 %s" % commands
             self.availableCommands = commands
 
         def setVariables(vars):
-#            print "wwww2 %s" % vars
             self.deviceVariables = vars
 
         def gotException(failure):
@@ -627,12 +614,18 @@ class Device:
         self._allDevices._MessageLibrary.deviceDelayList(self.device_id)
 
     def load_history(self, howmany=35):
+        """
+        Loads device history into the device instance. This method gets the data from the db and adds a callback
+        to _do_load_history to actually set the values.
+
+        :param howmany:
+        :return:
+        """
         d =  self._allDevices._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=howmany)
         d.addCallback(self._do_load_history)
         return d
 
     def _do_load_history(self, records):
-#        print records
         if len(records) == 0:
             self.status.append(self.Status(self.device_id, 0, 0, '', '', {}, '', 0, 0))
         else:
@@ -641,6 +634,12 @@ class Device:
         logger.debug("Device load history: {device_id} - {status}", device_id=self.device_id, status=self.status)
 
     def get_history(self, history=0):
+        """
+        Gets the history of the device status.
+
+        :param history:
+        :return:
+        """
         return {"status": self.status[history]}
 
     def validateCommand(self, cmdUUID):

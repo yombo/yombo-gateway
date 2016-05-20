@@ -78,9 +78,9 @@ class Automation(YomboLibrary):
 
     def _module_prestart_(self, **kwargs):
         """
-        Implements the _module_prestart_ and is called before _start_ is called for all the modules.
+        Implements the _module_prestart_ hook and is called before _start_ is called for all the modules.
 
-        Implements three hook: hook_automation_trigger, hook_automation_condition, hook_automation_action
+        Implements three hooks: hook_automation_trigger, hook_automation_condition, hook_automation_action
 
         *hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
         *hook_automation_filter_list : Expects a list of filter callbacks to validate and check against
