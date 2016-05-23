@@ -56,6 +56,7 @@ old/*
 ##########################################
 yombo/modules/*
 !yombo/modules/__init__.py
+!yombo/modules/automationexample/*
 !yombo/modules/empty/
 !yombo/modules/logreader/
 !yombo/modules/logwriter/

@@ -85,37 +85,36 @@ documentation.
 :license: LICENSE for details.
 """
 # Import Yombo libraries
-#from yombo.core.component import IModule
-from yombo.core.helpers import getCommands, getCronTab
-from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.exceptions import YomboWarning
+from yombo.core.helpers import getCommands
 from yombo.core.log import getLogger
 
 logger = getLogger('core.module')
+
 
 class YomboModule:
     """
     Setups a module to assist the developer write modules quickly. Pre-defines several items.
 
-    :cvar _Name: (string) Name of the class (aka module name). EG: x10api
-    :cvar _FullName: (string) Name **full** of the class for routing. EG: yombo.modules.x10api
-    :cvar _Description: (string) Description, needs to be set in the module's init() function.
-    :cvar _ModAuthor: (string) Module author, needs to be set in the module's init() function.
-    :cvar _ModUrl: (string) URL for additional information about this
+
+    :ivar _Name: (string) Name of the class (aka module name). EG: x10api
+    :ivar _FullName: (string) Name **full** of the class for routing. EG: yombo.modules.x10api
+    :ivar _ModDescription: (string) Description, needs to be set in the module's init() function.
+    :ivar _ModAuthor: (string) Module author, needs to be set in the module's init() function.
+    :ivar _ModUrl: (string) URL for additional information about this
       module, needs to be set in the module's init() function.
-    :cvar _Atoms: (object/dict) The Yombo Atoms library, but can accessed as a dictionary or object.
-    :cvar _Commands: preloaded pointer to all configured commands.
-    :cvar _Devices: (dict) Dictionary to all devices this module controls.
-    :cvar _DevicesByType: (callback) A function to quickly get all devices for a specific device type.
-    :cvar _DeviceTypes: (list) List of device types that are registered for this module.
-    :cvar _DevicesLibrary: preloaded pointer to Devices library.
-    :cvar _Libraries: (dict) A dictionary of all modules. Returns pointers.
-    :cvar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
-    :cvar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
-    :cvar _ModuleUUID: (string) The UUID of the module.
-    :cvar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
+    :ivar _Atoms: (object/dict) The Yombo Atoms library, but can accessed as a dictionary or object.
+    :ivar _Commands: preloaded pointer to all configured commands.
+    :ivar _Devices: (dict) Dictionary to all devices this module controls.
+    :ivar _DevicesByType: (callback) A function to quickly get all devices for a specific device type.
+    :ivar _DeviceTypes: (list) List of device types that are registered for this module.
+    :ivar _DevicesLibrary: preloaded pointer to Devices library.
+    :ivar _Libraries: (dict) A dictionary of all modules. Returns pointers.
+    :ivar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
+    :ivar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
+    :ivar _ModuleUUID: (string) The UUID of the module.
+    :ivar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
       and set as per the user.
-    :cvar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
+    :ivar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
     """
     def __init__(self):
         """
@@ -126,7 +125,7 @@ class YomboModule:
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
         self._ModDescription = "NA"
         self._ModAuthor = "NA"
-        self._ModURL = "NA"
+        self._ModUrl = "NA"
         self._ModuleType = None
         self._ModuleUUID = None
 
@@ -141,8 +140,21 @@ class YomboModule:
         self._ModulesLibrary = None
 
     def dump(self):
+        """
+        Returns a dictionary of core attributes about this module.
+
+        :return: A dictionary of core attributes.
+        :rtype: dict
+        """
         return self.__str__()
+
     def __str__(self):
+        """
+        Returns a dictionary of core attributes about this module.
+
+        :return: A dictionary of core attributes.
+        :rtype: dict
+        """
         return {
             '_Name': self._Name,
             '_FullName': self._FullName,
@@ -150,7 +162,11 @@ class YomboModule:
             '_ModAuthor': self._ModAuthor,
             '_ModuleType': self._ModuleType,
             '_ModuleUUID': self._ModuleUUID,
-
+            '_ModUrl': self._ModUrl,
+            '_Devices': self._Devices,
+            '_DeviceTypes': self._DeviceTypes,
+            '_ModuleVariables': self._ModuleVariables,
+            '_ModulesLibrary': self._ModulesLibrary,
         }
 
     def _init_(self):
@@ -193,5 +209,32 @@ class YomboModule:
         """
         Incoming messeages from other components (internal and external to the gateway) will
         be sent to this method.
+
+        :param message: (Message) A Yombo Message to be sent to module or library.
         """
         pass
+
+    def amqp_incoming(self, deliver, properties, message):
+        """
+        Basic routing of incoming AQMP message packagets to a module. Sends requests to 'amqp_incoming_request'
+        and responses to 'amqp_incoming_response'.
+
+        :param deliver:
+        :param properties:
+        :param message:
+        """
+        logger.info("deliver (%s), props (%s), message (%s)" % (deliver, properties, message,))
+        logger.info("headers... {headers}", headers=properties.headers)
+        if properties.headers['Type'] == 'Request':
+            if message['DataType'] == 'Object':  # a single response
+                self.amqp_incoming_request(deliver, properties, message['Request'])
+            elif message['DataType'] == 'Objects':  # An array of responses
+                for response in message['Response']:
+                    print "about to send to incoming_request"
+                    self.amqp_incoming_request(deliver, properties, response)
+        elif properties.headers['Type'] == "Response":
+            if message['DataType'] == 'Object':  # a single response
+                self.amqp_incoming_response(deliver, properties, message['Response'])
+            elif message['DataType'] == 'Objects':  # An array of responses
+                for response in message['Response']:
+                    self.amqp_incoming_response(deliver, properties, response)

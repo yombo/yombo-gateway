@@ -1,6 +1,8 @@
 """
 A simple module to test and demonstrate various automation hooks.
 
+This module also creates a few rules for demonstration.
+
 :copyright: 2016 Yombo
 :license: MIT
 """
@@ -10,6 +12,7 @@ from yombo.core.module import YomboModule
 from yombo.core.log import getLogger
 
 logger = getLogger("module.automationexample")
+
 
 class AutomationExample(YomboModule):
     """
@@ -27,6 +30,16 @@ class AutomationExample(YomboModule):
         pass
 
     def AutomationExample_automation_rules_list(self, **kwargs):
+        """
+        Implements hook_automation_rules_list hook as implemented by the library automation. This defines a few
+        example rules. Notice the reference to 'component_function'. This the function that is called when the
+        rule fires. Notice that the function name can be reference by name as if it were implemented by a text file,
+        or a reference to the function be submitted. Passing a reference to a function provides higher assurance the
+        proper function is called and should be used when creating rules within a module.
+
+        :return: Returns a dictionary of rules to be parsed.
+        :rtype: dict
+        """
         return {'rules': [
             {
                 'name': 'Empty test 0',

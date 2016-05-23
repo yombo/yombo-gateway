@@ -24,12 +24,10 @@ A database API to SQLite3.
 """
 # Import python libraries
 from time import time
-from collections import OrderedDict
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.dbobject import DBObject
-from yombo.ext.twistar.exceptions import ImaginaryTableError
 
 # Import twisted libraries
 from twisted.enterprise import adbapi
@@ -38,7 +36,6 @@ from twisted.internet.defer import inlineCallbacks, returnValue, gatherResults, 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
-from yombo.core.helpers import pgpDecrypt
 
 logger = getLogger('lib.sqlitedb')
 
@@ -46,16 +43,20 @@ LATEST_SCHEMA_VERSION = 1
 
 #### Various SQLite tables within the database. ####
 
+
 class CommandDeviceTypes(DBObject):
     TABLENAME='command_device_types'
+
 
 class Command(DBObject):
     HABTM = [dict(name='device_types', join_table='CommandDeviceTypes')]
     pass
 
+
 class Config(DBObject):
 #    TABLENAME='devsadf'
     pass
+
 
 class Device(DBObject):
 #    HASMANY = [{'name':'device_status', 'class_name':'DeviceStatus', 'foreign_key':'id', 'association_foreign_key':'device_id'},
@@ -66,39 +67,50 @@ class Device(DBObject):
     TABLENAME='devices'
 #    pass
 
+
 class DeviceStatus(DBObject):
     TABLENAME='device_status'
     BELONGSTO = ['devices']
+
 
 class DeviceType(DBObject):
     TABLENAME='device_types'
     HABTM = [dict(name='commands', join_table='command_device_types')]
 #    BELONGSTO = ['devices']
 
+
 class GpgKey(DBObject):
     TABLENAME='gpg_keys'
+
 
 class Logs(DBObject):
     TABLENAME='logs'
 
+
 class ModuleDeviceTypes(DBObject):
     TABLENAME='moduleDeviceTypes'
+
 
 class Modules(DBObject):
     TABLENAME='modules'
 
+
 class ModulesInstalled(DBObject):
     TABLENAME='modulesInstalled'
+
 
 class Schema_Version(DBObject):
     TABLENAME='schema_version'
 
+
 class Sqldict(DBObject):
     TABLENAME='sqldict'
+
 
 class User(DBObject):
 #    TABLENAME='users'
     pass
+
 
 class Variable(DBObject):
     TABLENAME='variables'
@@ -106,12 +118,14 @@ class Variable(DBObject):
 
 #### Views ####
 
+
 class ModuleRoutingView(DBObject):
     TABLENAME='module_routing_view'
 
 #Registry.register(Config)
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
 Registry.register(Device, DeviceStatus, Variable, DeviceType, Command)
+
 
 class LocalDB(YomboLibrary):
     """

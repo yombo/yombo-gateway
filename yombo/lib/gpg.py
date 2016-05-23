@@ -50,7 +50,7 @@ class GPG(YomboLibrary):
         for gwuuid, data in gpg_keys.iteritems():
             if gwuuid not in db_keys:
                 for gwkey in gpg_keys[gwuuid]['keys']:
-                    if int(gpg_keys[gwuuid]['keys'][gwkey]['length']) < 20048:
+                    if int(gpg_keys[gwuuid]['keys'][gwkey]['length']) < 2048:
                         logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable", length=gpg_keys[gwuuid]['keys'][gwkey]['length'])
                     else:
                         yield self.local_db.insert_gpg_key(gpg_keys[gwuuid]['keys'][gwkey])
