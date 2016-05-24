@@ -35,7 +35,7 @@ Comment: https://github.com/SublimeCodeIntel/inflector commit hash:acfe73d3cacf8
 Files: yombo/ext/six.py
 Copyright: 2010-2015 Benjamin Peterson
 License: BSD License
-Comment: https://github.com/kelp404/six commit hash:30b8641f5b25e095c1f7ca1c8b82b3c0f9925f48
+Comment: https://bitbucket.org/gutworth/six commit hash:2c12cd64ff0c7797bb30b0d466e902f7ecd6e562
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights
@@ -57,7 +57,7 @@ Comment: https://github.com/kelp404/six commit hash:30b8641f5b25e095c1f7ca1c8b82
 Files: yombo/ext/twistar/*
 Copyright: 2010 Butterfat, LLC
 License: BSD License
-Comment: https://github.com/bmuller/twistar commit hash:ebe701b3007a13a2acffb63fce7c0a7745d460cb
+Comment: https://github.com/bmuller/twistar commit hash:19f4ce3d759f03f5066dfbaf2dab3f8939e6719d
   Permission is hereby granted, free of charge, to any person obtaining
   a copy of this software and associated documentation files (the
   "Software"), to deal in the Software without restriction, including

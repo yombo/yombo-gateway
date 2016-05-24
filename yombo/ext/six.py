@@ -1,6 +1,4 @@
-"""Utilities for writing code that runs on Python 2 and 3"""
-
-# Copyright (c) 2010-2015 Benjamin Peterson
+# Copyright (c) 2010-2016 Benjamin Peterson
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+"""Utilities for writing code that runs on Python 2 and 3"""
+
 from __future__ import absolute_import
 
 import functools
@@ -30,6 +30,7 @@ import types
 
 __author__ = "Benjamin Peterson <benjamin@python.org>"
 __version__ = "1.10.0"
+
 
 # Useful for very coarse version differentiation.
 PY2 = sys.version_info[0] == 2
@@ -70,14 +71,17 @@ else:
             MAXSIZE = int((1 << 63) - 1)
         del X
 
+
 def _add_doc(func, doc):
     """Add documentation to a function."""
     func.__doc__ = doc
+
 
 def _import_module(name):
     """Import module, returning the module after the last dot."""
     __import__(name)
     return sys.modules[name]
+
 
 class _LazyDescr(object):
 
@@ -94,6 +98,7 @@ class _LazyDescr(object):
         except AttributeError:
             pass
         return result
+
 
 class MovedModule(_LazyDescr):
 
@@ -115,6 +120,7 @@ class MovedModule(_LazyDescr):
         setattr(self, attr, value)
         return value
 
+
 class _LazyModule(types.ModuleType):
 
     def __init__(self, name):
@@ -128,6 +134,7 @@ class _LazyModule(types.ModuleType):
 
     # Subclasses should override this
     _moved_attributes = []
+
 
 class MovedAttribute(_LazyDescr):
 
@@ -152,6 +159,7 @@ class MovedAttribute(_LazyDescr):
     def _resolve(self):
         module = _import_module(self.mod)
         return getattr(module, self.attr)
+
 
 class _SixMetaPathImporter(object):
 
@@ -217,10 +225,12 @@ class _SixMetaPathImporter(object):
 
 _importer = _SixMetaPathImporter(__name__)
 
+
 class _MovedItems(_LazyModule):
 
     """Lazy loading of moved objects"""
     __path__ = []  # mark as package
+
 
 _moved_attributes = [
     MovedAttribute("cStringIO", "cStringIO", "io", "StringIO"),
@@ -252,10 +262,11 @@ _moved_attributes = [
     MovedModule("html_entities", "htmlentitydefs", "html.entities"),
     MovedModule("html_parser", "HTMLParser", "html.parser"),
     MovedModule("http_client", "httplib", "http.client"),
+    MovedModule("email_mime_base", "email.MIMEBase", "email.mime.base"),
+    MovedModule("email_mime_image", "email.MIMEImage", "email.mime.image"),
     MovedModule("email_mime_multipart", "email.MIMEMultipart", "email.mime.multipart"),
     MovedModule("email_mime_nonmultipart", "email.MIMENonMultipart", "email.mime.nonmultipart"),
     MovedModule("email_mime_text", "email.MIMEText", "email.mime.text"),
-    MovedModule("email_mime_base", "email.MIMEBase", "email.mime.base"),
     MovedModule("BaseHTTPServer", "BaseHTTPServer", "http.server"),
     MovedModule("CGIHTTPServer", "CGIHTTPServer", "http.server"),
     MovedModule("SimpleHTTPServer", "SimpleHTTPServer", "http.server"),
@@ -306,9 +317,11 @@ _MovedItems._moved_attributes = _moved_attributes
 moves = _MovedItems(__name__ + ".moves")
 _importer._add_module(moves, "moves")
 
+
 class Module_six_moves_urllib_parse(_LazyModule):
 
     """Lazy loading of moved objects in six.moves.urllib_parse"""
+
 
 _urllib_parse_moved_attributes = [
     MovedAttribute("ParseResult", "urlparse", "urllib.parse"),
@@ -344,9 +357,11 @@ Module_six_moves_urllib_parse._moved_attributes = _urllib_parse_moved_attributes
 _importer._add_module(Module_six_moves_urllib_parse(__name__ + ".moves.urllib_parse"),
                       "moves.urllib_parse", "moves.urllib.parse")
 
+
 class Module_six_moves_urllib_error(_LazyModule):
 
     """Lazy loading of moved objects in six.moves.urllib_error"""
+
 
 _urllib_error_moved_attributes = [
     MovedAttribute("URLError", "urllib2", "urllib.error"),
@@ -362,9 +377,11 @@ Module_six_moves_urllib_error._moved_attributes = _urllib_error_moved_attributes
 _importer._add_module(Module_six_moves_urllib_error(__name__ + ".moves.urllib.error"),
                       "moves.urllib_error", "moves.urllib.error")
 
+
 class Module_six_moves_urllib_request(_LazyModule):
 
     """Lazy loading of moved objects in six.moves.urllib_request"""
+
 
 _urllib_request_moved_attributes = [
     MovedAttribute("urlopen", "urllib2", "urllib.request"),
@@ -410,9 +427,11 @@ Module_six_moves_urllib_request._moved_attributes = _urllib_request_moved_attrib
 _importer._add_module(Module_six_moves_urllib_request(__name__ + ".moves.urllib.request"),
                       "moves.urllib_request", "moves.urllib.request")
 
+
 class Module_six_moves_urllib_response(_LazyModule):
 
     """Lazy loading of moved objects in six.moves.urllib_response"""
+
 
 _urllib_response_moved_attributes = [
     MovedAttribute("addbase", "urllib", "urllib.response"),
@@ -429,9 +448,11 @@ Module_six_moves_urllib_response._moved_attributes = _urllib_response_moved_attr
 _importer._add_module(Module_six_moves_urllib_response(__name__ + ".moves.urllib.response"),
                       "moves.urllib_response", "moves.urllib.response")
 
+
 class Module_six_moves_urllib_robotparser(_LazyModule):
 
     """Lazy loading of moved objects in six.moves.urllib_robotparser"""
+
 
 _urllib_robotparser_moved_attributes = [
     MovedAttribute("RobotFileParser", "robotparser", "urllib.robotparser"),
@@ -444,6 +465,7 @@ Module_six_moves_urllib_robotparser._moved_attributes = _urllib_robotparser_move
 
 _importer._add_module(Module_six_moves_urllib_robotparser(__name__ + ".moves.urllib.robotparser"),
                       "moves.urllib_robotparser", "moves.urllib.robotparser")
+
 
 class Module_six_moves_urllib(types.ModuleType):
 
@@ -461,9 +483,11 @@ class Module_six_moves_urllib(types.ModuleType):
 _importer._add_module(Module_six_moves_urllib(__name__ + ".moves.urllib"),
                       "moves.urllib")
 
+
 def add_move(move):
     """Add an item to six.moves."""
     setattr(_MovedItems, move.name, move)
+
 
 def remove_move(name):
     """Remove item from six.moves."""
@@ -474,6 +498,7 @@ def remove_move(name):
             del moves.__dict__[name]
         except KeyError:
             raise AttributeError("no such move, %r" % (name,))
+
 
 if PY3:
     _meth_func = "__func__"
@@ -492,6 +517,7 @@ else:
     _func_defaults = "func_defaults"
     _func_globals = "func_globals"
 
+
 try:
     advance_iterator = next
 except NameError:
@@ -499,11 +525,13 @@ except NameError:
         return it.next()
 next = advance_iterator
 
+
 try:
     callable = callable
 except NameError:
     def callable(obj):
         return any("__call__" in klass.__dict__ for klass in type(obj).__mro__)
+
 
 if PY3:
     def get_unbound_function(unbound):
@@ -534,12 +562,14 @@ else:
 _add_doc(get_unbound_function,
          """Get the function out of a possibly unbound function""")
 
+
 get_method_function = operator.attrgetter(_meth_func)
 get_method_self = operator.attrgetter(_meth_self)
 get_function_closure = operator.attrgetter(_func_closure)
 get_function_code = operator.attrgetter(_func_code)
 get_function_defaults = operator.attrgetter(_func_defaults)
 get_function_globals = operator.attrgetter(_func_globals)
+
 
 if PY3:
     def iterkeys(d, **kw):
@@ -584,6 +614,7 @@ _add_doc(iteritems,
          "Return an iterator over the (key, value) pairs of a dictionary.")
 _add_doc(iterlists,
          "Return an iterator over the (key, [values]) pairs of a dictionary.")
+
 
 if PY3:
     def b(s):
@@ -632,24 +663,32 @@ else:
 _add_doc(b, """Byte literal""")
 _add_doc(u, """Text literal""")
 
+
 def assertCountEqual(self, *args, **kwargs):
     return getattr(self, _assertCountEqual)(*args, **kwargs)
+
 
 def assertRaisesRegex(self, *args, **kwargs):
     return getattr(self, _assertRaisesRegex)(*args, **kwargs)
 
+
 def assertRegex(self, *args, **kwargs):
     return getattr(self, _assertRegex)(*args, **kwargs)
+
 
 if PY3:
     exec_ = getattr(moves.builtins, "exec")
 
     def reraise(tp, value, tb=None):
-        if value is None:
-            value = tp()
-        if value.__traceback__ is not tb:
-            raise value.with_traceback(tb)
-        raise value
+        try:
+            if value is None:
+                value = tp()
+            if value.__traceback__ is not tb:
+                raise value.with_traceback(tb)
+            raise value
+        finally:
+            value = None
+            tb = None
 
 else:
     def exec_(_code_, _globs_=None, _locs_=None):
@@ -665,22 +704,33 @@ else:
         exec("""exec _code_ in _globs_, _locs_""")
 
     exec_("""def reraise(tp, value, tb=None):
-    raise tp, value, tb
+    try:
+        raise tp, value, tb
+    finally:
+        tb = None
 """)
+
 
 if sys.version_info[:2] == (3, 2):
     exec_("""def raise_from(value, from_value):
-    if from_value is None:
-        raise value
-    raise value from from_value
+    try:
+        if from_value is None:
+            raise value
+        raise value from from_value
+    finally:
+        value = None
 """)
 elif sys.version_info[:2] > (3, 2):
     exec_("""def raise_from(value, from_value):
-    raise value from from_value
+    try:
+        raise value from from_value
+    finally:
+        value = None
 """)
 else:
     def raise_from(value, from_value):
         raise value
+
 
 print_ = getattr(moves.builtins, "print", None)
 if print_ is None:
@@ -760,6 +810,7 @@ if sys.version_info[0:2] < (3, 4):
 else:
     wraps = functools.wraps
 
+
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     # This requires a bit of explanation: the basic idea is to make a dummy
@@ -770,6 +821,7 @@ def with_metaclass(meta, *bases):
         def __new__(cls, name, this_bases, d):
             return meta(name, bases, d)
     return type.__new__(metaclass, 'temporary_class', (), {})
+
 
 def add_metaclass(metaclass):
     """Class decorator for creating a class with a metaclass."""
@@ -785,6 +837,7 @@ def add_metaclass(metaclass):
         orig_vars.pop('__weakref__', None)
         return metaclass(cls.__name__, cls.__bases__, orig_vars)
     return wrapper
+
 
 def python_2_unicode_compatible(klass):
     """
@@ -802,6 +855,7 @@ def python_2_unicode_compatible(klass):
         klass.__unicode__ = klass.__str__
         klass.__str__ = lambda self: self.__unicode__().encode('utf-8')
     return klass
+
 
 # Complete the moves implementation.
 # This code is at the end of this module to speed up module loading.

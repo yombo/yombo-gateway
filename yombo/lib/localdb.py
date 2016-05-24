@@ -19,7 +19,7 @@ A database API to SQLite3.
    Do not rely on these function names to remain the same.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries

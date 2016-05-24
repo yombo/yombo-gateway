@@ -7,9 +7,9 @@ from twisted.internet import defer
 
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.exceptions import ImaginaryTableError, CannotRefreshError
+from yombo.ext.twistar.utils import joinWheres
 
-
-class InteractionBase:
+class InteractionBase(object):
     """
     Class that specific database implementations extend.
 
@@ -106,7 +106,10 @@ class InteractionBase:
         select = select or "*"
 
         if id is not None:
-            where = ["id = ?", id]
+            if where is None:
+                where = ["id = ?", id]
+            else:
+                where = joinWheres(where, ["id = ?", id])
             one = True
 
         if not isinstance(limit, tuple) and limit is not None and int(limit) == 1:
@@ -402,7 +405,7 @@ class InteractionBase:
 
         @return: A conditional in the same form as the C{where} parameter in L{DBObject.find}.
         """
-        assert(type(where) is list)
+        assert(isinstance(where, list))
         query = where[0].replace("?", "%s")
         args = where[1:]
         return (query, args)

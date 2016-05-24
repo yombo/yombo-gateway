@@ -11,7 +11,7 @@ from yombo.ext.twistar.utils import createInstances, joinWheres
 from yombo.ext.twistar.exceptions import ReferenceNotSavedError
 
 
-class Relationship:
+class Relationship(object):
     """
     Base class that all specific relationship type classes extend.
 

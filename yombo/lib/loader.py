@@ -116,14 +116,6 @@ class Loader(YomboLibrary):
              yield self.library_invoke(libraryName, "_load_")
         yield self.start_libraries()
 
-#        try:
-#            self.import_libraries() # import and init all libraries
-#        except YomboCritical, e:
-#            logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-#            logger.debug("{e}", e=e)
-#            logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-#            e.exit()
-
     def start(self):
         self._saveSQLDictLoop = LoopingCall(self._saveSQLDictDB)
         self._saveSQLDictLoop.start(3)
