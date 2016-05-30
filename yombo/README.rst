@@ -5,7 +5,7 @@ Yombo Directory
 Contains the core functions, libraries to run the gateway
 and a place to put modules.  See online documentation for
 more details.
-https://yombo.net/docs/gateway/current/chapters/yombo-framework.html
+https://docs.yombo.net/gateway/html/current/chapters/yombo-framework.html
 
 core
 ------

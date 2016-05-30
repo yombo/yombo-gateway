@@ -49,6 +49,28 @@ class Devices(YomboLibrary):
         - :func:`get_devices_by_device_type` - Get all device for a certain deviceType (UUID or MachineLabel)
         - :func:`search` - Get a pointer to a device, using device_id or device label.
     """
+    def __contains__(self, deviceRequested):
+        """
+        Checks to if a provided device name or device uuid exists.
+
+        Simulate a dictionary when requested with:
+            >>> if '137ab129da9318' in self._Devices['137ab129da9318']:  #by uuid
+        or:
+            >>> if 'living room light' in self._Devices['137ab129da9318']:  #by uuid
+
+        See: :func:`yombo.utils.get_devices` for full usage example.
+
+        :param deviceRequested: The device UUID or device label to search for.
+        :type deviceRequested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        try:
+            self.get_device(deviceRequested)
+            return True
+        except:
+            return False
+
     def __getitem__(self, deviceRequested):
         """
         Attempts to find the device requested using a couple of methods.

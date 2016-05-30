@@ -1,10 +1,10 @@
 """
-Yombo comes with an interface to derive information about the underlying system. This is called
-the atoms interface and provides the Yombo Gateway with various information. Libraries and modules
-can extend atoms. For dynamically changing data, use States.
+For more information see: `Atoms @ Projects.yombo.net <hhttps://projects.yombo.net/projects/modules/wiki/Atoms>`_
 
-Atoms are relatively static, although if a change is detected, the atom should be updated as
-needed. For example, if the IP address changes, the atom data should be refreshed.
+Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
+some exceptions such as IP address changes. Libraries and modules and get and set additional atoms as desired.
+
+For dynamically changing data, use :py:mod:`yombo.lib.states`.
 
 If a request atom doesn't exist, a value of None will be returned instead of an exception.
 
@@ -123,6 +123,7 @@ class Atoms(YomboLibrary):
         self.__Atoms.update(self.os_data())
         self.triggers = {}
         self.automation = self._Libraries['automation']
+        self.set('running_since', time())
 
     def _load_(self):
         pass
@@ -150,17 +151,57 @@ class Atoms(YomboLibrary):
         return self.set(key, value)
 
     def __contains__(self, key):
+        return self.exists(key)
+
+    def __str__(self):
+        states = {}
+        for key, state in self.__Atoms.iteritems():
+            if state['readKey'] is None:
+                states[key] = state['value']
+        return states
+
+    def __repr__(self):
+        states = {}
+        for key, state in self.__Atoms.iteritems():
+            if state['readKey'] is not None:
+                state['readKey'] = True
+            if state['writeKey'] is not None:
+                state['writeKey'] = True
+            states[key] = state
+        return states
+
+    def exists(self, key):
+        """
+        Checks if a given atom exsist. Returns true or false.
+
+        :param key: Name of state to check.
+        :return: If state exists:
+        :rtype: Bool
+        """
         if key in self.__Atoms:
             return True
         return False
 
     def get(self, key=None):
+        """
+        Get the value of a given atom (key).
+
+        :param key: Name of atom to check.
+        :return: Value of atom
+        """
         if key is None:
             return self.__Atoms
         keys = key.split(':')
         return yombo.utils.dict_get_value(self.__Atoms, keys)
 
     def set(self, key, value):
+        """
+        Get the value of a given atom (key).
+
+        :param key: Name of atom to check.
+        :param value: Value to set the atom to.
+        :return: Value of atom
+        """
         keys = key.split(':')
         yombo.utils.dict_set_value(self.__Atoms, keys, value)
         self.check_trigger(key, keys, value)
@@ -246,6 +287,7 @@ class Atoms(YomboLibrary):
     def atoms_add_trigger_callback(self, rule, **kwargs):
         """
         Called to add a trigger.  We simply use the automation library for the heavy lifting.
+        Called to add a trigger.  We simply use the automation library for the heavy lifting.
 
         :param rule: The potential rule being added.
         :param kwargs: None
@@ -310,7 +352,7 @@ class Atoms(YomboLibrary):
                 else:
                     rule['action'][item]['_my_callback'] = action['component_callback']
             else:
-                if all( required in action for required in ['component_type', 'component_name', 'component_function']):
+                if all(required in action for required in ['component_type', 'component_name', 'component_function']):
                     if action['component_type'] == 'library':
                         if action['component_name'] not in self._Libraries:
                             return False

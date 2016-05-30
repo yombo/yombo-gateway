@@ -105,5 +105,4 @@ do
     # Gateway died for some reason or was told to quit, so, lets exit!
     exit $OUT
   fi
-done  
-
+done

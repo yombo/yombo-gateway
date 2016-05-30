@@ -3,16 +3,14 @@ import pyximport; pyximport.install()
 #software.  Details can be found at https://yombo.net
 """
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
-
 import sys
 import os
 
 stdoutbefore = getattr(sys.stdout, "encoding", None)
 stderrbefore = getattr(sys.stderr, "encoding", None)
-
 
 from twisted.application import internet, service, strports
 
@@ -39,11 +37,10 @@ except ImportError:
 
 from yombo.core.log import getLogger
 
-logger = getLogger('twistedlogger')
+logger = getLogger('root.twistd')
 
 application = service.Application('yombo')
 
 service = GWService()
 service.setServiceParent(application)
 service.start()
-#logger.basicConfig(level=logging.DEBUG)

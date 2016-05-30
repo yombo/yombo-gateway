@@ -252,11 +252,13 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 beforeZlib = len(msg)
                 msg = zlib.decompress(msg)
                 afterZlib = len(msg)
+                logger.debug("Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}", compressed=beforeZlib, uncompressed=afterZlib)
                 self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.compressed")
                 self.factory.StatisticsLibrary.timing("lib.amqpyombo.amqp.compressed", percentage(afterZlib, beforeZlib))
 
             else:
                 self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.uncompressed")
+
 
             if props.content_type == 'application/json':
                 if self.is_json(msg):
@@ -414,6 +416,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.incoming_queue = []
 
     def incoming(self, deliver, properties, msg):
+        logger.debug("got incoming: {msg}", msg=msg)
         item = {
             "deliver" : deliver,
             "properties" : properties,
@@ -516,7 +519,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         }
 
         self.outgoing_queue.append((kwargs))
-        logger.debug("In PikaFactory sendMessage client: %s" % self.AMQPProtocol)
+        logger.debug("In PikaFactory sendMessage client: protocol: %s, fullyConnected: %s" % (self.AMQPProtocol, self.fullyConnected))
         if self.AMQPProtocol is not None and self.fullyConnected is True:
             self.AMQPProtocol.send()
 

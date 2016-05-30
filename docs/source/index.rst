@@ -1,11 +1,11 @@
-.. Documentation master file, created on Tue Jul 10 13:38:03 2012.
-
 .. rubric:: Yombo Gateway Documentation
 
-TL;DR - Quick Start Guide
--------------------------
+Be sure to visit our `Home page <https://yombo.net/>`_ and `Projects.Yombo.net <https://projects.yombo.net/>`_ for
+more information.
 
-Get your gateway up and running in no time.  Just two steps:
+.. rubric:: TL;DR - Quick Start Guide
+
+Get your gateway up and running in no time.  Just three steps:
 
 1. Create an account at `Yombo.net <https://yombo.net/>`_ (or in future, use the mobile app).
 2. Install the gateway software:
@@ -55,7 +55,7 @@ located in : docs/source/
 .. rubric:: License Information
 
 :Homepage: https://yombo.net/
-:Copyright: 2013-2015 Yombo
+:Copyright: 2013-2016 Yombo
 :License: For the open source license, see the LICENSE file or http://yombo.net/policies/licensing
 
 Last updated: |today|

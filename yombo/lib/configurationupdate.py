@@ -171,7 +171,11 @@ class ConfigurationUpdate(YomboLibrary):
         self.loadDefer = defer.Deferred()
 #        self.loadDefer.addCallback(self.__loadFinish)
         self._LocalDBLibrary = self._Libraries['localdb']
+        self._fullDownloadStartTime = time()
         self.get_all_configs()
+        self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
+        self._getAllConfigsLoggerLoop.start(5, False)  # Display a log line for pending downloaded, false - Dont' show now
+
 
 #        self.cache = ExpiringDict(max_len=100, max_age_seconds=30)
         return self.loadDefer
@@ -515,5 +519,9 @@ class ConfigurationUpdate(YomboLibrary):
 
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs is True:
             self.__doingfullconfigs = False
+            self._getAllConfigsLoggerLoop.stop()
             self.loadDefer.callback(10) # a made up number.
 
+    def _show_pending_configs(self):
+        waitingTime = time() - self._fullDownloadStartTime
+        logger.info("Waited %s for startup; pending these configurations: %s" % (waitingTime, self.__pendingUpdates))

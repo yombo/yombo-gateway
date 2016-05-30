@@ -1,7 +1,7 @@
 Developing Gateway
 ===================
 
-We welcome contributions to the Yombo Gateway and modules.
+We welcome contributions to the Yombo Gateway and modules. to get started
 
 Sending a bitbucket pull request
 ---------------------------------
@@ -55,7 +55,7 @@ Installing Gateway for development
 ----------------------------------
 
 Documention for configuring your machine and downloading the software
-is located here: https://yombo.net/docs/gateway/current/chapters/prepare-operating-system.html
+is located here: https://docs.yombo.net
 
 Create a virtual environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

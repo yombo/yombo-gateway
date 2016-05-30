@@ -8,6 +8,7 @@ This framework can also act a bridge between vendor protocols. For example,
 an X10 controler can be mapped to control Z-Wave or Insteon products.
 
 The gateway can also be easily extended using modules. The modules can:
+
 * Extend the features of the framework throug the use of hooks.
 * Provide additional API features to other modules.
 * Provide advanced automation rules and tasks.
@@ -16,10 +17,10 @@ The gateway can also be easily extended using modules. The modules can:
 Documentation
 =============
 
-For new users, check out the quick start guide at https://yombo.net/docs/gateway/html/current/index.html
+For new users, check out the quick start guide at https://docs.yombo.net
 
 For those wishing to dive deeper into the code, the API, or want to develop modules,
-vist the documentation generated from the source here: https://docs.yombo.net/
+vist the porjects page at: https://projects.yombo.net/
 
 ===============================
 Getting Help / Other Resources
@@ -44,4 +45,4 @@ If you do not wish to release your source code of the software you build using Y
 Gateway as the base, you may use Yombo Gateway source and/or binaries under the Yombo
 Gateway Private License as described here:
 
-https://yombo.net/policies/licensing/yombo-private-license
+https://yombo.net/policies/private-license

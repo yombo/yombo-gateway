@@ -261,7 +261,7 @@ class Modules(YomboLibrary):
         """
         logger.debug("Calling init functions of modules. {modules}", modules=self._modulesByUUID)
         for module_id, module in self._modulesByUUID.iteritems():
-            self.modules_invoke_log('info', module._FullName, 'module', 'init', 'About to call _init_.')
+            self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
             if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
 #                logger.warn("self.get_module_devices(module['{module_id}'])", module_id=module.dump())
                 module._ModuleType = self._rawModulesList[module_id]['module_type']

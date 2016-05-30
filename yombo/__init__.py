@@ -3,6 +3,7 @@
 """
 Yombo Gateway developers API documentation.
 
-
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+:copyright: Copyright 2012-2016 by Yombo.
+:license: See LICENSE file for details.
 """

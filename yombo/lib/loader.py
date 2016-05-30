@@ -53,6 +53,7 @@ HARD_LOAD = [
     "Modules",
     "Startup",
     "GPG",
+    "Automation",
     "Atoms",
     "States",
     "CronTab",
@@ -60,7 +61,6 @@ HARD_LOAD = [
     "AMQPYombo",
     "ConfigurationUpdate",
     "DownloadModules",
-    "Automation",
     "Times",
     "Commands",
     "VoiceCmds",
@@ -162,13 +162,13 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             component = name.lower()
             library = self.loadedLibraries[component]
-            self.logLoader('info', component, 'library', 'init', 'About to call _init_.')
+            self.logLoader('debug', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._States = self.loadedLibraries['states']
             library._Modules = self._moduleLibrary
             library._Libraries = self.loadedLibraries
             if hasattr(library, '_init_') and callable(library._init_) and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
-#                stuff = yield library._init_(self)
+#                d = yield maybeDeferred(library._init_, self)
 #                continue
                 try:
                     d = yield maybeDeferred(library._init_, self)

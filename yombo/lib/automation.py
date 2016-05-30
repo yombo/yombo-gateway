@@ -47,6 +47,7 @@ class Automation(YomboLibrary):
         self.triggers = {}  # Track various triggers - help find what rules to fire whena trigger matches.
 
         self.tracker = {}  # Basic tracking
+        print "track - %s" % self.tracker
         self.sources = {}  # List of source processors
         self.filters = {}  # List of filter processors
         self.actions = {}  # List of actionprocessors

@@ -10,7 +10,7 @@ from twisted.internet import reactor
 from yombo.core.module import YomboModule
 from yombo.core.log import getLogger
 
-logger = getLogger("module.empty")
+logger = getLogger("modules.empty")
 
 class Empty(YomboModule):
     """

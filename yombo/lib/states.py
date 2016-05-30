@@ -1,39 +1,20 @@
 """
-The states interface provides a common method to share automation states. States can include any
-arbitrary information. This can include weather events such as isRaining, sprinklersOn, isAlarmArmed,
-etc.
+For more information see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
 
-Yombo does not specify any naming standards and is left to the module developer. Developers should
-take care not to overwrite another state. To prevent states from accidently overridden, a write
-password can be set. This should help prevent another module modifying a state that it shouldn't
-be modifying. For example, a module that manages sprinklers can set a write password.
+The states library is used to collect and provide information about various states that the automation system
+can be in or exist around it. For example, it can tell if it's light outside, dawn, dusk, or if it's connected
+to the Yombo server. It can provide a list of users connected and what module they are connected through.
 
-A reference is added to every module and library and can be accessed as: "self.__States"
+Example states: times_dark, weather_raining, alarm_armed, yombo_service_connection
 
-Loose guidelines:
-
-All variables should start with the the type of state being stored, such as: weather, alarm, garagedoor, etc.
-
-* Don't use multiple states when one is good enough. Below, there is "houseIsWholeHouseFanOn" and
-  "houseStateWholeHouseFan". This is redundant, just use one.
-* True/False values should start with "Is", such as: weatherIsRaining=True, alarmIsRinging=False,
-  houseIsOccupied=True, GarageDoorIsAllClosed=True, houseIsWholeHouseFanOn=False
-  * Don't use "True" or "False", use True or False.
-  * When practical, don't use 1 or 0, use True or False.
-* Items holding the status of state, should simply add 'State': alarmState="Disarmed",
-  houseStateWholeHouseFan="Low", houseState="Occupied"
-* Items holding multiple values should be stored within a dict, even though a list
-  would work. This allows quick upserts:
-  garageDoorDict = {1: 'Closed', 2:'Open'}
-  garageDoorDict[4] = "Open"
-* Don't set any values to None or "None". If None is needed, simply delete the state.
+For more information see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
 
 *Usage**:
 
 .. code-block:: python
 
    try:
-     raining = self._States['weatherIsRaining']
+     raining = self._States['weather__raining']
    except:
      raining = None
 
@@ -41,16 +22,27 @@ All variables should start with the the type of state being stored, such as: wea
        # turn on sprinklers
 
    try:
-     jeffIsHome = self._States['JeffIsHome']
+     jeffIsHome = self._States['user_jeff_location']
    except:
      jeffIsHome = None
 
-   if jeffIsHome is True:
+   if jeffIsHome == "home":
        # turn on HVAC
-   elif jeffIsHome is false:
+   elif jeffIsHome is not None:
        # turn off HVAC
    else:
        # we don't know if Jeff is home or not, leave HVAC alone
+
+   try:
+     self._States['weather_is_cloudy'] = True
+   except:
+     pass  # unable to set state?
+   else:
+     try:
+       self._States.set_set_password('weather_is_cloudy', 'mySecretPassword123')  # set a write protect password
+     except:
+       pass  # unable to set write password? Who cares.
+
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.
@@ -74,6 +66,8 @@ class States(YomboLibrary, object):
     """
     Provides a base API to store common states among libraries and modules.
     """
+    MAX_HISTORY = 100
+
     @inlineCallbacks
     def _init_(self, loader):
         self._ModDescription = "Yombo States API"
@@ -110,28 +104,58 @@ class States(YomboLibrary, object):
         return self.set(key, value)
 
     def __contains__(self, key):
-        if key in self.__States:
-            return True
-        return False
+        return self.exists(key)
 
     def __str__(self):
-        return "member of Test"
+        states = {}
+        for key, state in self.__States.iteritems():
+            if state['readKey'] is None:
+                states[key] = state['value']
+        return states
 
     def __repr__(self):
-        return "member of Test"
+        states = {}
+        for key, state in self.__States.iteritems():
+            if state['readKey'] is not None:
+                state['readKey'] = True
+            if state['writeKey'] is not None:
+                state['writeKey'] = True
+            states[key] = state
+        return states
 
     def exists(self, key):
+        """
+        Checks if a given state exsist. Returns true or false.
+
+        :param key: Name of state to check.
+        :return: If state exists:
+        :rtype: Bool
+        """
         if key in self.__States:
             return True
         return False
 
-    def getTime(self, key):
+    def get_last_update(self, key):
+        """
+        Get the time() the key was created or last updated.
+
+        :param key: Name of state to check.
+        :return: Time() of last update
+        :rtype: float
+        """
         if key in self.__States:
             return self.__States[key]['updated']
         else:
             raise YomboStateNotFound("Cannot get state time: %s not found" % key)
 
     def get(self, key=None, password=None):
+        """
+        Get the value of a given state (key). If a password is required and not provided, returns YomboStateNoAccess.
+
+        :param key: Name of state to check.
+        :param password: Optional - Only required if state has a read password. See :py:func:`has_set_password`
+        :return: Value of state
+        """
 #        logger.info("States: {state}", state=self.__States)
 #        logger.info("State pass: {password}", key=key, password=password)
         if key is None:
@@ -153,6 +177,15 @@ class States(YomboLibrary, object):
             return None
 
     def set(self, key, value, password=None):
+        """
+        Set the value of a given state (key). If a password is required and not provided, returns YomboStateNoAccess.
+
+        :param key: Name of state to set.
+        :param value: Value to set state to. Can be string, list, or dictionary.
+        :param password: Optional - Only required if state has a write password. See :py:func:`has_get_password`
+        :return: Value of state
+        """
+
 #        logger.info("State set: {key} = {value}  pass: {password}", key=key, value=value, password=password)
         if key in self.__States:
             if self.__States[key]['writeKey'] is not None:
@@ -162,29 +195,38 @@ class States(YomboLibrary, object):
                     raise YomboStateNoAccess("State write password is invalid.")
             self.__States[key]['value'] = value
             self.__States[key]['updated'] = time()
-            self.__setHistory(key, self.__States[key]['value'], self.__States[key]['updated'])
+            self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         else:
             self.__States[key] = {
-                'value' : value,
-                'updated' : int(time()),
-                'readKey' : None,
-                'writeKey' : password
+                'value': value,
+                'updated': int(time()),
+                'readKey': None,
+                'writeKey': password
             }
-            self.__setHistory(key, self.__States[key]['value'], self.__States[key]['updated'])
+            self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         self.check_trigger(key, value)
 
-    def __setHistory(self, key, value, updated):
+    def __set_history(self, key, value, updated):
         data = {'value' : value, 'updated' : updated}
         if key in self.__History:
             self.__History[key].appendleft(data)
         else:
-            self.__History[key] = deque([data], 50)
+            self.__History[key] = deque([data], self.MAX_HISTORY)
 
-    def getHistory(self, key, position=1, password=None):
+    def get_history(self, key, position=1, password=None):
+        """
+        Returns a previous version of the state. Returns a dictionary with "value" and "updated" inside. See
+        :py:func:`history_length` to deterine how many entries there are. Max of MAX_HISTORY (currently 100).
+
+        :param key: Name of the state to get.
+        :param position: How far back to go. 0 is current, 1 is previous, etc.
+        :param password: Optional - Only required if state has a read password. See :py:func:`has_set_password`
+        :return:
+        """
         if key in self.__States:
             if self.__States[key]['readKey'] is not None:
                 if password is None:
-                    raise YomboStateNoAccess("State is read protected with password. Use self.__States.getHistory(key, position, password) to read.")
+                    raise YomboStateNoAccess("State is read protected with password. Use self.__States.get_history(key, position, password) to read.")
                 elif self.__States[key]['readKey'] != password:
                     raise YomboStateNoAccess("State read password is invalid.")
             if key in self.__History:
@@ -196,7 +238,70 @@ class States(YomboLibrary, object):
         else:
             raise YomboStateNotFound("Cannot get state: %s not found" % key)
 
+    def history_length(self, key, password=None):
+        """
+        Returns how many records a given state (key) has.
+
+        :param key: Name of the state to check.
+        :param password: Optional - Only required if state has a read password. See :py:func:`has_set_password`
+        :return: How many records there are for a given state.
+        :rtype: int
+        """
+        if key in self.__States:
+            if self.__States[key]['readKey'] is not None:
+                if password is None:
+                    raise YomboStateNoAccess("State is read protected with password. Use self.__States.get_history(key, position, password) to read.")
+                elif self.__States[key]['readKey'] != password:
+                    raise YomboStateNoAccess("State read password is invalid.")
+            if key in self.__History:
+                return len(self.__History[key])
+            else:
+                raise YomboStateNotFound("Cannot get state history, no history for: %s" % key)
+        else:
+            raise YomboStateNotFound("Cannot get state: %s not found" % key)
+
+    def has_get_password(self, key):
+        """
+        Checks if a password is required for 'get'.
+
+        :param key: Name of the state to check.
+        :return: True if a password exists.
+        :rtype: bool
+        """
+        if key in self.__States:
+            if self.__States[key]['readKey'] is None:
+                return False
+            else:
+                return True
+        else:
+            raise YomboStateNotFound("Cannot get state: %s not found" % key)
+
+    def has_set_password(self, key):
+        """
+        Checks if a password is required for 'set'.
+
+        :param key: Name of the state to check.
+        :return: True if a password exists.
+        :rtype: bool
+        """
+        if key in self.__States:
+            if self.__States[key]['writeKey'] is None:
+                return False
+            else:
+                return True
+        else:
+            raise YomboStateNotFound("Cannot get state: %s not found" % key)
+
     def delete(self, key, password=None):
+        """
+        Deletes a status (key). Raises YomboStateNoAccess if write access password is required. Raises
+        YomboStateNotFound if state not found.
+
+        :param key: Name of the state to delete.
+        :param password: Optional - Only required if state has a write password. See :py:func:`has_set_password`
+        :return: None
+        :rtype: None
+        """
         if key in self.__States:
             if self.__States[key]['writeKey'] is not None:
                 if password is None:
@@ -204,36 +309,72 @@ class States(YomboLibrary, object):
                 elif self.__States[key]['writeKey'] != password:
                     raise YomboStateNoAccess("State write password is invalid.")
                 del self.__States[key]
+        else:
+            raise YomboStateNotFound("Cannot delete state: %s not found" % key)
+        return None
 
-    def setReadPassword(self, key, password):
+    def set_get_password(self, key, password):
+        """
+        Sets a get password for the given state (key).
+
+        :param key: state to set password for
+        :param password: new pasword
+        :return: None
+        """
         if key not in self.__States:
             YomboStateNotFound("Key: %s not found." % key)
         if self.__States[key]['readKey'] is not None:
-            YomboStateNotFound("State read password is already set.  Use unsetReadPassword(key, password)")
+            YomboStateNotFound("State read password is already set.  Use unset_read_password(key, password)")
         self.__States[key]['readKey'] = password
+        return None
 
-    def unsetReadPassword(self, key, password):
+    def unset_get_password(self, key, password):
+        """
+        Remove a get password for the given state.
+
+        :param key: state to remove password for
+        :param password: Current password.
+        :return: None
+        """
         if key not in self.__States:
             YomboStateNotFound("Key: %s not found." % key)
         if self.__States[key]['readKey'] is None or self.__States[key]['readKey'] == password:
             self.__States[key]['readKey'] = None
         else:
             YomboStateNotFound("Invalid state read password supplied.")
+        return None
 
-    def setWritePassword(self, key, password):
+    def set_set_password(self, key, password):
+        """
+        Sets a write (set) password for the given state.
+        :param key: state to set write password
+        :param password: new password
+        :return: None
+        """
         if key not in self.__States:
             YomboStateNotFound("Key: %s not found." % key)
         if self.__States[key]['writeKey'] is not None:
-            YomboStateNotFound("State write password is already set.  Use unsetWritePassword(key, password)")
+            YomboStateNotFound("State write password is already set.  Use unset_write_password(key, password)")
         self.__States[key]['writeKey'] = password
+        return None
 
-    def unsetWritePassword(self, key, password):
+    def unset_set_password(self, key, password):
+        """
+        Remove a write password for the given state.
+
+        :param key: state to remove write password
+        :param password: current password
+        :return: None
+        """
         if key not in self.__States:
             YomboStateNotFound("Key: %s not found." % key)
         if self.__States[key]['writeKey'] is None or self.__States[key]['writeKey'] == password:
             self.__States[key]['writeKey'] = None
         else:
             YomboStateNotFound("Invalid state write password supplied.")
+        return None
+
+    ### The remaining functions are not needed by module developers. They are are for processing automation rules. ###
 
     def check_trigger(self, key, value):
         """
@@ -285,7 +426,7 @@ class States(YomboLibrary, object):
 
     def states_get_value_callback(self, rule, key_name, **kwargs):
         """
-        A callback to the value for platform "atom". We simply just do a get based on key_name.
+        A callback to the value for platform "states". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
         :param key_name: The atom key we'll get get the value.
