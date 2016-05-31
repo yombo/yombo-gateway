@@ -24,6 +24,7 @@ passed in by reference.
 =========================== ================================================================================================== ========================== ==============================================================
 Source                      Hook Name                                                                                          When Called                Description
 =========================== ================================================================================================== ========================== ==============================================================
+Atoms                       :py:meth:`set <yombo.lib.atoms.Atoms.set>`                                                         set                        When a value is about to be assigned to an atom.
 Automation                  :py:meth:`automation_action_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add actions available for rules
 Automation                  :py:meth:`automation_filter_list <yombo.lib.automation.Automation._module_prestart_>`              module_prestart            Add filter processors for triggers and conditions
 Automation                  :py:meth:`automation_rules_list <yombo.lib.automation.Automation._module_prestart_>`               module_prestart            Add rules

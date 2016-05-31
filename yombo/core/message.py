@@ -234,8 +234,8 @@ class Message:
         self.payload        = kwargs['payload']
         self.msgAuth        = kwargs.get('msgAuth', {})
         self.msgPath        = OrderedDict([])
-        self.notBefore      = kwargs.get('notBefore', 0)
-        self.maxDelay       = kwargs.get('maxDelay', 0)
+        kwargs['notBefore'] = kwargs.get('notBefore', 0)
+        kwargs['maxDelay']  = kwargs.get('maxDelay', 0)
         self.newMessage     = kwargs.get('newMessage', True)
 
         if 'msgPath' in kwargs:
@@ -250,6 +250,8 @@ class Message:
                 self.msgUUID = str(generateUUID(mainType=self.uuidType, subType=self.uuidSubType))
             else:
                 raise YomboMessageError("Existing message should have a msgUUID", 'Message API::Create message.')
+
+        self.set_delay(**kwargs)
 
     def __getitem__(self, key):
         """
@@ -319,6 +321,48 @@ class Message:
 #TODO: Create signature method. :-)
 #        self.generateMsgAuth()
         return newmsg
+
+
+    def set_delay(self, **kwargs):
+        """
+        Used by get_message to set a delay. This is useful when a command to a device needs
+        to be sent later.
+
+        When these values are set, the messages are made persistent across restarts. It's
+        advisable to set a 'notBefore'
+        Used for controlling when to send a device command
+        Sets a "not before" and "not after"
+        To be documentated later. Basically, just sets notBefore and maxDelay
+        based on kwargs.
+        """
+        notBefore = 0.0
+        maxDelay = 0.0
+
+        if 'notBefore' in kwargs:
+            try:
+              notBefore = float(kwargs['notBefore'])
+              if notBefore < time():
+                raise YomboDeviceError("Cannot set 'notBefore' to a time in the past.", errorno=150)
+            except:
+                raise YomboDeviceError("notBefore is not an int or float.", errorno=151)
+        elif 'delay' in kwargs:
+            try:
+              notBefore = time() + float(kwargs['delay'])
+            except:
+              raise YomboDeviceError("delay is not an int or float", errorno=152)
+        else:
+              raise YomboDeviceError("notBefore or delay not set.", errorno=153)
+
+        if maxDelay in kwargs:
+          try:
+            maxDelay = float(kwargs['kwargs'])
+            if maxDelay < 0:
+              raise YomboDeviceError("Max delay cannot be less then 0.", errorno=154)
+          except:
+            raise YomboDeviceError("maxDelay is not an int or float.", errorno=151)
+
+        self.notBefore = notBefore
+        self.maxDelay = maxDelay
 
     def validateMsgOriginFull(self):
         """
@@ -410,7 +454,7 @@ class Message:
 
         # if message is to be delievered later, send to queue
         if self.notBefore > time.time():
-            self._MessagesLibrary.addToDelay(self)
+            self._MessagesLibrary.add_msg_to_delay_queue(self)
             return
 
         # Now we are ready to send the message.  First tell messages library.

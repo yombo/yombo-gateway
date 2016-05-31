@@ -6,15 +6,16 @@ a _unittest method.
 :copyright: 2013 Yombo
 :license: Yombo RPL 1.5
 """
-from collections import namedtuple
 import time
+from collections import namedtuple
 
 from twisted.internet import reactor
-from yombo.core.module import YomboModule
-from yombo.core.helpers import getTimes, getConfigValue
+
+from yombo.core.helpers import getConfigValue
 from yombo.core.log import getLogger
-from yombo.core.sqldict import SQLDict
+from yombo.core.module import YomboModule
 from yombo.lib.loader import getTheLoadedComponents # Don't use this!
+from yombo.utils.sqldict import SQLDict
 
 logger = getLogger("module.test")
 

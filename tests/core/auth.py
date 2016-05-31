@@ -1,6 +1,6 @@
 import pyximport; pyximport.install()
 from unittest import TestCase, main
-from yombo.core.auth import *
+from yombo.utils.auth import *
 
 class AuthTests(TestCase):
 

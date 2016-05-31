@@ -2,11 +2,11 @@
 
 .. _filereader:
 
-.. currentmodule:: yombo.core.filereader
+.. currentmodule:: yombo.utils.filereader
 
 ============================================
-FileReader (yombo.core.filereader)
+FileReader (yombo.utils.filereader)
 ============================================
 
-.. automodule:: yombo.core.filereader
+.. automodule:: yombo.utils.filereader
    :members:

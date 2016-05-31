@@ -56,7 +56,7 @@ from datetime import datetime
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.fuzzysearch import FuzzySearch
+from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCronTabError
 from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary

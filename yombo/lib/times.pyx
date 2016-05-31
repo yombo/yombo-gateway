@@ -267,11 +267,11 @@ class Times(YomboLibrary, object):
         """
         self._CalcDayNight()
         if self.isDay:
-            setTime = self.sun_set() - time()
+            setTime = self.sunset() - time()
             logger.debug("NowNight event in: {setTime}", setTime=setTime)
             self.CLnowNight = reactor.callLater(setTime, self._send_status, 'nowNight')
         else:
-            setTime = self.sunRise() -time()
+            setTime = self.sunrise() -time()
             logger.debug("NowDay event in: {setTime}", setTime=setTime)
             self.CLnowDay = reactor.callLater(setTime, self._send_status, 'nowDay')
 
@@ -293,12 +293,12 @@ class Times(YomboLibrary, object):
         self._CalcTwilight()  #is it twilight right now?
         if self.isTwilight:
             setTime = self.sunset_twilight() - time()
-            riseTime = self.sun_rise() - time()
+            riseTime = self.sunrise() - time()
             twTime = min (setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
             self.CLnowNotTwilight = reactor.callLater(twTime, self._send_status, 'nowNotTwilight')
         else:
-            setTime = self.sun_set() - time()
+            setTime = self.sunset() - time()
             riseTime = self.sunrise_twilight() - time()
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
@@ -320,10 +320,10 @@ class Times(YomboLibrary, object):
         self._CalcTwilight()  #is it twilight right now?
         sunrise = self.sunrise_twilight() # for today
         self.nextSunrise = sunrise
-        sunset = self.sun_set()  # for today
+        sunset = self.sunset()  # for today
         self.nextSunset = sunset
 
-        sunrise_end = self.sun_rise() # for today
+        sunrise_end = self.sunrise() # for today
         sunset_end = self.sunset_twilight()  # for today
         logger.debug("_setup_next_dawn_dusk_event - Sunset: {sunset}", sunset=sunset)
         #print "t = %s" % datetime.fromtimestamp(time())
@@ -587,7 +587,7 @@ class Times(YomboLibrary, object):
         temp = self._next_setting(self.obs,obj())
         return self._timegm(temp)
 
-    def sun_rise(self, **kwargs):
+    def sunrise(self, **kwargs):
         """
         Return sunrise, optionaly returns sunrise +/- # days. The offset of "0" would be
         for the next sunrise.
@@ -602,7 +602,7 @@ class Times(YomboLibrary, object):
             dayOffset = kwargs['dayOffset']
         return self.item_rise(dayOffset=dayOffset, item='Sun')
 
-    def sun_set(self, **kwargs):
+    def sunset(self, **kwargs):
         """
         Return sunset, optionaly returns sunset +/- # days.
 
@@ -824,9 +824,9 @@ class Times(YomboLibrary, object):
         self.obsTwilight.lat = lat
         self.obsTwilight.lon = lon
 
-        err_ss = self.sun_set () - CalTimegm(d(nss).timetuple())
+        err_ss = self.sunset () - CalTimegm(d(nss).timetuple())
         err_twe = self.sunset_twilight () - CalTimegm(d(twe).timetuple())
-        assert (abs(err_ss) < 120), "time skew is more than 2 minutes for sunset (%s) calculated(lt) = %s should be(lt) = %s" % (msg,datetime.fromtimestamp(self.sun_set()),datetime.fromtimestamp(CalTimegm(d(nss).timetuple())))
+        assert (abs(err_ss) < 120), "time skew is more than 2 minutes for sunset (%s) calculated(lt) = %s should be(lt) = %s" % (msg,datetime.fromtimestamp(self.sunset()),datetime.fromtimestamp(CalTimegm(d(nss).timetuple())))
         assert (abs(err_twe) < 120), "time skew is more than 2 minutes for twilight finish (%s) calculated(lt) = %s should be(lt) = %s" % (msg,
                                                                                                                                            datetime.fromtimestamp(self.sunset_twilight ()),
                                                                                                                                            datetime.fromtimestamp(CalTimegm(d(twe).timetuple())))
@@ -846,13 +846,13 @@ class Times(YomboLibrary, object):
         print self.obs
         print self.obsTwilight
         print 'time()', time()
-        print 'sr', self.sun_rise()
-        print 'ss', self.sun_set()
+        print 'sr', self.sunrise()
+        print 'ss', self.sunset()
         print 'srt', self.sunrise_twilight()
         print 'sst', self.sunset_twilight()
-        assert (self.sun_rise()>time()),"next rise after current time"
-        assert (self.sun_set()>time()),"next set after current time"
-        assert (self.sun_rise_twilight()>time()),"next twilight rise after current time"
+        assert (self.sunrise()>time()),"next rise after current time"
+        assert (self.sunset()>time()),"next set after current time"
+        assert (self.sunrise_twilight()>time()),"next twilight rise after current time"
         assert (self.sunset_twilight()>time()),"next twilight set after current time"
 
         print '************Year check midnights********************'
@@ -876,8 +876,8 @@ class Times(YomboLibrary, object):
         t = CalTimegm (datetime.utcnow().timetuple()) + 24*60*60
         globals()['datetime'] = DateTime
         print 'time()', time()
-        print 'sr', self.sun_rise()
-        print 'ss', self.sun_set()
+        print 'sr', self.sunrise()
+        print 'ss', self.sunset()
         print 'srt', self.sunrise_twilight()
         print 'sst', self.sunset_twilight()
 

@@ -29,7 +29,7 @@ from yombo.ext.expiringdict import ExpiringDict
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 #from yombo.core.message import Message
-from yombo.core.helpers import getConfigValue, setConfigValue, getConfigTime
+from yombo.core.helpers import getConfigValue, setConfigValue
 from yombo.core.log import getLogger
 from yombo.core import getComponent
 #from yombo.core.maxdict import MaxDict
@@ -155,7 +155,6 @@ class ConfigurationUpdate(YomboLibrary):
         :type loader: :mod:`~yombo.lib.loader`
         """
         self.loader = loader
-
         self.__incomingConfigQueue = deque([])
         self.__incomingConfigQueueLoop = LoopingCall(self.__incomingConfigQueueCheck)
 
@@ -269,7 +268,7 @@ class ConfigurationUpdate(YomboLibrary):
             records = msg['Data']["configdata"]
             sendUpdates = []
             for record in records:
-                if getConfigTime(record['section'], record['item']) > record['updated']:
+                if self._Libraries['configuration'].getConfigTime(record['section'], record['item']) > record['updated']:
                   setConfigValue(record['section'], record['item'], record['value'])
                 else: #the gateway is newer
                   sendUpdates.append({'section': record['section'],
@@ -483,10 +482,10 @@ class ConfigurationUpdate(YomboLibrary):
             logger.debug("sending command: {item}", item=item)
 
             self._appendFullDownloadQueue(item)
-            self.AMQPYombo.sendDirectMessage(**self._generateRequest(item, "All"))
+            self.AMQPYombo.send_amqp_message(**self._generate_request_message(item, "All"))
         #todo: Put in a looping call and track re-requests for 'lost' items'.
 
-    def _generateRequest(self, request_type, requestContent):
+    def _generate_request_message(self, request_type, requestContent):
         request = {
             "exchange_name"  : "ysrv.e.gw_config",
             "source"        : "yombo.gateway.lib.configurationupdate",
@@ -498,7 +497,7 @@ class ConfigurationUpdate(YomboLibrary):
             },
             "request_type"   : request_type,
         }
-        return self.AMQPYombo.generateRequest(**request)
+        return self.AMQPYombo.generate_request_message(**request)
 
     def _appendFullDownloadQueue(self, table):
         """

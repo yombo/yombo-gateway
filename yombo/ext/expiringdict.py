@@ -13,6 +13,10 @@ The values stored in the following way:
 }
 
 NOTE: iteration over dict and also keys() do not remove expired values!
+
+Copyright: Anton Efimenko
+License: Apache License, 2.0 http://www.apache.org/licenses/
+Comment: https://pypi.python.org/pypi/expiringdict/1.1.2
 '''
 
 from time import time

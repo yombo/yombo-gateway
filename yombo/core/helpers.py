@@ -121,27 +121,6 @@ def generateUUID(**kwargs):
     tempit = uuid + subtype + maintype
     return tempit
 
-def getConfigTime(section, key):
-    """
-    Get the time the configuration was last updated.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.core.helpers import getConfigTime
-       secondSinceEpoch = getConfigTime("core", "gwuuid")
-
-    :param section: The section of the configuration to load. IE: core, etc.
-    :type section: string
-    :param key: The configuration key. It's the entry under a section.
-    :type key: string
-    """
-    global yomboconfigs
-    if yomboconfigs is None:
-        yomboconfigs = getComponent('yombo.gateway.lib.configuration')
-    return yomboconfigs.getConfigTime(section, key)
-
 #@inlineCallbacks
 def getConfigValue(section, key, default=None):
     """
@@ -234,44 +213,6 @@ def getComponent(name):
     except KeyError:
         raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
 
-def getDevices():
-    """
-    Returns a pointer to defined devices as a dictionary. From here, you can
-    search for a device (see usage below).
-
-    .. note::
-    
-       This function is documented for reference only. For all modules there
-       is already a pre-defined variable containing a pointer to all devices.
-       It's **"self._Devices"**.  Usage of this is listed in this example.
-
-    .. warning::
-
-       This returns a pointer to the a dictionary (array) of devices. Care
-       should be taken not to remove, replace, or change the dictionary as
-       this will affect the entire gateway framework.
-
-    **Short Usage**:
-
-        >>> self._Devices['137ab129da9318']  #by uuid
-        or:
-        >>> self._Devices['living room light']  #by name
-
-    **Full Usage**:
-
-    .. code-block:: python
-
-       # Get the living room device using the fuzzy search feature.
-       livingRoom = self._Devices['living room light']
-
-       # now we can turn on the lamp without needing a pincode.
-       livingRoom.sendCmd(self, array('skippincode':True, 'cmd': 'on'))
-
-    :return: A dictionary of pointers of all devices.
-    :rtype: dict
-    """
-    return getComponent('yombo.gateway.lib.devices')
-
 def getDevice(deviceSearch):
     """
     Returns a pointer to device.
@@ -346,23 +287,6 @@ def getCommand(commandSearch):
     :rtype: object
     """
     return getComponent('yombo.gateway.lib.commands')._search(commandSearch)
-    
-def getCommandsByVoice():
-    """
-    Returns a pointer to all commands by voice as a dictionary. Primary
-    used internally.
-    
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.core.helpers import getCommandsByVoice
-       allVoiceCommands = getCommandsByVoice
-
-    :return: The pointer to all the commands by voice.
-    :rtype: dict
-    """
-    return getComponent('yombo.gateway.lib.commands').getCommandsByVoice()
 
 def getCronTab():
     """
@@ -526,7 +450,7 @@ def testBit(int_type, offset):
     return(int_type & mask)
 
 
-#TODO: Rewrite this function to use AMQP, remove sleep!
+#TODO: This will be removed - will based off kerberos method, but using GPG.
 def getUserGWToken(username, gwtokenid, fetchRemote=False):
     """
     Fetches a gateway token for a username from yombo service. Used by the
@@ -571,17 +495,6 @@ def getUserGWToken(username, gwtokenid, fetchRemote=False):
     else:
       return record
 
-def percentage(part, whole):
-    """
-    Return a float representing a percentage of part against the whole.
-
-    For example: percentage(7, 12) returns: 58.333333333333336
-
-    :param part:
-    :param whole:
-    :return:
-    """
-    return 100 * float(part)/float(whole)
 
 def pgpEncrypt(inText, destination):
     """

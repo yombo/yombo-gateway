@@ -30,18 +30,18 @@ Download Steps:
 :license: LICENSE for details.
 """
 
-from itertools import izip
 import os
 import shutil
 import time
 import zipfile
+from itertools import izip
 
-from twisted.web.client import downloadPage, getPage
 from twisted.internet import defer
-   
-from yombo.core.library import YomboLibrary
-from yombo.core.db import get_dbconnection
+from twisted.web.client import downloadPage
+
+from old.db import get_dbconnection
 from yombo.core.helpers import getConfigValue
+from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 
 logger = getLogger('library.downloadmodules')

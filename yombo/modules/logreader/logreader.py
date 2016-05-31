@@ -14,10 +14,10 @@ This module demonstrates two features of the Yombo Gateway:
 :license: GPL
 """
 from yombo.core.exceptions import YomboFileError
-from yombo.core.filereader import FileReader
-from yombo.core.module import YomboModule
-from yombo.core.helpers import getComponent, generateUUID
+from yombo.core.helpers import getComponent
 from yombo.core.log import getLogger
+from yombo.core.module import YomboModule
+from yombo.utils.filereader import FileReader
 
 logger = getLogger("modules.logreader")
 
@@ -84,6 +84,7 @@ class LogReader(YomboModule):
 
         Just pass the raw string to YomboBot for parsing.
         """
+        pass
 
     def _stop_(self):
         """

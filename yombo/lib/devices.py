@@ -2,28 +2,56 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://yombo.net
 """
-Classes to maintain device state, control devices, and query devices.
+For more information see:
+`Devices @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Devices>`_
 
-The devices (plural) class is a wrapper class and contains all
-the individual devices as an individual class.  The devices class
-is responsible for loading individual device classes.
+The devices library is primarily responsible for: maintaining device state and
+sending commands to devices.
 
-The device (singular) class represents one device.  This class
-has many functions that help with utilizing the device.  When possible,
-this class should be used to send Yombo Messages for controlling, and
-getting/setting/querying status.  The device class maintains the
-current known device state.  Any changes to the device state are
-saved to the local database.
+The device (singular) class represents one device.  This class has many functions
+that help with utilizing the device.  When possible, this class should be used to
+send Yombo Messages for controlling, and getting/setting/querying status. The
+device class maintains the current known device state.  Any changes to the device
+state are saved to the local database.
+
+To send a command to a device is simple.
+
+*Usage**:
+
+.. code-block:: python
+
+   # Three ways to send a command to a device. Going from easiest method, but less assurance of correct command
+   # to most assurance.
+
+   # Lets turn on every device this module manages.
+   for item in self._Devices:
+       self.Devices[item].get_message(self, cmd='off')
+
+   # Lets turn off every every device, using a very specific command uuid.
+   for item in self._Devices:
+       self.Devices[item].get_message(self, cmd='js83j9s913')  # Made up number, but can be same as off
+
+   # Lets turn off every every device, using the command object itself.
+
+   off_commands = self._Commands['off']  # Lets search for the command itself, we'll get an object back.
+   # Now, lets just pass that command object in. In this demo, this is basically the same as verions 1 above,
+   # but is shown as an example.
+   for item in self._Devices:
+       self.Devices[item].get_message(self, cmd='js83j9s913')  # Made up number, but can be same as off
+
+
+   if self._Atom['os'] != None:
+       logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom['os'])
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
+import cPickle
+import copy
 from collections import deque, namedtuple
 from time import time
-import copy
-import cPickle
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -31,9 +59,8 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 
 
 # Import Yombo libraries
-from yombo.lib.commands import Command # used to test if isinstance
 from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError
-from yombo.core.fuzzysearch import FuzzySearch
+from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
@@ -355,10 +382,10 @@ class Device:
         Performs items that required deferreds.
         :return:
         """
-        def setCommands(commands):
+        def set_commands(commands):
             self.availableCommands = commands
 
-        def setVariables(vars):
+        def set_variables(vars):
             self.deviceVariables = vars
 
         def gotException(failure):
@@ -366,12 +393,12 @@ class Device:
            return 100  # squash exception, use 0 as value for next stage
 
         d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
-        d.addCallback(setCommands)
+        d.addCallback(set_commands)
         d.addErrback(gotException)
 
         d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
         d.addErrback(gotException)
-        d.addCallback(setVariables)
+        d.addCallback(set_variables)
         d.addErrback(gotException)
 
         if self.testDevice is False:
@@ -404,7 +431,7 @@ class Device:
                 'status'         : copy.copy(self.status),
                }
 
-    def getMessage(self, sourceComponent, **kwargs):
+    def get_message(self, sourceComponent, **kwargs):
         """
         Create a message with the required params and return a Message.
 
@@ -416,13 +443,16 @@ class Device:
         If a pin_code is required, "pin_code" must be included as one of
         the arguments otherwise. All **kwargs are sent to the 'module'.
 
+        *This doesn't send the message, it only creates it!* Use the send()
+        funciton on the returned object to send it.
+
         :raises YomboDeviceError: Raised when:
 
             - pin_code is required but not sent it; skippin_code overrides. Errorno: 100
             - pin_code is required and pin_code submitted is invalid and
               skippin_code is missing. Errorno: 101
             - payload was submitted, but not a dict. Errorno: 102
-            - cmdobj, cmduUUID, or cmd was not sent in. Errorno: 103
+            - cmd is not a valid command object or string. Errorno: 103
         :param sourceComponent: The library or module name that msgOrigin
             should be set to.
         :type sourceComponent: Reference to the Library or Core or Module (usually 'self')
@@ -434,8 +464,8 @@ class Device:
             - maxDelay *(int)* - How late the message is allowed to be delivered.
             - pin_code *(string)* - Required if device requries a pin.
             - skippin_code *(True)* - Bypass pin checking (use wisely).
-            - cmdobj (instance), cmd  or cmduuid *(string)* - Needs to include either a "cmdobj", "cmd" or "cmduuid";
-              *cmdobj* is always preferred, followed by *cmdUUID*, then cmd.
+            - cmd *(instance or string)* - Must be either an instance of a command
+              or a string to search for the command.
             - payload *(dict)* - Payload attributes to include. cmdobj and deviceobj are
               already set.
         :return: the msgUUID
@@ -451,23 +481,22 @@ class Device:
 
         logger.debug("device kwargs: {kwargs}", kwargs=kwargs)
         cmdobj = None
-        try:
-          if 'cmdobj' in kwargs:
-            if isinstance(kwargs['cmdobj'], Command):
-              cmdobj = kwargs['cmdobj']
-            else:
-              raise YomboDeviceError("Invalid 'cmdobj'.", errorno=103)
-          elif 'cmdUUID' in kwargs:
-              cmdobj = self._allDevices._Libraries('commands').getCommand(kwargs['cmdUUID'])
-          elif 'cmd' in kwargs:
-              cmdobj = self._allDevices._Libraries('commands').getCommand(kwargs['cmd'])
-#              cmdobj = getCommand(kwargs['cmd'])
-          else:
-            raise YomboDeviceError("Missing 'cmdobj', 'cmd', or 'cmdUUID'; what to do?", errorno=103)
-        except:
-            raise YomboDeviceError("Invalid 'cmdobj', 'cmd', or 'cmdUUID'; what to do??", errorno=103)
+        if 'cmd' not in kwargs:
+            raise YomboDeviceError("Missing 'cmd' must be a valid command instance , 'cmd', or 'cmdUUID'; what to do?", errorno=103)
 
-        if self.validateCommand(cmdobj.cmdUUID) is not True:
+        if type(kwargs['cmd']) == 'instance':
+            if kwargs['cmd'].__class__ != 'yombo.lib.commands.Command':
+                raise YomboDeviceError("Object passed to get_message is not a command object.", errorno=103)
+            cmdobj = kwargs['cmd']
+        elif type(kwargs['cmd']) == 'str':
+            try:
+                self._allDevices._Libraries('commands').getCommand(kwargs['cmdUUID'])
+            except:
+                raise YomboDeviceError("Cannot find command from string: %s" % kwargs['cmd'], errorno=103)
+        else:
+            raise YomboDeviceError("'cmd' must be a string or instance of a command.", errorno=103)
+
+        if self.validate_command(cmdobj.cmdUUID) is not True:
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         payloadValues = {}
@@ -491,54 +520,20 @@ class Device:
                'uuidType'       : "1",
                'uuidSubType'    : "123",
                'payload'        : payload,
+               'notBefore'      : kwargs.get('notBefore', 0),
+               'maxDelay'       : kwargs.get('maxDelay', 0),
                }
         message = Message(**msg)
-
-        if 'notbefore' in kwargs or 'delay' in kwargs:
-          message.notBefore, message.maxDelay = self.getDelay(**kwargs)
 
 #TODO: Move to lib/device.py to listen for cmd packets.
 #TODO: Remember, we need to ignore our own broadcasts.
 #        self.lastCmd.appendleft(cmd)
         return message
 
-    def setDelay(self, **kwargs):
-        """
-        To be documentated later. Basically, just sets notBefore and maxDelay
-        based on kwargs.
-        """
-        notBefore = 0.0
-        maxDelay = 0.0
-
-        if 'notBefore' in kwargs:
-            try:
-              notBefore = float(kwargs['notBefore'])
-              if notBefore < time():
-                raise YomboDeviceError("Cannot set 'notBefore' to a time in the past.", errorno=150)
-            except:
-                raise YomboDeviceError("notBefore is not an int or float.", errorno=151)
-        elif 'delay' in kwargs:
-            try:
-              notBefore = time() + float(kwargs['delay'])
-            except:
-              raise YomboDeviceError("delay is not an int or float", errorno=152)
-        else:
-              raise YomboDeviceError("notBefore or delay not set.", errorno=153)
-
-        if maxDelay in kwargs:
-          try:
-            maxDelay = float(kwargs['kwargs'])
-            if maxDelay < 0:
-              raise YomboDeviceError("Max delay cannot be less then 0.", errorno=154)
-          except:
-            raise YomboDeviceError("maxDelay is not an int or float.", errorno=151)
-
-        return notBefore, maxDelay
-
-    def setStatus(self, **kwargs):
+    def set_status(self, **kwargs):
         """
         Usually called by the device's command/logic module to set/update the
-        device status.
+        device status. This can also be called externally as needed.
 
         :raises YomboDeviceError: Raised when:
 
@@ -555,16 +550,16 @@ class Device:
             - payload *(dict)* - a dict to be appended to the payload portion of the
               status message.
         """
-        logger.debug("setStatus called...: {kwargs}", kwargs=kwargs)
-        self._setStatus(**kwargs)
+        logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
+        self._set_status(**kwargs)
         if 'silent' not in kwargs:
-            self.sendStatus(**kwargs)
+            self.send_status(**kwargs)
 
-    def _setStatus(self, **kwargs):
-        logger.debug("_setStatus called...")
+    def _set_status(self, **kwargs):
+        logger.debug("_set_status called...")
         machine_status = None
         if 'machine_status' not in kwargs:
-            raise YomboDeviceError("setStatus was called without a real machine_status!", errorno=120)
+            raise YomboDeviceError("set_status was called without a real machine_status!", errorno=120)
 
         device_state = kwargs.get('device_state', 0)
         machine_status = kwargs['machine_status']
@@ -575,7 +570,7 @@ class Device:
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
 
-        logger.debug("_setStatus is saving status...")
+        logger.debug("_set_status is saving status...")
 
         newStatus = self.Status(self.device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
         self.status.appendleft(newStatus)
@@ -584,8 +579,17 @@ class Device:
             if len(self._allDevices._toSaveStatus) > 60:
                 self._allDevices._save_status()
 
-    def sendStatus(self, **kwargs):
-        logger.debug("sendStatus called...")
+    def send_status(self, **kwargs):
+        """
+        Tell the message system to broadcast the current status of a device. This
+        is typically only called internally when a device status changes. Shouldn't
+        need to call this from a module. Just send a command to the device and
+        this function will be called automatically as needed.
+
+        :param kwargs:
+        :return:
+        """
+        logger.debug("send_status called...")
         if 'dest' in kwargs:
             dest = kwargs['dest']
         else:
@@ -619,21 +623,19 @@ class Device:
         message = Message(**msg)
         message.send()
 
-    def removeDelayed(self):
+    def remove_delayed(self):
         """
         Remove any messages that might be set to be called later that
         relates to this device.  Easy, just tell the messages library to 
         do that for us.
         """
-        self._allDevices._MessageLibrary.deviceDelayCancel(self.device_id)
+        self._allDevices._MessageLibrary.device_delay_cancel(self.device_id)
 
-    def getDelayed(self):
+    def get_delayed(self):
         """
-        Remove any messages that might be set to be called later that
-        relates to this device.  Easy, just tell the messages library to 
-        do that for us.
+        List messages that are to be sent at a later time.
         """
-        self._allDevices._MessageLibrary.deviceDelayList(self.device_id)
+        self._allDevices._MessageLibrary.device_delay_list(self.device_id)
 
     def load_history(self, howmany=35):
         """
@@ -659,12 +661,12 @@ class Device:
         """
         Gets the history of the device status.
 
-        :param history:
+        :param history: How far back to go. 0 = previoius, 1 - the one before that, etc.
         :return:
         """
         return {"status": self.status[history]}
 
-    def validateCommand(self, cmdUUID):
+    def validate_command(self, cmdUUID):
         if cmdUUID in self.availableCommands:
             return True
         else:

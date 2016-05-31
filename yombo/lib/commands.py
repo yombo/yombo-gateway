@@ -1,19 +1,13 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python Gateway automation
+# This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-Class to maintain list of all available commands. Initially, this
-is a cache with the ability and intention to expand later.
+For more information see: `Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Commands>`_
 
-The commands (plural) class is a wrapper class and contains all
-the individual commands as individual classes.  The commands class
-is responsible for loading all the commands and assigning them to
-an individual command class.
+This library maintains al ist of all available commands. The commands (plural) is a wrapper class and contains all
+the individual command classes.
 
 The command (singular) class represents one command.
-
-The private online repository can be used to recover previous command
-usage statistics.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2016 by Yombo.
@@ -24,7 +18,7 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCommandError
-from yombo.core.fuzzysearch import FuzzySearch
+from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 
@@ -108,19 +102,10 @@ class Commands(YomboLibrary):
     def _reload_(self):
         self.__loadCommands()
 
-    def getCommandsByVoice(self):
+    def _get_commands_by_voice(self):
         """
         This function shouldn't be used by modules. Internal use only. For modules,
         use: `self._Commands['on']` to search by name.
-
-
-        **Usage**:
-
-        .. code-block:: python
-
-           from yombo.core.helpers import getCommandsByVoice
-           commands = getCommands()
-           onCmd = commands['on'] #fuzzy search match
 
         :return: Pointer to array of all devices.
         :rtype: dict
@@ -158,7 +143,6 @@ class Commands(YomboLibrary):
         Load the commands into memory. Set up various dictionaries support libraries to manage
         devices.
         """
-        import itertools
 
         self._clear_()
 

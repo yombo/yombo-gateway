@@ -56,3 +56,4 @@ class GWService(Service):
         logger.info("Yombo Gateway stopping.")
         stopLoader()
         logger.info("Yombo Gateway stopped.")
+

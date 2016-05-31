@@ -2,11 +2,11 @@
 
 .. _maxdict:
 
-.. currentmodule:: yombo.core.maxdict
+.. currentmodule:: yombo.utils.maxdict
 
 ============================================
-MaxDict (yombo.core.maxdict)
+MaxDict (yombo.utils.maxdict)
 ============================================
 
-.. automodule:: yombo.core.maxdict
+.. automodule:: yombo.utils.maxdict
    :members:

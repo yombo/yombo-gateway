@@ -30,9 +30,9 @@ Stops components in the following phases. Modules first, then libraries.
 :license: LICENSE for details.
 """
 # Import python libraries
-from re import search as ReSearch
 import sys
 import traceback
+from re import search as ReSearch
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
@@ -40,7 +40,7 @@ from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError
-from yombo.core.fuzzysearch import FuzzySearch
+from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 import yombo.utils
@@ -100,6 +100,7 @@ class Loader(YomboLibrary):
         self.__localModuleVars = {}
         self._SQLDictUpdates = {}
         self._moduleLibrary = None
+        self._hook_cache = {}
 
     @inlineCallbacks
     def load(self):  #on startup, load libraried, then modules
@@ -162,14 +163,14 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             component = name.lower()
             library = self.loadedLibraries[component]
-            self.logLoader('debug', component, 'library', 'init', 'About to call _init_.')
+            self.logLoader('info', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._States = self.loadedLibraries['states']
             library._Modules = self._moduleLibrary
             library._Libraries = self.loadedLibraries
             if hasattr(library, '_init_') and callable(library._init_) and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
-#                d = yield maybeDeferred(library._init_, self)
-#                continue
+                d = yield maybeDeferred(library._init_, self)
+                continue
                 try:
                     d = yield maybeDeferred(library._init_, self)
                 except YomboCritical, e:
@@ -219,6 +220,12 @@ class Loader(YomboLibrary):
         if not (hook.startswith("_") and hook.endswith("_")):
             isCoreFunction = False
             hook = library._Name + "_" + hook
+        if hook in self._hook_cache:
+            if self._hook_cache[library._FullName+hook] == False:
+#                logger.warn("Cache hook ({library}:{hook})...passing", library=library._FullName, hook=hook)
+                returnValue(None)
+        else:
+            self._hook_cache[library._FullName+hook] = None
         if hasattr(library, hook):
             method = getattr(library, hook)
             self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'About to call: %s' % hook)
@@ -229,6 +236,7 @@ class Loader(YomboLibrary):
                    results = yield maybeDeferred(method, **kwargs)
                self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'Finished with call: %s' % hook)
                returnValue(results)
+
 #                 try:
 #                     if isCoreFunction:
 #                         results = yield maybeDeferred(method)
@@ -256,8 +264,13 @@ class Loader(YomboLibrary):
 # #                              limit=5, file=sys.stdout)))
 # #                    logger.error("--------------------------------------------------------")
             else:
-                logger.error("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
+ #               self._hook_cache[library._FullName+hook] = False
+                logger.warn("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+                logger.debug("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
                 raise YomboWarning("Hook is not callable: %s" % hook)
+        else:
+#            logger.warn("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+            self._hook_cache[library._FullName+hook] = False
 
     def library_invoke_all(self, hook, fullName=False, **kwargs):
         """

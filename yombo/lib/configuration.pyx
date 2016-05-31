@@ -175,7 +175,7 @@ class Configuration(YomboLibrary):
         :param message: A yombo message.
         :type message: :ref:`message`
         """
-        logger.warn("A message was sent to configuration module.  No messages allowed.")
+        logger.debug("A message was sent to configuration module.  No messages allowed.")
 
     def getConfigTime(self, section, key):
         updateItem = section + "_+_" + key + "_+_time"
@@ -190,7 +190,15 @@ class Configuration(YomboLibrary):
         default if defined.  Tries to type cast with int first before
         returning a string.
         
-        Section and key will be converted to lowercase, rending the set/get function case insenstive.
+        Section and key will be converted to lowercase, rendering the set/get
+        function case insenstive.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           from yombo.core.helpers import getConfigValue
+           gatewayUUID = getConfigValue("core", "gwuuid", "Default Value")
 
         :param section: The configuration section to use.
         :type section: string
@@ -235,6 +243,13 @@ class Configuration(YomboLibrary):
         **cannot exceed 1000 characters**.  The value cannot exceed 5000 bytes.
 
         Section and key will be converted to lowercase, rending the set/get function case insenstive.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           from yombo.core.helpers import setConfigValue
+           gatewayUUID = setConfigValue("section_name", "mykey", "New Value")
 
         :param section: The configuration section to use.
         :type section: string

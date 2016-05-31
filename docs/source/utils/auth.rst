@@ -2,11 +2,11 @@
 
 .. _auth:
 
-.. currentmodule:: yombo.core.auth
+.. currentmodule:: yombo.utils.auth
 
 ==============================
-Auth (yombo.core.auth)
+Auth (yombo.utils.auth)
 ==============================
 
-.. automodule:: yombo.core.auth
+.. automodule:: yombo.utils.auth
    :members:

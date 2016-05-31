@@ -1,5 +1,5 @@
 """
-For more information see: `Atoms @ Projects.yombo.net <hhttps://projects.yombo.net/projects/modules/wiki/Atoms>`_
+For more information see: `Atoms @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Atoms>`_
 
 Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
 some exceptions such as IP address changes. Libraries and modules and get and set additional atoms as desired.
@@ -123,10 +123,9 @@ class Atoms(YomboLibrary):
         self.__Atoms.update(self.os_data())
         self.triggers = {}
         self.automation = self._Libraries['automation']
-        self.set('running_since', time())
 
     def _load_(self):
-        pass
+        self.set('running_since', time())
 
     def _start_(self):
         pass
@@ -198,12 +197,24 @@ class Atoms(YomboLibrary):
         """
         Get the value of a given atom (key).
 
-        :param key: Name of atom to check.
+        :param key: Name of atom to set.
         :param value: Value to set the atom to.
         :return: Value of atom
         """
         keys = key.split(':')
-        yombo.utils.dict_set_value(self.__Atoms, keys, value)
+
+        # Call any hooks
+        already_set = False
+        atom_changes = yombo.utils.global_invoke_all('atoms_set', **{'keys': keys, 'value': value})
+        for moduleName, newValue in atom_changes.iteritems():
+            if newValue is not None:
+                logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}", moduleName=moduleName, newValue=newValue)
+                yombo.utils.dict_set_value(self.__Atoms, keys, newValue)
+                already_set = True
+
+        if not already_set:
+            yombo.utils.dict_set_value(self.__Atoms, keys, value)
+
         self.check_trigger(key, keys, value)
 
     def os_data(self):

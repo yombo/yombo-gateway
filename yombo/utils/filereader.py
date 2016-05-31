@@ -14,7 +14,7 @@ send any new lines of text to the function define on setup.
 
 .. code-block:: python
 
-   from yombo.core.filereader import FileReader  #load at the top of the file.
+   from yombo.utils.filereader import FileReader  # load at the top of the file.
   
    class MyModule(YomboModule):
    # don't forget "def init(self)"
@@ -29,7 +29,7 @@ send any new lines of text to the function define on setup.
        self.file.close()  # Tell FileReader to close the file. Very important!
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2013-2015 by Yombo.
+:copyright: Copyright 2013-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -37,12 +37,11 @@ import codecs
 import os # used to create the file if it doesn't exist.
 
 # Import twisted libraries
-# from twisted.internet.reactor import callLater
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFileError
-from yombo.core.sqldict import SQLDict
+from yombo.utils.sqldict import SQLDict
 
 class BlankFileReader(object):
     pass

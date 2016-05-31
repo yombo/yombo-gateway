@@ -82,12 +82,11 @@ the fuzzysearch phase of voice command lookup.
 import re
 
 from yombo.core.exceptions import YomboException
-from yombo.core.fuzzysearch import FuzzySearch
-from yombo.core.helpers import  getCommandsByVoice, getDevices
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
 from yombo.utils import global_invoke_all
+from yombo.utils.fuzzysearch import FuzzySearch
 
 logger = getLogger('library.voice_cmds')
 
@@ -112,7 +111,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         """
         self.loader = loader
         super(VoiceCmds, self).__init__(None, .8)
-        self.commandsByVoice = getCommandsByVoice()
+        self.commandsByVoice = self._Libraries['commands']._get_commands_by_voice()
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
@@ -120,7 +119,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         """
         Setup self.commandsByVoice.... todo doco...
         """
-        self._Devices = getDevices()
+        self._Devices = self._Libraries['devices']
 
     def _start_(self):
         """
@@ -251,7 +250,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                                         } }
               self.update(a)
 
-    def getMessage(self, voice_cmd, origin = "yombo.gateway.lib.voice_cmds"):
+    def get_message(self, voice_cmd, origin = "yombo.gateway.lib.voice_cmds"):
         """
         Generates a message that is ready to be sent.
 
@@ -274,5 +273,5 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
             message = Message(**msg)
             return message
         else:
-            return self._Devices[voice_cmd['value']['device_id']].getMessage(self, cmdid=voice_cmd['value']['cmdUUID'])
+            return self._Devices[voice_cmd['value']['device_id']].get_message(self, cmd=voice_cmd['value']['cmdUUID'])
         

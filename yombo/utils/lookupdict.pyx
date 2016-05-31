@@ -8,7 +8,7 @@ A dictionary that can search by either key or by value.
 
 .. code-block:: python
 
-   from yombo.core.lookupdict import LookupDict
+   from yombo.utils.lookupdict import LookupDict
 
    items = LookupDict({'mom' : 'Jane', 'dad' : 'Joe'}) # Can accept a dictionary to get started.
    result = items['mom'] # Jane

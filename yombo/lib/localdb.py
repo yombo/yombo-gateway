@@ -12,12 +12,6 @@ A database API to SQLite3.
    If additional information is needed to/from the database, open a feature
    request at `<https://projects.yombo.net/>` under the Gateway Project.
 
-.. warning::
-
-   This entire file will be re-written in a future version. An attempt
-   was made to make this non-blocking, but it was not completly successfull.
-   Do not rely on these function names to remain the same.
-
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.

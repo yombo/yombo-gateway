@@ -2,6 +2,9 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
+For more information see:
+`Messages @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Messages>`_
+
 Manages messages that are to be delivered at a later time (notBefore).
 This library can take a message in, pickle it, and store it for persistency.
 
@@ -20,18 +23,17 @@ send function of a message when needed.
 :license: LICENSE for details.
 """
 # Import python libraries
-from collections import deque
 import time
+from collections import deque
 
 # Import twisted libraries
 from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboMessageError
-#from yombo.core.helpers import getCommand, getDevice
 from yombo.core.library import YomboLibrary
 from yombo.core.message import Message
-from yombo.core.sqldict import SQLDict  #load at the top of the file.
+from yombo.utils.sqldict import SQLDict  #load at the top of the file.
 from yombo.core.log import getLogger
 from yombo.utils import global_invoke_all
 
@@ -139,7 +141,7 @@ class Messages(YomboLibrary):
         if hasattr(self, 'distributions'): # used incase GW stops premature.
             self.distributions.clear()
 
-    def addToDelay(self, message):
+    def add_msg_to_delay_queue(self, message):
         """
         Add a message to the delay queue be delivered at 'notBefore' time.
 
@@ -165,9 +167,10 @@ class Messages(YomboLibrary):
         reply = message.getReply(msgStatus="delayed")
         reply.send()
 
-    def deviceDelayCancel(self, device_id):
+    def device_delay_cancel(self, device_id):
         """
         Cancel any pending messages for a given device_id.
+
         :param device_id: The msgUUID to be removed.
         :type device_id: string
         """
@@ -175,13 +178,13 @@ class Messages(YomboLibrary):
         if device_id in self.deviceList:
           for key in range(len(self.deviceList[device_id])):
               try:
-                self.cancelDelay(self.deviceList[device_id][key])
+                self.cancel_delayed_message(self.deviceList[device_id][key])
               except:
                 pass
               del self.deviceList[device_id][key]
         del self.deviceList[device_id]
 
-    def deviceDelayList(self, device_id):
+    def device_delay_list(self, device_id):
         """
         Return a list of messageUUID's for delayed messages for a given device_id.
         :param device_id: The msgUUID to be removed.
@@ -190,9 +193,9 @@ class Messages(YomboLibrary):
         if device_id in self.deviceList:
           return self.deviceList[device_id]
 
-    def cancelDelay(self, msgUUID):
+    def cancel_delayed_message(self, msgUUID):
         """
-        Remove a message from being delayed.
+        Removes the provided message uuid from the delayed send queue.
 
         :param msgUUID: The msgUUID to be removed.
         :type msgUUID: string
@@ -205,6 +208,7 @@ class Messages(YomboLibrary):
             del self.reactors[msgUUID]
         else:
             isGood = False
+
         if msgUUID in self.delayQueue:
             del self.delayQueue[msgUUID]
         else:
@@ -216,6 +220,7 @@ class Messages(YomboLibrary):
     def checkDelay(self, msgUUID):
         """
         Check if a message is in the delay queue.
+
         :param msgUUID: The msgUUID to check.
         :type msgUUID: string
         """
@@ -229,7 +234,7 @@ class Messages(YomboLibrary):
         delete that and clean up the reactors list.
         """
         try:
-          self.cancelDelay(message.msgUUID)
+          self.cancel_delayed_message(message.msgUUID)
         except:
           pass
 
@@ -265,4 +270,3 @@ class Messages(YomboLibrary):
                 self.distributions[list].remove(moduleName)
             except:
                 pass
-

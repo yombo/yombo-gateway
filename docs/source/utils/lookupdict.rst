@@ -2,12 +2,12 @@
 
 .. _lookupdict:
 
-.. currentmodule:: yombo.core.lookupdict
+.. currentmodule:: yombo.utils.lookupdict
 
 ==========================================
-LookupDict (yombo.core.lookupdict)
+LookupDict (yombo.utils.lookupdict)
 ==========================================
-.. automodule:: yombo.core.lookupdict
+.. automodule:: yombo.utils.lookupdict
 
 LookupDict Class
 ---------------------------

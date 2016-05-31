@@ -43,18 +43,12 @@ features to be used by libraries and modules.
    :maxdepth: 1
 
    ../core/auth.rst
-   ../core/db.rst
    ../core/exceptions
-   ../core/filereader
-   ../core/fuzzysearch
    ../core/helpers
    ../core/library
    ../core/log
-   ../core/lookupdict
-   ../core/maxdict
    ../core/message
    ../core/module
-   ../core/sqldict
 
 .. _lib:
 
@@ -101,6 +95,11 @@ Various utilities to help the Yombo Gateway get things done.
 
    ../utils/utils.rst
    ../utils/decorators.rst
+   ../utils/filereader
+   ../utils/fuzzysearch
+   ../utils/lookupdict
+   ../utils/maxdict
+   ../utilssqldict
 
 .. _ext:
 
@@ -116,4 +115,5 @@ information.
    :maxdepth: 1
 
    ../ext/hjson.rst
+   ../ext/twistar.rst
    ../ext/six.rst

@@ -7,8 +7,6 @@ to the Yombo server. It can provide a list of users connected and what module th
 
 Example states: times_dark, weather_raining, alarm_armed, yombo_service_connection
 
-For more information see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
-
 *Usage**:
 
 .. code-block:: python
@@ -58,7 +56,7 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound
 from yombo.core.log import getLogger
-from yombo.core.sqldict import SQLDict
+from yombo.utils.sqldict import SQLDict
 from yombo.core.library import YomboLibrary
 logger = getLogger("library.YomboStates")
 

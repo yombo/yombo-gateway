@@ -93,7 +93,7 @@ class DevicesTests(ExpectingTestCase):
 
     def testDeviceGetMessage(self):
         """
-        Validates device.getMessage().
+        Validates device.get_message().
         """
         record = {'description'    : "Test device 2.",
                   'created'        : int(time.time())-9,
@@ -112,10 +112,10 @@ class DevicesTests(ExpectingTestCase):
 
         dev = self._Devices._addDevice(record, True)  # create dummy device
         with self.expectRaises(Yombopin_codeError):       # Pin is required, so, it should toss an error
-            dev.getMessage('yombo.gateway.tests.devices')
+            dev.get_message('yombo.gateway.tests.devices')
 
         with self.expectRaises(DeviceError): # no cmd, cmdUUID, or cmdobj submitted.
-            dev.getMessage('yombo.gateway.tests.devices', pin_code="1234")
+            dev.get_message('yombo.gateway.tests.devices', pin_code="1234")
 
         command = {'description'    : "Test command 3.",
 #                  'created'        : int(time.time())-10,
@@ -135,7 +135,7 @@ class DevicesTests(ExpectingTestCase):
         
         tempObj = mock.Mock()
         tempObj._FullName = "yombo.gateway.tests.devices"
-        dev.getMessage(tempObj, pin_code="1234", cmd="Test Cmd 3")
+        dev.get_message(tempObj, pin_code="1234", cmd="Test Cmd 3")
 
 if __name__ == '__main__':
     main()

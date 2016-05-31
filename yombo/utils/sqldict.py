@@ -28,7 +28,6 @@ import cPickle
 from itertools import izip
 from sqlite3 import Binary as sqlite3Binary
 
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
@@ -78,7 +77,6 @@ class SQLDict(dict):
         mydata = cPickle.loads(str(data.dict_data))
         logger.debug("key === {key}  data = {mydata}", key=data.data_key, data=mydata)
         self[data.dict_key] = mydata
-
 
     def __setitem__(self, key, value):
         """

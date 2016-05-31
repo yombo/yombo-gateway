@@ -17,7 +17,6 @@ import inspect
 import random
 import string
 import sys
-#import re
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -215,6 +214,9 @@ def dict_merge(original, changes):
 def fopen(*args, **kwargs):
     """
     A help function that wraps around python open() function.
+
+    This function should be used by modules. Use the
+    :py:mod:`yombo.utils.filereader` class.
     """
     # For windows, always use binary mode.
     if kwargs.pop('binary', True):
@@ -241,6 +243,18 @@ def fopen(*args, **kwargs):
         old_flags = fcntl.fcntl(fhandle.fileno(), fcntl.F_GETFD)
         fcntl.fcntl(fhandle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
     return fhandle
+
+def percentage(part, whole):
+    """
+    Return a float representing a percentage of part against the whole.
+
+    For example: percentage(7, 12) returns: 58.333333333333336
+
+    :param part:
+    :param whole:
+    :return:
+    """
+    return 100 * float(part)/float(whole)
 
 def get_command(commandSearch):
     """
@@ -300,7 +314,7 @@ def get_device(deviceSearch):
     .. note::
 
        This shouldn't be used by modules, instead, use the pre-set point of
-       *self._Devices*, see: :py:func:`getDevices`.
+       *self._Devices*, see: :py:func:`get_devices`.
 
     :param deviceSearch: Which device to search for.  device_id or Device Label. device_id preferred.
     :type deviceSearch: string - Device UUID or Device Label.

@@ -13,18 +13,18 @@ Also calls module hooks as requested by other libraries and modules.
 # Import python libraries
 #import sys
 #import traceback
-from time import time
 import ConfigParser
 import sys
 import traceback
+from time import time
 
 # Import twisted libraries
 #from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
+from twisted.internet.defer import inlineCallbacks, maybeDeferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError, YomboWarning, YomboCritical
-from yombo.core.fuzzysearch import FuzzySearch
+from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 import yombo.utils
@@ -272,6 +272,7 @@ class Modules(YomboLibrary):
                 module._Modules = self._moduleDevicesByName
                 module._Libraries = self.loader.loadedLibraries
 
+                module._Commands = self.loader.loadedLibraries['commands']
                 module._Devices = self.get_module_devices(module_id)
                 module._DevicesByType = getattr(self._DevicesLibrary, "get_devices_by_device_type")
                 module._DeviceTypes = self.get_module_device_types(module_id)
