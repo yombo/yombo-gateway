@@ -11,7 +11,7 @@ from twisted.internet import reactor
 from yombo.core.module import YomboModule
 from yombo.core.log import getLogger
 
-logger = getLogger("module.automationexample")
+logger = getLogger("modules.automationexample")
 
 
 class AutomationExample(YomboModule):
@@ -67,11 +67,11 @@ class AutomationExample(YomboModule):
                     {
                     'source': {
                         'platform': 'states',
-                        'name': 'is_light',
+                        'name': 'times_light',
                         },
                     'filter': {
                         'platform': 'basic_values',
-                        'value': 'true'
+                        'value': 'false'
                         }
                     },
                 ],
@@ -113,8 +113,9 @@ class AutomationExample(YomboModule):
         }
         
     def _start_(self):
-        logger.info("States: Is Light: {is_light}", is_light=self._States['is_light'])
+        logger.info("States: Is Light: {times_light}", times_light=self._States['times_light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
+        self._States['automationexample'] = 0
 
     def set_high(self):
         self._States['automationexample'] = 1

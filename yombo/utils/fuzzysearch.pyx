@@ -108,7 +108,7 @@ class FuzzySearch(dict):
 
         return item
 
-    def search(self, searchFor, limiterOverride=None):
+    def search(self, searchFor, limiter_override=None):
         """
         What key to search for.  It returns 5 variables as a dictionary:
             - valid - True if ratio match is above the limiter.
@@ -120,22 +120,21 @@ class FuzzySearch(dict):
         
         :param searchFor: The key of the dictionary to search for.
         :type searchFor: int or string
-        :param limiterOverride: temporarily override the limiter for only this search.
-        :type float
+        :param limiter_override: temporarily override the limiter for only this search.
         :return: See description for details
         :rtype: dict
         """
-        results = self._search(searchFor, limiterOverride)
+        results = self._search(searchFor, limiter_override)
         return {
-            'valid' : results[0],
-            'key' : results[1],
-            'value'  : results[2],
-            'ratio'   : results[3],
-            'others' : results[4],
-            'searchFor' : searchFor,
+            'valid': results[0],
+            'key': results[1],
+            'value': results[2],
+            'ratio': results[3],
+            'others': results[4],
+            'searchFor': searchFor,
         }
 
-    def _search(self, searchFor, limiterOverride=None):
+    def _search(self, searchFor, limiter_override=None):
         """
         **Don't use this function directly** - Performs the actual search.
 
@@ -143,8 +142,8 @@ class FuzzySearch(dict):
         the best matching key.
         :param searchFor: The key of the dictionary to search for.
         :type searchFor: int or string
-        :param limiterOverride: temporarily override the limiter for this search.
-        :type limiterOverride
+        :param limiter_override: temporarily override the limiter for this search.
+        :type limiter_override
         :return: See :func:`~yombo.lib.fuzzysearch.search` for details
         :rtype: dict
         """
@@ -184,16 +183,16 @@ class FuzzySearch(dict):
                 best_match = self._dict_getitem(key)
             
             # return a list of the top 5 key matches on failure.
-            key_list[curRatio] = {'key' : key, 'value' : self._dict_getitem(key), 'ratio' : curRatio}
+            key_list[curRatio] = {'key': key, 'value': self._dict_getitem(key), 'ratio': curRatio}
             sorted_list = self.take(5, sorted(key_list.iteritems(), key=operator.itemgetter(0), reverse=True))
 
         limiter = None
-        if limiterOverride is not None:
-            if limiterOverride > .99999999999:
-                limiterOverride = .99
-            elif limiterOverride < .10:
-                limiterOverride = .10
-            limiter = limiterOverride
+        if limiter_override is not None:
+            if limiter_override > .99999999999:
+                limiter_override = .99
+            elif limiter_override < .10:
+                limiter_override = .10
+            limiter = limiter_override
         else:
             limiter = self.limiter
             

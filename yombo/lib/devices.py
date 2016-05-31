@@ -2,8 +2,11 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://yombo.net
 """
-For more information see:
-`Devices @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Devices>`_
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Devices @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Devices>`_
 
 The devices library is primarily responsible for: maintaining device state and
 sending commands to devices.

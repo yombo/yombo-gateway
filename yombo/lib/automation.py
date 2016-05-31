@@ -1,8 +1,23 @@
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
-Reads a text file for simple automation rules. Allows you to quickly setup simple
-automation rules.
+.. rst-class:: floater
 
-todo: Make rules a class to make processing easier
+.. note::
+
+  For more information see: `Automation @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Automation>`_
+
+The automation library provides users an easy method to setup simple automation rules and tasks without the need
+to write a single line of code.
+
+For developers: This library only provides the base framework. Features are actually implemented by hooks to other
+libraries and modules. Developers can extend the capabilites of the automation library using modules..
+
+Developers should the following modules for examples of implementation:
+
+* :py:mod:`yombo.lib.automationhelpers` - Library for implementation of calling a function by automation rule.
+* :py:mod:`yombo.lib.atoms` - Look near the bottom for hooks into triggers, conditions, and actions.
+* :py:mod:`yombo.lib.states` - Look near the bottom for hooks into triggers, conditions, and actions.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.
@@ -19,6 +34,10 @@ import yombo.utils
 
 logger = getLogger("library.automation")
 
+#for testing...
+#from pprint import pprint
+
+
 REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
 REQUIRED_TRIGGER_FIELDS = ['source', 'filter']
 REQUIRED_CONDITION_FIELDS = ['source', 'filter']
@@ -33,7 +52,8 @@ CONDITION_TYPE_OR = 'or'
 
 class Automation(YomboLibrary):
     """
-    Reads "automation.txt" for automation rules.
+    Reads "automation.txt" for automation rules and parses them into rules. Also calls hook_automation_rules_list for
+    additional automation rules.
     """
     def _init_(self, loader):
         self._ModDescription = "Easy Automation for everyone"
@@ -43,12 +63,11 @@ class Automation(YomboLibrary):
 
         self._rulesRaw = {}  # Used to store raw input from reading file.
         self._rulesParse = {}  # Used to store raw input from reading file.
-        self.rules = {}   # Store processed rules
-        self.triggers = {}  # Track various triggers - help find what rules to fire whena trigger matches.
+        self.rules = {}   # Store processed / active rules
+        self.active_triggers = {}  # Track various triggers - help find what rules to fire whena trigger matches.
 
         self.tracker = {}  # Basic tracking
-        print "track - %s" % self.tracker
-        self.sources = {}  # List of source processors
+        self.triggers = {}  # List of source processors
         self.filters = {}  # List of filter processors
         self.actions = {}  # List of actionprocessors
 
@@ -66,6 +85,7 @@ class Automation(YomboLibrary):
         pass
 
     def _start_(self):
+        print "track - %s" % self.tracker
         pass
 
     def _stop_(self):
@@ -93,7 +113,7 @@ class Automation(YomboLibrary):
 
         .. code-block:: python
 
-           def ModuleName_automation_source_list(self, **kwargs):
+           def ModuleName_automation_trigger_list(self, **kwargs):
                return [
                  { 'platform': 'atom',
                    'add_trigger_callback': callBackFunction,  # function to call to add a trigger
@@ -122,11 +142,11 @@ class Automation(YomboLibrary):
         For "automation_rules_list" hook, see the :ref:`Automation Example <automationexample>` example module.
 
         """
-        automation_sources = yombo.utils.global_invoke_all('automation_source_list')
+        automation_sources = yombo.utils.global_invoke_all('automation_trigger_list')
         logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in automation_sources.iteritems():
             for vals in item:
-                self.sources[vals['platform']] = vals
+                self.triggers[vals['platform']] = vals
 
         automation_filters = yombo.utils.global_invoke_all('automation_filter_list')
 #        logger.info("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
@@ -152,6 +172,7 @@ class Automation(YomboLibrary):
 
         for rule in self._rulesRaw['rules']:
             self.add_rule(rule)
+#        pprint(self.rules)
 
     def add_rule(self, rule):
         """
@@ -232,24 +253,25 @@ class Automation(YomboLibrary):
         for item in range(len(rule['action'])):
             platform = rule['action'][item]['platform']
             VCB = self.actions[platform]['validate_callback']
-            if not VCB(rule, platform=platform, item=item):
+            if not VCB(rule, rule['action'][item]):
                 logger.warn("Action platform '{action_platform}' not in rule: {rule_name}. Skipping rule.",
                             action_platform=platform, rule_name=rule['name'])
                 return False
 
         logger.info("Passed adding rule condition check....")
-        add_trigger = self.sources[rule['trigger']['source']['platform']]['add_trigger_callback']
+        add_trigger = self.triggers[rule['trigger']['source']['platform']]['add_trigger_callback']
         add_trigger(rule, condition_callback=self.automation_check_conditions)
 
-        if rule['trigger']['source']['platform'] not in self.triggers:
-            self.triggers[rule['trigger']['source']['platform']] = []
-        self.triggers[rule['trigger']['source']['platform']].append(rule_id)
+        if rule['trigger']['source']['platform'] not in self.active_triggers:
+            self.active_triggers[rule['trigger']['source']['platform']] = []
+        self.active_triggers[rule['trigger']['source']['platform']].append(rule_id)
         self.rules[rule_id] = rule
+#        self.rules[rule_id] = Rule(rule)
 
     def _check_source_platform(self, rule, source, trigger_required=False):
         """
         Help function to add_rule.  It checks to make sure a any 'source': {'platform': 'platform_name'} exists. It
-        tests against self.sources that was gathered from various modules and modules using hooks.
+        tests against self.triggers that was gathered from various modules and modules using hooks.
 
         :param rule: the rule
         :param source: source to check
@@ -258,17 +280,17 @@ class Automation(YomboLibrary):
         """
         source_platform = source['platform']
         if trigger_required:
-            if 'add_trigger_callback' in self.sources[source_platform]:
-                if not callable(self.sources[source_platform]['add_trigger_callback']):
+            if 'add_trigger_callback' in self.triggers[source_platform]:
+                if not callable(self.triggers[source_platform]['add_trigger_callback']):
                     logger.warn("Rule '{rule}': {source_platform} doesn't have a callable trigger adder.", rule=rule['name'], source_platform=source_platform)
                     return False
             else:
                 logger.warn("Rule '{rule}': {source_platform} Doesn't have a listing for a trigger adder.", rule=rule['name'], source_platform=source_platform)
                 return False
 
-        if source_platform in self.sources:
-            method = self.sources[source_platform]['validate_callback']
-            if not method(rule, platform=source_platform, source=source):
+        if source_platform in self.triggers:
+            method = self.triggers[source_platform]['validate_callback']
+            if not method(rule, rule['trigger']):
                 logger.warn("Rule '{rule}': Has invalid source platform params. source_platform: {source_platform}.", rule=rule['name'], source_platform=source_platform)
                 return False
         else:
@@ -386,8 +408,8 @@ class Automation(YomboLibrary):
 #            print "testing conditons: %s" % condition
             for item in range(len(condition)):
                 # get value(s)
-                method = self.sources[condition[item]['source']['platform']]['get_value_callback']
-                value = method(rule, condition[item]['source']['name'])
+                method = self.triggers[condition[item]['source']['platform']]['get_value_callback']
+                value = method(rule, condition[item]['source'])
 
                 # check value(s)
                 try:
@@ -420,9 +442,97 @@ class Automation(YomboLibrary):
         for item in range(len(rule['action'])):
             platform = rule['action'][item]['platform']
             do_action = self.actions[platform]['do_action_callback']
-            do_action(rule, item=item, platform=platform)
+            do_action(rule, rule['action'][item])
 
         return
+
+
+class Rule:
+    """
+    A class to contain various aspects of a rule.
+    """
+    def __init__(self, device, allDevices, testDevice=False):
+        """
+        :param device: *(list)* - A device as passed in from the devices class. This is a
+            dictionary with various device attributes.
+        :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's status
+            changed. (Not implemented.)
+        :ivar callAfterChange: *(list)* - A list of functions to call after this device has it's status
+            changed. (Not implemented.)
+        :ivar device_id: *(string)* - The UUID of the device.
+        :ivar device_type_id: *(string)* - The device type UUID of the device.
+        :type device_id: string
+        :ivar label: *(string)* - Device label as defined by the user.
+        :ivar description: *(string)* - Device description as defined by the user.
+        :ivar enabled: *(bool)* - If the device is enabled - can send/receive command and/or
+            status updates.
+        :ivar pin_required: *(bool)* - If a pin is required to access this device.
+        :ivar pin_code: *(string)* - The device pin number.
+            system to deliver commands and status update requests.
+        :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
+        :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
+        :ivar lastCmd: *(dict)* - A dictionary of up to the last 30 command messages.
+        :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
+        :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
+            values entered by the user.
+        :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
+        """
+        logger.debug("New device - info: {device}", device=device)
+
+        self.Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
+        self.Command = namedtuple('Command', "time, cmduuid, source")
+        self.callBeforeChange = []
+        self.callAfterChange = []
+        self.device_id = device["id"]
+        self.device_type_id = device["device_type_id"]
+        self.deviceTypeLabel = device["device_type_machine_label"]
+        self.label = device["label"]
+        self.deviceClass = device["device_class"]
+        self.description = device["description"]
+        self.enabled = int(device["status"])
+        self.pin_required = int(device["pin_required"])
+        self.pin_code = device["pin_code"]
+        self.pin_timeout = int(device["pin_timeout"])
+        self.voice_cmd = device["voice_cmd"]
+        self.voice_cmd_order = device["voice_cmd_order"]
+        self.created = int(device["created"])
+        self.updated = int(device["updated"])
+        self.lastCmd = deque({}, 30)
+        self.status = deque({}, 30)
+        self._allDevices = allDevices
+        self.testDevice = testDevice
+        self.availableCommands = []
+        self.deviceVariables = {'asdf':'qwer'}
+
+    def _init_(self):
+        """
+        Performs items that required deferreds.
+        :return:
+        """
+        def set_commands(commands):
+            self.availableCommands = commands
+
+        def set_variables(vars):
+            self.deviceVariables = vars
+
+        def gotException(failure):
+           print "Exception : %r" % failure
+           return 100  # squash exception, use 0 as value for next stage
+
+        d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
+        d.addCallback(set_commands)
+        d.addErrback(gotException)
+
+        d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
+        d.addErrback(gotException)
+        d.addCallback(set_variables)
+        d.addErrback(gotException)
+
+        if self.testDevice is False:
+            d.addCallback(lambda ignored: self.load_history(35))
+        return d
+
+
 
 
 """

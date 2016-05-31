@@ -48,20 +48,21 @@ class AutomationHelpers(YomboLibrary):
         """
         return [
             { 'platform': 'call_function',
-              'validate_callback': self.basic_values_action_validate,  # function to call to validate an action is possible.
-              'do_action_callback': self.basic_values_action_do  # function to be called to perform an action
+              'validate_callback': self.basic_values_action_validate_callback,  # function to call to validate an action is possible.
+              'do_action_callback': self.basic_values_do_action_callback  # function to be called to perform an action
             }
          ]
 
-    def basic_values_action_validate(self, rule, **kwargs):
+    def basic_values_action_validate_callback(self, rule, action, **kwargs):
         """
         A callback to check if a provided action is valid before being added as a possible action.
 
+        :param rule: The potential rule being added.
+        :param action: The action portion of the rule.
         :param kwargs: None
         :return:
         """
-        item = kwargs['item']
-        action = rule['action'][item]
+        print "################ in basic_values_action_validate %s - %s" % (rule, kwargs)
 
         if action['platform'] == 'call_function':
             if 'component_callback' in action:
@@ -69,7 +70,7 @@ class AutomationHelpers(YomboLibrary):
                     logger.warn("Rule '{rule_name}' is not callable by reference: 'component_callback': {callback}", rule_name=rule['name'], callback=action['component_callback'])
                     return False
                 else:
-                    rule['action'][item]['_my_callback'] = action['component_callback']
+                    action['_my_callback'] = action['component_callback']
             else:
                 if all(required in action for required in ['component_type', 'component_name', 'component_function']):
                     if action['component_type'] == 'library':
@@ -81,7 +82,7 @@ class AutomationHelpers(YomboLibrary):
                                 logger.warn("Rule '{rule_name}' is not callable by name: 'component_type, component_name, component_function'", rule_name=rule['name'])
                                 return False
                             else:
-                                rule['action'][item]['_my_callback'] = method
+                                action['_my_callback'] = method
                     elif action['component_type'] == 'module':
                         if action['component_name'] not in self._Modules:
                             return False
@@ -91,7 +92,7 @@ class AutomationHelpers(YomboLibrary):
                                 logger.warn("Rule '{rule_name}' is not callable by name: 'component_type, component_name, component_function'", rule_name=rule['name'])
                                 return False
                             else:
-                                rule['action'][item]['_my_callback'] = method
+                                action['_my_callback'] = method
                     else:
                         logger.warn("Rule() '{rule_name}' doesn't have a valid component_type: ", rule_name=rule['name'])
                         return False
@@ -105,15 +106,15 @@ class AutomationHelpers(YomboLibrary):
 #        logger.warn("saving rule: {rule}", rule=rule)
         return True
 
-    def basic_values_action_do(self, rule, **kwargs):
+    def basic_values_do_action_callback(self, rule, action, **kwargs):
         """
         A callback to perform an action.
 
+        :param rule: The complete rule being fired.
+        :param action: The action portion of the rule.
         :param kwargs: None
         :return:
         """
-        item = kwargs['item']
-        action = rule['action'][item]
         method = action['_my_callback']
 
         if callable(method):

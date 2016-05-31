@@ -2,6 +2,12 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Voice Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Voice_Commands>`_
+
 The term "Voice commands" may be misleading.  Think of voice commands as
 noun/verb or verb/noun pairs to control devices.  The verb is the "what",
 such as which :class:`~yombo.lib.devices` or module function to send a

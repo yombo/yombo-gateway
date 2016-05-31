@@ -2,8 +2,13 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://yombo.net
 """
-Cron like library that can be used to perform activites.  Can be used by
-modules to call a function at set times.
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Cron Tab @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Cron_Tab>`_
+
+Cron like library that can be used to perform activites. Can be used by modules to call a function at set times.
 
 Idea and partial code from: http://stackoverflow.com/questions/373335/suggestions-for-a-cron-like-scheduler-in-python
 

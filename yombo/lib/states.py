@@ -1,5 +1,9 @@
 """
-For more information see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
 
 The states library is used to collect and provide information about various states that the automation system
 can be in or exist around it. For example, it can tell if it's light outside, dawn, dusk, or if it's connected
@@ -58,6 +62,7 @@ from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound
 from yombo.core.log import getLogger
 from yombo.utils.sqldict import SQLDict
 from yombo.core.library import YomboLibrary
+
 logger = getLogger("library.YomboStates")
 
 class States(YomboLibrary, object):
@@ -372,10 +377,13 @@ class States(YomboLibrary, object):
             YomboStateNotFound("Invalid state write password supplied.")
         return None
 
-    ### The remaining functions are not needed by module developers. They are are for processing automation rules. ###
+    # The remaining functions implement automation hooks. These should not be called by anything other than the
+    # automation library!
 
     def check_trigger(self, key, value):
         """
+        Not actually called by automation library, but it's used to send triggers to it.
+
         Called when a an State value is changed. Checks if a trigger should be fired. Uses the automation helper
         function for the heavy lifting.
         """
@@ -386,7 +394,7 @@ class States(YomboLibrary, object):
         else:
             logger.debug("trigger didn't match any trigger filters")
 
-    def States_automation_source_list(self, **kwargs):
+    def States_automation_trigger_list(self, **kwargs):
         """
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
@@ -396,8 +404,8 @@ class States(YomboLibrary, object):
         return [
             { 'platform': 'states',
               'add_trigger_callback': self.states_add_trigger_callback,  # function to call to add a trigger
-              'validate_callback': self.states_validate_callback,  # function to call to validate a trigger
-              'get_value_callback': self.states_get_value_callback,  # get a value
+              'validate_callback': self.states_trigger_validate_callback,  # function to call to validate a trigger
+              'get_value_callback': self.states_trigger_get_value_callback,  # get a value
             }
          ]
 
@@ -411,24 +419,75 @@ class States(YomboLibrary, object):
         """
         self.automation.track_trigger_basic_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
 
-    def states_validate_callback(self, rule, **kwargs):
+    def states_trigger_validate_callback(self, rule, trigger, **kwargs):
         """
         A callback to check if a provided source is valid before being added as a possible source.
 
         :param kwargs: None
         :return:
         """
-        if all( required in rule['trigger']['source'] for required in ['platform', 'name']):
+        if all( required in trigger['source'] for required in ['platform', 'name']):
             return True
         return False
 
-    def states_get_value_callback(self, rule, key_name, **kwargs):
+    def states_trigger_get_value_callback(self, rule, source, **kwargs):
         """
         A callback to the value for platform "states". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
-        :param key_name: The atom key we'll get get the value.
+        :param source: Dictionary containg everything that's in the 'source' section for trigger or condition
+        :return:
+        """
+        key_name = source['name']
+        if 'password' in source:
+            return self.get(key_name, source['password'])
+        else:
+            return self.get(key_name)
+
+    def States_automation_action_list(self, **kwargs):
+        """
+        hook_automation_action_list called by the automation library to list possible actions this module can
+        perform.
+
+        This implementation allows autoamtion rules set easily set Atom values.
+
         :param kwargs: None
         :return:
         """
-        return self.get(key_name)
+        return [
+            { 'platform': 'states',
+              'validate_callback': self.states_action_validate_callback,  # function to call to validate an action is possible.
+              'do_action_callback': self.states_do_action_callback  # function to be called to perform an action
+            }
+         ]
+
+    def states_action_validate_callback(self, rule, action, **kwargs):
+        """
+        A callback to check if a provided action is valid before being added as a possible action.
+
+        :param rule: The potential rule being added.
+        :param action: The action portion of the rule.
+        :param kwargs: None
+        :return:
+        """
+        print "################ in states_action_validate_callback"
+        if key not in action:
+            return False
+        if value not in action:
+            return False
+        return True
+
+    def states_do_action_callback(self, rule, action, **kwargs):
+        """
+        A callback to perform an action.
+
+        :param rule: The complete rule being fired.
+        :param action: The action portion of the rule.
+        :param kwargs: None
+        :return:
+        """
+        key_name = source['name']
+        if 'password' in source:
+            return self.set(key_name, source['password'])
+        else:
+            return self.set(key_name)

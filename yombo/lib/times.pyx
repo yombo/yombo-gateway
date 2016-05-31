@@ -2,7 +2,11 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-For more information see: `Times @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Times>`_
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Times @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Times>`_
 
 Sets up various times and events for: dusk, dawn, sunrise, sunset. Also send event messages when a status change
 changes.  It also configures many State items such as times_light, times_dark, times_dawn, times_dusk

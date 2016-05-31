@@ -52,6 +52,10 @@ The majority of the time, the default settings will work fine. However, the
 gateway exposes many settings that allows various options to be tweaked. Some
 caution is needed: *you can break things!*
 
+The yombo.ini file contains various configuration settings. For details about
+it's contents see the Yombo Wiki for
+`yombo.ini <https://projects.yombo.net/projects/gateway/wiki/Yomboini>`_
+
 .. rst-class:: floater
 
 .. warning::
@@ -59,9 +63,6 @@ caution is needed: *you can break things!*
   If you update the yombo.ini file while the **gateway is running**, any changes
   will be **lost**.
 
-The yombo.ini file contains various configuration settings. For details about
-it's contents see the Yombo Wiki for
-`yombo.ini <https://projects.yombo.net/projects/gateway/wiki/Yomboini>`_
 
 Only the basic configurations are stored in the yombo.ini file, the remaining
 configurations (devices, commands, etc) are stored in a local database file

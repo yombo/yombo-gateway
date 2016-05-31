@@ -2,7 +2,11 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-For more information see: `Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Commands>`_
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Commands>`_
 
 This library maintains al ist of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.

@@ -2,6 +2,12 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Modules @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Modules>`_
+
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
 Also calls module hooks as requested by other libraries and modules.
