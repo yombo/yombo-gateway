@@ -59,8 +59,8 @@ if os.path.isfile('twistd.pid') is True:
 if not os.path.exists('usr'):
     os.makedirs('usr')
 #sql data directory
-if not os.path.exists('usr/sql'):
-    os.makedirs('usr/sql')
+if not os.path.exists('usr/etc'):
+    os.makedirs('usr/etc')
 #downloaded modules directory
 if not os.path.exists('usr/opt'):
     os.makedirs('usr/opt')
@@ -546,7 +546,7 @@ def GPGKeyGenerate(**kwargs):
     input_data = gpg.gen_key_input(
         name_email=gwuuid + "@yombo.net",
         name_real="Yombo Gateway",
-        name_comment=gwuuid,
+        name_comment="gw_" + gwuuid,
         key_type='RSA',
         key_length=4096,
         expire_date='5y')
@@ -633,12 +633,13 @@ def GPGKeySelect(bundle):
         result = GPGKeyGenerate()
         if isinstance(result, dict) and len(result) == 2:
             return result
-        else:
-            print "\n\rError with key generation."
+#        else:
+#            print "\n\rError with key generation."
+
       try:
         pair = int(pair)
-      except ValueError:
-        print "\n\rInvalid keypair.  Try again."
+      except ValueError,e :
+#        print "\n\rInvalid keypair: %s" % e
         continue
       try:
         #seperated out incase there is an error

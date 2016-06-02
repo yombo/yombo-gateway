@@ -138,7 +138,8 @@ def upgrade(Registry, **kwargs):
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
      `id`     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `gwuuid`     TEXT NOT NULL,
+     `endpoint_type`     TEXT NOT NULL,
+     `endpoint_id`     TEXT NOT NULL,
      `key_id`     TEXT NOT NULL,
      `fingerprint`     TEXT NOT NULL,
      `length`     INTEGER NOT NULL,
@@ -146,7 +147,7 @@ def upgrade(Registry, **kwargs):
      `created`     INTEGER NOT NULL
      );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'gwuuid'))
+    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'endpoint_id'))
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
 
     # To be completed
@@ -177,13 +178,20 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('modules', 'machine_label'))
 
     # Tracks what versions of a module is installed, when it was installed, and last checked for new version.
-    table = """CREATE TABLE `modules_installed` (
-     `id`     TEXT NOT NULL, /* moduleUUID */
+    table = """CREATE TABLE `module_installed` (
+     `id`     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `module_id`     TEXT NOT NULL, /* module.id */
      `installed_version`     TEXT NOT NULL,
      `install_time`     INTEGER NOT NULL,
-     `last_check`     INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+     `last_check`     INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('module_installed', 'module_id'))
+
+    ## Create view for modules ##
+    view = """CREATE VIEW modules_view AS
+    SELECT modules.*, module_installed.installed_version, module_installed. install_time, module_installed.last_check
+    FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
+    yield Registry.DBPOOL.runQuery(view)
 
     # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
     table = """CREATE TABLE `sqldict` (

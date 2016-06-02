@@ -101,7 +101,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         self.channel.add_on_close_callback(close_connection)
 
         yield self.channel.basic_qos(prefetch_count=PREFETCH_COUNT)
-        logger.info("Setting AMQP connected to true.")
+        logger.debug("Setting AMQP connected to true.")
         self.connected = True
 
         register = {
@@ -444,7 +444,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 logger.debug("msg: {msg}", msg=msg)
                 if msg['Startup'] == 'Ok':
                     self.fullyConnected = True
-                    logger.info("Fully connected")
+                    logger.info("Fully connected to Yombo infrastructure....nice.")
                     self.connected()
                     self.AMQPYombo.connected()
                     self.AMQPProtocol.send()
@@ -625,7 +625,7 @@ class AMQPYombo(YomboLibrary):
         Called by pika_factory.incoming() after successfully completed negotiation. It's already been connected
         for a while, but now it's connected as far as the library is concerned.
         """
-        self._local_log("info", "AMQPYombo::connected")
+        self._local_log("debug", "AMQPYombo::connected")
         self._connected = True
         self._connecting = False
         self.timeout_reconnect_task = False

@@ -10,6 +10,7 @@ This is the main class the is responsible for getting everything started.
 # Import twisted libraries
 from twisted.internet import reactor
 from twisted.application.service import Service
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.lib.loader import getLoader, stopLoader, setupLoader
@@ -37,14 +38,15 @@ class GWService(Service):
         """
         Service.startService(self)
 
+    @inlineCallbacks
     def getLoader(self):
         """
         Get the loader class and then call it's load function. The
         loader's load function does all the actual work.
         """
         self.loader = getLoader()
-        self.loader.load()
-        self.loader.start()
+        yield self.loader.load()
+        yield self.loader.start()
 #        self.loader.connect()
         
     def stopService(self):

@@ -110,12 +110,23 @@ class Loader(YomboLibrary):
         This function is called when the gateway is to startup. In turn,
         this function will load all the components and modules of the gateway.
         """
+        logger.info("Importing libraries, this can take a few moments.")
         yield self.import_libraries() # import and init all libraries
-        logger.info("Calling load functions of libraries.")
+        logger.debug("Calling load functions of libraries.")
         for index, name in enumerate(HARD_LOAD):
              libraryName = name.lower()
              yield self.library_invoke(libraryName, "_load_")
-        yield self.start_libraries()
+
+        self._moduleLibrary = self.loadedLibraries['modules']
+        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
+        for index, name in enumerate(HARD_LOAD):
+             libraryName =  name.lower()
+             yield self.library_invoke(libraryName, "_start_")
+
+        if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
+          self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
+        else:
+          yield self._moduleLibrary.load_modules()
 
     def start(self):
         self._saveSQLDictLoop = LoopingCall(self._saveSQLDictDB)
@@ -163,7 +174,7 @@ class Loader(YomboLibrary):
         for index, name in enumerate(HARD_LOAD):
             component = name.lower()
             library = self.loadedLibraries[component]
-            self.logLoader('info', component, 'library', 'init', 'About to call _init_.')
+            self.logLoader('debug', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._States = self.loadedLibraries['states']
             library._Modules = self._moduleLibrary
@@ -189,23 +200,6 @@ class Loader(YomboLibrary):
             else:
                 logger.error("----==(Library doesn't have init function: {name})==-----", name=name)
 
-
-    def start_libraries(self):
-        """
-        Called the "load" function of libraries.
-        """
-        self._moduleLibrary = self.loadedLibraries['modules']
-
-        logger.debug("Calling start function of libraries.")
-        for index, name in enumerate(HARD_LOAD):
-             libraryName =  name.lower()
-             self.library_invoke(libraryName, "_start_")
-
-        if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
-          self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
-        else:
-          self._moduleLibrary.load_modules()
-
     @inlineCallbacks
     def library_invoke(self, requestedLibrary, hook, **kwargs):
         """
@@ -230,12 +224,12 @@ class Loader(YomboLibrary):
             method = getattr(library, hook)
             self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'About to call: %s' % hook)
             if callable(method):
-               if isCoreFunction:
-                   results = yield maybeDeferred(method)
-               else:
-                   results = yield maybeDeferred(method, **kwargs)
-               self.logLoader('debug',requestedLibrary, 'library', 'library_invoke', 'Finished with call: %s' % hook)
-               returnValue(results)
+                if isCoreFunction:
+                    results = yield maybeDeferred(method)
+                else:
+                    results = yield maybeDeferred(method, **kwargs)
+                self.logLoader('debug', requestedLibrary, 'library', 'library_invoke', 'Finished with call: %s' % hook)
+                returnValue(results)
 
 #                 try:
 #                     if isCoreFunction:

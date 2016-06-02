@@ -18,7 +18,7 @@ The command (singular) class represents one command.
 :license: LICENSE for details.
 """
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCommandError
@@ -52,7 +52,6 @@ class Commands(YomboLibrary):
         """
         return self._search(commandRequested)
 
-    @inlineCallbacks
     def _init_(self, loader):
         """
         Setups up the basic framework. Nothing is loaded in here until the
@@ -66,10 +65,8 @@ class Commands(YomboLibrary):
         self.__yombocommands = {}
         self.__yombocommandsByName = FuzzySearch(None, .92)
         self.__yombocommandsByVoice = FuzzySearch(None, .92)
-
         self.local_db = self._Libraries['localdb']
-        yield self.__loadCommands()
-        
+
     def _load_(self):
         """
         Loads all commands from DB to various arrays for quick lookup.
@@ -80,7 +77,9 @@ class Commands(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        pass
+        self.__loadCommands()
+        self.loadDefer = Deferred()
+        return self.loadDefer
 
     def _stop_(self):
         """
@@ -154,6 +153,8 @@ class Commands(YomboLibrary):
         for command in commands:
             self._addCommand(command)
         logger.debug("Done load_commands: {yombocommands}", yombocommands=self.__yombocommands)
+        self.loadDefer.callback(10)
+
 
     def _addCommand(self, record, testCommand = False):
         """

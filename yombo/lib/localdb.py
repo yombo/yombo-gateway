@@ -25,7 +25,7 @@ from yombo.ext.twistar.dbobject import DBObject
 
 # Import twisted libraries
 from twisted.enterprise import adbapi
-from twisted.internet.defer import inlineCallbacks, returnValue, gatherResults, waitForDeferred
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
@@ -61,7 +61,6 @@ class Device(DBObject):
     TABLENAME='devices'
 #    pass
 
-
 class DeviceStatus(DBObject):
     TABLENAME='device_status'
     BELONGSTO = ['devices']
@@ -86,11 +85,17 @@ class ModuleDeviceTypes(DBObject):
 
 
 class Modules(DBObject):
+    HASONE = [{'name':'module_installed', 'class_name':'ModuleInstalled', 'foreign_key':'module_id'}]
     TABLENAME='modules'
 
 
-class ModulesInstalled(DBObject):
-    TABLENAME='modulesInstalled'
+class ModulesView(DBObject):
+    TABLENAME='modules_view'
+
+
+class ModuleInstalled(DBObject):
+    TABLENAME='module_installed'
+    BELONGSTO = ['modules']
 
 
 class Schema_Version(DBObject):
@@ -119,7 +124,7 @@ class ModuleRoutingView(DBObject):
 #Registry.register(Config)
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
 Registry.register(Device, DeviceStatus, Variable, DeviceType, Command)
-
+Registry.register(Modules, ModuleInstalled)
 
 class LocalDB(YomboLibrary):
     """
@@ -138,7 +143,7 @@ class LocalDB(YomboLibrary):
         self.loader = loader
         self.db_model = {}  #store generated database model here.
         # Connect to the DB
-        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/sql/yombo.db", check_same_thread = False)
+        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread = False)
         self.dbconfig = Registry.getConfig()
 
         self.schema_version = 0
@@ -160,6 +165,9 @@ class LocalDB(YomboLibrary):
 
     def _start_(self):
         pass
+
+    def get_model_class(self, class_name):
+        return globals()[class_name]()
 
     @inlineCallbacks
     def _load_db_model(self):
@@ -247,6 +255,9 @@ class LocalDB(YomboLibrary):
         records = yield self.dbconfig.select("devices_view")
         returnValue(records)
 
+    #################
+    ### GPG     #####
+    #################
     @inlineCallbacks
     def get_gpg_key(self, **kwargs):
         records = None
@@ -261,31 +272,30 @@ class LocalDB(YomboLibrary):
 
         variables = {}
         for record in records:
-            if record['gwuuid'] not in variables:
-                variables[record['gwuuid']] = {
-                    'gwuuid': record['gwuuid'],
+            if record['endpoint_id'] not in variables:
+                variables[record['endpoint_type'] + record['endpoint_id']] = {
+                    'endpoint_type': record['endpoint_type'],
+                    'endpoint_id': record['endpoint_id'],
                     'keys': {},
                 }
             key = {
-                'gwuuid': record['gwuuid'],
+                'endpoint_type': record['endpoint_type'],
+                'endpoint_id': record['endpoint_id'],
                 'key_id': record['key_id'],
                 'fingerprint': record['fingerprint'],
+                'length': record['length'],
+                'expires': record['expires'],
                 'created': record['created'],
             }
-            variables[record['gwuuid']]['keys'][record['fingerprint']] = key
+            variables[record['endpoint_type'] + record['endpoint_id']]['keys'][record['fingerprint']] = key
         returnValue(variables)
 
     @inlineCallbacks
     def insert_gpg_key(self, gwkey, **kwargs):
 #        print "adding: %s" % gwkey
-        args = {
-            'gwuuid': gwkey['gwuuid'],
-            'key_id': gwkey['key_id'],
-            'fingerprint': gwkey['fingerprint'],
-            'created': gwkey['created'],
-        }
         key = GpgKey()
-        key.gwuuid = gwkey['gwuuid']
+        key.endpoint_type = gwkey['endpoint_id']
+        key.endpoint_id = gwkey['endpoint_type']
         key.key_id = gwkey['key_id']
         key.fingerprint = gwkey['fingerprint']
         key.length = gwkey['length']
@@ -304,6 +314,15 @@ class LocalDB(YomboLibrary):
             records = yield Modules.find(where=['status = ?', 1])
         else:
             records = yield Modules.all()
+
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_modules_view(self, get_all=False):
+        if get_all is False:
+            records = yield ModulesView.find(where=['status = ?', 1])
+        else:
+            records = yield ModulesView.all()
 
         returnValue(records)
 
@@ -399,7 +418,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def insert_many(self, table, vals):
         """
-        Insert a list of records into a table.
+        Insert a list of records into a table
 
         :param table:
         :param vals:

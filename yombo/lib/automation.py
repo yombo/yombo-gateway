@@ -34,8 +34,6 @@ import yombo.utils
 
 logger = getLogger("library.automation")
 
-#for testing...
-#from pprint import pprint
 
 
 REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
@@ -85,7 +83,6 @@ class Automation(YomboLibrary):
         pass
 
     def _start_(self):
-        print "track - %s" % self.tracker
         pass
 
     def _stop_(self):
@@ -172,7 +169,7 @@ class Automation(YomboLibrary):
 
         for rule in self._rulesRaw['rules']:
             self.add_rule(rule)
-#        pprint(self.rules)
+        logger.debug("All active rules: {rules}", rules=self.rules)
 
     def add_rule(self, rule):
         """
@@ -516,7 +513,7 @@ class Rule:
             self.deviceVariables = vars
 
         def gotException(failure):
-           print "Exception : %r" % failure
+           logger.error("Received exception: {failure}", failure=failure)
            return 100  # squash exception, use 0 as value for next stage
 
         d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)

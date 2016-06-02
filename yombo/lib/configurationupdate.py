@@ -23,6 +23,7 @@ from time import time
 from twisted.internet import defer
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
 
 from yombo.ext.expiringdict import ExpiringDict
 
@@ -34,6 +35,7 @@ from yombo.core.log import getLogger
 from yombo.core import getComponent
 #from yombo.core.maxdict import MaxDict
 from yombo.core.exceptions import YomboWarning
+from yombo.utils import sleep
 
 logger = getLogger('library.configurationupdate')
 
@@ -170,6 +172,10 @@ class ConfigurationUpdate(YomboLibrary):
         self.loadDefer = defer.Deferred()
 #        self.loadDefer.addCallback(self.__loadFinish)
         self._LocalDBLibrary = self._Libraries['localdb']
+
+    def _load_(self):
+        """
+        """
         self._fullDownloadStartTime = time()
         self.get_all_configs()
         self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
@@ -178,11 +184,6 @@ class ConfigurationUpdate(YomboLibrary):
 
 #        self.cache = ExpiringDict(max_len=100, max_age_seconds=30)
         return self.loadDefer
-
-    def _load_(self):
-        """
-        """
-        pass
     
     # def __loadFinish(self, nextSteps):
     #     """
@@ -444,7 +445,7 @@ class ConfigurationUpdate(YomboLibrary):
     @inlineCallbacks
     def get_all_configs(self):
         # don't over do it on the the full config download. Might be a quick restart of gateway.
-        logger.info("About to do get_all_configs")
+        logger.debug("About to do get_all_configs")
         if self.__doingfullconfigs is True:
             returnValue(False)
         lastTime = getConfigValue("core", "lastFullConfigDownload", 1)
@@ -459,9 +460,7 @@ class ConfigurationUpdate(YomboLibrary):
         for key, item in self.configTypes.iteritems():
             if 'table' not in item:
                 continue
-#            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! DELETE START  %s !!!!!!!!!!!!!!!!!!!!!!!!!!!!111" % item['table']
             yield self._LocalDBLibrary.delete(item['table'])
-#            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! DELETE DONE %s !!!!!!!!!!!!!!!!!!!!!!!!!!!!111" %item['table']
 
         self.do_get_all_configs()
 
@@ -516,10 +515,11 @@ class ConfigurationUpdate(YomboLibrary):
             self.__pendingUpdates.remove(table)
         logger.debug("Configs pending: {pendingUpdates}", pendingUpdates=self.__pendingUpdates)
 
+        print "if len( %s ) == 0 and %s is True" % (len(self.__pendingUpdates), self.__doingfullconfigs)
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs is True:
             self.__doingfullconfigs = False
             self._getAllConfigsLoggerLoop.stop()
-            self.loadDefer.callback(10) # a made up number.
+            reactor.callLater(0.1, self.loadDefer.callback, 10) # give DB some breathing room
 
     def _show_pending_configs(self):
         waitingTime = time() - self._fullDownloadStartTime

@@ -2,9 +2,15 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-Downloads modules from Yombo servers to ensure the gateway has lastest version.
+Responsible for downloading and installing any modules as requested by the configuration.
 
-It compares the 'modules' table for columns prodVersion and devVersion table
+.. warning::
+
+   This library is not intended to be accessed by developers or users. These functions, variables,
+    and classes **should not** be accessed directly by modules. These are documented here for completeness.
+
+
+It compares the 'modules' table for columns prod_version and dev_version table
 against 'gitmodules' table.  If the version are the same, then nothing
 happens.  If versions are newer, it downloads newer versions.
 
@@ -26,20 +32,23 @@ Download Steps:
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2013 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 import os
 import shutil
 import time
 import zipfile
 from itertools import izip
 
+from pprint import pprint
+
+# Import twisted libraries
 from twisted.internet import defer
 from twisted.web.client import downloadPage
 
-from old.db import get_dbconnection
+# Import Yombo libraries
 from yombo.core.helpers import getConfigValue
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
@@ -63,6 +72,7 @@ class DownloadModules(YomboLibrary):
     DL_PATH = "usr/opt/"
     MAX_KEY = 50
     MAX_VALUE = 50
+    MAX_DOWNLOAD_CONCURRENT = 2  # config: misc:downloadmodulesconcurrent
 
     def _init_(self, loader):
         """
@@ -70,10 +80,10 @@ class DownloadModules(YomboLibrary):
         semaphore for queing downloads.
         """
         self.loader = loader
-        self.dbpool = get_dbconnection()
+        self._LocalDBLibrary = self._Libraries['localdb']
 
         self._getVersion = []
-        self.maxDownload = getConfigValue("misc", 'downloadmodulesconcurrent', 2)
+        self.maxDownload = getConfigValue("misc", 'downloadmodulesconcurrent', self.MAX_DOWNLOAD_CONCURRENT)
         self.allDownloads = []   # to start deferreds
         self.mysemaphore = defer.DeferredSemaphore(2)  #used to queue deferreds
 
@@ -95,7 +105,7 @@ class DownloadModules(YomboLibrary):
             else:
                 self.cloudfront = "http://cloudfront.yombo.net/"
             
-        return self.checkModules()
+        return self.download_modules()
 
     def _start_(self):
         """
@@ -115,103 +125,85 @@ class DownloadModules(YomboLibrary):
         """
         pass
 
-    def checkModules(self):
+    @defer.inlineCallbacks
+    def download_modules(self):
         """
         Check if the currently installed module is the latest version available.
         If it's not, then add to queue for downloading.  After the queue is
         loaded call start the semaphore and get it going to download modules.
         """
-        m = self.dbpool.cursor()
-        gm = self.dbpool.cursor()
-        m.execute("SELECT moduleuuid, machinelabel, installbranch, prodversion, devversion FROM modules WHERE status = 1")
-        row = m.fetchone()
-        if row == None:
-            return None
-        field_names = [n[0].lower() for n in m.description]
+        modules = yield self._LocalDBLibrary.get_modules_view()
+        if len(modules) == 0:
+            defer.returnValue(None)
+
         deferredList = []
-        while row is not None:
-            record = (dict(izip(field_names, row)))
-            modulelabel = record['machinelabel']
-            modulelabel = modulelabel.lower()
-            moduleuuid = record['moduleuuid']
-            gmrow = ''
-            if ( ( ( record['prodversion'] != '' and record['prodversion'] != None and record['prodversion'] != "*INVALID*") or
-              ( record['devversion'] != '' and record['devversion'] != None and record['devversion'] != "*INVALID*") ) and
-#              record['installbranch'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
-              record['installbranch'] != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
+        for module in modules:
+            modulelabel = module.machine_label.lower()
+            moduleuuid = module.id
+            #pprint(module)
+
+            if ( ( ( module.prod_version != '' and module.prod_version != None and module.prod_version != "*INVALID*") or
+              ( module.dev_version != '' and module.dev_version != None and module.dev_version != "*INVALID*") ) and
+#              module.install_branch != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
+              module.install_branch != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
                 logger.warn("Module doesn't have freeze: yombo/modules/{modulelabel}/.freeze", modulelabel=modulelabel)
-                gm.execute("SELECT moduleuuid, installedversion, installtime FROM modulesinstalled WHERE moduleuuid = '%s'" % (moduleuuid))
-                gmrow = gm.fetchone()
-                gmfield_names = []
-                gmrecord = {}
-                if gmrow == None:
-                    gmrecord = {'moduleuuid' : moduleuuid, 'installedversion' : '', 'installtime' : 0}
-                else:
-                    gmfield_names = [gn[0].lower() for gn in gm.description]
-                    gmrecord = (dict(izip(gmfield_names, gmrow)))
-  
+
                 modulus = moduleuuid[0:1]
                 clouduri = self.cloudfront + "gateway/modules/%s/%s/" % (str(modulus), str(moduleuuid))
-                installVersion = ''
                 data = {}
 
-                if (record['installbranch'] == 'prodbranch' and gmrecord['installedversion'] != record['prodversion']):
-                    installVersion = record['prodversion']
-                    data = {'zipuri'    : str(clouduri + record['prodversion'] + ".zip"),
-                            'zipfile'   : self.DL_PATH + record['prodversion'] + ".zip",
-                            'type'      : "prodversion",
-                            'module'    : record,
-                            'installedmodule' : gmrecord,
-                            'version'   : record['prodversion'],
+                if (module.install_branch == 'prodbranch' and module.installed_version != module.prod_version) or module.dev_version != "":
+                    data = {'download_uri'    : str(clouduri + module.prod_version + ".zip"),
+                            'zip_file'   : self.DL_PATH + modulelabel + "_" + module.prod_version + ".zip",
+                            'type'      : "prod_version",
+                            'install_version': module.prod_version,
+                            'module'    : module,
                             }
-                elif (record['installbranch'] == 'devbranch' and gmrecord['installedversion'] != record['devversion']):
-                    installVersion = record['prodversion']
-                    data = {'zipuri'    : str(clouduri + record['devversion'] + ".zip"),
-                            'zipfile'   : self.DL_PATH + record['devversion'] + ".zip",
-                            'type'      : "devversion",
-                            'module'    : record,
-                            'installedmodule' : gmrecord,
-                            'version'   : record['devversion'],
+                elif module.install_branch == 'devbranch' and module.dev_version != "" and module.installed_version != module.dev_version:
+                    data = {'download_uri': str(clouduri + module.dev_version + ".zip"),
+                            'zip_file': self.DL_PATH + modulelabel + "_" + module.dev_version + ".zip",
+                            'type': "dev_version",
+                            'install_version': module.dev_version,
+                            'module': module,
                             }
                 else:
                     logger.debug("Either no correct version to install, or version already installed..")
-                    row = m.fetchone()
                     continue
- 
-                logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zipuri'])
+
+                logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zip_uri'])
                
-                d = self.mysemaphore.run(downloadPage, data['zipuri'], data['zipfile'])
+#                d = self.mysemaphore.run(downloadPage, data['zip_uri'], data['zip_file'])
+                d = self.mysemaphore.run(self.download_file, data['download_uri'], data['zip_file'])
                 self.allDownloads.append(d)
-                d.addErrback(self.downloadFileFailed, data)
-                d.addCallback(self.unzipVersion, data)
-                d.addErrback(self.unzipVersionFailed, data)
-                d.addCallback(self.updateDatabase, data)
-                d.addErrback(self.updateDatabaseFailed, data)
+                d.addErrback(self.download_file_failed, data)
+                d.addCallback(self.unzip_file, data)
+                d.addErrback(self.unzip_file_failed, data)
+                d.addCallback(self.update_database, data)
+                d.addErrback(self.update_database_failed, data)
 
-            row = m.fetchone()
+                d = yield maybeDeferred(library._init_, self)
 
-        finalD = defer.DeferredList(self.allDownloads)
-        finalD.addCallback(self.downloadCleanup)
-        return finalD
+        finalD = yield defer.DeferredList(self.allDownloads)
+        defer.returnValue(finalD)
     
     def downloadCleanup(self, something):
         """
         When the downloads are completed, come here for any house cleaning.
         """
-        self.dbpool.commit()
+        logger.info("Done with downloads!")
 
-    def downloadFile(self, version, data):
+    def download_file(self, download_uri, zip_file):
         """
         Helper function to download the module as a zip file.
         """
         logger.debug("!! Downlod version:::  {data}", data=data)
-        zipuri =  data['zipuri']
-        zipfile =  data['zipfile']
-        logger.debug("getting uri: {uri}  saving to:{zilfile}", zipuri=zipuri, zipfile=zipfile)
-        d = downloadPage(data['zipuri'], data['zipfile'])
+        zip_uri =  data['zip_uri']
+        zip_file =  data['zip_file']
+        logger.debug("getting uri: {uri}  saving to:{zip_file}", zip_uri=zip_uri, zip_file=zip_file)
+        d = downloadPage(data['zip_uri'], data['zip_file'])
         return d
 
-    def downloadFileFailed(self, data, data2):
+    def download_file_failed(self, data, data2):
         """
         Helper function for cleanup is called when the download failed.  Won't
         continue processing the zip file.
@@ -219,7 +211,7 @@ class DownloadModules(YomboLibrary):
         logger.warn("Couldn't download the file...")
         return defer.fail()
 
-    def unzipVersion(self, tossaway, data):
+    def unzip_file(self, tossaway, data):
         """
         Helper function to unzip the module and place the module in the
         final location.
@@ -232,7 +224,7 @@ class DownloadModules(YomboLibrary):
         moduleLabel = data['module']['modulelabel']
         moduleLabel = moduleLabel.lower()
         logger.debug("Modulelabel = {moduleLabel}", moduleLabel=moduleLabel)
-        zipFile = data['zipfile']
+        zip_file = data['zip_file']
         modDir = 'yombo/modules/' + moduleLabel
 
         if not os.path.exists(modDir):
@@ -243,12 +235,12 @@ class DownloadModules(YomboLibrary):
                     os.unlink(os.path.join(root, f))
                 for d in dirs:
                     shutil.rmtree(os.path.join(root, d))
-        z = zipfile.ZipFile(zipFile)
+        z = zip_file.ZipFile(zip_file)
         z.extractall(modDir)
         listing = os.listdir(modDir)
         return "1"
 
-    def unzipVersionFailed(self, data, data2):
+    def unzip_file_failed(self, data, data2):
         """
         Helper function for cleanup when the zip process fails
         or unable to move the module to it's final destination.
@@ -257,22 +249,34 @@ class DownloadModules(YomboLibrary):
         if data != None:
           return defer.fail()
 
-    def updateDatabase(self, data, data2):
-        moduleUUID = data2['module']['moduleuuid']
+    def update_database(self, tossaway, data):
+        """
+
+        :param tossaway: Blank, nothing to see here.
+        :type data: None
+        :param data: Contains the module information, passed on.
+        :type data: dict
+        :return:
+        """
+        module = data['module']
+        moduleUUID = module.id
 
         c = self.dbpool.cursor()
-        if (data2['installedmodule']['installtime'] > 0):
-            logger.debug("About to UPDATE to modulesinstalled!")
-            c.execute("""
-                update modulesinstalled set installedversion=?, installtime=? where moduleUUID=?;""", (data2['version'], int(time.time()), moduleUUID) )
+        ModuleInstalled = self._LocalDBLibrary.get_model_class("ModuleInstalled")
+
+        if module.instal_ltime is None:
+            module_installed = ModuleInstalled(module_id=moduleUUID,
+                                                                    installed_version=data['install_version'],
+                                                                    install_time=time.time())
+            module_installed.save()
         else:
-            logger.debug("About to replace into to modulesinstalled!")
-            c.execute("""
-                replace into modulesinstalled (moduleuuid, installedversion, installtime)
-                values  (?, ?, ?);""", (moduleUUID, data2['version'], int(time.time()) ) )
+            module_installed = ModuleInstalled.find(['module_id = ?', moduleUUID, "Smith"])
+            module_installed.installed_version = data['install_version']
+            module_installed.install_time = time.time()
+            module_installed.save()
         return "1"
 
-    def updateDatabaseFailed(self, data, data2):
+    def update_database_failed(self, data, data2):
         """
         Helper function for cleanup is called when unable to update the database.
         """

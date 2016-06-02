@@ -60,7 +60,6 @@ from time import time
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
 
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError
 from yombo.utils.fuzzysearch import FuzzySearch
@@ -144,20 +143,20 @@ class Devices(YomboLibrary):
         self._saveStatusLoop = None
 
     def _load_(self):
-        """
-        Get pointer to voice commands, get db connection.
-        """
-        self.__load_devices()
-        self.loadDefer = Deferred()
-        return self.loadDefer
+        pass
 
     def _start_(self):
         """
         Load devices, and load some of the device history. Setup looping
         call to periodically save any updated device status.
         """
+        self.__load_devices()
+        self.loadDefer = Deferred()
+
         self._saveStatusLoop = LoopingCall(self._save_status)
         self._saveStatusLoop.start(120, False)
+
+        return self.loadDefer
 
     def _stop_(self):
         """

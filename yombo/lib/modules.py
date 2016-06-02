@@ -96,7 +96,6 @@ class Modules(YomboLibrary):
         """
         Starts the library and calls self.LoadData()
         """
-#        self._ModulesLibrary = self.loader.loadedComponents['yombo.gateway.lib.modules']
         self.load_module_data()
 
     def _stop_(self):
@@ -139,7 +138,9 @@ class Modules(YomboLibrary):
         logger.debug("starting modules::init....")
         # Init
         yield self.loader.library_invoke_all("_module_init_")
+        logger.warn("1111111111111111111111111111111111111111111111111111111111111 AAA")
         yield self.module_init_invoke()  # Call "_init_" of modules
+        logger.warn("1111111111111111111111111111111111111111111111111111111111111 BBB")
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
@@ -275,7 +276,7 @@ class Modules(YomboLibrary):
 
                 module._Atoms = self.loader.loadedLibraries['atoms']
                 module._States = self.loader.loadedLibraries['states']
-                module._Modules = self._moduleDevicesByName
+                module._Modules = self
                 module._Libraries = self.loader.loadedLibraries
 
                 module._Commands = self.loader.loadedLibraries['commands']
@@ -293,10 +294,12 @@ class Modules(YomboLibrary):
                     del self._localModuleVars[module._Name]
 #                module._init_()
 #                continue
+                d = yield maybeDeferred(module._init_)
+                continue
                 try:
-                    d = maybeDeferred(module._init_)
+                    d = yield maybeDeferred(module._init_)
 #                    d.errback(self.SomeError)
-                    yield d
+#                    yield d
                 except YomboCritical, e:
                     logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
                     logger.error("--------------------------------------------------------")
@@ -322,8 +325,8 @@ class Modules(YomboLibrary):
                 #               limit=5, file=sys.stdout)))
                 #     logger.error("--------------------------------------------------------")
 
-    def SomeError(self, duuu):
-        print "ERRRRRROOOOORRRR: %s" % duuu
+    def SomeError(self, error):
+        logger.error("Received an error: {error}", error=error)
 
     def module_invoke(self, requestedModule, hook, **kwargs):
         """
@@ -335,7 +338,6 @@ class Modules(YomboLibrary):
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = module._Name + "_" + hook
 #        self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
-#        kwargs['_modulesLibrary'] = self
         if hasattr(module, hook):
             method = getattr(module, hook)
             if callable(method):
@@ -488,9 +490,9 @@ class Modules(YomboLibrary):
                 logger.debug("Looking for {requestedItem}, found: {modules}", requestedItem=requestedItem, modules=requestedUUID)
                 return self._modulesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-                print e
-                print self._modulesByUUID
-                logger.warn("get_module:: not found!!! requestedItem: {requestedItem}", requestedItem=requestedItem)
+#                print self._modulesByUUID
+                logger.warn("Cannot find module: {requestedItem}", requestedItem=requestedItem)
+                logger.info("Module search error message: {error}", error=e)
                 raise KeyError('Module not found.')
 
     def get_module_devices(self, requestedItem):
@@ -498,9 +500,9 @@ class Modules(YomboLibrary):
         Returns all devices for a given module uuid or module name, This is used by the module library to setup a
         list of devices on startup.
 
-            >>> devices = self._ModulesLibrary.get_module_devices('137ab129da9318')  #by uuid
+            >>> devices = self._Modules.get_module_devices('137ab129da9318')  #by uuid
         or:
-            >>> devices = self._ModulesLibrary.get_module_devices('Homevision')  #by name
+            >>> devices = self._Modules.get_module_devices('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -524,9 +526,9 @@ class Modules(YomboLibrary):
         Returns all device types for a given module uuid or module name, This is used by the module library to setup a
         list of device types on startup.
 
-            >>> deviceTypes = self._ModulesLibrary.get_module_device_types('137ab129da9318')  #by uuid
+            >>> deviceTypes = self._Modules.get_module_device_types('137ab129da9318')  #by uuid
         or:
-            >>> deviceTypes = self._ModulesLibrary.get_module_device_types('Homevision')  #by name
+            >>> deviceTypes = self._Modules.get_module_device_types('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -556,11 +558,11 @@ class Modules(YomboLibrary):
 
         This function allows you to get the ``moduleUUID``, ``moduleLabel`` or a pointer to the ``module`` itself.
 
-            >>> moduleUUID = self._ModulesLibrary.get_device_routing('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
+            >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
         or:
-            >>> deviceTypes = self._ModulesLibrary.get_device_routing('X10 Appliance', 'Command', 'moduleUUID')  #by name, get the moduleUUID
+            >>> deviceTypes = self._Modules.get_device_routing('X10 Appliance', 'Command', 'moduleUUID')  #by name, get the moduleUUID
         or:
-            >>> moduleUUID = self._ModulesLibrary.get_device_routing('137ab129da9318', 'Interface', 'moduleLabel')  #by uuid. get the moduleLabel
+            >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'moduleLabel')  #by uuid. get the moduleLabel
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -631,5 +633,5 @@ class Modules(YomboLibrary):
         :param msg: Optional message to include.
         :return:
         """
-        logit = func = getattr(logger, level)
+        logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
