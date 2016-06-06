@@ -51,22 +51,25 @@ To send a command to a device is simple.
 :license: LICENSE for details.
 """
 # Import python libraries
-import cPickle
 import copy
 from collections import deque, namedtuple
 from time import time
+
+# Import 3rd-party libs
+import yombo.ext.six as six
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError
+from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 from yombo.core.message import Message
 from yombo.utils import random_string
+
 
 logger = getLogger('library.devices')
 
@@ -133,13 +136,15 @@ class Devices(YomboLibrary):
         self.loader = loader
         self._MessageLibrary = self.loader.loadedLibraries['messages']
         self._ModulesLibrary = self.loader.loadedLibraries['modules']
-        self.voice_cmds = self.loader.loadedLibraries['voicecmds']
+        self._AutomationLibrary = self.loader.loadedLibraries['automation']
+        self._VoiceCommandsLibrary = self.loader.loadedLibraries['voicecmds']
+        self._LocalDBLibrary = self._Libraries['localdb']
 
-        self._devicesByUUID = {}
+        self._devicesByUUID = FuzzySearch({}, .99)
         self._devicesByName = FuzzySearch({}, .89)
         self._devicesByDeviceTypeByUUID = {}
         self._devicesByDeviceTypeByName = FuzzySearch({}, .94)
-        self._toSaveStatus = {}
+        self._status_updates_to_save = {}
         self._saveStatusLoop = None
 
     def _load_(self):
@@ -198,7 +203,7 @@ class Devices(YomboLibrary):
             for record in records:
                 logger.debug("Loading device: {record}", record=record)
                 try:
-                    self.voice_cmds.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
+                    self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
                 except:
                     pass
                 d = yield self._add_device(record)
@@ -236,15 +241,14 @@ class Devices(YomboLibrary):
         Function that does actual work. Saves items in the self._toStaveStatus
         queue to the SQLite database.
         """
-        if len(self._toSaveStatus) == 0:
+        if len(self._status_updates_to_save) == 0:
             return
 
         logger.info("Saving device status to disk.")
-        for key in self._toSaveStatus.keys():
-            ss = self._toSaveStatus[key]
-            ss.machine_status_extra = cPickle.dumps(ss.machine_status_extra)
-            self._ModulesLibrary['localdb'].set_device_status(**ss.__dict__)
-            del self._toSaveStatus[key]
+        for key in self._status_updates_to_save.keys():
+            ss = self._status_updates_to_save[key]
+            self._LocalDBLibrary.save_device_status(**ss.__dict__)
+            del self._status_updates_to_save[key]
 
     def _clear_(self):
         """
@@ -260,7 +264,7 @@ class Devices(YomboLibrary):
     def listDevices(self):
         return list(self._devicesByName.keys())
 
-    def get_device(self, deviceRequested):
+    def get_device(self, device_requested, limiter_override=.99):
         """
         Performs the actual device search.
 
@@ -272,39 +276,41 @@ class Devices(YomboLibrary):
         See: :func:`yombo.core.helpers.get_device` for full usage example.
 
         :raises YomboDeviceError: Raised when device cannot be found.
-        :param deviceRequested: The device UUID or device label to search for.
+        :param device_requested: The device UUID or device label to search for.
         :type deviceRequested: string
         :return: Pointer to array of all devices.
         :rtype: dict
         """
-        logger.debug("looking for: {device_id}", device_id=deviceRequested)
-        if deviceRequested in self._devicesByUUID:
-            return self._devicesByUUID[deviceRequested]
+        logger.debug("looking for: {device_id}", device_id=device_requested)
+        if device_requested in self._devicesByUUID:
+            logger.debug("found by device id! {device_id}", device_id=device_requested)
+            return self._devicesByUUID._search(self, device_requested, limiter_override)
         else:
             try:
-                requestedUUID = self._devicesByName[deviceRequested]
+                requestedUUID = self._devicesByName[device_requested]
+                logger.debug("found by device name! {device_id}", device_id=device_requested)
                 return self._devicesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
                 raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
 
-    def get_devices_by_device_type(self, deviceTypeRequested):
+    def get_devices_by_device_type(self, device_type_requested):
         """
         Returns list of devices by deviceType. Will search by DeviceType UUID or MachineLabel.
 
         :raises YomboDeviceError: Raised when function encounters an error.
-        :param deviceTypeRequested: The device UUID or device label to search for.
-        :type deviceRequested: string
+        :param device_type_requested: The device UUID or device label to search for.
+        :type device_type_requested: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
         logger.debug("## _devicesByDeviceTypeByUUID: {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID)
 #        logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
-        if deviceTypeRequested in self._devicesByDeviceTypeByUUID:
-            logger.debug("## {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID[deviceTypeRequested])
-            return self._devicesByDeviceTypeByUUID[deviceTypeRequested]
+        if device_type_requested in self._devicesByDeviceTypeByUUID:
+            logger.debug("## {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID[device_type_requested])
+            return self._devicesByDeviceTypeByUUID[device_type_requested]
         else:
             try:
-                requestedUUID = self._devicesByDeviceTypeByName[deviceTypeRequested]
+                requestedUUID = self._devicesByDeviceTypeByName[device_type_requested]
 #                logger.debug("## _devicesByDeviceTypeByUUID: {requestedUUID}", requestedUUID=self._devicesByDeviceTypeByUUID)
 #                logger.debug("## _devicesByDeviceTypeByName: {requestedUUID}", requestedUUID=self._devicesByDeviceTypeByName)
 #                logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
@@ -313,6 +319,139 @@ class Devices(YomboLibrary):
             except YomboFuzzySearchError, e:
 #                logger.debug("e={e}", e=e)
                 return {}
+
+    # The remaining functions implement automation hooks. These should not be called by anything other than the
+    # automation library!
+
+    def check_trigger(self, key, value):
+        """
+        Called by the devices.set function when a new value is set. It asks the automation library if this key is
+        trigger, and if so, fire any rules.
+
+        True - Rules fired, fale - no rules fired.
+        """
+
+        results = self._AutomationLibrary.triggers_check('devices', key, value)
+
+    def Devices_automation_source_list(self, **kwargs):
+        """
+        hook_automation_source_list called by the automation library to get a list of possible sources.
+
+        :param kwargs: None
+        :return:
+        """
+        return [
+            { 'platform': 'devices',
+              'validate_source_callback': self.devices_validate_source_callback,  # function to call to validate a trigger
+              'add_trigger_callback': self.devices_add_trigger_callback,  # function to call to add a trigger
+              'get_value_callback': self.devices_get_value_callback,  # get a value
+            }
+         ]
+
+    def devices_validate_source_callback(self, rule, source, **kwargs):
+        """
+        A callback to check if a provided source is valid before being added as a possible source.
+
+        :param kwargs: None
+        :return:
+        """
+        if 'platform' not in source:
+            raise YomboWarning("'platform' must be in 'source' section.")
+
+        if 'device' in source:
+            try:
+#                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00011"
+                device = self.get_device(source['device'], .89)
+#                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00022"
+                source['device_pointer'] = device
+#                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
+                return source
+            except Exception, e:
+                raise YomboWarning("Error while searching for device, could not be found: %s" % source['device'],
+                                   101, 'devices_validate_source_callback', 'lib.devices')
+        else:
+            raise YomboWarning("For platform 'devices' as a 'source', must have 'device' and can be either device ID or device label.  Source:%s" % source,
+                               102, 'devices_validate_source_callback', 'lib.devices')
+
+    def devices_add_trigger_callback(self, rule, **kwargs):
+        """
+        Called to add a trigger.  We simply use the automation library for the heavy lifting.
+
+        :param rule: The potential rule being added.
+        :param kwargs: None
+        :return:
+        """
+        self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointer'].device_id)
+
+    def devices_get_value_callback(self, rule, source, **kwargs):
+        """
+        A callback to the value for platform "states". We simply just do a get based on key_name.
+
+        :param rule: The potential rule being added.
+        :param source: Dictionary containg everything that's in the 'source' section for trigger or condition
+        :return:
+        """
+
+        return source['device_pointer'].machine_status
+
+    def Devices_automation_action_list(self, **kwargs):
+        """
+        hook_automation_action_list called by the automation library to list possible actions this module can
+        perform.
+
+        This implementation allows autoamtion rules set easily set Atom values.
+
+        :param kwargs: None
+        :return:
+        """
+        return [
+            { 'platform': 'devices',
+              'validate_action_callback': self.devices_validate_action_callback,  # function to call to validate an action is possible.
+              'do_action_callback': self.devices_do_action_callback  # function to be called to perform an action
+            }
+         ]
+
+    def devices_validate_action_callback(self, rule, action, **kwargs):
+        """
+        A callback to check if a provided action is valid before being added as a possible action.
+
+        :param rule: The potential rule being added.
+        :param action: The action portion of the rule.
+        :param kwargs: None
+        :return:
+        """
+#        print "devices - kwargs: %s" % action
+        if 'command' not in action:
+            raise YomboWarning("For platform 'devices' as an 'action', must have 'comand' and can be either command uuid or command label.",
+                               103, 'devices_validate_action_callback', 'lib.devices')
+
+        if 'device' in action:
+            try:
+                device = self.get_device(action['device'])
+                action['device_pointer'] = device
+                return action
+            except:
+                raise YomboWarning("Error while searching for device, could not be found: %s" % action['device'],
+                               104, 'devices_validate_action_callback', 'lib.devices')
+        else:
+            raise YomboWarning("For platform 'devices' as an 'action', must have 'device' and can be either device ID or device label.",
+                               105, 'devices_validate_action_callback', 'lib.devices')
+
+    def devices_do_action_callback(self, rule, action, **kwargs):
+        """
+        A callback to perform an action.
+
+        :param rule: The complete rule being fired.
+        :param action: The action portion of the rule.
+        :param kwargs: None
+        :return:
+        """
+        device = action['device_pointer']
+#        print "the_message = device.get_message(self, cmd=%s)" % action['command']
+        the_message = device.get_message(self, cmd=action['command'])
+#        print "the_message: %s" % the_message
+        the_message.send()
+
 
 class Device:
     """
@@ -347,7 +486,7 @@ class Device:
         :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
         :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
         :ivar lastCmd: *(dict)* - A dictionary of up to the last 30 command messages.
-        :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
+        :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
         :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
             values entered by the user.
         :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
@@ -364,7 +503,7 @@ class Device:
         self.label = device["label"]
         self.deviceClass = device["device_class"]
         self.description = device["description"]
-        self.enabled = int(device["status"])
+        self.enabled = int(device["status"])  # status from database means enabled or not.
         self.pin_required = int(device["pin_required"])
         self.pin_code = device["pin_code"]
         self.pin_timeout = int(device["pin_timeout"])
@@ -373,11 +512,12 @@ class Device:
         self.created = int(device["created"])
         self.updated = int(device["updated"])
         self.lastCmd = deque({}, 30)
-        self.status = deque({}, 30)
+        self.status_history = deque({}, 30)
         self._allDevices = allDevices
         self.testDevice = testDevice
         self.availableCommands = []
         self.deviceVariables = {'asdf':'qwer'}
+        self._CommandsLibrary = self._allDevices._Libraries['commands']
 
     def _init_(self):
         """
@@ -385,7 +525,8 @@ class Device:
         :return:
         """
         def set_commands(commands):
-            self.availableCommands = commands
+            for command in commands:
+                self.availableCommands.append(str(command.command_id))
 
         def set_variables(vars):
             self.deviceVariables = vars
@@ -418,19 +559,19 @@ class Device:
         """
         Export device variables as a dictionary.
         """
-        return {'device_id'     : str(self.device_id),
-                'device_type_id' : str(self.device_type_id),
-                'label'          : str(self.label),
-                'description'    : str(self.description),
-                'enabled'        : int(self.enabled),
-                'pin_code'        : "********",
-                'pin_required'    : int(self.pin_required),
-                'pin_timeout'     : int(self.pin_timeout),
-                'voice_cmd'       : str(self.voice_cmd),
-                'voice_cmd_order'  : str(self.voice_cmd_order),
-                'created'        : int(self.created),
-                'updated'        : int(self.updated),
-                'status'         : copy.copy(self.status),
+        return {'device_id': str(self.device_id),
+                'device_type_id': str(self.device_type_id),
+                'label': str(self.label),
+                'description': str(self.description),
+                'enabled': int(self.enabled),
+                'pin_code': "********",
+                'pin_required':  int(self.pin_required),
+                'pin_timeout': int(self.pin_timeout),
+                'voice_cmd': str(self.voice_cmd),
+                'voice_cmd_order': str(self.voice_cmd_order),
+                'created': int(self.created),
+                'updated': int(self.updated),
+                'status_history': copy.copy(self.status_history),
                }
 
     def get_message(self, sourceComponent, **kwargs):
@@ -486,19 +627,21 @@ class Device:
         if 'cmd' not in kwargs:
             raise YomboDeviceError("Missing 'cmd' must be a valid command instance , 'cmd', or 'cmdUUID'; what to do?", errorno=103)
 
+#        print "cmd is of type: %s" % type(kwargs['cmd'])
         if type(kwargs['cmd']) == 'instance':
             if kwargs['cmd'].__class__ != 'yombo.lib.commands.Command':
                 raise YomboDeviceError("Object passed to get_message is not a command object.", errorno=103)
             cmdobj = kwargs['cmd']
-        elif type(kwargs['cmd']) == 'str':
+        elif isinstance(kwargs['cmd'], six.string_types):
             try:
-                self._allDevices._Libraries('commands').getCommand(kwargs['cmdUUID'])
-            except:
-                raise YomboDeviceError("Cannot find command from string: %s" % kwargs['cmd'], errorno=103)
+                cmdobj = self._CommandsLibrary.get_command(kwargs['cmd'])
+            except Exception, e:
+                raise YomboDeviceError("Cannot find command from string: %s" % kwargs['cmd'], errorno=103, )
         else:
             raise YomboDeviceError("'cmd' must be a string or instance of a command.", errorno=103)
 
-        if self.validate_command(cmdobj.cmdUUID) is not True:
+#        if self.validate_command(cmdobj) is not True:
+        if str(cmdobj.cmdUUID) not in self.availableCommands:
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         payloadValues = {}
@@ -512,19 +655,26 @@ class Device:
 
         payload.update(payloadValues)
 
-        route = self._allDevices._ModulesLibrary.getDeviceRouting(self.device_type_id, 'Command')
+        route = self._allDevices._ModulesLibrary.get_device_routing(self.device_type_id, 'Command', 'moduleLabel')
 
+        print "route : %s" % route
         msg = {
                'msgOrigin'      : sourceComponent._FullName.lower(),
-               'msgDestination' : "yombo.gateway.modules.%s" % route['moduleLabel'],
+               'msgDestination' : "yombo.gateway.modules.%s" % route,
                'msgType'        : "cmd",
                'msgStatus'      : "new",
                'uuidType'       : "1",
                'uuidSubType'    : "123",
                'payload'        : payload,
-               'notBefore'      : kwargs.get('notBefore', 0),
-               'maxDelay'       : kwargs.get('maxDelay', 0),
                }
+
+        if 'notBefore' in kwargs:
+            msg['notBefore'] = kwargs['notBefore']
+        if  'maxDelay' in kwargs:
+            msg['maxDelay'] = kwargs['maxDelay'],
+        if  'delay' in kwargs:
+            msg['delay'] = kwargs['delay'],
+
         message = Message(**msg)
 
 #TODO: Move to lib/device.py to listen for cmd packets.
@@ -544,8 +694,10 @@ class Device:
             - If payload was set, but not a dictionary. Errorno: 122
         :param kwargs: key/value dictionary with the following keys-
 
-            - status *(int or string)* - The new status.
-            - statusExtra *(dict)* - Extra status as a dictionary.
+            - device_state *(float)* - Soemthing that can be used to graph. on = 1, off =0. Lamp at 50% = 0.5
+            - human_status *(int or string)* - The new status.
+            - machine_status *(int or string)* - The new status.
+            - machine_status_extra *(dict)* - Extra status as a dictionary.
             - source *(string)* - The source module or library name creating the status.
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
@@ -564,22 +716,21 @@ class Device:
             raise YomboDeviceError("set_status was called without a real machine_status!", errorno=120)
 
         device_state = kwargs.get('device_state', 0)
+        human_status = kwargs.get('human_status', machine_status)
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', '')
-        human_status = kwargs.get('human_status', machine_status)
         source = kwargs.get('source', 'unknown')
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
 
-        logger.debug("_set_status is saving status...")
-
-        newStatus = self.Status(self.device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
-        self.status.appendleft(newStatus)
+        new_status = self.Status(self.device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
+        self.status_history.appendleft(new_status)
         if self.testDevice is False:
-            self._allDevices._toSaveStatus[random_string(length=12)] = newStatus
-            if len(self._allDevices._toSaveStatus) > 60:
+            self._allDevices._status_updates_to_save[random_string(length=12)] = new_status
+            if len(self._allDevices._status_updates_to_save) > 120:
                 self._allDevices._save_status()
+        self._allDevices.check_trigger(self.device_id, new_status)
 
     def send_status(self, **kwargs):
         """
@@ -606,8 +757,8 @@ class Device:
             payloadAddon = {}
 
         payload = {"deviceobj" : self,
-                   "status" : self.status[0],
-                   "prevStatus" : self.status[1],
+                   "status" : self.status_history[0],
+                   "previous_status" : self.status_history[1],
                   }
         try:
             payload.update(payloadAddon)
@@ -653,11 +804,13 @@ class Device:
 
     def _do_load_history(self, records):
         if len(records) == 0:
-            self.status.append(self.Status(self.device_id, 0, 0, '', '', {}, '', 0, 0))
+            self.status_history.append(self.Status(self.device_id, 0, 0, '', '', {}, '', 0, 0))
         else:
             for record in records:
-                self.status.appendleft(self.Status(record['set_time'], record['human_status'], record['machine_status'], cPickle.loads(str(record['machine_status_extra'])), record['source'], record['uploaded'], record['uploadable']))
-        logger.debug("Device load history: {device_id} - {status}", device_id=self.device_id, status=self.status)
+                self.status_history.appendleft(self.Status(record['device_id'], record['set_time'], record['device_state'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['source'], record['uploaded'], record['uploadable']))
+#                              self.Status = namedtuple('Status',  "device_id,           set_time,           device_state,           human_status,           machine_status,                             machine_status_extra,             source,           uploaded,           uploadable")
+
+        logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
     def get_history(self, history=0):
         """
@@ -669,7 +822,8 @@ class Device:
         return {"status": self.status[history]}
 
     def validate_command(self, cmdUUID):
-        if cmdUUID in self.availableCommands:
+        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, cmdUUID, self.availableCommands)
+        if str(cmdUUID) in self.availableCommands:
             return True
         else:
             return False

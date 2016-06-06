@@ -50,7 +50,17 @@ class Commands(YomboLibrary):
         :param commandRequested: The command UUID or command label to search for.
         :type commandRequested: string
         """
-        return self._search(commandRequested)
+        return self.get_command(commandRequested)
+
+    def __len__(self):
+        return len(self.__yombocommands)
+
+    def __contains__(self, commandRequested):
+        try:
+            self.get_command(commandRequested)
+            return True
+        except:
+            return False
 
     def _init_(self, loader):
         """
@@ -115,7 +125,7 @@ class Commands(YomboLibrary):
         """
         return self.__yombocommandsByVoice
 
-    def _search(self, commandRequested):
+    def get_command(self, commandRequested):
         """
         Performs the actual command search.
 
@@ -123,8 +133,6 @@ class Commands(YomboLibrary):
 
            Modules shouldn't use this function. Use the built in reference to
            find commands: `self._Commands['8w3h4sa']`
-
-        See: :func:`yombo.core.helpers.getCommands` for full usage example.
 
         :raises YomboCommandError: Raised when device cannot be found.
         :param commandRequested: The device UUID or device label to search for.
@@ -154,7 +162,7 @@ class Commands(YomboLibrary):
             self._addCommand(command)
         logger.debug("Done load_commands: {yombocommands}", yombocommands=self.__yombocommands)
         self.loadDefer.callback(10)
-
+#        print self.__yombocommandsByName
 
     def _addCommand(self, record, testCommand = False):
         """
@@ -205,6 +213,7 @@ class Command:
         self.label = command.label
         self.description = command.description
         self.input_type_id = command.input_type_id
+        self.live_update = command.live_update
         self.public = command.public
         self.status = command.status
         self.created = command.created
@@ -229,6 +238,7 @@ class Command:
             'label'         : str(self.label),
             'description'   : str(self.description),
             'input_type_id' : int(self.input_type_id),
+            'live_update' : int(self.live_update),
             'public'        : int(self.public),
             'status'        : int(self.status),
             'created'       : int(self.created),

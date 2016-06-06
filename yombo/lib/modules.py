@@ -26,7 +26,7 @@ from time import time
 
 # Import twisted libraries
 #from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, DeferredList
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError, YomboWarning, YomboCritical
@@ -138,9 +138,7 @@ class Modules(YomboLibrary):
         logger.debug("starting modules::init....")
         # Init
         yield self.loader.library_invoke_all("_module_init_")
-        logger.warn("1111111111111111111111111111111111111111111111111111111111111 AAA")
         yield self.module_init_invoke()  # Call "_init_" of modules
-        logger.warn("1111111111111111111111111111111111111111111111111111111111111 BBB")
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
@@ -158,7 +156,9 @@ class Modules(YomboLibrary):
         # Start
         yield self.loader.library_invoke_all("_module_start_")
         yield self.module_invoke_all("_start_")
+
         yield self.loader.library_invoke_all("_module_started_")
+        yield self.module_invoke_all("_started_")
 
     def stop_modules(self, junk, callWhenDone):
         """
@@ -185,7 +185,6 @@ class Modules(YomboLibrary):
                 delete_component = module._FullName
                 self.del_module(moduleUUID, module._Name.lower())
                 del self.loader.loadedComponents[delete_component.lower()]
-
         callWhenDone()
 
     @inlineCallbacks
@@ -267,6 +266,7 @@ class Modules(YomboLibrary):
         Calls the _init_ functions of modules. Can't use basic hook for this due to complex items.
         """
         logger.debug("Calling init functions of modules. {modules}", modules=self._modulesByUUID)
+        module_init_deferred = []
         for module_id, module in self._modulesByUUID.iteritems():
             self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
             if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
@@ -294,7 +294,7 @@ class Modules(YomboLibrary):
                     del self._localModuleVars[module._Name]
 #                module._init_()
 #                continue
-                d = yield maybeDeferred(module._init_)
+                module_init_deferred.append(maybeDeferred(module._init_))
                 continue
                 try:
                     d = yield maybeDeferred(module._init_)
@@ -324,10 +324,14 @@ class Modules(YomboLibrary):
                 #     logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
                 #               limit=5, file=sys.stdout)))
                 #     logger.error("--------------------------------------------------------")
+#        logger.debug("!!!!!!!!!!!!!!!!!!!!!1 About to yield while waiting for module_init's to be done!")
+        yield DeferredList(module_init_deferred)
+#        logger.debug("!!!!!!!!!!!!!!!!!!!!!2 Done yielding for while waiting for module_init's to be done!")
 
     def SomeError(self, error):
         logger.error("Received an error: {error}", error=error)
 
+#    @inlineCallbacks
     def module_invoke(self, requestedModule, hook, **kwargs):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
@@ -549,10 +553,10 @@ class Modules(YomboLibrary):
                 logger.debug("No module found for a given device type {deviceType}", deviceType=requestedItem)
                 return {}
 
-    def get_device_routing(self, requestedItem, moduleType, returnType = 'moduleUUID'):
+    def get_device_routing(self, requested_item, moduleType, returnType = 'moduleUUID'):
         """
         Device routing is used by the gateway to route a device command to the correct module. For example, a
-        Z-Wave applicance module should be routed to the Z-Wave command module. From there, it needs to be routed
+        Z-Wave appliance module should be routed to the Z-Wave command module. From there, it needs to be routed
         to the Z-Wave interface module (the interface module is what bridges the command module to the outside world
         such as though a USB/Serial/Network interface).
 
@@ -565,8 +569,8 @@ class Modules(YomboLibrary):
             >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'moduleLabel')  #by uuid. get the moduleLabel
 
         :raises KeyError: Raised when module cannot be found.
-        :param requestedItem: The module UUID or module name to search for.
-        :type requestedItem: string
+        :param requested_item: The module UUID or module name to search for.
+        :type requested_item: string
         :param moduleType: The module type to return. One of: Command, Interface, Logic, Other
         :type moduleType: string
         :param returnType: What type of string to return. One of: moduleUUID, moduleLabel, module
@@ -578,14 +582,16 @@ class Modules(YomboLibrary):
 #        logger.debug("getModuleDeviceTypes::_moduleDeviceTypesByUUID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByUUID)
         temp = None
 #        print "looking for device routing..."
-        if requestedItem in self._moduleDeviceRouting:
-            temp = self._moduleDeviceRouting[requestedItem]
+        if requested_item in self._moduleDeviceRouting:
+            temp = self._moduleDeviceRouting[requested_item]
         else:
             try:
-                temp = self._moduleDeviceRoutingByName[requestedItem.lower()]
+                temp = self._moduleDeviceRoutingByName[requested_item.lower()]
             except YomboFuzzySearchError, e:
-                logger.info("No route for {requestedItem}", requestedItem=requestedItem)
-                return None
+                logger.info("No route for {requestedItem}", requestedItem=requested_item)
+                raise YomboWarning("No device route for: %s" % requested_item)
+
+#        print "temp = %s" % temp
 
         if moduleType == "Command":
             if 'Command' in temp:
@@ -611,6 +617,8 @@ class Modules(YomboLibrary):
         elif moduleType == "Other":
             if 'Other' in temp:
                 temp = temp['Other']
+
+#        print "temp2 = %s" % temp
 
         logger.debug("returnValue = {returnType}", returnType=returnType)
 

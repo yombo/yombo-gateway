@@ -58,7 +58,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound
+from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound, YomboWarning
 from yombo.core.log import getLogger
 from yombo.utils.sqldict import SQLDict
 from yombo.core.library import YomboLibrary
@@ -116,15 +116,15 @@ class States(YomboLibrary, object):
                 states[key] = state['value']
         return states
 
-    def __repr__(self):
-        states = {}
-        for key, state in self.__States.iteritems():
-            if state['readKey'] is not None:
-                state['readKey'] = True
-            if state['writeKey'] is not None:
-                state['writeKey'] = True
-            states[key] = state
-        return states
+    # def __repr__(self):
+    #     states = {}
+    #     for key, state in self.__States.iteritems():
+    #         if state['readKey'] is not None:
+    #             state['readKey'] = True
+    #         if state['writeKey'] is not None:
+    #             state['writeKey'] = True
+    #         states[key] = state
+    #     return states
 
     def exists(self, key):
         """
@@ -382,19 +382,14 @@ class States(YomboLibrary, object):
 
     def check_trigger(self, key, value):
         """
-        Not actually called by automation library, but it's used to send triggers to it.
+        Called by the states.set function when a new value is set. It asks the automation library if this key is
+        trigger, and if so, fire any rules.
 
-        Called when a an State value is changed. Checks if a trigger should be fired. Uses the automation helper
-        function for the heavy lifting.
+        True - Rules fired, fale - no rules fired.
         """
-        results = self.automation.track_trigger_check_triggers('states', key, value)
-        if results != False:
-            logger.debug("I have a match! {results}", results=results)
-            self.automation.track_trigger_basic_do_actions(results)
-        else:
-            logger.debug("trigger didn't match any trigger filters")
+        results = self.automation.triggers_check('states', key, value)
 
-    def States_automation_trigger_list(self, **kwargs):
+    def States_automation_source_list(self, **kwargs):
         """
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
@@ -403,11 +398,24 @@ class States(YomboLibrary, object):
         """
         return [
             { 'platform': 'states',
+              'validate_source_callback': self.states_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.states_add_trigger_callback,  # function to call to add a trigger
-              'validate_callback': self.states_trigger_validate_callback,  # function to call to validate a trigger
-              'get_value_callback': self.states_trigger_get_value_callback,  # get a value
+              'get_value_callback': self.states_get_value_callback,  # get a value
             }
          ]
+
+    def states_validate_source_callback(self, rule, source, **kwargs):
+        """
+        A callback to check if a provided source is valid before being added as a possible source.
+
+        :param kwargs: None
+        :return:
+        """
+        print "!!!! %s" % source
+        if all( required in source for required in ['platform', 'name']):
+            return True
+        raise YomboWarning("Source doesn't have required parameters: platform, name",
+                            101, 'states_validate_source_callback', 'states')
 
     def states_add_trigger_callback(self, rule, **kwargs):
         """
@@ -417,20 +425,9 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        self.automation.track_trigger_basic_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
+        self.automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
 
-    def states_trigger_validate_callback(self, rule, trigger, **kwargs):
-        """
-        A callback to check if a provided source is valid before being added as a possible source.
-
-        :param kwargs: None
-        :return:
-        """
-        if all( required in trigger['source'] for required in ['platform', 'name']):
-            return True
-        return False
-
-    def states_trigger_get_value_callback(self, rule, source, **kwargs):
+    def states_get_value_callback(self, rule, source, **kwargs):
         """
         A callback to the value for platform "states". We simply just do a get based on key_name.
 
@@ -456,12 +453,12 @@ class States(YomboLibrary, object):
         """
         return [
             { 'platform': 'states',
-              'validate_callback': self.states_action_validate_callback,  # function to call to validate an action is possible.
+              'validate_action_callback': self.states_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.states_do_action_callback  # function to be called to perform an action
             }
          ]
 
-    def states_action_validate_callback(self, rule, action, **kwargs):
+    def states_validate_action_callback(self, rule, action, **kwargs):
         """
         A callback to check if a provided action is valid before being added as a possible action.
 
@@ -470,12 +467,9 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        print "################ in states_action_validate_callback"
-        if key not in action:
-            return False
-        if value not in action:
-            return False
-        return True
+        if 'value' not in action['argumments']:
+            raise YomboWarning("In states_validate_action_callback: action is required to have 'value' within the arguments, so I know what to set.",
+                               101, 'states_validate_action_callback', 'states')
 
     def states_do_action_callback(self, rule, action, **kwargs):
         """

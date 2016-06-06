@@ -18,6 +18,10 @@ A database API to SQLite3.
 """
 # Import python libraries
 from time import time
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -225,23 +229,25 @@ class LocalDB(YomboLibrary):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
         records = yield self.dbconfig.select('device_status', select='device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable', where=['device_id = ?', id], orderby='set_time', limit=limit)
+        for index in range(len(records)):
+            records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
         returnValue(records)
 
     @inlineCallbacks
-    def set_device_status(self, device_id, **kwargs):
+    def save_device_status(self, device_id, **kwargs):
         set_time = kwargs.get('set_time', time())
-        state = kwargs.get('state', 0)
+        device_state = kwargs.get('device_state', 0)
         machine_status = kwargs['machine_status']
-        machine_status_extra = kwargs.get('machine_status_extra', '')
+        machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',',':') )
         human_status = kwargs.get('human_status', machine_status)
-        source = kwargs.get('source', 'unknown')
+        source = kwargs.get('source', '')
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
 
         yield DeviceStatus(
             device_id=device_id,
             set_time=set_time,
-            state=state,
+            device_state=device_state,
             human_status=human_status,
             machine_status=machine_status,
             machine_status_extra=machine_status_extra,

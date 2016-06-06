@@ -5,6 +5,7 @@ Helpers for automation items.
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -48,12 +49,12 @@ class AutomationHelpers(YomboLibrary):
         """
         return [
             { 'platform': 'call_function',
-              'validate_callback': self.basic_values_action_validate_callback,  # function to call to validate an action is possible.
+              'validate_action_callback': self.basic_values_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.basic_values_do_action_callback  # function to be called to perform an action
             }
          ]
 
-    def basic_values_action_validate_callback(self, rule, action, **kwargs):
+    def basic_values_validate_action_callback(self, rule, action, **kwargs):
         """
         A callback to check if a provided action is valid before being added as a possible action.
 
@@ -62,7 +63,7 @@ class AutomationHelpers(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        print "################ in basic_values_action_validate %s - %s" % (rule, kwargs)
+#        print "################ in basic_values_action_validate %s - %s" % (rule, kwargs)
 
         if action['platform'] == 'call_function':
             if 'component_callback' in action:
@@ -130,12 +131,12 @@ class AutomationHelpers(YomboLibrary):
         return [
              {
                  'platform': 'basic_values',
-                 'validate_callback': self.basic_values_filter_validate,  # validate a condition combo is possible
-                 'check_callback': self.basic_values_filter_check,  # perform a condition check
+                 'validate_filter_callback': self.basic_values_validate_filter_callback,  # validate a condition combo is possible
+                 'run_filter_callback': self.basic_values_run_filter_callback,  # perform a condition check
              }
         ]
 
-    def basic_values_filter_validate(self, rule, **kwargs):
+    def basic_values_validate_filter_callback(self, rule, **kwargs):
         """
         A callback to check if a provided condition is valid before being added as a possible condition.
 
@@ -146,10 +147,10 @@ class AutomationHelpers(YomboLibrary):
         filter_ = kwargs['filter']
         logger.debug("Validating filter: {filter}", filter=filter_)
         if not all( required in filter_ for required in ['platform', 'value']):
-            return False
-        return True
+            raise YomboWarning("Required fields (platform, value) are missing from 'basic_values' filter.")
+        return rule
 
-    def basic_values_filter_check(self, rule, **kwargs):
+    def basic_values_run_filter_callback(self, rule, **kwargs):
         """
         A callback to check if a provided condition is valid before being added as a possible condition.
 

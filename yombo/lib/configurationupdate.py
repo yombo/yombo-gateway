@@ -515,7 +515,6 @@ class ConfigurationUpdate(YomboLibrary):
             self.__pendingUpdates.remove(table)
         logger.debug("Configs pending: {pendingUpdates}", pendingUpdates=self.__pendingUpdates)
 
-        print "if len( %s ) == 0 and %s is True" % (len(self.__pendingUpdates), self.__doingfullconfigs)
         if len(self.__pendingUpdates) == 0 and self.__doingfullconfigs is True:
             self.__doingfullconfigs = False
             self._getAllConfigsLoggerLoop.stop()

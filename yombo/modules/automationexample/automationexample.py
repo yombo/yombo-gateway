@@ -85,6 +85,12 @@ class AutomationExample(YomboModule):
                             'argument1': 'somevalue'
                         }
                     }
+                ,
+                    {
+                        'platform': 'devices',
+                        'device': 'Christmas tree',
+                        'command': 'off',
+                    }
                 ]
             },
             {
@@ -107,6 +113,35 @@ class AutomationExample(YomboModule):
                             'argument1': 'somevalue'
                         }
                     }
+                ,
+
+                    {
+                        'platform': 'devices',
+                        'device': 'Christmas tree',
+                        'command': 'on',
+                    }
+                ],
+            },
+            {
+                'name': 'Test Device',
+                'trigger': {
+                    'source': {
+                        'platform': 'devices',
+                        'device': 'Christmas Tree',
+                    },
+                    'filter': {
+                        'platform': 'basic_values',
+                        'value': 1
+                    }
+                },
+                'action': [
+                    {
+                        'platform': 'call_function',
+                        'component_callback': self.call_when_high,
+                        'arguments': {
+                            'command': 'off'
+                        }
+                    }
                 ]
             }
             ]
@@ -118,18 +153,20 @@ class AutomationExample(YomboModule):
         self._States['automationexample'] = 0
 
     def set_high(self):
+        logger.info("in set_high - setting automationexample = 1")
         self._States['automationexample'] = 1
 
     def set_low(self):
+        logger.info("in set_low - setting automationexample = 0")
         self._States['automationexample'] = 0
 
     def call_when_high(self, **kwargs):
         logger.info("it's now high! {kwargs}", kwargs=kwargs)
-        reactor.callLater(10, self.set_low)
+        reactor.callLater(5, self.set_low)
 
     def call_when_low(self, **kwargs):
         logger.info("it's now low! {kwargs}", kwargs=kwargs)
-        reactor.callLater(10, self.set_high)
+        reactor.callLater(5, self.set_high)
 
     def _stop_(self):
         pass

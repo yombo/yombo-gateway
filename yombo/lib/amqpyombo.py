@@ -398,7 +398,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         logit("In {location} : {msg}", location=location, msg=msg)
 
     def startedConnecting(self, connector):
-        self._local_log("warn", "PikaFactory::startedConnecting")
+        self._local_log("debug", "PikaFactory::startedConnecting")
 
     def buildProtocol(self, addr):
         self._local_log("debug", "PikaFactory::buildProtocol")

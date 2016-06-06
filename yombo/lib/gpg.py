@@ -95,7 +95,7 @@ class GPG(YomboLibrary):
                     if int(gpg_keys[gwuuid]['keys'][gwkey]['length']) < 2048:
                         logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable", length=gpg_keys[gwuuid]['keys'][gwkey]['length'])
                     else:
-                        logger.info("Adding key to keyring: %s" % gpg_keys[gwuuid]['keys'][gwkey])
+                        logger.info("Adding key to keyring: {key}", key=gpg_keys[gwuuid]['keys'][gwkey])
                         yield self.local_db.insert_gpg_key(gpg_keys[gwuuid]['keys'][gwkey])
         self.initDefer.callback(10)
 

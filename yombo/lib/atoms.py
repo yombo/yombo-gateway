@@ -23,6 +23,7 @@ If a request atom doesn't exist, a value of None will be returned instead of an 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
+# Import python libraries
 try:
     import psutil
     HAS_PSUTIL = True
@@ -35,9 +36,10 @@ import re
 from platform import _supported_dists
 _supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
                      'slamd64', 'ovs', 'system', 'mint', 'oracle')
-from collections import deque
 from time import time
 
+# Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import getLogger
 import yombo.utils
@@ -157,21 +159,10 @@ class Atoms(YomboLibrary):
         return self.exists(key)
 
     def __str__(self):
-        states = {}
-        for key, state in self.__Atoms.iteritems():
-            if state['readKey'] is None:
-                states[key] = state['value']
-        return states
+        return self.__Atoms
 
-    def __repr__(self):
-        states = {}
-        for key, state in self.__Atoms.iteritems():
-            if state['readKey'] is not None:
-                state['readKey'] = True
-            if state['writeKey'] is not None:
-                state['writeKey'] = True
-            states[key] = state
-        return states
+#    def __repr__(self):
+#        return str(self.__Atoms)
 
     def exists(self, key):
         """
@@ -219,7 +210,7 @@ class Atoms(YomboLibrary):
         if not already_set:
             yombo.utils.dict_set_value(self.__Atoms, keys, value)
 
-        self.check_trigger(key, keys, value)
+        self.check_trigger(key, value)
 
     def os_data(self):
         """
@@ -275,21 +266,16 @@ class Atoms(YomboLibrary):
     # The remaining functions implement automation hooks. These should not be called by anything other than the
     # automation library!
 
-    def check_trigger(self, key, keys, value):
+    def check_trigger(self, key, value):
         """
-        Not actually called by automation library, but it's used to send triggers to it.
+        Called by the atoms.set function when a new value is set. It asks the automation library if this key is
+        trigger, and if so, fire any rules.
 
-        Called when a an Atom value is changed. Checks if a trigger should be fired. Uses the automation helper
-        function for the heavy lifting.
+        True - Rules fired, fale - no rules fired.
         """
-        results = self.automation.track_trigger_check_triggers('atoms', key, value)
-        if results != False:
-            logger.debug("I have a match! {results}", results=results)
-            self.automation.track_trigger_basic_do_actions(results)
-        else:
-            logger.debug("trigger didn't match any trigger filters")
+        results = self.automation.triggers_check('atoms', key, value)
 
-    def Atoms_automation_trigger_list(self, **kwargs):
+    def Atoms_automation_source_list(self, **kwargs):
         """
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
@@ -298,11 +284,22 @@ class Atoms(YomboLibrary):
         """
         return [
             { 'platform': 'atoms',
+              'validate_source_callback': self.atoms_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.atoms_add_trigger_callback,  # function to call to add a trigger
-              'validate_callback': self.atoms_trigger_validate_callback,  # function to call to validate a trigger
-              'get_value_callback': self.atoms_trigger_get_value_callback,  # get a value
+              'get_value_callback': self.atoms_get_value_callback,  # get a value
             }
          ]
+
+    def atoms_validate_source_callback(self, rule, source, **kwargs):
+        """
+        A callback to check if a provided source is valid before being added as a possible source.
+
+        :param kwargs: None
+        :return:
+        """
+        if all( required in source for required in ['platform', 'name']):
+            return True
+        raise YomboWarning("Source doesn't have required parameters: platform, name", 101, 'atoms_validate_source_callback', 'atoms')
 
     def atoms_add_trigger_callback(self, rule, **kwargs):
         """
@@ -313,20 +310,9 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        self.automation.track_trigger_basic_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
+        self.automation.triggers_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
 
-    def atoms_trigger_validate_callback(self, rule, trigger, **kwargs):
-        """
-        A callback to check if a provided source is valid before being added as a possible source.
-
-        :param kwargs: None
-        :return:
-        """
-        if all( required in trigger['source'] for required in ['platform', 'name']):
-            return True
-        return False
-
-    def atoms_trigger_get_value_callback(self, rule, source, **kwargs):
+    def atoms_get_value_callback(self, rule, source, **kwargs):
         """
         A callback to the value for platform "atom". We simply just do a get based on key_name.
 
@@ -349,12 +335,12 @@ class Atoms(YomboLibrary):
 #        print "!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#"
         return [
             { 'platform': 'atom',
-              'validate_callback': self.atoms_action_validate_callback,  # function to call to validate an action is possible.
+              'validate_action_callback': self.atoms_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.atoms_do_action_callback  # function to be called to perform an action
             }
          ]
 
-    def atoms_action_validate_callback(self, rule, action, **kwargs):
+    def atoms_validate_action_callback(self, rule, action, **kwargs):
         """
         A callback to check if a provided action is valid before being added as a possible action.
 
@@ -363,12 +349,9 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        print "################ in atoms_action_validate_callback"
-        if key not in action:
-            return False
-        if value not in action:
-            return False
-        return True
+        if 'value' not in rule['action'][action_item]['argumments']:
+            raise YomboWarning("In atoms_validate_action_callback: action is required to have 'value' within the arguments, so I know what to set.",
+                               101, 'atoms_validate_action_callback', 'atoms')
 
     def atoms_do_action_callback(self, rule, action, **kwargs):
         """

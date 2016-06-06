@@ -33,6 +33,7 @@ Stops components in the following phases. Modules first, then libraries.
 import sys
 import traceback
 from re import search as ReSearch
+#from inspect import callable
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred

@@ -42,6 +42,7 @@ from uuid import uuid4
 import copy
 import time
 import sys
+from inspect import isfunction
 
 # Import twisted libraries
 from twisted.internet.reactor import callLater
@@ -236,6 +237,7 @@ class Message:
         self.msgPath        = OrderedDict([])
         kwargs['notBefore'] = kwargs.get('notBefore', 0)
         kwargs['maxDelay']  = kwargs.get('maxDelay', 0)
+        kwargs['delay'] = kwargs.get('delay', 0)
         self.newMessage     = kwargs.get('newMessage', True)
 
         if 'msgPath' in kwargs:
@@ -341,25 +343,25 @@ class Message:
         if 'notBefore' in kwargs:
             try:
               notBefore = float(kwargs['notBefore'])
-              if notBefore < time():
-                raise YomboDeviceError("Cannot set 'notBefore' to a time in the past.", errorno=150)
+              if notBefore > 0 and notBefore < time():
+                raise YomboMessageError("Cannot set 'notBefore' to a time in the past.", errorno=150)
             except:
-                raise YomboDeviceError("notBefore is not an int or float.", errorno=151)
+                raise YomboMessageError("notBefore is not an int or float.", errorno=151)
         elif 'delay' in kwargs:
-            try:
-              notBefore = time() + float(kwargs['delay'])
-            except:
-              raise YomboDeviceError("delay is not an int or float", errorno=152)
-        else:
-              raise YomboDeviceError("notBefore or delay not set.", errorno=153)
+            if kwargs['delay'] > 0:
+                try:
+                  notBefore = time() + float(kwargs['delay'])
+                except:
+                  raise YomboMessageError("delay is not an int or float", errorno=152)
 
-        if maxDelay in kwargs:
-          try:
-            maxDelay = float(kwargs['kwargs'])
-            if maxDelay < 0:
-              raise YomboDeviceError("Max delay cannot be less then 0.", errorno=154)
-          except:
-            raise YomboDeviceError("maxDelay is not an int or float.", errorno=151)
+        if 'maxDelay' in kwargs:
+            if kwargs['maxDelay'] > 0:
+                try:
+                  maxDelay = float(kwargs['kwargs'])
+                  if maxDelay < 0:
+                    raise YomboMessageError("Max delay cannot be less then 0.", errorno=154)
+                except:
+                  raise YomboMessageError("maxDelay is not an int or float.", errorno=151)
 
         self.notBefore = notBefore
         self.maxDelay = maxDelay
@@ -465,10 +467,11 @@ class Message:
         allComponents = copy.copy(self.loader.loadedComponents)
         if self.msgDestination in allComponents:
             component = allComponents[self.msgDestination]
-
-            self.sentTo.append(self.msgDestination)
-            callLater(0.00001, component.message, self)
-#	            ret = component.message(self)                     # send actual message
+            if hasattr(component, 'message'):
+#            if callable(component.message):
+                self.sentTo.append(self.msgDestination)
+                callLater(0.00001, component.message, self)
+    #	            ret = component.message(self)                     # send actual message
             del allComponents[self.msgDestination]
         else:
             if destParts[2] != "all":
