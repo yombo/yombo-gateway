@@ -30,11 +30,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError: 
     import json
 
-try:  # prefer to talk in msgpack, if available.
-    import msgpack
-    HASMSGPACK = True
-except ImportError:
-    HASMSGPACK = False
+import yombo.ext.umsgpack as msgpack
 
 import zlib
 from datetime import datetime
@@ -117,7 +113,6 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
               "Request": {
                     "LocalIPAddress": getConfigValue("core", "localipaddress"),
                     "ExternalIPAddress": getConfigValue("core", "externalipaddress"),
-                    "HasMSGPACK": HASMSGPACK,
                     "ProtocolVersion": PROTOCOL_VERSION,
               },
             }
@@ -130,7 +125,6 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 "correlation_id" : self._startup_request_ID,
                 "user_id"        : self.factory.AMQPYombo.gwuuid,
                 "headers"        : {
-                    "ClientType"    : "ygw",
                     "ClientType"    : "ygw",
                     "Source"        : "yombo.gateway.lib.amqpyombo:" + self.factory.AMQPYombo.gwuuid,
                     "Destination"   : "yombo.server.amqpyombo",
@@ -263,19 +257,19 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
             self._local_log("debug", "PikaProtocol::receive_item5")
         except YomboWarning as e:
           if not queue_no_ack:
-            logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}", status='NACK', tag=deliver.delivery_tag)
+            logger.debug("AMQP Sending {status} due to invalid request. Tag: {tag}  E: {e}", status='NACK', tag=deliver.delivery_tag, e=e)
             channel.basic_nack(deliver.delivery_tag, False, False)
         except Exception as e:
           if not queue_no_ack:
-            logger.debug("AMQP Sending {status} due to unknown exception. Tag: {tag}", status='NACK', tag=deliver.delivery_tag)
+            logger.debug("AMQP Sending {status} due to unknown exception. Tag: {tag}  E: {e}", status='NACK', tag=deliver.delivery_tag, e=e)
             channel.basic_nack(deliver.delivery_tag, False, False)
 #          raise Exception
         else:
-          logger.debug('Calling callback: {callback}', callback=callback)
           d = defer.maybeDeferred(callback, deliver, props, msg)
+          logger.debug('Calling callback: {callback}', callback=callback)
           if not queue_no_ack:
             # if it gets here, it's passed basic checks. Lets either store the message for later or pass it on.
-            logger.debug("AMQP Sending {status} due to valid request. Tag: {tag}", status='ACK', tag=deliver.delivery_tag)
+            logger.debug("AMQP 1 Sending {status} due to valid request. Tag: {tag}", status='ACK', tag=deliver.delivery_tag)
             d.addCallback(self._basic_ack, channel, deliver.delivery_tag)
             d.addErrback(self._basic_nack, channel, deliver.delivery_tag)
 
@@ -319,12 +313,12 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
 #        prop = spec.BasicProperties(delivery_mode=2)
 
 #        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
-        if HASMSGPACK:
-            kwargs['body'] = msgpack.dumps(kwargs['body'])
-            kwargs['properties'].content_type = "application/msgpack"
-        else:
-            kwargs['body'] = json.dumps(kwargs['body'])
-            kwargs['properties'].content_type = "application/json"
+#        if HASMSGPACK:
+        kwargs['body'] = msgpack.dumps(kwargs['body'])
+        kwargs['properties'].content_type = "application/msgpack"
+#        else:
+#            kwargs['body'] = json.dumps(kwargs['body'])
+#            kwargs['properties'].content_type = "application/json"
 
         if len(kwargs['body']) > 700:
             kwargs['body'] = zlib.compress(kwargs['body'], 5)  # 5 appears to be fastest with test data - MSchwenk
@@ -467,8 +461,8 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         """
         self._local_log("debug", "PikaFactory::do_incoming")
 #        self._local_log("debug", "Msg:{msg}", msg=msg)
-        if msg['Code'] != 200:
-            raise YomboWarning("Yombo service responsed with code %s: %s" %(msg['Code'], msg['Message']))
+#        if msg['Code'] != 200:
+#            raise YomboWarning("Yombo service responsed with code %s: %s" %(msg['Code'], msg['Message']))
 
         # A request from somewhere
         if properties.headers['Type'] == 'Request':
@@ -519,7 +513,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         :return:
         """
-        self._local_log("info", "!!!!PikaFactory::close")
+        self._local_log("debug", "!!!!PikaFactory::close")
         self.AMQPProtocol.close()
 
     def clientConnectionLost(self, connector, reason):
@@ -601,7 +595,7 @@ class AMQPYombo(YomboLibrary):
         pass
     
     def _unload_(self):
-        self._local_log("warn", "AMQPYombo::_stop_")
+        self._local_log("debug", "AMQPYombo::_stop_")
         self.pika_factory.close()
 
     def _local_log(self, level, location, msg=""):

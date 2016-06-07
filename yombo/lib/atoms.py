@@ -290,16 +290,18 @@ class Atoms(YomboLibrary):
             }
          ]
 
-    def atoms_validate_source_callback(self, rule, source, **kwargs):
+    def atoms_validate_source_callback(self, rule, portion, **kwargs):
         """
         A callback to check if a provided source is valid before being added as a possible source.
 
-        :param kwargs: None
+        :param rule: The potential rule being added.
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        if all( required in source for required in ['platform', 'name']):
+        if all( required in portion['source'] for required in ['platform', 'name']):
             return True
-        raise YomboWarning("Source doesn't have required parameters: platform, name", 101, 'atoms_validate_source_callback', 'atoms')
+        raise YomboWarning("Source doesn't have required parameters: platform, name",
+                           101, 'atoms_validate_source_callback', 'atoms')
 
     def atoms_add_trigger_callback(self, rule, **kwargs):
         """
@@ -312,15 +314,15 @@ class Atoms(YomboLibrary):
         """
         self.automation.triggers_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
 
-    def atoms_get_value_callback(self, rule, source, **kwargs):
+    def atoms_get_value_callback(self, rule, portion, **kwargs):
         """
         A callback to the value for platform "atom". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
-        :param source: Dictionary containg everything that's in the 'source' section for trigger or condition
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        return self.get(source['name'])
+        return self.get(portion['source']['name'])
 
     def Atoms_automation_action_list(self, **kwargs):
         """
@@ -349,7 +351,7 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        if 'value' not in rule['action'][action_item]['argumments']:
+        if 'value' not in action['argumments']:
             raise YomboWarning("In atoms_validate_action_callback: action is required to have 'value' within the arguments, so I know what to set.",
                                101, 'atoms_validate_action_callback', 'atoms')
 
@@ -362,4 +364,4 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        return self.set(source['name'], source['value'])
+        return self.set(action['name'], action['value'])

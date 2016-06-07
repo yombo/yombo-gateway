@@ -137,7 +137,7 @@ class Messages(YomboLibrary):
         """
         Used by the loader module to clear all library and module subscriptions.
         """
-        logger.warn("Message - _module_unload_....!")
+        logger.debug("Message - _module_unload_....!")
         if hasattr(self, 'distributions'): # used incase GW stops premature.
             self.distributions.clear()
 

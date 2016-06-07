@@ -33,3 +33,8 @@ six
 ---
 
 Six provides simple utilities for wrapping over differences between Python 2 and Python 3
+
+umsgpack
+--------
+
+Light weight message pack, supports python 2 and 3.

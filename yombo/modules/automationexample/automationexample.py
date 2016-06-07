@@ -71,7 +71,7 @@ class AutomationExample(YomboModule):
                         },
                     'filter': {
                         'platform': 'basic_values',
-                        'value': 'false'
+                        'value': 'true'
                         }
                     },
                 ],
@@ -87,7 +87,7 @@ class AutomationExample(YomboModule):
                     }
                 ,
                     {
-                        'platform': 'devices',
+                        'platform': 'dev5ices',
                         'device': 'Christmas tree',
                         'command': 'off',
                     }
@@ -116,7 +116,7 @@ class AutomationExample(YomboModule):
                 ,
 
                     {
-                        'platform': 'devices',
+                        'platform': 'devi5ces',
                         'device': 'Christmas tree',
                         'command': 'on',
                     }

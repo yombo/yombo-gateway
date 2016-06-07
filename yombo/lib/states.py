@@ -404,15 +404,15 @@ class States(YomboLibrary, object):
             }
          ]
 
-    def states_validate_source_callback(self, rule, source, **kwargs):
+    def states_validate_source_callback(self, rule, portion, **kwargs):
         """
         A callback to check if a provided source is valid before being added as a possible source.
 
-        :param kwargs: None
+        :param rule: The potential rule being added.
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        print "!!!! %s" % source
-        if all( required in source for required in ['platform', 'name']):
+        if all( required in portion['source'] for required in ['platform', 'name']):
             return True
         raise YomboWarning("Source doesn't have required parameters: platform, name",
                             101, 'states_validate_source_callback', 'states')
@@ -427,19 +427,18 @@ class States(YomboLibrary, object):
         """
         self.automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
 
-    def states_get_value_callback(self, rule, source, **kwargs):
+    def states_get_value_callback(self, rule, portion, **kwargs):
         """
         A callback to the value for platform "states". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
-        :param source: Dictionary containg everything that's in the 'source' section for trigger or condition
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        key_name = source['name']
-        if 'password' in source:
-            return self.get(key_name, source['password'])
+        if 'password' in portion['source']:
+            return self.get(portion['source']['name'], portion['source']['password'])
         else:
-            return self.get(key_name)
+            return self.get(portion['source']['name'])
 
     def States_automation_action_list(self, **kwargs):
         """
@@ -480,8 +479,7 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        key_name = source['name']
         if 'password' in source:
-            return self.set(key_name, source['password'])
+            return self.set(action['name'], action['password'])
         else:
-            return self.set(key_name)
+            return self.set(action['name'])

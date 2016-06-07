@@ -660,7 +660,7 @@ class Message:
         if self.msgStatus != 'new':
             return True
         
-        logger.warn("validcmd payload: {payload}", payload=self.payload)
+        logger.debug("validcmd payload: {payload}", payload=self.payload)
 
         #for testing with isinstance. Can't include at startup - loop!
         from yombo.lib.devices import Device

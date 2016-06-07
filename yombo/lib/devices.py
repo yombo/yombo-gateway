@@ -348,24 +348,25 @@ class Devices(YomboLibrary):
             }
          ]
 
-    def devices_validate_source_callback(self, rule, source, **kwargs):
+    def devices_validate_source_callback(self, rule, portion, **kwargs):
         """
         A callback to check if a provided source is valid before being added as a possible source.
 
-        :param kwargs: None
+        :param rule: The potential rule being added.
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        if 'platform' not in source:
+        if 'platform' not in portion['source']:
             raise YomboWarning("'platform' must be in 'source' section.")
 
-        if 'device' in source:
+        if 'device' in portion['source']:
             try:
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00011"
-                device = self.get_device(source['device'], .89)
+                device = self.get_device(portion['source']['device'], .89)
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00022"
-                source['device_pointer'] = device
+                portion['source']['device_pointer'] = device
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
-                return source
+                return portion
             except Exception, e:
                 raise YomboWarning("Error while searching for device, could not be found: %s" % source['device'],
                                    101, 'devices_validate_source_callback', 'lib.devices')
@@ -383,16 +384,16 @@ class Devices(YomboLibrary):
         """
         self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointer'].device_id)
 
-    def devices_get_value_callback(self, rule, source, **kwargs):
+    def devices_get_value_callback(self, rule, portion, **kwargs):
         """
         A callback to the value for platform "states". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
-        :param source: Dictionary containg everything that's in the 'source' section for trigger or condition
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
 
-        return source['device_pointer'].machine_status
+        return portion['source']['device_pointer'].machine_status
 
     def Devices_automation_action_list(self, **kwargs):
         """
@@ -657,7 +658,6 @@ class Device:
 
         route = self._allDevices._ModulesLibrary.get_device_routing(self.device_type_id, 'Command', 'moduleLabel')
 
-        print "route : %s" % route
         msg = {
                'msgOrigin'      : sourceComponent._FullName.lower(),
                'msgDestination' : "yombo.gateway.modules.%s" % route,

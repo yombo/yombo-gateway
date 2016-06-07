@@ -138,16 +138,14 @@ def upgrade(Registry, **kwargs):
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
      `id`     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `endpoint_type`     TEXT NOT NULL,
-     `endpoint_id`     TEXT NOT NULL,
-     `key_id`     TEXT NOT NULL,
+     `endpoint`     TEXT NOT NULL,
      `fingerprint`     TEXT NOT NULL,
      `length`     INTEGER NOT NULL,
      `expires`     INTEGER NOT NULL,
      `created`     INTEGER NOT NULL
      );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'endpoint_id'))
+    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'endpoint'))
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
 
     # To be completed

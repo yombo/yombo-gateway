@@ -278,40 +278,25 @@ class LocalDB(YomboLibrary):
 
         variables = {}
         for record in records:
-            if record['endpoint_id'] not in variables:
-                variables[record['endpoint_type'] + record['endpoint_id']] = {
-                    'endpoint_type': record['endpoint_type'],
-                    'endpoint_id': record['endpoint_id'],
-                    'keys': {},
-                }
             key = {
-                'endpoint_type': record['endpoint_type'],
-                'endpoint_id': record['endpoint_id'],
-                'key_id': record['key_id'],
+                'endpoint': record['endpoint'],
                 'fingerprint': record['fingerprint'],
                 'length': record['length'],
                 'expires': record['expires'],
                 'created': record['created'],
             }
-            variables[record['endpoint_type'] + record['endpoint_id']]['keys'][record['fingerprint']] = key
+            variables[record['fingerprint']] = key
         returnValue(variables)
 
     @inlineCallbacks
     def insert_gpg_key(self, gwkey, **kwargs):
-#        print "adding: %s" % gwkey
         key = GpgKey()
-        key.endpoint_type = gwkey['endpoint_id']
-        key.endpoint_id = gwkey['endpoint_type']
-        key.key_id = gwkey['key_id']
+        key.endpoint = gwkey['endpoint']
         key.fingerprint = gwkey['fingerprint']
         key.length = gwkey['length']
         key.expires = gwkey['expires']
         key.created = gwkey['created']
- #       print key
         yield key.save()
- #       print key
-
-#        yield self.dbconfig.insert('gpg_keys', args)
 #        yield self.dbconfig.insert('gpg_keys', args, None, 'OR IGNORE' )
 
     @inlineCallbacks

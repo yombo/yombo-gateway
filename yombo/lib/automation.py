@@ -196,6 +196,10 @@ class Automation(YomboLibrary):
 
         # First pass - do basic checks
         logger.debug("About to add rule: {rule}", rule=rule)
+        if rule['trigger']['source']['platform'] not in self.sources:
+            logger.info("Platform ({platform}) doesn't exist as a trigger:({rule}) {required}",
+                        platform=rule['trigger']['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+            return False
         if not all(section in rule for section in REQUIRED_RULE_FIELDS):
             logger.info("Rule doesn't have required trigger fields, skipping: ({rule}) {required}",
                         rule=rule, required=REQUIRED_RULE_FIELDS)
@@ -219,6 +223,10 @@ class Automation(YomboLibrary):
                     logger.info("Rule:'{rule}' Doesn't have required condition fields:({condition}) Required:{required}",
                                 rule=rule['name'], condition=rule['condition'][item], required=REQUIRED_CONDITION_FIELDS)
                     return False
+                if rule['condition'][item]['source']['platform'] not in self.sources:
+                    logger.info("Platform ({platform}) doesn't exist as a source:({rule}) {required}",
+                                platform=rule['condition'][item]['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                    return False
                 if not all(section in rule['condition'][item]['source'] for section in REQUIRED_SOURCE_FIELDS):
                     logger.info("Rule:'{rule}' Doesn't have required condition source fields, has: ({condition})  Required:{required}",
                                 rule=rule['name'], condition=rule['condition'][item]['source'], required=REQUIRED_SOURCE_FIELDS)
@@ -227,6 +235,10 @@ class Automation(YomboLibrary):
                     logger.info("Rule:'{rule}' Doesn't have required condition filter fields, has: ({condition})  Required:{required}",
                                 rule=rule['name'], condition=rule['condition'][item]['source'], required=REQUIRED_FILTER_FIELDS)
                     return False
+                if rule['condition'][item]['filter']['platform'] not in self.filters:
+                    logger.info("Platform ({platform}) doesn't exist as a filter: ({rule}) {required}",
+                                platform=ule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                    return False
 
         for item in range(len(rule['action'])):
             if not all(section in rule['action'][item] for section in REQUIRED_ACTION_FIELDS):
@@ -234,14 +246,18 @@ class Automation(YomboLibrary):
                             rule=rule['name'], action=rule['action'][item], required=REQUIRED_ACTION_FIELDS)
                 is_valid = False   # Doesn't have all required fields.
                 return False
+            if rule['action'][item]['platform'] not in self.actions:
+                logger.info("Platform ({platform}) doesn't exist as an action:({rule}) {required}",
+                            platform=rule['action'][item]['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                return False
 
 
         logger.debug("Automation rule, after basic checks: {rule}", rule=rule)
 
         # for each rule, make sure the trigger, condition, and action checker is valid.
         try:
-            rule['trigger']['source'] = self._check_returned_rule(rule['trigger']['source'], self._check_source_platform(rule, rule['trigger']['source'], True))
-            rule['trigger']['filter'] = self._check_returned_rule(rule['trigger']['filter'], self._check_filter_platform(rule, rule['trigger']['filter']))
+            rule['trigger'] = self._check_returned_rule(rule['trigger'], self._check_source_platform(rule, rule['trigger'], True))
+            rule['trigger'] = self._check_returned_rule(rule['trigger'], self._check_filter_platform(rule, rule['trigger']))
 
             if 'condition' in rule:
                 if 'condition_type' in rule:
@@ -251,10 +267,10 @@ class Automation(YomboLibrary):
                         return False
                 for item in range(len(rule['condition'])):
                     try:
-                        rule['condition'][item]['source'] = \
-                            self._check_returned_rule(rule['condition'][item]['source'], self._check_source_platform(rule, rule['condition'][item]['source']))
-                        rule['condition'][item]['filter'] = \
-                            self._check_returned_rule(rule['condition'][item]['filter'], self._check_filter_platform(rule, rule['condition'][item]['filter']))
+                        rule['condition'][item] = \
+                            self._check_returned_rule(rule['condition'][item], self._check_source_platform(rule, rule['condition'][item]))
+                        rule['condition'][item] = \
+                            self._check_returned_rule(rule['condition'][item], self._check_filter_platform(rule, rule['condition'][item]))
                     except YomboWarning, e:
                         return False
 
@@ -306,7 +322,7 @@ class Automation(YomboLibrary):
         :param trigger_required: If a trigger is required, this is true.
         :return:
         """
-        source_platform = portion['platform']
+        source_platform = portion['source']['platform']
         if trigger_required:
             if 'add_trigger_callback' in self.sources[source_platform]:
                 if not callable(self.sources[source_platform]['add_trigger_callback']):
@@ -333,11 +349,11 @@ class Automation(YomboLibrary):
         :param portion: source to check
         :return:
         """
-        filter_platform = portion['platform']
+        filter_platform = portion['filter']['platform']
         if filter_platform in self.filters:
             validate_filter_callback_function = self.filters[filter_platform]['validate_filter_callback']
             try:
-                rule = validate_filter_callback_function(rule, platform=filter_platform, filter=portion)
+                rule = validate_filter_callback_function(rule, portion)
             except YomboWarning, e:
                 logger.warn("Rule '{rule}': Has invalid filter platform params. filter_platform: {filter_platform}.", rule=rule['name'], filter_platform=filter_platform)
                 raise YomboWarning("Rule '%s': Has invalid filter platform params. filter_platform: %s." % (rule['name'], filter_platform),
@@ -399,7 +415,7 @@ class Automation(YomboLibrary):
             rule_id = rule_ids[item]['rule_id']
             rule = self.rules[rule_id]
             try:
-                result = self.automation_check_filter(rule_id, rule['trigger']['filter'], new_value)
+                result = self.automation_check_filter(rule_id, rule['trigger'], new_value)
                 if result:
                     rules_should_fire.append(rule_id)
             except YomboAutomationWarning:
@@ -410,11 +426,11 @@ class Automation(YomboLibrary):
 
         return True
 
-    def automation_check_filter(self, rule_id, filter_, new_value):
-        if not filter_['platform'] in self.filters:
-            raise YomboAutomationWarning("No filter platform: %s" % filter_['platform'], 100, 'automation_check_filter', 'automation')
-        run_filter_callback_function = self.filters[filter_['platform']]['run_filter_callback']
-        return run_filter_callback_function(self.rules[rule_id], filter=filter_, new_value=new_value)
+    def automation_check_filter(self, rule_id, portion, new_value):
+        if not portion['filter']['platform'] in self.filters:
+            raise YomboAutomationWarning("No filter platform: %s" % portion['filter']['platform'], 100, 'automation_check_filter', 'automation')
+        run_filter_callback_function = self.filters[portion['filter']['platform']]['run_filter_callback']
+        return run_filter_callback_function(self.rules[rule_id], portion, new_value)
 
     def automation_check_conditions(self, rule_id):
         """
@@ -438,11 +454,11 @@ class Automation(YomboLibrary):
             for item in range(len(condition)):
                 # get value(s)
                 get_value_callback_function = self.sources[condition[item]['source']['platform']]['get_value_callback']
-                value = get_value_callback_function(rule, condition[item]['source'])
+                value = get_value_callback_function(rule, condition[item])
 
                 # check value(s)
                 try:
-                    result = self.automation_check_filter(rule_id, condition[item]['filter'], value)
+                    result = self.automation_check_filter(rule_id, condition[item], value)
  #                   print "result of condition check filter: %s" % result
                     condition_results.append(result)
                 except YomboAutomationWarning:

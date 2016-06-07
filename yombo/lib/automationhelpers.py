@@ -136,7 +136,7 @@ class AutomationHelpers(YomboLibrary):
              }
         ]
 
-    def basic_values_validate_filter_callback(self, rule, **kwargs):
+    def basic_values_validate_filter_callback(self, rule, portion, **kwargs):
         """
         A callback to check if a provided condition is valid before being added as a possible condition.
 
@@ -144,13 +144,12 @@ class AutomationHelpers(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        filter_ = kwargs['filter']
-        logger.debug("Validating filter: {filter}", filter=filter_)
-        if not all( required in filter_ for required in ['platform', 'value']):
+#        logger.debug("Validating filter: {filter}", filter=portion['filter'])
+        if not all( required in portion['filter'] for required in ['platform', 'value']):
             raise YomboWarning("Required fields (platform, value) are missing from 'basic_values' filter.")
         return rule
 
-    def basic_values_run_filter_callback(self, rule, **kwargs):
+    def basic_values_run_filter_callback(self, rule, portion, new_value, **kwargs):
         """
         A callback to check if a provided condition is valid before being added as a possible condition.
 
@@ -158,15 +157,13 @@ class AutomationHelpers(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        filter_ = kwargs['filter']
-        logger.debug("Checking filter: {filter}", filter=filter_)
-        trigger_value = filter_['value']
+        logger.debug("Checking filter: {filter}", filter=portion['filter'])
+        trigger_value = portion['filter']['value']
         try:
             trigger_value = is_string_bool(trigger_value)
         except YomboWarning:
             pass
 
-        new_value = kwargs['new_value']
 #        logger.debug("Checking new = old: {new_value} = {trigger_value}", new_value=new_value, trigger_value=trigger_value)
         if new_value == trigger_value:
             return True
