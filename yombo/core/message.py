@@ -84,7 +84,7 @@ class Message:
             since it may take a while to get a failed message.
         :type msgDestination: string
         :param msgType: The type of message being sent, such as: command,
-            event, status, config:
+            event, status:
 
             * "cmd" - Used for sending commands to various devices. It is best
               to use Device library to complete this.
@@ -722,10 +722,10 @@ class Message:
         else:
             raise YomboMessageError("'device_id' or 'device' not found in payload. Required for commands.", 'Message API::ValidateCMD')
 
-        logger.debug("availablecommands: {availableCommands}", availableCommands=self.payload['deviceobj'].availableCommands, )
+        logger.debug("available_commands: {available_commands}", available_commands=self.payload['deviceobj'].available_commands, )
         logger.debug("self.payload['{cmdobj}']", cmdobj=self.payload['cmdobj'])
         # check that command is possible for given device_id
-        if self.payload['cmdobj'].cmdUUID not in self.payload['deviceobj'].availableCommands:
+        if self.payload['cmdobj'].cmdUUID not in self.payload['deviceobj'].available_commands:
            raise YomboMessageError("Invalid cmdUUID for this device_id.", 'Message API::ValidateCMD')
 
         # force delivery to the correct module.

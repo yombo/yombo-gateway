@@ -490,7 +490,7 @@ class Device:
         :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
         :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
             values entered by the user.
-        :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
+        :ivar available_commands: *(list)* - A list of cmdUUID's that are valid for this device.
         """
         logger.debug("New device - info: {device}", device=device)
 
@@ -500,7 +500,7 @@ class Device:
         self.callAfterChange = []
         self.device_id = device["id"]
         self.device_type_id = device["device_type_id"]
-        self.deviceTypeLabel = device["device_type_machine_label"]
+        self.device_type_machine_label = device["device_type_machine_label"]
         self.label = device["label"]
         self.deviceClass = device["device_class"]
         self.description = device["description"]
@@ -516,7 +516,7 @@ class Device:
         self.status_history = deque({}, 30)
         self._allDevices = allDevices
         self.testDevice = testDevice
-        self.availableCommands = []
+        self.available_commands = []
         self.deviceVariables = {'asdf':'qwer'}
         self._CommandsLibrary = self._allDevices._Libraries['commands']
 
@@ -527,7 +527,7 @@ class Device:
         """
         def set_commands(commands):
             for command in commands:
-                self.availableCommands.append(str(command.command_id))
+                self.available_commands.append(str(command.command_id))
 
         def set_variables(vars):
             self.deviceVariables = vars
@@ -642,7 +642,7 @@ class Device:
             raise YomboDeviceError("'cmd' must be a string or instance of a command.", errorno=103)
 
 #        if self.validate_command(cmdobj) is not True:
-        if str(cmdobj.cmdUUID) not in self.availableCommands:
+        if str(cmdobj.cmdUUID) not in self.available_commands:
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         payloadValues = {}
@@ -681,6 +681,15 @@ class Device:
 #TODO: Remember, we need to ignore our own broadcasts.
 #        self.lastCmd.appendleft(cmd)
         return message
+
+    def get_status(self, history=0):
+        """
+        Gets the history of the device status.
+
+        :param history: How far back to go. 0 = previoius, 1 - the one before that, etc.
+        :return:
+        """
+        return self.status_history[history]
 
     def set_status(self, **kwargs):
         """
@@ -804,7 +813,7 @@ class Device:
 
     def _do_load_history(self, records):
         if len(records) == 0:
-            self.status_history.append(self.Status(self.device_id, 0, 0, '', '', {}, '', 0, 0))
+            self.status_history.append(self.Status(self.device_id, 0, 0, 'NA', 'NA', {}, '', 0, 0))
         else:
             for record in records:
                 self.status_history.appendleft(self.Status(record['device_id'], record['set_time'], record['device_state'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['source'], record['uploaded'], record['uploadable']))
@@ -812,18 +821,9 @@ class Device:
 
         logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
-    def get_history(self, history=0):
-        """
-        Gets the history of the device status.
-
-        :param history: How far back to go. 0 = previoius, 1 - the one before that, etc.
-        :return:
-        """
-        return {"status": self.status[history]}
-
     def validate_command(self, cmdUUID):
-        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, cmdUUID, self.availableCommands)
-        if str(cmdUUID) in self.availableCommands:
+        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, cmdUUID, self.available_commands)
+        if str(cmdUUID) in self.available_commands:
             return True
         else:
             return False

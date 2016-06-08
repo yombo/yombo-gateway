@@ -515,6 +515,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         """
         self._local_log("debug", "!!!!PikaFactory::close")
         self.AMQPProtocol.close()
+        self.AMQPYombo.disconnected()
 
     def clientConnectionLost(self, connector, reason):
         logger.debug("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
@@ -582,6 +583,7 @@ class AMQPYombo(YomboLibrary):
             ssl=True,
             credentials=self.pika_credentials
         )
+        self._States.set('yombo_server_is_connected', False)
 
         self.connect()
 
@@ -623,6 +625,7 @@ class AMQPYombo(YomboLibrary):
         self._connected = True
         self._connecting = False
         self.timeout_reconnect_task = False
+        self._States.set('yombo_server_is_connected', True)
 
     def send_amqp_message(self, **kwargs):
         """
@@ -746,6 +749,7 @@ class AMQPYombo(YomboLibrary):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
+        self._States.set('yombo_server_is_connected', False)
         logger.info("Disconnected from Yombo service.")
         self.pika_factory.fullyConnected = False  # connected to AMQP, and ready to send messages.
         self._connected = False  # connected to AMQP, and ready to send messages.

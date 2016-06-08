@@ -164,6 +164,13 @@ class Atoms(YomboLibrary):
 #    def __repr__(self):
 #        return str(self.__Atoms)
 
+    def get_atoms(self):
+        """
+        Shouldn't really be used. Just returns a _copy_ of all the atoms.
+        :return:
+        """
+        return self.__Atoms.copy()
+
     def exists(self, key):
         """
         Checks if a given atom exsist. Returns true or false.

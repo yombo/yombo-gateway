@@ -92,11 +92,11 @@ class Empty(YomboModule):
            :language: python
            :lines: 83,95-99
         """
-        logger.debug("Is Light: %s", self._States['is_light'])
-        logger.debug("Is Dark: %s", self._States['is_dark'])
-        logger.debug("Is Day: %s", self._States['is_day'])
-        logger.debug("Is Night: %s", self._States['is_night'])
-        logger.debug("Mars Next Rise: %s", self._Times.objRise(dayOffset=1, object='Mars'))
+        logger.debug("Is Light: {light}", light=self._States['is_light'])
+        logger.debug("Is Dark: {dark}", dark=self._States['is_dark'])
+        logger.debug("Is Day: {day}", day=self._States['is_day'])
+        logger.debug("Is Night: {night}", night=self._States['is_night'])
+        logger.debug("Mars Next Rise: {mars_rise}", mars_rise=self._Times.objRise(dayOffset=1, object='Mars'))
     
     def _stop_(self):
         """

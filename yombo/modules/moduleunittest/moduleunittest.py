@@ -41,11 +41,11 @@ class ModuleUnitTest(YomboModule):
         self.modules = self.components['yombo.gateway.lib.loader'].moduleNames
         
         # place to store our commands.
-        self.availableCommands = {}
-        self.availableCommands['open'] = self.libraries['Commands']['open']
-        self.availableCommands['close'] = self.libraries['Commands']['close']
-        self.availableCommands['on'] = self.libraries['Commands']['on']
-        self.availableCommands['off'] = self.libraries['Commands']['off']
+        self.available_commands = {}
+        self.available_commands['open'] = self.libraries['Commands']['open']
+        self.available_commands['close'] = self.libraries['Commands']['close']
+        self.available_commands['on'] = self.libraries['Commands']['on']
+        self.available_commands['off'] = self.libraries['Commands']['off']
         
         # store our devices
         self.devices = {}
@@ -65,8 +65,8 @@ class ModuleUnitTest(YomboModule):
         Startup phase 2 of 3.
         """
         deviceCmds = []
-        for cmd in self.availableCommands:
-            deviceCmds.append(self.availableCommands[cmd].cmdUUID)
+        for cmd in self.available_commands:
+            deviceCmds.append(self.available_commands[cmd].cmdUUID)
         
 
         # Don't ever do this in a real module. But add some test devices.
@@ -86,7 +86,7 @@ class ModuleUnitTest(YomboModule):
                  }
        
         self.devices[1] = self.libraries['Devices']._addDevice(record, True)
-        self.libraries['Devices'].yombodevices['01zZzZzZzZzZzZzZzZzZzZzZ'].availableCommands = deviceCmds
+        self.libraries['Devices'].yombodevices['01zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
 
         record = {'description'   : "Test device 2.  Number in front t test fuzzy searches.",
                   'created'       : int(time.time()),
@@ -104,7 +104,7 @@ class ModuleUnitTest(YomboModule):
                  }
        
         self.devices[2]= self.libraries['Devices']._addDevice(record, True)
-        self.libraries['Devices'].yombodevices['02zZzZzZzZzZzZzZzZzZzZzZ'].availableCommands = deviceCmds
+        self.libraries['Devices'].yombodevices['02zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
         
     def _start_(self):
         """
@@ -144,7 +144,7 @@ class ModuleUnitTest(YomboModule):
 
 #        self.outMsg = namedtuple('outMsg', "time, device_id, message")
 #        self.outMessages = {}
-        msg = self.devices[1].getMessage(self, cmdobj=self.availableCommands['open'])
+        msg = self.devices[1].getMessage(self, cmdobj=self.available_commands['open'])
         self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].device_id, msg)
         
     

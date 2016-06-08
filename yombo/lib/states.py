@@ -179,6 +179,26 @@ class States(YomboLibrary, object):
         else:
             return None
 
+    def get_states(self):
+        """
+        Get all states. For states requiring a password to read, value will be set to "Password required to see value".
+
+        :param key: Name of state to check.
+        :param password: Optional - Only required if state has a read password. See :py:func:`has_set_password`
+        :return: Value of state
+        """
+#        logger.info("States: {state}", state=self.__States)
+#        logger.info("State pass: {password}", key=key, password=password)
+        states = {}
+        for name, state in self.__States.iteritems():
+            states[name] = state
+            if state['readKey'] is not None:
+                states[name]['value'] = "*****"
+                states[name]['readKey'] = "Yes"
+            if state['writeKey'] is not None:
+                states[name]['writeKey'] = "Yes"
+        return states
+
     def set(self, key, value, password=None):
         """
         Set the value of a given state (key). If a password is required and not provided, returns YomboStateNoAccess.
@@ -233,6 +253,8 @@ class States(YomboLibrary, object):
                 elif self.__States[key]['readKey'] != password:
                     raise YomboStateNoAccess("State read password is invalid.")
             if key in self.__History:
+                if position == -1:  # Lets return all the history
+                    return self.__History[key]
                 if len(self.__History[key]) < position:
                     raise YomboStateNotFound("History doesn't exist. Only %s entries exist. %s" % len(self.__History[key]))
                 return self.__History[key][position]

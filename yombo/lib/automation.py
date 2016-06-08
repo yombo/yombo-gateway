@@ -522,7 +522,7 @@ class Rule:
         :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
         :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
             values entered by the user.
-        :ivar availableCommands: *(list)* - A list of cmdUUID's that are valid for this device.
+        :ivar available_commands: *(list)* - A list of cmdUUID's that are valid for this device.
         """
 
     def _init_(self):
@@ -531,7 +531,7 @@ class Rule:
         :return:
         """
         def set_commands(commands):
-            self.availableCommands = commands
+            self.available_commands = commands
 
         def set_variables(vars):
             self.deviceVariables = vars

@@ -19,12 +19,12 @@ if not os.path.exists('usr'):
     os.makedirs('usr')
 if not os.path.exists('usr'):
     os.makedirs('usr/gpg')
-#sql data directory
 #Misc items are stored here.
 if not os.path.exists('usr/etc'):
     os.makedirs('usr/etc')
 if not os.path.exists('usr/etc/gpg'):
     os.makedirs('usr/etc/gpg')
+    os.chmod('usr/etc/gpg', 0700)
 #logging directory
 if not os.path.exists('usr/log'):
     os.makedirs('usr/log')

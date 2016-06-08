@@ -62,7 +62,7 @@ class Times(YomboLibrary, object):
         self.loader = loader
         if PatchEnvironment: self.runned_for_tests()
 
-        self.time_ajust = 300.0
+        self.time_ajust = 150.0
 
         self.obs = ephem.Observer()
         self.obs.lat = str(getConfigValue('location', 'latitude', 0))
@@ -75,29 +75,29 @@ class Times(YomboLibrary, object):
         self.obsTwilight.lon = str(getConfigValue('location', 'longitude', 0))
         self.obsTwilight.elevation = int(getConfigValue('location', 'elevation', 800))
 
-        self.isTwilight = None
-        self.isLight = None
-        self.isDark = None
-        self.isDay = None
-        self.isNight = None
-        self.isDawn = None
-        self.isDusk = None
+#        self.isTwilight = None
+#        self.isLight = None
+#        self.isDark = None
+#        self.isDay = None
+#        self.isNight = None
+        self.isDawn = False
+        self.isDusk = False
         self.nextSunrise = None
         self.nextSunset = None
         self.nextMoonrise = None
         self.nextMoonset = None
 
-        self._States.set('times_twilight', None, self._StatesPassword)
-        self._States.set('times_light', None, self._StatesPassword)
-        self._States.set('times_dark', None, self._StatesPassword)
-        self._States.set('times_day', None, self._StatesPassword)
-        self._States.set('times_night', None, self._StatesPassword)
-        self._States.set('times_dawn', None, self._StatesPassword)
-        self._States.set('times_dusk', None, self._StatesPassword)
-        self._States.set('times_sunrise', None, self._StatesPassword)
-        self._States.set('times_sunset', None, self._StatesPassword)
-        self._States.set('times_moonrise', None, self._StatesPassword)
-        self._States.set('times_moonset', None, self._StatesPassword)
+#        self._States.set('times_twilight', None, self._StatesPassword)
+#        self._States.set('times_light', None, self._StatesPassword)
+#        self._States.set('times_dark', None, self._StatesPassword)
+#        self._States.set('times_day', None, self._StatesPassword)
+#        self._States.set('times_night', None, self._StatesPassword)
+#        self._States.set('times_dawn', False, self._StatesPassword)
+#        self._States.set('times_dusk', False, self._StatesPassword)
+#        self._States.set('times_sunrise', None, self._StatesPassword)
+#        self._States.set('times_sunset', None, self._StatesPassword)
+#        self._States.set('times_moonrise', None, self._StatesPassword)
+#        self._States.set('times_moonset', None, self._StatesPassword)
 
         self.CLnowLight = None
         self.CLnowDark = None
@@ -108,10 +108,25 @@ class Times(YomboLibrary, object):
         self.CLnowDawn = None
         self.CLnowDusk = None
 
+        self.is_now_init = True
         self._setup_light_dark_events()
         self._setup_day_night_events()
         self._setup_next_twilight_events() # needs to be called before setupNextDawnDuskEvent
         self._setup_next_dawn_dusk_event()
+        self._setup_moon_events()
+        self.is_now_init = False
+        #
+        # self._States.set_set_password('times_twilight', self._StatesPassword)
+        # self._States.set_set_password('times_light', self._StatesPassword)
+        # self._States.set_set_password('times_dark', self._StatesPassword)
+        # self._States.set_set_password('times_day', self._StatesPassword)
+        # self._States.set_set_password('times_night', self._StatesPassword)
+        # self._States.set_set_password('times_dawn', self._StatesPassword)
+        # self._States.set_set_password('times_dusk', self._StatesPassword)
+        # self._States.set_set_password('times_sunrise', self._StatesPassword)
+        # self._States.set_set_password('times_sunset', self._StatesPassword)
+        # self._States.set_set_password('times_moonrise', self._StatesPassword)
+        # self._States.set_set_password('times_moonset', self._StatesPassword)
 
     @property
     def isTwilight(self):
@@ -236,6 +251,30 @@ class Times(YomboLibrary, object):
         """
         pass
 
+    def _setup_moon_events(self):
+        """
+        Setup events to be called when moon rise/set needs to change.
+        Two callLater's are setup: one to send a broadcast event of the change
+        the second callLater is to come back to this function and redo it all.
+        This is different than day/night since it accounts for twilight.
+        """
+        self.CLnowMoonRise = None
+        self.CLnowMoonSet = None
+        nextMoonrise = self.item_rise(item='Moon')
+        if self.nextMoonrise != nextMoonrise:
+            self.nextMoonrise = nextMoonrise
+        nextMoonset = self.item_set(item='Moon')
+        if self.nextMoonset != nextMoonset:
+            self.nextMoonset = nextMoonset
+
+        setTime = 0
+        if self.item_visible(item='Moon'):
+            self.CLnowMoonEvents = reactor.callLater(self.nextMoonset+0.1, self._send_status, 'now_moonset')
+            reactor.callLater(self.nextMoonset+0.1, self._setup_moon_events)
+        else:
+            self.CLnowMoonEvents = reactor.callLater(self.nextMoonrise+0.1, self._send_status, 'now_moonrise')
+            reactor.callLater(self.nextMoonrise+0.1, self._setup_moon_events)
+
     def _setup_light_dark_events(self):
         """
         Setup events to be called when isLight and isDark needs to change.
@@ -250,16 +289,16 @@ class Times(YomboLibrary, object):
         if self.isLight:
             setTime = self.sunset_twilight() - time()
             #print "%d = %d - %d" % (setTime, self.sunset_twilight(),time())
-            self.CLnowDark = reactor.callLater(setTime, self._send_status, 'nowDark')
+            self.CLnowDark = reactor.callLater(setTime, self._send_status, 'now_dark')
             #print "self.CLnowDark = reactor.callLater(setTime, self._send_status, 'nowDark')"
         else:
             setTime = self.sunrise_twilight() - time()
             #print "setTime = self.sunrise_twilight()"
             #print "%d = %d - %d" % (setTime, self.sunrise_twilight(),time())
-            self.CLnowLight = reactor.callLater(setTime, self._send_status, 'nowLight')
+            self.CLnowLight = reactor.callLater(setTime, self._send_status, 'now_light')
 
         #set a callLater to redo islight/dark, and setup next broadcast.
-        reactor.callLater(setTime+self.time_ajust, self._setup_light_dark_events)
+        reactor.callLater(setTime+0.1, self._setup_light_dark_events)
 
     def _setup_day_night_events(self):
         """
@@ -273,11 +312,11 @@ class Times(YomboLibrary, object):
         if self.isDay:
             setTime = self.sunset() - time()
             logger.debug("NowNight event in: {setTime}", setTime=setTime)
-            self.CLnowNight = reactor.callLater(setTime, self._send_status, 'nowNight')
+            self.CLnowNight = reactor.callLater(setTime, self._send_status, 'now_night')
         else:
             setTime = self.sunrise() -time()
             logger.debug("NowDay event in: {setTime}", setTime=setTime)
-            self.CLnowDay = reactor.callLater(setTime, self._send_status, 'nowDay')
+            self.CLnowDay = reactor.callLater(setTime, self._send_status, 'now_day')
 
         #set a callLater to redo isday/night, and setup next broadcast.
         reactor.callLater(setTime+self.time_ajust, self._setup_day_night_events)
@@ -306,7 +345,7 @@ class Times(YomboLibrary, object):
             riseTime = self.sunrise_twilight() - time()
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowTwilight = reactor.callLater(twTime, self._send_status, 'nowTwilight')
+            self.CLnowTwilight = reactor.callLater(twTime, self._send_status, 'now_twilight')
 
         reactor.callLater(twTime+self.time_ajust, self._setup_next_twilight_events)
 
@@ -321,11 +360,14 @@ class Times(YomboLibrary, object):
         self.CLnowNotDusk = None
         self.CLnowDawn = None
         self.CLnowDusk = None
-        self._CalcTwilight()  #is it twilight right now?
+        if self.is_now_init is False:
+            self._CalcTwilight()  #is it twilight right now?
         sunrise = self.sunrise_twilight() # for today
-        self.nextSunrise = sunrise
+        if self.nextSunrise != sunrise:
+            self.nextSunrise = sunrise
         sunset = self.sunset()  # for today
-        self.nextSunset = sunset
+        if self.nextSunset != sunset:
+            self.nextSunset = sunset
 
         sunrise_end = self.sunrise() # for today
         sunset_end = self.sunset_twilight()  # for today
@@ -342,16 +384,24 @@ class Times(YomboLibrary, object):
             if secsRiseEnd < secsSetEnd: #  it's dawn right now = twilight + closer to sunrise's end
                 self.CLnowNotDawn = reactor.callLater(secsRiseEnd, self._send_now_not_dawn) # set a timer for no more dawn
                 reactor.callLater(secsRiseEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
+                if self.is_now_init:
+                    self.isDawn = True
             else: # else, closer to sunset.
                 self.CLnowNotDusk = reactor.callLater(secsSetEnd, self._send_now_not_dusk) # set a timer for no more dusk
                 reactor.callLater(secsSetEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
+                if self.is_now_init:
+                    self.isDusk = True
         else: # it's not twilight, we need to set a time for it to start.
             if secsRise < secsSet: #  it's going to be dawn next = no twilight + closer to sunrise
                 self.CLnowDawn = reactor.callLater(secsRise, self._send_now_dawn) # set a timer for is dawn
                 reactor.callLater(secsRise+self.time_ajust, self._setup_next_dawn_dusk_event)
+                if self.is_now_init:
+                    self.isDawn = False
             else: # else, we are closer to sunset!
                 self.CLnowDusk = reactor.callLater(secsSet, self._send_now_dusk) # set a timer for is dusk
                 reactor.callLater(secsSet+self.time_ajust, self._setup_next_dawn_dusk_event)
+                if self.is_now_init:
+                    self.isDusk = False
         logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})", secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
 
     def _send_now_dawn(self):
@@ -359,7 +409,7 @@ class Times(YomboLibrary, object):
         Called by timer when it's nowDawn.
         """
         self.isDawn = True
-        self._send_status('nowDawn')
+        self._send_status('now_dawn')
 
     def _send_now_not_dawn(self):
         """
@@ -367,14 +417,14 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dusk.
         """
         self.isDawn = False
-        self._send_status('nowNotDawn')
+        self._send_status('now_not_dawn')
 
     def _send_now_dusk(self):
         """
         Called by timer when it's nowDusk.
         """
         self.isDusk = True
-        self._send_status('nowDusk')
+        self._send_status('now_dusk')
 
     def _send_now_not_dusk(self):
         """
@@ -382,7 +432,7 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dawn.
         """
         self.isDusk = False
-        self._send_status('nowNotDusk')
+        self._send_status('now_not_dusk')
 
     def _send_status(self, msgstatus):
         """
@@ -393,10 +443,10 @@ class Times(YomboLibrary, object):
                'msgOrigin'      : self._FullName,
                'msgDestination' : "yombo.gateway.all",
                'msgType'        : 'event',
-               'msgStatus'      : msgstatus,
+               'msgStatus'      : 'new',
                'uuidType'       : "0",
                'uuidSubType'    : "040",
-               'payload'        : {},
+               'payload'        : {'type': 'times', 'event':msgstatus},
                }
         logger.debug("Time event: {msg}", msg=msg)
         message = Message(**msg)
@@ -470,7 +520,7 @@ class Times(YomboLibrary, object):
             self.isDay = True
             self.isNight = False
 
-    def next_wilight(self):
+    def next_twilight(self):
         """
         Returns the times of the next twilight. If it's currently twilight, then start will be "0".
         """
@@ -600,10 +650,7 @@ class Times(YomboLibrary, object):
         :param item: Default='Sun'. PyEphem item to search for and return results for.
         :type item: string
         """
-
-        dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
+        dayOffset = kwargs.get('dayOffset', 0)
         return self.item_rise(dayOffset=dayOffset, item='Sun')
 
     def sunset(self, **kwargs):
