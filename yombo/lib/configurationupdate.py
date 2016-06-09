@@ -25,19 +25,12 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 
-from yombo.ext.expiringdict import ExpiringDict
-
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
-#from yombo.core.message import Message
-from yombo.core.helpers import getConfigValue, setConfigValue
-from yombo.core.log import getLogger
-from yombo.core import getComponent
-#from yombo.core.maxdict import MaxDict
+from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import sleep
 
-logger = getLogger('library.configurationupdate')
+logger = get_logger('library.configurationupdate')
 
 class ConfigurationUpdate(YomboLibrary):
     """
@@ -162,13 +155,13 @@ class ConfigurationUpdate(YomboLibrary):
 
         self.__doingfullconfigs = False
         self.__pendingUpdates = []
-        self.gpg_key = getConfigValue("core", "gpgkeyid", '')
-        self.gpg_key_ascii = getConfigValue("core", "gpgkeyascii", '')
-        self.gwuuid = getConfigValue("core", "gwuuid")
+        self.gpg_key = self._Configs.get("core", "gpgkeyid", '')
+        self.gpg_key_ascii = self._Configs.get("core", "gpgkeyascii", '')
+        self.gwuuid = self._Configs.get("core", "gwuuid")
 
         if self.loader.unittest:  # if we are testing, don't try to download configs
             return
-        self.AMQPYombo = getComponent('yombo.gateway.lib.AMQPYombo')
+        self.AMQPYombo = self._Libraries['AMQPYombo']
         self.loadDefer = defer.Deferred()
 #        self.loadDefer.addCallback(self.__loadFinish)
         self._LocalDBLibrary = self._Libraries['localdb']
@@ -213,7 +206,7 @@ class ConfigurationUpdate(YomboLibrary):
         """
         pass
 
-    def incomingConfigQueueAdd(self, msg):
+    def incoming_config_queue_add(self, msg):
         """
         Add a configuration response from the Yombo server to
         processing queue. After being added,
@@ -232,12 +225,12 @@ class ConfigurationUpdate(YomboLibrary):
 #        logger.warn("configQueueCheck was just called.")
         while self.__incomingConfigQueue:
             config = self.__incomingConlibrary.configurationupdatefigQueue.pop()
-            self.processConfig(config)
+            self.process_config(config)
 
-    def amqpDirectIncoming(self, sendInfo, deliver, props, msg):
+    def amqp_direct_incoming(self, sendInfo, deliver, props, msg):
         # do nothing on requests for now.... in future if we ever accept requests, we will.
         if props.headers['Type'] != "Response":
-            raise YomboWarning("ConfigurationUpdate::amqpDirectIncoming only accepts 'Response' type message.") # For now...
+            raise YomboWarning("ConfigurationUpdate::amqp_direct_incoming only accepts 'Response' type message.") # For now...
 
         # if a response, lets make sure it's something we asked for!
 #        logger.info("received: %s, deliver: %s, props: %s, msg: %s" % (sendInfo, deliver, props, msg))
@@ -248,29 +241,29 @@ class ConfigurationUpdate(YomboLibrary):
         configStatus = props.headers['ConfigStatus']
         inputType = props.headers['Type']
  #       try:
-        self.processConfig(inputType, configType, configStatus, msg)
+        self.process_config(inputType, configType, configStatus, msg)
 #        except:
 #            raise YomboWarning("Unable to pre")
 
     @inlineCallbacks
-    def processConfig(self, inputType, configType, configStatus, msg):
+    def process_config(self, inputType, configType, configStatus, msg):
         logger.debug("processing configType: {configType}", configType=configType)
 
         # make sure the command exists
         if configType not in self.configTypes:
-            logger.warn("ConfigurationUpdate::processConfig - '{configType}' is not a valid configuration item. Skipping.", configType=configType)
+            logger.warn("ConfigurationUpdate::process_config - '{configType}' is not a valid configuration item. Skipping.", configType=configType)
             return
         elif configType == "GatewayConfigs":
             payload = msg['Data']
             for section in payload:
                 for key in section['Values']:
-                   setConfigValue(section['Section'], key['Key'], key['Value'])
+                   self._Configs.set(section['Section'], key['Key'], key['Value'])
         elif configType == "GatewayVariable":
             records = msg['Data']["configdata"]
             sendUpdates = []
             for record in records:
-                if self._Libraries['configuration'].getConfigTime(record['section'], record['item']) > record['updated']:
-                  setConfigValue(record['section'], record['item'], record['value'])
+                if self._Libraries['configuration'].get_config_time(record['section'], record['item']) > record['updated']:
+                  self._Configs.set(record['section'], record['item'], record['value'])
                 else: #the gateway is newer
                   sendUpdates.append({'section': record['section'],
                                       'item'   : record['item'],
@@ -281,7 +274,7 @@ class ConfigurationUpdate(YomboLibrary):
 #              self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'setGatewayVariables', 'configdata':sendUpdates}))
 #            self._removeFullTableQueue('GatewayVariablesTable')
         elif configType in self.configTypes:
-            logger.debug("ConfigurationUpdate::processConfig - Doing config for: {configType}", configType=configType)
+            logger.debug("ConfigurationUpdate::process_config - Doing config for: {configType}", configType=configType)
             configs_db = self.configTypes[configType]
 
             data = []
@@ -428,7 +421,7 @@ class ConfigurationUpdate(YomboLibrary):
                                 tempStorage['1'].append(field)
             for key, value in tempStorage.iteritems():
 #                logger.info("key: {key}, value: {value}", key=key, value=value)
-                self.processConfig(tempConfig[key]['inputType'], tempConfig[key]['configType'], configStatus, tempStorage[key])
+                self.process_config(tempConfig[key]['inputType'], tempConfig[key]['configType'], configStatus, tempStorage[key])
 
             if len(save_records) > 0:
 #                for record in save_records:
@@ -448,13 +441,13 @@ class ConfigurationUpdate(YomboLibrary):
         logger.debug("About to do get_all_configs")
         if self.__doingfullconfigs is True:
             returnValue(False)
-        lastTime = getConfigValue("core", "lastFullConfigDownload", 1)
+        lastTime = self._Configs.get("core", "lastFullConfigDownload", 1)
         if int(lastTime) > (int(time() - 10)):
             logger.debug("Not downloading fullconfigs due to race condition.")
             returnValue(None)
 
         self.__doingfullconfigs = True
-        setConfigValue("core", "lastFullConfigDownload", int(time()) )
+        self._Configs.set("core", "lastFullConfigDownload", int(time()) )
 
         logger.debug("Preparing for full configuration download.")
         for key, item in self.configTypes.iteritems():
@@ -489,7 +482,7 @@ class ConfigurationUpdate(YomboLibrary):
             "exchange_name"  : "ysrv.e.gw_config",
             "source"        : "yombo.gateway.lib.configurationupdate",
             "destination"   : "yombo.server.configs",
-            "callback" : self.amqpDirectIncoming,
+            "callback" : self.amqp_direct_incoming,
             "body"          : {
               "DataType"        : "Object",
               "Request"         : requestContent,

@@ -12,12 +12,12 @@ from collections import namedtuple
 from twisted.internet import reactor
 
 from yombo.core.helpers import getConfigValue
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 from yombo.core.module import YomboModule
 from yombo.lib.loader import getTheLoadedComponents # Don't use this!
 from yombo.utils.sqldict import SQLDict
 
-logger = getLogger("module.test")
+logger = get_logger("module.test")
 
 class ModuleUnitTest(YomboModule):
     """

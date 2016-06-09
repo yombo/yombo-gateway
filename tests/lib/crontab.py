@@ -28,7 +28,7 @@ class CronTabTests(ExpectingTestCase):
 
     def testCreateRunAt(self):
         m = Mock()
-        myCron = self._CronTab.runAt(m, "14:25")
+        myCron = self._CronTab.run_at(m, "14:25")
         self.expectSetEqual([25,], myCron.mins, "CronJob should run at 25 mins after the hour, but it's not.", first=True)
         self.expectSetEqual([14,], myCron.hours, "CronJob should run at hour 14 (2pm), but it's not.")
 
@@ -51,14 +51,14 @@ class CronTabTests(ExpectingTestCase):
     def testRunNowThruCronTab(self):
         m = Mock()
         myCron = self._CronTab.new(m, label="MyCron")
-        self._CronTab.runNow(myCron.cronUUID)
-        self.assertEqual(m.called, True, "CronTab called called runNow, but action function wasn't called!")
+        self._CronTab.run_now(myCron.cronUUID)
+        self.assertEqual(m.called, True, "CronTab called called run_now, but action function wasn't called!")
 
     def testRunNowThruCronTab(self):
         m = Mock()
         myCron = self._CronTab.new(m, label="MyCron")
-        myCron.runNow()
-        self.assertEqual(m.called, True, "CronJob called runNow, but action function wasn't called!")
+        myCron.run_now()
+        self.assertEqual(m.called, True, "CronJob called run_now, but action function wasn't called!")
 
 
 if __name__ == '__main__':

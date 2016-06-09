@@ -33,9 +33,9 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger('lib.sqlitedb')
+logger = get_logger('lib.sqlitedb')
 
 LATEST_SCHEMA_VERSION = 1
 
@@ -333,33 +333,38 @@ class LocalDB(YomboLibrary):
         returnValue(records)
 
     @inlineCallbacks
-    def get_sql_dict(self, module, dict_name):
-        records = yield self.dbconfig.select('device_status', select='dict_key, dict_data', where=['module = ? AND dict_name = ?', module, dict_name])
-        returnValue(records[0])
+    def get_sql_dict(self, component, dict_name):
+        records = yield self.dbconfig.select('sqldict', select='dict_data', where=['component = ? AND dict_name = ?', component, dict_name])
+        returnValue(records)
 
     @inlineCallbacks
-    def set_sql_dict(self, module, dict_name, dict_key, dict_data):
+    def set_sql_dict(self, component, dict_name, dict_data):
         """
         Used to save SQLDicts to the database. This is from a loopingcall as well as
         shutdown of the gateway.
 
-        Called by: lib.Loader::saveSQLDict
+        Called by: lib.Loader::save_sql_dict
 
-        :param module: Module/Library that is storing the data.
+        :param component: Module/Library that is storing the data.
         :param dictname: Name of the dictionary that is used within the module/library
         :param key1: Key
         :param data1: Data
         :return: None
         """
-        args = {'module': module,
+        args = {'component': component,
                 'dict_name': dict_name,
-                'dict_key' : dict_key,
                 'dict_data' : dict_data,
                 'updated' : int(time()),
         }
-        yield self.dbconfig.update('sqldict', args, where=['dict_key = ? AND module = ? AND dict_name = ?', dict_key, module, dict_name] )
-        args['created'] = args['updated']
-        yield self.dbconfig.insert('sqldict', args, None, 'OR IGNORE' )
+#        print "starting set_sql_dict"
+        records = yield self.dbconfig.select('sqldict', select='dict_name', where=['component = ? AND dict_name = ?', component, dict_name])
+        if len(records) > 0:
+            results = yield self.dbconfig.update('sqldict', args, where=['component = ? AND dict_name = ?', component, dict_name] )
+#            print "set_sql_dict: update reuslts: %s" %results
+        else:
+            args['created'] = args['updated']
+            results = yield self.dbconfig.insert('sqldict', args, None, 'OR IGNORE' )
+#            print "set_sql_dict: insert reuslts: %s" %results
 
     @inlineCallbacks
     def get_variables(self, variable_type, foreign_id = None):

@@ -34,17 +34,15 @@ send any new lines of text to the function define on setup.
 """
 # Import python libraries
 import codecs
-import os # used to create the file if it doesn't exist.
+import os
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFileError
-from yombo.utils.sqldict import SQLDict
-
-class BlankFileReader(object):
-    pass
+from yombo.utils import get_component
 
 class FileReader:
     """
@@ -53,7 +51,7 @@ class FileReader:
 
     Typically used to monitor log files.
     """
-    def __init__(self, instanceObj, **kwargs):
+    def __init__(self, owner_object, **kwargs):
         """
         Generate a new File Reader instance. 
 
@@ -74,23 +72,26 @@ class FileReader:
         :type frequency: int
         """
         try:
-          self.filename       = kwargs['filename']
+            self.filename = kwargs['filename']
         except:
-          raise FileError("filename not set.", 'FileWatcher API')
+            raise YomboFileError("filename not set.", 101, '__init__', 'FileReader')
 
         try:
-          self.callback       = kwargs['callback']
+            self.callback = kwargs['callback']
         except:
-          raise FileError("callback not set.", 'FileWatcher API')
+            raise YomboFileError("callback not set.", 102, '__init__', 'FileReader')
 
-        self.fileid    = kwargs.get('fileid', self.filename)
+        self._owner_object = owner_object
+
+        self.fileid = kwargs.get('fileid', self.filename)
         self.makeexist = kwargs.get('makeexist', True)
         self.frequency = kwargs.get('frequency', 1)
+        self._SQLDict = get_component('yombo.gateway.lib.sqldict')
 
-        blankObj = BlankFileReader()
-        blankObj._FullName = "gateway.core.filereader-" + instanceObj._FullName.lower()
-
-        self.fileInfo = SQLDict(blankObj, self.fileid) # Track file position
+    @inlineCallbacks
+    def start(self):
+        self.fileInfo = yield self._SQLDict.get('yombo.gateway.utils-filereader', 'fileInfo')
+#        self.fileInfo = {}
 
         if 'startLocation' not in self.fileInfo:
             self.fileInfo['startLocation'] = 0
@@ -101,25 +102,27 @@ class FileReader:
 
         try:
             if not os.path.exists(self.filename):
-                if self.makeexist == True: # if file doesn't exist
+                if self.makeexist is True:  # if file doesn't exist
                     open(self.filename, 'w').close()  # create it and then close.
                     self.fileInfo['startLocation'] = 0
                 else:
-                    raise FileError("File does not exist and not allowed to create.", 'FileWatcher API')
-            else: # else, exists. If smaller than last run, reset the file pointer.
-                fileInfo = os.stat(self.filename)
-                if fileInfo.st_size < self.fileInfo['startLocation']:
+                    raise YomboFileError("File does not exist, told not cannot create one.",
+                                         103, '__init__', 'FileReader')
+            else:  # else, exists. If smaller than last run, reset the file pointer.
+                file_info = os.stat(self.filename)
+                if file_info.st_size < self.fileInfo['startLocation']:
                     self.fileInfo['startLocation'] = 0
                 
             self.fp_in = codecs.open(self.filename, encoding='utf-8')
             self.fp_in.seek(self.fileInfo['startLocation'])
         except IOError as (errno, strerror):
-            raise YomboFileError("Logreader could not open file for reading. Reason: %s" % strerror)
-            self.fileOpened = None
-            callLater(10, self.load)
-
-        self.timer = LoopingCall(self._watch)
-        self.timer.start(self.frequency)
+            raise YomboFileError("Logreader could not open file for reading. Reason: %s" % strerror,
+                                 104, '__init__', 'FileReader')
+#            self.fileOpened = None
+#            callLater(10, self.load)
+        else:
+            self.timer = LoopingCall(self._watch)
+            self.timer.start(self.frequency)
 
     def close(self):
         """
@@ -138,5 +141,6 @@ class FileReader:
         """
         for line in self.fp_in.readlines():
             self.callback(line)
- 
-        self.fileInfo['startLocation'] = self.fp_in.tell()
+        location = self.fp_in.tell()  # lets be friendly to SQLDict.
+        if location != self.fileInfo['startLocation']:
+            self.fileInfo['startLocation'] = location

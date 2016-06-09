@@ -8,9 +8,9 @@ nearly empty starter module.
 from twisted.internet import reactor
 
 from yombo.core.module import YomboModule
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger("modules.empty")
+logger = get_logger("modules.empty")
 
 class Empty(YomboModule):
     """

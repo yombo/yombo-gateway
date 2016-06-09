@@ -9,9 +9,9 @@ This module also creates a few rules for demonstration.
 from twisted.internet import reactor
 
 from yombo.core.module import YomboModule
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger("modules.automationexample")
+logger = get_logger("modules.automationexample")
 
 
 class AutomationExample(YomboModule):
@@ -22,7 +22,7 @@ class AutomationExample(YomboModule):
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
-        self._States['automationexample'] = 0
+#        self._States['automationexample'] = 0
 
     def _load_(self):
         # in 3 seconds from now, change the state - test the trigger
@@ -150,7 +150,7 @@ class AutomationExample(YomboModule):
     def _start_(self):
         logger.info("States: Is Light: {times_light}", times_light=self._States['times_light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
-        self._States['automationexample'] = 0
+#        self._States['automationexample'] = 0
 
     def set_high(self):
         logger.info("in set_high - setting automationexample = 1")

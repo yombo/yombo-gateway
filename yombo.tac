@@ -35,9 +35,9 @@ except ImportError:
     sys.path.append(os.path.join(os.getcwd(), ""))
     from yombo.core.gwservice import GWService
 
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger('root.twistd')
+logger = get_logger('root.twistd')
 
 application = service.Application('yombo')
 

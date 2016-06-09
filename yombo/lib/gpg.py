@@ -17,12 +17,11 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.core.helpers import getConfigValue, getComponent
 from yombo.core.library import YomboLibrary
-from yombo.core.message import Message
+#from yombo.core.message import Message
 
-from yombo.core.log import getLogger
-logger = getLogger('library.gpg')
+from yombo.core.log import get_logger
+logger = get_logger('library.gpg')
 
 class GPG(YomboLibrary):
     """
@@ -33,7 +32,7 @@ class GPG(YomboLibrary):
         Get the GnuPG subsystem up and loaded.
         """
         self.initDefer = Deferred()
-        self.mykeyid = getConfigValue('gpg', 'gpgkeyid')
+        self.mykeyid = self._Configs.get('gpg', 'gpgkeyid')
         self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
         logger.debug("syncing gpg keys into db")
         self.sync_keyring_to_db()
@@ -45,7 +44,7 @@ class GPG(YomboLibrary):
         """
         Get the root cert from database and make sure it's in our public keyring.
         """
-        self._AMQPLibrary = getComponent('yombo.gateway.lib.AMQPYombo')
+        self._AMQPLibrary = self._Libraries['AMQPYombo']
 
         pass
 
@@ -409,4 +408,256 @@ class GPG(YomboLibrary):
             self.gpgRoot = key
             self.importKey(key, 6)
         d.addCallback(dbResults)
+
+### Stuff from helps. For reference
+# def pgpEncrypt(inText, destination):
+#     """
+#     Encrypt text and output as ascii armor text.
+#
+#     :param inText: Plain text to encrypt.
+#     :type inText: string
+#     :param destination: Key fingerprint of the destination.
+#     :type destination: string
+#     :return: Ascii armored text.
+#     :rtype: string
+#     :raises: Exception - If encryption failed.
+#     """
+#     if type(inText) is unicode and inText.startswith('-----BEGIN PGP MESSAGE-----'):
+#         if not hasattr(pgpEncrypt, 'gpgkeyid'):
+#             pgpEncrypt.gpgkeyid = self._Configs.get('core', 'gpgkeyid')
+#             pgpEncrypt.gpg = gnupg.GPG()
+#
+#         try:
+#             output = pgpEncrypt.gpg.encrypt(inText, destination, sign=pgpEncrypt.gpgkeyid )
+#             if output.status != "encryption ok":
+#                 raise Exception("Unable to encrypt string.")
+#             return output.data
+#         except:
+#             raise Exception("Unable to encrypt string.")
+#     return inText
+#
+# def pgpDecrypt(inText):
+#     """
+#     Decrypt a PGP / GPG ascii armor text.  If passed in string/text is not detected as encrypted,
+#     will simply return the input.
+#
+#     #TODO: parse STDERR to make sure the key id is ours. Validates trust.
+#
+#     :param inText: Ascii armored encoded text.
+#     :type inText: string
+#     :return: Decoded string.
+#     :rtype: string
+#     :raises: Exception - If decoding failed.
+#     """
+#
+#     if type(inText) is unicode and inText.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
+#         return pgpVerify(inText)
+#     elif type(inText) is unicode and inText.startswith('-----BEGIN PGP MESSAGE-----'):
+#         if not hasattr(pgpDecrypt, 'gpgkeyid'):
+#             pgpDecrypt.gpgkeyid = self._Configs.get('core', 'gpgkeyid')
+#             pgpDecrypt.gpg = gnupg.GPG()
+#         try:
+#             out = pgpDecrypt.gpg.decrypt(inText)
+#             return out.data
+#         except:
+#             raise Exception("Unable to decrypt string.")
+#
+#     return inText
+#
+#
+# def pgpSign(inText, asciiarmor=True):
+#     """
+#     Signs inText and returns the signature.
+#     """
+#     #cache the gpg/pgp key locally.
+#     if type(inText) is unicode or type(inText) is str:
+#         if not hasattr(pgpSign, 'gpg'):
+#             pgpSign.gpg = gnupg.GPG()
+#
+#         if not hasattr(pgpSign, 'gpgkeyid'):
+#             pgpSign.gpgkeyid = self._Configs.get('core', 'gpgkeyid')
+#             pgpSign.gpg = gnupg.GPG()
+#
+#         try:
+#             signed = pgpSign.gpg.sign(inText, keyid=pgpSign.gpgkeyid, clearsign=asciiarmor)
+#             return signed.data
+#         except:
+#             raise Exception("Error with GPG system. Unable to sign your message. 101b")
+#     return False
+#
+# def pgpVerify(inText):
+#     """
+#     Verifys a signature. Returns the data if valid, otherwise False.
+#     """
+#     if type(inText) is unicode or type(inText) is str:
+#         if not hasattr(pgpVerify, 'gpg'):
+#             pgpVerify.gpg = gnupg.GPG()
+#
+#         try:
+#             verified = pgpVerify.gpg.verify(inText)
+#             if verified.status == "signature valid":
+#                 if verified.stderr.find('TRUST_ULTIMATE') > 0:
+#                     pass
+#                 elif verified.stderr.find('TRUST_FULLY') > 0:
+#                     pass
+#                 else:
+#                     raise Exception("Encryption not from trusted source!")
+#                 out = pgpVerify.gpg.decrypt(inText)
+#                 return out.data
+#             else:
+#                 return False
+#         except:
+#             raise Exception("Error with GPG system. Unable to verify signed text. 101a")
+#     return False
+#
+# def pgpValidateDest(destination):
+#     """
+#     Validate that we have a key for the given destination.  If not, try to
+#     fetch the given key and it to the key ring. Then revalidate.
+#
+#     .. todo::
+#
+#        This function is mostly a place holder. Function doesn't work or return anything useful.
+#
+#     :param destination: The destination key to check for.
+#     :type destination: string
+#     :return: True if destination is valid, otherwise false.
+#     :rtype: bool
+#     """
+# # Pseudocode
+# #
+# # Determine if gateway
+# # Ask yombo service for keyID of gateway
+# #   Can just ask keys.yombo.net for it since gateway
+# #   may have multiple keys - which one to use?
+# # Wait for yombo service to give us the key id
+# # Ask gnupg to fetch the key
+# # Retyrn true if good.
+#     pass
+#
+# def pgpDownloadRoot():
+#     """
+#     Fetch the latest Yombo root PGP/GPG keyID. Then download it from
+#     keys.yombo.net. After, mark the key as fully trusted.
+#     """
+#     from twisted.web.client import getPage
+#
+#     environment = self._Configs.get("server", 'environment', "production")
+#     uri = ''
+#     if self._Configs.get("server", 'gpgidtxt', "") != "":
+#         uri = "https://%s/" % self._Configs.get("server", 'gpgidtxt')
+#     else:
+#         if(environment == "production"):
+#             uri = "https://yombo.net/gpgid.txt"
+#         elif (environment == "staging"):
+#             uri = "https://wwwstg.yombo.net/gpgid.txt"
+#         elif (environment == "development"):
+#             uri = "https://wwwdev.yombo.net/gpgid.txt"
+#         else:
+#             uri = "https://yombo.net/gpgid.txt"
+#
+#     uri = "https://yombo.net/gpgid.txt"
+#     deferred = getPage(uri)
+#     deferred.addCallback(pgpCheckRoot)
+#
+# def pgpCheckRoot(result):
+#     """
+#     A callback for :py:meth:`pgpDownloadRoot`. Now that we have Yombo Root
+#     keyid, lets first check to see if we have already downloaded it this
+#     session.  If we have, pass. Otherwise, download it and the "fully"
+#     trust the cert.
+#
+#     :param result: Result of pgpDownloadRoot is the keyID.
+#     :type result: string
+#     """
+#     if not hasattr(pgpCheckRoot, 'gpg'):
+#         pgpCheckRoot.gpg = gnupg.GPG()
+#         pgpCheckRoot.previousID = ""
+#
+#     rootID = result.strip()
+#
+#     if rootID == pgpCheckRoot.previousID:
+#       return
+#     else:
+#        pgpCheckRoot.previousID = rootID
+#
+#     keys = pgpCheckRoot.gpg.list_keys()
+#
+#     haveRootKey = False
+#
+#     for key in keys:
+#       if key['uids'][0][0:12] == "Yombo (Root)":
+#         if key['keyid'] != rootID:
+#           pgpCheckRoot.previousID = key['keyid']
+#         else:
+#           logger.debug("key ({key}) trust:: {ownertrust}", key=key['keyid'], ownertrust=key['ownertrust'])
+#           haveRootKey = True
+#           if key['ownertrust'] == 'u':
+#             pass
+#           elif key['ownertrust'] == 'f':
+#             pass
+#           else:
+#             pgpTrustKey(key['fingerprint'])
+#         break
+#
+#     if haveRootKey == False:
+#         importResult = pgpCheckRoot.gpg.recv_keys("keys.yombo.net", rootID)
+#         logger.debug("Yombo Root key import result: {importResults}", importResult=importResult)
+#         pgpTrustKey(key['fingerprint'])
+#     logger.debug("Yombo Root key: {haveRootKey}", haveRootKey=haveRootKey)
+#
+# def pgpCheckKeyTrust(fingerprint):
+#     """
+#     Returns the trust level of a given fingerprint.
+#
+#     :param fingerprint: Fingerprint of keyID to check.
+#     :type fingerprint: string
+#     :return: Level of trust.
+#     :rtype: string
+#
+#     .. todo::
+#
+#        NOT DONE!!!  Does not work!!!
+#     """
+#     if not hasattr(pgpCheckKeyTrust, 'gpg'):
+#         pgpCheckKeyTrust.gpg = gnupg.GPG()
+#
+#     keys = pgpCheckKeyTrust.gpg.list_keys()
+#
+#     logger.info("my keys: {keys}", keys=keys)
+# #    return
+# #    for key in keys:
+# #      if key['uids'][0][0:12] == "Yombo (Root)":
+# #        if key['keyid'] != rootID:
+# #          pgpCheckKeyTrust.previousID = key['keyid']
+# #        else:
+# #          logger.info("4444")
+# #          logger.info("Root key %s", key['keyid'])
+# #          haveRootKey = True
+# #          if key['trust'] == 'u':
+# #            trustRootKey = True
+# #          else:
+# #            pgpTrustKey(key['fingerprint'])
+# #        break
+#
+#
+# def pgpFetchKey(searchKey):
+#     if not hasattr(pgpFetchKey, 'gpg'):
+#         pgpFetchKey.gpg = gnupg.GPG()
+#
+#     importResult = pgpFetchKey.gpg.recv_keys("keys.yombo.net", searchKey)
+#     logger.debug("GPG Import result for {searchKey}: {importResult}", searchKey=searchKey, importResult=importResult)
+#
+# def pgpTrustKey(fingerprint, trustLevel = 5):
+#     """
+#     Sets the trust of a key.
+#     #TODO: This function is blocking! Adjust to non-blocking. See below.
+#     """
+#     p = Popen(["gpg --import-ownertrust"], shell=True, stdin=PIPE, stdout=PIPE, close_fds=True)
+#     (child_stdout, child_stdin) = (p.stdout, p.stdin)
+#     child_stdin.write("%s:%d:\n" % (fingerprint, trustLevel))
+#     child_stdin.close()
+#
+#     result = child_stdout.read()
+#     logger.info("GPG Trust change: {result}", result=result)
 

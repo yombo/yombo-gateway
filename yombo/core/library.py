@@ -28,6 +28,18 @@ class YomboLibrary:
         """
         pass
 
+    def _start_(self):
+        """
+        Called when a library can now send requests externally.
+        """
+        pass
+
+    def _stop_(self):
+        """
+        Called when a library is about to be stopped..then unloaded.
+        """
+        pass
+
     def _unload_(self):
         """
         Called when a library is about to be unloaded. 

@@ -10,10 +10,10 @@ from time import time
 from functools import wraps
 
 # Import Yombo libraries
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 import yombo.utils
 
-logger = getLogger('utils.utils')
+logger = get_logger('utils.utils')
 
 def memoize_(func):
     """

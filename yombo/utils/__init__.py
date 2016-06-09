@@ -12,11 +12,11 @@ try:
 except ImportError:
     # fcntl is not available on windows
     HAS_FCNTL = False
-
 import inspect
 import random
 import string
 import sys
+import re
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -81,6 +81,19 @@ def dict_has_key(dictionary, keys):
         return False
     else:
         return True
+
+def dict_find_key(symbol_dic, val):
+    """
+    Find a key of a dictionary for a given key.
+
+    :param symbol_dic: The dictionary to search.
+    :type symbol_dic: dict
+    :param val: The value to search for.
+    :type val: any valid dict key type
+    :return: The key of dictionary dic given the value
+    :rtype: any valid dict key type
+    """
+    return [k for k, v in symbol_dic.iteritems() if v == val][0]
 
 def dict_has_value(dictionary, keys, value):
     """
@@ -272,94 +285,59 @@ def get_command(commandSearch):
     """
     return get_command('yombo.gateway.lib.commands')._search(commandSearch)
 
-def get_component(name):
-    """
-    Return loaded component (module or library). This can be used to find
-    other modules or libraries. The getComponent uses the :ref:`FuzzySearch <fuzzysearch>`
-    class to make searching easier, but can only be off one or two letters
-    due to importance of selecting the correct library or module.
-
-    All component names are stored in lower case, the search will convert
-    requests to lower case.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       from yombo.core.helpers import getComponent
-       someOtherModule = getComponent("Yombo.Gateway.module.someOtherModule")
-       someOtherModule.setDisplay("Hello world.") # this module would set the
-                                                  # display and send a device
-                                                  # status message
-
-    :raises YomboNoSuchLoadedComponentError: When the requested component cannot be found.
-    :param name: The name of the component (library or module) to find.  Returns a
-        pointer to the object so it's functions and attributes can be accessed.
-    :type name: string
-    :return: Pointer to requested library or module.
-    :rtype: Object reference
-    """
-    if not hasattr(get_component, 'components'):
-        from yombo.lib.loader import getTheLoadedComponents
-        get_component.components = getTheLoadedComponents()
-    try:
-        return get_component.components[name.lower()]
-    except KeyError:
-        raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
-
-def get_device(deviceSearch):
-    """
-    Returns a pointer to device.
-
-    .. note::
-
-       This shouldn't be used by modules, instead, use the pre-set point of
-       *self._Devices*, see: :py:func:`get_devices`.
-
-    :param deviceSearch: Which device to search for.  device_id or Device Label. device_id preferred.
-    :type deviceSearch: string - Device UUID or Device Label.
-    :return: The pointer to the requested device.
-    :rtype: object
-    """
-    return getComponent('yombo.gateway.lib.devices').get_device(deviceSearch)
-
-def get_devices_by_device_type():
-    """
-    Returns a pointer to a **function** to get all devices for a given device_type_id or MachineLabel. Modules
-    should use the built in function ``self._DevicesByDeviceType``.
-
-    .. note::
-
-       For modules, there is already a pre-defined function for getting all devices
-       of a specific type. It's "self._DevicesByType".
-
-    **Short Usage**:
-
-        >>> deviceList = self._DevicesByDeviceType('137ab129da9318')  #by device_type_id, this is a function.
-
-    **Usage**:
-
-    .. code-block:: python
-
-       # A simple all x10 lights off (regardless of house / unit code)
-       allX10Lamps = self._DevicesByType('137ab129da9318')
-
-       # Turn off all x10 lamps
-       for lamp in allX10Lamps:
-           lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
-
-    :param deviceType: The deviceType to search for, either a UUID or Machinelabel
-    :type device_type_id: string
-    :return: Returns a pointer to function that can be called to fetch
-        all devices belonging to a device type UUID.
-    :rtype:
-    """
-    return getattr(getComponent('yombo.gateway.lib.devices'), "get_devices_by_device_type")
-
 def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.im_class):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
+
+def get_local_ip_address():
+    """
+    Get the ip address of the local machine.
+
+
+    No single/simple way to do this.  First, do a simple get (works on windows).
+    Then if that doesn't work, use the hostname -I function of the os.
+
+    #@TODO: The second method needs to be fixed. Needs to prompt or something
+    """
+    import socket
+    addr = socket.gethostbyname(socket.gethostname())
+
+    badips = ['127.0.0.1', '127.0.1.1']
+
+    if addr in badips:
+       import commands
+       addr = commands.getoutput("hostname -I")
+
+    addr = addr.split()
+    addr = addr[0]
+    return addr.strip()
+
+def get_external_ip_address():
+    """
+    Get the IP address of this machine as seen from the outside world.  THis
+    function is primarily used during various internal testing of the Yombo
+    Gateway.  This information is reported to the Yombo Service, however, the
+    Yombo Service already knows you're IP address during the process of
+    downloading configuration files.
+
+    Yombo servers will only use this information if server "getpeer.ip()" function
+    results in a private IP address.  See: http://en.wikipedia.org/wiki/Private_network
+    This assists in Yombo performing various tests internally, but still providing
+    an ability to do further tests.
+
+    Gives Yombo servers a hint of your external ip address from your view. This
+    should be the same as what Yombo servers see when you connect.
+
+    This is called only once during the startup phase.  Calling this function too
+    often can result in the gateway being blocked by whatismyip.org
+
+    :return: An ip address
+    :rtype: string
+    """
+    import urllib2
+    return urllib2.urlopen('http://wtfismyip.com/text').read()
+
 
 def random_string(**kwargs):
     """
@@ -369,8 +347,8 @@ def random_string(**kwargs):
 
     .. code-block:: python
 
-       from yombo.core.helpers import generateRandom
-       someRandonness = generateRandom(letters="abcdef0123456") #make a hex value
+       from yombo.utils import random_string
+       someRandonness = random_string(letters="abcdef0123456") #make a hex value
 
     :param length: Length of the output string. Default: 32
     :type length: int
@@ -393,6 +371,62 @@ def random_string(**kwargs):
         lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
         return "".join(lst)
 
+def generate_uuid(**kwargs):
+    """
+    Create a 30 character UUID, where only 26 of the characters are random.
+    The remaining 4 characters are used by developers to track where a
+    UUID originated from.
+
+    **All arguments are kwargs.**
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import generate_uuid
+       newUUID = generate_uuid(maintype='G', subtype='a2A')
+
+    :param maintype: A single alphanumeric (0-9, a-z, A-Z) to note the uuid main type.
+    :type maintype: char
+    :param maintype: Up to 3 characters (0-9, a-z, A-Z) to note the uuid sub type.
+    :type subtype: string
+    :return: A random string, with source identifiers at the end, 30 bytes in length.
+    :rtype: string
+    """
+    uuid = random_string(length=26)
+    maintype= kwargs.get('maintype', 'z')
+    subtype= kwargs.get('subtype', 'zzz')
+
+    okPattern = re.compile(r'([0-9a-zA-Z]+)')
+
+    m = re.search(okPattern, maintype)
+    if m:
+        pass
+    else:
+        maintype = "z"
+        subtype = "zzz"
+
+    m = re.search(okPattern, subtype)
+    if m:
+        pass
+    else:
+        subtype = "zzz"
+
+    if len(maintype) != 1:
+        type = "z";
+
+    if len(subtype) == 1:
+        subtype = "zz" + subtype
+    elif len(subtype) == 2:
+        subtype = "z" + subtype
+    elif len(subtype) == 3:
+        pass
+    else:
+        subtype = "zzz"
+
+    tempit = uuid + subtype + maintype
+    return tempit
+
 def global_invoke_all(hook, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
@@ -405,6 +439,28 @@ def global_invoke_all(hook, **kwargs):
     lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True)
     modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True)
     return dict_merge(modules_results, lib_results)
+
+def get_component(name):
+    """
+    Return loaded component (module or library). This can be used to find
+    other modules or libraries. The getComponent uses the :ref:`FuzzySearch <fuzzysearch>`
+    class to make searching easier, but can only be off one or two letters
+    due to importance of selecting the correct library or module.
+
+    :raises YomboNoSuchLoadedComponentError: When the requested component cannot be found.
+    :param name: The name of the component (library or module) to find.  Returns a
+        pointer to the object so it's functions and attributes can be accessed.
+    :type name: string
+    :return: Pointer to requested library or module.
+    :rtype: Object reference
+    """
+    if not hasattr(get_component, 'components'):
+        from yombo.lib.loader import get_the_loaded_components
+        get_component.components = get_the_loaded_components()
+    try:
+        return get_component.components[name.lower()]
+    except KeyError:
+        raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
 
 def is_string_bool(value=None):
     """
@@ -421,6 +477,36 @@ def is_string_bool(value=None):
         elif str(value).lower() == 'none':
             return None
     raise YomboWarning("String is not true, false, or none.")
+
+def is_yes_no(self, input):
+    """
+    Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
+    returns "No". Useful to convert something to human Yes/No.
+    :param self:
+    :param input:
+    :return:
+    """
+    if input in ("1", 1, True, "open", "on", "running"):
+        return "Yes"
+    else:
+        return "No"
+
+def test_bit(int_type, offset):
+    """
+    Tests wether a specific bit is on or off for a given int.
+
+    :param int_type: The given int to interrogate.
+    :type int_type: int
+    :param offset: The bit location to return, starting from lowest to highest.
+    :type offset: int
+    :return: If the bit is on or off
+    """
+    mask = 1 << offset
+    if (int_type & mask) > 0:
+      return 1
+    else:
+      return 0
+    return(int_type & mask)
 
 class ViewAsObject(object):
     def __init__(self, d):
@@ -489,3 +575,48 @@ def is_fcntl_available(check_sunos=False):
     if check_sunos and is_sunos():
         return False
     return HAS_FCNTL
+
+# #TODO: This will be removed - will based off kerberos method, but using GPG.
+# def getUserGWToken(username, gwtokenid, fetchRemote=False):
+#     """
+#     Fetches a gateway token for a username from yombo service. Used by the
+#     authention tool when validating users. (UNTESTED!!)
+#
+#     :param username: Username of user trying to get in.
+#     :type username: string
+#     :param gwtokenid: GW Token ID to use for user.
+#     :type gwtokenid: string
+#     """
+#     global yombodbtools
+#     if yombodbtools is None:
+#         yombodbtools = get_dbtools()
+#     record = yombodbtools.getUserGWToken(username, gwtokenid)
+#     if record is None:
+#       if fetchRemote == True:
+#         logger.info("Requesting user tokens.")
+#         beforeTime = getConfigValue('local', 'lastUserTokens')
+#         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullUsers'}))
+#         message = {'msgOrigin'      : "yombo.gateway.lib.GatewayConfigs:%s" % getConfigValue("core", "gwuuid"),
+#                    'msgDestination' : "yombo.svc.lib.GatewayConfigs",
+#                    'msgType'        : "config",
+#                    'msgStatus'      : "request",
+#                    'uuidType'       : "0",
+#                    'uuidSubType'    : "010",
+#                    'payload'        : {'cmd' : 'getFullUserGWTokens'},
+#                   }
+#         message = Message(**msg)
+#         message.send()
+#         for x in range (0,10):
+#           logger.info("Waiting for user tokens to flow in.")
+#           #todo: WHAT?!?!?!?!!?  No sleeping allowed...
+#           sleep(0.2)
+#           afterTime = getConfigValue('local', 'lastUserTokens')
+#           if beforeTime != beforeTime:
+#             recordNew = yombodbtools.getUserGWToken(username, gwtokenid)
+#             if recordNew is not None:
+#               return recordNew
+#             else:
+#               return None
+#         return None
+#     else:
+#       return record

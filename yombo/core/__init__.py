@@ -8,14 +8,14 @@
 :copyright: 2012-2015 by Yombo
 :license: LICENSE for details.
 """
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger('core')
+logger = get_logger('core')
 
 
 def getComponent(name):
     """
     Return loaded component
     """
-    from yombo.lib.loader import getLoader
-    return getLoader().getLoadedComponent(name)
+    from yombo.lib.loader import get_loader
+    return get_loader().get_loaded_component(name)

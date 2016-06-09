@@ -61,13 +61,13 @@ from datetime import datetime
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.utils import random_string
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCronTabError
-from yombo.core.helpers import generateRandom
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger('library.crontab')
+logger = get_logger('library.crontab')
 
 # Some utility classes / functions first
 class AllMatch(set):
@@ -262,14 +262,14 @@ class CronTab(YomboLibrary):
         cronjob.disable()
 
 
-    def runNow(self, key):
+    def run_now(self, key):
         """
         Runs a cronjob now.
 
         To run a cron (note, it's a method not a dictionary):
-            >>> self._CronTab.runNow('7s453hhxl3')  #by cron uuid
+            >>> self._CronTab.run_now('7s453hhxl3')  #by cron uuid
         or::
-            >>> self._CronTab.runNow('module.YomboBot.MyCron')  #by name
+            >>> self._CronTab.run_now('module.YomboBot.MyCron')  #by name
 
         :param key: The cron UUID / cron job name
         :type key: string
@@ -277,12 +277,12 @@ class CronTab(YomboLibrary):
         cronjob = self._search(key)
         cronjob.runNow()
 
-    def setLabel(self, key, label):
+    def set_label(self, key, label):
         """
         Set job label.
 
         To set a label for a cron job:
-            >>> self._CronTab.setLabel('7s453hhxl3', 'modules.mymodule.mycronjob')  #by cron uuid
+            >>> self._CronTab.set_label('7s453hhxl3', 'modules.mymodule.mycronjob')  #by cron uuid
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
         :param key: The cron UUID
@@ -293,7 +293,7 @@ class CronTab(YomboLibrary):
         cronjob = self._search(key)
         cronjob.label = label
 
-    def runAt(self, action, timestring, label='', args=(), kwargs={}):
+    def run_at(self, action, timestring, label='', args=(), kwargs={}):
         """
         Helper function for CronTab.new().
 
@@ -351,7 +351,7 @@ class CronJob(object):
         self.crontab = crontab
         self.args = args
         self.kwargs = kwargs
-        self.cronUUID = generateRandom(length=24)
+        self.cronUUID = random_string(length=24)
 
     def __del__(self):
         """
@@ -374,7 +374,7 @@ class CronJob(object):
         """
         self.enabled = False
 
-    def matchtime(self, t):
+    def match_time(self, t):
         """
         Return True if this event should trigger at the specified datetime
         """
@@ -385,7 +385,7 @@ class CronJob(object):
                 (t.weekday()  in self.dow))
 
     def check(self, t):
-        if self.enabled is True and self.matchtime(t):
+        if self.enabled is True and self.match_time(t):
             self.action(*self.args, **self.kwargs)
 
     def runNow(self):

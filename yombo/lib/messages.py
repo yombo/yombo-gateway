@@ -28,16 +28,16 @@ from collections import deque
 
 # Import twisted libraries
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboMessageError
 from yombo.core.library import YomboLibrary
 from yombo.core.message import Message
-from yombo.utils.sqldict import SQLDict  #load at the top of the file.
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 from yombo.utils import global_invoke_all
 
-logger = getLogger('library.messages')
+logger = get_logger('library.messages')
 
 class Messages(YomboLibrary):
     """
@@ -52,12 +52,14 @@ class Messages(YomboLibrary):
         self.queue = deque()    # Placeholder for startup message queues
         self.processing = False
 
+    @inlineCallbacks
     def _load_(self):
         """
         Load the messages, but that's about it. Can't send any messages until start is reached. Can accept
         messages by the time load has completed.
         """
-        self.delayQueue = SQLDict(self, "messages") # lets use sqldict to do the heavy lifting
+        self.delayQueue = yield self._Libraries['SQLDict'].get(self, 'delayQueue')
+#        self.delayQueue = {}
         self.reactors = {} # map msgUUID to a reactor (delayed message)
         self.deviceList = {} # list of devices that have pending messages.
 

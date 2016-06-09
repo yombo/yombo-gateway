@@ -32,11 +32,11 @@ from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboCritical
-from yombo.core.helpers import getExternalIPAddress
-from yombo.core.log import getLogger
+from yombo.utils import get_external_ip_address, get_local_ip_address
+from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 
-logger = getLogger('library.configuration')
+logger = get_logger('library.configuration')
 
 class Configuration(YomboLibrary):
     """
@@ -113,11 +113,19 @@ class Configuration(YomboLibrary):
                 self.cacheDirty = True
         if 'externalIPAddressTime' in self.cache['core']:
             if int(self.cache['core']['externalIPAddressTime']) < int(time.time()) - 12000:
-              self.write("core", "externalIPAddress", getExternalIPAddress())
-              self.write("core", "externalIPAddressTime", int(time.time()))
+                self.set("core", "externalIPAddress", get_external_ip_address())
+                self.set("core", "externalIPAddressTime", int(time.time()))
         else:
-            self.write("core", "externalIPAddress", getExternalIPAddress())
-            self.write("core", "externalIPAddressTime", int(time.time()))
+            self.set("core", "externalIPAddress", get_external_ip_address())
+            self.set("core", "externalIPAddressTime", int(time.time()))
+
+        if 'localIPAddressTime' in self.cache['core']:
+            if int(self.cache['core']['localIPAddressTime']) < int(time.time()) - 12000:
+                self.set("core", "localIPAddress", get_local_ip_address())
+                self.set("core", "localIPAddressTime", int(time.time()))
+        else:
+            self.set("core", "localIPAddress", get_local_ip_address())
+            self.set("core", "localIPAddressTime", int(time.time()))
 
         self.periodic_save_ini = LoopingCall(self._save_ini)
         self.periodic_save_ini.start(300, False)
@@ -177,14 +185,14 @@ class Configuration(YomboLibrary):
         """
         logger.debug("A message was sent to configuration module.  No messages allowed.")
 
-    def getConfigTime(self, section, key):
+    def get_config_time(self, section, key):
         updateItem = section + "_+_" + key + "_+_time"
         if updateItem in self.cache['updateinfo']:
             return self.cache['updateinfo'][updateItem]
         else:
             return None
 
-    def read(self, section, key, default=None):
+    def get(self, section, key, default=None):
         """
         Read value of configuration key, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
@@ -197,8 +205,7 @@ class Configuration(YomboLibrary):
 
         .. code-block:: python
 
-           from yombo.core.helpers import getConfigValue
-           gatewayUUID = getConfigValue("core", "gwuuid", "Default Value")
+           gatewayUUID = self._Config.get("core", "gwuuid", "Default Value")
 
         :param section: The configuration section to use.
         :type section: string
@@ -237,7 +244,7 @@ class Configuration(YomboLibrary):
         else:
             return None
 
-    def write(self, section, key, value):
+    def set(self, section, key, value):
         """
         Set value of configuration key for a given section.  The key length
         **cannot exceed 1000 characters**.  The value cannot exceed 5000 bytes.
@@ -248,8 +255,7 @@ class Configuration(YomboLibrary):
 
         .. code-block:: python
 
-           from yombo.core.helpers import setConfigValue
-           gatewayUUID = setConfigValue("section_name", "mykey", "New Value")
+           gatewayUUID = self._Config.set("section_name", "mykey", "New Value")
 
         :param section: The configuration section to use.
         :type section: string

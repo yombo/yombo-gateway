@@ -89,12 +89,12 @@ import re
 
 from yombo.core.exceptions import YomboException
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 from yombo.core.message import Message
 from yombo.utils import global_invoke_all
 from yombo.utils.fuzzysearch import FuzzySearch
 
-logger = getLogger('library.voice_cmds')
+logger = get_logger('library.voice_cmds')
 
 class VoiceCmds(FuzzySearch, YomboLibrary):
     """

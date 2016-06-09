@@ -43,8 +43,16 @@ To send a command to a device is simple.
        self.Devices[item].get_message(self, cmd='js83j9s913')  # Made up number, but can be same as off
 
 
-   if self._Atom['os'] != None:
-       logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom['os'])
+   # Get devices by device type:
+   deviceList = self._DevicesByDeviceType('137ab129da9318')  #by device_type_id, this is a function.
+
+   # A simple all x10 lights off (regardless of house / unit code)
+   allX10Lamps = self._DevicesByType('137ab129da9318')
+   # Turn off all x10 lamps
+   for lamp in allX10Lamps:
+     lamp.sendCmd(self, array('skippincode':True, 'cmd': 'off'))
+
+
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2016 by Yombo.
@@ -66,12 +74,12 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 from yombo.core.message import Message
 from yombo.utils import random_string
 
 
-logger = getLogger('library.devices')
+logger = get_logger('library.devices')
 
 class Devices(YomboLibrary):
     """
@@ -261,7 +269,7 @@ class Devices(YomboLibrary):
         self._devicesByDeviceTypeByUUID.clear()
         self._devicesByDeviceTypeByName.clear()
 
-    def listDevices(self):
+    def list_devices(self):
         return list(self._devicesByName.keys())
 
     def get_device(self, device_requested, limiter_override=.99):

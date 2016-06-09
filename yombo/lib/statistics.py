@@ -15,20 +15,19 @@ Used to track gateway statistics and various usage information.
 """
 # Import python libraries
 import math
-#import functools
 import datetime
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
-from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.helpers import getConfigValue, generateRandom
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
+from yombo.utils import random_string
 
-logger = getLogger('library.statistics')
+logger = get_logger('library.statistics')
+
 
 class Statistics(YomboLibrary):
     """
@@ -55,8 +54,8 @@ class Statistics(YomboLibrary):
     Currently, Yombo limits logging up to 10,000 statistics items per day per gateway. This limit is subject
     to change.
     """
-    countDuration = 300 # 5 minutes for count buckets
-    timingDuration = 300 # 5 minutes for timing buckets
+    countDuration = 300  # 5 minutes for count buckets
+    timingDuration = 300  # 5 minutes for timing buckets
 
     enabled = None
     collections = {}
@@ -66,11 +65,8 @@ class Statistics(YomboLibrary):
         self._count = {}
         self._timing = {}
         self._gauge = {}
-        self.gwuuid = getConfigValue("core", "gwuuid")
-        self.countDuration = 3 # 5 minutes for count buckets
-        self.timingDuration = 3 # 5 minutes for timing buckets
-
-        self.enabled = getConfigValue('statistics', 'enabled', False)
+        self.gwuuid = self._Configs.get("core", "gwuuid")
+        self.enabled = self._Configs.get('statistics', 'enabled', False)
 
     def _load_(self):
         pass
@@ -78,18 +74,18 @@ class Statistics(YomboLibrary):
     def _start_(self):
         logger.info("Stats module enabled? {enabled}", enabled=self.enabled)
         if self.enabled is True:
-            self.sendDataLoop = LoopingCall(self.sendData)
+            self.sendDataLoop = LoopingCall(self.send_data)
             self.sendDataLoop.start(self.countDuration, False)
             return
 
     def _stop_(self):
         if self.enabled is True:
-            self.sendData()
+            self.send_data()
 
     def _unload_(self):
         pass
 
-    def _getTime(self, type):
+    def _get_time(self, type):
         """
         Internal function to get time in the format required for various statistics.
 
@@ -108,7 +104,7 @@ class Statistics(YomboLibrary):
         microseconds=tm.microsecond)
         return int(tm.strftime('%s'))
 
-    def _validateName(self, name):
+    def _validate_name(self, name):
         """
         Validates the name being submitted is valid. No point in sending badly named
         items to the server, as the server will simply perform this same check and
@@ -162,7 +158,7 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validateName(name)
+        self._validate_name(name)
         bucket = datetime.datetime.now().strftime('%s')
         if bucket not in self.data:
             self._gauge[bucket] = {}
@@ -180,9 +176,9 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validateName(name)
+        self._validate_name(name)
 
-        bucket = self._getTime('count')
+        bucket = self._get_time('count')
 
         if bucket not in self.data:
             self._count[bucket] = {}
@@ -199,9 +195,9 @@ class Statistics(YomboLibrary):
         """
         if self.enabled is not True:
             return
-        self._validateName(name)
+        self._validate_name(name)
 
-        bucket = self._getTime('count')
+        bucket = self._get_time('count')
 
         if bucket not in self._count:
             self._count[bucket] = {}
@@ -223,9 +219,9 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validateName(name)
+        self._validate_name(name)
 
-        bucket = self._getTime('count')
+        bucket = self._get_time('count')
 
         if bucket not in self._count:
             self._count[bucket] = {}
@@ -247,9 +243,9 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validateName(name)
+        self._validate_name(name)
 
-        bucket = self._getTime('timing')
+        bucket = self._get_time('timing')
 
         if bucket not in self._timing:
             self._timing[bucket] = {}
@@ -259,7 +255,7 @@ class Statistics(YomboLibrary):
         else:
             self._timing[bucket][name].append(duration)
 
-    def sendData(self, full=False):
+    def send_data(self, full=False):
         """
         Sends stats to the Yombo servers periodically. Typically only sends all but the
         last time bucket in case this function is called between time buckets.
@@ -267,7 +263,7 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        bucket = self._getTime('count')
+        bucket = self._get_time('count')
         bucketsSent = []
         amqpBody = []
         logger.info("stats. count: {count}", count=self._count)
@@ -280,7 +276,7 @@ class Statistics(YomboLibrary):
         for time in bucketsSent:
             del self._count[time]
 
-        bucket = self._getTime('timing')
+        bucket = self._get_time('timing')
         bucketsSent = []
         for key, items in self._timing.iteritems():
             if key <= bucket - (self.timingDuration +10):
@@ -333,7 +329,7 @@ class Statistics(YomboLibrary):
             "routing_key"      : '*',
             "body"             : request,
             "properties" : {
-                "correlation_id" : generateRandom(length=12),
+                "correlation_id" : random_string(length=12),
                 "user_id"        : self.gwuuid,
                 "headers"        : {
                     "Source"        : "yombo.gateway.lib.statistics:" + self.gwuuid,

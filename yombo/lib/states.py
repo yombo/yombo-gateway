@@ -54,16 +54,15 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 from collections import deque
 from time import time
 
-# Import Yombo libraries
+# Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound, YomboWarning
-from yombo.core.log import getLogger
-from yombo.utils.sqldict import SQLDict
+from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 
-logger = getLogger("library.YomboStates")
+logger = get_logger("library.YomboStates")
 
 class States(YomboLibrary, object):
     """
@@ -79,7 +78,7 @@ class States(YomboLibrary, object):
         self.automation = self._Libraries['automation']
 
         self.__States = {}
-        self.__History = yield SQLDict(self, 'History')
+        self.__History = yield self._Libraries['SQLDict'].get(self, 'History')
 #        logger.info("Recovered YomboStates: {states}", states=self.__States)
 
     def _load_(self):
@@ -231,8 +230,10 @@ class States(YomboLibrary, object):
 
     def __set_history(self, key, value, updated):
         data = {'value' : value, 'updated' : updated}
+#        print "saving state history: %s:%s" % (key, value)
         if key in self.__History:
             self.__History[key].appendleft(data)
+#            print "appending: %s" % self.__History[key]
         else:
             self.__History[key] = deque([data], self.MAX_HISTORY)
 

@@ -9,6 +9,6 @@
 :license: LICENSE for details.
 """
 from loader import Loader
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger('library')
+logger = get_logger('library')

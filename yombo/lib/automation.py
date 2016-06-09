@@ -32,10 +32,10 @@ import yombo.ext.hjson as hjson
 # Import Yombo libraries
 from yombo.core.exceptions import YomboAutomationWarning, YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 import yombo.utils
 
-logger = getLogger("library.automation")
+logger = get_logger("library.automation")
 
 
 REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
@@ -494,65 +494,65 @@ class Automation(YomboLibrary):
         return
 
 
-class Rule:
-    """
-    A class to contain various aspects of a rule.
-    """
-    def __init__(self, device, allDevices, testDevice=False):
-        """
-        :param device: *(list)* - A device as passed in from the devices class. This is a
-            dictionary with various device attributes.
-        :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's status
-            changed. (Not implemented.)
-        :ivar callAfterChange: *(list)* - A list of functions to call after this device has it's status
-            changed. (Not implemented.)
-        :ivar device_id: *(string)* - The UUID of the device.
-        :ivar device_type_id: *(string)* - The device type UUID of the device.
-        :type device_id: string
-        :ivar label: *(string)* - Device label as defined by the user.
-        :ivar description: *(string)* - Device description as defined by the user.
-        :ivar enabled: *(bool)* - If the device is enabled - can send/receive command and/or
-            status updates.
-        :ivar pin_required: *(bool)* - If a pin is required to access this device.
-        :ivar pin_code: *(string)* - The device pin number.
-            system to deliver commands and status update requests.
-        :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
-        :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
-        :ivar lastCmd: *(dict)* - A dictionary of up to the last 30 command messages.
-        :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
-        :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
-            values entered by the user.
-        :ivar available_commands: *(list)* - A list of cmdUUID's that are valid for this device.
-        """
-
-    def _init_(self):
-        """
-        Performs items that required deferreds.
-        :return:
-        """
-        def set_commands(commands):
-            self.available_commands = commands
-
-        def set_variables(vars):
-            self.deviceVariables = vars
-
-        def gotException(failure):
-           logger.error("Received exception: {failure}", failure=failure)
-           return 100  # squash exception, use 0 as value for next stage
-
-        d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
-        d.addCallback(set_commands)
-        d.addErrback(gotException)
-
-        d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
-        d.addErrback(gotException)
-        d.addCallback(set_variables)
-        d.addErrback(gotException)
-
-        if self.testDevice is False:
-            d.addCallback(lambda ignored: self.load_history(35))
-        return d
-
+# class Rule:
+#     """
+#     A class to contain various aspects of a rule.
+#     """
+#     def __init__(self, device, allDevices, testDevice=False):
+#         """
+#         :param device: *(list)* - A device as passed in from the devices class. This is a
+#             dictionary with various device attributes.
+#         :ivar callBeforeChange: *(list)* - A list of functions to call before this device has it's status
+#             changed. (Not implemented.)
+#         :ivar callAfterChange: *(list)* - A list of functions to call after this device has it's status
+#             changed. (Not implemented.)
+#         :ivar device_id: *(string)* - The UUID of the device.
+#         :ivar device_type_id: *(string)* - The device type UUID of the device.
+#         :type device_id: string
+#         :ivar label: *(string)* - Device label as defined by the user.
+#         :ivar description: *(string)* - Device description as defined by the user.
+#         :ivar enabled: *(bool)* - If the device is enabled - can send/receive command and/or
+#             status updates.
+#         :ivar pin_required: *(bool)* - If a pin is required to access this device.
+#         :ivar pin_code: *(string)* - The device pin number.
+#             system to deliver commands and status update requests.
+#         :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
+#         :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
+#         :ivar lastCmd: *(dict)* - A dictionary of up to the last 30 command messages.
+#         :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
+#         :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
+#             values entered by the user.
+#         :ivar available_commands: *(list)* - A list of cmdUUID's that are valid for this device.
+#         """
+#
+#     def _init_(self):
+#         """
+#         Performs items that required deferreds.
+#         :return:
+#         """
+#         def set_commands(commands):
+#             self.available_commands = commands
+#
+#         def set_variables(vars):
+#             self.deviceVariables = vars
+#
+#         def gotException(failure):
+#            logger.error("Received exception: {failure}", failure=failure)
+#            return 100  # squash exception, use 0 as value for next stage
+#
+#         d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
+#         d.addCallback(set_commands)
+#         d.addErrback(gotException)
+#
+#         d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
+#         d.addErrback(gotException)
+#         d.addCallback(set_variables)
+#         d.addErrback(gotException)
+#
+#         if self.testDevice is False:
+#             d.addCallback(lambda ignored: self.load_history(35))
+#         return d
+#
 
 
 

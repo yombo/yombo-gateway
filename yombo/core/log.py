@@ -5,11 +5,12 @@ Handles logging functions.
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """
-
+# Import python libraries
 import ConfigParser
 from zope.interface import provider
 import io
 
+# Import twisted libraries
 from twisted.logger import FileLogObserver, FilteringLogObserver, globalLogPublisher, InvalidLogLevelError, \
     Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime, jsonFileLogObserver
 
@@ -45,7 +46,7 @@ def consoleLogObserver(event):
     print u"[{0}{1}\033[39m-{2}]: {3}".format(bcolor[event["log_level"].name.lower()], event["log_level"].name.upper(), event["log_namespace"], formatEvent(event))
 
 
-def getLogger(logname='yombolog', **kwargs):
+def get_logger(logname='yombolog', **kwargs):
     """
     Returns a logger object that allows logging of error messages.
 
@@ -53,9 +54,9 @@ def getLogger(logname='yombolog', **kwargs):
 
     .. code-block:: python
 
-       from yombo.core.log import getLogger
+       from yombo.core.log import get_logger
 
-       logger = getLogger("module.ModuleName")
+       logger = get_logger("module.ModuleName")
        logger.debug("Some status line, debug level items.")
        logger.info("ModuleName has finished starting is ready.")
        logger.warn("A warning!!")
@@ -127,7 +128,7 @@ def getLogger(logname='yombolog', **kwargs):
     
     return loggers[logname]
 
-def resetLogLevels():
+def reset_log_levels():
     """
     Used to reset the logs to their proper levels after
     configurations are downloaded. Also called when

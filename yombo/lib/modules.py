@@ -32,10 +32,10 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, DeferredList
 from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError, YomboWarning, YomboCritical
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 import yombo.utils
 
-logger = getLogger('library.modules')
+logger = get_logger('library.modules')
 
 class Modules(YomboLibrary):
     """
@@ -171,7 +171,8 @@ class Modules(YomboLibrary):
 
         callWhenDone()
 
-    def unload_modules(self, junk, callWhenDone):
+    @inlineCallbacks
+    def unload_modules(self):
         keys = self._modulesByUUID.keys()
         self.loader.library_invoke_all("_module_unload_")
         for moduleUUID in keys:
@@ -181,11 +182,10 @@ class Modules(YomboLibrary):
             except YomboWarning:
                 pass
             finally:
-                self.loader.library_invoke_all("_module_unloaded_")
+                yield self.loader.library_invoke_all("_module_unloaded_")
                 delete_component = module._FullName
                 self.del_module(moduleUUID, module._Name.lower())
                 del self.loader.loadedComponents[delete_component.lower()]
-        callWhenDone()
 
     @inlineCallbacks
     def build_raw_module_list(self):
@@ -275,11 +275,14 @@ class Modules(YomboLibrary):
                 module._ModuleUUID = module_id
 
                 module._Atoms = self.loader.loadedLibraries['atoms']
-                module._States = self.loader.loadedLibraries['states']
-                module._Modules = self
-                module._Libraries = self.loader.loadedLibraries
-
                 module._Commands = self.loader.loadedLibraries['commands']
+                module._Configs = self.loader.loadedLibraries['configuration']
+                module._CronTab = self.loader.loadedLibraries['crontab']
+                module._Libraries = self.loader.loadedLibraries
+                module._Modules = self
+                module._States = self.loader.loadedLibraries['states']
+
+                module._DevicesLibrary = self.loader.loadedLibraries['devices']  # Basically, all devices
                 module._Devices = self.get_module_devices(module_id)
                 module._DevicesByType = getattr(self._DevicesLibrary, "get_devices_by_device_type")
                 module._DeviceTypes = self.get_module_device_types(module_id)
@@ -341,7 +344,7 @@ class Modules(YomboLibrary):
             raise YomboWarning("Cannot call YomboModule hooks")
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = module._Name + "_" + hook
-#        self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
+        self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
         if hasattr(module, hook):
             method = getattr(module, hook)
             if callable(method):

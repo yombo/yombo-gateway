@@ -13,10 +13,10 @@ from twisted.application.service import Service
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.lib.loader import getLoader, stopLoader, setupLoader
-from yombo.core.log import getLogger
+from yombo.lib.loader import get_loader, stop_loader, setup_loader
+from yombo.core.log import get_logger
 
-logger = getLogger('core.gwservice')
+logger = get_logger('core.gwservice')
 
 class GWService(Service):
     """
@@ -29,8 +29,8 @@ class GWService(Service):
         After twisted is running to get, call various starter functions
         to get everything started.
         """
-        self.loaderCallID = reactor.callWhenRunning(setupLoader)
-        self.loaderCallID2 = reactor.callWhenRunning(self.getLoader)
+        self.loaderCallID = reactor.callWhenRunning(setup_loader)
+        self.loaderCallID2 = reactor.callWhenRunning(self.get_real_loader)
 
     def startService(self):
         """
@@ -39,16 +39,17 @@ class GWService(Service):
         Service.startService(self)
 
     @inlineCallbacks
-    def getLoader(self):
+    def get_real_loader(self):
         """
         Get the loader class and then call it's load function. The
         loader's load function does all the actual work.
         """
-        self.loader = getLoader()
+        self.loader = get_loader()
         yield self.loader.load()
         yield self.loader.start()
 #        self.loader.connect()
         
+    @inlineCallbacks
     def stopService(self):
         """
         Stop the service, shouldn't be called by anyone!
@@ -56,6 +57,5 @@ class GWService(Service):
         If the service needs to be stoped due to error, use an L{exceptions}.
         """
         logger.info("Yombo Gateway stopping.")
-        stopLoader()
+        yield self.loader.unload()
         logger.info("Yombo Gateway stopped.")
-

@@ -10,10 +10,10 @@ Helpers for automation items.
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 from yombo.utils import is_string_bool
 
-logger = getLogger("library.automationhelper")
+logger = get_logger("library.automationhelper")
 
 
 class AutomationHelpers(YomboLibrary):

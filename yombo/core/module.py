@@ -85,10 +85,10 @@ documentation.
 :license: LICENSE for details.
 """
 # Import Yombo libraries
-from yombo.core.helpers import getCommands
-from yombo.core.log import getLogger
 
-logger = getLogger('core.module')
+from yombo.core.log import get_logger
+
+logger = get_logger('core.module')
 
 
 class YomboModule:
@@ -128,8 +128,6 @@ class YomboModule:
         self._ModUrl = "NA"
         self._ModuleType = None
         self._ModuleUUID = None
-
-        self._Commands = getCommands()
 
         self._Devices = None
         self._DeviceTypes = None

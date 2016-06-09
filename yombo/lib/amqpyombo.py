@@ -29,14 +29,12 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json  
 except ImportError: 
     import json
-
-import yombo.ext.umsgpack as msgpack
-
+import pika
 import zlib
 from datetime import datetime
-
-import pika
 from pika.adapters import twisted_connection
+
+import yombo.ext.umsgpack as msgpack
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -45,14 +43,13 @@ from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical, YomboMessageError
-from yombo.core.helpers import getConfigValue, generateRandom, getComponent
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
-from yombo.utils import percentage
+from yombo.core.log import get_logger
+from yombo.utils import percentage, random_string
 from yombo.utils.maxdict import MaxDict
 from yombo.core.message import Message
 
-logger = getLogger('library.amqpyombo')
+logger = get_logger('library.amqpyombo')
 
 PROTOCOL_VERSION = 1
 PREFETCH_COUNT = 10  # determine how many messages should be received/inflight
@@ -75,7 +72,7 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         self.factory = factory
         self._consumers = {}
         super(PikaProtocol, self).__init__(self.factory.AMQPYombo.pika_parameters)
-        self._startup_request_ID = generateRandom(length=12) #gw
+        self._startup_request_ID = random_string(length=12) #gw
 
         self.incoming_queue = []
 
@@ -111,8 +108,8 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
         request = {
               "DataType": "Object",
               "Request": {
-                    "LocalIPAddress": getConfigValue("core", "localipaddress"),
-                    "ExternalIPAddress": getConfigValue("core", "externalipaddress"),
+                    "LocalIPAddress": self.factory.AMQPYombo._Configs.get("core", "localipaddress"),
+                    "ExternalIPAddress": self.factory.AMQPYombo._Configs.get("core", "externalipaddress"),
                     "ProtocolVersion": PROTOCOL_VERSION,
               },
             }
@@ -137,11 +134,11 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
             }
 
         self.factory.sentCorrelationIDs[self._startup_request_ID] = {
-            "time_created"      : datetime.now(),
-            'time_sent'         : None,
-            "time_received"     : None,
-            "callback"          : None,
-            "correlation_type"  : "local",
+            "time_created": datetime.now(),
+            'time_sent': None,
+            "time_received": None,
+            "callback": None,
+            "correlation_type": "local",
         }
 
         requestmsg['properties'] = pika.BasicProperties(**requestmsg['properties'])
@@ -224,16 +221,16 @@ class PikaProtocol(twisted_connection.TwistedProtocolConnection):
                 logger.warn('Error with contentType!')
                 raise YomboWarning("Content type must be 'application/msgpack', 'application/json' or 'text/plain'. Got: " + props.content_type)
 
-            self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.recieved")
+            self.factory._Statistics.increment("lib.amqpyombo.amqp.recieved")
             if props.content_encoding == 'zlib':
                 beforeZlib = len(msg)
                 msg = zlib.decompress(msg)
                 afterZlib = len(msg)
                 logger.debug("Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}", compressed=beforeZlib, uncompressed=afterZlib)
-                self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.compressed")
-                self.factory.StatisticsLibrary.timing("lib.amqpyombo.amqp.compressed", percentage(afterZlib, beforeZlib))
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.compressed")
+                self.factory._Statistics.timing("lib.amqpyombo.amqp.compressed", percentage(afterZlib, beforeZlib))
             else:
-                self.factory.StatisticsLibrary.increment("lib.amqpyombo.amqp.uncompressed")
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.uncompressed")
 
             if props.content_type == 'application/json':
                 if self.is_json(msg):
@@ -379,7 +376,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.sentCorrelationIDs = MaxDict(700) #correlate requests with responses
         self.AMQPProtocol = None
 
-        self.StatisticsLibrary = getComponent('yombo.gateway.lib.statistics')
+        self._Statistics = AMQPYombo._Libraries['statistics']
         self.AMQPYombo = AMQPYombo
         self.AMQPProtocol = None
         self.outgoing_queue = []
@@ -510,10 +507,11 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
     def close(self):
         """
-
+        Called from AMQPYombo._unload_, usually when gateway is shutting down.
         :return:
         """
         self._local_log("debug", "!!!!PikaFactory::close")
+#        print "amqp factory about to call close: %s" % self.AMQPProtocol
         self.AMQPProtocol.close()
         self.AMQPYombo.disconnected()
 
@@ -557,13 +555,13 @@ class AMQPYombo(YomboLibrary):
         self.loader = loader
         self._connecting = False  # True if trying to connect now
         self._connected = False  # Connected to AMQP
-        self.gwuuid = "gw_" + getConfigValue("core", "gwuuid")
+        self.gwuuid = "gw_" + self._Configs.get("core", "gwuuid")
 
         self.pika_factory = PikaFactory(self)
         self._local_log("debug", "AMQPYombo::connect")
-        environment = getConfigValue('server', 'environment', "production")
-        if getConfigValue("server", 'hostname', "") != "":
-            self.amqp_host = getConfigValue("server", 'hostname')
+        environment = self._Configs.get('server', 'environment', "production")
+        if self._Configs.get("server", 'hostname', "") != "":
+            self.amqp_host = self._Configs.get("server", 'hostname')
         else:
             if environment == "production":
                 self.amqp_host = "amqp.yombo.net"
@@ -574,7 +572,7 @@ class AMQPYombo(YomboLibrary):
             else:
                 self.amqp_host = "amqp.yombo.net"
 
-        self.pika_credentials=pika.PlainCredentials( self.gwuuid, getConfigValue("core", "gwhash") )
+        self.pika_credentials=pika.PlainCredentials( self.gwuuid, self._Configs.get("core", "gwhash") )
         self.pika_parameters = pika.ConnectionParameters(
             host=self.amqp_host,
             port=5671,
@@ -602,7 +600,7 @@ class AMQPYombo(YomboLibrary):
 
     def _local_log(self, level, location, msg=""):
         logit = func = getattr(logger, level)
-        logit("In {location} : {msg}", location=location, msg=msg)
+        logit("In {location} : {AMQPProtocolmsg}", location=location, msg=msg)
 
     def connect(self):
         """
@@ -649,7 +647,7 @@ class AMQPYombo(YomboLibrary):
 
         kwargs["time_created"] = kwargs.get("time_created", datetime.now())
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
-        kwargs['correlation_id'] = kwargs.get('correlation_id', generateRandom(length=18))
+        kwargs['correlation_id'] = kwargs.get('correlation_id', random_string(length=18))
         kwargs['correlation_type'] = "direct_send"
 
         properties = kwargs.get('properties', {})
@@ -670,7 +668,7 @@ class AMQPYombo(YomboLibrary):
                "exchange_name"  : "gw_config",
                "source"        : "yombo.gateway.lib.configurationupdate",
                "destination"   : "yombo.server.configs",
-               "callback" : self.amqpDirectIncoming,
+               "callback" : self.amqp_direct_incoming,
                "body"          : {
                  "DataType"        : "Object",
                  "Request"         : requestContent,
@@ -717,7 +715,7 @@ class AMQPYombo(YomboLibrary):
         if request_type is None:
             raise YomboWarning("AMQP.generateRequest requires 'request_type'.")
 
-        requestID = generateRandom(length=12)
+        requestID = random_string(length=12)
 
         requestmsg = {
             "exchange_name"    : exchange_name,
@@ -754,7 +752,7 @@ class AMQPYombo(YomboLibrary):
         self.pika_factory.fullyConnected = False  # connected to AMQP, and ready to send messages.
         self._connected = False  # connected to AMQP, and ready to send messages.
 
-    def amqpToMessage(self, deliver, properties, amqp):
+    def amqp_to_message(self, deliver, properties, amqp):
         """
         Convert an AMQP message to a Yombo Message. This is used for routing command and status messages.
 

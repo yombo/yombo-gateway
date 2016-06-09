@@ -3,11 +3,10 @@ from unittest import TestCase, result
 from unittest.case import _AssertRaisesContext
 import sys
 
-from yombo.lib.loader import setupLoader, getLoader
-from yombo.core.helpers import getComponent
+from yombo.lib.loader import setup_loader, get_loader
 
-setupLoader(testing=True)
-_loader = getLoader()
+setup_loader(testing=True)
+_loader = get_loader()
 _loader.importLibraries()
 #_getComponent = getComponent
 

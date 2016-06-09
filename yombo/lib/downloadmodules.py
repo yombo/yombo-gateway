@@ -49,11 +49,10 @@ from twisted.internet import defer
 from twisted.web.client import downloadPage
 
 # Import Yombo libraries
-from yombo.core.helpers import getConfigValue
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger('library.downloadmodules')
+logger = get_logger('library.downloadmodules')
 
 class DownloadModules(YomboLibrary):
     """
@@ -83,7 +82,7 @@ class DownloadModules(YomboLibrary):
         self._LocalDBLibrary = self._Libraries['localdb']
 
         self._getVersion = []
-        self.maxDownload = getConfigValue("misc", 'downloadmodulesconcurrent', self.MAX_DOWNLOAD_CONCURRENT)
+        self.maxDownload = self._Configs.get("misc", 'downloadmodulesconcurrent', self.MAX_DOWNLOAD_CONCURRENT)
         self.allDownloads = []   # to start deferreds
         self.mysemaphore = defer.DeferredSemaphore(2)  #used to queue deferreds
 
@@ -92,9 +91,9 @@ class DownloadModules(YomboLibrary):
         Prepare the cloudfront download location, and :func:`checkModules`
         to see if any modules need to be downloaded.
         """
-        environment = getConfigValue("server", 'environment', "production")
-        if getConfigValue("server", 'cloudfront', "") != "":
-            self.cloudfront = "http://%s/" % getConfigValue("server", 'cloudfront')
+        environment = self._Configs.get("server", 'environment', "production")
+        if self._Configs.get("server", 'cloudfront', "") != "":
+            self.cloudfront = "http://%s/" % self._Configs.get("server", 'cloudfront')
         else:
             if(environment == "production"):
                 self.cloudfront = "http://cloudfront.yombo.net/"
@@ -173,7 +172,7 @@ class DownloadModules(YomboLibrary):
                 logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zip_uri'])
                
 #                d = self.mysemaphore.run(downloadPage, data['zip_uri'], data['zip_file'])
-                d = self.mysemaphore.run(self.download_file, data['download_uri'], data['zip_file'])
+                d = self.mysemaphore.run(self.download_file, data)
                 self.allDownloads.append(d)
                 d.addErrback(self.download_file_failed, data)
                 d.addCallback(self.unzip_file, data)
@@ -181,26 +180,24 @@ class DownloadModules(YomboLibrary):
                 d.addCallback(self.update_database, data)
                 d.addErrback(self.update_database_failed, data)
 
-                d = yield maybeDeferred(library._init_, self)
-
         finalD = yield defer.DeferredList(self.allDownloads)
         defer.returnValue(finalD)
     
-    def downloadCleanup(self, something):
+    def download_cleanup(self, something):
         """
         When the downloads are completed, come here for any house cleaning.
         """
         logger.info("Done with downloads!")
 
-    def download_file(self, download_uri, zip_file):
+    def download_file(self, data):
         """
         Helper function to download the module as a zip file.
         """
         logger.debug("!! Downlod version:::  {data}", data=data)
-        zip_uri =  data['zip_uri']
+        download_uri =  data['download_uri']
         zip_file =  data['zip_file']
-        logger.debug("getting uri: {uri}  saving to:{zip_file}", zip_uri=zip_uri, zip_file=zip_file)
-        d = downloadPage(data['zip_uri'], data['zip_file'])
+        logger.debug("getting uri: {download_uri}  saving to:{zip_file}", download_uri=download_uri, zip_file=zip_file)
+        d = downloadPage(data['download_uri'], data['zip_file'])
         return d
 
     def download_file_failed(self, data, data2):

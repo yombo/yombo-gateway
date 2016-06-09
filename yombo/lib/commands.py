@@ -22,11 +22,11 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboCommandError
-from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
+from yombo.utils.fuzzysearch import FuzzySearch
 
-logger = getLogger('library.commands')
+logger = get_logger('library.commands')
 
 class Commands(YomboLibrary):
     """

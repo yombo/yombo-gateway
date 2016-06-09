@@ -2,9 +2,9 @@ import json
 import time
 
 from yombo.core.module import YomboModule
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 
-logger = getLogger("modules.logwriter")
+logger = get_logger("modules.logwriter")
 
 class LogWriter(YomboModule):
     """

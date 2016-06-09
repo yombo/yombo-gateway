@@ -49,12 +49,11 @@ from twisted.internet.reactor import callLater
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboMessageError
-#TODO: When redoing PGP, move calls to the library
-from yombo.core.helpers import getConfigValue, getComponent, generateUUID, getCommand, getDevice, pgpSign, pgpVerify
-from yombo.core.log import getLogger
-from yombo.lib.loader import getLoader
+from yombo.core.log import get_logger
+from yombo.utils import generate_uuid
+from yombo.lib.loader import get_loader
 
-logger = getLogger('core.message')
+logger = get_logger('core.message')
 
 class Message:
     """
@@ -65,24 +64,28 @@ class Message:
     """
 
     def __init__(self, **kwargs):
+#        headers
+#        properties
+#        body
+
         """
         Generate a message from a dictionary. If using to control a device,
         it's best to use the device instanct to send messages.
 
         The params defined refer to kwargs and become class variables.
         
-        :param msgOrigin: **Required.** Library, module, or other component
+        :param msg_origin: **Required.** Library, module, or other component
             that generated the message. This will be used to send a reply
             message if needed.  It is also used for GPG/PGP key selection for
             validating/decrypting commands and status messages sent from remote
             places.
-        :type msgOrigin: string
-        :param msgDestination: **Required.** The final destination for the
+        :type msg_origin: string
+        :param msg_destination: **Required.** The final destination for the
             message. If the message cannot be delivered to the destination,
             a return message will be sent to the Origin with the same
             messageID with a status of "failed".  An exception is not thrown
             since it may take a while to get a failed message.
-        :type msgDestination: string
+        :type msg_destination: string
         :param msgType: The type of message being sent, such as: command,
             event, status:
 
@@ -218,9 +221,10 @@ class Message:
             msgUUID exists and won't create a new one.
         :type newMessage: bool
         """
-        self.loader = getLoader()
-        self._MessagesLibrary = getComponent('yombo.gateway.lib.messages')
-        self._ModulesLibrary = getComponent('yombo.gateway.lib.modules')
+        self.loader = get_loader()
+        self._MessagesLibrary = self._Libraries['messages']
+        self._ModulesLibrary = self._Libraries['modules']
+        self._GPG = self._Libraries['gpg']
 
         self.msgOrigin      = kwargs['msgOrigin']
         self.msgDestination = kwargs['msgDestination']
@@ -246,10 +250,10 @@ class Message:
 
         self.sentTo = []
 
-        self.gwUUID = getConfigValue("core", "gwuuid")
+        self.gwUUID = self._Configs.get("core", "gwuuid")
         if self.msgUUID is None:
             if self.newMessage:
-                self.msgUUID = str(generateUUID(mainType=self.uuidType, subType=self.uuidSubType))
+                self.msgUUID = str(generate_uuid(mainType=self.uuidType, subType=self.uuidSubType))
             else:
                 raise YomboMessageError("Existing message should have a msgUUID", 'Message API::Create message.')
 
@@ -437,18 +441,16 @@ class Message:
         if self.validateMessage() is False:
             raise YomboMessageError("You should never see this message. If you do.  Please tell supprt@yombo.net about it!", 'Message API::Catchall')
 
-        if self.checkDestinationAsLocal() is False:
-            gc = getComponent('yombo.gateway.lib.gatewaycontrol')
-            gc.message(self)
-            logger.info("message is not marked for local. Sending to server for processing!")
-            return
-        if self.msgType == "control": # control messages
-            if self.cmd == "disconnectSvc":
-# TODO: finish this!
-                pass
-                self.loader.loadedComponents['yombo.gateway.lib.GatewayControlProtocol']
+#        if self.checkDestinationAsLocal() is False:
+#            gc = getComponent('yombo.gateway.lib.gatewaycontrol')
+#            gc.message(self)
+#            logger.info("message is not marked for local. Sending to server for processing!")
+#            return
+#        if self.msgType == "control": # control messages
+#            if self.cmd == "disconnectSvc":
+## TODO: finish this!
+#                pass
 
-                
         if self._MessagesLibrary.processing is False:
             logger.debug("Message::send - Queuing message for later")
             self._MessagesLibrary.queue.appendleft(self)
@@ -674,14 +676,14 @@ class Message:
                 raise YomboMessageError("if 'cmdobj' specified', it must be a command instance.", 'Message API::ValidateCMD')
         elif 'cmdUUID' in self.payload:
             try:
-                self.payload['cmdobj'] = getCommand(self.payload['cmdUUID'])
+                self.payload['cmdobj'] = self._Commands[self.payload['cmdUUID']]
                 self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
                 self.payload['cmd'] = self.payload['cmdobj'].cmd
             except:
                 raise YomboMessageError("Couldn't find specified cmdUUID.", 'Message API::ValidateCMD')
         elif 'cmd' in self.payload:
             try:
-                self.payload['cmdobj'] = getCommand(self.payload['cmd'])
+                self.payload['cmdobj'] = self._Commands[self.payload['cmd']]
                 self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
                 self.payload['cmd'] = self.payload['cmdobj'].cmd
             except:
@@ -704,7 +706,7 @@ class Message:
         elif 'device_id' in self.payload:
 #            try:
 #                logger.warn("aaaa1: {payload}", payload=self.payload)
-                self.payload['deviceobj'] = getDevice(self.payload['device_id'])
+                self.payload['deviceobj'] = self._DevicesLibrary[self.payload['device_id']]
 #                logger.warn("aaaa2: {payload}", payload=self.payload)
                 self.payload['device_id'] = self.payload['deviceobj'].device_id
 #                logger.warn("aaaa3: {payload}", payload=self.payload)
@@ -714,7 +716,7 @@ class Message:
  #               raise YomboMessageError("Couldn't find specified device_id. %s " % sys.exc_info()[0], 'Message API')
         elif 'device' in self.payload:
             try:
-                self.payload['deviceobj'] = getDevice(self.payload['device'])
+                self.payload['deviceobj'] = self._DevicesLibrary[self.payload['device']]
                 self.payload['device_id'] = self.payload['deviceobj'].device_id
                 self.payload['device'] = self.payload['deviceobj'].label
             except:
@@ -774,14 +776,14 @@ class Message:
             }
 
         self.msgAuth['username'] = kwargs.get('username', '')
-        self.msgAuth['signature'] = pgpSign(dumps(hashed))
+        self.msgAuth['signature'] = self._GPG.sign_asymmetric(dumps(hashed))
 
     def validateMsgAuth(self):
         """
         Validates that the message authentication is valid.
         """
         if 'signature' in self.msgAuth:
-            hashed = loads(pgpVerify(self.msgAuth['signature']))
+            hashed = loads(self._GPG.verify_asymmetric(self.msgAuth['signature']))
             logger.debug("{hashed}", hashed=hashed)
             if self.msgOrigin != hashed['msgOrigin']:
                 raise YomboMessageError("msgOrigin doesn't match hash.", 'Message API::ValidateMsgAuth')

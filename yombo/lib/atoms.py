@@ -41,10 +41,10 @@ from time import time
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.core.log import getLogger
+from yombo.core.log import get_logger
 import yombo.utils
 
-logger = getLogger("library.atoms")
+logger = get_logger("library.atoms")
 
 _REPLACE_LINUX_RE = re.compile(r'linux', re.IGNORECASE)
 

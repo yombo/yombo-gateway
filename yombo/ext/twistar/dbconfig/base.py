@@ -265,7 +265,7 @@ class InteractionBase(object):
         q = "TRUNCATE TABLE %s" % tablename
         return self.executeOperation(q, [])
 
-    def update(self, tablename, args, where=None, txn=None, limit=None):
+    def update(self, tablename, vals, where=None, txn=None, limit=None):
         """
         Update a row into the given table.
 
@@ -284,18 +284,38 @@ class InteractionBase(object):
 
         @return: A C{Deferred}
         """
-        setstring, args = self.updateArgsToString(args)
+        setstring, vals = self.updateArgsToString(vals)
         q = "UPDATE %s " % tablename + " SET " + setstring
         if where is not None:
             wherestr, whereargs = self.whereToString(where)
             q += " WHERE " + wherestr
-            args += whereargs
+            vals += whereargs
         if limit is not None:
             q += " LIMIT " + str(limit)
 
         if txn is not None:
-            return self.executeTxn(txn, q, args)
-        return self.executeOperation(q, args)
+            return self.executeTxn(txn, q, vals)
+        return self.executeOperation(q, vals)
+
+        # if we have a transaction use it
+        if txn is not None:
+            self.executeTxn(txn, q, vals.values())
+            return self.getLastInsertID(txn)
+
+        def _update(txn, q, vals):
+            self.executeTxn(txn, q, vals.values())
+            return self.getLastInsertID(txn)
+        return self.runInteraction(_update, q, vals)
+
+
+
+        def _update(txn, q, vals):
+            self.executeTxn(txn, q, vals.values())
+            return self.getLastInsertID(txn)
+        return self.runInteraction(_update, q, vals)
+
+
+
 
 
     def valuesToHash(self, txn, values, tablename, cacheable=True):

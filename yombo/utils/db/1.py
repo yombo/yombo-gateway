@@ -194,15 +194,14 @@ def upgrade(Registry, **kwargs):
     # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
     table = """CREATE TABLE `sqldict` (
      `id`     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `module`     TEXT NOT NULL,
-     `dict_name`     INTEGER NOT NULL,
-     `dict_key`     TEXT NOT NULL,
-     `dict_data`     BLOB,
+     `component` TEXT NOT NULL,
+     `dict_name`    INTEGER NOT NULL,
+     `dict_data`    BLOB,
      `created`     INTEGER NOT NULL,
      `updated`     INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'dict_name'))
-    yield Registry.DBPOOL.runQuery(create_index('sqldict', 'module'))
+    yield Registry.DBPOOL.runQuery(create_index('sqldict', 'component'))
 
     # To be completed
     table = """CREATE TABLE `users` (
