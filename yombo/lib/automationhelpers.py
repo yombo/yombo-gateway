@@ -6,12 +6,13 @@ Helpers for automation items.
 :license: LICENSE for details.
 """
 # Import python libraries
+from time import time
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import is_string_bool
+from yombo.utils import is_string_bool, epoch_from_string
 
 logger = get_logger("library.automationhelper")
 
@@ -40,6 +41,17 @@ class AutomationHelpers(YomboLibrary):
     def message(self, message):
         pass
 
+    # Helper functions for any automation
+    def get_action_delay(self, delay):
+        """
+        Used to check the 'delay' field of an action. If 'delay' is specified, but useless, will raise
+
+        :param action: Pass in the action to be checked. Will return in epoch time or None if invalid
+        :return:
+        """
+        return (float(epoch_from_string(delay)) - float(time()))
+
+
     def AutomationHelpers_automation_action_list(self, **kwargs):
         """
         hook_automation_action_list called by the automation library to list possible actions.
@@ -63,8 +75,6 @@ class AutomationHelpers(YomboLibrary):
         :param kwargs: None
         :return:
         """
-#        print "################ in basic_values_action_validate %s - %s" % (rule, kwargs)
-
         if action['platform'] == 'call_function':
             if 'component_callback' in action:
                 if not callable(action['component_callback']):

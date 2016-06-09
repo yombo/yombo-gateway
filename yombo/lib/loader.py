@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Responsible for importing, starting, and stopping all libraries and modules.
 
@@ -33,7 +33,6 @@ Stops components in the following phases. Modules first, then libraries.
 import sys
 import traceback
 from re import search as ReSearch
-#from inspect import callable
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
@@ -81,6 +80,7 @@ HARD_UNLOAD = [
     "SQLDict",
 ]
 
+
 class Loader(YomboLibrary):
     """
     Responsible for loading libraries, and then delegating loading modules to
@@ -90,7 +90,22 @@ class Loader(YomboLibrary):
     modules are unloaded, and then reloaded after configurations are done
     being downloaded.
     """
-#    zope.interface.implements(ILibrary)
+    def __getitem__(self, component_requested):
+        """
+        """
+        logger.debug("looking for: {component_requested}", component_requested=component_requested)
+        if component_requested in self.loadedComponents:
+            logger.debug("found by loadedComponents! {component_requested}", component_requested=component_requested)
+            return self.loadedComponents[component_requested]
+        elif component_requested in self.loadedLibraries:
+            logger.debug("found by loadedLibraries! {component_requested}", component_requested=component_requested)
+            return self.loadedComponents[component_requested]
+        elif component_requested in self._moduleLibrary:
+            logger.debug("found by self._moduleLibrary! {component_requested}", component_requested=self._moduleLibrary)
+            return self._moduleLibrary[component_requested]
+        else:
+            raise YomboWarning("Loader could not find requested component: {%s}"
+                               % component_requested, '101', '__getitem__', 'loader')
 
     def __init__(self, testing=False):
         self.unittest = testing

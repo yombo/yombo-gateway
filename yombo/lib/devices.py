@@ -76,7 +76,7 @@ from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.message import Message
-from yombo.utils import random_string
+from yombo.utils import random_string, split, epoch_from_string
 
 
 logger = get_logger('library.devices')
@@ -292,7 +292,7 @@ class Devices(YomboLibrary):
         logger.debug("looking for: {device_id}", device_id=device_requested)
         if device_requested in self._devicesByUUID:
             logger.debug("found by device id! {device_id}", device_id=device_requested)
-            return self._devicesByUUID._search(self, device_requested, limiter_override)
+            return self._devicesByUUID.search2(device_requested, limiter_override)
         else:
             try:
                 requestedUUID = self._devicesByName[device_requested]
@@ -436,8 +436,11 @@ class Devices(YomboLibrary):
 
         if 'device' in action:
             try:
-                device = self.get_device(action['device'])
-                action['device_pointer'] = device
+                devices_text = split(action['device'])
+                devices = []
+                for device_text in devices_text:
+                    devices.append(self.get_device(action['device']))
+                action['device_pointer'] = devices
                 return action
             except:
                 raise YomboWarning("Error while searching for device, could not be found: %s" % action['device'],
@@ -446,7 +449,7 @@ class Devices(YomboLibrary):
             raise YomboWarning("For platform 'devices' as an 'action', must have 'device' and can be either device ID or device label.",
                                105, 'devices_validate_action_callback', 'lib.devices')
 
-    def devices_do_action_callback(self, rule, action, **kwargs):
+    def devices_do_action_callback(self, rule, action, options={}, **kwargs):
         """
         A callback to perform an action.
 
@@ -455,11 +458,16 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        device = action['device_pointer']
-#        print "the_message = device.get_message(self, cmd=%s)" % action['command']
-        the_message = device.get_message(self, cmd=action['command'])
-#        print "the_message: %s" % the_message
-        the_message.send()
+#        logger.error("firing device rule: {rule}", rule=rule)
+#        logger.error("rule options: {options}", options=options)
+        for device in action['device_pointer']:
+    #        print "the_message = device.get_message(self, cmd=%s)" % action['command']
+            the_message = device.get_message(self, cmd=action['command'])
+            if 'delay' in options and options['delay'] is not None:
+                logger.warn("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
+                the_message.set_delay(delay=options['delay'])
+    #        print "the_message: %s" % the_message
+            the_message.send()
 
 
 class Device:

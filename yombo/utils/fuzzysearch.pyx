@@ -134,6 +134,32 @@ class FuzzySearch(dict):
             'searchFor': searchFor,
         }
 
+    def search2(self, searchFor, limiter_override=None):
+        """
+        What key to search for.  It returns 5 variables as a dictionary:
+            - valid - True if ratio match is above the limiter.
+            - key - Best matching key.
+            - value - Best matchin value for the given key.
+            - ratio - The ratio as a percentage (float, less than 1 if not exact match) of closeness matching.
+            - others - The top 5 alternatives, ordered from highest to lowest, as a dictionary
+                of dictionaries.  The key being the ratio. Values of the dictionary are: key, value
+
+        :param searchFor: The key of the dictionary to search for.
+        :type searchFor: int or string
+        :param limiter_override: temporarily override the limiter for only this search.
+        :return: See description for details
+        :rtype: dict
+        """
+        if limiter_override is not None:
+            found, key, item, ratio, others = self._search(searchFor, limiter_override)
+        else:
+            found, key, item, ratio, others = self._search(searchFor)
+
+        if not found:
+            raise YomboFuzzySearchError(searchFor, key, item, ratio, others)
+
+        return item
+
     def _search(self, searchFor, limiter_override=None):
         """
         **Don't use this function directly** - Performs the actual search.

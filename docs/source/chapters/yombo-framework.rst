@@ -69,6 +69,7 @@ Times libararies.
    ../lib/loader.rst
    ../lib/messages.rst
    ../lib/modules.rst
+   ../lib/sqldict
    ../lib/startup.rst
    ../lib/states.rst
    ../lib/statistics.rst
@@ -91,7 +92,6 @@ Various utilities to help the Yombo Gateway get things done.
    ../utils/fuzzysearch
    ../utils/lookupdict
    ../utils/maxdict
-   ../utilssqldict
 
 .. _ext:
 

@@ -1,11 +1,12 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 .. rst-class:: floater
 
 .. note::
 
-  For more information see: `Automation @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Automation>`_
+  For more information see:
+  `Automation @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Automation>`_
 
 The automation library provides users an easy method to setup simple automation rules and tasks without the need
 to write a single line of code.
@@ -24,7 +25,7 @@ Developers should the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-from pprint import pprint
+import yombo.ext.umsgpack as msgpack
 
 # Import 3rd-party libs
 import yombo.ext.hjson as hjson
@@ -65,6 +66,7 @@ class Automation(YomboLibrary):
         self._rulesParse = {}  # Used to store raw input from reading file.
         self.rules = {}   # Store processed / active rules
         self.active_triggers = {}  # Track various triggers - help find what rules to fire whena trigger matches.
+        self._AutomationHelpersLibrary = self._Libraries['automationhelpers']
 
         self.tracker = {}  # Registered items to track, will be checked against if a trigger check fires.
         self.sources = {}  # List of source processors
@@ -74,9 +76,10 @@ class Automation(YomboLibrary):
         # lets load the raw json and see if we can even parse anything.
         try:
             with yombo.utils.fopen('automation.txt', 'r') as fp_:
-                self._rulesRaw = hjson.loads(fp_.read())
+                temp_rules = hjson.loads(fp_.read())
+                self._rulesRaw = msgpack.loads(msgpack.dumps(temp_rules))  # remove ordered dict.
 #                print "hjosn: %s" % hjson.loads(self._rulesRaw)
-#                logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
+                logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
         except Exception, e:
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
@@ -115,7 +118,7 @@ class Automation(YomboLibrary):
            def ModuleName_automation_source_list(self, **kwargs):
                return [
                  { 'platform': 'atom',
-                   'validate_source_callback': self.atoms_validate_source_callback,  # function to call to validate a trigger
+                   'validate_source_callback': self.atoms_validate_source_callback,  # validate a trigger
                    'add_trigger_callback': self.atoms_add_trigger_callback,  # function to call to add a trigger
                    'get_value_callback': self.atoms_get_value_callback,  # get a value
                  }
@@ -124,7 +127,7 @@ class Automation(YomboLibrary):
            def ModuleName_automation_filter_list(self, **kwargs):
                return [
                  { 'platform': 'basic_values',
-                   'validate_filter_callback': self.Atoms_validate_filter_callback,  # validate a condition combo is possible
+                   'validate_filter_callback': self.Atoms_validate_filter_callback,  # validate a condition is possible
                    'run_filter_callback': self.Atoms_run_filter_callback,  # perform a condition check
                  }
                ]
@@ -163,11 +166,15 @@ class Automation(YomboLibrary):
 
         other_rules = yombo.utils.global_invoke_all('automation_rules_list')
         for component, rules in other_rules.iteritems():
-            self._rulesRaw = yombo.utils.dict_merge(self._rulesRaw, rules)
+#            print "Merging 1: %s" % rules['rules']
+#            print "Merging 2: %s" % self._rulesRaw['rules']
+            for rule in rules['rules']:
+                self._rulesRaw['rules'].append(rule)
+#            print "Results: %s" % self._rulesRaw
 
- #       logger.debug("rulesRaw: {rawrules}", rawrules=self._rulesRaw)
+#        logger.warn("rulesRaw: {rawrules}", rawrules=pprint(self._rulesRaw))
         if 'rules' not in self._rulesRaw:
-            logger.warn("There are no simple automation rules!!!")
+            logger.warn("No automation rules found.")
             return
 
         for rule in self._rulesRaw['rules']:
@@ -187,6 +194,7 @@ class Automation(YomboLibrary):
         rule_is = None
         if 'rule_id' in rule:
             if rule['rule_id'] in self.rules:
+                logger.warn("Duplicate rule id found, dropping it.")
                 return False
             else:
                 rule_id = rule['rule_id']
@@ -237,10 +245,22 @@ class Automation(YomboLibrary):
                     return False
                 if rule['condition'][item]['filter']['platform'] not in self.filters:
                     logger.info("Platform ({platform}) doesn't exist as a filter: ({rule}) {required}",
-                                platform=ule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                                platform=rule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
                     return False
 
         for item in range(len(rule['action'])):
+            # Global settings
+
+            # use automationhelpers.get_action_delay(action) to perform the actual work.
+            # Just checking that it can be parsed during rule setup so that it can be used
+            # during rule run time.
+            if 'delay' in rule['action'][item]:
+                try:
+                    self._AutomationHelpersLibrary.get_action_delay(rule['action'][item]['delay'])
+                except Exception, e:
+                    logger.warn("Error parsing 'delay' within action, dropping rule. Delay:{delay}. Other reasons: {e}",
+                                delay=rule['action'][item]['delay'], e=e)
+                    return False
             if not all(section in rule['action'][item] for section in REQUIRED_ACTION_FIELDS):
                 logger.info("Rule:'{rule}' Doesn't have required action fields,  has: ({action})  Required:{required}",
                             rule=rule['name'], action=rule['action'][item], required=REQUIRED_ACTION_FIELDS)
@@ -287,7 +307,7 @@ class Automation(YomboLibrary):
                     logger.warn("Warning: {e}", e=e)
                     return False
 
-            logger.debug("Passed adding rule condition check.... {rule}", rule=rule)
+#            logger.debug("Passed adding rule condition check.... {rule}", rule=rule)
             add_trigger_callback_function = self.sources[rule['trigger']['source']['platform']]['add_trigger_callback']
             add_trigger_callback_function(rule, condition_callback=self.automation_check_conditions)
 
@@ -400,8 +420,10 @@ class Automation(YomboLibrary):
 #        logger.warn("tracked_key: {tracked_key}", tracked_key=tracked_key)
 #        logger.warn("trackers: {tracker}", tracker=self.tracker)
         if platform_label not in self.tracker:
+            logger.debug("platform_label not in self.tracker. Skipping rule.")
             return False
         if tracked_key not in self.tracker[platform_label]:
+            logger.debug("platform (%s), not tracking key: %s  " % (platform_label, tracked_key))
             return False
         rule_ids = self.tracker[platform_label][tracked_key]
         if len(rule_ids) == 0:
@@ -486,10 +508,21 @@ class Automation(YomboLibrary):
         rule = self.rules[rule_id]
 #        print "running rule_id: %s" % rule_id
         for item in range(len(rule['action'])):
+            options = {}
+            if 'delay' in rule['action'][item]:
+                try:
+                    options['delay'] = self._AutomationHelpersLibrary.get_action_delay(rule['action'][item]['delay'])
+                except Exception, e:
+                    logger.error("Error parsing 'delay' within action. Cannot perform action: {e}", e=e)
+                    raise YomboWarning("Error parsing 'delay' within action. Cannot perform action. (%s)" % rule['action'][item]['delay'],
+                                   301, 'devices_validate_action_callback', 'lib.devices')
+
+
+            logger.debug("Action options: {options}", options=options)
 #            print "running rule: %s" % rule['action'][item]
             platform = rule['action'][item]['platform']
             do_action_callback_function = self.actions[platform]['do_action_callback']
-            do_action_callback_function(rule, rule['action'][item], **rule['action'][item]['arguments'])
+            do_action_callback_function(rule, rule['action'][item], options, **rule['action'][item]['arguments'])
 
         return
 

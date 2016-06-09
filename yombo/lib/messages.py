@@ -23,7 +23,7 @@ send function of a message when needed.
 :license: LICENSE for details.
 """
 # Import python libraries
-import time
+from time import time
 from collections import deque
 
 # Import twisted libraries
@@ -73,6 +73,7 @@ class Messages(YomboLibrary):
         """
         Stop library - stop the looping call.
         """
+        logger.error("delay qeueu: {queue}", queue=self.delayQueue)
         pass
 
     def _unload_(self):
@@ -116,24 +117,33 @@ class Messages(YomboLibrary):
         # Now check to existing delayed messages.  If not too old, send
         # otherwise delete them.  If time is in future, setup a new
         # reactor to send in future.
-        for msg in self.delayQueue:
-          if float(msg.notBefore) < time.time():
-              if time.time() - float(msg.notBefore) > float(msg.maxDelay):
-                  # we're too late, just delete it.
+        logger.debug("module_started: delayQueue: {delay}", delay=self.delayQueue)
+        for msg_id in self.delayQueue.keys():
+            if msg_id in self.reactors:
+                logger.debug("Message already scheduled for delivery later. Possible from an automation rule. Skipping.")
+                continue
+            msg = self.delayQueue[msg_id]
+            if float(msg['notBefore']) < time(): # if delay message time has past, maybe process it.
+                if time() - float(msg['notBefore']) > float(msg['maxDelay']):
+                    # we're too late, just delete it.
+                    del self.delayQueue[msg_id]
+                    continue
+                else:
+                  #we're good, lets hydrate the message and send it.
+                  del msg['notBefore']
+                  del msg['maxDelay']
+                  to_send = Message(**msg)
                   del self.delayQueue[msg]
-                  continue
-              else:
-                #we're good, lets hydrate the message and send it.
-                toSend = Message(**self.delayQueue[msg])
-                del self.delayQueue[msg]
-                toSend.send()
-          else: # now lets setup messages for the future. Gotta wear shades.
-
-              self.reactors[msg] = reactor.callLater(2, self.loaded)
-              #Hydrate the message and prep it to send.
-              toSend = Message(**self.delayQueue[msg])
-              when = float(msg.notBefore) - time.time()
-              reactor.callLater(when, toSend.send)
+                  to_send.send()
+            else: # now lets setup messages for the future. Gotta wear shades.
+                del msg['notBefore']
+                del msg['maxDelay']
+                to_send = Message(**msg)
+                self.reactors[msg_id] = reactor.callLater(2, to_send.send)
+                #Hydrate the message and prep it to send.
+                to_send = Message(**self.delayQueue[msg_id])
+                when = float(msg.notBefore) - time()
+                reactor.callLater(when, to_send.send)
 
     def _module_unload_(self):
         """
@@ -158,13 +168,17 @@ class Messages(YomboLibrary):
           temp['payload']['device_id'] = temp['payload']['deviceobj'].device_id
           del temp['payload']['deviceobj']
 
-        when = time.time() - message.notBefore
-        self.reactors = reactor.callLater(when, message.send)
+        if message.msgUUID in self.reactors:
+            logger.error("Can't add message to delay queue, message UUID already used!")
+
+        when = message.notBefore - time()
+        self.reactors[message.msgUUID] = reactor.callLater(when, message.send)
 
         if temp['payload']['device_id'] not in self.deviceList:
           self.deviceList[temp['payload']['device_id']] = []
-        self.deviceList.append(message.msgUUID)
+#        self.deviceList.append(message.msgUUID)
 
+        logger.debug("Adding message to delayed message queue: {temp}", temp=temp)
         self.delayQueue[message.msgUUID] = temp  # dehydrate for persistence
         reply = message.getReply(msgStatus="delayed")
         reply.send()
@@ -179,10 +193,7 @@ class Messages(YomboLibrary):
 
         if device_id in self.deviceList:
           for key in range(len(self.deviceList[device_id])):
-              try:
-                self.cancel_delayed_message(self.deviceList[device_id][key])
-              except:
-                pass
+              self.cancel_delayed_message(self.deviceList[device_id][key])
               del self.deviceList[device_id][key]
         del self.deviceList[device_id]
 
@@ -208,16 +219,9 @@ class Messages(YomboLibrary):
             if self.reactors[msgUUID].active():
                 self.reactors[msgUUID].cancel()
             del self.reactors[msgUUID]
-        else:
-            isGood = False
 
         if msgUUID in self.delayQueue:
             del self.delayQueue[msgUUID]
-        else:
-            raise YomboMessageError("msgUUID not found in delay queue.", 'Messages Library')
-
-        if isGood is False:
-            raise YomboMessageError("msgUUID not found in reactors.", 'Messages Library')
 
     def checkDelay(self, msgUUID):
         """
@@ -235,10 +239,7 @@ class Messages(YomboLibrary):
         We will check if the message is in the delayQueue, if it is, we'll
         delete that and clean up the reactors list.
         """
-        try:
-          self.cancel_delayed_message(message.msgUUID)
-        except:
-          pass
+        self.cancel_delayed_message(message.msgUUID)
 
     def message(self, message):
         """

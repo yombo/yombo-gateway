@@ -17,17 +17,70 @@ import random
 import string
 import sys
 import re
+from datetime import datetime
+import parsedatetime.parsedatetime as pdt
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
 from twisted.internet import reactor
 
 # Import 3rd-party libs
+from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import memoize_
 import yombo.ext.six as six
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboNoSuchLoadedComponentError, YomboWarning
+
+def epoch_from_string( the_string ):
+    """
+    Receives a string and parses it into seconds. Some example strings:
+
+    * 1hour - Returns epoch time 1 hour ahead.
+    * 1h 3m -3s - Returns epoch 1 hour ahead, but add 3 minutes and subtract 3 seconds
+    *
+
+    Inspiration from here:
+    http://stackoverflow.com/questions/1810432/handling-the-different-results-from-parsedatetime
+
+    :param s:
+    :return:
+    """
+    c = pdt.Calendar()
+    result, what = c.parse( the_string )
+
+    dt = None
+
+    # what was returned (see http://code-bear.com/code/parsedatetime/docs/)
+    # 0 = failed to parse
+    # 1 = date (with current time, as a struct_time)
+    # 2 = time (with current date, as a struct_time)
+    # 3 = datetime
+    if what in (1,2):
+        # result is struct_time
+        dt = datetime( *result[:6] )
+    elif what == 3:
+        # result is a datetime
+        dt = result
+
+    if dt is None:
+        # Failed to parse
+        raise YomboWarning("Cannot parse this string into a date: '"+the_string+"'", 101, "epoch_from_string", 'utils')
+    return int(dt.strftime('%s'))
+
+def convert_to_seconds(s):
+    seconds_per_unit = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
+    return int(s[:-1]) * seconds_per_unit[s[-1]]
+
+def split(the_string, delimiter=','):
+    """
+    Pass in a string, and get back a list. This also ignore white spaces padding the delimiter.
+
+    :param the_string: The string to parse
+    :param delimiter: Default: , (commad).
+    :return:
+    """
+    return [x.strip() for x in the_string.split(',')]
 
 def clean_kwargs(**kwargs):
     """
@@ -336,7 +389,8 @@ def get_external_ip_address():
     :rtype: string
     """
     import urllib2
-    return urllib2.urlopen('http://wtfismyip.com/text').read()
+    request = urllib2.Request("https://api.ipify.org", headers={"Accept" : "text/html"})
+    return urllib2.urlopen(request).read()
 
 
 def random_string(**kwargs):

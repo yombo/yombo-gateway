@@ -1,43 +1,46 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 .. rst-class:: floater
 
 .. note::
 
-  For more information see: `Voice Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Voice_Commands>`_
+  For more information see:
+  `Voice Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Voice_Commands>`_
 
-The term "Voice commands" may be misleading.  Think of voice commands as
-noun/verb or verb/noun pairs to control devices.  The verb is the "what",
+The term "Voice commands" may be misleading. Think of voice commands as
+noun/verb or verb/noun pairs to control devices. The verb is the "what",
 such as which :class:`~yombo.lib.devices` or module function to send a
 :class:`command <yombo.lib.commands>` to. The noun is the "command" that the
 device or module should do for the given noun.
 
 Voice commands can be sent in by any means: Speach to text app such as Siri on
 iPhone, android speach to text, IM, private (or public if the user is daring)
-Twitter feed, Email, SMS, text file monitor, telent input, remote sensor, XPL,
+Twitter feed, Email, SMS, text file monitor, telnet input, remote sensor, XPL,
 XAP, microphone with speech to text processing capabilities, etc.
 
 **Example**:
 
-  For example, if a voice command noun/verb pairs exist::
+  For example, if a voice command has these inputs::
 
     Noun: living room desk lamp
     Verb: on, off, dim, bright
 
-  Then a voice command such as "living room desk light off" would parse as::
+  Then a string of text with "living room desk light off" would parse as::
 
     Noun: living room desk lamp
     Verb: off
 
-Two primary actions the voice_cmd class can do::
+The voice commands would then generate an "off" command for device
+"living room desk lamp".
+
+Two primary actions the voice_cmd class can do:
 
 #. Add voice commands
 #. Search for voice commands
 
-Users can set voice commands on each device through the API or the
-`Yombo Website <http://yombo.net>`_ for each device.  The voice commands
+Users can set voice commands on each device. The voice commands
 are loaded when the gateway starts up.  Additional voice commands can be
 added by modules to add more functionality.
 
@@ -67,18 +70,14 @@ the fuzzysearch phase of voice command lookup.
 
   .. code-block:: python
 
-     from yombo.core.helpers import getVoiceCommands
-            
-     voice_cmds = getVoiceCommands()
+     voice_cmds = self._Libraries['voicecmds']
      voice_cmds.add("computer [sleep, hibernate, reset, power off]", 'module.computerTools', 0, 'nounverb')
 
   Search for the device_id for the desklamp and get the cmdUUID based on the action:
   
   .. code-block:: python
 
-     from yombo.core.helpers import getVoiceCommands
-            
-     voice_cmds = getVoiceCommands()
+     voice_cmds = self._Libraries['voicecmds']
      voice_cmds["desklamb off"] # it's misspelled, but it will still be found.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>

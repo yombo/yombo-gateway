@@ -2,12 +2,12 @@
 
 .. _sqldict:
 
-.. currentmodule:: yombo.utils.sqldict
+.. currentmodule:: yombo.lib.sqldict
 
 ====================================
-SQLDict (yombo.utils.sqldict)
+SQLDict (yombo.lib.sqldict)
 ====================================
-.. automodule:: yombo.utils.sqldict
+.. automodule:: yombo.lib.sqldict
 
 SQLDict Class
 ============================

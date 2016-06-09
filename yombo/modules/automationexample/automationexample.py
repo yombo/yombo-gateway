@@ -40,7 +40,7 @@ class AutomationExample(YomboModule):
         :return: Returns a dictionary of rules to be parsed.
         :rtype: dict
         """
-        return {'rules': [
+        return{'rules': [
             {
                 'name': 'Empty test 0',
                 'trigger': {
@@ -150,7 +150,7 @@ class AutomationExample(YomboModule):
     def _start_(self):
         logger.info("States: Is Light: {times_light}", times_light=self._States['times_light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
-#        self._States['automationexample'] = 0
+        self._States['automationexample'] = 0
 
     def set_high(self):
         logger.info("in set_high - setting automationexample = 1")

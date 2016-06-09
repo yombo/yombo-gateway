@@ -40,7 +40,7 @@ from collections import OrderedDict
 from json import dumps, loads
 from uuid import uuid4
 import copy
-import time
+from time import time
 import sys
 from inspect import isfunction
 
@@ -222,9 +222,12 @@ class Message:
         :type newMessage: bool
         """
         self.loader = get_loader()
-        self._MessagesLibrary = self._Libraries['messages']
-        self._ModulesLibrary = self._Libraries['modules']
-        self._GPG = self._Libraries['gpg']
+        self._DevicesLibrary = self.loader['yombo.gateway.lib.devices']
+        self._CommandsLibrary = self.loader['yombo.gateway.lib.commands']
+        self._MessagesLibrary = self.loader['yombo.gateway.lib.messages']
+        self._ModulesLibrary = self.loader['yombo.gateway.lib.modules']
+        self._GPG = self.loader['yombo.gateway.lib.gpg']
+        self._Configs = self.loader['yombo.gateway.lib.configuration']
 
         self.msgOrigin      = kwargs['msgOrigin']
         self.msgDestination = kwargs['msgDestination']
@@ -244,7 +247,10 @@ class Message:
         kwargs['delay'] = kwargs.get('delay', 0)
         self.newMessage     = kwargs.get('newMessage', True)
 
-        if 'msgPath' in kwargs:
+        if 'msgPath' in kwargs and len(kwargs['msgPath']) > 0:
+#            print "msgpath:::   %s" % kwargs['msgPath']
+#            print "msgpath:::  len: %s" % len(kwargs['msgPath'])
+#            print "msgpath:::  type: %s" % type(kwargs['msgPath'])
             for hop in kwargs['msgPath']:
                 self.msgPath[hop] = kwargs['msgPath'][hop]
 
@@ -291,7 +297,7 @@ class Message:
                 'uuidSubType'   : str(self.uuidSubType),
                 'msgUUID'       : str(self.msgUUID),
                 'msgOrigUUID'   : str(self.msgOrigUUID),
-                'msgPath'       : str(self.msgPath),
+                'msgPath'       : self.msgPath,
                 'sentTo'        : str(self.sentTo),
                 'msgAuth'       : dict(self.msgAuth),
                 'notBefore'     : int(self.notBefore),
@@ -354,9 +360,11 @@ class Message:
         elif 'delay' in kwargs:
             if kwargs['delay'] > 0:
                 try:
-                  notBefore = time() + float(kwargs['delay'])
-                except:
-                  raise YomboMessageError("delay is not an int or float", errorno=152)
+                    notBefore = time() + float(kwargs['delay'])
+#                    print "notBefore = %s, delay = %s" % (notBefore, float(kwargs['delay']))
+#                    print time()
+                except Exception, e:
+                    raise YomboMessageError("delay is not an int or float: %s" % e)
 
         if 'maxDelay' in kwargs:
             if kwargs['maxDelay'] > 0:
@@ -457,7 +465,8 @@ class Message:
             return
 
         # if message is to be delievered later, send to queue
-        if self.notBefore > time.time():
+        if self.notBefore > 0 and self.notBefore > time():
+            logger.debug("Adding message to queue for later!! {notBefore}", notBefore=self.notBefore)
             self._MessagesLibrary.add_msg_to_delay_queue(self)
             return
 
@@ -676,14 +685,14 @@ class Message:
                 raise YomboMessageError("if 'cmdobj' specified', it must be a command instance.", 'Message API::ValidateCMD')
         elif 'cmdUUID' in self.payload:
             try:
-                self.payload['cmdobj'] = self._Commands[self.payload['cmdUUID']]
+                self.payload['cmdobj'] = self._CommandsLibrary[self.payload['cmdUUID']]
                 self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
                 self.payload['cmd'] = self.payload['cmdobj'].cmd
             except:
                 raise YomboMessageError("Couldn't find specified cmdUUID.", 'Message API::ValidateCMD')
         elif 'cmd' in self.payload:
             try:
-                self.payload['cmdobj'] = self._Commands[self.payload['cmd']]
+                self.payload['cmdobj'] = self._CommandsLibrary[self.payload['cmd']]
                 self.payload['cmdUUID'] = self.payload['cmdobj'].cmdUUID
                 self.payload['cmd'] = self.payload['cmdobj'].cmd
             except:
