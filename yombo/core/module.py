@@ -221,18 +221,17 @@ class YomboModule:
         :param properties:
         :param message:
         """
-        logger.info("deliver (%s), props (%s), message (%s)" % (deliver, properties, message,))
-        logger.info("headers... {headers}", headers=properties.headers)
-        if properties.headers['Type'] == 'Request':
-            if message['DataType'] == 'Object':  # a single response
-                self.amqp_incoming_request(deliver, properties, message['Request'])
-            elif message['DataType'] == 'Objects':  # An array of responses
-                for response in message['Response']:
-                    print "about to send to incoming_request"
+#        logger.info("deliver (%s), props (%s), message (%s)" % (deliver, properties, message,))
+#        logger.info("headers... {headers}", headers=properties.headers)
+        if properties.headers['type'] == 'request':
+            if message['data_type'] == 'object': # a single response
+                self.amqp_incoming_request(deliver, properties, message['request'])
+            elif message['data_type'] == 'objects': # An array of responses
+                for response in message['request']:
                     self.amqp_incoming_request(deliver, properties, response)
-        elif properties.headers['Type'] == "Response":
-            if message['DataType'] == 'Object':  # a single response
-                self.amqp_incoming_response(deliver, properties, message['Response'])
-            elif message['DataType'] == 'Objects':  # An array of responses
-                for response in message['Response']:
+        elif properties.headers['type'] == "response":
+            if message['data_type'] == 'object': # a single response
+                self.amqp_incoming_response(deliver, properties, message['response'])
+            elif message['data_type'] == 'objects': # An array of responses
+                for response in message['response']:
                     self.amqp_incoming_response(deliver, properties, response)

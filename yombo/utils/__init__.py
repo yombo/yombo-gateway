@@ -28,6 +28,10 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import memoize_
 import yombo.ext.six as six
+from yombo.core.log import get_logger
+
+logger = get_logger('utils.__init__')
+
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboNoSuchLoadedComponentError, YomboWarning
@@ -384,6 +388,10 @@ def get_external_ip_address():
 
     This is called only once during the startup phase.  Calling this function too
     often can result in the gateway being blocked by whatismyip.org
+
+    .. warning::
+
+       This is 100% blocking code. A replacement will be coming soon.
 
     :return: An ip address
     :rtype: string

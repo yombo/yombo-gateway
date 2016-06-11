@@ -73,7 +73,7 @@ class Messages(YomboLibrary):
         """
         Stop library - stop the looping call.
         """
-        logger.error("delay qeueu: {queue}", queue=self.delayQueue)
+#        logger.error("delay qeueu: {queue}", queue=self.delayQueue)
         pass
 
     def _unload_(self):

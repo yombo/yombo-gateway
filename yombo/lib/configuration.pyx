@@ -111,21 +111,23 @@ class Configuration(YomboLibrary):
                     self._Libraries['localdb'].truncage('devicestatus')
                 self.cache['local']['deletedevicehistory'] = 'false'
                 self.cacheDirty = True
-        if 'externalIPAddressTime' in self.cache['core']:
-            if int(self.cache['core']['externalIPAddressTime']) < int(time.time()) - 12000:
-                self.set("core", "externalIPAddress", get_external_ip_address())
-                self.set("core", "externalIPAddressTime", int(time.time()))
+        if 'externalipaddress' in self.cache['core'] and 'externalipaddresstime' in self.cache['core']:
+            if int(self.cache['core']['externalipaddresstime']) < (int(time.time()) - 12000):
+                print self.cache['core']['externalipaddress']
+                self.set("core", "externalipaddress", get_external_ip_address())
+                self.set("core", "externalipaddresstime", int(time.time()))
         else:
-            self.set("core", "externalIPAddress", get_external_ip_address())
-            self.set("core", "externalIPAddressTime", int(time.time()))
+            print "didn't find external ip address"
+            self.set("core", "externalipaddress", get_external_ip_address())
+            self.set("core", "externalipaddresstime", int(time.time()))
 
-        if 'localIPAddressTime' in self.cache['core']:
-            if int(self.cache['core']['localIPAddressTime']) < int(time.time()) - 12000:
-                self.set("core", "localIPAddress", get_local_ip_address())
-                self.set("core", "localIPAddressTime", int(time.time()))
+        if 'localipaddresstime' in self.cache['core'] and 'localipaddress' in self.cache['core']:
+            if int(self.cache['core']['localipaddresstime']) < (int(time.time()) - 12000):
+                self.set("core", "localipaddress", get_local_ip_address())
+                self.set("core", "localipaddresstime", int(time.time()))
         else:
-            self.set("core", "localIPAddress", get_local_ip_address())
-            self.set("core", "localIPAddressTime", int(time.time()))
+            self.set("core", "localipaddress", get_local_ip_address())
+            self.set("core", "localipaddresstime", int(time.time()))
 
         self.periodic_save_ini = LoopingCall(self._save_ini)
         self.periodic_save_ini.start(300, False)

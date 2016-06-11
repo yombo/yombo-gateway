@@ -358,8 +358,8 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        if 'value' not in action['argumments']:
-            raise YomboWarning("In atoms_validate_action_callback: action is required to have 'value' within the arguments, so I know what to set.",
+        if 'value' not in action:
+            raise YomboWarning("In atoms_validate_action_callback: action is required to have 'value', so I know what to set.",
                                101, 'atoms_validate_action_callback', 'atoms')
 
     def atoms_do_action_callback(self, rule, action, **kwargs):

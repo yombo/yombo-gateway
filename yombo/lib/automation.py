@@ -11,6 +11,10 @@
 The automation library provides users an easy method to setup simple automation rules and tasks without the need
 to write a single line of code.
 
+*For End Users*: It's strongly recommended to visit
+`Automation @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Automation>`_ for details on usage
+and writing automation rules.
+
 For developers: This library only provides the base framework. Features are actually implemented by hooks to other
 libraries and modules. Developers can extend the capabilites of the automation library using modules..
 

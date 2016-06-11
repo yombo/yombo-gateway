@@ -438,7 +438,7 @@ class States(YomboLibrary, object):
         if all( required in portion['source'] for required in ['platform', 'name']):
             return True
         raise YomboWarning("Source doesn't have required parameters: platform, name",
-                            101, 'states_validate_source_callback', 'states')
+                101, 'states_validate_source_callback', 'states')
 
     def states_add_trigger_callback(self, rule, **kwargs):
         """
@@ -489,8 +489,8 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        if 'value' not in action['argumments']:
-            raise YomboWarning("In states_validate_action_callback: action is required to have 'value' within the arguments, so I know what to set.",
+        if 'value' not in action:
+            raise YomboWarning("In states_validate_action_callback: action is required to have 'value', so I know what to set.",
                                101, 'states_validate_action_callback', 'states')
 
     def states_do_action_callback(self, rule, action, **kwargs):
@@ -502,7 +502,7 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        if 'password' in source:
-            return self.set(action['name'], action['password'])
+        if 'password' in action:
+            return self.set(action['name'], action['value'], action['password'])
         else:
-            return self.set(action['name'])
+            return self.set(action['name'], action['value'])

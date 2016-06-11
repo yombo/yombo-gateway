@@ -5,6 +5,8 @@ Helpers for automation items.
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
+import operator
+
 # Import python libraries
 from time import time
 
@@ -16,6 +18,20 @@ from yombo.utils import is_string_bool, epoch_from_string
 
 logger = get_logger("library.automationhelper")
 
+ops = {
+    "==": operator.eq,
+    "!=": operator.ne,
+   "<": operator.lt,
+   "<=": operator.le,
+   ">=": operator.ge,
+   ">": operator.gt,
+    "eq": operator.eq,
+    "ne": operator.ne,
+   "lt": operator.lt,
+   "le": operator.le,
+   "ge": operator.ge,
+   "gt": operator.gt,
+   }
 
 class AutomationHelpers(YomboLibrary):
     """
@@ -61,12 +77,12 @@ class AutomationHelpers(YomboLibrary):
         """
         return [
             { 'platform': 'call_function',
-              'validate_action_callback': self.basic_values_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.basic_values_do_action_callback  # function to be called to perform an action
+              'validate_action_callback': self.call_function_validate_action_callback,  # function to call to validate an action is possible.
+              'do_action_callback': self.call_function_do_action_callback  # function to be called to perform an action
             }
          ]
 
-    def basic_values_validate_action_callback(self, rule, action, **kwargs):
+    def call_function_validate_action_callback(self, rule, action, **kwargs):
         """
         A callback to check if a provided action is valid before being added as a possible action.
 
@@ -117,7 +133,7 @@ class AutomationHelpers(YomboLibrary):
 #        logger.warn("saving rule: {rule}", rule=rule)
         return True
 
-    def basic_values_do_action_callback(self, rule, action, **kwargs):
+    def call_function_do_action_callback(self, rule, action, **kwargs):
         """
         A callback to perform an action.
 
@@ -157,6 +173,9 @@ class AutomationHelpers(YomboLibrary):
 #        logger.debug("Validating filter: {filter}", filter=portion['filter'])
         if not all( required in portion['filter'] for required in ['platform', 'value']):
             raise YomboWarning("Required fields (platform, value) are missing from 'basic_values' filter.")
+        if 'operator' in portion['filter']:
+            if 'operator' not in ops:
+                raise YomboWarning("Supplied filter operator is invalid: %s" % portion['filter']['operator'])
         return rule
 
     def basic_values_run_filter_callback(self, rule, portion, new_value, **kwargs):
@@ -168,13 +187,19 @@ class AutomationHelpers(YomboLibrary):
         :return:
         """
         logger.debug("Checking filter: {filter}", filter=portion['filter'])
-        trigger_value = portion['filter']['value']
+        filter_value = portion['filter']['value']
         try:
-            trigger_value = is_string_bool(trigger_value)
+            trigger_value = is_string_bool(filter_value)
         except YomboWarning:
             pass
 
 #        logger.debug("Checking new = old: {new_value} = {trigger_value}", new_value=new_value, trigger_value=trigger_value)
-        if new_value == trigger_value:
-            return True
-        return False
+
+        if 'operator' in portion['filter']:
+            op_func = ops[portion['filter']['operator']]
+            return op_func(new_value, filter_value)
+        else:
+            if new_value == filter_value:
+                return True
+            return False
+

@@ -102,7 +102,7 @@ class GPG(YomboLibrary):
                     logger.info("Adding key to keyring: {key}", key=data)
                     yield self.local_db.insert_gpg_key(data)
 
-    def remote_get_key(self, key_hash):
+    def remote_get_server_key(self, key_hash):
         """
         Send a request to AMQP server to get a key. When something comes back, add it to the key store.
 
@@ -110,7 +110,7 @@ class GPG(YomboLibrary):
         :return:
         """
         msg = {'key_type': 'server', 'id': key_hash}
-        self._AMQPLibrary.send_amqp_message(**self._generate_request_message('GPGGetKey', msg, self.amqp_response_get_key))
+        self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
         self.import_to_keyring
 
     def remote_get_root_key(self):
@@ -121,19 +121,19 @@ class GPG(YomboLibrary):
         :return:
         """
         msg = {'key_type': 'root'}
-        self._AMQPLibrary.send_amqp_message(**self._generate_request_message('GPGGetKey', msg, self.amqp_response_get_key))
+        self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
 
     def _generate_request_message(self, request_type, request_content, callback):
         request = {
-            "exchange_name"  : "ysrv.e.gw_config",
-            "source"        : "yombo.gateway.lib.gpg",
-            "destination"   : "yombo.server.configs",
+            "exchange_name": "ysrv.e.gw_config",
+            "source"       : "yombo.gateway.lib.gpg",
+            "destination"  : "yombo.server.configs",
             "callback" : callback,
-            "body"          : {
-              "DataType"        : "Object",
-              "Request"         : request_content,
+            "body": {
+              "data_type": "object",
+              "request"  : request_content,
             },
-            "request_type"   : request_type,
+            "request_type": request_type,
         }
         return self._AMQPLibrary.generate_request_message(**request)
 

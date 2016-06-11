@@ -376,7 +376,7 @@ class Devices(YomboLibrary):
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
                 return portion
             except Exception, e:
-                raise YomboWarning("Error while searching for device, could not be found: %s" % source['device'],
+                raise YomboWarning("Error while searching for device, could not be found: %s" % portion['device'],
                                    101, 'devices_validate_source_callback', 'lib.devices')
         else:
             raise YomboWarning("For platform 'devices' as a 'source', must have 'device' and can be either device ID or device label.  Source:%s" % source,
@@ -659,7 +659,9 @@ class Device:
 
 #        if self.validate_command(cmdobj) is not True:
         if str(cmdobj.cmdUUID) not in self.available_commands:
+            logger.warn("Requested command: {cmduuid}, but only have: {ihave}", cmduuid=cmdobj.cmdUUID, ihave=self.available_commands)
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
+
 
         payloadValues = {}
         if 'payload' in kwargs:
