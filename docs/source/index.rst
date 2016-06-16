@@ -5,15 +5,7 @@ more information.
 
 .. rubric:: TL;DR - Quick Start Guide
 
-Get your gateway up and running in no time.  Just three steps:
-
-1. Create an account at `Yombo.net <https://yombo.net/>`_ (or in future, use the mobile app).
-2. Install the gateway software:
-
-  * :doc:`Debian/Mint/Ubuntu <install/debian>`
-  * :doc:`Raspberry PI/PI2 <install/raspberry-pi>`
-
-3. :doc:`Configure and run your gateway <chapters/configuring-the-gateway>`
+In a hurry? Visit the :doc:`Getting Started with Yombo <chapters/getting-started-with-yombo>` page.
 
 .. rubric:: Other Resources
 

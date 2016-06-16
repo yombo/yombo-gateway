@@ -58,9 +58,11 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound, YomboWarning
+from yombo.core.exceptions import YomboStateNoAccess, YomboStateNotFound, YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
+from yombo.utils import global_invoke_all
+
 
 logger = get_logger("library.YomboStates")
 
@@ -215,10 +217,39 @@ class States(YomboLibrary, object):
                     raise YomboStateNoAccess("State is write protected with password. Use set(key, value, password) to write/update.")
                 elif self.__States[key]['writeKey'] != password:
                     raise YomboStateNoAccess("State write password is invalid.")
+
+            # Call any hooks
+            try:
+                state_changes = global_invoke_all('states_set', **{'keys': key, 'value': value, 'new': False})
+            except YomboHookStopProcessing:
+                logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
+                return
+
+            for moduleName, newValue in state_changes.iteritems():
+                if newValue is not None:
+                    logger.debug("statest::set Module ({moduleName}) changes state value to: {newValue}",
+                                 moduleName=moduleName, newValue=newValue)
+                    value = newValue
+                    break
+
             self.__States[key]['value'] = value
             self.__States[key]['updated'] = time()
             self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         else:
+            # Call any hooks
+            try:
+                state_changes = global_invoke_all('states_set', **{'keys': key, 'value': value, 'new': True})
+            except YomboHookStopProcessing:
+                logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
+                return
+
+            for moduleName, newValue in state_changes.iteritems():
+                if newValue is not None:
+                    logger.debug("statest::set Module ({moduleName}) changes state value to: {newValue}",
+                                 moduleName=moduleName, newValue=newValue)
+                    value = newValue
+                    break
+
             self.__States[key] = {
                 'value': value,
                 'updated': int(time()),

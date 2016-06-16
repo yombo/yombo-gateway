@@ -160,19 +160,12 @@ class Modules(YomboLibrary):
         yield self.loader.library_invoke_all("_module_started_")
         yield self.module_invoke_all("_started_")
 
-    def stop_modules(self, junk, callWhenDone):
-        """
-        Called when shutting down, durring reconfiguration, or downloading updated
-        modules.
-        """
+    @inlineCallbacks
+    def unload_modules(self):
         self.loader.library_invoke_all("_module_stop_")
         self.module_invoke_all("_stop_")
         self.loader.library_invoke_all("_module_stopped_")
 
-        callWhenDone()
-
-    @inlineCallbacks
-    def unload_modules(self):
         keys = self._modulesByUUID.keys()
         self.loader.library_invoke_all("_module_unload_")
         for moduleUUID in keys:

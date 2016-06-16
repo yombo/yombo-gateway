@@ -39,7 +39,7 @@ _supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
 from time import time
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
@@ -207,12 +207,19 @@ class Atoms(YomboLibrary):
 
         # Call any hooks
         already_set = False
-        atom_changes = yombo.utils.global_invoke_all('atoms_set', **{'keys': keys, 'value': value})
+        try:
+            atom_changes = yombo.utils.global_invoke_all('atoms_set', **{'keys': key, 'value': value, 'new': key in self.__Atoms})
+        except YomboHookStopProcessing:
+            logger.warning("Stopping processing 'hook_atoms_set' due to YomboHookStopProcessing exception.")
+            return
+
         for moduleName, newValue in atom_changes.iteritems():
             if newValue is not None:
-                logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}", moduleName=moduleName, newValue=newValue)
+                logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
+                             moduleName=moduleName, newValue=newValue)
                 yombo.utils.dict_set_value(self.__Atoms, keys, newValue)
                 already_set = True
+                break
 
         if not already_set:
             yombo.utils.dict_set_value(self.__Atoms, keys, value)

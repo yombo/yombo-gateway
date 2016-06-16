@@ -2,37 +2,47 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-A shell for module developers to get basic items configured for modules.
-
-All modules should extend this module.  See the class documentation for
-additional details.
-
-Modules have 3 phases of startup: _init, _load, _start.
-    - Init - Get the basics of the module running.  All libraries are
-      loaded and available.  Not all modules have been through init
-      this stage.  A deferred can be returned if the :ref:`Loader`
-      should wait until the module has completed it's init phase.
-    - Load - All modules have completed init phase.  Now it's time to get the
-      module ready to receive messages. By the time Load() finishes, the
-      module should be able to receive messages - even if it queue for later.
-      A deferred can be returned if the :ref:`Loader`
-      should wait until the module has completed it's load phase.
-      A _preload_ function exists and will be called before _load_.
-    - Start - The module should already be running by now. The module can
-      now start sending messages to other components for processing.
-      A _prestart_ function exists and will be called before _start_.
+Module developers must use the *YomboModule* class as their base class. This class
+gets their module setup and running with basic functions, predefined variables,
+and functions.
 
 .. warning::
 
-   It's highly suggested to **NOT** use the __init__ function for your module's
-   class. If you *must* use the __init__ function, be sure to call the parent
-   __init__ function before any actions take place within your local __init__.
+   It's highly suggested to **NOT** use the __init__ (double underscore)function for
+   your module's class. If you *must* use the __init__ function, be sure to call the
+   parent __init__ function before any actions take place within your local __init__.
+
+Modules have 3 primary phases of startup: _init_, _load_, _start_ (single underscores,
+not double. This have been extended to include additional phases and can be used as needed.
+The primary phases:
+
+    - *_init_* - Get the basics of the module running.  All libraries are
+      loaded and available.  Not all modules have been through init
+      this stage.  A deferred can be returned if the :ref:`Loader`
+      should wait until the module has completed it's init phase.
+    - *_load_* - All modules have completed init phase.  Now it's time to get the
+      module ready to receive messages. By the time _load_() finishes, the
+      module should be able to receive messages and process them, even if this means
+      it needs to queue sending messages until _start_() is called. A deferred can be
+      returned if the :ref:`Loader` should wait until the module has completed it's
+      load phase.
+    - *_start_* - The module should already be running by now. The module can
+      now start sending messages to other components for processing.
+      A _prestart_ function exists and will be called before _start_.
+
+Additional phases:
+
+    - *_preload_* - This will be called before _load_.
+    - *_prestart_* - Called just before _start_.
+    - *_started_* - Caled after _start_.
+
 
 Modules have 2 phases of shutdown: _stop, _unload
-    - Stop - The gateway is on the first phase of shutting down. The module
+    - *_stop_* - The gateway is on the first phase of shutting down. The module
       should no longer send messages.  It can still receive them after this
-      function ends.
-    - Unload - This module should stop everything, close connections, close
+      function ends, but should only process them if it's able. Not expected
+      to perform after it's called, only if able.
+    - *_unload_* - This module should stop everything, close connections, close
       files, save any work. The module will no longer receive any messages
       during this phase of shutdown.
 
@@ -93,21 +103,27 @@ logger = get_logger('core.module')
 
 class YomboModule:
     """
-    Setups a module to assist the developer write modules quickly. Pre-defines several items.
+    This class quickly integrates user developed modules into the Yombo framework. It also sets up various
+    predefined various and functions.
 
+    Variables that can be set:
 
-    :ivar _Name: (string) Name of the class (aka module name). EG: x10api
-    :ivar _FullName: (string) Name **full** of the class for routing. EG: yombo.modules.x10api
     :ivar _ModDescription: (string) Description, needs to be set in the module's init() function.
     :ivar _ModAuthor: (string) Module author, needs to be set in the module's init() function.
     :ivar _ModUrl: (string) URL for additional information about this
       module, needs to be set in the module's init() function.
+
+    These variables are defined by this class and should be defined by the module developer.
+
+    :ivar _Name: (string) Name of the class (aka module name). EG: x10api
+    :ivar _FullName: (string) Name **full** of the class for routing. EG: yombo.modules.x10api
     :ivar _Atoms: (object/dict) The Yombo Atoms library, but can accessed as a dictionary or object.
     :ivar _Commands: preloaded pointer to all configured commands.
-    :ivar _Devices: (dict) Dictionary to all devices this module controls.
+    :ivar _Commands: Pointer to configuration options. Use self._Configs.get("section", "key") to use.
+    :ivar _DevicesLibrary: (dict) The devices library acts like a dictionary to *ALL* devices.
+    :ivar _Devices: (dict) A dictionary of devices that this module controls based of device types this module manages.
     :ivar _DevicesByType: (callback) A function to quickly get all devices for a specific device type.
     :ivar _DeviceTypes: (list) List of device types that are registered for this module.
-    :ivar _DevicesLibrary: preloaded pointer to Devices library.
     :ivar _Libraries: (dict) A dictionary of all modules. Returns pointers.
     :ivar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
     :ivar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
@@ -137,35 +153,14 @@ class YomboModule:
         self._ModuleVariables = None
         self._ModulesLibrary = None
 
-    def dump(self):
-        """
-        Returns a dictionary of core attributes about this module.
-
-        :return: A dictionary of core attributes.
-        :rtype: dict
-        """
-        return self.__str__()
-
     def __str__(self):
         """
-        Returns a dictionary of core attributes about this module.
+        Returns a string of this module's UUID.
 
         :return: A dictionary of core attributes.
         :rtype: dict
         """
-        return {
-            '_Name': self._Name,
-            '_FullName': self._FullName,
-            '_ModDescription': self._ModDescription,
-            '_ModAuthor': self._ModAuthor,
-            '_ModuleType': self._ModuleType,
-            '_ModuleUUID': self._ModuleUUID,
-            '_ModUrl': self._ModUrl,
-            '_Devices': self._Devices,
-            '_DeviceTypes': self._DeviceTypes,
-            '_ModuleVariables': self._ModuleVariables,
-            '_ModulesLibrary': self._ModulesLibrary,
-        }
+        return self._ModuleUUID
 
     def _init_(self):
         """
@@ -211,6 +206,28 @@ class YomboModule:
         :param message: (Message) A Yombo Message to be sent to module or library.
         """
         pass
+
+    def _dump(self):
+        """
+        Returns a dictionary of core attributes about this module. Usually used for debugging.
+
+        :return: A dictionary of core attributes.
+        :rtype: dict
+        """
+        return {
+            '_Name': self._Name,
+            '_FullName': self._FullName,
+            '_ModDescription': self._ModDescription,
+            '_ModAuthor': self._ModAuthor,
+            '_ModuleType': self._ModuleType,
+            '_ModuleUUID': self._ModuleUUID,
+            '_ModUrl': self._ModUrl,
+            '_Devices': self._Devices,
+            '_DevicesByType': self._DevicesByType,
+            '_DeviceTypes': self._DeviceTypes,
+            '_ModuleVariables': self._ModuleVariables,
+            '_ModulesLibrary': self._ModulesLibrary,
+        }
 
     def amqp_incoming(self, deliver, properties, message):
         """

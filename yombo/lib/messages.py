@@ -136,8 +136,6 @@ class Messages(YomboLibrary):
                   del self.delayQueue[msg]
                   to_send.send()
             else: # now lets setup messages for the future. Gotta wear shades.
-                del msg['notBefore']
-                del msg['maxDelay']
                 to_send = Message(**msg)
                 self.reactors[msg_id] = reactor.callLater(2, to_send.send)
                 #Hydrate the message and prep it to send.

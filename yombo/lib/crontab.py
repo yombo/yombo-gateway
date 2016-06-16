@@ -12,31 +12,35 @@ Cron like library that can be used to perform activites. Can be used by modules 
 
 Idea and partial code from: http://stackoverflow.com/questions/373335/suggestions-for-a-cron-like-scheduler-in-python
 
-You can create a new cronjob by specifing which function to callsecond, minute,
-hour, day, month, day of week (dow), along with args and kwargs to send to
-function.  Not all items need to specified. If time elements are not set, then
-it's assumed to be * (all).
+You can create a new cronjob by specifing which function to call, specify the second, minute,
+hour, day, month, day of week (dow), along with args and kwargs to send to function.  Not all
+items need to specified. If time elements are not set, then it's assumed to be * (all).
 
 Examples:
-M H D M DOW
-* * * * *  # call every minute, every hour, every day, every month
-new(self.myFunction)
 
-*/2 * * * *  # call every other minute)
-myArgs=('arg1', 'arg2')
-new(self.myFunction, min=range(0, 59, 2), args=myArgs)  # use range and specify a step
+.. code-block:: python
 
-0 0,6,12,18 * * *  # at midnight, 6am, 12pm, 6pm
-myKwargs={"argument1" : "value1", "argument2" : "value2"}
-new(self.myFunction, min=0, hour=(0,6,12,18), kwargs=myKwargs)  # use range and specify a step
+   #  M H D M DOW
+   #  * * * * *  # call every minute, every hour, every day, every month
+   self._CronTab.new(self.myFunction)
 
-0 12 * 0 0 # at 12:00pm on sunday
-new(self.myFunction, min=0, hour=12, dow=0 )  # use range and specify a step
+   # */2 * * * *  # call every other minute)
+   myArgs=('arg1', 'arg2')
+   self._CronTab.new(self.myFunction, min=range(0, 59, 2), args=myArgs)  # use range and specify a step
+   # The range just creates a list of minutes. You can also just pass a list of numbers.
 
-0 12 * 0 0 # at 12:00pm on sunday
-new(self.myFunction, min=0, hour=12, dow=0 )  # use range and specify a step
+   # 0 0,6,12,18 * * *  # at midnight, 6am, 12pm, 6pm
+   # myKwargs={"argument1" : "value1", "argument2" : "value2"}
+   self._CronTab.new(self.myFunction, min=0, hour=(0,6,12,18), kwargs=myKwargs)  # Notice the list of hours to run.
+
+   # 0 12 * 0 0 # at 12:00pm on sunday
+   self._CronTab.new(self.myFunction, min=0, hour=12, dow=0 )  # use range and specify a step
+
+   # 0 12 * 0 0 # at 12:00pm on sunday
+   self._CronTab.new(self.myFunction, min=0, hour=12, dow=0 )  # use range and specify a step
 
 Usage example
+
 .. code-block:: python
 
    self.MyCron = self._CronTab.new(self.myFunction, min=0, hour=12, dow=0 )
@@ -180,34 +184,34 @@ class CronTab(YomboLibrary):
                 raise YomboCronTabError('Searched for %s, but no good matches found. Best match: %s' % (e.searchFor, e.others[0].label) )
         raise YomboCronTabError('Searched for %s, but no matches found. ' % cronRequested )
 
-    def new(self, action, min=allMatch, hour=allMatch, day=allMatch,
+    def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
             month=allMatch, dow=allMatch, label='', enabled=True, args=(),
             kwargs={}):
         """
         Add a new cronjob.
 
-        :param action: Function to call
-        :type action: Reference to function
-        :param min: (optional) Minute to perform action
+        :param crontab_callback: Function to call
+        :type crontab_callback: Reference to function
+        :param min: (optional) Minute to perform crontab_callback
         :type min: "*", int, or list of ints
-        :param hour: (optional) Hour to perform action
+        :param hour: (optional) Hour to perform crontab_callback
         :type hour: "*", int, or list of ints
-        :param day: (optional) Day to perform action
+        :param day: (optional) Day to perform crontab_callback
         :type day: "*", int, or list of ints
-        :param month: (optional) Month to perform action
+        :param month: (optional) Month to perform crontab_callback
         :type month: "*", int, or list of ints
-        :param dow: (optional) Day of week to perform action
+        :param dow: (optional) Day of week to perform crontab_callback
         :type dow: "*", int, or list of ints
         :param label: (optional) Label for cron job.
         :type label: string
         :param enabled: (optional, default=True) If cronjob should be enabled.
         :type enabled: bool
-        :param args: (optional) Arguments to pass to "action"
+        :param args: (optional) Arguments to pass to "crontab_callback"
         :type args: List of arguments
-        :param kwargs: (optional) Keyword arguments to pass to "action"
+        :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
         :type kwargs: Dict of arguments
         """
-        newCron = CronJob(action, min=min, hour=hour, day=day, month=month,
+        newCron = CronJob(crontab_callback, min=min, hour=hour, day=day, month=month,
             dow=dow, label=label, enabled=enabled, crontab=self, args=args,
             kwargs=kwargs)
         self.__yombocron[newCron.cronUUID] = newCron
@@ -293,7 +297,7 @@ class CronTab(YomboLibrary):
         cronjob = self._search(key)
         cronjob.label = label
 
-    def run_at(self, action, timestring, label='', args=(), kwargs={}):
+    def run_at(self, crontab_callback, timestring, label='', args=(), kwargs={}):
         """
         Helper function for CronTab.new().
 
@@ -303,17 +307,17 @@ class CronTab(YomboLibrary):
         * 'h:mAM' EG: 1:14pm, 6:30am
         * 'h:m AM' EG: 1:14 pm, 6:30 am
 
-        :param action: Function to call
-        :type action: Reference to function
+        :param crontab_callback: Function to call
+        :type crontab_callback: Reference to function
         :param timestring: String to parse to get hour:minute from
         :type timestring: string
         :param label: (optional) Label for cron job.
         :type label: string
         :param enabled: (optional, default=True) If cronjob should be enabled.
         :type enabled: bool
-        :param args: (optional) Arguments to pass to "action"
+        :param args: (optional) Arguments to pass to "crontab_callback"
         :type args: List of arguments
-        :param kwargs: (optional) Keyword arguments to pass to "action"
+        :param kwargs: (optional) Keyword arguments to pass to "crontab_callback"
         :type kwargs: Dict of arguments
         """
         dateObj = None
@@ -325,7 +329,7 @@ class CronTab(YomboLibrary):
                     dateObj = datetime.strptime(timestring, '%I:%M %p')
                 except:
                     dateObj = datetime.strptime(timestring, '%H:%M')
-            return self.new(action, dateObj.minute, dateObj.hour, label=label,
+            return self.new(crontab_callback, dateObj.minute, dateObj.hour, label=label,
                    args=args, kwargs=kwargs)
         except:
           YomboCronTabError("Unable to parse time string. Try HH:MM (24 hour time) format")
@@ -334,13 +338,13 @@ class CronJob(object):
     """
     Individual cron job.  Manages by CronTab class.
     """
-    def __init__(self, action, min=allMatch, hour=allMatch, day=allMatch,
+    def __init__(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
                        month=allMatch, dow=allMatch, label='',
                        enabled=True, crontab=None, args=(), kwargs={}):
         """
         Setup the cron event.
         """
-        self.action = action
+        self.crontab_callback = crontab_callback
         self.mins = conv_to_set(min)
         self.hours= conv_to_set(hour)
         self.days = conv_to_set(day)
@@ -386,7 +390,7 @@ class CronJob(object):
 
     def check(self, t):
         if self.enabled is True and self.match_time(t):
-            self.action(*self.args, **self.kwargs)
+            self.crontab_callback(*self.args, **self.kwargs)
 
     def runNow(self):
-       self.action(*self.args, **self.kwargs)
+       self.crontab_callback(*self.args, **self.kwargs)

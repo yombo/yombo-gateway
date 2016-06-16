@@ -77,7 +77,9 @@ the fuzzysearch phase of voice command lookup.
   
   .. code-block:: python
 
-     voice_cmds = self._Libraries['voicecmds']
+     from yombo.core.helpers import getVoiceCommands
+
+     voice_cmds = getVoiceCommands()
      voice_cmds["desklamb off"] # it's misspelled, but it will still be found.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -107,6 +109,10 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
 
     Also, provides searching for voice commands.
     """
+    _Name = __class__.__name__
+    _FullName = "yombo.gateway.lib.%s" % __class__.__name__
+
+
     def _init_(self, loader):
         """
         Construct a new voice_cmds Instance
@@ -117,8 +123,6 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
         self.loader = loader
         super(VoiceCmds, self).__init__(None, .8)
         self.commandsByVoice = self._Libraries['commands']._get_commands_by_voice()
-        self._Name = self.__class__.__name__
-        self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
     def _load_(self):
         """

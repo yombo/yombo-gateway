@@ -20,7 +20,7 @@ libraries and modules. Developers can extend the capabilites of the automation l
 
 Developers should the following modules for examples of implementation:
 
-* :py:mod:`yombo.lib.automationhelpers` - Library for implementation of calling a function by automation rule.
+* :py:mod:`yombo.lib.automationhelpers` - Implements various platforms
 * :py:mod:`yombo.lib.atoms` - Look near the bottom for hooks into triggers, conditions, and actions.
 * :py:mod:`yombo.lib.states` - Look near the bottom for hooks into triggers, conditions, and actions.
 
@@ -44,7 +44,7 @@ logger = get_logger("library.automation")
 
 
 REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
-REQUIRED_TRIGGER_FIELDS = ['source', 'filter']
+REQUIRED_TRIGGER_FIELDS = ['source']
 REQUIRED_CONDITION_FIELDS = ['source', 'filter']
 REQUIRED_ACTION_FIELDS = ['platform']
 
@@ -107,12 +107,12 @@ class Automation(YomboLibrary):
         """
         Implements the _module_prestart_ hook and is called before _start_ is called for all the modules.
 
-        Implements three hooks: hook_automation_trigger, hook_automation_condition, hook_automation_action
+        Implements three hooks:
 
-        *hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
-        *hook_automation_filter_list : Expects a list of filter callbacks to validate and check against
+        * hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
+        * hook_automation_filter_list : Expects a list of filter callbacks to validate and check against
           a library or module supports.
-        *hook_automation_action : Expects a list of dictionarys containging automation action platforms
+        * hook_automation_action : Expects a list of dictionarys containging automation action platforms
           a library or module supports.
 
         **Usage**:
@@ -325,16 +325,16 @@ class Automation(YomboLibrary):
         self.rules[rule_id] = rule
 #        self.rules[rule_id] = Rule(rule)
 
-    def _check_returned_rule(self, rule, value):
-        if isinstance(value, bool):
-            if value is True:
-                return rule
+    def _check_returned_rule(self, portion, new_portion):
+        if isinstance(new_portion, bool):
+            if new_portion is True:
+                return portion
             else:
                 raise YomboWarning("Check failed in _check_returned_rule. Rule: %s" % rule, 110, '_check_returned_rule', 'automation')
-        if isinstance(value, type(None)):
-            return rule
+        if isinstance(new_portion, type(None)):
+            return portion
 
-        return rule
+        return new_portion
 
     def _check_source_platform(self, rule, portion, trigger_required=False):
         """

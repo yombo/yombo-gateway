@@ -9,22 +9,23 @@ https://docs.yombo.net/gateway/html/current/chapters/yombo-framework.html
 
 core
 ------
-
 Contains base functions and various Yombo Gateway APIs.
 
 ext
 ---------
-
 External resources used by Yombo. See the COPYING file for more details.
 
 lib
 ----------
-
 Responsible for running the Yombo Gateway, and contains some APIs.
 
 modules
 ----------
 Where modules are installed by the Gateway.
+
+tests
+----------
+Where unit tests live.
 
 utils
 ----------

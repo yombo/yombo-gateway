@@ -1,12 +1,12 @@
 # cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Handles loading, storing, updating, and saving gateway configuration items.
 
 Module developers do not need to access any methods or variables here.
 Instead, module developers should user L{SQLDict} to store any values
-that need persistency.  This include module specific settings or
+that need to be persistent. This includes module specific settings or
 configuration not set using the standard module variables portion
 for the module as defined in the 'Deverlopers Corner'.
 
@@ -38,6 +38,7 @@ from yombo.core.library import YomboLibrary
 
 logger = get_logger('library.configuration')
 
+
 class Configuration(YomboLibrary):
     """
     Configuration storage module for the gateway service.
@@ -63,7 +64,7 @@ class Configuration(YomboLibrary):
         :param loader: The loader module.
         :type loader: loader
         """
-        self.cache = {'core':{}}  # simple cache
+        self.cache = {'core': {}}  # simple cache
         self.cacheMisses = 0
         self.cacheHits = 0
 
@@ -157,7 +158,8 @@ class Configuration(YomboLibrary):
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        logger.debug("config stopping...Cache hits: {cacheHits}, cacheMisses: {cacheMisses}", cacheHits=self.cacheHits, cacheMisses=self.cacheMisses)  # todo: add to stats
+        logger.debug("config stopping...Cache hits: {cacheHits}, cacheMisses: {cacheMisses}",
+                     cacheHits=self.cacheHits, cacheMisses=self.cacheMisses)  # todo: add to stats
         logger.info("saving config file...")
         self._save_ini(True)
 

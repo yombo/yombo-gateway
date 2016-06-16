@@ -1,5 +1,5 @@
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Create various exceptions to be used throughout the Yombo
 gateway.
@@ -8,6 +8,7 @@ gateway.
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
+
 
 class YomboException(Exception):
     """
@@ -40,6 +41,7 @@ class YomboException(Exception):
         output = "%d: %s  In %s '%s'." % (self.errorno, self.message, self.component, self.name)
         return repr(output)
 
+
 class YomboWarning(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
@@ -58,6 +60,7 @@ class YomboWarning(YomboException):
         :type component: string
         """
         YomboException.__init__(self, message, errorno, component, name)
+
 
 class YomboAutomationWarning(YomboWarning):
     """
@@ -78,7 +81,8 @@ class YomboAutomationWarning(YomboWarning):
         """
         YomboWarning.__init__(self, message, errorno, component, name)
 
-class YomboStateNotFound(YomboException):
+
+class YomboStateNotFound(YomboWarning):
     """
     Extends *YomboWarning* - When a state is not found.
     """
@@ -97,7 +101,8 @@ class YomboStateNotFound(YomboException):
         """
         YomboWarning.__init__(self, message, errorno, component, name)
 
-class YomboStateNoAccess(YomboException):
+
+class YomboStateNoAccess(YomboWarning):
     """
     Extends *YomboWarning* - When access to the state is restricted. Must supply password.
     """
@@ -115,6 +120,7 @@ class YomboStateNoAccess(YomboException):
         :type component: string
         """
         YomboWarning.__init__(self, message, errorno, component, name)
+
 
 class YomboCritical(RuntimeWarning):
     """
@@ -161,6 +167,7 @@ class YomboCritical(RuntimeWarning):
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 1)
         reactor.stop()
 
+
 class YomboRestart(RuntimeWarning):
     """
     Extends *RunningWarning* - Restarts the gateway, not a fatal exception.  
@@ -170,7 +177,7 @@ class YomboRestart(RuntimeWarning):
         :param message: The error message to log/display.
         :type message: string
         """
-        self.name = name
+        self.name = message
         self.exit()
 
     def __str__(self):
@@ -192,11 +199,13 @@ class YomboRestart(RuntimeWarning):
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 127)
         reactor.stop()
 
+
 class YomboImproperlyConfigured(YomboWarning):
     """
     Extends :class:`YomboWarning` - A missing configuration or improperly configured option.
     """
     pass
+
 
 class YomboSuspiciousOperation(YomboWarning):
     """
@@ -211,51 +220,56 @@ class YomboAPIWarning(YomboWarning):
     """
     pass
 
+
 class YomboModuleWarning(YomboWarning):
     """
     Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "module".
     """
-    def __init__(self, message, errorno, moduleObj):
+    def __init__(self, message, errorno, module_obj):
         """
         :param message: The error message to log/display.
         :type message: string
         :param errorno: The error number to log/display.
         :type errorno: int
-        :param moduleObj: The module instance.
-        :type moduleObj: Module
+        :param module_obj: The module instance.
+        :type module_obj: Module
         """
-        YomboWarning.__init__(self, message, errorno, "module", moduleObj._Name)
+        YomboWarning.__init__(self, message, errorno, "module", module_obj._Name)
+
 
 class YomboModuleCritical(YomboCritical):
     """
     Extends :class:`YomboCritical` - Same as calling YomboCritical, but sets the component type to
     "module" - **this forces the gateway to quit**.
     """
-    def __init__(self, message, errorno, moduleObj):
+    def __init__(self, message, errorno, module_obj):
         """
         :param message: The error message to log/display.
         :type message: string
         :param errorno: The error number to log/display.
         :type errorno: int
-        :param moduleObj: Name of the library, component, or module rasing the exception.
-        :type moduleObj: string
+        :param module_obj: Name of the library, component, or module rasing the exception.
+        :type module_obj: string
         """
-        YomboCritical.__init__(self, message, errorno, "module", moduleObj._Name)
+        YomboCritical.__init__(self, message, errorno, "module", module_obj._Name)
+
 
 class YomboLibraryWarning(YomboWarning):
     """
     Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "library".
     """
-    def __init__(self, message, errorno, moduleObj):
-        YomboWarning.__init__(self, message, errorno, "library", moduleObj._Name)
+    def __init__(self, message, errorno, module_obj):
+        YomboWarning.__init__(self, message, errorno, "library", module_obj._Name)
+
 
 class YomboLibraryCritical(YomboCritical):
     """
     Extends :class:`YomboCritical` - Same as calling YomboCritical, but sets the component type to
     "library" - **this forces the gateway to quit**.
     """
-    def __init__(self, message, errorno, moduleObj):
-        YomboCritical.__init__(self, message, errorno, "library", moduleObj._Name)
+    def __init__(self, message, errorno, module_obj):
+        YomboCritical.__init__(self, message, errorno, "library", module_obj._Name)
+
 
 class YomboMessageError(Exception):
     """
@@ -286,11 +300,13 @@ class YomboMessageError(Exception):
         output = "Message API Error: '%s' Raised from: '%s'." % (self.message, self.name)
         return repr(output)
 
+
 class YomboFileError(YomboWarning):
     """
     Extends :class:`YomboWarning` - A missing configuration or improperly configured option.
     """
     pass
+
 
 class YomboDeviceError(Exception):
     """
@@ -373,7 +389,7 @@ class YomboDeviceError(Exception):
         @return: A formated string of the error message.
         @rtype: C{string}
         """
-        output = "Device API Error: '%s'" % (self.message)
+        output = "Device API Error: '%s'" % self.message
         return repr(output)
 
     def dump(self):
@@ -383,9 +399,8 @@ class YomboDeviceError(Exception):
         @returns: The exception components as a diction.
         @rtype: C{dict}
         """
-        return {'message'     : self.message,
-                'name'        : self.name}
-
+        return {'message': self.message,
+                'name': self.name}
 
         
 class YomboNoSuchLoadedComponentError(Exception):
@@ -394,6 +409,7 @@ class YomboNoSuchLoadedComponentError(Exception):
     (aka component), is not found.
     """
     pass
+
 
 class YomboFuzzySearchError(Exception):
     """
@@ -438,17 +454,20 @@ class YomboFuzzySearchError(Exception):
         output = "Key (%s) not found above the cutoff limit. Closest key found: %s with ratio of: %.3f." % (self.searchFor, self.key, self.ratio)
         return repr(output)
 
+
 class YomboPinCodeError(Exception):
     """
     Raised when the pin number is invalid.
     """
     pass
-        
+
+
 class YomboCommandError(Exception):
     """
     If commands class has an error.
     """
     pass
+
 
 class YomboCronTabError(Exception):
     """
@@ -456,14 +475,38 @@ class YomboCronTabError(Exception):
     """
     pass
 
+
 class YomboTimeError(Exception):
     """
     If :py:mod:`yombo.lib.times` class has an error.
     """
     pass
 
+
 class YomboInputValidationError(Exception):
     """
     If a value input doesn't match the allowed input type id.
     """
     pass
+
+
+class YomboHookStopProcessing(YomboWarning):
+    """
+    Raise this during a hook call to stop processing any remain hook calls and to stop further processing
+    of the remaining request.
+    """
+    def __init__(self, message, errorno=101, name="unknown", component="component"):
+        """
+        Setup the YomboWarning and then pass everying to YomboException
+
+        :param message: The error message to log/display.
+        :type message: string
+        :param errorno: The error number to log/display.
+        :type errorno: int
+        :param name: Name of the library, component, or module rasing the exception.
+        :type name: string
+        :param component: What type of ojbect is calling: component, library, or module
+        :type component: string
+        """
+        YomboWarning.__init__(self, message, errorno, component, name)
+

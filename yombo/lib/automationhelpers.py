@@ -79,7 +79,7 @@ class AutomationHelpers(YomboLibrary):
             { 'platform': 'call_function',
               'validate_action_callback': self.call_function_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.call_function_do_action_callback  # function to be called to perform an action
-            }
+            },
          ]
 
     def call_function_validate_action_callback(self, rule, action, **kwargs):
@@ -156,11 +156,36 @@ class AutomationHelpers(YomboLibrary):
     def AutomationHelpers_automation_filter_list(self, **kwargs):
         return [
              {
+                 'platform': 'any', # allow any value. Always returns true.
+                 'validate_filter_callback': self.any_validate_filter_callback,  # validate a condition combo is possible
+                 'run_filter_callback': self.any_run_filter_callback,  # perform a condition check
+             },
+             {
                  'platform': 'basic_values',
                  'validate_filter_callback': self.basic_values_validate_filter_callback,  # validate a condition combo is possible
                  'run_filter_callback': self.basic_values_run_filter_callback,  # perform a condition check
-             }
+             },
         ]
+
+    def any_validate_filter_callback(self, rule, portion, **kwargs):
+        """
+        Will always return True.
+
+        :param rule: The rule. We don't use this here.
+        :param kwargs: None
+        :return: True
+        """
+        return True
+
+    def any_run_filter_callback(self, rule, portion, new_value, **kwargs):
+        """
+        A callback to check if a provided condition is valid before being added as a possible condition.
+
+        :param rule: The rule. We don't use this here.
+        :param kwargs: None
+        :return: True
+        """
+        return True
 
     def basic_values_validate_filter_callback(self, rule, portion, **kwargs):
         """
@@ -176,7 +201,7 @@ class AutomationHelpers(YomboLibrary):
         if 'operator' in portion['filter']:
             if 'operator' not in ops:
                 raise YomboWarning("Supplied filter operator is invalid: %s" % portion['filter']['operator'])
-        return rule
+        return portion
 
     def basic_values_run_filter_callback(self, rule, portion, new_value, **kwargs):
         """
