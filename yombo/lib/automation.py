@@ -105,15 +105,15 @@ class Automation(YomboLibrary):
 
     def _module_prestart_(self, **kwargs):
         """
-        Implements the _module_prestart_ hook and is called before _start_ is called for all the modules.
+        Implementation of the _module_prestart_ hook and is called before _start_ is called for all the modules.
 
-        Implements three hooks:
+        **Hooks implemented**:
 
         * hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
         * hook_automation_filter_list : Expects a list of filter callbacks to validate and check against
           a library or module supports.
-        * hook_automation_action : Expects a list of dictionarys containging automation action platforms
-          a library or module supports.
+        * hook_automation_action_list : Expects a list of dictionarys containing automation action platforms.
+        * hook_automation_rules_list :  Expects a list of dictionarys containing automation rules.
 
         **Usage**:
 
@@ -286,15 +286,17 @@ class Automation(YomboLibrary):
             if 'condition' in rule:
                 if 'condition_type' in rule:
                     if not any(section.lower() in rule['condition_type'] for section in ['and', 'or']):
-                        logger.warn("Invalid condition_type: {condition_type}   Must be either 'and' or 'or. Skipping rule: {rule_name}",
+                        logger.warn("Invalid condition_type: {condition_type}  Must be either 'and' or 'or. Skipping rule: {rule_name}",
                                     condition_type=rule['condition_type'], rule_name=rule['name'])
                         return False
                 for item in range(len(rule['condition'])):
                     try:
                         rule['condition'][item] = \
-                            self._check_returned_rule(rule['condition'][item], self._check_source_platform(rule, rule['condition'][item]))
+                            self._check_returned_rule(rule['condition'][item],
+                                                self._check_source_platform(rule, rule['condition'][item]))
                         rule['condition'][item] = \
-                            self._check_returned_rule(rule['condition'][item], self._check_filter_platform(rule, rule['condition'][item]))
+                            self._check_returned_rule(rule['condition'][item],
+                                                self._check_filter_platform(rule, rule['condition'][item]))
                     except YomboWarning, e:
                         return False
 
@@ -330,7 +332,7 @@ class Automation(YomboLibrary):
             if new_portion is True:
                 return portion
             else:
-                raise YomboWarning("Check failed in _check_returned_rule. Rule: %s" % rule, 110, '_check_returned_rule', 'automation')
+                raise YomboWarning("Check failed in _check_returned_rule. Rule: %s" % new_portion, 110, '_check_returned_rule', 'automation')
         if isinstance(new_portion, type(None)):
             return portion
 
@@ -350,19 +352,26 @@ class Automation(YomboLibrary):
         if trigger_required:
             if 'add_trigger_callback' in self.sources[source_platform]:
                 if not callable(self.sources[source_platform]['add_trigger_callback']):
-#                    logger.warn("Rule '{rule}': {source_platform} doesn't have a callable trigger adder.", rule=rule['name'], source_platform=source_platform)
-                    raise YomboWarning("'%s' doesn't have a callable trigger adder" % source_platform, 111, '_check_source_platform', 'automation')
+#                    logger.warn("Rule '{rule}': {source_platform} doesn't have a callable trigger adder.",
+#  rule=rule['name'], source_platform=source_platform)
+                    raise YomboWarning("'%s' doesn't have a callable trigger adder" % source_platform, 111,
+                                       '_check_source_platform', 'automation')
             else:
- #               logger.warn("Rule '{rule}': {source_platform} Doesn't have a listing for a trigger adder.", rule=rule['name'], source_platform=source_platform)
-                raise YomboWarning("'%s' Doesn't have a listing for a trigger adder" % source_platform, 112, '_check_source_platform', 'automation')
+ #               logger.warn("Rule '{rule}': {source_platform} Doesn't have a listing for a trigger adder.",
+ #  rule=rule['name'], source_platform=source_platform)
+                raise YomboWarning("'%s' Doesn't have a listing for a trigger adder" % source_platform, 112,
+                                   '_check_source_platform', 'automation')
 
         if source_platform in self.sources:
             validate_source_callback_function = self.sources[source_platform]['validate_source_callback']
-#            logger.warn("Rule1 '{rule}': Checking platform params. source_platform: {source_platform}.", rule=rule['name'], source_platform=source_platform)
+#            logger.warn("Rule1 '{rule}': Checking platform params. source_platform: {source_platform}.",
+            #  rule=rule['name'], source_platform=source_platform)
             return validate_source_callback_function(rule, portion)
         else:
-            logger.warn("Rule '{rule}': Source doesn't have platform: {source_platform}", rule=rule['name'], source_platform=source_platform)
-            raise YomboWarning("Platform '%s' not found for source portion of rule" % source_platform, 113, '_check_source_platform', 'automation')
+            logger.warn("Rule '{rule}': Source doesn't have platform: {source_platform}", rule=rule['name'],
+                        source_platform=source_platform)
+            raise YomboWarning("Platform '%s' not found for source portion of rule" % source_platform, 113,
+                               '_check_source_platform', 'automation')
 
     def _check_filter_platform(self, rule, portion):
         """
@@ -379,8 +388,10 @@ class Automation(YomboLibrary):
             try:
                 rule = validate_filter_callback_function(rule, portion)
             except YomboWarning, e:
-                logger.warn("Rule '{rule}': Has invalid filter platform params. filter_platform: {filter_platform}.", rule=rule['name'], filter_platform=filter_platform)
-                raise YomboWarning("Rule '%s': Has invalid filter platform params. filter_platform: %s." % (rule['name'], filter_platform),
+                logger.warn("Rule '{rule}': Has invalid filter platform params. filter_platform: {filter_platform}.",
+                            rule=rule['name'], filter_platform=filter_platform)
+                raise YomboWarning("Rule '%s': Has invalid filter platform params. filter_platform: %s." %
+                                   (rule['name'], filter_platform),
                                    113, '_check_filter_platform', 'automation')
         else:
             logger.warn("Rule '{rule}': Filter doesn't have platform: {filter_platform}", rule=rule['name'], filter_platform=filter_platform)
@@ -424,7 +435,7 @@ class Automation(YomboLibrary):
 #        logger.warn("tracked_key: {tracked_key}", tracked_key=tracked_key)
 #        logger.warn("trackers: {tracker}", tracker=self.tracker)
         if platform_label not in self.tracker:
-            logger.debug("platform_label not in self.tracker. Skipping rule.")
+            logger.debug("platform_label ({platform_label}) not in self.tracker. Skipping rule.", platform_label=platform_label)
             return False
         if tracked_key not in self.tracker[platform_label]:
             logger.debug("platform (%s), not tracking key: %s  " % (platform_label, tracked_key))
@@ -510,7 +521,7 @@ class Automation(YomboLibrary):
         :return:
         """
         rule = self.rules[rule_id]
-#        print "running rule_id: %s" % rule_id
+        print "running rule_id: %s" % rule_id
         for item in range(len(rule['action'])):
             options = {}
             if 'delay' in rule['action'][item]:
@@ -590,73 +601,3 @@ class Automation(YomboLibrary):
 #             d.addCallback(lambda ignored: self.load_history(35))
 #         return d
 #
-
-
-
-"""
-==== stopped here ====
-rules: [
-  {
-  name: joe
-  trigger:
-    type: state
-    name: isDark
-    value: True
-  condition:
-    type: state
-    name: isLight #redundant, i know
-    value: False
-    --
-    type: device
-    name: porch light
-    value: off
-  action:
-    type: device
-    name: porch light
-    command: on
-    --
-    type: device
-    name: porch side light
-    command: on
-  }
-  ]
-
-# conditions:
-# time (can use or):
-condition_type: or
-condition:
-  type: time
-  before: '4:00'
-  --
-  type: time
-  after: '22:00'
-
-# state
-# device
-# numeric_state
-type: numeric_state
-entity_type: device
-entity_id: hallway nest (name or uuid)
-# At least one of the following required
-above: 17
-below: 25
-
-    def check_conditions(self, rule):
-        ""
-        condition is the raw value of self.rule[ruleID]
-        ""
-
-
-    def perform_action(self, rule):
-        ""
-        action is the raw value of self.rule[ruleID]
-        ""
-        actiondict = {}
-        for item, action in rule['action'].iteritems():
-            if actiondict['type'] not in actiondict:
-                actiondict[action['type']] = []
-            actiondict[action['type']].append(action)
-
-        for type, action in conditionsdict.iteritems():
-            do_action = self.actions[type].(action)
-"""

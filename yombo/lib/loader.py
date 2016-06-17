@@ -50,7 +50,6 @@ HARD_LOAD = [
     "LocalDB",
     "SQLDict",
     "Configuration",
-    "Modules",
     "Startup",
     "GPG",
     "Automation",
@@ -65,6 +64,7 @@ HARD_LOAD = [
     "Commands",
     "VoiceCmds",
     "Devices",
+    "Modules",
     "Messages",
     "AutomationHelpers",
 ]
@@ -261,7 +261,7 @@ class Loader(YomboLibrary):
             to_process = kwargs['components']
         else:
             for library_name, library in self.loadedLibraries.iteritems():
-#                print library.__dict__
+
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
 

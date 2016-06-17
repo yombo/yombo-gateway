@@ -80,6 +80,7 @@ class States(YomboLibrary, object):
         self.automation = self._Libraries['automation']
 
         self.__States = {}
+        self._live_states = {}
         self.__History = yield self._Libraries['SQLDict'].get(self, 'History')
 #        logger.info("Recovered YomboStates: {states}", states=self.__States)
 
@@ -176,6 +177,8 @@ class States(YomboLibrary, object):
                 elif self.__States[key]['readKey'] != password:
                     raise YomboStateNoAccess("State read password is invalid.")
 #            logger.info("State get2: {key}  value: {value}", key=key, value=self.__States[key]['value'])
+            if key in self._live_states:
+                return self._live_states[key]['callback'](**self._live_states[key]['arguments'])
             return self.__States[key]['value']
         else:
             return None
@@ -204,6 +207,11 @@ class States(YomboLibrary, object):
         """
         Set the value of a given state (key). If a password is required and not provided, returns YomboStateNoAccess.
 
+        **Hooks implemented**:
+
+        * hook_states_set : Sends kwargs 'key', 'value', and 'new'. *key* is the name of the state being set, *value* is
+          the new value to set, and *new* is True if the state didn't have a value before - otherwise False.
+
         :param key: Name of state to set.
         :param value: Value to set state to. Can be string, list, or dictionary.
         :param password: Optional - Only required if state has a write password. See :py:func:`has_get_password`
@@ -217,6 +225,9 @@ class States(YomboLibrary, object):
                     raise YomboStateNoAccess("State is write protected with password. Use set(key, value, password) to write/update.")
                 elif self.__States[key]['writeKey'] != password:
                     raise YomboStateNoAccess("State write password is invalid.")
+
+            if self.__States[key]['value'] == value:  # don't set the value to the same value
+                return
 
             # Call any hooks
             try:
@@ -258,6 +269,18 @@ class States(YomboLibrary, object):
             }
             self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         self.check_trigger(key, value)
+
+    def set_live(self, key, callback, arguments={}):
+        """
+        Set a live state. This is a state that will call a function for each request of the value.
+
+        :param key:
+        :param callback:
+        :param arguments:
+        :return:
+        """
+        # Not implemented yet. Considerations: blocking calls.
+        pass
 
     def __set_history(self, key, value, updated):
         data = {'value' : value, 'updated' : updated}

@@ -28,7 +28,6 @@ The example modules will guide you through the key concepts:
 .. toctree::
    :maxdepth: 1
 
-   hooks
    ../examples/empty
    ../examples/logreader
    ../examples/logwriter

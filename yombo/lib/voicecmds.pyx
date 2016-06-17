@@ -154,6 +154,10 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
 
         Expects a list of events to subscribe to.
 
+        **Hooks implemented**:
+
+        * hook_voice_cmds_add : Expects a list of message subscription events to subscrib to.
+
         **Usage**:
 
         .. code-block:: python

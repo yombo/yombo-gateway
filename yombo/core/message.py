@@ -741,8 +741,8 @@ class Message:
 
         # force delivery to the correct module.
         if(self.msgStatus == "new"):
-#            logger.warn("what? {pay}", pay=self.payload['deviceobj'].dump())
-            moduleLabel = "yombo.gateway.modules." + self._ModulesLibrary.get_device_routing(self.payload['deviceobj'].device_type_id, 'Command', 'moduleLabel').lower()
+#            logger.debug("device route: {route}", route=self.payload['deviceobj'].device_route)
+            moduleLabel = "yombo.gateway.modules." + self.payload['deviceobj'].device_route['Command'].lower()
             if self.msgDestination != moduleLabel :
                 self.msgDestination = moduleLabel
 

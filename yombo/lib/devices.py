@@ -89,6 +89,30 @@ class Devices(YomboLibrary):
         - :func:`get_devices_by_device_type` - Get all device for a certain deviceType (UUID or MachineLabel)
         - :func:`search` - Get a pointer to a device, using device_id or device label.
     """
+
+    _moduleDevicesByID = {}  # list of devices for a given module_id
+    _moduleDevicesByName = FuzzySearch({}, .92) # list of devices for a given module_label
+
+    _moduleDeviceTypesByID = {}  # list of devices_types for a given module_id
+    _moduleDeviceTypesByName = FuzzySearch({}, .92)  # list of devices_types for a given module_label
+
+    _moduleDeviceRoutingByID = {}  # stores routing information by device_type_id
+    #  _moduleDeviceRouting structure:
+    # {
+    #    'xyzDEVICE_TYPE_ID_123': {u'Interface': {'module_label': u'InsteonPLM', 'module_id': u'zJSZXwK58JQzc5cousWtxAvF'},
+    #                         u'Command': {'module_label': u'InsteonAPI', 'module_id': u'3XaJqjXuZ3pNnCDNKrHDh83a'}
+    #                         },
+    #}
+
+    _moduleDeviceRoutingByName = FuzzySearch({}, .95) # stores routing information by device_type::machine_label
+    #  _moduleDeviceRoutingByName structure:
+    # {
+    #    'device_name': {u'Interface': {'module_label': u'InsteonPLM', 'module_id': u'zJSZXwK58JQzc5cousWtxAvF'},
+    #                         u'Command': {'module_label': u'InsteonAPI', 'module_id': u'3XaJqjXuZ3pNnCDNKrHDh83a'}
+    #                         },
+    #}
+
+
     def __contains__(self, deviceRequested):
         """
         Checks to if a provided device name or device uuid exists.
@@ -185,6 +209,22 @@ class Devices(YomboLibrary):
         self._save_status()
 
     def _reload_(self):
+        for module in self._moduleDeviceTypesByID:
+            for subitem in self._moduleDeviceTypesByID[module]:
+                del self._moduleDeviceTypesByID[module][subitem]
+
+        for module in self._moduleDeviceTypesByName:
+            for subitem in self._moduleDeviceTypesByName[module]:
+                del self._moduleDeviceTypesByName[module][subitem]
+
+        for module in self._moduleDevicesByID:
+            self._moduleDevicesByID[module].clear()
+
+        for module in self._moduleDevicesByName:
+            self._moduleDevicesByName[module].clear()
+
+        self._moduleDeviceRoutingByID.clear()
+        self._moduleDeviceRoutingByName.clear()
         return self.__load_devices()
 
     @inlineCallbacks
@@ -192,9 +232,83 @@ class Devices(YomboLibrary):
         """
         Load the devices into memory. Set up various dictionaries to manage
         devices. This also setups all the voice commands for all the devices.
+
+        This also loads all the device routing. This helps messages and modules determine how to route
+        commands between command modules and interface modules.
         """
         devices = yield self._Libraries['LocalDB'].get_devices()
-        self.__do_load_devices(devices)
+        yield self.__do_load_devices(devices)
+
+
+        # Load up lots of data about modules, and module devices. Makes it easy for modules to get data about what
+        #devices and device types they manage.
+
+        device_types = []
+
+        records = yield self._LocalDBLibrary.get_module_routing()
+        for mdt in records:
+            logger.debug("load_module_data::processing MDT: {mdt}", mdt=mdt)
+
+            # Create list of DeviceType by UUID, so a module can find all it's deviceTypes
+            if mdt.module_id not in self._moduleDeviceTypesByID:
+                self._moduleDeviceTypesByID[mdt.module_id] = []
+            self._moduleDeviceTypesByID[mdt.module_id].append(mdt.device_type_id)
+
+            # Pointers to the above, used when searching.
+            if mdt.module_machine_label not in self._moduleDeviceTypesByName:
+                self._moduleDeviceTypesByName[mdt.module_machine_label] = []
+#            if mdt.device_type_id not in self._moduleDeviceTypesByName[mdt.module_machine_label]:
+            self._moduleDeviceTypesByName[mdt.module_machine_label.lower()].append(mdt.device_type_id)
+
+            # How to route device types - It's here to detere what module to send to from existing modules
+            if mdt.device_type_id not in self._moduleDeviceRoutingByID:
+                self._moduleDeviceRoutingByID[mdt.device_type_id] = {
+                    'Command': None,
+                    'Interface': None,
+                    'Logic': None,
+                    'Other': None,
+                }
+            self._moduleDeviceRoutingByID[mdt.device_type_id][mdt.module_type] = {
+                'module_id' : mdt.module_id,
+                'module_label' : mdt.module_machine_label,
+                }
+            # Pointers to the above, used when searching.
+            if mdt.device_type_label not in self._moduleDeviceRoutingByName:
+                self._moduleDeviceRoutingByName[mdt.device_type_label.lower()] = FuzzySearch({}, .92)
+            self._moduleDeviceRoutingByName[mdt.device_type_label.lower()][mdt.module_type] = {
+                'module_id' : mdt.module_id,
+                'module_label' : mdt.module_machine_label,
+                }
+
+        # Compile a list of devices for a particular module
+#            logger.debug("devices = {devices}", devices=devices)
+
+            if mdt.device_type_id not in device_types:
+                devices = self.get_devices_by_device_type(mdt.device_type_id)
+                for device_id in devices:
+                    logger.debug("Adding device_id({device_id} to self._moduleDevicesByID.", device_id=devices[device_id].device_id)
+                    if mdt.module_id not in self._moduleDevicesByID:
+                        self._moduleDevicesByID[mdt.module_id] = {}
+        #                    if device['device_id'] not in self._moduleDevicesByID[mdt['moduleuuid']]:
+        #                        self._moduleDevicesByID[mdt['moduleuuid']][device['label']] = {}
+                    self._moduleDevicesByID[mdt.module_id][devices[device_id].device_id] = devices[device_id]
+
+                    if mdt.module_id not in self._moduleDevicesByName:
+                        self._moduleDevicesByName[mdt.module_id] = FuzzySearch({}, .92)
+        #                    if device['label'] not in self._moduleDevicesByName[mdt['moduleuuid']]:
+        #                        self._moduleDevicesByName[mdt['moduleuuid']][device['label']] = {}
+                    self._moduleDevicesByName[mdt.module_id][devices[device_id].label] = devices[device_id].device_id
+
+#        logger.debug("self._moduleDeviceTypesByID = {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByID)
+#        logger.debug("self._moduleDeviceTypesByName = {moduleDeviceTypesByName}", moduleDeviceTypesByName=self._moduleDeviceTypesByName)
+#        logger.debug("self._moduleDeviceRoutingByID = {moduleDeviceRoutingByID}", moduleDeviceRoutingByID=self._moduleDeviceRoutingByID)
+#        logger.debug("self._moduleDeviceRoutingByName = {moduleDeviceRoutingByName}", moduleDeviceRoutingByName=self._moduleDeviceRoutingByName)
+        logger.debug("self._moduleDevicesByID = {_moduleDevicesByID}", _moduleDevicesByID=self._moduleDevicesByID)
+        logger.debug("self._moduleDevicesByName = {_moduleDevicesByName}", _moduleDevicesByName=self._moduleDevicesByName)
+
+        for device_id, device in self._devicesByUUID.iteritems():
+            device.setup_routes()
+        self.loadDefer.callback(10)
 
     def gotException(self, failure):
        print "Exception: %r" % failure
@@ -216,7 +330,6 @@ class Devices(YomboLibrary):
                     pass
                 d = yield self._add_device(record)
 
-        self.loadDefer.callback(10)
 
     def _add_device(self, record, testDevice=False):
         """
@@ -311,8 +424,8 @@ class Devices(YomboLibrary):
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
-        logger.debug("## _devicesByDeviceTypeByUUID: {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID)
-#        logger.debug("## deviceTypeRequested: {deviceTypeRequested}", deviceTypeRequested=deviceTypeRequested)
+#        logger.info("## _devicesByDeviceTypeByUUID: {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByName)
+#        logger.info("## device_type_requested: {device_type_requested}", device_type_requested=device_type_requested)
         if device_type_requested in self._devicesByDeviceTypeByUUID:
             logger.debug("## {devicesByDeviceTypeByUUID}", devicesByDeviceTypeByUUID=self._devicesByDeviceTypeByUUID[device_type_requested])
             return self._devicesByDeviceTypeByUUID[device_type_requested]
@@ -325,8 +438,120 @@ class Devices(YomboLibrary):
 #                logger.debug("## requestedUUID: {requestedUUID}", requestedUUID=requestedUUID)
                 return self._devicesByDeviceTypeByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
-#                logger.debug("e={e}", e=e)
+                logger.debug("e={e}", e=e)
                 return {}
+
+    def get_devices_for_module(self, requested_module):
+        """
+        Returns all devices for a given module uuid or module name, This is used by the module library to setup a
+        list of devices on startup.
+
+            >>> devices = self._Modules.get_module_devices('137ab129da9318')  #by uuid
+        or:
+            >>> devices = self._Modules.get_module_devices('Homevision')  #by name
+
+        :raises KeyError: Raised when module cannot be found.
+        :param requested_module: The module UUID or module name to search for.
+        :type requested_module: string
+        :return: Pointer to module.
+        :rtype: module
+        """
+        logger.debug("get_module_devices::requestedItem: {requested_module}", requested_module=requested_module)
+        logger.debug("get_module_devices::_moduleDevicesByID: {moduleDevicesByUUID}", moduleDevicesByUUID=self._moduleDevicesByID)
+        if requested_module in self._moduleDevicesByID:
+            return self._moduleDevicesByID[requested_module]
+        else:
+            try:
+                found_module_id = self._moduleDevicesByName[requested_module.lower()]
+                return self._moduleDevicesByID[found_module_id]
+            except YomboFuzzySearchError, e:
+                return {} # no devices setup for a requested module.
+
+    def get_devices_type_for_module(self, requested_module):
+        """
+        Returns all device types for a given module uuid or module name.
+
+            >>> deviceTypes = self._Modules.get_devices_type_for_module('137ab129da9318')  #by uuid
+        or:
+            >>> deviceTypes = self._Modules.get_devices_type_for_module('Homevision')  #by name
+
+        :raises KeyError: Raised when module cannot be found.
+        :param requested_module: The module UUID or module name to search for.
+        :type requested_module: string
+        :return: Pointer to module.
+        :rtype: module
+        """
+        logger.debug("get_module_device_types::requestedItem: {requested_module}", requested_module=requested_module)
+        logger.debug("get_module_device_types::_moduleDeviceTypesByID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByID)
+        if requested_module in self._moduleDeviceTypesByID:
+            return self._moduleDeviceTypesByID[requested_module]
+        else:
+            try:
+                logger.debug("self._moduleDeviceTypesByName: {moduleDeviceTypesByName}", moduleDeviceTypesByName=self._moduleDeviceTypesByName)
+                requestedUUID = self._moduleDeviceTypesByName[requested_module.lower()]
+                return self._moduleDeviceTypesByID[requestedUUID]
+            except YomboFuzzySearchError, e:
+                logger.debug("No module found for a given device type {requested_module}", requested_module=requested_module)
+                return {}
+
+    def get_device_routing(self, requested_device_type, routing_type, return_type = 'module_id'):
+        """
+        Device routing is used by the gateway to route a device command to the correct module. For example, a
+        Z-Wave appliance module should be routed to the Z-Wave command module. From there, it needs to be routed
+        to the Z-Wave interface module (the interface module is what bridges the command module to the outside world
+        such as though a USB/Serial/Network interface).
+
+        This function allows you to get the ``moduleUUID``, ``module_label`` or a pointer to the ``module`` itself.
+
+            >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
+        or:
+            >>> deviceTypes = self._Modules.get_device_routing('X10 Appliance', 'Command', 'module_id')  #by name, get the moduleUUID
+        or:
+            >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'module_label')  #by uuid. get the module_label
+
+        :raises KeyError: Raised when module cannot be found.
+        :param requested_device_type: The module UUID or module name to search for.
+        :type requested_device_type: string
+        :param routing_type: The module type to return. One of: Command, Interface, Logic, Other
+        :type routing_type: string
+        :param return_type: What type of string to return. One of: moduleUUID, module_label, module
+        :type return_type: string
+        :return: Pointer to module.
+        :rtype: module or string
+        """
+#        logger.debug("getModuleDeviceTypes::requestedItem: {requestedItem}", requestedItem=requestedItem)
+#        logger.debug("getModuleDeviceTypes::_moduleDeviceTypesByID: {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByID)
+#        logger.debug("get_device_routing::_moduleDeviceRoutingByID: {_moduleDeviceRoutingByID}", _moduleDeviceRoutingByID=self._moduleDeviceRoutingByID)
+        possible_routes = None
+#        print "looking for device routing... %s" % self._moduleDeviceRoutingByID
+#        print "rquested module: %s" % requested_device_type
+#        print "routing type: %s" % routing_type
+#        print "return type: %s" % return_type
+        if requested_device_type in self._moduleDeviceRoutingByID:
+            possible_routes = self._moduleDeviceRoutingByID[requested_device_type]
+        else:
+            try:
+                possible_routes = self._moduleDeviceRoutingByName[requested_device_type.lower()]
+            except YomboFuzzySearchError, e:
+                logger.info("No route for {requestedItem}", requestedItem=requested_device_type)
+                raise YomboWarning("No device route for device: %s" % requested_device_type, 201, "get_device_routing", "modules")
+
+#        print "possible_routes: %s" % possible_routes
+#        temp_section = self.lowest_possible_routing_module(possible_routes, routing_type)
+#        print "temp_section = %s" % temp_section
+#        logger.debug("returnValue = {return_type}", return_type=return_type)
+
+        if routing_type == "All":
+            return possible_routes
+        elif possible_routes[routing_type] is None:
+            return None
+        elif return_type in ("module_id", "module_label"):
+            return possible_routes[routing_type][return_type]
+        elif return_type is 'module':
+            return self._ModulesLibrary.get_module(possible_routes[routing_type]['module_id'])
+        raise YomboWarning("Cannot find device type:" + str(requested_device_type) + " (" + str(routing_type + ")"), 101,
+                           "get_device_routing", "modules")
+
 
     # The remaining functions implement automation hooks. These should not be called by anything other than the
     # automation library!
@@ -379,7 +604,7 @@ class Devices(YomboLibrary):
                 raise YomboWarning("Error while searching for device, could not be found: %s" % portion['device'],
                                    101, 'devices_validate_source_callback', 'lib.devices')
         else:
-            raise YomboWarning("For platform 'devices' as a 'source', must have 'device' and can be either device ID or device label.  Source:%s" % source,
+            raise YomboWarning("For platform 'devices' as a 'source', must have 'device' and can be either device ID or device label.  Source:%s" % portion,
                                102, 'devices_validate_source_callback', 'lib.devices')
 
     def devices_add_trigger_callback(self, rule, **kwargs):
@@ -461,13 +686,17 @@ class Devices(YomboLibrary):
 #        logger.error("firing device rule: {rule}", rule=rule)
 #        logger.error("rule options: {options}", options=options)
         for device in action['device_pointer']:
-    #        print "the_message = device.get_message(self, cmd=%s)" % action['command']
+            print "the_message = device.get_message(self, cmd=%s)" % action['command']
             the_message = device.get_message(self, cmd=action['command'])
+            print "the-message = %s" % the_message
             if 'delay' in options and options['delay'] is not None:
                 logger.warn("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
                 the_message.set_delay(delay=options['delay'])
     #        print "the_message: %s" % the_message
             the_message.send()
+#            try:
+#            except Exception,e :
+#                print "got exception: %s" % e
 
 
 class Device:
@@ -535,6 +764,15 @@ class Device:
         self.available_commands = []
         self.deviceVariables = {'asdf':'qwer'}
         self._CommandsLibrary = self._allDevices._Libraries['commands']
+        self.device_route = {}  # Destination module to send commands to
+        self._helpers = {}  # Helper class provided by route module that can provide additional features.
+
+    def __str__(self):
+        """
+        Print a string when printing the class.  This will return the device_id so that
+        the device can be identified and referenced easily.
+        """
+        return self.device_id
 
     def _init_(self):
         """
@@ -555,7 +793,6 @@ class Device:
         d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
         d.addCallback(set_commands)
         d.addErrback(gotException)
-
         d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
         d.addErrback(gotException)
         d.addCallback(set_variables)
@@ -565,12 +802,25 @@ class Device:
             d.addCallback(lambda ignored: self.load_history(35))
         return d
 
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the device_id so that
-        the device can be identified and referenced easily.
-        """
-        return self.device_id
+    def setup_routes(self):
+        try:
+            self.device_route['Command'] = self._allDevices.get_device_routing(self.device_type_id, 'Command', 'module_label')
+        except YomboWarning:
+            self.device_route['Command'] = None
+        try:
+            self.device_route['Interface'] = self._allDevices.get_device_routing(self.device_type_id, 'Interface', 'module_label')
+        except YomboWarning:
+            self.device_route['Interface'] = None
+        try:
+            self.device_route['Logic'] = self._allDevices.get_device_routing(self.device_type_id, 'Logic', 'module_label')
+        except YomboWarning:
+            self.device_route['Logic'] = None
+        try:
+            self.device_route['Other'] = self._allDevices.get_device_routing(self.device_type_id, 'Other', 'module_label')
+        except YomboWarning:
+            self.device_route['Other'] = None
+
+        logger.debug("device route: {device_route}", device_route=self.device_route)
 
     def dump(self):
         """
@@ -642,7 +892,8 @@ class Device:
         logger.debug("device kwargs: {kwargs}", kwargs=kwargs)
         cmdobj = None
         if 'cmd' not in kwargs:
-            raise YomboDeviceError("Missing 'cmd' must be a valid command instance , 'cmd', or 'cmdUUID'; what to do?", errorno=103)
+            raise YomboDeviceError("Missing 'cmd' must be a valid command instance , 'cmd', or 'cmdUUID'; what to do?",
+                                   errorno=103)
 
 #        print "cmd is of type: %s" % type(kwargs['cmd'])
         if type(kwargs['cmd']) == 'instance':
@@ -659,7 +910,8 @@ class Device:
 
 #        if self.validate_command(cmdobj) is not True:
         if str(cmdobj.cmdUUID) not in self.available_commands:
-            logger.warn("Requested command: {cmduuid}, but only have: {ihave}", cmduuid=cmdobj.cmdUUID, ihave=self.available_commands)
+            logger.warn("Requested command: {cmduuid}, but only have: {ihave}",
+                        cmduuid=cmdobj.cmdUUID, ihave=self.available_commands)
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
 
@@ -668,22 +920,21 @@ class Device:
             if isinstance(kwargs['payload'], dict):
                 payloadValues = kwargs['payload']
             else:
-                raise YomboDeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']), errorno=102)
+                raise YomboDeviceError("Payload in kwargs must be a dict. Received: %s" % type(kwargs['payload']),
+                                       errorno=102)
 
         payload = {"cmdobj" : cmdobj, "deviceobj" : self}
 
         payload.update(payloadValues)
 
-        route = self._allDevices._ModulesLibrary.get_device_routing(self.device_type_id, 'Command', 'moduleLabel')
-
         msg = {
-               'msgOrigin'      : sourceComponent._FullName.lower(),
-               'msgDestination' : "yombo.gateway.modules.%s" % route,
-               'msgType'        : "cmd",
-               'msgStatus'      : "new",
-               'uuidType'       : "1",
-               'uuidSubType'    : "123",
-               'payload'        : payload,
+               'msgOrigin'     : sourceComponent._FullName.lower(),
+               'msgDestination': "yombo.gateway.modules.%s" % self.device_route['Command'],
+               'msgType'       : "cmd",
+               'msgStatus'     : "new",
+               'uuidType'      : "1",
+               'uuidSubType'   : "123",
+               'payload'       : payload,
                }
 
         if 'notBefore' in kwargs:
@@ -792,13 +1043,13 @@ class Device:
         except:
             pass
         msg = {
-               'msgOrigin'      : src,
-               'msgDestination' : dest,
-               'msgType'        : "status",
-               'msgStatus'      : "new",
-               'msgStatusExtra' : "",
-               'uuidtype'       : "APDS",
-               'payload'        : payload,
+               'msgOrigin'     : src,
+               'msgDestination': dest,
+               'msgType'       : "status",
+               'msgStatus'     : "new",
+               'msgStatusExtra': "",
+               'uuidtype'      : "APDS",
+               'payload'       : payload,
               }
         message = Message(**msg)
         message.send()
@@ -837,7 +1088,7 @@ class Device:
                 self.status_history.appendleft(self.Status(record['device_id'], record['set_time'], record['device_state'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['source'], record['uploaded'], record['uploadable']))
 #                              self.Status = namedtuple('Status',  "device_id,           set_time,           device_state,           human_status,           machine_status,                             machine_status_extra,             source,           uploaded,           uploadable")
 
-        logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
+        #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
     def validate_command(self, cmdUUID):
         print "checking cmdavail for %s, looking for '%s': %s" % (self.label, cmdUUID, self.available_commands)
