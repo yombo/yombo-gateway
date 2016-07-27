@@ -33,6 +33,7 @@ Stops components in the following phases. Modules first, then libraries.
 import sys
 import traceback
 from re import search as ReSearch
+from collections import OrderedDict
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
@@ -46,39 +47,39 @@ import yombo.utils
 
 logger = get_logger('library.loader')
 
-HARD_LOAD = [
-    "LocalDB",
-    "SQLDict",
-    "Configuration",
-    "Startup",
-    "GPG",
-    "Automation",
-    "Atoms",
-    "States",
-    "CronTab",
-    "Statistics",
-    "AMQPYombo",
-    "ConfigurationUpdate",
-    "DownloadModules",
-    "Times",
-    "Commands",
-    "VoiceCmds",
-    "Devices",
-    "Modules",
-    "Messages",
-    "AutomationHelpers",
-]
+HARD_LOAD = OrderedDict()
+HARD_LOAD["LocalDB"] = {'operation_mode':'all'}
+HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
+HARD_LOAD["SQLDict"] = {'operation_mode':'all'}
+HARD_LOAD["Configuration"] = {'operation_mode':'all'}
+HARD_LOAD["Startup"] = {'operation_mode':'all'}
+HARD_LOAD["GPG"] = {'operation_mode':'all'}
+HARD_LOAD["Automation"] = {'operation_mode':'all'}
+HARD_LOAD["Atoms"] = {'operation_mode':'all'}
+HARD_LOAD["States"] = {'operation_mode':'all'}
+HARD_LOAD["CronTab"] = {'operation_mode':'all'}
+HARD_LOAD["Statistics"] = {'operation_mode':'all'}
+HARD_LOAD["AMQPYombo"] = {'operation_mode':'all'}
+HARD_LOAD["ConfigurationUpdate"] = {'operation_mode':'run'}
+HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
+HARD_LOAD["Times"] = {'operation_mode':'all'}
+HARD_LOAD["Commands"] = {'operation_mode':'all'}
+HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
+HARD_LOAD["Devices"] = {'operation_mode':'all'}
+HARD_LOAD["Modules"] = {'operation_mode':'all'}
+HARD_LOAD["Messages"] = {'operation_mode':'all'}
+HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
+HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 
-HARD_UNLOAD = [
-    "DownloadModules",
-    "Messages",
-    "Devices",
-    "AMQPYombo",
-    "Configuration",
-    "Statistics",
-    "Modules",
-    "SQLDict",
-]
+HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD["DownloadModules"] = {'operation_mode':'all'}
+HARD_UNLOAD["Messages"] = {'operation_mode''all'}
+HARD_UNLOAD["Devices"] = {'operation_mode':'all'}
+HARD_UNLOAD["AMQPYombo"] = {'operation_mode':'all'}
+HARD_UNLOAD["Configuration"] = {'operation_mode':'all'}
+HARD_UNLOAD["Statistics"] = {'operation_mode':'all'}
+HARD_UNLOAD["Modules"] = {'operation_mode':'all'}
+HARD_UNLOAD["SQLDict"] = {'operation_mode':'all'}
 
 
 class Loader(YomboLibrary):
@@ -117,6 +118,7 @@ class Loader(YomboLibrary):
         self.__localModuleVars = {}
         self._moduleLibrary = None
         self._hook_cache = {}
+        self.operation_mode = None  # One of: run, config
 
     @inlineCallbacks
     def load(self):  #on startup, load libraried, then modules
@@ -129,15 +131,33 @@ class Loader(YomboLibrary):
         logger.info("Importing libraries, this can take a few moments.")
         yield self.import_libraries() # import and init all libraries
         logger.debug("Calling load functions of libraries.")
-        for index, name in enumerate(HARD_LOAD):
-             libraryName = name.lower()
-             yield self.library_invoke(libraryName, "_load_")
+        for name, config in HARD_LOAD.iteritems():
+            do_load = False
+            if self.operation_mode is None:
+                do_load = True
+            elif self.operation_mode == 'all':
+                do_load = True
+            elif self.operation_mode == self.operation_mode:
+                do_load = True
+
+            if do_load:
+                libraryName = name.lower()
+                yield self.library_invoke(libraryName, "_load_")
 
         self._moduleLibrary = self.loadedLibraries['modules']
         logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
-        for index, name in enumerate(HARD_LOAD):
-             libraryName =  name.lower()
-             yield self.library_invoke(libraryName, "_start_")
+        for name, config in HARD_LOAD.iteritems():
+            do_load = False
+            if self.operation_mode is None:
+                do_load = True
+            elif self.operation_mode == 'all':
+                do_load = True
+            elif self.operation_mode == self.operation_mode:
+                do_load = True
+
+            if do_load:
+                libraryName =  name.lower()
+                yield self.library_invoke(libraryName, "_start_")
 
         if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
           self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
@@ -177,12 +197,12 @@ class Loader(YomboLibrary):
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
         logger.debug("Importing server libraries.")
-        for component in HARD_LOAD:
-            pathName = "yombo.lib.%s" % component
-            self.import_component(pathName, component, 'library')
+        for name, config in HARD_LOAD.iteritems():
+            pathName = "yombo.lib.%s" % name
+            self.import_component(pathName, name, 'library')
 
         logger.debug("Calling init functions of libraries.")
-        for index, name in enumerate(HARD_LOAD):
+        for name, config in HARD_LOAD.iteritems():
             component = name.lower()
             library = self.loadedLibraries[component]
             self._log_loader('debug', component, 'library', 'init', 'About to call _init_.')
@@ -338,11 +358,11 @@ class Loader(YomboLibrary):
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
-        for index, name in enumerate(HARD_UNLOAD):
+        for name, config in HARD_UNLOAD.iteritems():
             logger.debug("stopping: {name}", name=name)
             yield self.library_invoke(name, "_stop_")
 
-        for index, name in enumerate(HARD_UNLOAD):
+        for name, config in HARD_UNLOAD.iteritems():
             logger.debug("_unload_: {name}", name=name)
             yield self.library_invoke(name, "_unload_")
 

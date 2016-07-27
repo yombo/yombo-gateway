@@ -19,6 +19,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 #from yombo.core.message import Message
+from yombo.utils import random_string
 
 from yombo.core.log import get_logger
 logger = get_logger('library.gpg')
@@ -31,8 +32,11 @@ class GPG(YomboLibrary):
         """
         Get the GnuPG subsystem up and loaded.
         """
+        self.loader = loader
+        self.gwuuid = self._Configs.get("core", "gwuuid")
+        self._key_generation_status = {}
         self.initDefer = Deferred()
-        self.mykeyid = self._Configs.get('gpg', 'gpgkeyid')
+        self.mykeyid = self._Configs.get('core', 'gpgkeyid')
         self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
         logger.debug("syncing gpg keys into db")
         self.sync_keyring_to_db()
@@ -273,7 +277,48 @@ class GPG(YomboLibrary):
 #  'uids': [u'Yombo Gateway (L2rwJHeKuRSUQoxQFOQP7RnB) <L2rwJHeKuRSUQoxQFOQP7RnB@yombo.net>']},
 
 
+    def generate_key_status(self, request_id):
+        return self._key_generation_status[request_id]
 
+    @inlineCallbacks
+    def generate_key(self, request_id = None):
+        """
+        Generates a new GPG key pair. Updates yombo.ini and marks it to be sent when gateway conencts to server
+        again.
+        """
+        input_data = self.gpg.gen_key_input(
+            name_email=self.gwuuid + "@yombo.net",
+            name_real="Yombo Gateway",
+            name_comment="gw_" + self.gwuuid,
+            key_type='RSA',
+            key_length=2048,
+            expire_date='5y')
+
+        if request_id is None:
+            request_id = random_string(length=16)
+        self._key_generation_status[request_id] = 'working'
+        newkey = yield self.gpg.gen_key(input_data)
+        self._key_generation_status[request_id] = 'done'
+
+        print "newkey!!!!!! ===="
+        print newkey
+        print "request id ="
+        print request_id
+        if newkey == '':
+            print "\n\rERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?\n\r"
+            myExit()
+
+        private_keys = self.gpg.list_keys(True)
+        keyid = ''
+
+        for key in private_keys:
+            if str(key['fingerprint']) == str(newkey):
+                keyid=key['keyid']
+        asciiArmoredPublicKey = self.gpg.export_keys(keyid)
+        self._Configs.get('core', 'gpgkeyid', keyid)
+        self._Configs.get('core', 'gpgkeyascii', asciiArmoredPublicKey)
+#        sendKey(keyid, asciiArmoredPublicKey)
+        print "New keys (public and private) have been saved to key ring."
 
     ###########################################
     ###  Encrypt / Decrypt / Sign / Verify  ###

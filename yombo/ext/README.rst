@@ -13,6 +13,10 @@ BermiInflector
 The Inflector is used for getting the plural and singular form of nouns.  Used by
 twistar DB api.
 
+hashids
+-------
+Used to shorten long ints into strings and back.
+
 hjson
 ------
 

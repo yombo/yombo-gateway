@@ -1,0 +1,123 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/chartist_css.tpl' %}{% endblock %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12 col-md-12">
+                    <h1 class="page-header">Dashboard</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-3 col-md-3">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <div class="row" onclick="location.href='/devices';">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-wifi fa-3x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="large">{{ devices|length }}</div>
+                                    <div class="medium">Devices</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <div class="row" onclick="location.href='/modules';">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-cogs fa-3x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="large">{{ modules|length }}</div>
+                                    <div class="medium">Modules</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="panel panel-yellow">
+                        <div class="panel-heading">
+                            <div class="row" onclick="location.href='/states';">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-random fa-3x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="large">{{ states|length }}</div>
+                                    <div class="medium">States</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="panel panel-red">
+                        <div class="panel-heading">
+                            <div class="row" onclick="location.href='/atoms';">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-list fa-3x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="large">13</div>
+                                    <div class="medium">Atoms</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-6 col-md-6">
+                    <div class="ct-chart ct-perfect-fifth" id="chart1"></div>
+                </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="ct-bar ct-perfect-fifth" id="chart2"></div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+{% endblock %}
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/chartist_js.tpl' %}
+<script>
+  // Initialize a Line chart in the container with the ID chart1
+  var chart1_data = {
+    labels: [1, 2, 3, 4],
+    series: [[100, 120, 180, 200]]
+  }
+
+  var chart1_options = {
+    height: 200
+  }
+
+  var chart2_data = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    series: [
+      [5, 4, 3, 7, 5, 10, 3],
+      [3, 2, 9, 5, 4, 6, 4]
+    ]
+    }
+  var chart2_options = {
+    axisX: {
+      // On the x-axis start means top and end means bottom
+      position: 'start'
+    },
+    axisY: {
+      // On the y-axis start means left and end means right
+      position: 'end'
+    }
+  }
+
+  new Chartist.Line('#chart1', chart1_data, chart1_options);
+  new Chartist.Bar('#chart2', chart2_data, chart2_options);
+
+</script>
+{% endblock %}
+{% block body_bottom %}
+{% endblock %}

@@ -36,6 +36,7 @@ Calling Function Location                                                       
 :py:meth:`Automation:_module_prestart_() <yombo.lib.automation.Automation._module_prestart_>`             hook_automation_action_list                 Add a new platform to 'action' portion of automation system.
 :py:meth:`Automation:_module_prestart_() <yombo.lib.automation.Automation._module_prestart_>`             hook_automation_filter_list                 Add a new platform to 'filter' portion of automation system.
 :py:meth:`Automation:_module_prestart_() <yombo.lib.automation.Automation._module_prestart_>`             hook_automation_source_list                 Add a new platform to 'source' portion of automation system.
+:py:meth:`Configuration::_module_prestart_ <yombo.lib.configuration.Configuration._module_prestart_>`     hook_configuration_details                       Collects detailed information about a configuration option being used.
 :py:meth:`Messages::_module_prestart_()<yombo.lib.automation.Automation._module_prestart_>`               hook_message_subscriptions                  Subscribe a module to a message type.
 :py:meth:`Messages::_module_prestart_()<yombo.lib.automation.Automation._module_prestart_>`               hook_message_subscriptions                  Add subscriptions for messages.
 :py:meth:`Modules::load_modules <yombo.lib.modules.Modules.load_modules>`                                 _module_init_                               Only calls to libraries: Called before modules called with _init_.
@@ -53,5 +54,5 @@ Calling Function Location                                                       
 :py:meth:`Modules::unload_modules <yombo.lib.modules.Modules.load_modules>`                               _module_unload_                             Only calls to libraries: Called before modules called with _unload_.
 :py:meth:`Modules::unload_modules <yombo.lib.modules.Modules.load_modules>`                               _stop_                                      Only called to modules: Calls as part of _stop_ sequence.
 :py:meth:`Modules::unload_modules <yombo.lib.modules.Modules.load_modules>`                               _unload_                                    Only called to modules: Calls as part of _unload_ sequence.
-:py:meth:`VoiceCmds::_module_prestart_ <yombo.lib.voicecmds.VoiceCmds.load_modules>`                      hook_voice_cmds_add                         Called to add additional voice commands.
+:py:meth:`VoiceCmds::_module_prestart_ <yombo.lib.voicecmds.VoiceCmds._module_prestart_>`                 hook_voice_cmds_add                         Called to add additional voice commands.
 ========================================================================================================= =========================================== ==========================================================================================

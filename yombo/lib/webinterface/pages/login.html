@@ -1,0 +1,54 @@
+{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+{% block head_bottom %}
+<script src='https://www.google.com/recaptcha/api.js'></script>
+{% endblock %}
+
+{% block content %}
+{% if data.gateway_configured %}
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3">
+                    <h1 class="page-header">Setup Mode</h1>
+                    <p>
+                        Yombo Gateway is in configuration or setup only mode. This only allows low level setup and
+                        configuration of the gateway.
+                    </p>
+                    <p>
+                        Use the Yombo credentials below to setup this gateway. If you do not have one, you
+                        will need to <a href="https://yombo.net">create a Yombo account</a>.
+                    </p>
+                    <p>&nbsp;</p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+{% endif %}
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3">
+                    <div class="login-panel panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title"><center><strong>{{ data.gateway_label }}</strong><br> Sign into Yombo Account - <a href="https://yombo.net">Create</a></center></h3>
+                        </div>
+                        <div class="panel-body">
+                            <form action="/login" method="POST" role="form">
+                                <fieldset>
+                                    <div class="form-group">
+                                        <input class="form-control" placeholder="E-mail" name="email" type="email" autofocus>
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" placeholder="Password" name="password" type="password" value="">
+                                    </div>
+                                    <div class="checkbox">
+                                        <label>
+                                            <input name="remember" type="checkbox" value="Remember Me">Remember Me
+                                        </label>
+                                    </div>
+                                    <!-- Change this to a button or input when using this as a form -->
+                                    <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
+                                    <button type="submit" class="btn btn-lg btn-success btn-block">Login</button>
+                                </fieldset>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.row -->
+{% endblock %}

@@ -27,6 +27,7 @@ In a hurry? Visit the :doc:`Getting Started with Yombo <chapters/getting-started
    chapters/hooks.rst
    chapters/yombo-framework.rst
    chapters/developing-yombo-modules.rst
+   chapters/changelog.rst
 
 .. rubric:: Contributing to Documentation
 

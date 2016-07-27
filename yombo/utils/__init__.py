@@ -19,6 +19,8 @@ import sys
 import re
 from datetime import datetime
 import parsedatetime.parsedatetime as pdt
+from struct import pack as struct_pack, unpack as struct_unpack
+from socket import inet_aton
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -28,6 +30,8 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import memoize_
 import yombo.ext.six as six
+from yombo.ext.hashids import Hashids
+
 from yombo.core.log import get_logger
 
 logger = get_logger('utils.__init__')
@@ -223,7 +227,7 @@ def dict_get_value(dictionary, keys):
     .. code-block:: python
 
        from yombo.utils import dict_get_value
-       a_dictionary = {}
+       a_dictionary  = {'identity': {'location': {'state': 'California'}}}
        a_list = ['identity', 'location', 'state']
        value = dict_get_value(a_dictionary, a_list)
        #value = 'California'
@@ -396,10 +400,17 @@ def get_external_ip_address():
     :return: An ip address
     :rtype: string
     """
-    import urllib2
-    request = urllib2.Request("https://api.ipify.org", headers={"Accept" : "text/html"})
-    return urllib2.urlopen(request).read()
+    import urllib3
+    urllib3.disable_warnings()
+    http = urllib3.PoolManager()
+    r = http.request("GET", "https://yombo.net/tools/clientip.php")
+    return r.data
 
+def ip_address_to_int(address):
+    return struct_unpack("!I", inet_aton(address))[0]
+
+def int_to_ip_address(address):
+    return inet_ntoa(struct_pack("!I", address))
 
 def random_string(**kwargs):
     """
@@ -597,6 +608,24 @@ def sleep(secs):
     :type secs: int of float
     """
     return deferLater(reactor, secs, lambda: None)
+
+def hashid_encode(input, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
+    """
+    Encodes an int and returns a string. This typically shortens the length and is great for
+    showing users a better representation of a large int - if they don't care about the actual value.
+
+    :param input: Int - Input value to encode to a string.
+    :param min_length: Int - Minimum length string should be. Will pad if required.
+    :param salt: String - A salt to mangle the value. This isn't secure!
+    :param alphabet: String -
+    :return:
+    """
+    hashid = Hashids(salt, min_length, alphabet)
+    return hashid.encode(input)
+
+def hashid_decode(input, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
+    hashid = Hashids(salt, min_length, alphabet)
+    return hashid.decode(input)
 
 @memoize_
 def is_freebsd():

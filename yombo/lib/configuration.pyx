@@ -25,7 +25,8 @@ are kept to a minimum.
 # Import python libraries
 import ConfigParser
 import hashlib
-import time
+from time import time
+import cPickle
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -35,6 +36,7 @@ from yombo.core.exceptions import YomboCritical
 from yombo.utils import get_external_ip_address, get_local_ip_address
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
+from yombo.utils import dict_merge, global_invoke_all, is_string_bool, dict_get_value
 
 logger = get_logger('library.configuration')
 
@@ -47,29 +49,27 @@ class Configuration(YomboLibrary):
     stores the configuration items into a cache. The configuration is never
     stored in the database.
     """
-    MAX_KEY = 100
-    MAX_VALUE = 5001
+    MAX_OPTION_LENGTH = 100
+    MAX_VALUE_LENGTH = 10000
 
     # Yombo constants. Used for versioning and misc tracking.
     yombo_vars = {
-        'version': '0.10.0',
+        'version': '0.11.0',
     }
+    configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
+    configs_details = {}  # Collected details from libs and modules about configurations
 
     def _init_(self, loader):
         """
         Open the yombo.ini file for reading.
 
-        Import the configuration items into the database, also prime the cache for reading.
+        Import the configuration items into the database, also prime the configs for reading.
 
         :param loader: The loader module.
         :type loader: loader
         """
-        self.cache = {'core': {}}  # simple cache
-        self.cacheMisses = 0
-        self.cacheHits = 0
-
         self.loader = loader
-        self.cacheDirty = False
+        self.cache_dirty = False
         
         config_parser = ConfigParser.SafeConfigParser()
 
@@ -80,55 +80,68 @@ class Configuration(YomboLibrary):
             fp.close()
 
             for section in ini.sections():
-                if section == 'updateinfo':
-                    continue
-                self.cache[section] = {}
                 for option in ini.options(section):
                     value =  ini.get(section, option)
                     try:
-                        value = int(value)
+                        value = is_string_bool(value)
                     except:
                         try:
-                          value = float(value)
+                            value = int(value)
                         except:
-                          value = str(value)
-                    self.cache[section][option] = value
-
+                            try:
+                              value = float(value)
+                            except:
+                              value = str(value)
+                    self.set(section, option, value)
         except IOError:
             raise YomboCritical("ERROR: yombo.ini doesn't exist. Use ./config to setup.", 503, "startup")
         except ConfigParser.NoSectionError:
             pass
         
+        try:
+            fp = open('usr/etc/yombo.ini.meta')
+            config_parser.readfp(fp)
+            ini = config_parser
+            fp.close()
+
+            for section in ini.sections():
+                if section not in self.configs:
+                    continue
+                for option in ini.options(section):
+                    if option not in self.configs[section]:
+                        continue
+                    values = cPickle.loads(ini.get(section, option))
+                    self.configs[section][option] = dict_merge(self.configs[section][option], values)
+        except IOError:
+            pass
+        except ConfigParser.NoSectionError:
+            pass
+
         # Perform DB cleanup activites based on local section.
-        if 'local' in self.cache:
-            if 'deletedelayedmessages' in self.cache['local']:
-                if self.cache['local']['deletedelayedmessages'].lower() == "true":
-                    self._Libraries['localdb'].delete('sqldict', ['module = ?', 'yombo.gateway.lib.messages'])
-                self.cache['local']['deletedelayedmessages'] = 'false'
-                self.cacheDirty = True
+        if self.get('local', 'deletedelayedmessages') is True:
+            self._Libraries['localdb'].delete('sqldict', ['module = ?', 'yombo.gateway.lib.messages'])
+            self.set('local', 'deletedelayedmessages', False)
 
-            if 'deletedevicehistory' in self.cache['local']:
-                if self.cache['local']['deletedevicehistory'].lower() == "true":
-                    self._Libraries['localdb'].truncage('devicestatus')
-                self.cache['local']['deletedevicehistory'] = 'false'
-                self.cacheDirty = True
-        if 'externalipaddress' in self.cache['core'] and 'externalipaddresstime' in self.cache['core']:
-            if int(self.cache['core']['externalipaddresstime']) < (int(time.time()) - 12000):
-                print self.cache['core']['externalipaddress']
+        if self.get('local', 'deletedevicehistory') is True:
+            self._Libraries['localdb'].truncate('devicestatus')
+            self.set('local', 'deletedevicehistory', False)
+
+        if self.get('local', 'externalipaddress') is not None and self.get('local', 'externalipaddresstime') is not None:
+            if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 12000):
                 self.set("core", "externalipaddress", get_external_ip_address())
-                self.set("core", "externalipaddresstime", int(time.time()))
+                self.set("core", "externalipaddresstime", int(time()))
         else:
-            print "didn't find external ip address"
+#            print "didn't find external ip address"
             self.set("core", "externalipaddress", get_external_ip_address())
-            self.set("core", "externalipaddresstime", int(time.time()))
+            self.set("core", "externalipaddresstime", int(time()))
 
-        if 'localipaddresstime' in self.cache['core'] and 'localipaddress' in self.cache['core']:
-            if int(self.cache['core']['localipaddresstime']) < (int(time.time()) - 12000):
+        if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
+            if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 12000):
                 self.set("core", "localipaddress", get_local_ip_address())
-                self.set("core", "localipaddresstime", int(time.time()))
+                self.set("core", "localipaddresstime", int(time()))
         else:
             self.set("core", "localipaddress", get_local_ip_address())
-            self.set("core", "localipaddresstime", int(time.time()))
+            self.set("core", "localipaddresstime", int(time()))
 
         self.periodic_save_ini = LoopingCall(self._save_ini)
         self.periodic_save_ini.start(300, False)
@@ -158,27 +171,98 @@ class Configuration(YomboLibrary):
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        logger.debug("config stopping...Cache hits: {cacheHits}, cacheMisses: {cacheMisses}",
-                     cacheHits=self.cacheHits, cacheMisses=self.cacheMisses)  # todo: add to stats
         logger.info("saving config file...")
         self._save_ini(True)
 
     def _save_ini(self, force_save=False):
         """
-        Save the configuration cache to the INI file.
+        Save the configuration configs to the INI file.
 
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
-        if self.cacheDirty is True or force_save is True:
+        self.configs_dirty = True
+        if self.configs_dirty is True or force_save is True:
             Config = ConfigParser.ConfigParser()
-            for section in self.cache:
+            for section, options in self.configs.iteritems():
                 Config.add_section(section)
-                for item in self.cache[section]:
-                    Config.set(section, item, self.cache[section][item])
+                for item, data in options.iteritems():
+                    if 'value' not in data:  # incase it's documented, but not used. Usually bad doco.
+                        continue
+                    Config.set(section, item, data['value'])
+                if len(Config.options(section)) == 0:  # Don't save empty sections.
+                    Config.remove_section(section)
 
-            configfile = open("yombo.ini",'w')
-            Config.write(configfile)
-            configfile.close()
+            config_file = open("yombo.ini",'w')
+            Config.write(config_file)
+            config_file.close()
+
+            Config = ConfigParser.ConfigParser()
+            for section, options in self.configs.iteritems():
+                Config.add_section(section)
+                for item, data in options.iteritems():
+                    temp = self.configs[section][item]
+                    if 'reads' in temp:
+                        del temp['reads']
+                    if 'details' in temp:
+                        del temp['details']
+                    if 'writes' in temp:
+                        del temp['writes']
+                    if 'value' in temp:
+                        del temp['value']
+                    Config.set(section, item, cPickle.dumps() )
+                if len(Config.options(section)) == 0:  # Don't save empty sections.
+                    Config.remove_section(section)
+
+            config_file = open("usr/etc/yombo.ini.info",'w')
+            config_file.write('#\n')
+            config_file.write('# This file stores meta information about yombo.ini. Do not edit manually!\n')
+            config_file.write('#\n')
+            Config.write(config_file)
+            config_file.close()
+
+        self.configs_dirty = False
+
+    def _module_prestart_(self, **kwargs):
+        """
+        Called after _load_ is called for all the modules. Get's a list of configuration items all library
+        or modules define or use.
+
+        Note: This complies with i18n translations for future use.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           def ModuleName_config_details(self, **kwargs):
+               return [{'webinterface': {
+                           'enabled': {
+                               'description': {
+                                   'en': 'Enables/disables the web interface.',
+                               }
+                           },
+                           'port': {
+                               'description': {
+                                   'en': 'Port number for the web interface to listen on.'
+                               }
+                           }
+                       },
+               }]
+        """
+        config_details = global_invoke_all('configuration_details')
+
+        for component, details in config_details.iteritems():
+            if details is None:
+                continue
+            for list in details:
+#                logger.warn("For module {component}, adding details: {list}", component=component, list=list)
+                self.configs_details = dict_merge(self.configs_details, list)
+
+        for section, options in self.configs.iteritems():
+            for option, keys in options.iteritems():
+                try:
+                    self.configs[section][option]['details'] = self.configs_details[section][option]
+                except:
+                    pass
 
     def message(self, message):
         """
@@ -189,20 +273,13 @@ class Configuration(YomboLibrary):
         """
         logger.debug("A message was sent to configuration module.  No messages allowed.")
 
-    def get_config_time(self, section, key):
-        updateItem = section + "_+_" + key + "_+_time"
-        if updateItem in self.cache['updateinfo']:
-            return self.cache['updateinfo'][updateItem]
-        else:
-            return None
-
-    def get(self, section, key, default=None):
+    def get(self, section, option, default=None):
         """
-        Read value of configuration key, return None if it don't exist or
+        Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
         returning a string.
         
-        Section and key will be converted to lowercase, rendering the set/get
+        Section and option will be converted to lowercase, rendering the set/get
         function case insenstive.
 
         **Usage**:
@@ -213,107 +290,138 @@ class Configuration(YomboLibrary):
 
         :param section: The configuration section to use.
         :type section: string
-        :param key: The key (or the config key) to use.
-        :type key: string
+        :param option: The option (key) to use.
+        :type option: string
         :param default: What to return if no result is found, default = None.
         :type default: int or string
-        :return: The configuration value requested by section and key.
+        :return: The configuration value requested by section and option.
         :rtype: int or string or None
         """
-        if len(key) > self.MAX_KEY:
-            raise ValueError("key cannot be more than %d chars" % self.MAX_KEY)
+        if len(option) > self.MAX_OPTION_LENGTH:
+            raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+
+        section = section.lower()
+        option = option.lower()
 
         if section == 'yombo':
-            if key in self.yombo_vars:
-                return self.yombo_vars[key]
+            if option in self.yombo_vars:
+                return self.yombo_vars[option]
             else:
                 return None
 
-        section = section.lower()
-        key = key.lower()
-        if section in self.cache:
-            if key in self.cache[section]:
-                self.cacheHits += 1
-#                returnValue(self.cache[section][key])
-                return self.cache[section][key]
-
-        self.cacheMisses += 1
+        if section in self.configs:
+            if option in self.configs[section]:
+                self.configs[section][option]['reads'] += 1
+#                returnValue(self.configs[section][option])
+                return self.configs[section][option]['value']
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
+        if default == "":
+            return ""
+
         if default is not None:
-            if section not in self.cache:
-               self.cache[section] = {}
-            self.cache[section][key] = default
+            self.set(section, option, default)
+            self.configs[section][option]['reads'] += 1
             return default
         else:
             return None
 
-    def set(self, section, key, value):
+    def set(self, section, option, value):
         """
-        Set value of configuration key for a given section.  The key length
+        Set value of configuration option for a given section.  The option length
         **cannot exceed 1000 characters**.  The value cannot exceed 5000 bytes.
 
-        Section and key will be converted to lowercase, rending the set/get function case insenstive.
+        Section and option will be converted to lowercase, rending the set/get function case insenstive.
 
         **Usage**:
 
         .. code-block:: python
 
-           gatewayUUID = self._Config.set("section_name", "mykey", "New Value")
+           gatewayUUID = self._Config.set("section_name", "myoption", "New Value")
 
         :param section: The configuration section to use.
         :type section: string
-        :param key: The key (or the config key) to use.
-        :type key: string
+        :param option: The option (key) to use.
+        :type option: string
         :param value: What to return if no result is found, default = None.
         :type value: int or string
         """
-        if len(key) > self.MAX_KEY:
-            raise ValueError("key (%s) cannot be more than %d chars" % (key, self.MAX_KEY) )
+        if len(option) > self.MAX_OPTION_LENGTH:
+            raise ValueError("option (%s) cannot be more than %d chars" % (option, self.MAX_OPTION_LENGTH ) )
 
         # Can't set value!
         if section == 'yombo':
             raise ValueError("Not allowed to set value")
 
         if isinstance(value, str):
-            if section != 'updateinfo' and (len(value) > self.MAX_VALUE):
+            if len(value) > self.MAX_VALUE_LENGTH:
                 raise ValueError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
+#        print "section: %s, option: %s, value: %s" % (section, option, value)
         section = section.lower()
-        key = key.lower()
+        option = option.lower()
 
-        if section not in self.cache:
-            self.cache[section] = {}
-        self.cache[section][key] = value
+        if section not in self.configs:
+            self.configs[section] = {}
+        if option not in self.configs[section]:
+            self.configs[section][option] = {
+                'create_time': int(time()),
+                'reads': 0,
+                'writes': 0,
+            }
 
-        if 'updateinfo' not in self.cache:
-            self.cache['updateinfo'] = {}
+        self.configs[section][option] = dict_merge(self.configs[section][option], {
+                'set_time': int(time()),
+                'value': value,
+                'hash': hashlib.sha224( str(value) ).hexdigest(),
+            })
+        self.configs[section][option]['writes'] += 1
 
-        updateItem = section + "_+_" + key + "_+_time"
-        self.cache['updateinfo'][updateItem] = int( time.time() )
+        self.configs_dirty = True
 
-        updateItem = section + "_+_" + key + "_+_hash"
-        self.cache['updateinfo'][updateItem] = hashlib.sha224( str(value) ).hexdigest()
+    def get_meta(self, section, option, meta_type='time'):
+        try:
+            return self.configs_meta[section, option][meta_type]
+        except:
+            return None
 
-        self.cacheDirty = True
-
-    def delete(self, section, key):
+    def delete(self, section, option):
         """
-        Delete a section/key value from the cache and database.
+        Delete a section/option value from configs (yombo.ini).
 
         :param section: The configuration section to use.
         :type section: string
-        :param key: The key (or the config key) to use.
-        :type key: string
+        :param option: The option (key) to delete.
+        :type option: string
         """
 
-        if section in self.cache:
-            if key in self.cache[section]:
-                del self.cache[section][key]
+        if section in self.configs:
+            if option in self.configs[section]:
+                del self.configs[section][option]
 
-        if section == 'local': # don't save local items to the DB
-          return
-        if section in self.cache:
-            if key in self.cache[section]:
-                del self.cache[section][key]
+    def i18n_gettext(self):
+        """
+        Starting to implement i18n.
+
+        :return:
+        """
+        strings = {}
+        for section, options in self.configs.iteritems():
+            for option, data in options.iteritems():
+                has_string = False
+                if 'details' in data:
+                    if 'description' in data['details']:
+                        for lang, value in data['details'].iteritems():
+                            if lang not in strings:
+                                strings[lang] = {}
+                            strings[lang]['config.%s.%s' % (section, option)] = {
+                                'msgstr': data['details'][lang]
+                            }
+                            has_string = True
+
+                if has_string is False:
+                    strings['en']['config.%s.%s' % (section, option)] = {
+                        'msgstr': "Configuration: %s - %s" % (section, option)
+                    }
+        return strings

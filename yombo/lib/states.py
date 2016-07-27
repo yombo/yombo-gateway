@@ -218,9 +218,9 @@ class States(YomboLibrary, object):
         :return: Value of state
         """
 
-#        logger.info("State set: {key} = {value}  pass: {password}", key=key, value=value, password=password)
         if key in self.__States:
             if self.__States[key]['writeKey'] is not None:
+                logger.info("State set: {key} = {value}  pass: {password}, statepassword: {spassword}", key=key, value=value, password=password, spassword=self.__States[key]['writeKey'])
                 if password is None:
                     raise YomboStateNoAccess("State is write protected with password. Use set(key, value, password) to write/update.")
                 elif self.__States[key]['writeKey'] != password:

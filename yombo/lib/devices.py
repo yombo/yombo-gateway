@@ -686,11 +686,11 @@ class Devices(YomboLibrary):
 #        logger.error("firing device rule: {rule}", rule=rule)
 #        logger.error("rule options: {options}", options=options)
         for device in action['device_pointer']:
-            print "the_message = device.get_message(self, cmd=%s)" % action['command']
+            # print "the_message = device.get_message(self, cmd=%s)" % action['command']
             the_message = device.get_message(self, cmd=action['command'])
-            print "the-message = %s" % the_message
+            # print "the-message = %s" % the_message
             if 'delay' in options and options['delay'] is not None:
-                logger.warn("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
+                logger.debug("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
                 the_message.set_delay(delay=options['delay'])
     #        print "the_message: %s" % the_message
             the_message.send()
@@ -1091,7 +1091,7 @@ class Device:
         #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
     def validate_command(self, cmdUUID):
-        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, cmdUUID, self.available_commands)
+#        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, cmdUUID, self.available_commands)
         if str(cmdUUID) in self.available_commands:
             return True
         else:

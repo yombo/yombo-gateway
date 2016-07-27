@@ -756,8 +756,10 @@ class AMQPYombo(YomboLibrary):
         """
         Disconnect from the Yombo AMQP service, and tell the connector to not reconnect.
         """
+        print "aqmp disconnect"
         self.pika_factory.stopTrying()
-        self.myreactor.disconnect()
+        self.pika_factory.close()
+#        self.myreactor.disconnect()
 
     def disconnected(self):
         """

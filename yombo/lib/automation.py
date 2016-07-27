@@ -209,11 +209,11 @@ class Automation(YomboLibrary):
         # First pass - do basic checks
         logger.debug("About to add rule: {rule}", rule=rule)
         if rule['trigger']['source']['platform'] not in self.sources:
-            logger.info("Platform ({platform}) doesn't exist as a trigger:({rule}) {required}",
+            logger.info("Platform ({platform}) doesn't exist as a trigger.",
                         platform=rule['trigger']['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
             return False
         if not all(section in rule for section in REQUIRED_RULE_FIELDS):
-            logger.info("Rule doesn't have required trigger fields, skipping: ({rule}) {required}",
+            logger.info("Rule doesn't have required trigger fields, skipping: {required}",
                         rule=rule, required=REQUIRED_RULE_FIELDS)
             return False  # Doesn't have all required fields.
         if not all(section in rule['trigger'] for section in REQUIRED_TRIGGER_FIELDS):
@@ -271,7 +271,7 @@ class Automation(YomboLibrary):
                 is_valid = False   # Doesn't have all required fields.
                 return False
             if rule['action'][item]['platform'] not in self.actions:
-                logger.info("Platform ({platform}) doesn't exist as an action:({rule}) {required}",
+                logger.info("Platform ({platform}) doesn't exist as an action.",
                             platform=rule['action'][item]['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
                 return False
 
@@ -521,7 +521,7 @@ class Automation(YomboLibrary):
         :return:
         """
         rule = self.rules[rule_id]
-        print "running rule_id: %s" % rule_id
+#        print "running rule_id: %s" % rule_id
         for item in range(len(rule['action'])):
             options = {}
             if 'delay' in rule['action'][item]:

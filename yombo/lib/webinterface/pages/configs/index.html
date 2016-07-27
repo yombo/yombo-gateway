@@ -1,0 +1,197 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">Basic Systems Configurations</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form method="post">
+				<div class="row">
+					<div class="col-lg-6">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								System Settings
+							</div>
+							<div class="panel-body">
+
+					<div class="form-group">
+						<label>Validate Number</label>
+								<div class="material-switch pull-right">
+									<input id="someSwitchOptionDefault" name="someSwitchOption001" type="checkbox"/>
+									<label for="someSwitchOptionDefault" class="label-primary"></label>
+								</div>
+					</div>
+
+					<div class="form-group">
+						<label for="validate-text">Validate Text</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="validate-text" id="validate-text" placeholder="Validate Text" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-optional">Optional</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="validate-optional" id="validate-optional" placeholder="Optional">
+							<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-optional">Already Validated!</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="validate-text" id="validate-text" placeholder="Validate Text" value="Validated!" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-email">Validate Email</label>
+						<div class="input-group" data-validate="email">
+							<input type="text" class="form-control" name="validate-email" id="validate-email" placeholder="Validate Email" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-length">Minimum Length</label>
+						<div class="input-group" data-validate="length" data-length="5">
+							<textarea type="text" class="form-control" name="validate-length" id="validate-length" placeholder="Validate Length" required></textarea>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-select">Validate Select</label>
+						<div class="input-group">
+							<select class="form-control" name="validate-select" id="validate-select" placeholder="Validate Select" required>
+								<option value="">Select an item</option>
+								<option value="item_1">Item 1</option>
+								<option value="item_2">Item 2</option>
+								<option value="item_3">Item 3</option>
+							</select>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-number">Validate Number</label>
+						<div class="input-group" data-validate="number">
+							<input type="text" class="form-control" name="validate-number" id="validate-number" placeholder="Validate Number" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary col-xs-12" disabled>Submit</button>
+					<div >
+						<label>Validate Number</label>
+								<div class="material-switch pull-right">
+									<input id="someSwitchOptionDefault" name="someSwitchOption001" type="checkbox"/>
+									<label for="someSwitchOptionDefault" class="label-primary"></label>
+								</div>
+					</div>
+							</div>
+						</div>
+					</div>
+					<!-- /.col-lg-6 -->
+				</div>
+	            <!-- /.row -->
+				<div class="row">
+					<div class="col-lg-6">
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								Security Settings
+							</div>
+							<div class="panel-body">
+
+					<div class="form-group">
+						<label>Validate Number</label>
+								<div class="material-switch pull-right">
+									<input id="someSwitchOptionDefault" name="someSwitchOption001" type="checkbox"/>
+									<label for="someSwitchOptionDefault" class="label-primary"></label>
+								</div>
+					</div>
+
+					<div class="form-group">
+						<label for="validate-text">Validate Text</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="validate-text" id="validate-text" placeholder="Validate Text" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-optional">Optional</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="validate-optional" id="validate-optional" placeholder="Optional">
+							<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-optional">Already Validated!</label>
+						<div class="input-group">
+							<input type="text" class="form-control" name="validate-text" id="validate-text" placeholder="Validate Text" value="Validated!" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-email">Validate Email</label>
+						<div class="input-group" data-validate="email">
+							<input type="text" class="form-control" name="validate-email" id="validate-email" placeholder="Validate Email" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-length">Minimum Length</label>
+						<div class="input-group" data-validate="length" data-length="5">
+							<textarea type="text" class="form-control" name="validate-length" id="validate-length" placeholder="Validate Length" required></textarea>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-select">Validate Select</label>
+						<div class="input-group">
+							<select class="form-control" name="validate-select" id="validate-select" placeholder="Validate Select" required>
+								<option value="">Select an item</option>
+								<option value="item_1">Item 1</option>
+								<option value="item_2">Item 2</option>
+								<option value="item_3">Item 3</option>
+							</select>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="validate-number">Validate Number</label>
+						<div class="input-group" data-validate="number">
+							<input type="text" class="form-control" name="validate-number" id="validate-number" placeholder="Validate Number" required>
+							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+						</div>
+					</div>
+					<button type="submit" class="btn btn-primary col-xs-12" disabled>Submit</button>
+					<div >
+						<label>Validate Number</label>
+								<div class="material-switch pull-right">
+									<input id="someSwitchOptionDefault" name="someSwitchOption001" type="checkbox"/>
+									<label for="someSwitchOptionDefault" class="label-primary"></label>
+								</div>
+					</div>
+							</div>
+						</div>
+					</div>
+					<!-- /.col-lg-6 -->
+				</div>
+	            <!-- /.row -->
+			</form>
+{% endblock %}
+
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+    $(document).ready(function() {
+        $('#dataTables-example').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50
+        });
+    });
+    </script>
+{% endblock %}
