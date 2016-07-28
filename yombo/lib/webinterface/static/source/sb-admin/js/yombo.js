@@ -40,5 +40,9 @@ $(document).ready(function () {
 
     $('.input-group input[required], .input-group textarea[required], .input-group select[required]').trigger('change');
 
+});
 
+$('.alert').bind('closed.bs.alert', function () {
+        var id = $(this).data('the_alert_id');
+        $.get('/ajax/alert?action=closed&id='+id);
 });

@@ -129,9 +129,11 @@ class Atoms(YomboLibrary):
         self.__Atoms.update(self.os_data())
         self.triggers = {}
         self.automation = self._Libraries['automation']
+        self._loaded = False
 
     def _load_(self):
         self.set('running_since', time())
+        self._loaded = True
 
     def _start_(self):
         pass
@@ -287,7 +289,8 @@ class Atoms(YomboLibrary):
 
         True - Rules fired, fale - no rules fired.
         """
-        results = self.automation.triggers_check('atoms', key, value)
+        if self._loaded:
+            results = self.automation.triggers_check('atoms', key, value)
 
     def Atoms_automation_source_list(self, **kwargs):
         """

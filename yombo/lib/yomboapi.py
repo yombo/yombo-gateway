@@ -37,20 +37,20 @@ class YomboAPI(YomboLibrary):
     timeout = 5
 
     def _init_(self, loader):
-        self.api_key = self._Configs.get('yomboapi', 'api_key', 'pZEi9fbEuU4bTpxs')
-        self.auth_sessionid = self._Configs.get('yomboapi', 'sessionid')  # to be encrypted with gpg later
-        self.auth_sessionkey = self._Configs.get('yomboapi', 'sessionkey')  # to be encrypted with gpg later
-        self.contentType = self._Configs.get('api', 'contenttype', "application/json")
-        self.baseURL = self._Configs.get('api', 'baseurl', "https://api.yombo.net/api")
-
-        self._valid_session = False
-        self.validate_session()
-
-        self.init_defer = Deferred()
-        return self.init_defer
+        pass
 
     def _start_(self):
-        pass
+        self.api_key = self._Configs.get('yomboapi', 'api_key', 'pZEi9fbEuU4bTpxs', False)
+        self.auth_sessionid = self._Configs.get('yomboapi', 'sessionid', '')  # to be encrypted with gpg later
+        self.auth_sessionkey = self._Configs.get('yomboapi', 'sessionkey', '')  # to be encrypted with gpg later
+        self.contentType = self._Configs.get('api', 'contenttype', 'application/json', False)
+        self.baseURL = self._Configs.get('api', 'baseurl', "https://api.yombo.net/api", False)
+
+        self._valid_session = False
+        if self._Atoms['loader_operation_mode'] == 'run':
+            self.validate_session()
+            self.init_defer = Deferred()
+            return self.init_defer
 
     def _load_(self):
         pass

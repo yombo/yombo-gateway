@@ -42,7 +42,7 @@ yombo/lib/webinterface/
 *.log
 *.out
 usr/*
-!usr/bin/*
+!usr/README.rst
 mymodules/*
 
 # Project Tools #

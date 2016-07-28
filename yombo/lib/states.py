@@ -81,10 +81,12 @@ class States(YomboLibrary, object):
 
         self.__States = {}
         self._live_states = {}
+        self._loaded = False
         self.__History = yield self._Libraries['SQLDict'].get(self, 'History')
 #        logger.info("Recovered YomboStates: {states}", states=self.__States)
 
     def _load_(self):
+        self._loaded = True
         pass
 
     def _start_(self):
@@ -464,7 +466,8 @@ class States(YomboLibrary, object):
 
         True - Rules fired, fale - no rules fired.
         """
-        results = self.automation.triggers_check('states', key, value)
+        if self._loaded:
+            results = self.automation.triggers_check('states', key, value)
 
     def States_automation_source_list(self, **kwargs):
         """

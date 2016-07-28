@@ -113,9 +113,10 @@ class GPG(YomboLibrary):
         :param keyHash:
         :return:
         """
-        msg = {'key_type': 'server', 'id': key_hash}
-        self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
-        self.import_to_keyring
+        if self.loader.check_component_status('AMQPYombo', '_start_'):
+            msg = {'key_type': 'server', 'id': key_hash}
+            self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
+            self.import_to_keyring
 
     def remote_get_root_key(self):
         """
@@ -124,8 +125,9 @@ class GPG(YomboLibrary):
         :param keyHash:
         :return:
         """
-        msg = {'key_type': 'root'}
-        self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
+        if self.loader.check_component_status('AMQPYombo', '_start_'):
+            msg = {'key_type': 'root'}
+            self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
 
     def _generate_request_message(self, request_type, request_content, callback):
         request = {

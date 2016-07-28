@@ -15,9 +15,11 @@ mode.
 :license: LICENSE for details.
 """
 # Import Yombo libraries
-from yombo.core.exceptions import YomboCritical, YomboWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.core.log import get_logger
 
+logger = get_logger('library.startup')
 
 class Startup(YomboLibrary):
     """
@@ -28,25 +30,40 @@ class Startup(YomboLibrary):
 #    @inlineCallbacks
     def _init_(self, loader):
         self.loader = loader
+        if self.loader.operation_mode != None:  # will know if firstrun already or yombo.ini is missing.
+            return
+        print "stqartup = %s" % self.loader.operation_mode
+        need_config = False
         gwuuid = self._Configs.get("core", "gwuuid", None)
         if gwuuid is None or gwuuid == "":
-            raise YomboCritical("ERROR: No gateway ID, entering configuration mode only.", 503, "startup")
+            self._Libraries['webinterface'].add_alert("No gateway ID, entering 'config' mode.", 'warning')
+            logger.error("No gateway ID, entering 'config' mode.")
+            need_config = True
 
         hash = self._Configs.get("core", "gwhash", None)
         if hash is None or hash == "":
-            raise YomboCritical("ERROR: No gateway hash, entering configuration mode only.", 503, "startup")
+            self._Libraries['webinterface'].add_alert("No gateway hash, entering 'config' mode.", 'warning')
+            logger.error("No gateway hash, entering 'config' mode.")
+            need_config = True
 
         gpg_key = self._Configs.get("core", "gpgkeyid", None)
         gpg_key_ascii = self._Configs.get("core", "gpgkeyascii", None)
         if gpg_key is None or gpg_key == '' or gpg_key_ascii is None or gpg_key_ascii == '':
-            raise YomboCritical("ERROR: No GPG/PGP key pair found. entering configuration mode only.", 503, "startup")
+            self._Libraries['webinterface'].add_alert("No GPG/PGP key pair found, entering 'config' mode.", 'warning')
+            logger.error("No GPG/PGP key pair found, entering 'config' mode.")
+            need_config = True
 
-        if self.loader.operation_mode is None:
-            # self.loader.operation_mode = 'config'
+        first_run = self._Configs.get('core', 'firstrun', True)
+        if first_run:
+            self.loader.operation_mode = 'firstrun'
+        elif need_config:
+            print "startup setting config!"
+            self.loader.operation_mode = 'config'
+        else:
             self.loader.operation_mode = 'run'
 
     def _load_(self):
-        self._Atoms.set('operation_mode', self.loader.operation_mode)
+        pass
 
     def _start_(self):
         pass

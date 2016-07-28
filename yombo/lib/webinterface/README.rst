@@ -8,7 +8,7 @@ The web interface is a friendly method to get a gateway setup and running.  Ther
 
 1) Run - The gateway is working and operating as normal.
 2) Config - The gateway cannot startup due to missing or invalid configuration. This mode places the
-gateway in mode that it allows it to be configured.
+   gateway in mode that it allows it to be configured.
 
 The web interface uses jinja2 to create html pages.
 
@@ -27,7 +27,3 @@ Web pages to be displayed to user. Uses the fragements folder to create entire p
 static
 ----------
 A place where the browser can load static pages. Usually CSS, font, JS.
-
-build.py
-----------
-A simple utility for testing CSS/JS building.

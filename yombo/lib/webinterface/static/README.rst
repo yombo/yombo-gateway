@@ -16,3 +16,7 @@ build
 -------------
 Source files for CSS, Font, and JS.
 
+
+build.py
+----------
+A simple utility for testing CSS/JS building.

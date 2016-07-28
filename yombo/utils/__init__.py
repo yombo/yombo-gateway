@@ -444,6 +444,9 @@ def random_string(**kwargs):
         lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
         return "".join(lst)
 
+def human_alpabet():
+    return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
+
 def generate_uuid(**kwargs):
     """
     Create a 30 character UUID, where only 26 of the characters are random.

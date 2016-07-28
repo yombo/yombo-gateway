@@ -16,6 +16,11 @@ from os.path import dirname, abspath
 from time import strftime, gmtime
 from urlparse import parse_qs, urlparse
 from collections import OrderedDict
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
+
 
 from twisted.web.server import Site
 from twisted.web.static import File
@@ -51,10 +56,14 @@ class WebInterface(YomboLibrary):
     """
     webapp = Klein()  # Like Flask, but for twisted
     visits = 0
+    alerts = OrderedDict()
 
     def _init_(self, loader):
 
-        self.enabled = self._Configs.get('webinterface', 'enabled', 1)
+        self.enabled = self._Configs.get('webinterface', 'enabled', True)
+        if not self.enabled:
+            return
+
         self._port = self._Configs.get('webinterface', 'port', 8080)
 
         self.loader = loader
@@ -63,21 +72,8 @@ class WebInterface(YomboLibrary):
         self._dir = '/lib/webinterface/'
         self.setup_basic_filters()
 
-        self.alerts = OrderedDict()
+
         self.data = {}
-
-        self.data['gateway_configured'] = self._home_gateway_configured()
-        self.data['gateway_label'] = self._Configs.get("core", 'label', 'Yombo Gateway')
-
-        self.auth_pin = yombo.utils.random_string(length=6)
-
-        if not self.data['gateway_configured']:
-            self.alerts[yombo.utils.random_string(length=10)] = {
-                'level': 'info',
-                'message': 'gateway not properly configed',
-                'dismissable': False,
-                'removeable': False,
-            }
 
         self._build_dist()
         # self.alerts[yombo.utils.random_string(length=10)] = {
@@ -86,10 +82,34 @@ class WebInterface(YomboLibrary):
         # }
 
     def _load_(self):
-        self.httpListener = reactor.listenTCP(self._port, Site(self.webapp.resource(), None, logPath='/dev/null'))
+        pass
 
     def _start_(self):
-        pass
+        if not self.enabled:
+            return
+        self._op_mode = self._Atoms['loader_operation_mode']
+        self.data['gateway_configured'] = self._home_gateway_configured()
+        self.data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
+        self.data['operation_mode'] = self._op_mode
+
+        # if not self.data['gateway_configured']:
+        #     self.alerts[yombo.utils.random_string(length=12)] = {
+        #         'level': 'info',
+        #         'message': 'gateway not properly configed',
+        #         'dismissable': False,
+        #         'deletable': False,
+        #     }
+
+        self.auth_pin = self._Configs.get('webinterface', 'authpin', yombo.utils.random_string(length=6, letters=yombo.utils.human_alpabet()))
+        self.auth_pin_required = self._Configs.get('webinterface', 'authpin', True)
+        print "auth:: %s"  % self.auth_pin
+
+
+        self.web_interface_listener = reactor.listenTCP(self._port,
+                                                        Site(self.webapp.resource(),
+                                                             None,
+                                                             logPath='/dev/null')
+                                                        )
 
     def _stop_(self):
         pass
@@ -112,6 +132,21 @@ class WebInterface(YomboLibrary):
                 },
         }]
 
+    def add_alert(self, message, level='info', dismissable=True, deletable=True):
+        """
+        Add an alert to the stack.
+        :param level: info, warning, error
+        :param message:
+        :return:
+        """
+        rand = yombo.utils.random_string(length=12)
+        self.alerts[rand] = {
+            'level': level,
+            'message': message,
+            'dismissable': dismissable,
+            'deletable': deletable,
+        }
+        return rand
 
     def setup_basic_filters(self):
         def epoch_to_human(the_time):
@@ -136,7 +171,7 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/')
     def home(self, request):
-        if self.loader.operation_mode == 'config':
+        if self._op_mode == 'config':
             return self.config_home(request)
 
         # auth = self.require_auth(request)
@@ -220,9 +255,8 @@ class WebInterface(YomboLibrary):
     @webapp.route('/configs/basic')
     def page_configs_basic(self, request):
         config = {"core": {}, "webinterface": {}, "times": {}}
-        config['core']['label'] = self._Configs.get("core", 'label', 'Yombo Gateway')
-        config['core']['description'] = self._Configs.get("core", 'description', "")
-        config['core']['description'] = self._Configs.get("core", 'description', "")
+        config['core']['label'] = self._Configs.get("core", 'label', 'Yombo Gateway', False)
+        config['core']['description'] = self._Configs.get("core", 'description', "", False)
         config['times']['twilighthorizon'] = self._Configs.get("times", 'twilighthorizon')
         config['webinterface']['enabled'] = self._Configs.get("webinterface", "enabld")
         config['webinterface']['port'] = self._Configs.get("webinterface", "port")
@@ -288,10 +322,22 @@ class WebInterface(YomboLibrary):
         has['gateway_hash'] = 'True' if gwhash is not None else 'False'
         has['gpg_keyid'] = 'True' if gpgkeyid is not None else 'False'
         page = self.webapp.templates.get_template('status/index.html')
-        return page.render(has=has,
-                           operation_mode=self.loader.operation_mode,
+        return page.render(data=data,
                            yombo_server_is_connected=self._States.get('yombo_server_is_connected'),
                            )
+
+    @webapp.route('/ajax/alert', methods=['GET'])
+    def ajax_alert_get(self, request):
+        action = request.args.get('action')[0]
+        print "alert - action: %s" % action
+        results = {}
+        if action == "closed":
+            id = request.args.get('id')[0]
+            print "alert - id: %s" % id
+            if id in self.alerts:
+                del self.alerts[id]
+                results = {"status":200}
+        return json.dumps(results)
 
 
 
@@ -317,10 +363,6 @@ class WebInterface(YomboLibrary):
 
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
-
-#if has basic configuration (gwuuid, hash, )
-#yomboapi - stores master account credentails. Will prompt if needed with a warning
-
 
 
 

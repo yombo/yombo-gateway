@@ -25,14 +25,17 @@ are kept to a minimum.
 # Import python libraries
 import ConfigParser
 import hashlib
-from time import time
+from time import time, localtime, strftime
 import cPickle
+from shutil import copyfile
+import os
+from datetime import datetime
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboCritical
+from yombo.core.exceptions import YomboWarning
 from yombo.utils import get_external_ip_address, get_local_ip_address
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
@@ -94,10 +97,14 @@ class Configuration(YomboLibrary):
                               value = str(value)
                     self.set(section, option, value)
         except IOError:
-            raise YomboCritical("ERROR: yombo.ini doesn't exist. Use ./config to setup.", 503, "startup")
+            self.loader.operation_mode = 'firstrun'
+            logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
+            self._Atoms.set('configuration_found_yombo_ini', False)
+            return
         except ConfigParser.NoSectionError:
             pass
-        
+        self._Atoms.set('configuration_found_yombo_ini', True)
+
         try:
             fp = open('usr/etc/yombo.ini.meta')
             config_parser.readfp(fp)
@@ -143,8 +150,8 @@ class Configuration(YomboLibrary):
             self.set("core", "localipaddress", get_local_ip_address())
             self.set("core", "localipaddresstime", int(time()))
 
-        self.periodic_save_ini = LoopingCall(self._save_ini)
-        self.periodic_save_ini.start(300, False)
+        self.periodic_save_ini = LoopingCall(self.save)
+        self.periodic_save_ini.start(14400, False)
 
     def _load_(self):
         """
@@ -172,15 +179,19 @@ class Configuration(YomboLibrary):
         the user to see the current configuration and make any changes.
         """
         logger.info("saving config file...")
-        self._save_ini(True)
+        self.save(True)
 
-    def _save_ini(self, force_save=False):
+    def save(self, force_save=False):
         """
         Save the configuration configs to the INI file.
 
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
         self.configs_dirty = True
+        timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
+
+        if self._Atoms.get('configuration_found_yombo_ini') is True:
+            copyfile('yombo.ini', 'usr/bak/yombo_ini/yombo.ini.' + timeString)
         if self.configs_dirty is True or force_save is True:
             Config = ConfigParser.ConfigParser()
             for section, options in self.configs.iteritems():
@@ -209,7 +220,7 @@ class Configuration(YomboLibrary):
                         del temp['writes']
                     if 'value' in temp:
                         del temp['value']
-                    Config.set(section, item, cPickle.dumps() )
+                    Config.set(section, item, cPickle.dumps(temp) )
                 if len(Config.options(section)) == 0:  # Don't save empty sections.
                     Config.remove_section(section)
 
@@ -222,9 +233,24 @@ class Configuration(YomboLibrary):
 
         self.configs_dirty = False
 
+        path = "usr/bak/yombo_ini/"
+
+        for file in os.listdir(os.path.dirname(path)):
+            print "file: %s" % file
+            fullpath   = os.path.join(path,file)    # turns 'file1.txt' into '/path/to/file1.txt'
+            timestamp  = os.stat(fullpath).st_ctime # get timestamp of file
+            createtime = datetime.fromtimestamp(timestamp)
+            now        = datetime.now()
+            delta      = now - createtime
+            if delta.days > 30:
+                print "NEED TO DELETE: %s" % fullpath
+                continue
+                os.remove(fullpath)
+
+
     def _module_prestart_(self, **kwargs):
         """
-        Called after _load_ is called for all the modules. Get's a list of configuration items all library
+        Called after _init_ is called for all the modules. Get's a list of configuration items all library
         or modules define or use.
 
         Note: This complies with i18n translations for future use.
@@ -273,7 +299,7 @@ class Configuration(YomboLibrary):
         """
         logger.debug("A message was sent to configuration module.  No messages allowed.")
 
-    def get(self, section, option, default=None):
+    def get(self, section, option, default=None, set_if_missing=True):
         """
         Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
@@ -294,6 +320,8 @@ class Configuration(YomboLibrary):
         :type option: string
         :param default: What to return if no result is found, default = None.
         :type default: int or string
+        :param set_if_missing: If value is missing, should it be set for future reference?
+        :type set_if_missing: bool
         :return: The configuration value requested by section and option.
         :rtype: int or string or None
         """
@@ -320,8 +348,9 @@ class Configuration(YomboLibrary):
             return ""
 
         if default is not None:
-            self.set(section, option, default)
-            self.configs[section][option]['reads'] += 1
+            if set_if_missing:
+                self.set(section, option, default)
+                self.configs[section][option]['reads'] += 1
             return default
         else:
             return None

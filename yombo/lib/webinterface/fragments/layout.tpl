@@ -39,20 +39,15 @@
                 {% if alerts|length != 0 %}
                 <div class="row">
                     <div class="col-lg-12">
-                        <div>&nbsp;</div>
-                        <div class="panel panel-default">
-                           <!-- /.panel-heading -->
-                           <div class="panel-body">{% for key, alert in alerts.iteritems() %}{% if alert.dismissable %}
-                              <div class="alert alert-{{ alert.level }} alert-dismissable">
-                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                                {{ alert.message }}.
-                              </div>{% else %}
-                              <div class="alert alert-{{ alert.level }}">
-                                {{ alert.message }}.
-                              </div>{% endif %}{% endfor %}
-                           </div>
-                        </div>
-
+                        <div>&nbsp</div>
+                          {% for key, alert in alerts.iteritems() %}{% if alert.dismissable %}
+                          <div class="alert alert-{{ alert.level }} alert-dismissable" data-the_alert_id="{{ key }}">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ alert.message }}.
+                          </div>{% else %}
+                          <div class="alert alert-{{ alert.level }}">
+                            {{ alert.message }}.
+                          </div>{% endif %}{% endfor %}
                     </div>
                     <!-- /.col-lg-12 -->
                 </div>
