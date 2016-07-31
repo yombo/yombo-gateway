@@ -381,7 +381,7 @@ class Modules(YomboLibrary):
         for moduleUUID, module in self._modulesByUUID.iteritems():
             label = module._FullName.lower() if fullName else module._Name.lower()
             try:
-                 result = self.module_invoke(module._Name, hook)
+                 result = self.module_invoke(module._Name, hook, **kwargs)
                  if result is not None:
                      results[label] = result
             except YomboWarning:

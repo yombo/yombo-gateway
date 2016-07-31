@@ -36,7 +36,8 @@ Calling Function Location                                                       
 :py:meth:`Automation:_module_prestart_() <yombo.lib.automation.Automation._module_prestart_>`             hook_automation_action_list                 Add a new platform to 'action' portion of automation system.
 :py:meth:`Automation:_module_prestart_() <yombo.lib.automation.Automation._module_prestart_>`             hook_automation_filter_list                 Add a new platform to 'filter' portion of automation system.
 :py:meth:`Automation:_module_prestart_() <yombo.lib.automation.Automation._module_prestart_>`             hook_automation_source_list                 Add a new platform to 'source' portion of automation system.
-:py:meth:`Configuration::_module_prestart_ <yombo.lib.configuration.Configuration._module_prestart_>`     hook_configuration_details                       Collects detailed information about a configuration option being used.
+:py:meth:`Configuration::set <yombo.lib.configuration.Configuration.set>`                                 configuration_set                           Called when a configuration item is changed.
+:py:meth:`Configuration::_module_prestart_ <yombo.lib.configuration.Configuration._module_prestart_>`     hook_configuration_details                  Collects detailed information about a configuration option being used.
 :py:meth:`Messages::_module_prestart_()<yombo.lib.automation.Automation._module_prestart_>`               hook_message_subscriptions                  Subscribe a module to a message type.
 :py:meth:`Messages::_module_prestart_()<yombo.lib.automation.Automation._module_prestart_>`               hook_message_subscriptions                  Add subscriptions for messages.
 :py:meth:`Modules::load_modules <yombo.lib.modules.Modules.load_modules>`                                 _module_init_                               Only calls to libraries: Called before modules called with _init_.

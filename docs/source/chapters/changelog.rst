@@ -6,7 +6,7 @@ Changelog Highlights
 
 Below is a brief history of changes to the Yombo Gateway framework.
 
-0.11.0 - July 27, 2016
+July 27, 2016 - 0.11.0
 ======================
 
 New Features

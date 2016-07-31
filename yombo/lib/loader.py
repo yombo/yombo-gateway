@@ -165,6 +165,15 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]['_start_'] = False
 
+        for name, config in HARD_LOAD.iteritems():
+            if self.check_operation_mode(config['operation_mode']):
+                libraryName =  name.lower()
+                yield self.library_invoke(libraryName, "_started_")
+                HARD_LOAD[name]['_started_'] = True
+            else:
+                HARD_LOAD[name]['_started_'] = False
+
+
         if self.unittest: # if in test mode, skip downloading and loading modules.  Test your module by enhancing moduleunittest module
           self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
         else:
@@ -272,14 +281,11 @@ class Loader(YomboLibrary, object):
                 if check_operation_mode_inside(item, op_mode):
                     return True
 
-
-
     @inlineCallbacks
     def library_invoke(self, requested_library, hook, **kwargs):
         """
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
-        kwargs['_modulesLibrary'] = self._moduleLibrary
         library = self.loadedLibraries[requested_library]
         isCoreFunction = True
         if requested_library == 'Loader':
@@ -351,7 +357,6 @@ class Loader(YomboLibrary, object):
             self._log_loader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
             raise YomboCritical("Library or Module not found: %s", pathName)
-#        module_root = __import__(pymodulename, globals(), locals(), [], 0)
         try:
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
             pass
@@ -367,6 +372,7 @@ class Loader(YomboLibrary, object):
             return
 
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
+#        print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
         class_ = getattr(module_tail, pyclassname)
 
         # Put the component into various lists for mgmt
@@ -398,7 +404,7 @@ class Loader(YomboLibrary, object):
         """
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
-        logger.info("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
+        logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
         for name, config in HARD_UNLOAD.iteritems():
             print "name/confiog:  %s / %s" % (name, config
                                               )

@@ -403,8 +403,10 @@ def get_external_ip_address():
     import urllib3
     urllib3.disable_warnings()
     http = urllib3.PoolManager()
-    r = http.request("GET", "https://yombo.net/tools/clientip.php")
-    return r.data
+    r = http.request("GET", "https://wtfismyip.com/text")
+    return r.data.strip()
+
+
 
 def ip_address_to_int(address):
     return struct_unpack("!I", inet_aton(address))[0]
@@ -512,8 +514,8 @@ def global_invoke_all(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True)
-    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True)
+    lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
+    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     return dict_merge(modules_results, lib_results)
 
 def get_component(name):

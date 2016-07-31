@@ -211,6 +211,38 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('users', 'username'))
 
+    # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
+    table = """CREATE TABLE `webinterface_sessions` (
+     `id`     TEXT NOT NULL, /* moduleUUID */
+     `session_data` TEXT NOT NULL,
+     `created`     INTEGER NOT NULL,
+     `updated`     INTEGER NOT NULL),
+     PRIMARY KEY(id));"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('web_session', 'created'))
+    yield Registry.DBPOOL.runQuery(create_index('web_session', 'updated'))
+
+    # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
+    table = """CREATE TABLE `states` (
+     `id`     TEXT NOT NULL, /* moduleUUID */
+     `session_data` TEXT NOT NULL,
+     `created`     INTEGER NOT NULL,
+     `updated`     INTEGER NOT NULL),
+     PRIMARY KEY(id));"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('web_session', 'created'))
+    yield Registry.DBPOOL.runQuery(create_index('web_session', 'updated'))
+
+
+    # To be completed
+    table = """CREATE TABLE `users` (
+     `id`     INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `username`     TEXT NOT NULL,
+     `hash`     TEXT NOT NULL);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('users', 'username'))
+
+
     ## Create views ##
     view = """CREATE VIEW devices_view AS
     SELECT devices.*, device_types.machine_label AS device_type_machine_label, device_types.device_class as device_class

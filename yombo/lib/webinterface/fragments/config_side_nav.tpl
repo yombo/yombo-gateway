@@ -24,13 +24,13 @@
                             <a href="#" class="dropdown-collapse"><i class="fa fa-wrench fa-fw"></i> <span class="side-menu-title">Settings</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                 <li>
-                                    <a href="configs/basic">Basic Settings</a>
+                                    <a href="/configs/basic">Basic Settings</a>
                                 </li>
                                 <li>
-                                    <a href="configs/basic">Security Settings</a>
+                                    <a href="/configs/basic">Security Settings</a>
                                 </li>
                                 <li>
-                                    <a href="buttons.html">Application Settings</a>
+                                    <a href="/buttons.html">Application Settings</a>
                                 </li>
                             </ul>
                             <!-- /.nav-second-level -->
@@ -40,6 +40,9 @@
                         </li>
 						<li>
                             <a href="/misc/info"><i class="fa fa-info fa-fw"></i> <span class="side-menu-title">Info</span></a>
+                        </li>
+						<li>
+                            <a href="/logout"><i class="fa fa-sign-out fa-fw"></i> <span class="side-menu-title">Logoff</span></a>
                         </li>
                     </ul>
                 </div>

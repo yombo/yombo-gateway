@@ -153,6 +153,9 @@ class Configuration(YomboLibrary):
         self.periodic_save_ini = LoopingCall(self.save)
         self.periodic_save_ini.start(14400, False)
 
+        if self.get('core', 'setup_stage') is None:
+            self.set('core', 'setup_stage', 'first_run')
+
     def _load_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
@@ -236,7 +239,6 @@ class Configuration(YomboLibrary):
         path = "usr/bak/yombo_ini/"
 
         for file in os.listdir(os.path.dirname(path)):
-            print "file: %s" % file
             fullpath   = os.path.join(path,file)    # turns 'file1.txt' into '/path/to/file1.txt'
             timestamp  = os.stat(fullpath).st_ctime # get timestamp of file
             createtime = datetime.fromtimestamp(timestamp)
@@ -406,8 +408,9 @@ class Configuration(YomboLibrary):
                 'hash': hashlib.sha224( str(value) ).hexdigest(),
             })
         self.configs[section][option]['writes'] += 1
-
         self.configs_dirty = True
+        global_invoke_all('configuration_set', **{'section':section, 'option': option, 'value': value})
+
 
     def get_meta(self, section, option, meta_type='time'):
         try:

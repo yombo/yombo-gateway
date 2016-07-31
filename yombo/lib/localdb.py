@@ -22,6 +22,8 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+import base64
+import zlib
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -261,6 +263,40 @@ class LocalDB(YomboLibrary):
         records = yield self.dbconfig.select("devices_view")
         returnValue(records)
 
+    # not used, will convert from SQLDict to SQLite after heavy development is done.
+    @inlineCallbacks
+    def get_webinterface_session(self, id):
+        records = yield self.dbconfig.select('webinterface_sessions', select='*', where=['id = ?', id])
+        if len(records) != 1:
+            returnValue(None)
+        record = records[0]
+        record['data'] = json.loads(str(record['data']))
+        returnValue(record)
+
+    @inlineCallbacks
+    def set_webinterface_session(self, id, **kwargs):
+        created = kwargs.get('created', time())
+        updated = kwargs.get('created', time())
+        device_state = kwargs.get('device_state', 0)
+        machine_status = kwargs['machine_status']
+        machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',',':') )
+        human_status = kwargs.get('human_status', machine_status)
+        source = kwargs.get('source', '')
+        uploaded = kwargs.get('uploaded', 0)
+        uploadable = kwargs.get('uploadable', 0)
+
+        yield DeviceStatus(
+            device_id=device_id,
+            set_time=set_time,
+            device_state=device_state,
+            human_status=human_status,
+            machine_status=machine_status,
+            machine_status_extra=machine_status_extra,
+            source=source,
+            uploaded=uploaded,
+            uploadable=uploadable,
+        ).save()
+
     #################
     ### GPG     #####
     #################
@@ -335,6 +371,14 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_sql_dict(self, component, dict_name):
         records = yield self.dbconfig.select('sqldict', select='dict_data', where=['component = ? AND dict_name = ?', component, dict_name])
+        if len(records) == 1:
+            try:
+                before = len(records[0]['dict_data'])
+                records[0]['dict_data'] = zlib.decompress(base64.decodestring(records[0]['dict_data']) )
+                logger.debug("SQLDict Compression. With: {withcompress}, Without: {without}",
+                            without=len(records[0]['dict_data']), withcompress=before)
+            except:
+                pass
         returnValue(records)
 
     @inlineCallbacks
@@ -351,6 +395,10 @@ class LocalDB(YomboLibrary):
         :param data1: Data
         :return: None
         """
+        if len(dict_data) > 3000:
+            dict_data = base64.encodestring( zlib.compress(dict_data, 5) )
+            print "COMPRESS.... SQL DICT!! YAY"
+
         args = {'component': component,
                 'dict_name': dict_name,
                 'dict_data' : dict_data,
