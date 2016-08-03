@@ -101,7 +101,7 @@ do
      $YOMBO_OPTS
   fi
   OUT=$?
-  if [ $? -le "126" ]; then
+  if [ $OUT -le "126" ]; then
     # Gateway died for some reason or was told to quit, so, lets exit!
     exit $OUT
   fi

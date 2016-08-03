@@ -406,8 +406,6 @@ def get_external_ip_address():
     r = http.request("GET", "https://wtfismyip.com/text")
     return r.data.strip()
 
-
-
 def ip_address_to_int(address):
     return struct_unpack("!I", inet_aton(address))[0]
 

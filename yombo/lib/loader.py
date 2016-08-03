@@ -70,6 +70,7 @@ HARD_LOAD["Modules"] = {'operation_mode':'all'}
 HARD_LOAD["Messages"] = {'operation_mode':'all'}
 HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
+HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
@@ -80,6 +81,7 @@ HARD_UNLOAD["Configuration"] = {'operation_mode':'all'}
 HARD_UNLOAD["Statistics"] = {'operation_mode':'all'}
 HARD_UNLOAD["Modules"] = {'operation_mode':'all'}
 HARD_UNLOAD["SQLDict"] = {'operation_mode':'all'}
+HARD_UNLOAD["MQTT"] = {'operation_mode':'run'}
 
 
 class Loader(YomboLibrary, object):
@@ -227,7 +229,7 @@ class Loader(YomboLibrary, object):
 
             component = name.lower()
             library = self.loadedLibraries[component]
-            self._log_loader('debug', component, 'library', 'init', 'About to call _init_.')
+            self._log_loader('info', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
@@ -406,8 +408,6 @@ class Loader(YomboLibrary, object):
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
         for name, config in HARD_UNLOAD.iteritems():
-            print "name/confiog:  %s / %s" % (name, config
-                                              )
             if self.check_operation_mode(config['operation_mode']):
                 HARD_UNLOAD[name]['_stop_'] = 'Running'
                 libraryName = name.lower()

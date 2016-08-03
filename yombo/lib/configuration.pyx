@@ -133,7 +133,7 @@ class Configuration(YomboLibrary):
             self._Libraries['localdb'].truncate('devicestatus')
             self.set('local', 'deletedevicehistory', False)
 
-        if self.get('local', 'externalipaddress') is not None and self.get('local', 'externalipaddresstime') is not None:
+        if self.get('core', 'externalipaddress') is not None and self.get('core', 'externalipaddresstime') is not None:
             if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 12000):
                 self.set("core", "externalipaddress", get_external_ip_address())
                 self.set("core", "externalipaddresstime", int(time()))
@@ -150,31 +150,12 @@ class Configuration(YomboLibrary):
             self.set("core", "localipaddress", get_local_ip_address())
             self.set("core", "localipaddresstime", int(time()))
 
+
         self.periodic_save_ini = LoopingCall(self.save)
         self.periodic_save_ini.start(14400, False)
 
         if self.get('core', 'setup_stage') is None:
             self.set('core', 'setup_stage', 'first_run')
-
-    def _load_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
-  
-    def _start_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-#        self._save_ini_ptr = LoopingCall(self._save_init)
-#        self._save_ini_ptr.start(30)
-        pass
-  
-    def _stop_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
 
     def _unload_(self):
         """
@@ -190,10 +171,8 @@ class Configuration(YomboLibrary):
 
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
-        self.configs_dirty = True
-        timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-
         if self._Atoms.get('configuration_found_yombo_ini') is True:
+            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
             copyfile('yombo.ini', 'usr/bak/yombo_ini/yombo.ini.' + timeString)
         if self.configs_dirty is True or force_save is True:
             Config = ConfigParser.ConfigParser()
@@ -206,6 +185,7 @@ class Configuration(YomboLibrary):
                 if len(Config.options(section)) == 0:  # Don't save empty sections.
                     Config.remove_section(section)
 
+            print "saving config file!!!!!!!!!!!!!!!!!!!!!"
             config_file = open("yombo.ini",'w')
             Config.write(config_file)
             config_file.close()
@@ -301,7 +281,7 @@ class Configuration(YomboLibrary):
         """
         logger.debug("A message was sent to configuration module.  No messages allowed.")
 
-    def get(self, section, option, default=None, set_if_missing=True):
+    def get(self, section, option=None, default=None, set_if_missing=True):
         """
         Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
@@ -318,7 +298,7 @@ class Configuration(YomboLibrary):
 
         :param section: The configuration section to use.
         :type section: string
-        :param option: The option (key) to use.
+        :param option: The option (key) to use. Use * to return all possible options as a dict.
         :type option: string
         :param default: What to return if no result is found, default = None.
         :type default: int or string
@@ -330,6 +310,9 @@ class Configuration(YomboLibrary):
         if len(option) > self.MAX_OPTION_LENGTH:
             raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
+        if option is None:
+            raise YomboWarning("get operation must have option.")
+
         section = section.lower()
         option = option.lower()
 
@@ -340,6 +323,16 @@ class Configuration(YomboLibrary):
                 return None
 
         if section in self.configs:
+            if option == "*":
+                print "option = *!!! yeay"
+                if len(self.configs[section]) > 0:
+                    results = {}
+                    for key, data in self.configs[section].iteritems():
+                        if 'value' in data:
+                            results[key] = data['value']
+                            data['reads'] += 1
+                    return results
+                return None
             if option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
 #                returnValue(self.configs[section][option])

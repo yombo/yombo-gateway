@@ -46,8 +46,8 @@ class Startup(YomboLibrary):
             logger.error("No gateway hash, entering 'config' mode.")
             need_config = True
 
-        gpg_key = self._Configs.get("core", "gpgkeyid", None)
-        gpg_key_ascii = self._Configs.get("core", "gpgkeyascii", None)
+        gpg_key = self._Configs.get("gpg", "keyid", None)
+        gpg_key_ascii = self._Configs.get("gpg", "keypublicascii", None)
         if gpg_key is None or gpg_key == '' or gpg_key_ascii is None or gpg_key_ascii == '':
             self._Libraries['webinterface'].add_alert("No GPG/PGP key pair found, entering 'config' mode.", 'warning', type='system')
             logger.error("No GPG/PGP key pair found, entering 'config' mode.")

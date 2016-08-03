@@ -392,7 +392,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         self._Statistics = AMQPYombo._Libraries['statistics']
         self.AMQPYombo = AMQPYombo
-        self.AMQPProtocol = None
         self.outgoing_queue = []
         self.incoming_queue = []
 

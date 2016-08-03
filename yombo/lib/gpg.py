@@ -13,7 +13,7 @@ import os
 from subprocess import Popen, PIPE
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -36,7 +36,7 @@ class GPG(YomboLibrary):
         self.gwuuid = self._Configs.get("core", "gwuuid")
         self._key_generation_status = {}
         self.initDefer = Deferred()
-        self.mykeyid = self._Configs.get('core', 'gpgkeyid')
+        self.mykeyid = self._Configs.get('gpg', 'keyid')
         self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
         logger.debug("syncing gpg keys into db")
         self.sync_keyring_to_db()
@@ -317,10 +317,11 @@ class GPG(YomboLibrary):
             if str(key['fingerprint']) == str(newkey):
                 keyid=key['keyid']
         asciiArmoredPublicKey = self.gpg.export_keys(keyid)
-        self._Configs.get('core', 'gpgkeyid', keyid)
-        self._Configs.get('core', 'gpgkeyascii', asciiArmoredPublicKey)
+        self._Configs.get('gpg', 'keyid', keyid)
+        self._Configs.get('gpg', 'keyascii', asciiArmoredPublicKey)
 #        sendKey(keyid, asciiArmoredPublicKey)
         print "New keys (public and private) have been saved to key ring."
+        returnValue({'keyid': keyid, 'keyascii': asciiArmoredPublicKey})
 
     ###########################################
     ###  Encrypt / Decrypt / Sign / Verify  ###
