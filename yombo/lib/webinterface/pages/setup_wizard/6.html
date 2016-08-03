@@ -1,0 +1,33 @@
+{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+
+{% endblock %}
+
+{% block content %}
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <center><h3 class="modal-title" id="myModalLabel">Gateway Setup Wizard</h3><br>Configuration Complete</center></h3>
+                            <p></p>
+                            <div class="col-md-8 col-md-offset-2">
+                                <div class="progress">
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ (6/6)*100|round }}" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+                                   100%
+                                  </div>
+                                </div>
+                            </div>
+                    </div>
+                    <div class="panel-body">
+                        <p></p>
+                        <h2>Setup Complete</h2>
+                        <p>Setup is complete. Simply restart the gateway and begin automating!</p>
+                        <a class="btn btn-md btn-warning" href="/setup_wizard/6_restart"><i class="fa fa-chevron-left fa-remove pull-center"> &nbsp; </i>Reboot</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+    <form action="/setup_wizard/4" method="POST" role="form">
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <center><h3 class="modal-title">Gateway Setup Wizard</h3><br>Step 3: Gateway Configuration</center></h3>
+                            <p></p>
+                            <div class="col-md-8 col-md-offset-2">
+                                <div class="progress">
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ ((3/6)*100)|int }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ ((3/6)*100)|int }}%">
+                                    {{ ((3/6)*100)|int }}%
+                                  </div>
+                                </div>
+                            </div>
+                    </div>
+                    <div class="panel-body">
+                        <p></p>
+{% if gw_fields.label|length == 0 %}
+                        <h2>Create New Gateway</h2>
+                        <p>New gateway settings.</p>
+{% else %}
+                        <h2>Use existing gateway</h2>
+                        <p>Verify existing gateway settings.</p>
+{% endif %}
+                    </div>
+                    <div class="panel-body">
+
+                        <div class="form-group">
+                            <label for="gateway-label">Gateway Label</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="gateway-label" id="gateway-label" placeholder="'House', 'Garagage', 'Shed'" value="{{ gw_fields.label }}" autofocus required>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="gateway-description">Gateway Description</label>
+                            <div class="input-group">
+                                <textarea class="form-control" rows="5" name="gateway-description" id="gateway-description" placeholder="Detailed description" value="{{ gw_fields.description }}"></textarea>
+                                <span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div id="map-outer2" class="col-md-12">
+                                <div id="address3" class="col-md-4">
+                                    <div id="map-output"></div>
+                                        <div class="form-group">
+                                            <label for="gateway-latitude">Latitude</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" name="gateway-latitude" id="gateway-latitude" placeholder="37.757" value="{{ gw_fields.variables.latitude }}" required>
+                                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="gateway-longitude">Longitude</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" name="gateway-longitude" id="gateway-longitude" placeholder="-122.437" value="{{ gw_fields.variables.longitude }}" required>
+                                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="gateway-elevation">Elevation (in feet)</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" name="gateway-elevation" id="gateway-elevation" placeholder="90"  value="{{ gw_fields.variables.elevation }}" required>
+                                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <div id="address2" class="col-md-8">
+                                    <div id="map-search">
+                                        <input id="search-txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000">
+                                        <input id="search-btn" type="button" value="Search">
+                                        <input id="detect-btn" type="button" value="Detect" disabled>
+                                        <div id="gmap"></div>
+                                    </div>
+                                </div>
+                            </div><!-- /map-outer -->
+                        </div> <!-- /row -->
+                        <div class="row">
+                            <div class="col-md-12">
+                            <div>&nbsp;</div>
+                                <a class="btn btn-md btn-warning" href="/setup_wizard/2"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
+                                <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
+{% endblock %}
+

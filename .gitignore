@@ -33,8 +33,6 @@ webroot/*
 yombo/lib/html5*
 yombo/lib/old*
 yombo/lib/webinterface/static/dist
-yombo/lib/webinterface/
-!yombo/modules/__init__.py
 *.jar
 
 # Logs and Databases #

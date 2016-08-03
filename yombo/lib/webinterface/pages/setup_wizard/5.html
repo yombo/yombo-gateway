@@ -1,0 +1,110 @@
+{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+
+{% endblock %}
+
+{% block content %}
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <center><h3 class="modal-title" id="myModalLabel">Gateway Setup Wizard</h3><br>Step 5: GPG Key</center></h3>
+                            <p></p>
+                            <div class="col-md-8 col-md-offset-2">
+                                <div class="progress">
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ (5/6)*100|round }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ (5/6)*100|round }}%">
+                                   Last Step!
+                                  </div>
+                                </div>
+                            </div>
+                    </div>
+                    <div class="panel-body">
+                        <p></p>
+                        <h2>Setup GPG</h2>
+                        <p>GPG allows encrypted data to be sent to this gateway. Available options:</p>
+                        <ul>
+                            <li><strong>New</strong> - Create new GPG keys. <em>Suggested</em></li>
+                            <li><strong>Use Existing</strong> - Shows availablgpge GPG keys already created for Yombo Gateway.</li>
+                            <li><strong>Import</strong> (Advanced) - Submit existing private and public keys from a previous installation.
+                                This shold only be used if you are importing an existing Yombo Gateway GPG key pair.
+                                You should <strong>not</strong> use your personal/existing GPG key pair.</li>
+                        </ul>
+                    </div>
+                    <div class="panel-body">
+                        <label for="gpg-action">Gateway Action</label>
+                        <div class="form-group">
+                            <select name="gpg-action" id="gpg-action" class="selectpicker show-tick" title="Select GPG Key Source">
+                                <option value="new" style="background: #e6f7ff; color: #000;"{% if gpg_selected == 'new' or gpg_selected == "" %} selected{% endif %}>Create New Keypair</option>
+                                <option data-divider="true"></option>
+                                {% if gpg_existing|length > 0 %}
+                                <option disabled>Select Existing:</option>
+                                <option data-divider="true"></option>
+                                {% for id in gpg_existing %}
+                                <option value="{{ id }}"{% if gpg_selected == id %} selected{% endif %}>{{ gpg_existing[id] }}</option>
+                                {% endfor %}
+                                <option data-divider="true"></option>
+                                {% endif %}
+                                <option value="import"{% if gpg_selected == "import" %} selected{% endif %}>Import</option>
+                            </select> selected: {{ gpg_selected }}
+                        </div>
+                    </div>
+
+                    <form action="/setup_wizard/6" method="POST" role="form" id="myForm">
+                    <div class="row">
+                        <div class="col-md-12">
+                        </div>
+                    </div>
+
+                    <div class="panel-body">
+                            <span id="GPG-Input-Area">{% if gpg_selected == 'new' or gpg_selected == "" %} {% include 'lib/webinterface/pages/setup_wizard/5_gpg_new.html' %}{% endif %}</span>
+                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+{% endblock %}
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+    <script type="text/javascript">
+        $('#gpg-action').on('load change', function(event) {
+            var val = $(this).val();
+            $.ajax({
+                url: '/setup_wizard/5_gpg_section',
+                type: 'POST',
+                data: {gpg_action: val},
+            })
+            .done(function(data) {
+                $('#GPG-Input-Area').html(data);
+            })
+            .fail(function() {
+                console.log("error");
+            })
+            .always(function() {
+                console.log("complete");
+            });
+        });
+
+$(document).ready(function() {
+    $("body").prepend('<div id="loadingform" class="ui-widget-overlay" style="z-index: 1001; display: none; top: 0; left: 0; height: 100%; width: 100%; background: rgba( 255, 255, 255, .8 )
+     url('http://i.stack.imgur.com/FhHRx.gif')50% 50% no-repeat;"></div>');
+    $("body").prepend("<div id='PleaseWait' style='display: none;'><img src='http://i.stack.imgur.com/FhHRx.gif'/></div>");
+});
+
+$('#myForm').submit(function() {
+    var pass = true;
+    //some validations
+
+    if(pass == false){
+        return false;
+    }
+    $("#loadingform, #PleaseWait").show();
+
+    return true;
+});
+
+    </script>
+{% endblock %}
+

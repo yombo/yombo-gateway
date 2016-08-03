@@ -1,0 +1,114 @@
+    <div class="form-group">
+        <label for="gpg-public-key">GPG Public Key</label>
+        <div class="input-group">
+            <textarea class="form-control" rows="10" name="gpg-public-key" id="gpg-public-key" placeholder="Example:
+-----BEGIN PGP PRIVATE KEY BLOCK-----
+Version: GnuPG v1
+Comment: Sample Private Key
+
+lQG7BDw8+vERBADT2o/VrokzJwvKgw+gHSenCtq/LMzJaqilrV06EXabpz+eA1/q
+n1B9/UktKByrGYjtTjy+Q4i7464Th+jKGUhN0pqVRSsqw0GD+8MDGvM3jNdtQC60
+M2pGpbwSSoKkJcVuNjTuFWGnQTkwcYMuWpP/137gnR5DXge/nL+RQ+VJXwCgm/UM
+GZcoPLnmulJB97zwzzFamTEEAJjMf10a3ZPxs5CEgr5R0sYoAuUt/ic0gKolJ4N7
+uua8QBYSDUNrTFSnkMOXSP9DxwhL57U0jcR14+ZFBv11bY5VF4xSp5QEt4Q/gyl9
+HHbF8LWyhVQ5Zm9zMI+5ixVRqmUGIbiPxzHLokt6cusZFJCTFq2DwogL2fnwCtVh
+PqowA/9onFN9LGcVs+Rg5NwpSkofYHSpb44tqATon+RjCryuuPu3UBXjQdwUeAnB
+TCaj0k39LVkg1W5GAx2/fwSFQDb79p9VzQQj8Pt6uIVN1/rb0sLt8Fr4FmSP5aBd
+YkRHIl+3RW5nHEKcG49yiyHfoFJYXwJdZuZyAGz/znheTzf08QAAniS8d8y9rceh
+oGNbhf09Xo9nTURsCwG0g1J1c3NlbGwgU3RldmVuIFNoYXduIE8nQ29ubm9yIChJ
+TlNFQ1VSRSAtIHNlZSA8aHR0cDovL3d3dy5tYXRoLmJlcmtlbGV5LmVkdS9+cm9j
+b25vci9wdWJsaWNrZXlzLmh0bWw+KSA8cm9jb25ub3JAbWF0aC5iZXJrZWxleS5l
+ZHU+iF0EExECAB0FAjw8+vIFCQHhM4AFCwcKAwQDFQMCAxYCAQIXgAAKCRC5lRrQ
+9ZXJZMRJAJkBwUTJTiHwFBAeocR7zJUqwTn0KgCcD+J95eAgjgbizZOB0udV6XEE
+2kWITAQYEQIADAUCPDz7HgUJAeEzgAAKCRC5lRrQ9ZXJZOLsAJ417fhb6280n0SH
+WrddjWa6nrvNFQCfdZwOOHGTSFeOsKcPpBr22+qxah4=
+=lKP3
+-----END PGP PRIVATE KEY BLOCK-----" value="{{ gw_private_key }}" required></textarea>
+            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="gpg-private-key">GPG Private Key</label>
+        <div class="input-group">
+            <textarea class="form-control" rows="10" name="gpg-private-key" id="gpg-private-key" placeholder="Example:
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+Comment: Sample Public Key
+
+mQINBFPOzTUBEADT1kIEMY1Ix+9DyNfGHE9HPjLSI/Ybnsn/bbx8cWmeAktoYjBS
+q29mJ0tchjyG8KP38vlkvfNYKn80985a/p7ZKupxOm1dDyAn5TZguDG2fEgCYxcB
+FxfMjGKLEFOS6hlPVh/3bm7xEvRuB5P/5Wdch9/UK11qLE3hlDlhnT1zq82Sk4G8
+OWnH8BLA8XuRAdwAdri7U2OmNPqCldlmpIsTy68MXJQk7tYi0Rwc55c65U4gGSuY
+qw3QzQ6X4TecFO/jUPBnnVb5YcYKxVw75PYF6NnKbbsnDYJoNg8bpEP2SVC0FWNK
+2rKYsGsbcco2/ruJuQsThVcuH3l07cAKaSzt+eb5+FWWzsojbSeXwD8yZocfPvEL
+eaa0/Jr2220sV6OdSpWBa8mhBI5oTAbD9PDX3C5gyPj78mzDlhytLTCsdtL1Uqgm
+DTbIqgDPQBEnGr9Ny2XlIQ6AjuyuahBDl+ElmLnz0jI9bjt0vgAUGjmCCp71aioo
+MXZALwVBsdQH3w2BHQ8wU9sYtMlBPBMZz++oIQthmJ+Gb6myvMZCQ34M9TfpIv5i
+utAK2xBP/XfBl5BMYl6xNUHOxGhtBj/Pbzcwu/+Sk3mKkC4E2+aUKEjyzs6rDdDs
+pT+2B4A1nNXLU1PA+AfabdLnlvm7lMgzr30Waejcz4FbSdwCX8oN9UabBQARAQAB
+tCVBbGFuIEVsaWFzZW4gPGVsaWFzZW5AbWluZHNwcmluZy5jb20+iQJBBBMBCAAr
+AhsDAh4BAheACgsJDQoIDAcLAwIHFQoJCAsCAwUWAgMBAAIZAQUCVCJ6SwAKCRBf
+K0dW7Yc9IyAEEACjB/Kwt7WE5E+GEQ6DFVqFGGZpKQaNKI1bLi+xD63+gXuQzu2B
+2ujlerjKdiNaI7D2n0fcFOuEouxaRUkizb2/hV9rqAOGqUOwnRBr31wVqQP/s2xU
+4MMev46jFecI2FHALpNXA6/mqBh4ODyfpEetxM+DiaN4vUdiiLEtOfjCVggnCS7H
++JirccN7MZzt16P7AEbCD9qZwc+Gnob8DbXKm6VbN3sRG00c3zUjL7VLGC+qctWw
+P2HRKC1/XXxX4Vjidbs+2+ygAxlyLGVB12L2PTA63tR2ppJoRWAh9iLtaK2/uszH
+h9Gt5EtL4d00rqVhWHtDlPAvjyBAyomTWPysuuwJvob+nR6cSYobsi2/H8rj0F1l
+r2mKKIAojUE/KLxbd6KuXIk07P+vKse66oC8XVpbn6ckMypdftidYyyyH5jej2NP
+0FuP9jjl8eYgSZl9tqaU6Y9vDyXzE0h6F4SUPiBx3hEIrVzFJym0d6/t562bstQO
+pIPGkZxLOFm59msUf9mBqw7rJEs/EqhQ2w==
+=7DhM
+-----END PGP PUBLIC KEY BLOCK-----
+  " value="{{ gw_private_key }}" required></textarea>
+            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+        <div>&nbsp;</div>
+            <a class="btn btn-md btn-warning" href="/setup_wizard/4"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
+            <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">Import GPG Keys</button>
+        </div>
+    </div>
+<script>
+$(document).ready(function () {
+        $('.input-group input[required], .input-group textarea[required], .input-group select[required]').on('keyup change', function() {
+		var $form = $(this).closest('form'),
+            $group = $(this).closest('.input-group'),
+			$addon = $group.find('.input-group-addon'),
+			$icon = $addon.find('span'),
+			state = false;
+
+    	if (!$group.data('validate')) {
+			state = $(this).val() ? true : false;
+		}else if ($group.data('validate') == "email") {
+			state = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/.test($(this).val())
+		}else if($group.data('validate') == 'phone') {
+			state = /^[(]{0,1}[0-9]{3}[)]{0,1}[-\s\.]{0,1}[0-9]{3}[-\s\.]{0,1}[0-9]{4}$/.test($(this).val())
+		}else if ($group.data('validate') == "length") {
+			state = $(this).val().length >= $group.data('length') ? true : false;
+		}else if ($group.data('validate') == "number") {
+			state = !isNaN(parseFloat($(this).val())) && isFinite($(this).val());
+		}
+
+		if (state) {
+				$addon.removeClass('danger');
+				$addon.addClass('success');
+				$icon.attr('class', 'glyphicon glyphicon-ok');
+		}else{
+				$addon.removeClass('success');
+				$addon.addClass('danger');
+				$icon.attr('class', 'glyphicon glyphicon-remove');
+		}
+
+        if ($form.find('.input-group-addon.danger').length == 0) {
+            $form.find('[type="submit"]').prop('disabled', false);
+        }else{
+            $form.find('[type="submit"]').prop('disabled', true);
+        }
+	});
+
+    $('.input-group input[required], .input-group textarea[required], .input-group select[required]').trigger('change');
+
+});
+</script>

@@ -1,0 +1,101 @@
+{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+{% block head_bottom %}
+<script src='https://www.google.com/recaptcha/api.js'></script>
+<script src='/static/js/sha256.js'></script>
+{% endblock %}
+
+{% block content %}
+{% if data.operation_mode == 'config' %}
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3">
+                    <h1 class="page-header">Setup Mode</h1>
+                    <p>
+                        Yombo Gateway is in configuration or setup only mode. This only allows low level setup and
+                        configuration of the gateway.
+                    </p>
+                    <p>
+                        Use the Yombo credentials below to setup this gateway. If you do not have one, you
+                        will need to <a href="https://yombo.net">create a Yombo account</a>.
+                    </p>
+                    <p>&nbsp;</p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+{% endif %}
+            <div class="row">
+                <div class="col-md-6 col-md-offset-3">
+                    <div class="login-panel panel panel-default">
+                        <div class="panel-heading">
+                            <div style="float: left;">
+                                <a href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-2x"></i></a>
+                                <!-- Modal -->
+                                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                                  <div class="modal-dialog" role="document">
+                                    <div class="modal-content">
+                                      <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        <h4 class="modal-title" id="myModalLabel">Login Required</h4>
+                                      </div>
+                                      <div class="modal-body">
+                                          <p>Logging into your Yombo account allows this gateway to download
+                                          configuration information from a previously installed gateway or to create a
+                                          new gateway.
+                                          </p>
+                                          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+                                              <h4>It's Safe</h4> <p>You're credentials (email or password) will not be stored
+                                              in plaintext on the gateway. This form submits a secure version of your password thru
+                                              your gateway to Yombo for processing. Your password never leaves the browser.</p>
+                                          </div>
+                                          <div class="bs-callout bs-callout-danger" id=callout-images-ie-rounded-corners>
+                                              <h4>Security Warning</h4> <p>A hashed version of your credentials and the
+                                              gateway's access credentails to Yombo servers are stored in the
+                                              yombo.ini file. Although your credentail information cannot be derived from
+                                              this information, it can be used to access some features.</p>
+                                          </div>
+                                      </div>
+                                      <div class="modal-footer">
+                                        <button type="button" class="btn btn-primary">Save changes</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                            </div>
+                            <h3 class="panel-title"><center><strong>{{ data.gateway_label }}</strong><br> Sign into Yombo Account - <a href="https://yombo.net">Create</a></center></h3>
+                        </div>
+                        <div class="panel-body">
+                            <form action="/login/user" method="POST" role="form">
+                                <fieldset>
+                                    <div class="form-group">
+                                        <input class="form-control" placeholder="E-mail or Username" id="email" name="email" type="text" autofocus>
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" placeholder="Password" id="password-input" type="password" value="">
+                                    </div>
+                                    <div class="checkbox">
+                                        <label>
+                                            <input name="remember" type="checkbox" value="Remember Me">Remember Me
+                                        </label>
+                                    </div>
+                                    <!-- Change this to a button or input when using this as a form -->
+                                    <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
+                                    <div>&nbsp;</div>
+                                    <input class="form-control" placeholder="Password" id="password" name="password" type="hidden" value="">
+                                    <button type="submit" id="submit-login" class="btn btn-lg btn-success btn-block">Login</button>
+                                </fieldset>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+    <script>
+        $(document).ready(function() {
+                $('#submit-login').on('click', function (e) {
+                    $('#password').val(Sha256.hash($('#password-input').val()));
+            })
+        });
+    </script>
+{% endblock %}

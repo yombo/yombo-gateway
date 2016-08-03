@@ -1,0 +1,31 @@
+{% extends "lib/webinterface/fragments/layout_blank.tpl" %}
+
+{% block content %}
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                <div class="login-panel panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <center><h3 class="modal-title" >Gateway Setup Wizard</h3><br>Step 1: Getting Started</center></h3>
+                            <p></p>
+                            <div class="col-md-8 col-md-offset-2">
+                                <div class="progress">
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ ((0/6)*100)|int }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ ((0/6)*100)|int }}%">
+                                  0%
+                                  </div>
+                                </div>
+                            </div>                    </div>
+                    <div class="panel-body">
+                        <h2>Welcome!</h2>
+                        <p>The following setup wizard will get your gateway up and running with just a few steps.</p>
+                        <p>You will be required to login into your <a href="https://yombo.net">Yombo Account</a>.
+                        This allows the gateway to retrieve your account information. From there, you can
+                        download existing configurations from a previously configured gateway or setup a new
+                        gateway.</p>
+                        <a class="btn btn-lg btn-success btn-block" href="/setup_wizard/2">Log into Yombo <i class="fa fa-chevron-right fa-remove pull-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+{% endblock %}
+
