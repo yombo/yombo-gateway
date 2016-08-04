@@ -53,12 +53,12 @@ HARD_LOAD["SQLDict"] = {'operation_mode':'all'}
 HARD_LOAD["Atoms"] = {'operation_mode':'all'}
 HARD_LOAD["States"] = {'operation_mode':'all'}
 HARD_LOAD["Configuration"] = {'operation_mode':'all'}
+HARD_LOAD["Statistics"] = {'operation_mode':'all'}
 HARD_LOAD["Startup"] = {'operation_mode':'all'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
 HARD_LOAD["Automation"] = {'operation_mode':'all'}
 HARD_LOAD["CronTab"] = {'operation_mode':'all'}
-HARD_LOAD["Statistics"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
 HARD_LOAD["ConfigurationUpdate"] = {'operation_mode':'run'}
 HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
@@ -229,14 +229,16 @@ class Loader(YomboLibrary, object):
 
             component = name.lower()
             library = self.loadedLibraries[component]
-            self._log_loader('info', component, 'library', 'init', 'About to call _init_.')
+            self._log_loader('debug', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._DevicesLibrary = self.loadedLibraries['devices']
             library._Libraries = self.loadedLibraries
             library._Modules = self._moduleLibrary
+            library._MQTT = self.loadedLibraries['mqtt']
             library._States = self.loadedLibraries['states']
+            library._Statistics = self.loadedLibraries['statistics']
             if hasattr(library, '_init_') and callable(library._init_) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = yield maybeDeferred(library._init_, self)

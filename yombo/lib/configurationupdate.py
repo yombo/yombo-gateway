@@ -227,16 +227,11 @@ class ConfigurationUpdate(YomboLibrary):
             config = self.__incomingConlibrary.configurationupdatefigQueue.pop()
             self.process_config(config)
 
-    def amqp_direct_incoming(self, sendInfo, deliver, props, msg):
+    def amqp_direct_incoming(self, send_info, deliver, props, msg):
         # do nothing on requests for now.... in future if we ever accept requests, we will.
         if props.headers['type'] != "response":
             raise YomboWarning("ConfigurationUpdate::amqp_direct_incoming only accepts 'Response' type message.") # For now...
 
-        # if a response, lets make sure it's something we asked for!
-#        logger.info("received: %s, deliver: %s, props: %s, msg: %s" % (sendInfo, deliver, props, msg))
-#                dt = sendInfo['time_sent'] - sendInfo['time_created']
-#                ms = (dt.days * 24 * 60 * 60 + dt.seconds) * 1000 + dt.microseconds / 1000.0
-#                logger.info("Delay between create and send: %s ms" % ms)
         config_item = props.headers['config_item']
         config_type = props.headers['config_type']
         inputType = props.headers['type']

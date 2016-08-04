@@ -1,4 +1,4 @@
-# cython: embedsignature=True
+#cython: embedsignature=True
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
@@ -52,6 +52,7 @@ class Configuration(YomboLibrary):
     stores the configuration items into a cache. The configuration is never
     stored in the database.
     """
+    MAX_SECTION_LENGTH = 100
     MAX_OPTION_LENGTH = 100
     MAX_VALUE_LENGTH = 10000
 
@@ -84,7 +85,7 @@ class Configuration(YomboLibrary):
 
             for section in ini.sections():
                 for option in ini.options(section):
-                    value =  ini.get(section, option)
+                    value = ini.get(section, option)
                     try:
                         value = is_string_bool(value)
                     except:
@@ -92,9 +93,9 @@ class Configuration(YomboLibrary):
                             value = int(value)
                         except:
                             try:
-                              value = float(value)
+                                value = float(value)
                             except:
-                              value = str(value)
+                                value = str(value)
                     self.set(section, option, value)
         except IOError:
             self.loader.operation_mode = 'firstrun'
@@ -134,7 +135,7 @@ class Configuration(YomboLibrary):
             self.set('local', 'deletedevicehistory', False)
 
         if self.get('core', 'externalipaddress') is not None and self.get('core', 'externalipaddresstime') is not None:
-            if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 12000):
+            if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 3600):
                 self.set("core", "externalipaddress", get_external_ip_address())
                 self.set("core", "externalipaddresstime", int(time()))
         else:
@@ -143,7 +144,7 @@ class Configuration(YomboLibrary):
             self.set("core", "externalipaddresstime", int(time()))
 
         if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
-            if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 12000):
+            if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
                 self.set("core", "localipaddress", get_local_ip_address())
                 self.set("core", "localipaddresstime", int(time()))
         else:
@@ -162,7 +163,7 @@ class Configuration(YomboLibrary):
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        logger.info("saving config file...")
+        logger.debug("saving config file...")
         self.save(True)
 
     def save(self, force_save=False):
@@ -185,7 +186,6 @@ class Configuration(YomboLibrary):
                 if len(Config.options(section)) == 0:  # Don't save empty sections.
                     Config.remove_section(section)
 
-            print "saving config file!!!!!!!!!!!!!!!!!!!!!"
             config_file = open("yombo.ini",'w')
             Config.write(config_file)
             config_file.close()
@@ -226,7 +226,6 @@ class Configuration(YomboLibrary):
             delta      = now - createtime
             if delta.days > 30:
                 print "NEED TO DELETE: %s" % fullpath
-                continue
                 os.remove(fullpath)
 
 
@@ -307,7 +306,11 @@ class Configuration(YomboLibrary):
         :return: The configuration value requested by section and option.
         :rtype: int or string or None
         """
+        if len(section) > self.MAX_SECTION_LENGTH:
+            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
+            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
             raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         if option is None:
@@ -318,36 +321,43 @@ class Configuration(YomboLibrary):
 
         if section == 'yombo':
             if option in self.yombo_vars:
+                self._Statistics.increment("lib.configuration.get.value", anon=True)
                 return self.yombo_vars[option]
             else:
-                return None
+                self._Statistics.increment("lib.configuration.get.none", anon=True)
+            return None
 
         if section in self.configs:
             if option == "*":
-                print "option = *!!! yeay"
                 if len(self.configs[section]) > 0:
                     results = {}
                     for key, data in self.configs[section].iteritems():
                         if 'value' in data:
                             results[key] = data['value']
                             data['reads'] += 1
+                    self._Statistics.increment("lib.configuration.get.value", anon=True)
                     return results
+                self._Statistics.increment("lib.configuration.get.none", anon=True)
                 return None
             if option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
 #                returnValue(self.configs[section][option])
+                self._Statistics.increment("lib.configuration.get.value", anon=True)
                 return self.configs[section][option]['value']
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
         if default == "":
+            self._Statistics.increment("lib.configuration.get.empty_string", anon=True)
             return ""
 
         if default is not None:
             if set_if_missing:
                 self.set(section, option, default)
                 self.configs[section][option]['reads'] += 1
+            self._Statistics.increment("lib.configuration.get.default", anon=True)
             return default
         else:
+            self._Statistics.increment("lib.configuration.get.default", anon=True)
             return None
 
     def set(self, section, option, value):
@@ -370,15 +380,21 @@ class Configuration(YomboLibrary):
         :param value: What to return if no result is found, default = None.
         :type value: int or string
         """
+        if len(section) > self.MAX_SECTION_LENGTH:
+            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
-            raise ValueError("option (%s) cannot be more than %d chars" % (option, self.MAX_OPTION_LENGTH ) )
+            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         # Can't set value!
         if section == 'yombo':
+            self._Statistics.increment("lib.configuration.set.no_setting_yombo", anon=True)
             raise ValueError("Not allowed to set value")
 
         if isinstance(value, str):
             if len(value) > self.MAX_VALUE_LENGTH:
+                self._Statistics.increment("lib.configuration.set.value_too_long", anon=True)
                 raise ValueError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
@@ -394,6 +410,9 @@ class Configuration(YomboLibrary):
                 'reads': 0,
                 'writes': 0,
             }
+            self._Statistics.increment("lib.configuration.set.new", anon=True)
+        else:
+            self._Statistics.increment("lib.configuration.set.update", anon=True)
 
         self.configs[section][option] = dict_merge(self.configs[section][option], {
                 'set_time': int(time()),
@@ -420,7 +439,6 @@ class Configuration(YomboLibrary):
         :param option: The option (key) to delete.
         :type option: string
         """
-
         if section in self.configs:
             if option in self.configs[section]:
                 del self.configs[section][option]

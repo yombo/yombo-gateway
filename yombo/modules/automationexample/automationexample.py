@@ -148,7 +148,7 @@ class AutomationExample(YomboModule):
         }
         
     def _start_(self):
-        logger.info("States: Is Light: {times_light}", times_light=self._States['times_light'])
+        logger.info("States: Is Light: {times_light}", times_light=self._States['times_islight'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
         self._States['automationexample'] = 0
 

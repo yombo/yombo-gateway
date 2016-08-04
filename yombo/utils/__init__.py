@@ -21,6 +21,7 @@ from datetime import datetime
 import parsedatetime.parsedatetime as pdt
 from struct import pack as struct_pack, unpack as struct_unpack
 from socket import inet_aton
+import math
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -329,6 +330,29 @@ def percentage(part, whole):
     :return:
     """
     return 100 * float(part)/float(whole)
+
+def percentile(data_list, percent, key=lambda x:x):
+    """
+    Find the percentile of a list of values.
+
+    I think this was found here:http://code.activestate.com/recipes/511478-finding-the-percentile-of-the-values/
+
+    :param data_list: A list of values. Note N MUST BE already sorted.
+    :param percent: A float value from 0.0 to 1.0.
+    :param key: Optional key function to compute value from each element of N
+
+    :return: The percentile of the values
+    """
+    if not data_list:
+        return None
+    k = (len(data_list)-1) * percent
+    f = math.floor(k)
+    c = math.ceil(k)
+    if f == c:
+        return key(data_list[int(k)])
+    d0 = key(data_list[int(f)]) * (c-k)
+    d1 = key(data_list[int(c)]) * (k-f)
+    return d0+d1
 
 def get_command(commandSearch):
     """

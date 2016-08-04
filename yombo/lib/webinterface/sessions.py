@@ -273,7 +273,6 @@ class Sessions(object):
             if self._data[session_id]['created'] < session_delete_time:
                 del self._data[session_id]
                 count += 1
-        print "Sessions: Removed %s sessions." % count
     #
     # def expired(self):
     #     """Called when an expired session is atime"""

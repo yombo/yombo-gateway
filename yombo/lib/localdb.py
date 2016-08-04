@@ -24,9 +24,12 @@ except ImportError:
     import json
 import base64
 import zlib
+import cPickle
+from sqlite3 import Binary as sqlite3Binary
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
+from yombo.ext.twistar.utils import dictToWhere
 from yombo.ext.twistar.dbobject import DBObject
 
 # Import twisted libraries
@@ -107,6 +110,9 @@ class ModuleInstalled(DBObject):
 class Schema_Version(DBObject):
     TABLENAME='schema_version'
 
+
+class Statistics(DBObject):
+    TABLENAME='statistics'
 
 class Sqldict(DBObject):
     TABLENAME='sqldict'
@@ -368,6 +374,9 @@ class LocalDB(YomboLibrary):
         records = yield ModuleRoutingView.all()
         returnValue(records)
 
+    #################
+    ### SQLDict #####
+    #################
     @inlineCallbacks
     def get_sql_dict(self, component, dict_name):
         records = yield self.dbconfig.select('sqldict', select='dict_data', where=['component = ? AND dict_name = ?', component, dict_name])
@@ -397,7 +406,6 @@ class LocalDB(YomboLibrary):
         """
         if len(dict_data) > 3000:
             dict_data = base64.encodestring( zlib.compress(dict_data, 5) )
-            print "COMPRESS.... SQL DICT!! YAY"
 
         args = {'component': component,
                 'dict_name': dict_name,
@@ -413,6 +421,76 @@ class LocalDB(YomboLibrary):
             args['created'] = args['updated']
             results = yield self.dbconfig.insert('sqldict', args, None, 'OR IGNORE' )
 #            print "set_sql_dict: insert reuslts: %s" %results
+
+
+    #####################
+    ### Statistics  #####
+    #####################
+    @inlineCallbacks
+    def get_statistic(self, where):
+        find_where = dictToWhere(where)
+        records = yield Statistics.find(where=find_where)
+
+        print "stat records: %s" % records
+        returnValue(records)
+
+    @inlineCallbacks
+    def save_statistic(self, bucket, type, name, value, anon, in_average_data=None):
+        args = {'value': value,
+                'updated': int(time()),
+                'anon': anon,
+        }
+#        print "starting set_sql_dict"
+
+        records = yield self.dbconfig.select('statistics', select='*', where=['bucket = ? AND type = ? AND name = ?', bucket, type, name])
+        if len(records) > 0:  # now we need to merge the results. This can be fun.
+#            print "existing stat found: %s" % records[0]
+            if type == 'counter':
+                args['value'] = records[0]['value'] + value
+                results = yield self.dbconfig.update('statistics', args, where=['id = ?', records[0]['id']] )
+            elif type == 'datapoint': # chance is super rare.... Just replace the value. Probably never happens.
+                results = yield self.dbconfig.update('statistics', args, where=['id = ?', records[0]['id']] )
+            elif type == 'average':
+
+                record_average_data = cPickle.loads(str(records[0]['averagedata']))
+#                print "record_average_data: %s" % record_average_data
+#                print "in_average_data: %s" % in_average_data
+
+                counts = [record_average_data['count'], in_average_data['count']]
+                medians = [record_average_data['median'], in_average_data['median']]
+                uppers = [record_average_data['upper'], in_average_data['upper']]
+                lowers = [record_average_data['lower'], in_average_data['lower']]
+                upper_90s = [record_average_data['upper_90'], in_average_data['upper_90']]
+                lower_90s = [record_average_data['lower_90'], in_average_data['lower_90']]
+                median_90s = [record_average_data['median_90'], in_average_data['median_90']]
+
+                # found this weighted averaging method here:
+                # http://stackoverflow.com/questions/29330792/python-weighted-averaging-a-list
+                new_average_data = {}
+                new_average_data['count'] = record_average_data['count'] + in_average_data['count']
+                new_average_data['median'] = sum(x * y for x, y in zip(medians, counts)) / sum(counts)
+                new_average_data['upper'] = sum(x * y for x, y in zip(uppers, counts)) / sum(counts)
+                new_average_data['lower'] = sum(x * y for x, y in zip(lowers, counts)) / sum(counts)
+                new_average_data['upper_90'] = sum(x * y for x, y in zip(upper_90s, counts)) / sum(counts)
+                new_average_data['lower_90'] = sum(x * y for x, y in zip(lower_90s, counts)) / sum(counts)
+                new_average_data['median_90'] = sum(x * y for x, y in zip(median_90s, counts)) / sum(counts)
+
+                args['averagedata'] = sqlite3Binary(cPickle.dumps(new_average_data, cPickle.HIGHEST_PROTOCOL))
+                results = yield self.dbconfig.update('statistics', args, where=['id = ?', records[0]['id']] )
+            else:
+                pass
+        else:
+            args['bucket'] =  bucket
+            args['type'] = type
+            args['name'] = name
+            if type == 'average':
+                args['averagedata'] = sqlite3Binary(cPickle.dumps(in_average_data, cPickle.HIGHEST_PROTOCOL))
+ #           print "saving new SQL record: %s" % args
+            results = yield self.dbconfig.insert('statistics', args, None, 'OR IGNORE' )
+
+        returnValue(results)
+#            print "set_sql_dict: insert reuslts: %s" %results
+
 
     @inlineCallbacks
     def get_variables(self, variable_type, foreign_id = None):

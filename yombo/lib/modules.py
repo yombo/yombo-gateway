@@ -279,7 +279,9 @@ class Modules(YomboLibrary):
                 module._CronTab = self.loader.loadedLibraries['crontab']
                 module._Libraries = self.loader.loadedLibraries
                 module._Modules = self
+                module._MQTT = self.loader.loadedLibraries['mqtt']
                 module._States = self.loader.loadedLibraries['states']
+                module._Statistics = self.loader.loadedLibraries['statistics']
 
                 module._DevicesLibrary = self.loader.loadedLibraries['devices']  # Basically, all devices
                 module._Devices = self._DevicesLibrary.get_devices_for_module(module_id)

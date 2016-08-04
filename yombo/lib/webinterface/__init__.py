@@ -130,6 +130,7 @@ class WebInterface(YomboLibrary):
         self.displayTracebacks = False
 
         self.web_interface_listener = reactor.listenTCP(self._port, self.web_factory)
+        self._display_pin_console_time = 0
 
     def _started_(self):
         if self._op_mode != 'run':
@@ -265,6 +266,7 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/')
     def home(self, request):
+        self.check_op_mode(request, 'home')
         auth = self.require_auth(request)
         if auth is not None:
             return auth
@@ -272,7 +274,6 @@ class WebInterface(YomboLibrary):
 
     def run_home(self, request):
         print "home"
-        self.check_op_mode(request, 'home')
         auth = self.require_auth(request)
         if auth is not None:
             return auth

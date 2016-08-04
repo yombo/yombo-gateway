@@ -15,7 +15,7 @@ Implements MQTT. It does 2 things:
    my_mqtt = self._MQTT.new()  # Create a new connection to the embedded MQTT server.
    my_mqtt.subscribe('foo/bar/topic', self.show_mqtt_message)  # now all topics with 'foor/bar/topic' will be sent to show_mqtt_message
 
-
+..versionadded:: 0.11.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
@@ -25,6 +25,7 @@ from __future__ import print_function
 import yaml
 from os.path import abspath
 from os import environ
+import signal
 import crypt
 import random
 import string
@@ -34,6 +35,9 @@ from collections import deque
 from twisted.internet.ssl import ClientContextFactory
 from twisted.internet import protocol
 from twisted.internet import reactor
+from twisted.logger   import (
+    Logger, LogLevel, globalLogBeginner, textFileLogObserver,
+    FilteringLogObserver, LogLevelFilterPredicate)
 
 # 3rd party libraries
 from yombo.ext.mqtt.client.factory import MQTTFactory
@@ -76,7 +80,6 @@ class MQTT(YomboLibrary):
         self.client_connections = {}
         self.hbmqtt_config_file = abspath('.') + "/usr/etc/hbmqtt.yaml"
         self.hbmqtt_pass_file = abspath('.') + "/usr/etc/hbmqtt.pw"
-        print("mqtt path: %s" % self.hbmqtt_config_file)
         self.client_enabled = self._Configs.get('mqtt', 'client_enabled', True)
         self.server_enabled = self._Configs.get('mqtt', 'server_enabled', True)
         self.server_listen_ip = self._Configs.get('mqtt', 'server_listen_ip', '0.0.0.0')
@@ -87,14 +90,10 @@ class MQTT(YomboLibrary):
         self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'yombo', random_string(length=16))
         self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'local', random_string(length=5))
         self.server_users = self._Configs.get('mqtt_users', '*')
-        print("server_users: %s" % self.server_users)
 
         if not self.server_enabled:
             return
 
-    def _load_(self):
-        if self.server_enabled is False:
-            logger.info("Embedded MQTT Disabled.")
         yaml_config = {
             'listeners': {
                 'default': {
@@ -143,13 +142,34 @@ class MQTT(YomboLibrary):
 
         self.mqtt_server = MQTTServer(self.hbmqtt_config_file)
         command = ['hbmqtt', "-c", self.hbmqtt_config_file]
-        print("command: %s" % command)
-        reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
+        self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
 
-        self.local_mqtt_client_id = self.new(self.server_listen_ip, self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False )
+        level = LogLevel.levelWithName('info')
+        LLFP = LogLevelFilterPredicate()
+        LLFP.setLogLevelForNamespace(namespace='mqtt', level=level)
 
-    # def _unload_(self):
-    #     self.client_connections[self.local_mqtt_client_id].public('yombo/service/status', 'offline')
+    def _load_(self):
+        if self.server_enabled is False:
+            logger.info("Embedded MQTT Disabled.")
+            return
+        self.local_mqtt_client_id = random_string(length=10)
+        self.client_connections[self.local_mqtt_client_id] = self.new(self.server_listen_ip, self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False )
+#        print("localmqtt_client _id = %s" % self.local_mqtt_client_id)
+
+
+    def _stop_(self):
+#        print("###########################################clientid: %s" % self.local_mqtt_client_id)
+#        print("client connectins: %s" % self.client_connections)
+#        self.client_connections[self.local_mqtt_client_id].public('yombo/mqtt/status', 'offline')
+
+        for client_id, client in self.client_connections.iteritems():
+            client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
+            client.factory.protocol.disconnect()
+        self.mqtt_server.shutdown()
+
+    #def _unload_(self):
+        #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
+
 
     def new(self, server_hostname=None, server_port=None, user=None, password=None, ssl=False,):
         """
@@ -189,14 +209,14 @@ class MQTTClient(object):
         if server_port is None:
            raise YomboWarning("'server_port' is required.", '__init__', 'mqtt::MQTTClient')
 
-        self.my_factory = MQTTTYomboFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER)
-        self.my_factory.set_mqtt_client(self)
+        self.factory = MQTTTYomboFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER)
+        self.factory.set_mqtt_client(self)
 
         if ssl:
-            self.my_reactor = reactor.connectSSL(server_hostname, self.server_port, self.my_factory,
+            self.my_reactor = reactor.connectSSL(server_hostname, self.server_port, self.factory,
                                                  ClientContextFactory())
         else:
-            self.my_reactor = reactor.connectTCP(server_hostname, self.server_port, self.my_factory)
+            self.my_reactor = reactor.connectTCP(server_hostname, self.server_port, self.factory)
 
     def publish(self, topic, message, qos=0):
         """
@@ -207,7 +227,7 @@ class MQTTClient(object):
         :param qos: 0, 1, or 2. Default is 0.
         :return:
         """
-        self.my_factory.protocol.publish(topic=topic, message=message, qos=qos)
+        self.factory.protocol.publish(topic=topic, message=message, qos=qos)
 
     def subscribe(self, topic, callback, qos=2):
         """
@@ -217,16 +237,16 @@ class MQTTClient(object):
         :param qos: See MQTT doco for information.
         :return:
         """
-        self.my_factory.protocol.subscribe(topic, qos)
-        self.my_factory.protocol.setPublishHandler(callback)
+        self.factory.protocol.subscribe(topic, qos)
+        self.factory.protocol.setPublishHandler(callback)
 
     def unsubscribe(self, topic):
-        self.my_factory.protocol.ubsubscribe(topic)
+        self.factory.protocol.ubsubscribe(topic)
 
 
     def client_connectionMade(self):
         self.connected = True
-        self.my_factory.protocol.publish('yombo/service/status', 'online')
+        self.factory.protocol.publish('yombo/service/status', 'online')
 
     def client_connectionLost(self, reason):
         logger.info("Lost connection to HBMQTT Broker: {reason}", reason=reason)
@@ -236,12 +256,12 @@ class MQTTClient(object):
 class MQTTYomboProtocol(MQTTProtocol):
 
     def connectionMade(self):  # Empty through twisted.
-        print("!!!!  connectionMade   !!!!!")
+#        print("!!!!  connectionMade   !!!!!")
         self.connect("YomboGateway-v1", keepalive=0, version=v311)
         self.factory.mqtt_client.client_connectionMade()
 
     def _onDisconnect(self, reason):  # defined in MQTTProtocol in connectionLost
-        print("!!!!  connectionLost   !!!!!")
+#        print("!!!!  connectionLost   !!!!!")
         self.factory.mqtt_client.client_connectionLost(reason)
 
 
@@ -280,40 +300,34 @@ class MQTTTYomboFactory(MQTTFactory):
 class MQTTServer(protocol.ProcessProtocol):
     def __init__(self, config_file):
         self.config_file = config_file
-        self.data = ""
 
     def shutdown(self):
+#        self.transport.signalProcess(signal.SIGTERM)
         self.transport.closeStdin() # tell them we're done
 
-    def connectionMade(self):
-        print("connectionMade!")
-        # for i in range(self.verses):
-        #     self.transport.write("Aleph-null bottles of beer on the wall,\n" +
-        #                          "Aleph-null bottles of beer,\n" +
-        #                          "Take one down and pass it around,\n" +
-        #                          "Aleph-null bottles of beer on the wall.\n")
-
-    def outReceived(self, data):
-        print("outReceived: %s" % data)
-        self.data = self.data + data
-
-    def errReceived(self, data):
-        print("HBQMTT ERR: %s" % data)
-
-    def inConnectionLost(self):
-        print("inConnectionLost! stdin is closed! (we probably did it)")
-
-    def outConnectionLost(self):
-        print("outConnectionLost! The child closed their stdout!")
-        # now is the time to examine what they wrote
-        print("I saw them write:", self.data)
-
-    def errConnectionLost(self):
-        print("errConnectionLost! The child closed their stderr.")
-
-    def processExited(self, reason):
-        print("processExited, status %d" % (reason.value.exitCode,))
-
-    def processEnded(self, reason):
-        print("processEnded, status %d" % (reason.value.exitCode,))
-
+    # def connectionMade(self):
+    #     print("connectionMade!")
+    #
+    # def outReceived(self, data):
+    #     print("outReceived: %s" % data)
+    #
+    # def errReceived(self, data):
+    #     print("HBQMTT ERR: %s" % data)
+    #
+    # def inConnectionLost(self):
+    #     print("inConnectionLost! stdin is closed! (we probably did it)")
+    #
+    # def outConnectionLost(self):
+    #     print("outConnectionLost! The child closed their stdout!")
+    #     # now is the time to examine what they wrote
+    #     print("I saw them write:", self.data)
+    #
+    # def errConnectionLost(self):
+    #     print("errConnectionLost! The child closed their stderr.")
+    #
+    # def processExited(self, reason):
+    #     print("processExited, status %d" % (reason.value.exitCode,))
+    #
+    # def processEnded(self, reason):
+    #     print("processEnded, status %d" % (reason.value.exitCode,))
+    #

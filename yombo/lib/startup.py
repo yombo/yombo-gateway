@@ -32,7 +32,6 @@ class Startup(YomboLibrary):
         self.loader = loader
         if self.loader.operation_mode != None:  # will know if firstrun already or yombo.ini is missing.
             return
-        print "stqartup = %s" % self.loader.operation_mode
         need_config = False
         gwuuid = self._Configs.get("core", "gwuuid", None)
         if gwuuid is None or gwuuid == "":

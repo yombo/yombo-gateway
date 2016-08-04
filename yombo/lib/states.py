@@ -80,7 +80,6 @@ class States(YomboLibrary, object):
         self.automation = self._Libraries['automation']
 
         self.__States = {}
-        self._live_states = {}
         self._loaded = False
         self.__History = yield self._Libraries['SQLDict'].get(self, 'History')
 #        logger.info("Recovered YomboStates: {states}", states=self.__States)
@@ -165,24 +164,27 @@ class States(YomboLibrary, object):
         """
 #        logger.info("States: {state}", state=self.__States)
 #        logger.info("State pass: {password}", key=key, password=password)
-        if key is None:
-            results = {}
-            for item in self.__States:
-                if self.__States[item]['readKey'] is None:
-                    results[item] = self.__States[item]['value']
-            return results
-
+        # if key is None:
+        #     results = {}
+        #     for item in self.__States:
+        #         if self.__States[item]['readKey'] is None:
+        #             results[item] = self.__States[item]['value']
+        #     self._Statistics.increment("lib.states.get.all")
+        #     return results
         if key in self.__States:
             if self.__States[key]['readKey'] is not None:
                 if password is None:
+                    self._Statistics.increment("lib.states.get.noaccess")
                     raise YomboStateNoAccess("State is read protected with password. Use self.__States.get(key, password) to read.")
                 elif self.__States[key]['readKey'] != password:
+                    self._Statistics.increment("lib.states.get.noaccess")
                     raise YomboStateNoAccess("State read password is invalid.")
 #            logger.info("State get2: {key}  value: {value}", key=key, value=self.__States[key]['value'])
-            if key in self._live_states:
-                return self._live_states[key]['callback'](**self._live_states[key]['arguments'])
-            return self.__States[key]['value']
+            else:
+                self._Statistics.increment("lib.states.get.value")
+                return self.__States[key]['value']
         else:
+            self._Statistics.increment("lib.states.get.not_found")
             return None
 
     def get_states(self):
@@ -245,6 +247,7 @@ class States(YomboLibrary, object):
                     value = newValue
                     break
 
+            self._Statistics.increment("lib.states.set.update")
             self.__States[key]['value'] = value
             self.__States[key]['updated'] = time()
             self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
@@ -269,6 +272,7 @@ class States(YomboLibrary, object):
                 'readKey': None,
                 'writeKey': password
             }
+            self._Statistics.increment("lib.states.set.new")
             self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         self.check_trigger(key, value)
 
