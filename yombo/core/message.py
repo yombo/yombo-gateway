@@ -267,7 +267,11 @@ class Message:
 
     def __getitem__(self, key):
         """
-        Simulate a dictionary lookup of a key value. Typical usage::
+        Simulate a dictionary lookup of a key value.
+
+        *Usage**:
+
+        .. code-block:: python
 
             message['msgOrigin']
 
@@ -407,14 +411,17 @@ class Message:
     def getReply(self, **kwargs):
         """
         Using the current message, generate a new message skeleton most fields
-        prepopulated. This is typically used to generate a reply. Usage::
+        prepopulated. This is typically used to generate a reply.
 
-            newMessage = existingMessage.getReply(msgStatus="done", textStatus="Process has completed.")
-            newMessages.payload = newPayload
-            newMessage.send()
+        *Usage**:
 
-        :return: A new message object with the msgOrigin fliped with
-            msgDestination.
+        .. code-block:: python
+
+           newMessage = existingMessage.getReply(msgStatus="done", textStatus="Process has completed.")
+           newMessages.payload = newPayload
+           newMessage.send()
+
+        :return: A new message object with the msgOrigin fliped with msgDestination.
         :rtype: message
         """
         repl = {
@@ -444,7 +451,7 @@ class Message:
 
         :raise YomboMessageError: When the message cannot be sent and the reason why.
         :return: True if sent, otherwise will toss an exception.
-        ":rtype: bool
+        :rtype: bool
         """
         if self.validateMessage() is False:
             raise YomboMessageError("You should never see this message. If you do.  Please tell supprt@yombo.net about it!", 'Message API::Catchall')
@@ -525,7 +532,7 @@ class Message:
         :param external: True if the packet came from an external source, otherwise false if generated internally.
         :type external: bool
         :raise YomboMessageError: If external is not a True or False.  Also raised if component doesn't start with
-        'yombo.gateway' and doesn't include the remotes UUID.  IE: yombo.controller:s83h8109d81h0dh213
+          'yombo.gateway' and doesn't include the remotes UUID.  IE: yombo.controller:s83h8109d81h0dh213
         """
 
         component = component.lower()

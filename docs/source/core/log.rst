@@ -12,8 +12,5 @@ Log Module
 ==============================
 .. automodule:: yombo.core.log
    :members:
-
-   .. automethod:: __init__
-
-
+   :private-members:
 

@@ -15,8 +15,8 @@ are kept to a minimum.
 
 .. warning::
 
-  These resources are NOT meant for direct access.  To get and set configuration
-  values, use :ref:`getConfigValue` and :ref:`setConfigValue>.
+   These resources are NOT meant for direct access.  To get and set configuration
+   values, use :ref:`getConfigValue` and :ref:`setConfigValue>.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2012-2015 by Yombo.

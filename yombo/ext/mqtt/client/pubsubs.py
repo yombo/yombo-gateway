@@ -117,8 +117,10 @@ class ConnectedState(BaseConnectedState):
         self.protocol.handlePUBREC(response)
 
     # QoS=2 packets forwarded to subscriber
-    def handlePUBREL(self, dup, response):
-        self.protocol.handlePUBREL(dup, response)
+#    def handlePUBREL(self, dup, response):
+#        self.protocol.handlePUBREL(dup, response)
+    def handlePUBREL(self, response):  # patched by mitch, submitted pull request.
+        self.protocol.handlePUBREL(response)
 
     # QoS=2 packets forwarded to publisher
     def handlePUBCOMP(self, response):
@@ -151,6 +153,7 @@ class MQTTProtocol(MQTTBaseProtocol):
         self._factor       =  self.DEFAULT_FACTOR
         # additional, per-connection subscriber state
         self._onPublish   = None
+        self._onMqttConnectionMade = None  # a callback for when .connect() is done
         
       
        
@@ -356,6 +359,8 @@ class MQTTProtocol(MQTTBaseProtocol):
             self._purgeSession()
         else:
             self._syncSession()
+        if self._onMqttConnectionMade:
+            self._onMqttConnectionMade()
 
     # ---------------------------
     # State Machine API callbacks

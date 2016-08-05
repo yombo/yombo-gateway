@@ -433,6 +433,7 @@ class MQTTBaseProtocol(Protocol):
         '''
         response = PUBREL()
         response.decode(packet)
+        print "About to call handlePUBREL"
         self.state.handlePUBREL(response)
 
     # ------------------------------------------------------------------------

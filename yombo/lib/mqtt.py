@@ -3,7 +3,7 @@
 
 .. note::
 
-  For more information see: `Atoms @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/mqtt>`_
+  For more information see: `MQTT @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/mqtt>`_
 
 Implements MQTT. It does 2 things:
 
@@ -14,15 +14,22 @@ Implements MQTT. It does 2 things:
 
 .. code-block:: python
 
+   def _init_(self):
+       # Create anew connection. Hostname, port, user, password, ssl(True/False) can be specified if connection
+       # to anther MQTT server. Otherwise, use the default local one.
+       self.my_mqtt = self._MQTT.new()  # Create a new connection to the embedded MQTT server.
+
+       # Subscribe to all topics of 'foor/bar/topic' and send them to:  self.show_mqtt_message
+       self.my_mqtt.subscribe('foo/bar/topic', self.show_mqtt_message)
+
    def show_mqtt_message(self, topic, message):
        print "topic: %s" % topic
        print "message: %s" % message
 
-   my_mqtt = self._MQTT.new()  # Create a new connection to the embedded MQTT server.
-   my_mqtt.subscribe('foo/bar/topic', self.show_mqtt_message)  # now all topics with 'foor/bar/topic' will be sent to show_mqtt_message
 
 ..versionadded:: 0.11.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
@@ -44,6 +51,7 @@ from twisted.internet import reactor
 from twisted.logger   import (
     Logger, LogLevel, globalLogBeginner, textFileLogObserver,
     FilteringLogObserver, LogLevelFilterPredicate)
+from twisted.internet.task import LoopingCall
 
 # 3rd party libraries
 from yombo.ext.mqtt.client.factory import MQTTFactory
@@ -150,18 +158,16 @@ class MQTT(YomboLibrary):
         command = ['hbmqtt', "-c", self.hbmqtt_config_file]
         self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
 
-        level = LogLevel.levelWithName('info')
-        LLFP = LogLevelFilterPredicate()
-        LLFP.setLogLevelForNamespace(namespace='mqtt', level=level)
+        # level = LogLevel.levelWithName('info')
+        # LLFP = LogLevelFilterPredicate()
+        # LLFP.setLogLevelForNamespace(namespace='mqtt', level=level)
 
     def _load_(self):
         if self.server_enabled is False:
             logger.info("Embedded MQTT Disabled.")
             return
-        self.local_mqtt_client_id = random_string(length=10)
-        self.client_connections[self.local_mqtt_client_id] = self.new(self.server_listen_ip, self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False )
-#        print("localmqtt_client _id = %s" % self.local_mqtt_client_id)
 
+        self.test()
 
     def _stop_(self):
 #        print("###########################################clientid: %s" % self.local_mqtt_client_id)
@@ -177,12 +183,13 @@ class MQTT(YomboLibrary):
         #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
 
 
-    def new(self, server_hostname=None, server_port=None, user=None, password=None, ssl=False,):
+    def new(self, on_connect_callback, server_hostname=None, server_port=None, user=None, password=None, ssl=False,):
         """
         Create a new connection to MQTT. Don't worry, it's designed for many many connections. Leave all
         connection details blank or all completed. Blank will connect the MQTT client to the default Yombo
         embedded MQTT Server: HBMQTT
 
+        :param on_connect_callback: Callback to a method when the MQTT connection is up. Used for subscriptions, etc.
         :param server_hostname:
         :param server_port:
         :param user:
@@ -195,13 +202,35 @@ class MQTT(YomboLibrary):
             raise YomboWarning('MQTT Clients disabled, unable to connect', 'connect', 'mqtt')
 
         client_id = random_string(length=10)
-        self.client_connections[client_id] = MQTTClient(self, server_hostname, server_port, user, password, ssl)
+        self.client_connections[client_id] = MQTTClient(self, on_connect_callback, server_hostname, server_port, user, password, ssl)
 
         return self.client_connections[client_id]
 
+    def test(self):
+        self.local_mqtt_client_id = random_string(length=10)
+#        self.client_connections[self.local_mqtt_client_id] = self.new(self.test_on_connect, 'test.mosquitto.org', 1883 )
+        self.client_connections[self.local_mqtt_client_id] = self.new(self.test_on_connect, self.server_listen_ip, self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False )
+#        print("localmqtt_client _id = %s" % self.local_mqtt_client_id)
+
+        self.test_1 = False
+        self.sendDataLoop = LoopingCall(self.test_send_data)
+        self.sendDataLoop.start(15, False)
+
+    def test_on_connect(self):
+        print("in on connect in library...")
+        self.client_connections[self.local_mqtt_client_id].subscribe("foo/#", self.test_mqtt_in)
+        pass
+
+    def test_send_data(self):
+        self.client_connections[self.local_mqtt_client_id].publish("foo/bar/shed/status", 'open')
+
+    def test_mqtt_in(self,topic, payload, qos, dup, retain, msgID):
+        print("i got this: %s / %s" % (topic, payload))
+        pass
+
 
 class MQTTClient(object):
-    def __init__(self, mqtt_library, server_hostname, server_port, user=None, password=None, ssl=False):
+    def __init__(self, mqtt_library, on_connect_callback, server_hostname, server_port, user=None, password=None, ssl=False):
         self.server_hostname = server_hostname
         self.server_port = server_port
         self.user = user
@@ -209,6 +238,8 @@ class MQTTClient(object):
         self.ssl = ssl
         self.connected = False
         self.mqtt_library = mqtt_library
+
+        self.on_connect_callback = on_connect_callback
         self.subscribe_callback = None
 
         if server_hostname is None:
@@ -218,6 +249,7 @@ class MQTTClient(object):
 
         self.factory = MQTTTYomboFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER)
         self.factory.set_mqtt_client(self)
+        self.factory.set_on_connect_callback(on_connect_callback)
 
         if ssl:
             self.my_reactor = reactor.connectSSL(server_hostname, self.server_port, self.factory,
@@ -235,7 +267,7 @@ class MQTTClient(object):
         :return:
         """
         self.factory.protocol.publish(topic=topic, message=message, qos=qos)
-        self._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
+        self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
 
     def subscribe(self, topic, callback, qos=2):
         """
@@ -245,6 +277,7 @@ class MQTTClient(object):
         :param qos: See MQTT doco for information.
         :return:
         """
+        print("subscription set...")
         self.factory.protocol.subscribe(topic, qos)
         self.subscribe_callback = callback
         self.factory.protocol.setPublishHandler(self.deliver_message)
@@ -262,14 +295,14 @@ class MQTTClient(object):
         :return:
         """
         print("topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, msgID:%s" % (topic, payload, qos, dup, retain, msgID))
-        self._onPublish(topic, payload, qos, dup, retain, msgID)
+        self.subscribe_callback(topic, payload, qos, dup, retain, msgID)
 
     def unsubscribe(self, topic):
-        self.factory.protocol.ubsubscribe(topic)
+        self.factory.protocol.bsubscribe(topic)
 
     def client_connectionMade(self):
         self.connected = True
-        self.factory.protocol.publish('yombo/service/status', 'online')
+#        self.factory.protocol.publish('yombo/service/status', 'online')
 
     def client_connectionLost(self, reason):
         logger.info("Lost connection to HBMQTT Broker: {reason}", reason=reason)
@@ -281,17 +314,27 @@ class MQTTYomboProtocol(MQTTProtocol):
     def connectionMade(self):  # Empty through twisted.
 #        print("!!!!  connectionMade   !!!!!")
         self.connect("YomboGateway-v1", keepalive=0, version=v311)
+        self._onmqttConnectionMade = self.factory.on_connect_callback
         self.factory.mqtt_client.client_connectionMade()
 
+#    def _onDisconnect(self, reason):  # defined in MQTTProtocol in connectionLost
+##        print("!!!!  connectionLost   !!!!!")
+#        self.factory.mqtt_client.client_connectionLost(reason)
+
     def _onDisconnect(self, reason):  # defined in MQTTProtocol in connectionLost
-#        print("!!!!  connectionLost   !!!!!")
-        self.factory.mqtt_client.client_connectionLost(reason)
+        print("!!!!  SCREAAAAAAmmmmmm   !!!!!")
+#        self.factory.mqtt_client.client_connectionLost(reason)
 
 
 class MQTTTYomboFactory(MQTTFactory):
 
     def set_mqtt_client(self, mqtt_client):
+#        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  client set")
         self.mqtt_client = mqtt_client
+
+    def set_on_connect_callback(self, on_connect_callback):
+#        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  client set")
+        self.on_connect_callback = on_connect_callback
 
     def buildProtocol(self, addr):
         if self.profile == self.SUBSCRIBER:

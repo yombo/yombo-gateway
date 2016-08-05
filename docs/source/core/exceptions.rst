@@ -10,5 +10,4 @@ Exceptions (yombo.core.exceptions)
 
 .. automodule:: yombo.core.exceptions
    :members:
-
-   .. automethod:: __init__
+   :private-members:

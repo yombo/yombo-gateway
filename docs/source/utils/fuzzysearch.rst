@@ -11,4 +11,4 @@ FuzzySearch (yombo.utils.fuzzysearch)
 .. automodule:: yombo.utils.fuzzysearch
    :members:
 
-   .. automethod:: __init__
+   .. automethod:: FuzzySearch.__init__

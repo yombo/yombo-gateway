@@ -33,14 +33,12 @@ features to be used by libraries and modules.
 .. toctree::
    :maxdepth: 1
 
-   ../core/auth.rst
-   ../core/exceptions
-   ../core/gwservice
-   ../core/helpers
-   ../core/library
-   ../core/log
-   ../core/message
-   ../core/module
+   ../core/exceptions.rst
+   ../core/gwservice.rst
+   ../core/library.rst
+   ../core/log.rst
+   ../core/message.rst
+   ../core/module.rst
 
 .. _lib:
 
@@ -68,6 +66,7 @@ Times libararies.
    ../lib/downloadmodules.rst
    ../lib/gpg.rst
    ../lib/loader.rst
+   ../lib/localdb.rst
    ../lib/messages.rst
    ../lib/modules.rst
    ../lib/mqtt.rst
@@ -76,6 +75,7 @@ Times libararies.
    ../lib/states.rst
    ../lib/statistics.rst
    ../lib/times.rst
+   ../lib/yomboapi.rst
    ../lib/voicecmds.rst
 
 .. _util:

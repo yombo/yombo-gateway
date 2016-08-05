@@ -29,6 +29,7 @@ exactness can be fine tuned using a percent value from .99 - .10, the default 75
    Search, but only require 50% match.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
