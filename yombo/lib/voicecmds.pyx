@@ -175,6 +175,23 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
                 logger.debug("For module '{fullName}', adding voice_cmd: {voice_cmd}, order: {order}", voice_cmd=list['voice_cmd'], fullName=componentName, order=list['order'])
                 self.add(list['voice_cmd'], componentName, None, list['order'])
 
+    def search(self, searchFor, limiter_override=None):
+        """
+        A simple wrapper around fuzzysearch.search to generate stats.
+
+        :param searchFor: The key of the dictionary to search for.
+        :type searchFor: int or string
+        :param limiter_override: temporarily override the limiter for only this search.
+        :return: See description for details
+        :rtype: dict
+        """
+        results = super(VoiceCmds, self).__getitem__(searchFor, limiter_override=None)
+        if results['valid'] is True:
+            self._Statistics.increment("lib.voicecmds.search.found", bucket_time=30, anon=True)
+        else:
+            self._Statistics.increment("lib.voicecmds.search.not_found", bucket_time=30, anon=True)
+        return results
+
     def add(self, voiceString, destination, device_id = None, order = 'both'):
         """
         Add a voice command to the available voice commands.

@@ -8,7 +8,7 @@
 
   For more information see: `Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Commands>`_
 
-This library maintains al ist of all available commands. The commands (plural) is a wrapper class and contains all
+This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
 
 The command (singular) class represents one command.

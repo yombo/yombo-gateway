@@ -71,7 +71,8 @@ or "house.upstairs.*.temperature"
 """
 # Import python libraries
 from datetime import datetime, timedelta
-
+from difflib import SequenceMatcher
+import re
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -80,7 +81,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.utils import percentile
+from yombo.utils import percentile, global_invoke_all
 from yombo.core.log import get_logger
 
 logger = get_logger('library.statistics')
@@ -93,7 +94,6 @@ class Statistics(YomboLibrary):
     enabled = True  # set to tru to start, will be updated when configurations is loaded.
     count_bucket_duration = 5
     averages_bucket_duration = 5
-    datapoint_bucket_duration = 5
     _counters = {}  # stores counter information before it's saved to database
     _averages = {}  # stores averages type information
     _datapoints = {}  # stores datapoint data
@@ -112,9 +112,22 @@ class Statistics(YomboLibrary):
 
         self.gwuuid = self._Configs.get("core", "gwuuid")
 
+        # defines bucket time span, default is 5 minutes for all buckets
         self.count_bucket_duration = self._Configs.get('statistics', 'count_bucket_duration', 5)  # 5 minutes for count buckets
         self.averages_bucket_duration = self._Configs.get('statistics', 'averages_bucket_duration', 5)  # 5 minutes for averages buckets
-        self.datapoint_bucket_duration = self._Configs.get('statistics', 'datapoint_bucket_duration', 5)  # 5 minutes for count buckets
+
+        # defines how long to keep things. All values in days! 0 - forever
+        self.count_bucket_life_full = self._Configs.get('statistics', 'count_bucket_life_full', 30, False)
+        self.count_bucket_life_hourly = self._Configs.get('statistics', 'count_bucket_life_hourly', 120, False)
+        self.count_bucket_life_daily = self._Configs.get('statistics', 'count_bucket_life_daily', 0, False)
+        self.averages_bucket_life_full = self._Configs.get('statistics', 'averages_bucket_life_full', 30, False)
+        self.averages_bucket_life_hourly = self._Configs.get('statistics', 'averages_bucket_life_hourly', 120, False)
+        self.averages_bucket_life_daily = self._Configs.get('statistics', 'averages_bucket_life_daily', 0, False)
+        self.datapoint_bucket_life_full = self._Configs.get('statistics', 'datapoint_bucket_life_full', 30, False)
+        self.datapoint_bucket_life_hourly = self._Configs.get('statistics', 'datapoint_bucket_life_hourly', 120, False)
+        self.datapoint_bucket_life_daily = self._Configs.get('statistics', 'datapoint_bucket_life_daily', 0, False)
+
+        self.bucket_lifetimes = {}  # caches meta life duration. Might get set many times, no need to hammer database
 
         self.time_between_saves = self._Configs.get('statistics', 'time_between_saves', 1800 )  # 30 mins
         self.sendDataLoop = LoopingCall(self._save_statistics)
@@ -139,22 +152,59 @@ class Statistics(YomboLibrary):
     def unload_errback(self, reason):
         logger.warn("Error unloading statistics: {reason}", reason=reason)
 
-    def _get_bucket_time(self, type):
+
+    def _module_prestart_(self, **kwargs):
+        """
+        This function is called before the _start_ function of all modules is called. This in turn calls the
+        hook_statistics_lifetimes hook to get lifetime information about statistics.
+
+        This allows libraries and modules to limit the lifetime of statistics. It expects a dictionary in return:
+        return {'name': 'lib.amqpyombo.amqp.#',
+                'lifetimes': [15, 30, 365],
+               }
+
+        The name is the filter to apply. A * can replace one section of the name, while a # will grab any name
+        segments after it.
+
+        See :py:mod:`Atoms Library <yombo.lib.automationhelpers>` for demo. All other modules are defined here...
+        """
+        # first, set some generic defaults. The filter matcher when processing will always use the most specific.
+        self.bucket_lifetimes_default = [30, 90, 365]
+
+        self.add_bucket_lifetime('lib.#', [10, 30, 365])
+        self.add_bucket_lifetime('lib.amqpyombo.amqp.#', [5, 15, 90])  # don't really care about this! If you do, just override with same value.
+        self.add_bucket_lifetime('core.#', [10, 30, 365])
+        self.add_bucket_lifetime('modules.#', [10, 30, 365])
+
+        stat_lifetimes = global_invoke_all('statistics_lifetimes')
+#        print "################## %s " % automation_sources
+#        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
+        for moduleName, item in stat_lifetimes.iteritems():
+            if isinstance(item, dict):
+                    self.add_bucket_lifetime(item['name'], item['lifetimes'])
+
+        print 'lifetimes: %s' % self.bucket_lifetimes
+
+    def _get_bucket_time(self, type, bucket_time=None):
         """
         Internal function to get time for a given bucket type.
 
         :param type: Either count, averages, or datapoint.
         :return: A unix epoch time for a bucket.
         """
-        bucket_minutes = None
-        if type == "count":
-            bucket_minutes = self.count_bucket_duration
-        elif type == "averages":
-            bucket_minutes = self.averages_bucket_duration
-        elif type == "datapoint":
-            return int(datetime.now().strftime('%s'))
+        if bucket_time is not None:
+            if 60 % bucket_time != 0:
+                raise YomboWarning("bucket_time must be divisible by 60.")
+            bucket_minutes = bucket_time
         else:
-            raise YomboWarning('Invalid _get_bucket_time type: %s' % type)
+            if type == "count":
+                bucket_minutes = self.count_bucket_duration
+            elif type == "averages":
+                bucket_minutes = self.averages_bucket_duration
+            elif type == "datapoint":
+                return int(datetime.now().strftime('%s'))
+            else:
+                raise YomboWarning('Invalid _get_bucket_time type: %s' % type)
 
         now = datetime.now()
         bucket = now - timedelta(minutes = now.minute % bucket_minutes, seconds = now.second, microseconds = now.microsecond )
@@ -184,7 +234,21 @@ class Statistics(YomboLibrary):
             if len(parts[count]) < 3:
                 raise YomboWarning("'%s' is too short, must be at least 3 characters: " % parts[count])
 
-    def datapoint(self, name, value, anon=False):
+    def add_bucket_lifetime(self, name, lifetimes):
+        """
+
+        :param name: name of bucket
+        :param lifetimes: list - [full, hourly, daily]
+        :return:
+        """
+        if isinstance(lifetimes, list) is False or len(lifetimes) != 3:
+            raise YomboWarning("Bucket lifetimes must be a list of life int values.")
+        for item in lifetimes:
+            if isinstance(item, int) is False:
+                raise YomboWarning("Bucket lifetimes must be a list of life int values.")
+        self.bucket_lifetimes[name] = {'life': lifetimes}
+
+    def datapoint(self, name, value, anon=False, lifetimes=None):
         """
         Set a datapoint numberic value. For example, set the amount of memory used every so often.
 
@@ -196,6 +260,8 @@ class Statistics(YomboLibrary):
         :type name: string
         :param value: A numbered value to set.
         :type value: int
+        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
@@ -207,10 +273,14 @@ class Statistics(YomboLibrary):
         bucket = self._get_bucket_time('datapoint')
         if bucket not in self._datapoints:
             self._datapoints[bucket] = {}
+        if name not in self._datapoints:
+            self._datapoints[bucket][name] = {}
         self._datapoints[bucket][name]['value'] = value
         self._datapoints[bucket][name]['anon'] = anon
+        if lifetimes is not None:
+            self.add_bucket_lifetime(name, lifetimes)
 
-    def count(self, name, value, anon=False):
+    def count(self, name, value, bucket_time=None, anon=False, lifetimes=None):
         """
         Set a count value. Typically, this isn't used, instead use ``increment`` or ``decrement`` due to
         bucket time rollover.
@@ -219,6 +289,8 @@ class Statistics(YomboLibrary):
         :type name: string
         :param value: A numbered value to set.
         :type value: int
+        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
@@ -227,14 +299,16 @@ class Statistics(YomboLibrary):
 
         self._validate_name(name)
 
-        bucket = self._get_bucket_time('count')
+        bucket = self._get_bucket_time('count', bucket_time)
 
         if bucket not in self._counters:
             self._counters[bucket] = {}
         self._counters[bucket][name]['value'] = value
         self._counters[bucket][name]['anon'] = anon
+        if lifetimes is not None:
+            self.add_bucket_lifetime(name, lifetimes)
 
-    def increment(self, name, count=1, anon=False):
+    def increment(self, name, count=1, bucket_time=None, anon=False, lifetimes=None):
         """
         Increment a counter value. If doesn't exist, will create the new counter for the given name.
 
@@ -246,6 +320,8 @@ class Statistics(YomboLibrary):
         :type name: string
         :param count: How many to increment by, defaults to 1.
         :type count: int
+        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
@@ -253,7 +329,7 @@ class Statistics(YomboLibrary):
             return
         self._validate_name(name)
 
-        bucket = self._get_bucket_time('count')
+        bucket = self._get_bucket_time('count', bucket_time)
 
         if bucket not in self._counters:
             self._counters[bucket] = {}
@@ -266,8 +342,11 @@ class Statistics(YomboLibrary):
                 self._counters[bucket][name]['value'] += count
                 self._counters[bucket][name]['anon'] = anon
 
+        if lifetimes is not None:
+            self.add_bucket_lifetime(name, lifetimes)
 
-    def decrement(self, name, count=1, anon=False):
+
+    def decrement(self, name, count=1, bucket_time=None, anon=False, lifetimes=None):
         """
         Decrement a counter value. If doesn't exist, will create the new counter for the given name.
 
@@ -279,6 +358,8 @@ class Statistics(YomboLibrary):
         :type name: string
         :param count: How many to increment by, defaults to -1.
         :type count: int
+        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
@@ -287,7 +368,7 @@ class Statistics(YomboLibrary):
 
         self._validate_name(name)
 
-        bucket = self._get_bucket_time('count')
+        bucket = self._get_bucket_time('count', bucket_time)
 
         if bucket not in self._counters:
             self._counters[bucket] = {}
@@ -300,8 +381,10 @@ class Statistics(YomboLibrary):
                 self._counters[bucket][name]['value'] -= count
                 self._counters[bucket][name]['anon'] = anon
 
+        if lifetimes is not None:
+            self.add_bucket_lifetime(name, lifetimes)
 
-    def averages(self, name, value, anon=False):
+    def averages(self, name, value, bucket_time=None, anon=False, lifetimes=None):
         """
         Set a time on how long something took to complete in milliseconds. A single timer can be set many times, but
         it will be averaged per bucket.
@@ -314,6 +397,8 @@ class Statistics(YomboLibrary):
         :type name: string
         :param value: How long something took in milliseconds.
         :type value: int
+        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
@@ -322,7 +407,7 @@ class Statistics(YomboLibrary):
 
         self._validate_name(name)
 
-        bucket = self._get_bucket_time('averages')
+        bucket = self._get_bucket_time('averages', bucket_time)
 
         if bucket not in self._averages:
             self._averages[bucket] = {}
@@ -330,6 +415,9 @@ class Statistics(YomboLibrary):
         if name not in self._averages[bucket]:
             self._averages[bucket][name] = []
         self._averages[bucket][name].append({'value': value, 'anon': anon})
+
+        if lifetimes is not None:
+            self.add_bucket_lifetime(name, lifetimes)
 
     @inlineCallbacks
     def _save_statistics(self, full=False):
@@ -396,13 +484,96 @@ class Statistics(YomboLibrary):
 
         for bucket in self._datapoints.keys():
             if full or bucket < (current_datapoint_bucket):
+#                print "buck datapoints: %s" % self._datapoints[bucket]
                 for name in self._datapoints[bucket].keys():
                     yield self._Libraries['localdb'].save_statistic(bucket, "datapoint", name,
-                                                                    self._counters[bucket][name]['value'],
-                                                                    self._counters[bucket][name]['anon'])
+                                                                    self._datapoints[bucket][name]['value'],
+                                                                    self._datapoints[bucket][name]['anon'])
     
             if full:                    
                 del self._datapoints[bucket]
+                self.consolidate_db()  # for testing
+
+    @inlineCallbacks
+    def consolidate_db(self):
+        """
+        CPU intensive function consolidates statistic information.
+
+        NOT COMPLETE. Just geting started.
+
+        Steps:
+        1) Generate full list of names (ask sql for unique).
+        2) Match list of names with filters.
+        3) Ask SQL for names with date ranges as defined in filter+lifetime  *continue from here*
+        4) Add all the data up.
+        5) Remove date range of data from SQL
+        6) Add new consolidated data back to SQL.
+        :return:
+        """
+
+        #        1) Generate full list of names.
+        records = yield self._Libraries['localdb'].get_distinct_stat_names()
+
+        names = {}
+        for record in records:
+            names[record['name']] = {'bucket_min':record['bucket_min'],'bucket_max':record['bucket_min']}
+
+        #       2) Match list of names with filters.
+        def make_regex(bucket_lifetimes):
+            thelist = {}
+            for filter, data in bucket_lifetimes.iteritems():
+                thelist[filter] = re.compile(filter.replace('#', '.*').replace('$', '\$').replace('+', '[/\$\s\w\d]+'))
+            return thelist
+
+        def select_closest( the_list, search_for):  # semi-reusing fuzzydict..
+            stringDiffLib = SequenceMatcher()
+            stringDiffLib.set_seq1(search_for.lower())
+            # examine each key in the dict
+            best_ratio = 0
+            best_match = None
+            for key in the_list:
+                # key must be a string, otherwise it is skipped!
+                try:
+                    stringDiffLib.set_seq2(key.lower())
+                except TypeError:
+                    continue                # might get here, even though it's not a string. Catch it!
+                try:
+                    # get the match ratio
+                    curRatio = stringDiffLib.ratio()
+                except TypeError:
+                    break
+                # if this is the best ratio so far - save it and the value
+                if curRatio > best_ratio:
+                    best_ratio = curRatio
+                    best_match = key
+            return best_match
+
+        regexs = make_regex(self.bucket_lifetimes)
+
+        # get all possible matching filters
+        for name, name_info in names.iteritems():
+          for filter, regex in regexs.iteritems():
+            result = regex.match(name)
+            if result is not None:
+              if 'filters' not in names[name]:
+                  names[name] = {'filters': []}
+              names[name]['filters'].append(filter)
+
+        # now lets strip this down
+        for name, data in names.iteritems():
+            if 'filters' in data:
+                filter = select_closest(data['filters'], name)
+                del names[name]['filters']
+                names[name]['life'] = self.bucket_lifetimes[filter]['life']
+            else:
+                names[name]['life'] = [0, 0, 0]
+
+        print names
+#{'home.kitchen.bar': {'life': [1, 3, 5]}, 'home.office.light': {'life': [2, 4, 6]}, 'home.den.light': {'life': [2, 4, 6]}}
+
+
+        #        3) Ask SQL for names with date ranges as defined in filter+lifetime  *continue from here*
+
 
     def _upload_statistics(self):
         """

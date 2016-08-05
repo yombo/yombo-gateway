@@ -427,6 +427,13 @@ class LocalDB(YomboLibrary):
     ### Statistics  #####
     #####################
     @inlineCallbacks
+    def get_distinct_stat_names(self):
+        records = yield self.dbconfig.select('statistics', where="type != 'datapoint'",
+                                             select='name, MIN(bucket) as bucket_min, MAX(bucket) as bucket_max',
+                                             group='name')
+        returnValue(records)
+
+    @inlineCallbacks
     def get_statistic(self, where):
         find_where = dictToWhere(where)
         records = yield Statistics.find(where=find_where)
@@ -485,7 +492,7 @@ class LocalDB(YomboLibrary):
             args['name'] = name
             if type == 'average':
                 args['averagedata'] = sqlite3Binary(cPickle.dumps(in_average_data, cPickle.HIGHEST_PROTOCOL))
- #           print "saving new SQL record: %s" % args
+#            print "saving new SQL record: %s" % args
             results = yield self.dbconfig.insert('statistics', args, None, 'OR IGNORE' )
 
         returnValue(results)

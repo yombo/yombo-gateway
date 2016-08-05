@@ -556,19 +556,22 @@ class Devices(YomboLibrary):
     # The remaining functions implement automation hooks. These should not be called by anything other than the
     # automation library!
 
-    def check_trigger(self, key, value):
+    def check_trigger(self, device_id, new_status):
         """
-        Called by the devices.set function when a new value is set. It asks the automation library if this key is
-        trigger, and if so, fire any rules.
+        Called by the devices.set function when a device changes state. It just sends this to the automation
+        library for checking and firing any rules as needed.
 
         True - Rules fired, fale - no rules fired.
+        :param device_id: Device ID
+        :type device_id: str
+        :param new_status: New device state
+        :type new_status: str
         """
-
-        results = self._AutomationLibrary.triggers_check('devices', key, value)
+        self._AutomationLibrary.triggers_check('devices', device_id, new_status)
 
     def Devices_automation_source_list(self, **kwargs):
         """
-        hook_automation_source_list called by the automation library to get a list of possible sources.
+        Adds 'devices' to the list of source platforms (triggers)as a platform for rule sources (triggers).
 
         :param kwargs: None
         :return:
@@ -583,11 +586,11 @@ class Devices(YomboLibrary):
 
     def devices_validate_source_callback(self, rule, portion, **kwargs):
         """
-        A callback to check if a provided source is valid before being added as a possible source.
+        Used to check a rule's source for 'devices'. It makes sure rule source is valid before being added.
 
         :param rule: The potential rule being added.
-        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
-        :return:
+        :param portion: Dictionary containg everything in the rule being checked. Includes source, filter, etc.
+        :return: None. Raises YomboWarning if invalid.
         """
         if 'platform' not in portion['source']:
             raise YomboWarning("'platform' must be in 'source' section.")
@@ -711,7 +714,7 @@ class Device:
     controlled and/or queried for status.  Examples include a lamp
     module, curtains, Plex client, rain sensor, etc.
     """
-    def __init__(self, device, allDevices, testDevice=False):
+    def __init__(self, device, devices_library, testDevice=False):
         """
         :param device: *(list)* - A device as passed in from the devices class. This is a
             dictionary with various device attributes.
@@ -759,11 +762,11 @@ class Device:
         self.updated = int(device["updated"])
         self.lastCmd = deque({}, 30)
         self.status_history = deque({}, 30)
-        self._allDevices = allDevices
+        self.devices_library = devices_library
         self.testDevice = testDevice
         self.available_commands = []
         self.deviceVariables = {'asdf':'qwer'}
-        self._CommandsLibrary = self._allDevices._Libraries['commands']
+        self._CommandsLibrary = self.devices_library._Libraries['commands']
         self.device_route = {}  # Destination module to send commands to
         self._helpers = {}  # Helper class provided by route module that can provide additional features.
 
@@ -790,10 +793,10 @@ class Device:
            print "Exception : %r" % failure
            return 100  # squash exception, use 0 as value for next stage
 
-        d = self._allDevices._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
+        d = self.devices_library._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
         d.addCallback(set_commands)
         d.addErrback(gotException)
-        d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variables('device', self.device_id))
+        d.addCallback(lambda ignored: self.devices_library._Libraries['localdb'].get_variables('device', self.device_id))
         d.addErrback(gotException)
         d.addCallback(set_variables)
         d.addErrback(gotException)
@@ -804,19 +807,19 @@ class Device:
 
     def setup_routes(self):
         try:
-            self.device_route['Command'] = self._allDevices.get_device_routing(self.device_type_id, 'Command', 'module_label')
+            self.device_route['Command'] = self.devices_library.get_device_routing(self.device_type_id, 'Command', 'module_label')
         except YomboWarning:
             self.device_route['Command'] = None
         try:
-            self.device_route['Interface'] = self._allDevices.get_device_routing(self.device_type_id, 'Interface', 'module_label')
+            self.device_route['Interface'] = self.devices_library.get_device_routing(self.device_type_id, 'Interface', 'module_label')
         except YomboWarning:
             self.device_route['Interface'] = None
         try:
-            self.device_route['Logic'] = self._allDevices.get_device_routing(self.device_type_id, 'Logic', 'module_label')
+            self.device_route['Logic'] = self.devices_library.get_device_routing(self.device_type_id, 'Logic', 'module_label')
         except YomboWarning:
             self.device_route['Logic'] = None
         try:
-            self.device_route['Other'] = self._allDevices.get_device_routing(self.device_type_id, 'Other', 'module_label')
+            self.device_route['Other'] = self.devices_library.get_device_routing(self.device_type_id, 'Other', 'module_label')
         except YomboWarning:
             self.device_route['Other'] = None
 
@@ -1005,10 +1008,10 @@ class Device:
         new_status = self.Status(self.device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.testDevice is False:
-            self._allDevices._status_updates_to_save[random_string(length=12)] = new_status
-            if len(self._allDevices._status_updates_to_save) > 120:
-                self._allDevices._save_status()
-        self._allDevices.check_trigger(self.device_id, new_status)
+            self.devices_library._status_updates_to_save[random_string(length=12)] = new_status
+            if len(self.devices_library._status_updates_to_save) > 120:
+                self.devices_library._save_status()
+        self.devices_library.check_trigger(self.device_id, new_status)
 
     def send_status(self, **kwargs):
         """
@@ -1042,6 +1045,7 @@ class Device:
             payload.update(payloadAddon)
         except:
             pass
+        self.devices_library._Statistics.increment("lib.devices.status_change", anon=True)
         msg = {
                'msgOrigin'     : src,
                'msgDestination': dest,
@@ -1060,13 +1064,13 @@ class Device:
         relates to this device.  Easy, just tell the messages library to 
         do that for us.
         """
-        self._allDevices._MessageLibrary.device_delay_cancel(self.device_id)
+        self.devices_library._MessageLibrary.device_delay_cancel(self.device_id)
 
     def get_delayed(self):
         """
         List messages that are to be sent at a later time.
         """
-        self._allDevices._MessageLibrary.device_delay_list(self.device_id)
+        self.devices_library._MessageLibrary.device_delay_list(self.device_id)
 
     def load_history(self, howmany=35):
         """
@@ -1076,7 +1080,7 @@ class Device:
         :param howmany:
         :return:
         """
-        d =  self._allDevices._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=howmany)
+        d =  self.devices_library._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=howmany)
         d.addCallback(self._do_load_history)
         return d
 

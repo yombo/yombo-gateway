@@ -202,7 +202,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         daate_time = time_info['time_received'] - time_info['time_sent']
         milliseconds = (daate_time.days * 24 * 60 * 60 + daate_time.seconds) * 1000 + daate_time.microseconds / 1000.0
         logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
-        self.factory._Statistics.averages("lib.amqpyombo.amqp.response.time", milliseconds, anon=True)
+        self.factory._Statistics.averages("lib.amqpyombo.amqp.response.time", milliseconds, bucket_time=15, anon=True)
 
 #        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
@@ -214,33 +214,33 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             # if a response, lets make sure it's something we asked for!
             elif props.headers['type'] == "response":
                 if props.correlation_id is None or not isinstance(props.correlation_id, basestring):
-                    self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.correlation_id_invalid", anon=True)
+                    self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.correlation_id_invalid", bucket_time=15, anon=True)
                     raise YomboWarning("Correlation_id must be present for 'Response' types, and must be a string.")
                 if props.correlation_id not in self.factory.send_correlation_ids:
                     logger.debug("{correlation_id} not in list of ids: {send_correlation_ids} ",
                                  correlation_id=props.correlation_id, send_correlation_ids=self.factory.send_correlation_ids.keys())
-                    self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.nocorrelation", anon=True)
+                    self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.nocorrelation", bucket_time=15, anon=True)
                     raise YomboWarning("Received request {correlation_id}, but never asked for it. Discarding",
                                        correlation_id=props.correlation_id)
             else:
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.unknown_msg_type", anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.unknown_msg_type", bucket_time=15, anon=True)
                 raise YomboWarning("Unknown message type recieved.")
 
             self._local_log("debug", "PikaProtocol::receive_item4")
             if props.user_id is None:
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.nouserid", anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.nouserid", bucket_time=15, anon=True)
                 raise YomboWarning("user_id missing.")
             if props.content_type is None:
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_type_missing", anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_type_missing", bucket_time=15, anon=True)
                 raise YomboWarning("content_type missing.")
             if props.content_encoding is None:
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_encoding_missing", anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_encoding_missing", bucket_time=15, anon=True)
                 raise YomboWarning("content_encoding missing.")
             if props.content_encoding != 'text' and props.content_encoding != 'zlib':
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_encoding_invalid", anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_encoding_invalid", bucket_time=15, anon=True)
                 raise YomboWarning("Content Encoding must be either  'text' or 'zlib'. Got: " + props.content_encoding)
             if props.content_type != 'text/plain' and props.content_type != 'application/msgpack' and  props.content_type != 'application/json':
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_type_invalid", anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.content_type_invalid", bucket_time=15, anon=True)
                 logger.warn('Error with contentType!')
                 raise YomboWarning("Content type must be 'application/msgpack', 'application/json' or 'text/plain'. Got: " + props.content_type)
 
@@ -250,11 +250,11 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                 afterZlib = len(msg)
                 logger.debug("Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}, percent: {percent}",
                              compressed=beforeZlib, uncompressed=afterZlib, percent=percentage(beforeZlib, afterZlib))
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.compressed", anon=True)
-                self.factory._Statistics.averages("lib.amqpyombo.amqp.received.compressed.percentage", percentage(beforeZlib, afterZlib), anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.compressed", bucket_time=15, anon=True)
+                self.factory._Statistics.averages("lib.amqpyombo.amqp.received.compressed.percentage", percentage(beforeZlib, afterZlib), bucket_time=15, anon=True)
             else:
-                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.uncompressed", anon=True)
-            self.factory._Statistics.averages("lib.amqpyombo.amqp.received.payload.size", len(msg), anon=True)
+                self.factory._Statistics.increment("lib.amqpyombo.amqp.received.uncompressed", bucket_time=15, anon=True)
+            self.factory._Statistics.averages("lib.amqpyombo.amqp.received.payload.size", len(msg), bucket_time=15, anon=True)
 
             if props.content_type == 'application/json':
                 if self.is_json(msg):
@@ -273,7 +273,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             # if a response, lets make sure it's something we asked for!
             elif props.headers['type'] == "Response":
                 if props.correlation_id not in self.factory.send_correlation_ids:
-                    self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.no_correlation_id", anon=True)
+                    self.factory._Statistics.increment("lib.amqpyombo.amqp.received.discarded.no_correlation_id", bucket_time=15, anon=True)
                     raise YomboWarning("Received request %s, but never asked for it. Discarding" % props.correlation_id)
 
             self._local_log("debug", "PikaProtocol::receive_item5")
@@ -347,18 +347,18 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 #            kwargs['body'] = json.dumps(kwargs['body'])
 #            kwargs['properties'].content_type = "application/json"
 
-        self.factory._Statistics.averages("lib.amqpyombo.amqp.sent.size", len(kwargs['body']), anon=True)
+        self.factory._Statistics.averages("lib.amqpyombo.amqp.sent.size", len(kwargs['body']), bucket_time=15, anon=True)
         if len(kwargs['body']) > 700:
             beforeZlib = len(kwargs['body'])
             kwargs['body'] = zlib.compress(kwargs['body'], 5)  # 5 appears to be fastest with test data - MSchwenk
             kwargs['properties'].content_encoding == "zlib"
-            self.factory._Statistics.increment("lib.amqpyombo.amqp.sent.compressed", anon=True)
+            self.factory._Statistics.increment("lib.amqpyombo.amqp.sent.compressed", bucket_time=15, anon=True)
             afterZlib = len(kwargs['body'])
-            self.factory._Statistics.increment("lib.amqpyombo.amqp.sent.compressed", anon=True)
+            self.factory._Statistics.increment("lib.amqpyombo.amqp.sent.compressed", bucket_time=15, anon=True)
             self.factory._Statistics.averages("lib.amqpyombo.amqp.sent.compressed.percentage", percentage(afterZlib, beforeZlib), anon=True)
         else:
             kwargs['properties'].content_encoding = 'text'
-            self.factory._Statistics.increment("lib.amqpyombo.amqp.sent.uncompressed", anon=True)
+            self.factory._Statistics.increment("lib.amqpyombo.amqp.sent.uncompressed", bucket_time=15, anon=True)
 
         try:
             if kwargs['properties'].correlation_id in self.factory.send_correlation_ids:
@@ -624,15 +624,6 @@ class AMQPYombo(YomboLibrary):
 
         self.connect()
 
-    def _load_(self):
-        pass
-
-    def _start_(self):
-        pass
-
-    def _stop_(self):
-        pass
-    
     def _unload_(self):
         self._local_log("debug", "AMQPYombo::_stop_")
         self.pika_factory.close()

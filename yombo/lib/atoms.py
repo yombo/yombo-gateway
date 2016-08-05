@@ -166,6 +166,13 @@ class Atoms(YomboLibrary):
 #    def __repr__(self):
 #        return str(self.__Atoms)
 
+    def Atoms_statistics_lifetimes(self, **kwargs):
+        """
+        We keep 10 days of max data, 30 days of hourly data, 1 of daily data
+        """
+        return {'name': 'lib.atoms.#', 'lifetimes': [11, 30, 365] } # we set full details for 11 days as an example/test
+
+
     def get_atoms(self):
         """
         Shouldn't really be used. Just returns a _copy_ of all the atoms.
@@ -195,6 +202,7 @@ class Atoms(YomboLibrary):
         if key is None:
             return self.__Atoms
         keys = key.split(':')
+        self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
         return yombo.utils.dict_get_value(self.__Atoms, keys)
 
     def set(self, key, value):
@@ -214,7 +222,6 @@ class Atoms(YomboLibrary):
         except YomboHookStopProcessing:
             logger.warning("Stopping processing 'hook_atoms_set' due to YomboHookStopProcessing exception.")
             return
-
         for moduleName, newValue in atom_changes.iteritems():
             if newValue is not None:
                 logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
@@ -223,6 +230,7 @@ class Atoms(YomboLibrary):
                 already_set = True
                 break
 
+        self._Statistics.increment("lib.atoms.set", bucket_time=15, anon=True)
         if not already_set:
             yombo.utils.dict_set_value(self.__Atoms, keys, value)
 
@@ -351,7 +359,6 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-#        print "!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#!@#"
         return [
             { 'platform': 'atom',
               'validate_action_callback': self.atoms_validate_action_callback,  # function to call to validate an action is possible.

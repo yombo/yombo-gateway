@@ -43,7 +43,7 @@ from yombo.core.exceptions import YomboTimeError, YomboStateNoAccess
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.message import Message
-from yombo.utils import random_string
+from yombo.utils import random_string, is_one_zero
 
 logger = get_logger('library.times')
 
@@ -100,6 +100,7 @@ class Times(YomboLibrary, object):
     def isTwilight(self, val):
         self._States.set('times_istwilight', val, self._StatesPassword)
         self.__isTwilight = val
+        self._Statistics.datapoint("lib.times.is_twilight", is_one_zero(val))
 
     @property
     def isLight(self):
@@ -109,6 +110,7 @@ class Times(YomboLibrary, object):
     def isLight(self, val):
         self._States.set('times_islight', val, self._StatesPassword)
         self.__isLight = val
+        self._Statistics.datapoint("lib.times.is_light", is_one_zero(val))
 
     @property
     def isDark(self):
@@ -118,6 +120,7 @@ class Times(YomboLibrary, object):
     def isDark(self, val):
         self._States.set('times_isdark', val, self._StatesPassword)
         self.__isDark = val
+        self._Statistics.datapoint("lib.times.is_dark", is_one_zero(val))
 
     @property
     def isDay(self):
@@ -127,6 +130,7 @@ class Times(YomboLibrary, object):
     def isDay(self, val):
         self._States.set('times_isday', val, self._StatesPassword)
         self.__isDay = val
+        self._Statistics.datapoint("lib.times.is_day", is_one_zero(val))
 
     @property
     def isNight(self):
@@ -136,6 +140,7 @@ class Times(YomboLibrary, object):
     def isNight(self, val):
         self._States.set('times_isnight', val, self._StatesPassword)
         self.__isNight = val
+        self._Statistics.datapoint("lib.times.is_night", is_one_zero(val))
 
     @property
     def isDawn(self):
@@ -145,6 +150,7 @@ class Times(YomboLibrary, object):
     def isDawn(self, val):
         self._States.set('times_isdawn', val, self._StatesPassword)
         self.__isDawn = val
+        self._Statistics.datapoint("lib.times.is_dawn", is_one_zero(val))
 
     @property
     def isDusk(self):
@@ -154,6 +160,7 @@ class Times(YomboLibrary, object):
     def isDusk(self, val):
         self._States.set('times_isdusk', val, self._StatesPassword)
         self.__isDusk = val
+        self._Statistics.datapoint("lib.times.is_dusk", is_one_zero(val))
 
     @property
     def nextSunrise(self):
@@ -338,7 +345,7 @@ class Times(YomboLibrary, object):
         Two callLater's are setup: one to send a broadcast event of the change
         the second callLater is to come back to this function and redo it all.
         """
-        self.CLnowNotDawn = None
+        self.CLnowNotst = None
         self.CLnowNotDusk = None
         self.CLnowDawn = None
         self.CLnowDusk = None
@@ -361,7 +368,7 @@ class Times(YomboLibrary, object):
 
         secsRiseEnd = sunrise_end - curtime#here
         secsSetEnd = sunset_end - curtime
-        if self.isTwilight == True:
+        if self.isTwilight == True: # It's twilight. Sun is down.
             if secsRiseEnd < secsSetEnd: #  it's dawn right now = twilight + closer to sunrise's end
                 self.CLnowNotDawn = reactor.callLater(secsRiseEnd, self._send_now_not_dawn) # set a timer for no more dawn
                 reactor.callLater(secsRiseEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
@@ -380,12 +387,12 @@ class Times(YomboLibrary, object):
                 reactor.callLater(secsRise+self.time_ajust, self._setup_next_dawn_dusk_event)
                 if self.is_now_init:
                     self.isDawn = False
-                    self.isDusk = True
+                    self.isDusk = False
             else: # else, we are closer to sunset!
                 self.CLnowDusk = reactor.callLater(secsSet, self._send_now_dusk) # set a timer for is dusk
                 reactor.callLater(secsSet+self.time_ajust, self._setup_next_dawn_dusk_event)
                 if self.is_now_init:
-                    self.isDawn = True
+                    self.isDawn = False
                     self.isDusk = False
         logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})", secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
 

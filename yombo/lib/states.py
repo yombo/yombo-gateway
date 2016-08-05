@@ -174,17 +174,17 @@ class States(YomboLibrary, object):
         if key in self.__States:
             if self.__States[key]['readKey'] is not None:
                 if password is None:
-                    self._Statistics.increment("lib.states.get.noaccess")
+                    self._Statistics.increment("lib.states.get.noaccess", bucket_time=60, anon=True)
                     raise YomboStateNoAccess("State is read protected with password. Use self.__States.get(key, password) to read.")
                 elif self.__States[key]['readKey'] != password:
-                    self._Statistics.increment("lib.states.get.noaccess")
+                    self._Statistics.increment("lib.states.get.noaccess", bucket_time=60, anon=True)
                     raise YomboStateNoAccess("State read password is invalid.")
 #            logger.info("State get2: {key}  value: {value}", key=key, value=self.__States[key]['value'])
             else:
-                self._Statistics.increment("lib.states.get.value")
+                self._Statistics.increment("lib.states.get.found", bucket_time=60, anon=True)
                 return self.__States[key]['value']
         else:
-            self._Statistics.increment("lib.states.get.not_found")
+            self._Statistics.increment("lib.states.get.not_found", bucket_time=60, anon=True)
             return None
 
     def get_states(self):
@@ -247,7 +247,7 @@ class States(YomboLibrary, object):
                     value = newValue
                     break
 
-            self._Statistics.increment("lib.states.set.update")
+            self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
             self.__States[key]['value'] = value
             self.__States[key]['updated'] = time()
             self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
@@ -272,7 +272,7 @@ class States(YomboLibrary, object):
                 'readKey': None,
                 'writeKey': password
             }
-            self._Statistics.increment("lib.states.set.new")
+            self._Statistics.increment("lib.states.set.new", bucket_time=60, anon=True)
             self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         self.check_trigger(key, value)
 

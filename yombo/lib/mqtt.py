@@ -1,4 +1,10 @@
 """
+.. rst-class:: floater
+
+.. note::
+
+  For more information see: `Atoms @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/mqtt>`_
+
 Implements MQTT. It does 2 things:
 
 1) Start an embedded HBMQTT MQTT Broker. This can be disabled.
@@ -203,6 +209,7 @@ class MQTTClient(object):
         self.ssl = ssl
         self.connected = False
         self.mqtt_library = mqtt_library
+        self.subscribe_callback = None
 
         if server_hostname is None:
            raise YomboWarning("'server_host' is required.", '__init__', 'mqtt::MQTTClient')
@@ -228,6 +235,7 @@ class MQTTClient(object):
         :return:
         """
         self.factory.protocol.publish(topic=topic, message=message, qos=qos)
+        self._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
 
     def subscribe(self, topic, callback, qos=2):
         """
@@ -238,11 +246,26 @@ class MQTTClient(object):
         :return:
         """
         self.factory.protocol.subscribe(topic, qos)
-        self.factory.protocol.setPublishHandler(callback)
+        self.subscribe_callback = callback
+        self.factory.protocol.setPublishHandler(self.deliver_message)
+
+    def deliver_message(self, topic, payload, qos, dup, retain, msgID):
+        """
+        Delivers a message from
+
+        :param topic: MQTT Topic
+        :param payload: Payload portion
+        :param qos: Quality Service
+        :param dup: Duplicate?
+        :param retain: ??
+        :param msgID: ??
+        :return:
+        """
+        print("topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, msgID:%s" % (topic, payload, qos, dup, retain, msgID))
+        self._onPublish(topic, payload, qos, dup, retain, msgID)
 
     def unsubscribe(self, topic):
         self.factory.protocol.ubsubscribe(topic)
-
 
     def client_connectionMade(self):
         self.connected = True

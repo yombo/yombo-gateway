@@ -307,10 +307,10 @@ class Configuration(YomboLibrary):
         :rtype: int or string or None
         """
         if len(section) > self.MAX_SECTION_LENGTH:
-            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
             raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
-            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
             raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         if option is None:
@@ -321,10 +321,10 @@ class Configuration(YomboLibrary):
 
         if section == 'yombo':
             if option in self.yombo_vars:
-                self._Statistics.increment("lib.configuration.get.value", anon=True)
+                self._Statistics.increment("lib.configuration.get.value", bucket_time=15, anon=True)
                 return self.yombo_vars[option]
             else:
-                self._Statistics.increment("lib.configuration.get.none", anon=True)
+                self._Statistics.increment("lib.configuration.get.none", bucket_time=15, anon=True)
             return None
 
         if section in self.configs:
@@ -335,29 +335,29 @@ class Configuration(YomboLibrary):
                         if 'value' in data:
                             results[key] = data['value']
                             data['reads'] += 1
-                    self._Statistics.increment("lib.configuration.get.value", anon=True)
+                    self._Statistics.increment("lib.configuration.get.value", bucket_time=15, anon=True)
                     return results
-                self._Statistics.increment("lib.configuration.get.none", anon=True)
+                self._Statistics.increment("lib.configuration.get.none", bucket_time=15, anon=True)
                 return None
             if option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
 #                returnValue(self.configs[section][option])
-                self._Statistics.increment("lib.configuration.get.value", anon=True)
+                self._Statistics.increment("lib.configuration.get.value", bucket_time=15, anon=True)
                 return self.configs[section][option]['value']
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
         if default == "":
-            self._Statistics.increment("lib.configuration.get.empty_string", anon=True)
+            self._Statistics.increment("lib.configuration.get.empty_string", bucket_time=15, anon=True)
             return ""
 
         if default is not None:
             if set_if_missing:
                 self.set(section, option, default)
                 self.configs[section][option]['reads'] += 1
-            self._Statistics.increment("lib.configuration.get.default", anon=True)
+            self._Statistics.increment("lib.configuration.get.default", bucket_time=15, anon=True)
             return default
         else:
-            self._Statistics.increment("lib.configuration.get.default", anon=True)
+            self._Statistics.increment("lib.configuration.get.default", bucket_time=15, anon=True)
             return None
 
     def set(self, section, option, value):
@@ -381,20 +381,20 @@ class Configuration(YomboLibrary):
         :type value: int or string
         """
         if len(section) > self.MAX_SECTION_LENGTH:
-            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
             raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
-            self._Statistics.increment("lib.configuration.set.invalid_length", anon=True)
+            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
             raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         # Can't set value!
         if section == 'yombo':
-            self._Statistics.increment("lib.configuration.set.no_setting_yombo", anon=True)
+            self._Statistics.increment("lib.configuration.set.no_setting_yombo", bucket_time=15, anon=True)
             raise ValueError("Not allowed to set value")
 
         if isinstance(value, str):
             if len(value) > self.MAX_VALUE_LENGTH:
-                self._Statistics.increment("lib.configuration.set.value_too_long", anon=True)
+                self._Statistics.increment("lib.configuration.set.value_too_long", bucket_time=15, anon=True)
                 raise ValueError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
@@ -410,9 +410,9 @@ class Configuration(YomboLibrary):
                 'reads': 0,
                 'writes': 0,
             }
-            self._Statistics.increment("lib.configuration.set.new", anon=True)
+            self._Statistics.increment("lib.configuration.set.new", bucket_time=15, anon=True)
         else:
-            self._Statistics.increment("lib.configuration.set.update", anon=True)
+            self._Statistics.increment("lib.configuration.set.update", bucket_time=15, anon=True)
 
         self.configs[section][option] = dict_merge(self.configs[section][option], {
                 'set_time': int(time()),

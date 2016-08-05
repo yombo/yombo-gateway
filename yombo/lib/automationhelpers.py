@@ -1,6 +1,8 @@
 """
-Helpers for automation items.
+Helpers for automation items. Adds some core platforms to the source, filters, and actions systems. See
+:py:mod:`yombo.lib.automationhelpers` for additional details.
 
+..versionadded:: 0.10.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
@@ -18,6 +20,7 @@ from yombo.utils import is_string_bool, epoch_from_string
 
 logger = get_logger("library.automationhelper")
 
+# A list of possible operations that can be used in "basic_values" filters.
 ops = {
     "==": operator.eq,
     "!=": operator.ne,
@@ -35,48 +38,49 @@ ops = {
 
 class AutomationHelpers(YomboLibrary):
     """
-    Reads "automation.txt" for automation rules.
+    Provides the following core platforms:
+
+    1) Source platforms: (None currently defined)
+    2) Filter platforms:
+       1) *any* - A simple filter that always returns True.
+       2) *basic_values* - Allows basic logic to be applied. Greater than a given value, is equal to, etc. See
+          `Automation @ Projects <https://projects.yombo.net/projects/modules/wiki/Automation>`_ for
+          details.
+    3) Action platforms:
+       1) *call_function* - A very powerful platform that allwos nearly any Yombo Gateway function to be called. It
+          can call functions by name or by reference if defined within a module.
     """
     def _init_(self, loader):
+        self.loaders = loader
         self._ModDescription = "Automation Helper Library"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
 
-    def _load_(self):
-        pass
-
-    def _start_(self):
-        pass
-
-    def _stop_(self):
-        pass
-
-    def _unload_(self):
-        pass
-
-    def message(self, message):
-        pass
-
     # Helper functions for any automation
     def get_action_delay(self, delay):
         """
-        Used to check the 'delay' field of an action. If 'delay' is specified, but useless, will raise
+        Used to check the 'delay' field of an action. It's used to send delayed commands. It converts strings such as
+        '1m 3s', '1 hour', '6 min' into an epoch time so that the automation system can handle it. Must be a time
+        in the future, any times set to the past will be disable the rule.
 
-        :param action: Pass in the action to be checked. Will return in epoch time or None if invalid
-        :return:
+        :param delay: String - A string to be parsed into epoch time in the future.
+        :return: Float in seconds in the future.
         """
-        return (float(epoch_from_string(delay)) - float(time()))
-
+        seconds = (float(epoch_from_string(delay)) - float(time()))
+        if seconds <0:
+            raise YomboWarning("get_action_delay on accepts delays in the future, not the past.", 'get_action_delay', 'automationhelpers')
+        return seconds
 
     def AutomationHelpers_automation_action_list(self, **kwargs):
         """
-        hook_automation_action_list called by the automation library to list possible actions.
+        Adds 'call_function' to the available action platforms. Allows functions to be called as an action defined
+        within an automation rule.
 
         :param kwargs: None
         :return:
         """
         return [
-            { 'platform': 'call_function',
+            { 'platform': 'call_function',  # Defines a new action platform.
               'validate_action_callback': self.call_function_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.call_function_do_action_callback  # function to be called to perform an action
             },
@@ -84,7 +88,7 @@ class AutomationHelpers(YomboLibrary):
 
     def call_function_validate_action_callback(self, rule, action, **kwargs):
         """
-        A callback to check if a provided action is valid before being added as a possible action.
+        A callback to check if a provided action is valid before being added as a possible action for a rule.
 
         :param rule: The potential rule being added.
         :param action: The action portion of the rule.

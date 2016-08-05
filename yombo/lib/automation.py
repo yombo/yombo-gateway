@@ -11,19 +11,34 @@
 The automation library provides users an easy method to setup simple automation rules and tasks without the need
 to write a single line of code.
 
+There are three steps to every rule:
+
+1) Source - A rule must be triggered by some source. A device state changes, an internal value changes, system
+   status changes, etc.
+2) Filters - Rules can be filtered. For example, if a rule was triggered by some source, it can be stop from
+   firing it's action if certain conditions aren't met. For example, a device source such as 'motion' is detected
+   outside. But, a condition check of "is sunny" is true, then don't bother turning on the light.
+3) Action - Do something. In the above example, turn on a light.
+
+A naming convention of 'platforms' is used to direct the automation system. It's just another way of saying
+'atoms, devices, and states can be used as sources'. for example, atoms, states, and devices can all be platforms
+for sources, filters, and actions. A state change can trigger a rule, a state value can be a condition, and a state
+can be changed as an action.
+
 *For End Users*: It's strongly recommended to visit
 `Automation @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Automation>`_ for details on usage
 and writing automation rules.
 
-For developers: This library only provides the base framework. Features are actually implemented by hooks to other
-libraries and modules. Developers can extend the capabilites of the automation library using modules..
+*For developers*: This library only provides the base framework. Features are actually implemented by hooks to other
+libraries and modules. Developers can extend the capabilities of the automation library using modules.
 
-Developers should the following modules for examples of implementation:
+Developers should review the following modules for examples of implementation:
 
 * :py:mod:`yombo.lib.automationhelpers` - Implements various platforms
 * :py:mod:`yombo.lib.atoms` - Look near the bottom for hooks into triggers, conditions, and actions.
 * :py:mod:`yombo.lib.states` - Look near the bottom for hooks into triggers, conditions, and actions.
 
+..versionadded:: 0.10.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
@@ -57,8 +72,9 @@ CONDITION_TYPE_OR = 'or'
 
 class Automation(YomboLibrary):
     """
-    Reads "automation.txt" for automation rules and parses them into rules. Also calls hook_automation_rules_list for
-    additional automation rules.
+    Reads "automation.txt" for user automation rules and parses them into rules. Also calls hook_automation_rules_list
+    for additional automation rules defined by modules. It also implements various hooks so modules can extend the
+    capabilites of the automation system.
     """
     def _init_(self, loader):
         self._ModDescription = "Easy Automation for everyone"
@@ -88,38 +104,29 @@ class Automation(YomboLibrary):
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
 
-    def _load_(self):
-        pass
-
-    def _start_(self):
-        pass
-
-    def _stop_(self):
-        pass
-
-    def _unload_(self):
-        pass
-
-    def message(self, message):
-        pass
-
     def _module_prestart_(self, **kwargs):
         """
-        Implementation of the _module_prestart_ hook and is called before _start_ is called for all the modules.
+        This function is called before the _start_ function of all modules is called.
+
+        Calls libraries and modules to check if any additional rules should be defined. It also makes calls to see
+        if the automation features are being extended, such as adding new automation platforms.
 
         **Hooks implemented**:
 
-        * hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
+        * hook_automation_rules_list :  Expects a list of dictionarys containing automation rules.
+        * hook_automation_action_list : Expects a list of dictionarys containing automation action platforms.
         * hook_automation_filter_list : Expects a list of filter callbacks to validate and check against
           a library or module supports.
-        * hook_automation_action_list : Expects a list of dictionarys containing automation action platforms.
-        * hook_automation_rules_list :  Expects a list of dictionarys containing automation rules.
+        * hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
 
         **Usage**:
 
         .. code-block:: python
 
            def ModuleName_automation_source_list(self, **kwargs):
+               '''
+               Adds additional platforms to the source platform. Creates additional rule triggers.
+               '''
                return [
                  { 'platform': 'atom',
                    'validate_source_callback': self.atoms_validate_source_callback,  # validate a trigger
@@ -129,6 +136,9 @@ class Automation(YomboLibrary):
                ]
 
            def ModuleName_automation_filter_list(self, **kwargs):
+               '''
+               Adds additional platforms to the filters system. Allows rules to be filtered.
+               '''
                return [
                  { 'platform': 'basic_values',
                    'validate_filter_callback': self.Atoms_validate_filter_callback,  # validate a condition is possible
@@ -137,6 +147,9 @@ class Automation(YomboLibrary):
                ]
 
            def ModuleName_automation_action_list(self, **kwargs):
+               '''
+               Adds additional platforms to the action system. Allows new types of actions to be taken.
+               '''
                return [
                  { 'platform': 'x10',
                    'fields': ['name', 'command']  #can be either UUID's or Machine Labels
@@ -187,8 +200,10 @@ class Automation(YomboLibrary):
 
     def add_rule(self, rule):
         """
-        Adds a rule to the self.rules.  Do not add rules directly, they must be validated before so less validation
-        can happen during run time.
+        Internal function, adds a rule to the self.rules. Do not add rules directly, they must be validated before
+        so less validation can happen during run time.
+
+        To add rules, use 'automation.txt' file or hook_automation_rules_list within a module.
 
         :param rule: A dictionary containing the rule to add
         :type rule: dict
@@ -405,8 +420,25 @@ class Automation(YomboLibrary):
         A public function that modules and libraries can use to trigger rules. Used to track simple dictionary
         type items or things that can be contained in a dictionary.
 
-        :param rule_id: Rule ID to attach trigger to
-        :param platform_label: Platform being added.
+        See the :py:mod:`devices <yombo.lib.devices>` library for best example and documentation.
+
+        Summary: When a rule is being added, the 'add_trigger_callback' is called to the platform to add any
+        triggers required. Generally, it's up to the module to perform this task. However, the 'triggers_add'
+        and 'triggers_check' can perform this task.
+
+        In devices, states, atoms, etc, when 'add_trigger_callback' is called, they all register tracked_keys with
+        this function. This function creates an entry in a dictionary and can store the values.  Now, whenever a
+        device status changes, states change, atoms change, they call triggers_check with the tracked_key and
+        the value. If the value's changed, :py:meth:`triggers_check <triggers_check>` will fire any rules as required.
+
+        *Usage**:
+
+        .. code-block:: python
+
+           self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', automation_device_id)
+
+        :param rule_id: Rule ID to attach trigger to.
+        :param platform_label: Source platform being added: EG: devices, states, atoms
         :param tracked_key: An immutable key to monitor. Usually a dictionary key.
         :return:
         """
@@ -423,11 +455,14 @@ class Automation(YomboLibrary):
     # 'atoms', 'is_light', False
     def triggers_check(self, platform_label, tracked_key, new_value):
         """
-        Modules and libraries can call this to check for any triggers on a dictionary. Will return a list
+        Modules and libraries can call this to check for any triggers on a dictionary. If a trigger matches, any
+        defined rules for a given trigger will fire.
 
-        :param platform_label:
-        :param tracked_key:
-        :param new_value:
+        See the :py:mod:`devices <yombo.lib.devices>` library for best example and documentation.
+
+        :param platform_label: Platform label to track.
+        :param tracked_key: Defined key from triggers_add
+        :param new_value: New value to track
         :return:
         """
 #        logger.warn("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@checking : {new_value}", new_value=new_value)
@@ -512,7 +547,6 @@ class Automation(YomboLibrary):
         else:
             logger.debug("Condition check failed for: {rule}", rule=self.rules[rule_id]['name'])
 
-
     def automation_action(self, rule_id):
         """
         Directs the rule_id to the correct module/library do_action_callback function
@@ -538,7 +572,7 @@ class Automation(YomboLibrary):
             platform = rule['action'][item]['platform']
             do_action_callback_function = self.actions[platform]['do_action_callback']
             do_action_callback_function(rule, rule['action'][item], options, **rule['action'][item]['arguments'])
-
+            self._Statistics.increment("lib.automation.rules.fired", bucket_time=15, anon=True)
         return
 
 

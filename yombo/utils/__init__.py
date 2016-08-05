@@ -20,7 +20,7 @@ import re
 from datetime import datetime
 import parsedatetime.parsedatetime as pdt
 from struct import pack as struct_pack, unpack as struct_unpack
-from socket import inet_aton
+from socket import inet_aton, inet_ntoa
 import math
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
@@ -565,9 +565,10 @@ def get_component(name):
 def is_string_bool(value=None):
     """
     Returns a True/False/None based on the string. If nothing is found, "YomboWarning" is raised.
-    Returns a boolean value representing the "truth" of the value passed. The
-    rules for what is a "True" value are:
-        2. The string values "True" and "true"
+    Returns a boolean value representing the "truth" of the value passed. Returns true if the string
+    provided is 'true/True/trUE, etc'.
+
+    :param value: String of either "true" or "false" (case insensitive), returns bool or raises YomboWarning.
     """
     if isinstance(value, six.string_types):
         if str(value).lower() == 'true':
@@ -578,18 +579,59 @@ def is_string_bool(value=None):
             return None
     raise YomboWarning("String is not true, false, or none.")
 
-def is_yes_no(self, input):
+def is_true_false(input, only_bool=False):
+    """
+    Used by various utils to determine if an input is high or low. Other functions like is_one_zero and is_yes_no will
+    return the results in different ways based on results from here
+
+    :param input: A string, bool, int to test
+    :param only_bool: If true, will only return bools. Otherwise, None will be returned if indeterminate input.
+    :return:
+    """
+    if isinstance(input, six.string_types):
+        input = input.lower()
+        if input in ("1", "open", "on", "running"):
+            return True
+        if input in ("0", "closed", "off", "stopped"):
+            return False
+    elif isinstance(input, bool):
+            return input
+    elif isinstance(input, six.integer_types):
+            if input == 1:
+                return True
+            elif input == 0:
+                return False
+    else:
+        if only_bool:
+            return False
+        else:
+            return None
+
+def is_yes_no(input):
     """
     Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
     returns "No". Useful to convert something to human Yes/No.
-    :param self:
     :param input:
-    :return:
+    :return: String on either "Yes" or "No".
     """
-    if input in ("1", 1, True, "open", "on", "running"):
+    if is_true_false(input, True):
         return "Yes"
     else:
         return "No"
+
+def is_one_zero(input):
+    """
+    Like is_yes_no, but returns 1 for yes/true/on/open/running, 0 for otherwise.
+
+    Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
+    returns "No". Useful to convert something to human Yes/No.
+    :param input:
+    :return:
+    """
+    if is_true_false(input, True):
+        return 1
+    else:
+        return 0
 
 def test_bit(int_type, offset):
     """

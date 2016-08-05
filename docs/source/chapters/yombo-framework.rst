@@ -66,9 +66,11 @@ Times libararies.
    ../lib/crontab.rst
    ../lib/devices.rst
    ../lib/downloadmodules.rst
+   ../lib/gpg.rst
    ../lib/loader.rst
    ../lib/messages.rst
    ../lib/modules.rst
+   ../lib/mqtt.rst
    ../lib/sqldict
    ../lib/startup.rst
    ../lib/states.rst
