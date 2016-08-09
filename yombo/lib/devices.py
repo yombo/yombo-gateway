@@ -181,23 +181,74 @@ class Devices(YomboLibrary):
         self._saveStatusLoop = None
 
     def _load_(self):
-        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
-
-        # self.mqtt_test_conenction = self.new(self.server_listen_ip,
-        #     self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False,
-        #     self.test_mqtt_in, self.test_on_connect )
-
-        # Can use either deviceid or device machine label, mixed with cmd id or cmd machine label.
-        # expecting 'yombo/devices/deviceID/cmd on' or
-        # 'yombo/devices/garage_door/cmd off'
-        # handles: set or get
-        self.mqtt.subscribe("yombo/devices/#")
+        if self._Atoms['loader_operation_mode'] == 'run':
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
+            self.mqtt.subscribe("yombo/devices/+/get")
+            self.mqtt.subscribe("yombo/devices/+/cmd")
 
     def mqtt_incoming(self, topic, payload, qos, retain):
-        parts = payload.split('/', 10)
-#        if payload == 'get':
-#            if
-        print("Yombo Devices got this: %s / %s" % (topic, payload))
+        """
+        Processes incoming MQTT requests. It understands:
+
+        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/get Value - Get some attribute
+          * Value = state, human, machine, extra
+        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/cmd/CMDID|CMDMACHINELABEL Options - Send a command
+          * Options - Either a string for a single variable, or json for multiple variables
+
+        Examples: /yombo/devices/get/christmas_tree/cmd on
+
+        :param topic:
+        :param payload:
+        :param qos:
+        :param retain:
+        :return:
+        """
+        #  0       1       2       3        4
+        # yombo/devices/DEVICEID/get|cmd/option
+        parts = topic.split('/', 10)
+        print("Yombo Devices got this: %s / %s" % (topic, parts))
+
+
+        try:
+            device = self.get_device(parts[2].replace("_", " "))
+        except YomboDeviceError, e:
+            logger.info("Received MQTT request for a device that doesn't exist")
+            return
+
+#Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
+
+        if parts[3] == 'get':
+            status = device.get_status()
+            if payload == 'state':
+                self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
+            elif payload == 'human':
+                self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
+            elif payload == 'machine':
+                self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
+            elif payload == 'extra':
+                self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
+            elif payload == 'last':
+                self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
+            elif payload == 'source':
+                self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
+        elif parts[3] == 'cmd':
+            msg = device.get_message(self, cmd=parts[4])
+            msg.send()
+            if len(parts) > 5:
+                status = device.get_status()
+                if parts[5] == 'state':
+                    self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
+                elif parts[5] == 'human':
+                    self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
+                elif parts[5] == 'machine':
+                    self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
+                elif parts[5] == 'extra':
+                    self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
+                elif parts[5] == 'last':
+                    self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
+                elif parts[5] == 'source':
+                    self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
+
 
     def _start_(self):
         """

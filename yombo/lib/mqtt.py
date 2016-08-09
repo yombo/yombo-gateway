@@ -54,6 +54,7 @@ from twisted.logger   import (
     Logger, LogLevel, globalLogBeginner, textFileLogObserver,
     FilteringLogObserver, LogLevelFilterPredicate)
 from twisted.internet.task import LoopingCall
+from twisted.internet.defer import inlineCallbacks
 
 # 3rd party libraries
 from yombo.ext.mqtt.client.factory import MQTTFactory
@@ -283,6 +284,7 @@ class MQTTClient(object):
         else:
             self.my_reactor = reactor.connectTCP(server_hostname, server_port, self.factory)
 
+    @inlineCallbacks
     def publish(self, topic, message, qos=0, retain=False):
         """
         Publish a message.
@@ -293,7 +295,7 @@ class MQTTClient(object):
         :return:
         """
         if self.connected:
-            self.factory.protocol.publish(topic=topic, message=message, qos=qos)
+            yield self.factory.protocol.publish(topic=topic, message=message, qos=qos)
             self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
         if self.connected:
             self.send_queue.append({
@@ -304,6 +306,7 @@ class MQTTClient(object):
                 'retain': False,
             })
 
+    @inlineCallbacks
     def subscribe(self, topic, qos=1):
         """
         Subscribe to a topic. Inlucde the topic like 'yombo/myfunky/something'
@@ -313,7 +316,7 @@ class MQTTClient(object):
         :return:
         """
         if self.connected:
-            self.factory.protocol.subscribe(topic, qos)
+            yield self.factory.protocol.subscribe(topic, qos)
             self.mqtt_library._Statistics.increment("lib.mqtt.client.subscribe", bucket_time=10, anon=True)
         else:
             self.send_queue.append({
@@ -322,15 +325,17 @@ class MQTTClient(object):
                 'qos': qos,
             })
 
+    @inlineCallbacks
     def unsubscribe(self, topic):
         if self.connected:
-            self.factory.protocol.unsubscribe(topic)
+            yield self.factory.protocol.unsubscribe(topic)
             self.mqtt_library._Statistics.increment("lib.mqtt.client.unsubscribe", bucket_time=10, anon=True)
         if self.connected:
             self.send_queue.append({
                 'type': 'unsubscribe',
             })
 
+    @inlineCallbacks
     def mqtt_connected(self):
         print("client ID connected: %s" % self.client_id)
         self.connected = True
@@ -338,11 +343,11 @@ class MQTTClient(object):
             try:
                 item = self.send_queue.popleft()
                 if item['type'] == 'subscribe':
-                    self.subscribe(item['topic'], item['qos'])
+                    yield self.subscribe(item['topic'], item['qos'])
                 elif item['type'] == 'unsubscribe':
-                    self.unsubscribe(item['topic'])
+                    yield self.unsubscribe(item['topic'])
                 if item['type'] == 'publish':
-                    self.publish(item['topic'], item['message'], qos=item['qos'], retain=item['retain'])
+                    yield self.publish(item['topic'], item['message'], qos=item['qos'], retain=item['retain'])
             except IndexError:
                 break
 
@@ -361,7 +366,7 @@ class MQTTClient(object):
         :param mqtt_msg_id: MQTT Msg ID. Used to detect duplicates.
         :return:
         """
-#        print("mqtt_incoming - topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, mqtt_msg_id:%s" % (topic, payload, qos, dup, retain, mqtt_msg_id))
+        print("mqtt_incoming - topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, mqtt_msg_id:%s" % (topic, payload, qos, dup, retain, mqtt_msg_id))
 
 #        print("client ID incomin: %s" % self.client_id)
         if self.mqtt_incoming_callback:

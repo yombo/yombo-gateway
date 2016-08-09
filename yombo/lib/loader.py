@@ -149,6 +149,7 @@ class Loader(YomboLibrary, object):
         yield self.import_libraries() # import and init all libraries
         logger.debug("Calling load functions of libraries.")
         for name, config in HARD_LOAD.iteritems():
+            self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
@@ -226,10 +227,10 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_init_'] = False
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
+            self._log_loader('debug', name, 'library', 'init', 'About to call _init_.')
 
             component = name.lower()
             library = self.loadedLibraries[component]
-            self._log_loader('debug', component, 'library', 'init', 'About to call _init_.')
             library._Atoms = self.loadedLibraries['atoms']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
