@@ -282,6 +282,7 @@ class Modules(YomboLibrary):
                 module._MQTT = self.loader.loadedLibraries['mqtt']
                 module._States = self.loader.loadedLibraries['states']
                 module._Statistics = self.loader.loadedLibraries['statistics']
+                module._Localize = self.loader.loadedLibraries['localize']
 
                 module._DevicesLibrary = self.loader.loadedLibraries['devices']  # Basically, all devices
                 module._Devices = self._DevicesLibrary.get_devices_for_module(module_id)

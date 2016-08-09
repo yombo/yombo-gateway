@@ -181,7 +181,7 @@ class Devices(YomboLibrary):
         self._saveStatusLoop = None
 
     def _load_(self):
-        if self._Atoms['loader_operation_mode'] == 'run':
+        if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")

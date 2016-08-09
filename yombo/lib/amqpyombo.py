@@ -620,7 +620,7 @@ class AMQPYombo(YomboLibrary):
             ssl=True,
             credentials=self.pika_credentials
         )
-        self._States.set('yombo_server_is_connected', False)
+        self._States.set('amqp.connected', False)
 
         self.connect()
 
@@ -632,6 +632,13 @@ class AMQPYombo(YomboLibrary):
         logit = func = getattr(logger, level)
         logit("In {location} : {AMQPProtocolmsg}", location=location, msg=msg)
 
+    def AMQPYombo_i18n_states(self, **kwargs):
+       return [
+           {'amqp.connected': {
+               'en': 'True if AMQP connection exists to Yombo servers.',
+               },
+           },
+       ]
     def connect(self):
         """
         Called from self._init_ to start the connection to Yombo AMQP.
@@ -653,7 +660,7 @@ class AMQPYombo(YomboLibrary):
         self._connected = True
         self._connecting = False
         self.timeout_reconnect_task = False
-        self._States.set('yombo_server_is_connected', True)
+        self._States.set('amqp.connected', True)
 
     def send_amqp_message(self, **kwargs):
         """
@@ -778,7 +785,7 @@ class AMQPYombo(YomboLibrary):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
-        self._States.set('yombo_server_is_connected', False)
+        self._States.set('amqp.connected', False)
         logger.info("Disconnected from Yombo service.")
         self.pika_factory.fullyConnected = False  # connected to AMQP, and ready to send messages.
         self._connected = False  # connected to AMQP, and ready to send messages.

@@ -100,11 +100,11 @@ class Configuration(YomboLibrary):
         except IOError:
             self.loader.operation_mode = 'firstrun'
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
-            self._Atoms.set('configuration_found_yombo_ini', False)
+            self._Atoms.set('configuration.yombo_ini.found', False)
             return
         except ConfigParser.NoSectionError:
             pass
-        self._Atoms.set('configuration_found_yombo_ini', True)
+        self._Atoms.set('configuration.yombo_ini.found', True)
 
         try:
             fp = open('usr/etc/yombo.ini.meta')
@@ -166,13 +166,20 @@ class Configuration(YomboLibrary):
         logger.debug("saving config file...")
         self.save(True)
 
+    def Configuration_i18n_atoms(self, **kwargs):
+       return [
+           {'configuration.yombo_ini.found': {
+               'en': 'True if yombo.ini was found on startup.',
+               },
+           },
+       ]
     def save(self, force_save=False):
         """
         Save the configuration configs to the INI file.
 
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
-        if self._Atoms.get('configuration_found_yombo_ini') is True:
+        if self._Atoms.get('configuration.yombo_ini.found') is True:
             timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
             copyfile('yombo.ini', 'usr/bak/yombo_ini/yombo.ini.' + timeString)
         if self.configs_dirty is True or force_save is True:

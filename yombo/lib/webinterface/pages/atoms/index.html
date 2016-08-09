@@ -25,12 +25,14 @@
                                         <tr>
                                             <th>Name</th>
                                             <th>Value</th>
+                                            <th>Description</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for atom_name, atom in atoms.iteritems() %}
+                                    <tbody>{% for atom_name, atom_value in atoms.iteritems() %}
                                         <tr>
                                             <td>{{ atom_name }}</td>
-                                            <td>{{ atom }}</td>
+                                            <td>{{ atom_value }}</td>
+                                             <td>{{ atoms_i18n[atom_name] }}</td>
                                         </tr>{% endfor %}
                                     </tbody>
                                 </table>

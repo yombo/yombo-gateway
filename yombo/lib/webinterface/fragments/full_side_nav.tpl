@@ -21,17 +21,19 @@
                             <a href="/"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
                         </li>
 						<li>
-                            <a href="#" class="dropdown-collapse"><i class="fa fa-wrench fa-fw"></i> <span class="side-menu-title">Settings</span><span class="fa arrow"></span></a>
+                            <a href="#" class="dropdown-collapse"><i class="fa fa-info fa-fw"></i> <span class="side-menu-title">Info</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
                                 <li>
-                                    <a href="/configs/basic">Basic Settings</a>
+                                    <a href="/devices">Devices</a>
                                 </li>
-								<div class="advanced-settings">
                                 <li>
-                                    <a href="/configs/yombo_ini">Yombo.ini</a>
-                                </li></div>
+                                    <a href="/modules">Modules</a>
+                                </li>
                                 <li>
-                                    <a href="buttons.html">Application Settings</a>
+                                    <a href="/states">States</a>
+                                </li>
+                                <li>
+                                    <a href="/atoms">Atoms</a>
                                 </li>
                             </ul>
                             <!-- /.nav-second-level -->
@@ -40,7 +42,20 @@
                             <a href="/developers"><i class="fa fa-code fa-fw"></i> <span class="side-menu-title">Tools</span></a>
                         </li>
 						<li>
-                            <a href="/misc/info"><i class="fa fa-info fa-fw"></i> <span class="side-menu-title">Info</span></a>
+                            <a href="#" class="dropdown-collapse"><i class="fa fa-wrench fa-fw"></i> <span class="side-menu-title">Settings</span><span class="fa arrow"></span></a>
+                            <ul class="nav nav-second-level">
+                                <li>
+                                    <a href="/configs/basic">Basic Settings</a>
+                                </li>
+                                <li>
+                                    <a href="/configs/yombo_ini">Yombo.ini</a>
+                                </li>
+                                <li>
+                                    <a href="buttons.html">Application Settings</a>
+                                </li>
+								<div class="advanced-settings"></div>
+                            </ul>
+                            <!-- /.nav-second-level -->
                         </li>
                     </ul>
                 </div>

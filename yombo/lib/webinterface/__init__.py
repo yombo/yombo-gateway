@@ -115,7 +115,7 @@ class WebInterface(YomboLibrary):
     def _start_(self):
         if not self.enabled:
             return
-        self._op_mode = self._Atoms['loader_operation_mode']
+        self._op_mode = self._Atoms['loader.operation_mode']
         self.data['gateway_configured'] = self._home_gateway_configured()
         self.data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
         self.data['operation_mode'] = self._op_mode
@@ -255,10 +255,12 @@ class WebInterface(YomboLibrary):
         return self.require_auth(request, True)
 
     def check_op_mode(self, request, router, **kwargs):
+        print "op mode: %s" % self._op_mode
         if self._op_mode == 'config':
+            print "showing config home"
             method = getattr(self, 'config_'+ router)
             return method(request, **kwargs)
-        if self._op_mode == 'firstrun':
+        elif self._op_mode == 'firstrun':
             method = getattr(self, 'firstrun_'+ router)
             return method(request, **kwargs)
         method = getattr(self, 'run_'+ router)
@@ -273,10 +275,11 @@ class WebInterface(YomboLibrary):
         return self.check_op_mode(request, 'home')
 
     def run_home(self, request):
-        print "home"
+        print "run_home"
         auth = self.require_auth(request)
         if auth is not None:
             return auth
+        print "run_home_done"
 
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
         return page.render(alerts=self.get_alerts(),
@@ -833,9 +836,11 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
     @webapp.route('/atoms')
     def page_atoms(self, request):
         page = self.get_template(request, self._dir + 'pages/atoms/index.html')
+        strings = self._Localize.get_strings(request.getHeader('accept-language'), 'atoms')
         return page.render(alerts=self.get_alerts(),
                            data=self.data,
                            atoms=self._Libraries['atoms'].get_atoms(),
+                           atoms_i18n=strings,
                            )
 
     @webapp.route('/devices')
@@ -911,9 +916,11 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
     @webapp.route('/states')
     def page_states(self, request):
         page = self.get_template(request, self._dir + 'pages/states/index.html')
+        strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
         return page.render(alerts=self.alerts,
                            data=self.data,
                            states=self._Libraries['states'].get_states(),
+                           states_i18n=strings,
                            )
 
 
@@ -948,7 +955,7 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
         has['gpg_keyid'] = 'True' if gpgkeyid is not None else 'False'
         page = self.get_template(request, 'status/index.html')
         return page.render(data=self.data,
-                           yombo_server_is_connected=self._States.get('yombo_server_is_connected'),
+                           yombo_server_is_connected=self._States.get('amqp.connected'),
                            )
 
     @webapp.route('/api/v1/notifications', methods=['GET'])
@@ -1009,7 +1016,7 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
     def _home_gateway_configured(self):
         gwuuid = self._Configs.get("core", "gwuuid", None)
         gwhash = self._Configs.get("core", "gwhash", None)
-        gpgkeyid = self._Configs.get('core', 'gpgkeyid', None)
+        gpgkeyid = self._Configs.get('gpg', 'keyid', None)
 
         if gwuuid is None or gwhash is None or gpgkeyid is None:
             return False

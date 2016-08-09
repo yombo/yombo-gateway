@@ -163,8 +163,26 @@ class Atoms(YomboLibrary):
     def __str__(self):
         return self.__Atoms
 
-#    def __repr__(self):
-#        return str(self.__Atoms)
+    def Atoms_i18n_atoms(self, **kwargs):
+       return [
+           {'cpu.count': {
+               'en': 'Number of CPUs (cores) gateway has.',
+               },
+           },
+           {'mem'
+            'mem.total': {
+               'en': 'Total memory on gateway.',
+               },
+           },
+           { 'os': {
+               'en': 'Operating system type.',
+               },
+           },
+           { 'os.family': {
+               'en': 'Which family the operating system belongs to.',
+               },
+           },
+       ]
 
     def Atoms_statistics_lifetimes(self, **kwargs):
         """
@@ -241,35 +259,35 @@ class Atoms(YomboLibrary):
         Returns atoms about the operating system.
         """
         atoms = {}
-        (atoms['kernel'],atoms['nodename'],atoms['kernelrelease'], version,
-         atoms['cpuarch'], _) = platform.uname()
+        (atoms['kernel'],atoms['system.name'],atoms['kernel.release'], version,
+         atoms['cpu.arch'], _) = platform.uname()
 
-        atoms['cpu_count'] = 0
-        atoms['mem_total'] = 0
-        atoms['os_family'] = 'Unknown'
+        atoms['cpu.count'] = 0
+        atoms['mem.total'] = 0
+        atoms['os.family'] = 'Unknown'
         if HAS_PSUTIL:
-            atoms['cpu_count'] = psutil.cpu_count()
+            atoms['cpu.count'] = psutil.cpu_count()
             memory = psutil.virtual_memory()
-            atoms['mem_total'] = memory.total
+            atoms['mem.total'] = memory.total
 
         if yombo.utils.is_windows():
             atoms['os'] = 'Windows'
-            atoms['os_family'] = 'Windows'
+            atoms['os.family'] = 'Windows'
         elif yombo.utils.is_linux():
             atoms['os'] = 'Linux'
-            atoms['os_family'] = 'Linux'
+            atoms['os.family'] = 'Linux'
 
             (osname, osrelease, oscodename) = \
                 [x.strip('"').strip("'") for x in
                  platform.linux_distribution(supported_dists=_supported_dists)]
 
-            if 'osfullname' not in atoms:
-                atoms['osfullname'] = osname.strip()
-            if 'osrelease' not in atoms:
-                atoms['osrelease'] = osrelease.strip()
-            atoms['oscodename'] = oscodename.strip()
+            if 'os.fullname' not in atoms:
+                atoms['os.fullname'] = osname.strip()
+            if 'os.release' not in atoms:
+                atoms['os.release'] = osrelease.strip()
+            atoms['os.codename'] = oscodename.strip()
 
-            distroname = _REPLACE_LINUX_RE.sub('', atoms['osfullname']).strip()
+            distroname = _REPLACE_LINUX_RE.sub('', atoms['os.fullname']).strip()
             # return the first ten characters with no spaces, lowercased
             shortname = distroname.replace(' ', '').lower()[:10]
             # this maps the long names from the /etc/DISTRO-release files to the
@@ -278,10 +296,10 @@ class Atoms(YomboLibrary):
 
         elif atoms['kernel'] == 'Darwin':
             atoms['os'] = 'Mac'
-            atoms['os_family'] = 'Darwin'
+            atoms['os.family'] = 'Darwin'
         elif atoms['kernel'] == 'SunOS':
             atoms['os'] = 'SunOS'
-            atoms['os_family'] = 'Solaris'
+            atoms['os.family'] = 'Solaris'
         else:
             atoms['os'] = atoms['kernel']
 

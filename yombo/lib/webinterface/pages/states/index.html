@@ -25,7 +25,7 @@
                                 <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
                                     <thead>
                                         <tr>
-                                            <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Read<br>Password</th><th>Write<br>password</th></tr>
+                                            <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                         </tr>
                                     </thead>
                                     <tbody>{% for state_name, state in states.iteritems() %}
@@ -33,8 +33,7 @@
                                             <td><a href="/states/state/{{ state_name }}">{{ state_name }}</a></td>
                                              <td>{{ state['value'] }}</td>
                                              <td>{{ state['updated']|epoch_to_human }}</td>
-                                             <td>{{ state['readKey'] }}</td>
-                                             <td>{{ state['writeKey'] }}</td>
+                                             <td>{{ states_i18n[state_name] }}</td>
                                          </tr>{% endfor %}
                                     </tbody>
                                 </table>

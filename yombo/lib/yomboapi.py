@@ -49,7 +49,7 @@ class YomboAPI(YomboLibrary):
         self.baseURL = self._Configs.get('api', 'baseurl', "https://api.yombo.net/api", False)
 
         self._valid_session = False
-        if self._Atoms['loader_operation_mode'] == 'run':
+        if self._Atoms['loader.operation_mode'] == 'run':
             self.validate_session()
             self.init_defer = Deferred()
             return self.init_defer

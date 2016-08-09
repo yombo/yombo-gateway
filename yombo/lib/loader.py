@@ -71,6 +71,7 @@ HARD_LOAD["Messages"] = {'operation_mode':'all'}
 HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
+HARD_LOAD["Localize"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
@@ -121,21 +122,6 @@ class Loader(YomboLibrary, object):
         self._moduleLibrary = None
         self._hook_cache = {}
         self._operation_mode = None  # One of: firstrun, config, run
-
-    @property
-    def operation_mode(self):
-        return self._operation_mode
-
-    @operation_mode.setter
-    def operation_mode(self, val):
-        self.loadedLibraries['atoms']['loader_operation_mode'] = val
-        self._operation_mode = val
-
-    def check_component_status(self, name, function):
-        if name in HARD_LOAD:
-            if function in HARD_LOAD[name]:
-                return HARD_LOAD[name][function]
-        return None
 
     @inlineCallbacks
     def load(self):  #on startup, load libraried, then modules
@@ -195,6 +181,29 @@ class Loader(YomboLibrary, object):
         yield self._moduleLibrary.unload_modules()
         yield self.unload_components()
 
+    def Times_i18n_atoms(self, **kwargs):
+       return [
+           {'loader.operation_mode': {
+               'en': 'One of: firstrun, run, config',
+               },
+           },
+       ]
+
+    @property
+    def operation_mode(self):
+        return self._operation_mode
+
+    @operation_mode.setter
+    def operation_mode(self, val):
+        self.loadedLibraries['atoms']['loader.operation_mode'] = val
+        self._operation_mode = val
+
+    def check_component_status(self, name, function):
+        if name in HARD_LOAD:
+            if function in HARD_LOAD[name]:
+                return HARD_LOAD[name][function]
+        return None
+
     def _log_loader(self, level, label, type, method, msg=""):
         """
         A common log format for loading/unloading libraries and modules.
@@ -237,6 +246,7 @@ class Loader(YomboLibrary, object):
             library._DevicesLibrary = self.loadedLibraries['devices']
             library._Libraries = self.loadedLibraries
             library._Modules = self._moduleLibrary
+            library._Localize = self.loadedLibraries['localize']
             library._MQTT = self.loadedLibraries['mqtt']
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']

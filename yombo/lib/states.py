@@ -16,7 +16,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 .. code-block:: python
 
    try:
-     raining = self._States['weather__raining']
+     raining = self._States['weather.raining']
    except:
      raining = None
 
@@ -24,7 +24,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
        # turn on sprinklers
 
    try:
-     jeffIsHome = self._States['user_jeff_location']
+     jeffIsHome = self._States['is.people.jeff.home']
    except:
      jeffIsHome = None
 
