@@ -45,7 +45,11 @@ from twisted.logger import Logger
 from ..      import __version__
 from ..error import ProfileValueError
 
-log = Logger(namespace='mqtt')
+
+# Yombo Modules
+from yombo.core.log import get_logger
+
+log = get_logger('ext.mqtt.factory')
 
 class MQTTFactory(ReconnectingClientFactory):
 

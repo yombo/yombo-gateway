@@ -31,8 +31,6 @@
 # ----------------
 
 from zope.interface   import implementer
-from twisted.logger   import Logger
-
 
 # -----------
 # Own modules
@@ -43,7 +41,11 @@ from .base       import ConnectedState as BaseConnectedState
 from .pubsubs    import MQTTProtocol as PubSubsMQTTProtocol
 
 
-log = Logger(namespace='mqtt')
+# Yombo Modules
+from yombo.core.log import get_logger
+
+log = get_logger('ext.mqttsubscriber')
+
 
 # ---------------------------------
 # MQTT Client Connected State Class

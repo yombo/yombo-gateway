@@ -183,7 +183,7 @@ class Statistics(YomboLibrary):
             if isinstance(item, dict):
                     self.add_bucket_lifetime(item['name'], item['lifetimes'])
 
-        print 'lifetimes: %s' % self.bucket_lifetimes
+#        print 'lifetimes: %s' % self.bucket_lifetimes
 
     def _get_bucket_time(self, type, bucket_time=None):
         """

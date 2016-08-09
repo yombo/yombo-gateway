@@ -58,8 +58,7 @@ from random import randint
 from zope.interface import implementer
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor, defer, task
-from twisted.logger   import Logger
-from twisted.python   import failure
+#from twisted.python   import failure
 
 # -----------
 # Own modules
@@ -74,6 +73,11 @@ from ..error     import ( MQTTStateError, MQTTWindowError, MQTTTimeoutError, Tim
 from .interfaces import IMQTTClientControl
 from .interval   import Interval
 
+# Yombo Modules
+from yombo.core.log import get_logger
+
+log = get_logger('ext.mqtt.base')
+
 
 MQTT_CONNECT_CODES = [
     "Connection Accepted",
@@ -83,8 +87,6 @@ MQTT_CONNECT_CODES = [
     "Connection Refused, bad user name or password",
     "Connection Refused, not authorized",
 ]
-
-log = Logger(namespace='mqtt')
 
 
 # ---------------------------------------

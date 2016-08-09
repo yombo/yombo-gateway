@@ -59,6 +59,7 @@ To send a command to a device is simple.
 :license: LICENSE for details.
 """
 # Import python libraries
+from __future__ import print_function
 import copy
 from collections import deque, namedtuple
 from time import time
@@ -180,7 +181,23 @@ class Devices(YomboLibrary):
         self._saveStatusLoop = None
 
     def _load_(self):
-        pass
+        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
+
+        # self.mqtt_test_conenction = self.new(self.server_listen_ip,
+        #     self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False,
+        #     self.test_mqtt_in, self.test_on_connect )
+
+        # Can use either deviceid or device machine label, mixed with cmd id or cmd machine label.
+        # expecting 'yombo/devices/deviceID/cmd on' or
+        # 'yombo/devices/garage_door/cmd off'
+        # handles: set or get
+        self.mqtt.subscribe("yombo/devices/#")
+
+    def mqtt_incoming(self, topic, payload, qos, retain):
+        parts = payload.split('/', 10)
+#        if payload == 'get':
+#            if
+        print("Yombo Devices got this: %s / %s" % (topic, payload))
 
     def _start_(self):
         """
@@ -311,7 +328,7 @@ class Devices(YomboLibrary):
         self.loadDefer.callback(10)
 
     def gotException(self, failure):
-       print "Exception: %r" % failure
+       print("Exception: %r" % failure)
        return 100  # squash exception, use 0 as value for next stage
 
     @inlineCallbacks
@@ -790,7 +807,7 @@ class Device:
             self.deviceVariables = vars
 
         def gotException(failure):
-           print "Exception : %r" % failure
+           print("Exception : %r" % failure)
            return 100  # squash exception, use 0 as value for next stage
 
         d = self.devices_library._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)

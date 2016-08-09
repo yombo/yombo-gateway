@@ -59,10 +59,12 @@ Usage example
 :license: LICENSE for details.
 """
 # Import python libraries
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
+
 
 # Import Yombo libraries
 from yombo.utils import random_string
@@ -119,6 +121,7 @@ class CronTab(YomboLibrary):
         :type loader: Instance of Loader
         """
         self.loader = loader
+
         self.__yombocron = {}
         
     def _load_(self):
@@ -131,12 +134,21 @@ class CronTab(YomboLibrary):
         """
         Start the looping call to check for cron every minute.
         """
+        now = datetime.now()
+        cron_next_minute =  now - timedelta(seconds = now.second - 61)  # we always run cron near the top of the minute
+        cron_start = float(cron_next_minute.strftime('%s.%f')) - float(now.strftime('%s.%f')) - 0.2
+
+        reactor.callLater(cron_start, self.setup_cron_loop)
+
+    def setup_cron_loop(self):
         self.__cronTabLoop.start(60)
 
     def _checkCron(self):
         """
         Checks to see if cron needs to run anything.
         """
+        logger.debug("Cron check: %s" % datetime.now())
+
         t=datetime(*datetime.now().timetuple()[:5])
         for e in self.__yombocron:
           self.__yombocron[e].check(t)

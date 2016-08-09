@@ -17,12 +17,13 @@ Implements MQTT. It does 2 things:
    def _init_(self):
        # Create anew connection. Hostname, port, user, password, ssl(True/False) can be specified if connection
        # to anther MQTT server. Otherwise, use the default local one.
-       self.my_mqtt = self._MQTT.new()  # Create a new connection to the embedded MQTT server.
+       self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming)  # Create a new connection to the embedded MQTT server.
 
-       # Subscribe to all topics of 'foor/bar/topic' and send them to:  self.show_mqtt_message
-       self.my_mqtt.subscribe('foo/bar/topic', self.show_mqtt_message)
+       # Subscribe to all topics of 'foor/bar/topic' and send them to:  self.mqtt_incoming
+       self.my_mqtt.subscribe('foo/bar/topic')
+       self.my_mqtt.publish('for/bar/topic/status', 'on')  # publish a message
 
-   def show_mqtt_message(self, topic, message):
+   def mqtt_incoming(self, topic, payload, qos, retain):
        print "topic: %s" % topic
        print "message: %s" % message
 
@@ -43,6 +44,7 @@ import crypt
 import random
 import string
 from collections import deque
+import sys
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory
@@ -65,7 +67,7 @@ from yombo.core.library import YomboLibrary
 from yombo.utils import random_string
 from yombo.core.log import get_logger
 
-logger = get_logger('lib.mqtt')
+logger = get_logger('mqtt')
 
 def sha512_crypt(password, salt=None, rounds=None):
     """
@@ -100,9 +102,9 @@ class MQTT(YomboLibrary):
         self.server_listen_port_nonsecure = self._Configs.get('mqtt', 'server_listen_port_nonsecure', 1883)
         self.server_listen_port_ssl = self._Configs.get('mqtt', 'server_listen_port_ssl', 1885)
         self.server_listen_port_websockets = self._Configs.get('mqtt', 'server_listen_port_websockets', 8081)
+        self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
 
         self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'yombo', random_string(length=16))
-        self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'local', random_string(length=5))
         self.server_users = self._Configs.get('mqtt_users', '*')
 
         if not self.server_enabled:
@@ -118,8 +120,7 @@ class MQTT(YomboLibrary):
             'timeout_disconnect_delay': 2,
             'auth': {
                 'password-file': self.hbmqtt_pass_file,
-#                'allow-anonymous': False,
-                'allow-anonymous': True,
+                'allow-anonymous': self.server_allow_anonymous,
             },
         }
 
@@ -142,7 +143,6 @@ class MQTT(YomboLibrary):
 
         cfg_users = self._Configs.get('mqtt_users', '*')
 
-#        users = [['yombo', self.yombo_mqtt_password]]
         users = []
 
         if cfg_users is not None:
@@ -158,22 +158,14 @@ class MQTT(YomboLibrary):
         command = ['hbmqtt', "-c", self.hbmqtt_config_file]
         self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
 
-        # level = LogLevel.levelWithName('info')
-        # LLFP = LogLevelFilterPredicate()
-        # LLFP.setLogLevelForNamespace(namespace='mqtt', level=level)
-
     def _load_(self):
         if self.server_enabled is False:
             logger.info("Embedded MQTT Disabled.")
             return
 
-        self.test()
+#        self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
     def _stop_(self):
-#        print("###########################################clientid: %s" % self.local_mqtt_client_id)
-#        print("client connectins: %s" % self.client_connections)
-#        self.client_connections[self.local_mqtt_client_id].public('yombo/mqtt/status', 'offline')
-
         for client_id, client in self.client_connections.iteritems():
             client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
             client.factory.protocol.disconnect()
@@ -183,7 +175,9 @@ class MQTT(YomboLibrary):
         #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
 
 
-    def new(self, on_connect_callback, server_hostname=None, server_port=None, user=None, password=None, ssl=False,):
+    def new(self, server_hostname=None, server_port=None, user=None, password=None, ssl=False,
+            mqtt_incoming_callback=None, mqtt_connected_callback=None, will_topic=None, will_message=None, will_qos=0,
+            will_retain=None, clean_start=True, version=v311, keepalive=0, client_id=None):
         """
         Create a new connection to MQTT. Don't worry, it's designed for many many connections. Leave all
         connection details blank or all completed. Blank will connect the MQTT client to the default Yombo
@@ -198,66 +192,98 @@ class MQTT(YomboLibrary):
         :return:
         """
         if not self.client_enabled:
-            logger.warn("MQTT Disabled. Not allowed to connect.")
+            logger.warn("MQTT Clients Disabled. Not allowed to connect.")
             raise YomboWarning('MQTT Clients disabled, unable to connect', 'connect', 'mqtt')
 
-        client_id = random_string(length=10)
-        self.client_connections[client_id] = MQTTClient(self, on_connect_callback, server_hostname, server_port, user, password, ssl)
+        if client_id is None:
+            client_id = random_string(length=10)
+        if client_id in self.client_connections:
+            logger.warn("client_id must be unique. Got: %s" % client_id)
+            raise YomboWarning ("client_id must be unique. Got: %s" % client_id, 'MQTT::new', 'mqtt')
 
+        if server_hostname is None:
+            server_hostname = self.server_listen_ip
+
+        if server_port is None:
+            server_port = self.server_listen_port_nonsecure
+
+        if user is None:
+            user = 'yombo'
+
+        if password is None:
+            password = self.yombo_mqtt_password
+
+        self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, user, password, ssl,
+            mqtt_incoming_callback, mqtt_connected_callback, will_topic, will_message, will_qos, will_retain, clean_start,
+            version, keepalive)
         return self.client_connections[client_id]
 
     def test(self):
-        self.local_mqtt_client_id = random_string(length=10)
-#        self.client_connections[self.local_mqtt_client_id] = self.new(self.test_on_connect, 'test.mosquitto.org', 1883 )
-        self.client_connections[self.local_mqtt_client_id] = self.new(self.test_on_connect, self.server_listen_ip, self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False )
-#        print("localmqtt_client _id = %s" % self.local_mqtt_client_id)
+#        self.local_mqtt_client_id = random_string(length=10)
 
-        self.test_1 = False
+        self.mqtt_test_conenction = self.new(self.server_listen_ip,
+            self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False,
+            self.test_mqtt_in, self.test_on_connect )
+
+        self.mqtt_test_conenction.subscribe("yombo/#")
+
         self.sendDataLoop = LoopingCall(self.test_send_data)
-        self.sendDataLoop.start(15, False)
+        self.sendDataLoop.start(15, True)
 
     def test_on_connect(self):
         print("in on connect in library...")
-        self.client_connections[self.local_mqtt_client_id].subscribe("foo/#", self.test_mqtt_in)
-        pass
+        self.test_send_data()
 
     def test_send_data(self):
-        self.client_connections[self.local_mqtt_client_id].publish("foo/bar/shed/status", 'open')
+        self.mqtt_test_conenction.publish("yombo/devices/asdf/asdf", 'open')
 
-    def test_mqtt_in(self,topic, payload, qos, dup, retain, msgID):
+    def test_mqtt_in(self, topic, payload, qos, retain):
         print("i got this: %s / %s" % (topic, payload))
-        pass
-
 
 class MQTTClient(object):
-    def __init__(self, mqtt_library, on_connect_callback, server_hostname, server_port, user=None, password=None, ssl=False):
+    def __init__(self, mqtt_library, client_id, server_hostname, server_port, username=None, password=None, ssl=False,
+                 mqtt_incoming_callback=None, mqtt_connected_callback=None, will_topic=None, will_message=None, will_qos=0,
+                 will_retain=None, clean_start=True, version=v311, keepalive=0):
+
         self.server_hostname = server_hostname
         self.server_port = server_port
-        self.user = user
+        self.username = username
         self.password = password
         self.ssl = ssl
         self.connected = False
         self.mqtt_library = mqtt_library
+        self.client_id = client_id
 
-        self.on_connect_callback = on_connect_callback
-        self.subscribe_callback = None
+        self.incoming_duplicates = deque([], 150)
 
-        if server_hostname is None:
-           raise YomboWarning("'server_host' is required.", '__init__', 'mqtt::MQTTClient')
-        if server_port is None:
-           raise YomboWarning("'server_port' is required.", '__init__', 'mqtt::MQTTClient')
+        self.mqtt_incoming_callback = mqtt_incoming_callback
+        self.mqtt_connected_callback = mqtt_connected_callback
+
+        self.send_queue = deque() # stores any received items like publish and subscribe until fully connected
 
         self.factory = MQTTTYomboFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER)
-        self.factory.set_mqtt_client(self)
-        self.factory.set_on_connect_callback(on_connect_callback)
+
+        self.factory.mqtt_client=self
+        self.factory.username = username
+        self.factory.password = password
+        self.factory.will_topic = will_topic
+        self.factory.will_message = will_message
+        self.factory.will_qos = will_qos
+        self.factory.will_retain = will_retain
+        self.factory.clean_start = clean_start
+        self.factory.version = version
+        self.factory.will_retain = will_retain
+        self.factory.clean_start = clean_start
+        self.factory.version = version
+        self.factory.keepalive = keepalive
 
         if ssl:
-            self.my_reactor = reactor.connectSSL(server_hostname, self.server_port, self.factory,
+            self.my_reactor = reactor.connectSSL(server_hostname, server_port, self.factory,
                                                  ClientContextFactory())
         else:
-            self.my_reactor = reactor.connectTCP(server_hostname, self.server_port, self.factory)
+            self.my_reactor = reactor.connectTCP(server_hostname, server_port, self.factory)
 
-    def publish(self, topic, message, qos=0):
+    def publish(self, topic, message, qos=0, retain=False):
         """
         Publish a message.
 
@@ -266,43 +292,90 @@ class MQTTClient(object):
         :param qos: 0, 1, or 2. Default is 0.
         :return:
         """
-        self.factory.protocol.publish(topic=topic, message=message, qos=qos)
-        self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
+        if self.connected:
+            self.factory.protocol.publish(topic=topic, message=message, qos=qos)
+            self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
+        if self.connected:
+            self.send_queue.append({
+                'type': 'publish',
+                'topic': topic,
+                'message': message,
+                'qos': qos,
+                'retain': False,
+            })
 
-    def subscribe(self, topic, callback, qos=2):
+    def subscribe(self, topic, qos=1):
         """
         Subscribe to a topic. Inlucde the topic like 'yombo/myfunky/something'
-        :param topic: string.
+        :param topic: string or list of strings to subscribe to.
         :param callback: a point to a function to be called when data arrives.
-        :param qos: See MQTT doco for information.
+        :param qos: See MQTT doco for information. We handle duplicates, no need for qos 2.
         :return:
         """
-        print("subscription set...")
-        self.factory.protocol.subscribe(topic, qos)
-        self.subscribe_callback = callback
-        self.factory.protocol.setPublishHandler(self.deliver_message)
+        if self.connected:
+            self.factory.protocol.subscribe(topic, qos)
+            self.mqtt_library._Statistics.increment("lib.mqtt.client.subscribe", bucket_time=10, anon=True)
+        else:
+            self.send_queue.append({
+                'type': 'subscribe',
+                'topic': topic,
+                'qos': qos,
+            })
 
-    def deliver_message(self, topic, payload, qos, dup, retain, msgID):
+    def unsubscribe(self, topic):
+        if self.connected:
+            self.factory.protocol.unsubscribe(topic)
+            self.mqtt_library._Statistics.increment("lib.mqtt.client.unsubscribe", bucket_time=10, anon=True)
+        if self.connected:
+            self.send_queue.append({
+                'type': 'unsubscribe',
+            })
+
+    def mqtt_connected(self):
+        print("client ID connected: %s" % self.client_id)
+        self.connected = True
+        while True:
+            try:
+                item = self.send_queue.popleft()
+                if item['type'] == 'subscribe':
+                    self.subscribe(item['topic'], item['qos'])
+                elif item['type'] == 'unsubscribe':
+                    self.unsubscribe(item['topic'])
+                if item['type'] == 'publish':
+                    self.publish(item['topic'], item['message'], qos=item['qos'], retain=item['retain'])
+            except IndexError:
+                break
+
+        if self.mqtt_connected_callback:
+            self.mqtt_connected_callback()
+
+    def mqtt_incoming(self, topic, payload, qos, dup, retain, mqtt_msg_id):
         """
-        Delivers a message from
+        Incoming messages from MQTT broker come here.
 
         :param topic: MQTT Topic
         :param payload: Payload portion
         :param qos: Quality Service
-        :param dup: Duplicate?
-        :param retain: ??
-        :param msgID: ??
+        :param dup: Will be 1 if duplicate flag was set in MQTT message. We ignore this
+        :param retain: If retain flag was set.
+        :param mqtt_msg_id: MQTT Msg ID. Used to detect duplicates.
         :return:
         """
-        print("topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, msgID:%s" % (topic, payload, qos, dup, retain, msgID))
-        self.subscribe_callback(topic, payload, qos, dup, retain, msgID)
+#        print("mqtt_incoming - topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, mqtt_msg_id:%s" % (topic, payload, qos, dup, retain, mqtt_msg_id))
 
-    def unsubscribe(self, topic):
-        self.factory.protocol.bsubscribe(topic)
-
-    def client_connectionMade(self):
-        self.connected = True
-#        self.factory.protocol.publish('yombo/service/status', 'online')
+#        print("client ID incomin: %s" % self.client_id)
+        if self.mqtt_incoming_callback:
+            #  check if we already received this msg_id. This is why we don't need qos=2 for incoming, qos 1 is enough.
+            if mqtt_msg_id is not None:
+                if mqtt_msg_id not in self.incoming_duplicates:
+                    self.incoming_duplicates.append(mqtt_msg_id)
+                else:
+ #                   print("dropping duplicate message: %s" % mqtt_msg_id)
+                    return
+            self.mqtt_incoming_callback(topic, payload, qos, retain)
+        else:
+            raise YomboWarning("Recieved MQTT message, but no callback defined, no where to send.", 'direct_incoming',
+                               'mqtt')
 
     def client_connectionLost(self, reason):
         logger.info("Lost connection to HBMQTT Broker: {reason}", reason=reason)
@@ -311,30 +384,18 @@ class MQTTClient(object):
 
 class MQTTYomboProtocol(MQTTProtocol):
 
-    def connectionMade(self):  # Empty through twisted.
-#        print("!!!!  connectionMade   !!!!!")
-        self.connect("YomboGateway-v1", keepalive=0, version=v311)
-        self._onmqttConnectionMade = self.factory.on_connect_callback
-        self.factory.mqtt_client.client_connectionMade()
+    def connectionMade(self):  # Empty through stack of twisted and MQTT library
 
-#    def _onDisconnect(self, reason):  # defined in MQTTProtocol in connectionLost
-##        print("!!!!  connectionLost   !!!!!")
-#        self.factory.mqtt_client.client_connectionLost(reason)
+        # call the mqtt_client.mqtt_connectin function once fully connected. This allows to send queued messages.
+        self._onMqttConnectionMade = self.factory.mqtt_client.mqtt_connected
 
-    def _onDisconnect(self, reason):  # defined in MQTTProtocol in connectionLost
-        print("!!!!  SCREAAAAAAmmmmmm   !!!!!")
-#        self.factory.mqtt_client.client_connectionLost(reason)
-
+        self.connect("Yombo-%s-v1" % self.factory.mqtt_client.client_id, keepalive=self.factory.keepalive,
+            willTopic=self.factory.will_topic, willMessage=self.factory.will_message,
+            willQoS=self.factory.will_qos, willRetain=self.factory.will_retain,
+            username=self.factory.username, password=self.factory.password,
+            cleanStart=self.factory.clean_start)
 
 class MQTTTYomboFactory(MQTTFactory):
-
-    def set_mqtt_client(self, mqtt_client):
-#        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  client set")
-        self.mqtt_client = mqtt_client
-
-    def set_on_connect_callback(self, on_connect_callback):
-#        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  client set")
-        self.on_connect_callback = on_connect_callback
 
     def buildProtocol(self, addr):
         if self.profile == self.SUBSCRIBER:
@@ -360,6 +421,7 @@ class MQTTTYomboFactory(MQTTFactory):
         self.windowUnsubscribe[addr] = v
 
         self.protocol = MQTTYomboProtocol(self, addr)  # Everything above is from mqtt.client.factory
+        self.protocol.setPublishHandler(self.mqtt_client.mqtt_incoming)
         return self.protocol                           # submitted pull request to get this into source
 
 
@@ -368,7 +430,6 @@ class MQTTServer(protocol.ProcessProtocol):
         self.config_file = config_file
 
     def shutdown(self):
-#        self.transport.signalProcess(signal.SIGTERM)
         self.transport.closeStdin() # tell them we're done
 
     # def connectionMade(self):

@@ -14,12 +14,36 @@ Technical Pursuit Inc.,
 All Rights Reserved. 
 
 PREAMBLE
-The Yombo Reciprocal Public License (YRPL) is based on the concept of reciprocity or, if you prefer, fairness.
+The Yombo Reciprocal Public License (YRPL) is based on the concept of
+reciprocity or, if you prefer, fairness.
 
-In short, this license grew out of a desire to close loopholes in previous open source licenses, loopholes that allowed parties to acquire open source software and derive financial benefit from it without having to release their improvements or derivatives to the community which enabled them. This occurred any time an entity did not release their application to a "third party". While there is a certain freedom in this model of licensing, it struck the authors of the YRPL as being unfair to the open source community at large and to the original authors of the works in particular. After all, bug fixes, extensions, and meaningful and valuable derivatives were not consistently finding their way back into the community where they could fuel further, and faster, growth and expansion of the overall open source software base. While you should clearly read and understand the entire license, the essence of the YRPL is found in two definitions: "Deploy" and "Required Components". Regarding deployment, under the YRPL your changes, bug fixes, extensions, etc. must be made available to the open source community at large when you Deploy in any form -- either internally or to an outside party. Once you start running the software you have to start sharing the software. Further, under the YRPL all components you author including schemas, scripts, source code, etc. -- regardless of whether they're compiled into a single binary or used as two halves of client/server application -- must be shared. You have to share the whole pie, not an isolated slice of it. In addition to these goals, the YRPL was authored to meet the requirements of the Open Source Definition as maintained by the Open Source Initiative (OSI). The specific terms and conditions of the license are defined in the remainder of this document.
+In short, this license grew out of a desire to close loopholes in previous open
+source licenses, loopholes that allowed parties to acquire open source software
+and derive financial benefit from it without having to release their
+improvements or derivatives to the community which enabled them. This occurred
+any time an entity did not release their application to a "third party". While
+there is a certain freedom in this model of licensing, it struck the authors of
+the RPL as being unfair to the open source community at large and to the
+original authors of the works in particular. After all, bug fixes, extensions,
+and meaningful and valuable derivatives were not consistently finding their way
+back into the community where they could fuel further, and faster, growth
+and expansion of the overall open source software base. While you should
+clearly read and understand the entire license, the essence of the YRPL is
+found in two definitions: "Deploy" and "Required Components". Regarding
+deployment, under the YRPL your changes, bug fixes, extensions, etc. must be
+made available to the open source community at large when you Deploy in any
+form -- either internally or to an outside party. Once you start running the
+software you have to start sharing the software. Further, under the YRPL all
+components you author including schemas, scripts, source code, etc. -- regardless
+of whether they're compiled into a single binary or used as two halves of
+client/server application -- must be shared. You have to share the whole pie,
+not an isolated slice of it. In addition to these goals, the YRPL was authored
+to meet the requirements of the Open Source Definition as maintained by the
+Open Source Initiative (OSI). The specific terms and conditions of the license
+are defined in the remainder of this document.
 
 LICENSE TERMS 
-1.0 General; Applicability &amp; Definitions. This Reciprocal Public License
+1.0 General; Applicability Definitions. This Reciprocal Public License
   Version 1.6 ("License") applies to any programs or other works as well as any
   and all updates or maintenance releases of said programs or works
   ("Software") not already covered by this License which the Software copyright
@@ -96,7 +120,8 @@ LICENSE TERMS
   copy, distribute, modify, or create derivatives of either the Software or any
   Extensions created by a Contributor. These actions are prohibited by law if
   you do not accept this License. Therefore, by performing any of these actions
-  You indicate Your acceptance of this License and Your agreement to be bound by all its terms and conditions.
+  You indicate Your acceptance of this License and Your agreement to be bound
+  by all its terms and conditions.
 
 IF YOU DO NOT AGREE WITH ALL THE TERMS AND CONDITIONS OF THIS LICENSE DO NOT
 USE, MODIFY, CREATE DERIVATIVES, OR DISTRIBUTE THE SOFTWARE. IF IT IS
@@ -444,7 +469,7 @@ of Licensed Software or portions thereof.
   laws and regulations. By downloading or by otherwise obtaining the Licensed
   Software, You are agreeing to be responsible for compliance with all
   applicable laws and regulations.
-13.8 Arbitration, Jurisdiction &amp; Venue. This License shall be governed by
+13.8 Arbitration, Jurisdiction & Venue. This License shall be governed by
   California law provisions (except to the extent applicable law, if any,
   provides otherwise), excluding its conflict-of-law provisions. You expressly
   agree that any dispute relating to this License shall be submitted to binding

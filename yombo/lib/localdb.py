@@ -428,7 +428,7 @@ class LocalDB(YomboLibrary):
     #####################
     @inlineCallbacks
     def get_distinct_stat_names(self):
-        records = yield self.dbconfig.select('statistics', where="type != 'datapoint'",
+        records = yield self.dbconfig.select('statistics', where=['type != ?', 'datapoint'],
                                              select='name, MIN(bucket) as bucket_min, MAX(bucket) as bucket_max',
                                              group='name')
         returnValue(records)
