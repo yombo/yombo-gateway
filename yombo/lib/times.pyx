@@ -22,10 +22,11 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
        moonrise = times.item_rise(dayOffset=1, item='Moon') # 1 - we want the next moon rise
 
 .. todo::
-  Redo many parts of this module. Doesn't seem to be working.
+
   Polar region debug (some strange glitches like nowNight message when it is polar day (I think we need variables for polar day and night begin/end)
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
@@ -617,7 +618,9 @@ class Times(YomboLibrary, object):
         Returns when an item rises.
 
         **Usage**:
+
         .. code-block:: python
+
             from yombo.core.helpers import getTime
             time = getTimes()
             saturnRise = time.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Saturn.
@@ -650,7 +653,9 @@ class Times(YomboLibrary, object):
         Returns when an item sets.
 
         **Usage**:
+
         .. code-block:: python
+
             from yombo.core.helpers import getTime
             time = getTimes()
             saturnRise = time.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Saturn.

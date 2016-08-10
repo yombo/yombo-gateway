@@ -516,7 +516,9 @@ class Devices(YomboLibrary):
         list of devices on startup.
 
             >>> devices = self._Modules.get_module_devices('137ab129da9318')  #by uuid
+
         or:
+
             >>> devices = self._Modules.get_module_devices('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
@@ -541,7 +543,9 @@ class Devices(YomboLibrary):
         Returns all device types for a given module uuid or module name.
 
             >>> deviceTypes = self._Modules.get_devices_type_for_module('137ab129da9318')  #by uuid
+
         or:
+
             >>> deviceTypes = self._Modules.get_devices_type_for_module('Homevision')  #by name
 
         :raises KeyError: Raised when module cannot be found.
@@ -573,9 +577,13 @@ class Devices(YomboLibrary):
         This function allows you to get the ``moduleUUID``, ``module_label`` or a pointer to the ``module`` itself.
 
             >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'module')  #by uuid, get the actual module pointer
+
         or:
+
             >>> deviceTypes = self._Modules.get_device_routing('X10 Appliance', 'Command', 'module_id')  #by name, get the moduleUUID
+
         or:
+
             >>> moduleUUID = self._Modules.get_device_routing('137ab129da9318', 'Interface', 'module_label')  #by uuid. get the module_label
 
         :raises KeyError: Raised when module cannot be found.

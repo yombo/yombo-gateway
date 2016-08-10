@@ -1,13 +1,13 @@
-.. index:: yobmoapi
+.. index:: yomboapi
 
-.. _yobmoapi:
+.. _yomboapi:
 
-.. currentmodule:: yombo.lib.yobmoapi
+.. currentmodule:: yombo.lib.yomboapi
 
 ===========================================
-YomboAPI (yombo.lib.yobmoapi)
+YomboAPI (yombo.lib.yomboapi)
 ===========================================
-.. automodule:: yombo.lib.yobmoapi
+.. automodule:: yombo.lib.yomboapi
 
 YomboAPI class
 ===========================================

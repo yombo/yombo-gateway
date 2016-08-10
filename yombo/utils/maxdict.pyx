@@ -14,6 +14,7 @@ Allows for creation of a dictionary with a maximum size.
    items['brother'] = 'Jeff'   # add an additional entry.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2015-2015 by Yombo.
 :license: LICENSE for details.
 """

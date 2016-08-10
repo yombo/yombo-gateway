@@ -2,6 +2,7 @@
 Various utilities to help the Yombo Gateway get things done.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """

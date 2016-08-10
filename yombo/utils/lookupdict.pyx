@@ -15,6 +15,7 @@ A dictionary that can search by either key or by value.
    result = items['Jane'] # mom
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """

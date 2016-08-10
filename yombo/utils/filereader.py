@@ -29,6 +29,7 @@ send any new lines of text to the function define on setup.
        self.file.close()  # Tell FileReader to close the file. Very important!
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2013-2016 by Yombo.
 :license: LICENSE for details.
 """

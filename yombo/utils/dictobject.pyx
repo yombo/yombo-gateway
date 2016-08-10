@@ -19,6 +19,7 @@ Original from: https://github.com/webpy/webpy/blob/master/web/utils.py
 Modified for use with Yombo by Mitch
 
 .. moduleauthor:: web.py & Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
