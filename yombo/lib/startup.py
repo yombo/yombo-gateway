@@ -11,6 +11,7 @@ mode.
   or variables.  This is listed here for completeness.
   
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

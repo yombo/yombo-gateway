@@ -43,6 +43,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """

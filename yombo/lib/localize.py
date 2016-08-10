@@ -11,6 +11,7 @@ To just get started: translation first!
        logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom['os'])
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """

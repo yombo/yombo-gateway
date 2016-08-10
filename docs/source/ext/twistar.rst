@@ -1,6 +1,6 @@
 .. index:: twistar
 
-.. _hjson:
+.. _twistar:
 
 .. currentmodule:: yombo.ext.twistar
 

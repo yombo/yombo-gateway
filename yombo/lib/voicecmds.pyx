@@ -83,6 +83,7 @@ the fuzzysearch phase of voice command lookup.
      voice_cmds["desklamb off"] # it's misspelled, but it will still be found.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

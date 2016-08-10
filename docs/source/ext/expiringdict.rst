@@ -1,6 +1,6 @@
-.. index:: twistar
+.. index:: expiringdict
 
-.. _hjson:
+.. _expiringdict:
 
 .. currentmodule:: yombo.ext.expiringdict
 

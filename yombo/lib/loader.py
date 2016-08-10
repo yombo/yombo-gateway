@@ -26,6 +26,7 @@ Stops components in the following phases. Modules first, then libraries.
   function to get what is needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
@@ -124,7 +125,7 @@ class Loader(YomboLibrary, object):
         self._operation_mode = None  # One of: firstrun, config, run
 
     @inlineCallbacks
-    def load(self):  #on startup, load libraried, then modules
+    def start(self):  #on startup, load libraried, then modules
         """
         This is effectively the main start function.
 
@@ -167,9 +168,6 @@ class Loader(YomboLibrary, object):
           self.loadedComponents['yombo.gateway.lib.messages'].modulesStarted()
         else:
           yield self._moduleLibrary.load_modules()
-
-    def start(self):
-        pass
 
     @inlineCallbacks
     def unload(self):

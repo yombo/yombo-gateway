@@ -39,11 +39,11 @@ from datetime import datetime, timedelta
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboTimeError, YomboStateNoAccess
+from yombo.core.exceptions import YomboTimeError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.message import Message
-from yombo.utils import random_string, is_one_zero
+from yombo.utils import is_one_zero
 
 logger = get_logger('library.times')
 

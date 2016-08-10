@@ -10,6 +10,7 @@ Handles getting configuration updates from the Yombo servers.
    or variables.  They are used internally.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

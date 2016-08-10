@@ -9,6 +9,7 @@ Used by the Yombo Gateway framework to set up it's libraries.
    within modules.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """

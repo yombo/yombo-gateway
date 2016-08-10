@@ -4,7 +4,8 @@
 This is the main class the is responsible for getting everything started.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2012-2015 by Yombo.
+
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import twisted libraries
@@ -13,24 +14,23 @@ from twisted.application.service import Service
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.lib.loader import get_loader, stop_loader, setup_loader
+from yombo.lib.loader import get_loader, setup_loader
 from yombo.core.log import get_logger
 
 logger = get_logger('core.gwservice')
 
 class GWService(Service):
     """
-    Responsible for starting/stopping the entire service.
+    Responsible for starting/stopping the entire Yombo Gateway service.  This is called from Yombo.tac.
     """
     loader = None
    
     def start(self):
         """
-        After twisted is running to get, call various starter functions
+        After twisted is running to get, call loader library and various starter functions
         to get everything started.
         """
-        self.loaderCallID = reactor.callWhenRunning(setup_loader)
-        self.loaderCallID2 = reactor.callWhenRunning(self.get_real_loader)
+        reactor.callWhenRunning(self.start_loader_library)
 
     def startService(self):
         """
@@ -39,16 +39,13 @@ class GWService(Service):
         Service.startService(self)
 
     @inlineCallbacks
-    def get_real_loader(self):
+    def start_loader_library(self):
         """
-        Get the loader class and then call it's load function. The
-        loader's load function does all the actual work.
+        Sets up the loader library and then start it.
         """
-        self.loader = get_loader()
-        yield self.loader.load()
+        self.loader = setup_loader()
         yield self.loader.start()
-#        self.loader.connect()
-        
+
     @inlineCallbacks
     def stopService(self):
         """

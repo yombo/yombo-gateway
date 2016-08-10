@@ -103,26 +103,6 @@ class YomboStateNotFound(YomboWarning):
         YomboWarning.__init__(self, message, errorno, component, name)
 
 
-class YomboStateNoAccess(YomboWarning):
-    """
-    Extends *YomboWarning* - When access to the state is restricted. Must supply password.
-    """
-    def __init__(self, message, errorno=101, name="States", component="library"):
-        """
-        Setup the YomboWarning and then pass everying to YomboException
-
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
-        """
-        YomboWarning.__init__(self, message, errorno, component, name)
-
-
 class YomboCritical(RuntimeWarning):
     """
     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
@@ -510,4 +490,3 @@ class YomboHookStopProcessing(YomboWarning):
         :type component: string
         """
         YomboWarning.__init__(self, message, errorno, component, name)
-

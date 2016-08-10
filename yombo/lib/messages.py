@@ -19,6 +19,7 @@ will delivery itself here automatically and this library will call the
 send function of a message when needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

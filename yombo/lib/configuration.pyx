@@ -19,6 +19,7 @@ are kept to a minimum.
    values, use :ref:`getConfigValue` and :ref:`setConfigValue>.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """

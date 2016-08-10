@@ -1,4 +1,3 @@
-
         <nav role="navigation" style="margin-bottom: 0; margin-top: -1px;">
             <div class="navbar-default sidebar" role="navigation">
                 <div class="sidebar-nav navbar-collapse" id="sidebar-area">

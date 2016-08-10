@@ -20,6 +20,7 @@ gets updated.
    resources['family'] = {'brother' : 'Jeff', 'mom' : 'Sara', 'dad' : 'Sam'}
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """

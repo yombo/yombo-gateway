@@ -13,6 +13,7 @@ Manages all modules within the system. Provides a single reference to perform mo
 Also calls module hooks as requested by other libraries and modules.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

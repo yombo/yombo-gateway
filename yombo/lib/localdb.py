@@ -13,6 +13,7 @@ A database API to SQLite3.
    request at `<https://projects.yombo.net/>` under the Gateway Project.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

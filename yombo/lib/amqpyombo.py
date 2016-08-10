@@ -21,6 +21,7 @@ users data, the user's own it, Yombo won't sell it, Yombo keeps it private.
 Perhaps disconnect and reconnect to another server? -Mitch
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2015-2016 by Yombo.
 :license: LICENSE for details.
 """
@@ -32,7 +33,6 @@ except ImportError:
 import pika
 import zlib
 from datetime import datetime
-#from pika.adapters import twisted_connection
 
 import yombo.ext.umsgpack as msgpack
 

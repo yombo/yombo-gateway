@@ -3,6 +3,7 @@
 Various pycrypto tools, if available, to create strong random strings.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
 """

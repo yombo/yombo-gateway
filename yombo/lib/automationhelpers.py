@@ -2,8 +2,9 @@
 Helpers for automation items. Adds some core platforms to the source, filters, and actions systems. See
 :py:mod:`yombo.lib.automationhelpers` for additional details.
 
-..versionadded:: 0.10.0
+.. versionadded:: 0.10.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """

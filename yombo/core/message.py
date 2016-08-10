@@ -41,11 +41,11 @@ from json import dumps, loads
 from uuid import uuid4
 import copy
 from time import time
-import sys
-from inspect import isfunction
+#import sys
+#from inspect import isfunction
 
 # Import twisted libraries
-from twisted.internet.reactor import callLater
+from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboMessageError
@@ -488,7 +488,7 @@ class Message:
             if hasattr(component, 'message'):
 #            if callable(component.message):
                 self.sentTo.append(self.msgDestination)
-                callLater(0.00001, component.message, self)
+                reactor.callLater(0.00001, component.message, self)
     #	            ret = component.message(self)                     # send actual message
             del allComponents[self.msgDestination]
         else:
@@ -503,7 +503,7 @@ class Message:
                 for componentName in self._MessagesLibrary.distributions[self.msgType]:
                     if componentName in allComponents:   # make sure it's not already sent
                         component = allComponents[componentName]
-                        callLater(0.00001, component.message, self)
+                        reactor.callLater(0.00001, component.message, self)
                         self.sentTo.append(componentName)
                         del allComponents[componentName]  # remove, won't send again
 
@@ -513,7 +513,7 @@ class Message:
             for componentName in self._MessagesLibrary.distributions["all"]:
                 if componentName in allComponents:   # make sure it's not already sent
                     component = allComponents[componentName]
-                    callLater(0.00001, component.message, self)
+                    reactor.callLater(0.00001, component.message, self)
                     self.sentTo.append(componentName)
                     del allComponents[componentName]  # remove, won't send again
 

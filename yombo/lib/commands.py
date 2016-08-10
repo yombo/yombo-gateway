@@ -14,6 +14,7 @@ the individual command classes.
 The command (singular) class represents one command.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """

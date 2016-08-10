@@ -28,7 +28,7 @@ Implements MQTT. It does 2 things:
        print "message: %s" % message
 
 
-..versionadded:: 0.11.0
+.. versionadded:: 0.11.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
 :copyright: Copyright 2016 by Yombo.

@@ -5,7 +5,7 @@
 Manages interactions with api.yombo.net
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-..versionadded:: 0.11.0
+.. versionadded:: 0.11.0
 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.

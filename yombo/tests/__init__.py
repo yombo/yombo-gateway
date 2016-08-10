@@ -7,7 +7,7 @@ from yombo.lib.loader import setup_loader, get_loader
 
 setup_loader(testing=True)
 _loader = get_loader()
-_loader.importLibraries()
+_loader.import_libraries()
 #_getComponent = getComponent
 
 class ExpectingTestCase(TestCase):
