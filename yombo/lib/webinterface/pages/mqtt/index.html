@@ -1,0 +1,106 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">MQTT Tools</h1>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form id="sendmqtt" action="/api/v1/mqtt" method="POST" role="form">
+				<div class="row">
+					<div class="col-lg-7 col-md-8">
+						<div class="panel panel-default">
+
+							<div class="panel-heading">
+								<h4>
+                                <div style="float: right;">
+                                    <a href="#" data-toggle="modal" data-target="#mqttinfo"><i class="fa fa-question-circle  fa-2x"></i></a>
+                                </div>Send MQTT Message</h4>
+							</div>
+							<div class="panel-body">
+                                {{ macros.modal("mqttinfo", 'Publish and MQTT Message', "
+                                <p>You can send an MQTT message usng the gateway's primary MQTT account.</p>
+                                <p> Generally you want to use QoS 0 or 1. By default, we use the local embedded MQTT server
+                                    and there is no need for 2. It increases the overhead. Any Yombo MQTT clients will automatically
+                                    discard duplicate messages as well, so no worry about getting multiples.</p>
+                                <div class='bs-callout bs-callout-success' id='callout-images-ie-rounded-corners'>
+                                    <h4><i class='fa fa-info-circle'></i> No feedback provided by default</h4>
+                                    <p>Unless you are sending a message that you know will perform some action, no feedback
+                                    on the message will be provided by this tool.</p>
+                                </div>") }}
+                                {{ macros.modal("mqttresultmodal", 'MQTT Publish Results', '
+                                <p><div id="mqttresults"></div></p>') }}
+								<div class="form-group">
+									<label for="topic">Topic</label>
+									<div class="input-group">
+										<input type="text" class="form-control" name="topic" id="topic" placeholder="yombo/devices/front_porch/cmd" required value="">
+										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+									</div>
+								</div>
+								<div class="form-group">
+									<label for="message">Message</label>
+									<div class="input-group">
+										<input type="text" class="form-control" name="message" id="message" placeholder="on" required value="">
+										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+									</div>
+								</div>
+                                <div class="form-group">
+									<label for="qos">QoS - Quality of Service</label>
+									<div class="input-group">
+                                        <select name="qos" required class="selectpicker show-tick" title="QoS">
+                                            <option value="0">0 - At most send once</option>
+                                            <option value="1" selected>1 - At least send once</option>
+                                            <option value="2">2 - Exactly once</option>
+                                        </select>
+                                    </div>
+                                </div>
+<div id=created></div>
+					<button type="submit" class="btn btn-primary col-xs-12" disabled>Send MQTT Message</button>
+
+							</div>
+						</div>
+					</div>
+					<!-- /.col-lg-6 -->
+				</div>
+	            <!-- /.row -->
+			</form>
+
+{% endblock %}
+
+
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+
+<script>
+    $('.ls-modal').on('click', function(e){
+      e.preventDefault();
+      $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
+    });
+
+$('#sendmqtt').submit(function() { // catch the form's submit event
+    $.ajax({ // create an AJAX call...
+        data: $(this).serialize(), // get the form data
+        type: $(this).attr('method'), // GET or POST
+        url: $(this).attr('action'), // the file to call
+        dataType: 'json',
+        success: function(resp){
+            $("#mqttresults").html(resp.message);
+            $("#mqttresultmodal").modal('show');
+        }
+//        success: function(response) { // on success..
+//            $('#created').html(response.message); // update the DIV
+//        }
+    });
+    return false; // cancel original event to prevent form submitting
+});
+
+</script>
+
+{% endblock %}
+

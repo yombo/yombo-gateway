@@ -39,12 +39,17 @@ from __future__ import print_function
 import yaml
 from os.path import abspath
 from os import environ
-import signal
+#import signal
 import crypt
 import random
 import string
 from collections import deque
-import sys
+#import sys
+# Import python libraries
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory
@@ -54,7 +59,7 @@ from twisted.logger   import (
     Logger, LogLevel, globalLogBeginner, textFileLogObserver,
     FilteringLogObserver, LogLevelFilterPredicate)
 from twisted.internet.task import LoopingCall
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # 3rd party libraries
 from yombo.ext.mqtt.client.factory import MQTTFactory
@@ -105,6 +110,7 @@ class MQTT(YomboLibrary):
         self.server_listen_port_websockets = self._Configs.get('mqtt', 'server_listen_port_websockets', 8081)
         self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
 
+        self.mqtt_local_client = None
         self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'yombo', random_string(length=16))
         self.server_users = self._Configs.get('mqtt_users', '*')
 
@@ -166,6 +172,14 @@ class MQTT(YomboLibrary):
 
 #        self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
+    def _start_(self):
+        """
+        Just connect with a local client. Can later be used to send messages as needed.
+        :return:
+        """
+        self.mqtt_local_client = self.new()
+
+
     def _stop_(self):
         for client_id, client in self.client_connections.iteritems():
             client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
@@ -174,6 +188,73 @@ class MQTT(YomboLibrary):
 
     #def _unload_(self):
         #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
+
+    def MQTT_webinterface_add_routes(self, **kwargs):
+        """
+        A demonstration of how to add menus and provide function calls to the web interface library. This would
+        normally be used by modules and not libaries, this is here for documentation purposes.
+        :param kwargs:
+        :return:
+        """
+        if self.client_enabled:
+            return {
+                'nav_side': [
+                    {
+                    'label1': 'Tools',
+                    'label2': 'MQTT',
+                    'priority1': None,  # Even with a value, 'Tools' is already defined and will be ignored.
+                    'priority2': 10000,
+                    'icon': 'fa fa-wrench fa-fw',
+                    'url': '/tools/mqtt',
+                    'tooltip': '',
+                    'opmode': 'run',
+                    },
+                ],
+                'routes': [
+                    self.web_interface_routes,
+               ],
+            }
+
+    def web_interface_routes(self, webapp):
+        """
+        Since this is normally done within a module and not a library, the template files would be located inside
+        the module. Web page templates would be something like: /modules/mymodule/html_templates/function1.html
+
+        :param webapp: A pointer to the webapp, it's used to setup routes.
+        :return:
+        """
+        with webapp.subroute("/") as webapp:
+            @webapp.route("/tools/mqtt")
+            def page_tools_mqtt(webinterface, request):
+                auth = webinterface.require_auth(request)
+                if auth is not None:
+                    return auth
+
+                page = webinterface.webapp.templates.get_template(webinterface._dir + 'pages/mqtt/index.html')
+                return page.render(data=webinterface.data,
+                                   alerts=webinterface.get_alerts(),
+                                   )
+
+                return b"These stairs lead to the lair of beasts of the mqtt world: "
+
+            @webapp.route("/api/v1/mqtt")
+            @inlineCallbacks
+            def api_v1_mqtt(webinterface, request):
+                auth = webinterface.require_auth(request)
+                if auth is not None:
+                    returnValue(auth)
+                topic = request.args.get('topic')[0]  # please do some validation!!
+                message = request.args.get('message')[0]  # please do some validation!!
+                qos = int(request.args.get('qos')[0])  # please do some validation!!
+
+                try:
+                    yield self.mqtt_local_client.publish(topic, message, qos)
+                    results = {'status':200, 'message': 'MQTT message sent successfully.'}
+                    returnValue(json.dumps(results))
+                except Exception, e:
+                    print("whathahtahthat %s" % e)
+                    results = {'status':500, 'message': 'MQTT message count not be sent.'}
+                    returnValue(json.dumps(results))
 
 
     def new(self, server_hostname=None, server_port=None, user=None, password=None, ssl=False,

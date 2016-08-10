@@ -225,7 +225,4 @@
 	            <!-- /.navbar-top-links -->
 			</div>
             <!-- /.navbar-header -->
-
-            </div>
-            <!-- /.navbar-static-side -->
         </nav>

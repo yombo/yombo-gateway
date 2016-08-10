@@ -32,9 +32,10 @@ class Localize(YomboLibrary):
     information about the underlying system.
     """
     def _init_(self, loader):
-        self.states = {}  # All state translations
         self.atoms = {}  # All atom translations
+        self.configuration = {}  # All configuration translations
         self.system_messages = {}  # Various system messages.
+        self.states = {}  # All state translations
 
     def _load_(self):
         pass
@@ -105,6 +106,21 @@ class Localize(YomboLibrary):
                         if language not in self.atoms[msgid]:
                             self.atoms[msgid][language] = {}
                         self.atoms[msgid][language] = the_string
+
+        temp_strings = global_invoke_all('i18n_configurations1')
+        for component, strings in temp_strings.iteritems():
+#            print "component: %s, msgids: %s" % (component, msgids)
+            for string in strings:
+#                print "string: %s" % string
+                for msgid, languages in string.iteritems():
+#                    print "label: %s" % msgid
+                    for language, the_string in languages.iteritems():
+#                        print "language: %s, the_string: %s" % (language, the_string)
+                        if msgid not in self.configuration:
+                            self.configuration[msgid] = {}
+                        if language not in self.configuration[msgid]:
+                            self.configuration[msgid][language] = {}
+                        self.configuration[msgid][language] = the_string
 
     def get_strings(self, accept_language, type):
         accept_languages = self.parse_accept_language(accept_language)

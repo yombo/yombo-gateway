@@ -427,10 +427,15 @@ class LocalDB(YomboLibrary):
     ### Statistics  #####
     #####################
     @inlineCallbacks
-    def get_distinct_stat_names(self):
-        records = yield self.dbconfig.select('statistics', where=['type != ?', 'datapoint'],
-                                             select='name, MIN(bucket) as bucket_min, MAX(bucket) as bucket_max',
-                                             group='name')
+    def get_distinct_stat_names(self, get_all=False):
+        if get_all:
+            records = yield self.dbconfig.select('statistics',
+                         select='name, MIN(bucket) as bucket_min, MAX(bucket) as bucket_max',
+                         group='name')
+        else:
+            records = yield self.dbconfig.select('statistics', where=['type != ?', 'datapoint'],
+                         select='name, MIN(bucket) as bucket_min, MAX(bucket) as bucket_max',
+                         group='name')
         returnValue(records)
 
     @inlineCallbacks

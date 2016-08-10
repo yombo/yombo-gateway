@@ -55,5 +55,7 @@ Calling Function Location                                                       
 :py:meth:`Modules::unload_modules <yombo.lib.modules.Modules.load_modules>`                               _module_unload_                             Only calls to libraries: Called before modules called with _unload_.
 :py:meth:`Modules::unload_modules <yombo.lib.modules.Modules.load_modules>`                               _stop_                                      Only called to modules: Calls as part of _stop_ sequence.
 :py:meth:`Modules::unload_modules <yombo.lib.modules.Modules.load_modules>`                               _unload_                                    Only called to modules: Calls as part of _unload_ sequence.
+:py:meth:`MQTT::_module_prestart_ <yombo.lib.mqtt.MQTT._module_prestart_>`                                webinterface_add_routes                     Added MQTT features to web interface library.
 :py:meth:`VoiceCmds::_module_prestart_ <yombo.lib.voicecmds.VoiceCmds._module_prestart_>`                 hook_voice_cmds_add                         Called to add additional voice commands.
 ========================================================================================================= =========================================== ==========================================================================================
+MQTT_webinterface_add_routes

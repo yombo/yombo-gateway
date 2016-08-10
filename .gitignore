@@ -37,6 +37,7 @@ yombo/lib/webinterface/static/dist
 
 # Logs and Databases #
 ######################
+1
 *.log
 *.out
 usr/*

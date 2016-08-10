@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<html>
    <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -28,11 +27,8 @@
         {% endif %}
 	</header>
     <div id="wrapper">
-
         <!-- Side Navigation -->
-		{% if data.gateway_configured%}{% include 'lib/webinterface/fragments/full_side_nav.tpl' %}
-		{% else %}{% include 'lib/webinterface/fragments/config_side_nav.tpl' %}
-        {% endif %}
+		{%- include 'lib/webinterface/fragments/side_nav.tpl' -%}
         <!-- Page Content -->
         <div id="page-wrapper">
             <div class="container-fluid">

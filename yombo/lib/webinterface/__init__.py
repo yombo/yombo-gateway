@@ -12,6 +12,7 @@ from os import path, listdir, mkdir
 from os.path import dirname, abspath
 from time import strftime, gmtime, time
 from urlparse import parse_qs, urlparse
+from operator import itemgetter
 
 import jinja2
 from klein import Klein
@@ -25,7 +26,7 @@ except ImportError:
 from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, succeed
+from twisted.internet.defer import inlineCallbacks, succeed, returnValue
 
 # Import 3rd party libraries
 
@@ -36,6 +37,8 @@ from yombo.core.exceptions import YomboRestart
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
+from yombo.lib.webinterface.route_setup_wizard import setup_wizard
+
 #from yombo.lib.webinterfaceyombosession import YomboSession
 
 logger = get_logger("library.webconfig")
@@ -79,6 +82,110 @@ simulate_gw = {
                   },
               }
 
+nav_side_menu = [
+    {
+        'label1': 'Info',
+        'label2': 'Devices',
+        'priority1': 1000,
+        'priority2': 500,
+        'icon': 'fa fa-info fa-fw',
+        'url': '/devices/index',
+        'tooltip': 'Show Devices',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Info',
+        'label2': 'Modules',
+        'priority1': 1000,
+        'priority2': 1000,
+        'icon': 'fa fa-info fa-fw',
+        'url': '/modules/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Info',
+        'label2': 'States',
+        'priority1': 1000,
+        'priority2': 2000,
+        'icon': 'fa fa-info fa-fw',
+        'url': '/states/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Info',
+        'label2': 'Atoms',
+        'priority1': 1000,
+        'priority2': 3000,
+        'icon': 'fa fa-info fa-fw',
+        'url': '/atoms/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Statistics',
+        'label2': 'General',
+        'priority1': 2000,
+        'priority2': 500,
+        'icon': 'fa fa-dashboard fa-fw',
+        'url': '/statistics/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Tools',
+        'label2': 'General',
+        'priority1': 3000,
+        'priority2': 500,
+        'icon': 'fa fa-code fa-fw',
+        'url': '/tools/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+
+    {
+        'label1': 'Settings',
+        'label2': 'Basic Settings',
+        'priority1': 4000,
+        'priority2': 500,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/basic',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Settings',
+        'label2': 'Gateway Settings',
+        'priority1': 4000,
+        'priority2': 1000,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/basic',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Settings',
+        'label2': 'Yombo.Ini',
+        'priority1': 4000,
+        'priority2': 1500,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/yombo_ini',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Settings',
+        'label2': 'Web Interface',
+        'priority1': 4000,
+        'priority2': 2000,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/web_interface',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+]
+
 
 class WebInterface(YomboLibrary):
     """
@@ -107,6 +214,8 @@ class WebInterface(YomboLibrary):
 
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
+
+        setup_wizard(self.webapp)
 
     @inlineCallbacks
     def _load_(self):
@@ -140,20 +249,93 @@ class WebInterface(YomboLibrary):
     def _unload_(self):
         pass
 
-    def WebInterface_configuration_details(self, **kwargs):
-        return [{'webinterface': {
-                    'enabled': {
-                        'description': {
-                            'en': 'Enables/disables the web interface.',
-                        }
-                    },
-                    'port': {
-                        'description': {
-                            'en': 'Port number for the web interface to listen on.'
-                        }
-                    }
+    # def WebInterface_configuration_details(self, **kwargs):
+    #     return [{'webinterface': {
+    #                 'enabled': {
+    #                     'description': {
+    #                         'en': 'Enables/disables the web interface.',
+    #                     }
+    #                 },
+    #                 'port': {
+    #                     'description': {
+    #                         'en': 'Port number for the web interface to listen on.'
+    #                     }
+    #                 }
+    #             },
+    #     }]
+
+    def WebInterface_i18n_configurations(self, **kwargs):
+       return [
+           {
+               'webinterface': {
+                   'enabled': {
+                       'en': 'Enables/disables the web interface.',
+                   },
+                   'port': {
+                       'en': 'Port number for the web interface to listen on.'
+                   },
                 },
-        }]
+           },
+       ]
+
+    def _module_prestart_(self, **kwargs):
+        """
+        Called before modules have their _prestart_ function called.
+
+        This implements the hook "webinterface_add_routes" and calls all libraries and modules. It allows libs and
+        modules to add menus to the web interface and provide additional funcationality.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           def ModuleName_webinterface_add_routes(self, **kwargs):
+               return {
+                   'nav_side': [
+                       {
+                       'label1': 'Tools',
+                       'label2': 'MQTT',
+                       'priority1': 3000,
+                       'priority2': 10000,
+                       'icon': 'fa fa-wrench fa-fw',
+                       'url': '/tools/mqtt',
+                       'tooltip': '',
+                       'opmode': 'run',
+                       },
+                   ],
+                   'routes': [
+                       self.web_interface_routes,
+                  ],
+               }
+
+        """
+        # first, lets get the top levels already defined so children don't re-arrange ours.
+        temp_dict = {}
+        newlist = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
+        for item in newlist:
+            level1 = item['label1']
+            if level1 not in newlist:
+                temp_dict[level1] = item['priority1']
+
+        temp_strings = yombo.utils.global_invoke_all('webinterface_add_routes')
+        for component, options in temp_strings.iteritems():
+            if 'nav_side' in options:
+                for new_nav in options['nav_side']:
+                    if new_nav['label1'] in temp_dict:
+                        new_nav['priority1'] =  temp_dict[new_nav['label1']]
+                    nav_side_menu.append(new_nav)
+            if 'routes' in options:
+                for new_route in options['routes']:
+                    new_route(self.webapp)
+
+        self.data['nav_side'] = OrderedDict()
+        newlist = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
+        for item in newlist:
+            level1 = item['label1']
+            if level1 not in self.data['nav_side']:
+                self.data['nav_side'][level1] = []
+            self.data['nav_side'][level1].append(item)
+#        print self.data['nav_side']
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):
         """
@@ -282,8 +464,8 @@ class WebInterface(YomboLibrary):
         print "run_home_done"
 
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
                            states=self._Libraries['states'].get_states(),
@@ -296,456 +478,13 @@ class WebInterface(YomboLibrary):
             return auth
 
         page = self.get_template(request, self._dir + 'config_pages/index.html')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            )
 
     def firstrun_home(self, request):
         print "bbbbbbbbbbbbbbbbbbbbbb"
         return self.redirect(request, '/setup_wizard/1')
-
-
-    @webapp.route('/setup_wizard/1')
-    def page_setup_wizard_1(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-
-        print "page_setup_wizard_1"
-        self.sessions.set(request, 'login_redirect', '/setup_wizard/2')
-        auth = self.require_auth_pin(request)
-        if auth is not None:
-            return auth
-
-
-        self.sessions.set(request, 'setup_wizard_last_step', 3)
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/1.html')
-        return page.render(alerts={},
-                           data=self.data,
-                           )
-
-    @webapp.route('/setup_wizard/2')
-    def page_setup_wizard_2(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (1, 2, 3):
-            self.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-            return self.redirect(request, '/setup_wizard/1')
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-#        print "selected gateawy: %s" % self.sessions.get(request, 'setup_wizard_gateway_id')
-
-        # simulate fetching possible gateways:
-        available_gateways = simulate_gw #(include_new=True)
-
-        self.sessions.set(request, 'setup_wizard_last_step', 2)
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/2.html')
-        return page.render(alerts={},
-                           data=self.data,
-                           existing_gateways=available_gateways,
-                           selected_gateway=self.sessions.get(request, 'setup_wizard_gateway_id'),
-                           )
-
-    @webapp.route('/setup_wizard/3', methods=['GET'])
-    def page_setup_wizard_3_get(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (2, 3, 4):
-            print "wiz step: %s" % self.sessions.get(request, 'setup_wizard_last_step')
-            return self.redirect(request, '/setup_wizard/1')
-
-        submitted_gateway_id = self.sessions.get(request, 'setup_wizard_gateway_id')
-        if submitted_gateway_id == None:
-            return self.redirect(request, "setup_wizard/2")
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        # simulate fetching possible gateways:
-        available_gateways = simulate_gw #(include_new=True)
-
-        if submitted_gateway_id not in available_gateways:
-            self.add_alert("Selected gateway not found. Try again.")
-            self.redirect(request, 'setup_wizard/2')
-
-        return self.page_setup_wizard_3_show_form(request, submitted_gateway_id, available_gateways)
-
-    @webapp.route('/setup_wizard/3', methods=['POST'])
-    def page_setup_wizard_3_post(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (2, 3, 4):
-            self.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-            print "bad nav!!!"
-            return self.redirect(request, '/setup_wizard/1')
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        valid_submit = True
-        try:
-            submitted_gateway_id = request.args.get('gateway-id')[0]
-        except:
-            valid_submit = False
-
-        if submitted_gateway_id == "" or valid_submit == False:
-            self.add_alert("Invalid gateway selected. Try again.")
-            return self.redirect(request, '/setup_wizard/2')
-
-        # simulate fetching possible gateways:
-        available_gateways = simulate_gw #(include_new=True)
-
-        if submitted_gateway_id not in available_gateways:
-            self.add_alert("Selected gateway not found. Try again.")
-            return self.redirect(request, "setup_wizard/2")
-
-        return self.page_setup_wizard_3_show_form(request, submitted_gateway_id, available_gateways)
-
-    def page_setup_wizard_3_show_form(self, request, wizard_gateway_id, available_gateways):
-        session = self.sessions.load(request)
-
-        if 'setup_wizard_gateway_id' not in session or session['setup_wizard_gateway_id'] != wizard_gateway_id:
-            available_gateways = simulate_gw #(include_new=True)
-            session['setup_wizard_gateway_id'] = wizard_gateway_id
-            session['setup_wizard_gateway_label'] = available_gateways[wizard_gateway_id]['label']
-            session['setup_wizard_gateway_description'] = available_gateways[wizard_gateway_id]['description']
-            session['setup_wizard_gateway_latitude'] = available_gateways[wizard_gateway_id]['variables']['latitude']
-            session['setup_wizard_gateway_longitude'] = available_gateways[wizard_gateway_id]['variables']['longitude']
-            session['setup_wizard_gateway_elevation'] = available_gateways[wizard_gateway_id]['variables']['elevation']
-
-        print "session: %s" % session
-        print "available_gateways[wizard_gateway_id]: %s" % available_gateways[wizard_gateway_id]
-        fields = {
-              'id' : session['setup_wizard_gateway_id'],
-              'label': session['setup_wizard_gateway_label'],
-              'description': session['setup_wizard_gateway_description'],
-              'variables': {
-                  'latitude': session['setup_wizard_gateway_latitude'],
-                  'longitude': session['setup_wizard_gateway_longitude'],
-                  'elevation': session['setup_wizard_gateway_elevation'],
-                  },
-        }
-
-        session['setup_wizard_last_step'] = 3
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/3.html')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
-                           gw_fields=fields,
-                           )
-
-    @webapp.route('/setup_wizard/4', methods=['GET'])
-    def page_setup_wizard_4_get(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (3, 4, 5):
-            self.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-            return self.redirect(request, '/setup_wizard/1')
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        return self.page_setup_wizard_4_show_form(request)
-
-    @webapp.route('/setup_wizard/4', methods=['POST'])
-    def page_setup_wizard_4_post(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (3, 4, 5):
-            self.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-            return self.redirect(request, '/setup_wizard/1')
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        valid_submit = True
-        try:
-            submitted_gateway_label = request.args.get('gateway-label')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Label.")
-
-        try:
-            submitted_gateway_description = request.args.get('gateway-description')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Description.")
-
-        try:
-            submitted_gateway_latitude = request.args.get('gateway-latitude')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Latitude.")
-
-        try:
-            submitted_gateway_longitude = request.args.get('gateway-longitude')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Longitude.")
-
-        try:
-            submitted_gateway_elevation = request.args.get('gateway-elevation')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Elevation.")
-
-        if valid_submit is False:
-            page = self.get_template(request, self._dir + 'pages/setup_wizard/4.html')
-            return page.render(alerts=self.get_alerts(),
-                               data=self.data,
-                               )
-        session = self.sessions.load(request)
-
-        session['setup_wizard_gateway_label'] = submitted_gateway_label
-        session['setup_wizard_gateway_description'] = submitted_gateway_description
-        session['setup_wizard_gateway_latitude'] = submitted_gateway_latitude
-        session['setup_wizard_gateway_longitude'] = submitted_gateway_longitude
-        session['setup_wizard_gateway_elevation'] = submitted_gateway_elevation
-
-        return self.page_setup_wizard_4_show_form(request)
-
-    def page_setup_wizard_4_show_form(self, request):
-        session = self.sessions.load(request)
-        security_items = {
-            'status': session.get('setup_wizard_security_status', '1'),
-            'gps_status': session.get('setup_wizard_security_gps_status', '1'),
-        }
-
-        session['setup_wizard_last_step'] = 4
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/4.html')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
-                           security_items=security_items,
-                           )
-
-    @webapp.route('/setup_wizard/5', methods=['GET'])
-    def page_setup_wizard_5_get(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (4, 5, 6):
-            self.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-            return self.redirect(request, '/setup_wizard/1')
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        return self.page_setup_wizard_5_show_form(request)
-
-    @webapp.route('/setup_wizard/5', methods=['POST'])
-    def page_setup_wizard_5_post(self, request):
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            return self.redirect(request, '/setup_wizard/6')
-        if self.sessions.get(request, 'setup_wizard_last_step') not in (4, 5, 6):
-            self.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-            return self.redirect(request, '/setup_wizard/1')
-
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        valid_submit = True
-        try:
-            submitted_security_status = request.args.get('security-status')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Device Send Status.")
-
-
-        try:
-            submitted_security_gps_status = request.args.get('security-gps-status')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway GPS Locations Send Status.")
-
-        if valid_submit is False:
-            return self.redirect(request, '/setup_wizard/4')
-
-        session = self.sessions.load(request)
-
-        session['setup_wizard_security_status'] = submitted_security_status
-        session['setup_wizard_security_gps_status'] = submitted_security_gps_status
-
-        return self.page_setup_wizard_5_show_form(request)
-
-    def page_setup_wizard_5_show_form(self, request):
-        gpg_selected = "new"
-
-        self.sessions.set(request, 'setup_wizard_last_step', 5)
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/5.html')
-        return page.render(alerts={},
-                           data=self.data,
-                           gpg_selected=gpg_selected
-                           )
-
-    @webapp.route('/setup_wizard/5_gpg_section')
-    def page_setup_wizard_5_gpg_section(self, request):
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return "Not authorizaed"
-
-        if self.sessions.get(request, 'setup_wizard_last_step') != 5:
-            return "Invalid wizard state. No content found."
-
-        available_keys = {} # simulate getting available keys from GPG library.
-
-        valid_submit = True
-        try:
-            submitted_gpg_action = request.args.get('gpg_action')[0]
-        except:
-            valid_submit = False
-            self.add_alert("Invalid Gateway Label.")
-
-        if valid_submit is False:
-            return "invalid submit"
-
-        if submitted_gpg_action == "new":
-            page = self.get_template(request, self._dir + 'pages/setup_wizard/5_gpg_new.html')
-            return page.render(alerts=self.get_alerts(),
-                               data=self.data,
-                               )
-        elif submitted_gpg_action == "import":
-            page = self.get_template(request, self._dir + 'pages/setup_wizard/5_gpg_import.html')
-            return page.render(alerts=self.get_alerts(),
-                               data=self.data,
-                               )
-        elif submitted_gpg_action in available_keys:
-            page = self.get_template(request, self._dir + 'pages/setup_wizard/5_gpg_existing.html')
-            return page.render(alerts=self.get_alerts(),
-                               data=self.data,
-                               )
-        else:
-            return "Invalid GPG selection."
-
-    @webapp.route('/setup_wizard/6', methods=['GET'])
-    def page_setup_wizard_6_get(self, request):
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        if self.sessions.get(request, 'setup_wizard_done') is not True:
-            self.redirect(request, '/setup_wizard/5')
-
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/6.html')
-        return page.render(alerts={},
-                           data=self.data,
-                           )
-
-    @webapp.route('/setup_wizard/6', methods=['POST'])
-    def page_setup_wizard_6_post(self, request):
-        print "111"
-        if self.sessions.get(request, 'setup_wizard_done') is True:
-            print "aaa"
-            return self.redirect(request, '/setup_wizard/6')
-        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-        if auth is not None:
-            return auth
-
-        valid_submit = True
-        try:
-            submitted_gpg_actions = request.args.get('gpg_action')[0]  # underscore here due to jquery
-        except:
-            valid_submit = False
-            self.add_alert("Please select an appropriate GPG/PGP Key action.")
-
-        if submitted_gpg_actions == 'import':  # make GPG keys!
-            try:
-                submitted_gpg_private = request.args.get('gpg-private-key')[0]
-            except:
-                valid_submit = False
-                self.add_alert("When importing, must have a valid private GPG/PGP key.")
-
-            try:
-                submitted_gpg_public = request.args.get('gpg-public-key')[0]
-            except:
-                valid_submit = False
-                self.add_alert("When importing, must have a valid public GPG/PGP key.")
-
-        if valid_submit is False:
-            return self.redirect('/setup_wizard/5')
-
-
-        if submitted_gpg_actions == 'new':  # make GPG keys!
-#            gpg-make-new key here...
-            pass
-        elif submitted_gpg_actions == 'import':  # make GPG keys!
-#            gpg-import-new-key-here...
-            pass
-        elif submitted_gpg_actions == 'existing':  # make GPG keys!
-#            gpg-import-new-key-here...
-            pass
-
-        gpg_info = {  # will be returned from the GPG import/create/select existing funciton
-            'keyid': '63EE4EA472E49634',
-            'keypublicascii': """-----BEGIN PGP PUBLIC KEY BLOCK-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-mI0ETyeLqwEEANsXSCvR9H5eSqRDusnqZpaxIj9uKanS+/R8yj23Yo2fl0r1BCwv
-EnYF8h2tnowFQb59fuv821ZH7LoT4HZeDpNL8WGjaBSYpnxfGK3GBahM65a2WISb
-nA+lkCuh7C6MA1zrNuKp5splsi/fg7hm7kaax5H2NJAUSuT3xsmLpZUTABEBAAG0
-P0dlbmVyYXRlZCBieSBBSFggKGdwZ19nZW5lcmF0ZWtleXMucHkpIDxTRldFenA0
-M1l6TEpmUERAYWh4Lm1lPoi4BBMBAgAiBQJPJ4urAhsvBgsJCAcDAgYVCAIJCgsE
-FgIDAQIeAQIXgAAKCRBj7k6kcuSWNOs8A/4qTI+gw4SLwarGEVt0APFhKHQncXim
-XRIV0dpHp6fX4JBN2yGFfAFP9dl+/xBJnOklRlnEvIb7D0cjwtRHSbNntKQb3pWT
-v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
-46JXipvbzmtNJQ==
-=NXHA
------END PGP PUBLIC KEY BLOCK-----""",
-        }
-#        if gpg_ok is False:
-#            return self.redirect('/setup_wizard/5')
-
-        # Call Yombo API to save Gateway. Will get back all the goodies we need!
-        # Everything is done! Lets save all the configs!
-
-        session = self.sessions.load(request)
-
-        api_results = {
-            'gwuuid': 'L2rwJHeKuRSUQoxQFOQP7RnB',  # A dummy test gateway UUID...just for testing...
-            'label': session['setup_wizard_gateway_label'],
-            'gwhash': 'tP.dLfPaCzmU5H84pDhrk3HDo4FQMEDeb7B',
-        }
-
-        self._Configs.set('core', 'gwuuid', api_results['gwuuid'])
-        self._Configs.set('core', 'label', session['setup_wizard_gateway_label'])
-        self._Configs.set('core', 'description', session['setup_wizard_gateway_description'])
-        self._Configs.set('core', 'gwhash', api_results['gwhash'])
-        self._Configs.set('gpg', 'keyid', gpg_info['keyid'])
-        self._Configs.set('gpg', 'keypublicascii', gpg_info['keypublicascii'])
-        self._Configs.set('security', 'amqpsendstatus', session['setup_wizard_security_status'])
-        self._Configs.set('security', 'amqpsendgpsstatus', session['setup_wizard_security_gps_status'])
-        self._Configs.set('location', 'latitude', session['setup_wizard_gateway_latitude'])
-        self._Configs.set('location', 'longitude', session['setup_wizard_gateway_longitude'])
-        self._Configs.set('location', 'elevation', session['setup_wizard_gateway_elevation'])
-        self._Configs.set('core', 'firstrun', False)
-
-        # Remove wizard settings...
-        for k in session.keys():
-            if k.startswith('setup_wizard_'):
-                session.pop(k)
-        session['setup_wizard_done'] = True
-        session['setup_wizard_last_step'] = 6
-
-        page = self.get_template(request, self._dir + 'pages/setup_wizard/6.html')
-        return page.render(alerts={},
-                           data=self.data,
-                           )
-
-
-    @webapp.route('/setup_wizard/6_restart', methods=['GET'])
-    def page_setup_wizard_6_restart(self, request):
-#        auth = self.require_auth(request)  # Notice difference. Now we want to log the user in.
-#        if auth is not None:
-#            return auth
-
-#        if self.sessions.get(request, 'setup_wizard_done') is not True:
-#            return self.redirect(request, '/setup_wizard/5')
-
-        raise YomboRestart("Web Interface setup wizard complete.")
 
     @webapp.route('/logout', methods=['GET'])
     def page_logout_get(self, request):
@@ -764,7 +503,7 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
         return self.redirect(request, '/')
 
     @webapp.route('/login/user', methods=['POST'])
-    def page_login__user_post(self, request):
+    def page_login_user_post(self, request):
         auth = self.require_auth_pin(request)
         if auth is not None:
             return auth
@@ -833,28 +572,29 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
         #                    data=self.data,
         #                    )
 
-    @webapp.route('/atoms')
+    @webapp.route('/atoms/index')
     def page_atoms(self, request):
         page = self.get_template(request, self._dir + 'pages/atoms/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'atoms')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            atoms=self._Libraries['atoms'].get_atoms(),
                            atoms_i18n=strings,
                            )
 
-    @webapp.route('/devices')
+    @webapp.route('/devices/index')
     def page_devices(self, request):
         page = self.get_template(request, self._dir + 'pages/devices/index.html')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data, devices=self._Libraries['devices']._devicesByUUID,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
+                           devices=self._Libraries['devices']._devicesByUUID,
                            )
 
-    @webapp.route('/commands')
+    @webapp.route('/commands/index')
     def page_commands(self, request):
         page = self.get_template(request, self._dir + 'pages/commands/index.html')
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            )
 
     @webapp.route('/commands/amqp')
@@ -872,13 +612,11 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
         page = self.get_template(request, self._dir + 'commands/index.html')
         return page.render()
 
-
-
     @webapp.route('/configs')
     def page_configs(self, request):
         page = self.get_template(request, self._dir + 'pages/configs/index.html')
-        return page.render(alerts=self.alerts,
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            configs=self._Libraries['configuration'].configs
                            )
 
@@ -892,38 +630,46 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
         config['webinterface']['port'] = self._Configs.get('webinterface', 'port')
 
         page = self.get_template(request, self._dir + 'pages/configs/basic.html')
-        return page.render(alerts=self.alerts,
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            config=config,
                            )
 
     @webapp.route('/configs/yombo_ini')
     def page_configs_yombo_ini(self, request):
         page = self.get_template(request, self._dir + 'pages/configs/yombo_ini.html')
-        return page.render(alerts=self.alerts,
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            configs=self._Libraries['configuration'].configs
                            )
 
-    @webapp.route('/modules')
+    @webapp.route('/modules/index')
     def page_modules(self, request):
         page = self.get_template(request, self._dir + 'pages/modules/index.html')
-        return page.render(alerts=self.alerts,
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            modules=self._Libraries['modules']._modulesByUUID,
                            )
 
-    @webapp.route('/states')
+    @webapp.route('/states/index')
     def page_states(self, request):
         page = self.get_template(request, self._dir + 'pages/states/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
-        return page.render(alerts=self.alerts,
-                           data=self.data,
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
                            states=self._Libraries['states'].get_states(),
                            states_i18n=strings,
                            )
 
-
+    @webapp.route('/tools/index')
+    def page_tools(self, request):
+        page = self.get_template(request, self._dir + 'pages/states/index.html')
+        strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
+        return page.render(data=self.data,
+                           alerts=self.get_alerts(),
+                           states=self._Libraries['states'].get_states(),
+                           states_i18n=strings,
+                           )
     @webapp.route('/gpg_keys')
     def page_gpg_keys(self, request):
         page = self.get_template(request, 'gpg_keys/index.html')
@@ -957,20 +703,6 @@ v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
         return page.render(data=self.data,
                            yombo_server_is_connected=self._States.get('amqp.connected'),
                            )
-
-    @webapp.route('/api/v1/notifications', methods=['GET'])
-    def ajax_alert_get(self, request):
-        action = request.args.get('action')[0]
-        results = {}
-        if action == "closed":
-            id = request.args.get('id')[0]
-            print "alert - id: %s" % id
-            if id in self.alerts:
-                del self.alerts[id]
-                results = {"status":200}
-        return json.dumps(results)
-
-
 
     @webapp.route('/static/', branch=True)
     def static(self, request):
