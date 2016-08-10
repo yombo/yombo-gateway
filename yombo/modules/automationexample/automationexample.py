@@ -123,7 +123,8 @@ class AutomationExample(YomboModule):
                 ],
             },
             {
-                'name': 'Test Device',
+                'name': 'AutomationExample',
+                'description': 'Test rule created in AutomationExample module',
                 'trigger': {
                     'source': {
                         'platform': 'devices',

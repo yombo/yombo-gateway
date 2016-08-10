@@ -37,7 +37,13 @@ from yombo.core.exceptions import YomboRestart
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
-from yombo.lib.webinterface.route_setup_wizard import setup_wizard
+
+from yombo.lib.webinterface.route_automation import route_automation
+from yombo.lib.webinterface.route_api_v1 import route_api_v1
+from yombo.lib.webinterface.route_configs import route_configs
+from yombo.lib.webinterface.route_devices import route_devices
+
+from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
 #from yombo.lib.webinterfaceyombosession import YomboSession
 
@@ -88,7 +94,7 @@ nav_side_menu = [
         'label2': 'Devices',
         'priority1': 1000,
         'priority2': 500,
-        'icon': 'fa fa-info fa-fw',
+        'icon': 'fa fa-wifi fa-fw',
         'url': '/devices/index',
         'tooltip': 'Show Devices',
         'opmode': 'run',
@@ -98,9 +104,19 @@ nav_side_menu = [
         'label2': 'Modules',
         'priority1': 1000,
         'priority2': 1000,
-        'icon': 'fa fa-info fa-fw',
+        'icon': 'fa fa-wifi fa-fw',
         'url': '/modules/index',
         'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Info',
+        'label2': 'Auotmation Rules',
+        'priority1': 1000,
+        'priority2': 1500,
+        'icon': 'fa fa-wifi fa-fw',
+        'url': '/automation/index',
+        'tooltip': 'Show Devices',
         'opmode': 'run',
     },
     {
@@ -108,7 +124,7 @@ nav_side_menu = [
         'label2': 'States',
         'priority1': 1000,
         'priority2': 2000,
-        'icon': 'fa fa-info fa-fw',
+        'icon': 'fa fa-wifi fa-fw',
         'url': '/states/index',
         'tooltip': '',
         'opmode': 'run',
@@ -118,7 +134,7 @@ nav_side_menu = [
         'label2': 'Atoms',
         'priority1': 1000,
         'priority2': 3000,
-        'icon': 'fa fa-info fa-fw',
+        'icon': 'fa fa-wifi fa-fw',
         'url': '/atoms/index',
         'tooltip': '',
         'opmode': 'run',
@@ -215,7 +231,11 @@ class WebInterface(YomboLibrary):
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
 
-        setup_wizard(self.webapp)
+        route_automation(self.webapp)
+        route_api_v1(self.webapp)
+        route_configs(self.webapp)
+        route_devices(self.webapp)
+        route_setup_wizard(self.webapp)
 
     @inlineCallbacks
     def _load_(self):
@@ -240,6 +260,12 @@ class WebInterface(YomboLibrary):
 
         self.web_interface_listener = reactor.listenTCP(self._port, self.web_factory)
         self._display_pin_console_time = 0
+
+        self.functions = {
+            '_': _,
+            'yes_no': yombo.utils.is_yes_no,
+        }
+
 
     def _started_(self):
         if self._op_mode != 'run':
@@ -464,7 +490,10 @@ class WebInterface(YomboLibrary):
         print "run_home_done"
 
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
-        return page.render(data=self.data,
+        functions = {'_': _}
+        return page.render(func=self.functions,
+                           _=_,  # translations
+                           data=self.data,
                            alerts=self.get_alerts(),
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
@@ -582,14 +611,6 @@ class WebInterface(YomboLibrary):
                            atoms_i18n=strings,
                            )
 
-    @webapp.route('/devices/index')
-    def page_devices(self, request):
-        page = self.get_template(request, self._dir + 'pages/devices/index.html')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
-                           devices=self._Libraries['devices']._devicesByUUID,
-                           )
-
     @webapp.route('/commands/index')
     def page_commands(self, request):
         page = self.get_template(request, self._dir + 'pages/commands/index.html')
@@ -611,37 +632,6 @@ class WebInterface(YomboLibrary):
 #                self.loader._Libraries['AMQPYombo'].disconnect()
         page = self.get_template(request, self._dir + 'commands/index.html')
         return page.render()
-
-    @webapp.route('/configs')
-    def page_configs(self, request):
-        page = self.get_template(request, self._dir + 'pages/configs/index.html')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
-                           configs=self._Libraries['configuration'].configs
-                           )
-
-    @webapp.route('/configs/basic')
-    def page_configs_basic(self, request):
-        config = {"core": {}, "webinterface": {}, "times": {}}
-        config['core']['label'] = self._Configs.get('core', 'label', '', False)
-        config['core']['description'] = self._Configs.get('core', 'description', '', False)
-        config['times']['twilighthorizon'] = self._Configs.get('times', 'twilighthorizon')
-        config['webinterface']['enabled'] = self._Configs.get('webinterface', 'enabled')
-        config['webinterface']['port'] = self._Configs.get('webinterface', 'port')
-
-        page = self.get_template(request, self._dir + 'pages/configs/basic.html')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
-                           config=config,
-                           )
-
-    @webapp.route('/configs/yombo_ini')
-    def page_configs_yombo_ini(self, request):
-        page = self.get_template(request, self._dir + 'pages/configs/yombo_ini.html')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
-                           configs=self._Libraries['configuration'].configs
-                           )
 
     @webapp.route('/modules/index')
     def page_modules(self, request):

@@ -37,7 +37,7 @@ simulate_gw = {
                   },
               }
 
-def setup_wizard(webapp):
+def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
         @webapp.route('/1')
         def page_setup_wizard_1(webinterface, request):
@@ -51,7 +51,9 @@ def setup_wizard(webapp):
 
             webinterface.sessions.set(request, 'setup_wizard_last_step', 1)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
-            return page.render(alerts={},
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts={},
                                data=webinterface.data,
                                )
 
@@ -74,7 +76,9 @@ def setup_wizard(webapp):
 
             webinterface.sessions.set(request, 'setup_wizard_last_step', 2)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/2.html')
-            return page.render(alerts={},
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts={},
                                data=webinterface.data,
                                existing_gateways=available_gateways,
                                selected_gateway=webinterface.sessions.get(request, 'setup_wizard_gateway_id'),
@@ -164,7 +168,9 @@ def setup_wizard(webapp):
 
             session['setup_wizard_last_step'] = 3
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/3.html')
-            return page.render(alerts=webinterface.get_alerts(),
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts={},
                                data=webinterface.data,
                                gw_fields=fields,
                                )
@@ -250,7 +256,9 @@ def setup_wizard(webapp):
 
             session['setup_wizard_last_step'] = 4
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/4.html')
-            return page.render(alerts=webinterface.get_alerts(),
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts={},
                                data=webinterface.data,
                                security_items=security_items,
                                )
@@ -310,7 +318,9 @@ def setup_wizard(webapp):
 
             webinterface.sessions.set(request, 'setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
-            return page.render(alerts={},
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts=webinterface.get_alerts(),
                                data=webinterface.data,
                                gpg_selected=gpg_selected
                                )
@@ -338,17 +348,23 @@ def setup_wizard(webapp):
 
             if submitted_gpg_action == "new":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_new.html')
-                return page.render(alerts=webinterface.get_alerts(),
+                return page.render(func=webinterface.functions,
+                                   _=_,  # translations
+                                   alerts=webinterface.get_alerts(),
                                    data=webinterface.data,
                                    )
             elif submitted_gpg_action == "import":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_import.html')
-                return page.render(alerts=webinterface.get_alerts(),
+                return page.render(func=webinterface.functions,
+                                   _=_,  # translations
+                                   alerts=webinterface.get_alerts(),
                                    data=webinterface.data,
                                    )
             elif submitted_gpg_action in available_keys:
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_existing.html')
-                return page.render(alerts=webinterface.get_alerts(),
+                return page.render(func=webinterface.functions,
+                                   _=_,  # translations
+                                   alerts=webinterface.get_alerts(),
                                    data=webinterface.data,
                                    )
             else:
@@ -364,7 +380,9 @@ def setup_wizard(webapp):
                 webinterface.redirect(request, '/setup_wizard/5')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
-            return page.render(alerts={},
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts=webinterface.get_alerts(),
                                data=webinterface.data,
                                )
 
@@ -463,7 +481,9 @@ def setup_wizard(webapp):
             session['setup_wizard_last_step'] = 6
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
-            return page.render(alerts={},
+            return page.render(func=webinterface.functions,
+                               _=_,  # translations
+                               alerts=webinterface.get_alerts(),
                                data=webinterface.data,
                                )
 

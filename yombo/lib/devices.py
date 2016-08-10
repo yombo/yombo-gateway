@@ -120,8 +120,11 @@ class Devices(YomboLibrary):
         Checks to if a provided device name or device uuid exists.
 
         Simulate a dictionary when requested with:
+
             >>> if '137ab129da9318' in self._Devices['137ab129da9318']:  #by uuid
+
         or:
+
             >>> if 'living room light' in self._Devices['137ab129da9318']:  #by uuid
 
         See: :func:`yombo.utils.get_devices` for full usage example.
@@ -142,8 +145,11 @@ class Devices(YomboLibrary):
         Attempts to find the device requested using a couple of methods.
 
         Simulate a dictionary when requested with:
+
             >>> self._Devices['137ab129da9318']  #by uuid
+
         or:
+
             >>> self._Devices['living room light']  #by name
 
         See: :func:`yombo.utils.get_devices` for full usage example.

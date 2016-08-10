@@ -77,6 +77,7 @@ class Automation(YomboLibrary):
     capabilites of the automation system.
     """
     def _init_(self, loader):
+        print _('hello')
         self._ModDescription = "Easy Automation for everyone"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
@@ -193,6 +194,11 @@ class Automation(YomboLibrary):
         if 'rules' not in self._rulesRaw:
             logger.warn("No automation rules found.")
             return
+
+        if 'description' not in rule:
+                rule['description'] = 'None'
+        if rule['description'] == '':
+                rule['description'] = 'None'
 
         for rule in self._rulesRaw['rules']:
             self.add_rule(rule)

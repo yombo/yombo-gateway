@@ -586,7 +586,9 @@ class Times(YomboLibrary, object):
         Returns a true if the given item is above the horizon.
 
         **Usage**:
+
         .. code-block:: python
+
             from yombo.core.helpers import getTimes
             time = getTimes()
             saturnVisible = time.item_visible('Saturn') # Is Saturn above the horizon? (True/False)

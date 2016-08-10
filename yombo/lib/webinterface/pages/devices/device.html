@@ -1,0 +1,101 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+</a> Device Information</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-12">
+                    {{ macros.modal("cmdresultmodal", 'Command Results', '
+                    <p><div id="cmdresult"></div></p>') }}
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Basic Information</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                                {{ device.label }}<br>
+
+                                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                                {{ device.description }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
+                                {{ func.yes_no(device.enabled) }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
+                                {{ func.yes_no(device.pin_required) }} // {{ device.pin_code }} <br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                                {{ device.label }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                                {{ device.label }}<br>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Current State</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Human: </label><br>
+                                {{ device.status_history[0].human_status }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">State: </label><br>
+                                {{ device.status_history[0].device_state }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
+                                {{ device.status_history[0].machine_status }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Extra: </label><br>
+                                {{ device.status_history[0].machine_status_extra }}<br>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Available Commands</label><br>(Click to send command)
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                {% for command in device.available_commands %}
+                                <label style="margin-top: 0px; margin-bottom: 0px">
+                                    <a class="deviceCmd" data-doc_value="{{ commands[command].cmdUUID }}" href="/api/v1/devices?action=runcommand&deviceid={{ device.device_id }}&commandid={{ commands[command].cmdUUID }}">{{ commands[command].label }}</a>
+                                </label>&nbsp;&nbsp;
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+
+                    </div>
+                </div>
+                <!-- /.col-lg-6 -->
+            </div>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+$('.deviceCmd').click(function (event){
+     event.preventDefault();
+     $.ajax({
+        url: $(this).attr('href'),
+        dataType: 'json',
+        success: function(resp){
+            $("#cmdresult").html(resp.message);
+            $("#cmdresultmodal").modal('show');
+            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
+     })
+     return false; //for good measure
+});
+
+    </script>
+{% endblock %}

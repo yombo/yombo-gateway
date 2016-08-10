@@ -5,7 +5,6 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">Devices</h1>
-                    Available devices configured on the gateway.
                     <p></p>
 
                 </div>
@@ -16,7 +15,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            Configured Devices
+                            <h4>Configured Devices</h4>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -29,11 +28,12 @@
                                     </thead>
                                     <tbody>{% for deviceID, device in devices.iteritems() %}
                                          <tr>
-                                            <td>{{ device.label }}</td>
+                                            <td><a href="/devices/details/{{ device.device_id }}">{{ device.label }}</a></td>
                                             <td>{{ device.description }}</td>
                                             <td>{{ device.device_type_machine_label }}</td>
                                             <td>{{ device.status_history[0]['human_status'] }}</td>
-                                            <td>{{ device.available_commands }}</td>
+                                            <td><a href="/devices/edit/{{ device.device_id }}">Edit</a>
+                                </label>&nbsp;&nbsp;</td>
                                          </tr>{% endfor %}
                                     </tbody>
                                 </table>

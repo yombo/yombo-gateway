@@ -7,9 +7,45 @@ except ImportError:
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, succeed, returnValue
 
-def api_v1(webapp):
-    with webapp.subroute("/api") as webapp:
-        @webapp.route('v1/notifications', methods=['GET'])
+def return_error(message, status=500):
+    return {
+        'status': status,
+        'message': message,
+    }
+
+def return_good(message, payload={}):
+    return {
+        'status': 200,
+        'message': message,
+        'payload': payload,
+    }
+
+def route_api_v1(webapp):
+    with webapp.subroute("/api/v1") as webapp:
+
+
+        @webapp.route('/devices', methods=['GET'])
+        def ajax_devices_get(webinterface, request):
+            try:
+                action = request.args.get('action')[0]
+            except:
+                return json.dumps(return_error('Action must be specified.'))
+
+            if action == 'runcommand':
+                try:
+                    deviceid = request.args.get('deviceid')[0]
+                    commandid = request.args.get('commandid')[0]
+                except:
+                    return json.dumps(return_error('deviceid and commandid must be specified for "runcommand".'))
+
+                device = webinterface._DevicesLibrary.get_device(deviceid)
+                msg = device.get_message(webinterface, cmd=commandid)
+                msg.send()
+                a = return_good('Command executed.')
+                return json.dumps(a)
+
+
+        @webapp.route('/notifications', methods=['GET'])
         def api_v1_notifications_get(webinterface, request):
             action = request.args.get('action')[0]
             results = {}
@@ -21,14 +57,14 @@ def api_v1(webapp):
                     results = {"status":200}
             return json.dumps(results)
     
-        @webapp.route('v1/statistics/names', methods=['GET'])
+        @webapp.route('/statistics/names', methods=['GET'])
         @inlineCallbacks
         def ajax_notifications_name_get(webinterface, request):
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
             print records
             returnValue(json.dumps(records))
     
-        @webapp.route('v1/statistics/range', methods=['GET'])
+        @webapp.route('/statistics/range', methods=['GET'])
         def api_v1_notifications_range_get(webinterface, request):
             name = request.args.get('name')[0]
             min = request.args.get('min')[0]
@@ -42,7 +78,7 @@ def api_v1(webapp):
                     results = {"status":200}
             return json.dumps(results)
     
-        @webapp.route('v1/statistics/something', methods=['GET'])
+        @webapp.route('/statistics/something', methods=['GET'])
         def api_v1_notifications_something_get(webinterface, request):
             action = request.args.get('action')[0]
             results = {}
