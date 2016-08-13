@@ -57,10 +57,8 @@ class Startup(YomboLibrary):
         if first_run:
             self.loader.operation_mode = 'firstrun'
         elif need_config:
-            print "startup setting config!"
             self.loader.operation_mode = 'config'
         else:
-            print "startup setting run!!"
             self.loader.operation_mode = 'run'
 
     def _load_(self):

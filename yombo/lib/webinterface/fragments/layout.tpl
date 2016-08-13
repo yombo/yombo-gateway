@@ -39,7 +39,7 @@
                           {% for key, alert in alerts.iteritems() %}{% if alert.dismissable %}
                           <div class="alert alert-{{ alert.level }} alert-dismissable" data-the_alert_id="{{ key }}">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            {{ alert.message }}.
+                            {{ alert.message }}
                           </div>{% else %}
                           <div class="alert alert-{{ alert.level }}">
                             {{ alert.message }}.

@@ -341,7 +341,7 @@ class Loader(YomboLibrary, object):
             to_process = kwargs['components']
         else:
             for library_name, library in self.loadedLibraries.iteritems():
-
+#                print "library %s" % library
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
 

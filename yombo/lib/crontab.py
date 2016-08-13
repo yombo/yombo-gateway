@@ -148,7 +148,7 @@ class CronTab(YomboLibrary):
         """
         Checks to see if cron needs to run anything.
         """
-        logger.info("Cron check: %s" % datetime.now())
+        logger.debug("Cron check: %s" % datetime.now())
 
         t=datetime(*datetime.now().timetuple()[:5])
         for e in self.__yombocron:

@@ -7,6 +7,10 @@ def route_automation(webapp):
 
         @webapp.route('/index')
         def page_automation_index(webinterface, request):
+            auth = webinterface.require_auth(request)
+            if auth is not None:
+                return auth
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/index.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
@@ -18,6 +22,9 @@ def route_automation(webapp):
         
         @webapp.route('/details/<string:automation_id>')
         def page_automation_details(webinterface, request, automation_id):
+            auth = webinterface.require_auth(request)
+            if auth is not None:
+                return auth
 
             try:
                 device = webinterface._DevicesLibrary[devicautomation_ide_id]
@@ -35,6 +42,9 @@ def route_automation(webapp):
     
         @webapp.route('/edit/<string:device_id>')
         def page_devices_edit(webinterface, request, device_id):
+            auth = webinterface.require_auth(request)
+            if auth is not None:
+                return auth
 
             try:
                 device = webinterface._DevicesLibrary[device_id]

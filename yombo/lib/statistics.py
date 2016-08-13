@@ -107,6 +107,8 @@ class Statistics(YomboLibrary):
         """
         self.loader = loader
         self.enabled = self._Configs.get('statistics', 'enabled', True)
+        self.enabled = self._Configs.get('statistics', 'upload', True)
+        self.enabled = self._Configs.get('statistics', 'anonymous', True)
 
         if self.enabled is not True:
             return

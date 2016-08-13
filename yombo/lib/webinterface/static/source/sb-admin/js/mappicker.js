@@ -5,7 +5,7 @@
 		function loadmap() {
 			// initialize map
 			var map = new google.maps.Map(document.getElementById("gmap"), {
-				center: new google.maps.LatLng(($("#gateway-latitude").val().length) ? $("#gateway-latitude").val() : 37.757720, ($("#gateway-longitude").val().length) ? $("#gateway-longitude").val() : -122.437600),
+				center: new google.maps.LatLng(($("#location-latitude").val().length) ? $("#location-latitude").val() : 37.757720, ($("#location-longitude").val().length) ? $("#location-longitude").val() : -122.437600),
 				zoom: 9,
 				mapTypeId: google.maps.MapTypeId.ROADMAP
 			});
@@ -18,8 +18,8 @@
 			// intercept map and marker movements
 			google.maps.event.addListener(map, "idle", function() {
 				marker.setPosition(map.getCenter());
-				$('#gateway-latitude').val(map.getCenter().lat().toFixed(3));
-				$('#gateway-longitude').val(map.getCenter().lng().toFixed(3));
+				$('#location-latitude').val(map.getCenter().lat().toFixed(3));
+				$('#location-longitude').val(map.getCenter().lng().toFixed(3));
 
                 var elevator = new google.maps.ElevationService();
                 var denali = new google.maps.LatLng(map.getCenter().lat().toFixed(6) , map.getCenter().lng().toFixed(6));
@@ -33,7 +33,7 @@
                         // Retrieve the first result
                         if (results[0]) {
 //                            text =
-            				$('#gateway-elevation').val(Math.round(results[0].elevation));
+            				$('#location-elevation').val(Math.round(results[0].elevation));
                         } else {
                             alert('No results found');
                         }
@@ -43,7 +43,6 @@
                     }
                 });
 
-//                $('#gateway-elevation').val(text);
 
 			});
 			google.maps.event.addListener(marker, "dragend", function(mapEvent) {
@@ -53,16 +52,6 @@
 			// initialize geocoder
 			var geocoder = new google.maps.Geocoder();
 
-
-//            google.maps.event.addListener(circle, 'click', function(event) {
-//                if (event.alreadyCalled_) {
-//                    alert('circle clicked again');
-//                }
-//                else {
-//                    alert('circle clicked first time');
-//                    event.alreadyCalled_ = true;
-//                }
-//            });
 
 			google.maps.event.addDomListener(document.getElementById("search-btn"), "click", function(event) {
                 if (!event.alreadyCalled_) {

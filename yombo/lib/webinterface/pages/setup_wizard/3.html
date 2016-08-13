@@ -32,7 +32,6 @@
 {% endif %}
                     </div>
                     <div class="panel-body">
-
                         <div class="form-group">
                             <label for="gateway-label">Gateway Label</label>
                             <div class="input-group">
@@ -48,42 +47,45 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div id="map-outer2" class="col-md-12">
-                                <div id="address3" class="col-md-4">
-                                    <div id="map-output"></div>
-                                        <div class="form-group">
-                                            <label for="gateway-latitude">Latitude</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control" name="gateway-latitude" id="gateway-latitude" placeholder="37.757" value="{{ gw_fields.variables.latitude }}" required>
-                                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="gateway-longitude">Longitude</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control" name="gateway-longitude" id="gateway-longitude" placeholder="-122.437" value="{{ gw_fields.variables.longitude }}" required>
-                                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="gateway-elevation">Elevation (in feet)</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control" name="gateway-elevation" id="gateway-elevation" placeholder="90"  value="{{ gw_fields.variables.elevation }}" required>
-                                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <div id="address2" class="col-md-8">
-                                    <div id="map-search">
-                                        <input id="search-txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000">
-                                        <input id="search-btn" type="button" value="Search">
-                                        <input id="detect-btn" type="button" value="Detect" disabled>
-                                        <div id="gmap"></div>
-                                    </div>
-                                </div>
-                            </div><!-- /map-outer -->
-                        </div> <!-- /row -->
+						<div class="row">
+							<div id="address3" class="col-md-4">
+								<div id="map-output"></div>
+									<div class="form-group">
+										<label >Search for location</label>
+										<div class="input-group">
+											<input id="search-txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
+											<input id="search-btn" type="button" value="    Search    ">
+											<input id="detect-btn" type="button" value="Detect" disabled>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="location-latitude">Latitude</label>
+										<div class="input-group">
+											<input type="text" class="form-control" name="location-latitude" id="location-latitude" placeholder="37.757" value="{{ gw_fields.variables.latitude }}" required>
+											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="location-longitude">Longitude</label>
+										<div class="input-group">
+											<input type="text" class="form-control" name="location-longitude" id="location-longitude" placeholder="-122.437" value="{{ gw_fields.variables.longitude }}" required>
+											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="location-elevation">Elevation (in feet)</label>
+										<div class="input-group">
+											<input type="text" class="form-control" name="location-elevation" id="location-elevation" placeholder="90"  value="{{ gw_fields.variables.elevation }}" required>
+											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+										</div>
+									</div>
+								</div>
+							<div id="address2" class="col-md-8">
+								<div id="map-search">
+									<div id="gmap"></div>
+								</div>
+							</div>
+						</div> <!-- /row -->
                         <div class="row">
                             <div class="col-md-12">
                             <div>&nbsp;</div>

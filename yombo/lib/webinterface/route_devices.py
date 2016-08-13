@@ -6,6 +6,9 @@ def route_devices(webapp):
 
         @webapp.route('/index')
         def page_devices_index(webinterface, request):
+            auth = webinterface.require_auth(request)
+            if auth is not None:
+                return auth
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
@@ -17,6 +20,9 @@ def route_devices(webapp):
         
         @webapp.route('/details/<string:device_id>')
         def page_devices_details(webinterface, request, device_id):
+            auth = webinterface.require_auth(request)
+            if auth is not None:
+                return auth
 
             try:
                 device = webinterface._DevicesLibrary[device_id]
@@ -34,6 +40,9 @@ def route_devices(webapp):
     
         @webapp.route('/edit/<string:device_id>')
         def page_devices_edit(webinterface, request, device_id):
+            auth = webinterface.require_auth(request)
+            if auth is not None:
+                return auth
 
             try:
                 device = webinterface._DevicesLibrary[device_id]

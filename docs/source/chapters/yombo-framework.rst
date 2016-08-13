@@ -46,10 +46,7 @@ Lib
 ***
 
 Libraries build on the core modules and functions and provide essential
-gateway services. There should be no need to access libraries directly,
-instead, use a function from the :doc:`devices <../core/helpers>` module
-as part of the core. An *exception* to this would be the CronTab and
-Times libararies.
+gateway services.
 
 .. toctree::
    :maxdepth: 1

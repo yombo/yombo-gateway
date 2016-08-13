@@ -221,12 +221,14 @@ class WebInterface(YomboLibrary):
 
         self._current_dir = dirname(dirname(dirname(abspath(__file__))))
         self._dir = '/lib/webinterface/'
-        self._build_dist()
+        self._build_dist()  # Make all the JS and CSS files
 
+        self.api = self.loader.loadedLibraries['yomboapi']
         self.data = {}
         self.sessions = Sessions(self.loader)
 
-        self._port = self._Configs.get('webinterface', 'port', 8080)
+        self.wi_port_nonsecure = self._Configs.get('webinterface', 'nonsecure_port', 8080)
+        self.wi_port_secure = self._Configs.get('webinterface', 'secure_port', 8443)
 
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
@@ -258,7 +260,7 @@ class WebInterface(YomboLibrary):
 #        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
 
-        self.web_interface_listener = reactor.listenTCP(self._port, self.web_factory)
+        self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
         self._display_pin_console_time = 0
 
         self.functions = {
@@ -412,13 +414,13 @@ class WebInterface(YomboLibrary):
     def redirect(self, request, redirect_path):
         request.setHeader('server', 'Yombo/1.0')
         request.redirect(redirect_path)
-        return succeed(None)
+#        return succeed(None)
 
     def require_auth(self, request, check_pin_only=False):
         session = self.sessions.load(request)
 
         if self.require_auth_pin:
-            print "auth pin:::: %s" % session
+#            print "auth pin:::: %s" % session
             # had to break these up... - kept dieing on me
             has_pin = False
             if session is not None:
@@ -444,7 +446,7 @@ class WebInterface(YomboLibrary):
         if session is not None:
             if 'auth' in session:
                 if session['auth'] is True:
-                    print "ddd:33"
+#                    print "ddd:33"
                     session['last_access'] = int(time())
                     try:
                         del session['login_redirect']
@@ -463,7 +465,7 @@ class WebInterface(YomboLibrary):
         return self.require_auth(request, True)
 
     def check_op_mode(self, request, router, **kwargs):
-        print "op mode: %s" % self._op_mode
+#        print "op mode: %s" % self._op_mode
         if self._op_mode == 'config':
             print "showing config home"
             method = getattr(self, 'config_'+ router)
@@ -476,18 +478,12 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/')
     def home(self, request):
-        self.check_op_mode(request, 'home')
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
         return self.check_op_mode(request, 'home')
 
     def run_home(self, request):
-        print "run_home"
         auth = self.require_auth(request)
         if auth is not None:
             return auth
-        print "run_home_done"
 
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
         functions = {'_': _}
@@ -512,7 +508,6 @@ class WebInterface(YomboLibrary):
                            )
 
     def firstrun_home(self, request):
-        print "bbbbbbbbbbbbbbbbbbbbbb"
         return self.redirect(request, '/setup_wizard/1')
 
     @webapp.route('/logout', methods=['GET'])
@@ -532,10 +527,11 @@ class WebInterface(YomboLibrary):
         return self.redirect(request, '/')
 
     @webapp.route('/login/user', methods=['POST'])
+    @inlineCallbacks
     def page_login_user_post(self, request):
         auth = self.require_auth_pin(request)
         if auth is not None:
-            return auth
+            returnValue(auth)
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
         print "111"
@@ -543,27 +539,34 @@ class WebInterface(YomboLibrary):
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
 
-        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
+        results = yield self.api.session_login_password(submitted_email, submitted_password)
+        if results is not None:
+#        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
             session = self.sessions.load(request)
             session['auth'] = True
             session['auth_id'] = submitted_email
-            session['auth_time'] = submitted_email
+            session['auth_time'] = time()
+            session['yomboapi_sessionid'] = results['SessionID']
+            session['yomboapi_sessionkey'] = results['SessionKey']
             request.received_cookies[self.sessions.config.cookie_name] = session['session_id']
-            print "session: %s" % session
+            if self._op_mode == 'firstrun':
+                self.api.save_session(session['yomboapi_sessionid'], session['yomboapi_sessionhash'])
         else:
-            self.sessions.load(request)
+            self.add_alert('Invalid login credentails', 'warning')
+#            self.sessions.load(request)
             page = self.get_template(request, self._dir + 'pages/login_user.html')
-            return page.render(alerts={},
+            returnValue(page.render(alerts=self.get_alerts(),
                                data=self.data,
                                )
+                       )
 
         login_redirect = "/"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']
-        print "delete login redirect... %s" % self.sessions.delete(request, 'login_redirect')
-        print "login/user:login_redirect: %s" % login_redirect
-        print "after delete session: %s" % session
-        return self.redirect(request, login_redirect)
+#        print "delete login redirect... %s" % self.sessions.delete(request, 'login_redirect')
+#        print "login/user:login_redirect: %s" % login_redirect
+#        print "after delete rediret...session: %s" % session
+        returnValue(self.redirect(request, login_redirect))
 
     @webapp.route('/login/pin', methods=['POST'])
     def page_login_pin_post(self, request):
@@ -635,6 +638,10 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/modules/index')
     def page_modules(self, request):
+        auth = self.require_auth(request)
+        if auth is not None:
+            return auth
+
         page = self.get_template(request, self._dir + 'pages/modules/index.html')
         return page.render(data=self.data,
                            alerts=self.get_alerts(),
@@ -643,6 +650,10 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/states/index')
     def page_states(self, request):
+        auth = self.require_auth(request)
+        if auth is not None:
+            return auth
+
         page = self.get_template(request, self._dir + 'pages/states/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
         return page.render(data=self.data,
@@ -653,6 +664,10 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/tools/index')
     def page_tools(self, request):
+        auth = self.require_auth(request)
+        if auth is not None:
+            return auth
+
         page = self.get_template(request, self._dir + 'pages/states/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
         return page.render(data=self.data,
@@ -703,9 +718,9 @@ class WebInterface(YomboLibrary):
         return File(self._current_dir + "/lib/webinterface/pages/setup_wizard/static")
 
     def display_pin_console(self):
-        local = "http://localhost:%s" % self._port
-        internal = "http://%s:%s" %(self._Configs.get('core', 'localipaddress'), self._port)
-        external = "http://%s:%s" % (self._Configs.get('core', 'externalipaddress'), self._port)
+        local = "http://localhost:%s" % self.wi_port_nonsecure
+        internal = "http://%s:%s" %(self._Configs.get('core', 'localipaddress'), self.wi_port_nonsecure)
+        external = "http://%s:%s" % (self._Configs.get('core', 'externalipaddress'), self.wi_port_nonsecure)
         print "###########################################################"
         print "#                                                         #"
         if self._op_mode != 'run':
@@ -779,7 +794,6 @@ class WebInterface(YomboLibrary):
         the webinterface JS and CSS files.
         :return:
         """
-
         if not path.exists('yombo/lib/webinterface/static/dist'):
             mkdir('yombo/lib/webinterface/static/dist')
         if not path.exists('yombo/lib/webinterface/static/dist/css'):
@@ -822,6 +836,11 @@ class WebInterface(YomboLibrary):
         CAT_SCRIPTS_OUT = 'dist/js/jquery-cookie-bootstrap-metismenu.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
+        CAT_SCRIPTS = [
+            'source/jquery/jquery.validate-1.15.0.min.js',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/js/jquery.validate-1.15.0.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
         CAT_SCRIPTS = [
             'source/bootstrap/dist/css/bootstrap.min.css',
             'source/metisMenu/metisMenu.min.css',

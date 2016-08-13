@@ -76,17 +76,18 @@ class Configuration(YomboLibrary):
         self.loader = loader
         self.cache_dirty = False
         
-        config_parser = ConfigParser.SafeConfigParser()
+
+        self._Atoms.set('configuration.yombo_ini.found', False)
 
         try:
+            config_parser = ConfigParser.SafeConfigParser()
             fp = open('yombo.ini')
             config_parser.readfp(fp)
-            ini = config_parser
             fp.close()
 
-            for section in ini.sections():
-                for option in ini.options(section):
-                    value = ini.get(section, option)
+            for section in config_parser.sections():
+                for option in config_parser.options(section):
+                    value = config_parser.get(section, option)
                     try:
                         value = is_string_bool(value)
                     except:
@@ -103,28 +104,31 @@ class Configuration(YomboLibrary):
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
             self._Atoms.set('configuration.yombo_ini.found', False)
             return
-        except ConfigParser.NoSectionError:
-            pass
-        self._Atoms.set('configuration.yombo_ini.found', True)
+        except ConfigParser.NoSectionError, e:
+            print "CAUGHT ConfigParser.NoSectionError!!!!  In Loading. %s" % e
+        else:
+            self._Atoms.set('configuration.yombo_ini.found', True)
+            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
+            copyfile('yombo.ini', 'usr/bak/yombo_ini/yombo.ini.' + timeString)
 
         try:
+            config_parser = ConfigParser.SafeConfigParser()
             fp = open('usr/etc/yombo.ini.meta')
             config_parser.readfp(fp)
-            ini = config_parser
             fp.close()
 
-            for section in ini.sections():
+            for section in config_parser.sections():
                 if section not in self.configs:
                     continue
-                for option in ini.options(section):
+                for option in config_parser.options(section):
                     if option not in self.configs[section]:
                         continue
-                    values = cPickle.loads(ini.get(section, option))
+                    values = cPickle.loads(config_parser.get(section, option))
                     self.configs[section][option] = dict_merge(self.configs[section][option], values)
-        except IOError:
-            pass
+        except IOError, e:
+            print "CAUGHT IOError!!!!!!!!!!!!!!!!!!  In reading meta: %s" % e
         except ConfigParser.NoSectionError:
-            pass
+            print "CAUGHT ConfigParser.NoSectionError!!!!  IN saving. "
 
         # Perform DB cleanup activites based on local section.
         if self.get('local', 'deletedelayedmessages') is True:
@@ -180,9 +184,6 @@ class Configuration(YomboLibrary):
 
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
-        if self._Atoms.get('configuration.yombo_ini.found') is True:
-            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-            copyfile('yombo.ini', 'usr/bak/yombo_ini/yombo.ini.' + timeString)
         if self.configs_dirty is True or force_save is True:
             Config = ConfigParser.ConfigParser()
             for section, options in self.configs.iteritems():
@@ -202,7 +203,7 @@ class Configuration(YomboLibrary):
             for section, options in self.configs.iteritems():
                 Config.add_section(section)
                 for item, data in options.iteritems():
-                    temp = self.configs[section][item]
+                    temp = self.configs[section][item].copy()
                     if 'reads' in temp:
                         del temp['reads']
                     if 'details' in temp:
@@ -335,6 +336,15 @@ class Configuration(YomboLibrary):
                 self._Statistics.increment("lib.configuration.get.none", bucket_time=15, anon=True)
             return None
 
+        if section == "*":  # we now allow to get all config items. Useful for the web.
+            results = {}
+            for section, options in self.configs.iteritems():
+                if section not in results:
+                    results[section] = {}
+                for option, data in options.iteritems():
+                    results[section][option] = self.configs[section][option]['value']
+            return results
+
         if section in self.configs:
             if option == "*":
                 if len(self.configs[section]) > 0:
@@ -343,10 +353,9 @@ class Configuration(YomboLibrary):
                         if 'value' in data:
                             results[key] = data['value']
                             data['reads'] += 1
-                    self._Statistics.increment("lib.configuration.get.value", bucket_time=15, anon=True)
                     return results
-                self._Statistics.increment("lib.configuration.get.none", bucket_time=15, anon=True)
                 return None
+
             if option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
 #                returnValue(self.configs[section][option])

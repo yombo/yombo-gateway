@@ -72,6 +72,7 @@ def route_setup_wizard(webapp):
     #        print "selected gateawy: %s" % webinterface.sessions.get(request, 'setup_wizard_gateway_id')
 
             # simulate fetching possible gateways:
+#            webinterface.gateway()
             available_gateways = simulate_gw #(include_new=True)
 
             webinterface.sessions.set(request, 'setup_wizard_last_step', 2)

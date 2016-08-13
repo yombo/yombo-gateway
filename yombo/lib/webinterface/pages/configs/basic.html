@@ -1,5 +1,8 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
-{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
+{% endblock %}
 
 {% block content %}
             <div class="row">
@@ -11,188 +14,240 @@
             <!-- /.row -->
             <form method="post">
 				<div class="row">
-					<div class="col-lg-6 col-md-7">
-						<div class="panel panel-default">
-							<div class="panel-heading">
-								<h4>Basic Settings</h4>
-							</div>
-							<div class="panel-body">
-								<div class="form-group">
-									<label for="gateway-label">Gateway Label</label>
-									<div class="input-group">
-										<input type="text" class="form-control" name="gateway-label" id="gateway-label" placeholder="Gateway Label" required value="{{ config.core.label }}">
-										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-									</div>
-								</div>
-								<div class="form-group">
-									<label for="gateway-description">Gateway Description</label>
-									<div class="input-group">
-										<input type="text" class="form-control" name="gateway-description" id="gateway-description" placeholder="Gateway Description" required value="{{ config.core.description }}">
-										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-									</div>
-								</div>
-								<div class="form-group">
-									<label data-toggle="tooltip" title="How many degrees below horizon does sun need to be to still be considered twilight. Usually -6. Civil: -6, Nautical: -12, Astronomical: -18">Twilight Degrees</label>
-									<div class="input-group">
-										<select class="form-control" name="times-twilight" id="times-twilight" placeholder="Select Twilight Degrees" required>
-											<option value="-2">-2</option>
-											<option value="-4">-4</option>
-											<option value="-6" selected>-6</option>
-											<option value="-8">-8</option>
-											<option value="-10">-10</option>
-											<option value="-12">-12</option>
-											<option value="-14">-14</option>
-											<option value="-16">-16</option>
-											<option value="-18">-18</option>
-											<option value="-20">-20</option>
-										</select>
-										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-									</div>
-								</div>
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h4>Basic Settings</h4>
+						</div>
+					<div class="panel-body">
+						<div class="form-group">
+							<label for="core_label">Gateway Label</label>
+							<div class="input-group">
+								<input type="text" class="form-control" name="core_label" id="core_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ config.core.label }}" autofocus required>
 							</div>
 						</div>
+						<div class="form-group">
+							<label for="core-description">Gateway Description</label>
+							<div class="input-group">
+								<textarea class="form-control" rows="5" name="core-description" id="core-description" placeholder="Detailed description" value="{{ config.core.description }}"></textarea>
+								<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
+							</div>
+						</div>
+
+						<div class="row">
+							<div id="address3" class="col-md-4">
+								<div id="map-output"></div>
+									<div class="form-group">
+										<label >Search for location</label>
+										<div class="input-group">
+											<input id="search-txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
+											<input id="search-btn" type="button" value="    Search    ">
+											<input id="detect-btn" type="button" value="Detect" disabled>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="location-latitude">Latitude</label>
+										<div class="input-group">
+											<input type="text" class="form-control" name="location-latitude" id="location-latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
+											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="location-longitude">Longitude</label>
+										<div class="input-group">
+											<input type="text" class="form-control" name="location-longitude" id="location-longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
+											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+										</div>
+									</div>
+									<div class="form-group">
+										<label for="location-elevation">Elevation (in feet)</label>
+										<div class="input-group">
+											<input type="text" class="form-control" name="location-elevation" id="location-elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
+											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+										</div>
+									</div>
+								</div>
+							<div id="address2" class="col-md-8">
+								<div id="map-search">
+									<div id="gmap"></div>
+								</div>
+							</div>
+						</div> <!-- /row -->
 					</div>
-					<!-- /.col-lg-6 -->
 				</div>
 	            <!-- /.row -->
 				<div class="row">
-					<div class="col-lg-6 col-md-7">
+                    <div class="col-lg-6 col-md-6">
 						<div class="panel panel-default">
 							<div class="panel-heading">
-								<h4>Web Interface</h4>
+								<h4>Web Interface</h4> (This website)
 							</div>
 								<div class="alert alert-warning">
 								Disabling the web interface will remove the ability to access this website. If disabled
-								and want to re-enable: 1) Stop yombo gateway. 2) Start gateway in configuration only
+								and you want to re-enable: 1) Stop yombo gateway. 2) Start gateway in configuration only
 								mode. Then come back here and enable.
 								</div>
 							<div class="panel-body">
 								<div class="form-group">
-									<label for="someSwitchOptionDefault11" data-toggle="tooltip" title="Web Interface is the web tool you are currently using! Disable with caution.">Web Interface On/Off)</label>
+									<label for="webinterface-enabled" data-toggle="tooltip" title="Web Interface is the web tool you are currently using! Disable with caution.">Web Interface</label>
 									<div class="material-switch pull-right">
-										<input id="someSwitchOptionDefault11" name="someSwitchOption002" type="checkbox" checked/>
-										<label for="someSwitchOptionDefault11" class="label-primary"></label>
+										<input id="webinterface-enabled" name="webinterface-enabled" type="checkbox" checked/>
+										<label for="webinterface-enabled" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="someSwitchOptionDefault11" data-toggle="tooltip" title="If enabled, only allows access from the same machine gateway is running on.">Localhost Only</label>
+									<label  for="webinterface-localhost-only" data-toggle="tooltip" title="If enabled, only allows access from the same machine gateway is running on.">Localhost Only</label>
 									<div class="material-switch pull-right">
-										<input id="someSwitchOptionDefault22" name="someSwitchOption003" type="checkbox" checked/>
-										<label for="someSwitchOptionDefault22" class="label-primary"></label>
+										<input id="webinterface-localhost-only" name="webinterface-localhost-only" type="checkbox" checked/>
+										<label for="webinterface-localhost-only" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="someSwitchOptionDefault11" data-toggle="tooltip" title="Port number used the gateway machine.">Port</label>
+									<label  for="webinterface-nonsecure-port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 80 is used by web servers, but must be root to do this or using a proper startup script.">Port, Non-Secure. Usually 8080 or 80. 0 = Disabled</label>
 									<div class="input-group" data-validate="number">
-										<input type="text" class="form-control" name="validate-number" id="validate-number" placeholder="Validate Number" required value="{{ config.webinterface.port }}">
+										<input type="text" class="form-control" name="validate-number" id="webinterface-nonsecure-port" placeholder="80" value="{{ config.webinterface.nonsecure_port }}" required>
 										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 									</div>
 								</div>
-							</div>
-						</div>
+								<div class="form-group">
+									<label  for="webinterface-secure-port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script.">Port, Secure (SSL). Usually 8443 or 443. 0 = Disabled</label>
+									<div class="input-group" data-validate="number">
+										<input type="text" class="form-control" name="validate-number" id="webinterface-secure-port" placeholder="443" value="{{ config.webinterface.secure_port }}" required>
+										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+									</div>
+								</div>
+                    <div class="col-lg-6 col-md-6">
+								<div class="form-group">
+									<label for="webinterface-pin-type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
+									<div class="input-group">
+										<select class="form-control" name="webinterface-pin-type" id="webinterface-pin-type" placeholder="Select Twilight Degrees">
+											<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static PIN</option>
+											<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
+											<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>
+										</select>
+									</div>
+								</div>
 					</div>
-					<!-- /.col-lg-7 -->
-				</div>
-	            <!-- /.row -->
-				<div class="row">
-					<div class="col-lg-6 col-md-7">
+                    <div class="col-lg-6 col-md-6">
+							<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">
+  								Scan TOPT QR Code
+							</button>
+							<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+							  <div class="modal-dialog" role="document">
+								<div class="modal-content">
+								  <div class="modal-header">
+									<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+									<h4 class="modal-title" id="myModalLabel">Modal title</h4>
+								  </div>
+								  <div class="modal-body">
+									...
+								  </div>
+								  <div class="modal-footer">
+									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+									<button type="button" class="btn btn-primary">Save changes</button>
+								  </div>
+								</div>
+							  </div>
+							</div>
+					</div>
+									</div>
+							</div>
+					</div>
+					<!-- /.col-lg-6 -->
+                    <div class="col-lg-6 col-md-6">
 						<div class="panel panel-default">
 							<div class="panel-heading">
-								Security Settings
+								<h4>Misc Settings</h4>
 							</div>
 							<div class="panel-body">
-
-					<div class="form-group">
-						<label>Validate Number</label>
-								<div class="material-switch pull-right">
-									<input id="someSwitchOptionDefault" name="someSwitchOption001" type="checkbox"/>
-									<label for="someSwitchOptionDefault" class="label-primary"></label>
+								<div class="form-group">
+									<label  for="statistics-enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
+									<div class="material-switch pull-right">
+										<input id="statistics-enbled" name="statistics-enbled" type="checkbox" checked/>
+										<label for="statistics-enbled" class="label-primary"></label>
+									</div>
 								</div>
-					</div>
-
-					<div class="form-group">
-						<label for="validate-text">Validate Text</label>
-						<div class="input-group">
-							<input type="text" class="form-control" name="validate-text" id="validate-text" placeholder="Validate Text" required>
-							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-						</div>
-					</div>
-					<div class="form-group">
-						<label for="validate-optional">Optional</label>
-						<div class="input-group">
-							<input type="text" class="form-control" name="validate-optional" id="validate-optional" placeholder="Optional">
-							<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
-						</div>
-					</div>
-					<div class="form-group">
-						<label for="validate-optional">Already Validated!</label>
-						<div class="input-group">
-							<input type="text" class="form-control" name="validate-text" id="validate-text" placeholder="Validate Text" value="Validated!" required>
-							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-						</div>
-					</div>
-					<div class="form-group">
-						<label for="validate-email">Validate Email</label>
-						<div class="input-group" data-validate="email">
-							<input type="text" class="form-control" name="validate-email" id="validate-email" placeholder="Validate Email" required>
-							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-						</div>
-					</div>
-					<div class="form-group">
-						<label for="validate-length">Minimum Length</label>
-						<div class="input-group" data-validate="length" data-length="5">
-							<textarea type="text" class="form-control" name="validate-length" id="validate-length" placeholder="Validate Length" required></textarea>
-							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-						</div>
-					</div>
-					<div class="form-group">
-						<label for="validate-select">Validate Select</label>
-						<div class="input-group">
-							<select class="form-control" name="validate-select" id="validate-select" placeholder="Validate Select" required>
-								<option value="">Select an item</option>
-								<option value="item_1">Item 1</option>
-								<option value="item_2">Item 2</option>
-								<option value="item_3">Item 3</option>
-							</select>
-							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-						</div>
-					</div>
-					<div class="form-group">
-						<label for="validate-number">Validate Number</label>
-						<div class="input-group" data-validate="number">
-							<input type="text" class="form-control" name="validate-number" id="validate-number" placeholder="Validate Number" required>
-							<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-						</div>
-					</div>
-					<button type="submit" class="btn btn-primary col-xs-12" disabled>Submit</button>
-					<div >
-						<label>Validate Number</label>
-								<div class="material-switch pull-right">
-									<input id="someSwitchOptionDefault" name="someSwitchOption001" type="checkbox"/>
-									<label for="someSwitchOptionDefault" class="label-primary"></label>
+								<div class="form-group">
+									<label  for="statistics-upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
+									<div class="material-switch pull-right">
+										<input id="statistics-upload" name="statistics-upload" type="checkbox" checked/>
+										<label for="statistics-upload" class="label-primary"></label>
+									</div>
 								</div>
-					</div>
+								<div class="form-group">
+									<label  for="statistics-anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
+									<div class="material-switch pull-right">
+										<input id="statistics-anonymous" name="statistics-anonymous" type="checkbox" checked/>
+										<label for="statistics-anonymous" class="label-primary"></label>
+									</div>
+								</div>
+								<div class="form-group">
+									<label  for="device-sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
+									<div class="material-switch pull-right">
+										<input id="device-sendstatus" name="device-sendstatus" type="checkbox" checked/>
+										<label for="device-sendstatus" class="label-primary"></label>
+									</div>
+								</div>
+								<div class="form-group">
+									<label  for="device-sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
+									<div class="material-switch pull-right">
+										<input id="device-sendstatusgps" name="device-sendstatusgps" type="checkbox" checked/>
+										<label for="device-sendstatusgps" class="label-primary"></label>
+									</div>
+								</div>
+
 							</div>
 						</div>
 					</div>
 					<!-- /.col-lg-6 -->
+				</div>
+	            <!-- /.row -->
+				<div class="row">
+					<div class="col-lg-12">
+					<button type="submit" class="btn btn-primary col-xs-12" disabled>Submit</button>
+					</div>
+					<p>&nbsp;</p>
 				</div>
 	            <!-- /.row -->
 			</form>
 {% endblock %}
 
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
 
 {% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
     <!-- Make the tables pretty -->
     <script>
-    $(document).ready(function() {
-        $('#dataTables-example').DataTable({
-                responsive: true,
-                paging: true,
-                iDisplayLength: 50
-        });
-    });
+
+
+$('form').validate({
+    rules: {
+        core_label: {
+            minlength: 3,
+            maxlength: 15,
+            required: true
+        }
+    },
+    highlight: function(element) {
+        var id_attr = "#" + $( element ).attr("id") + "1";
+        $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+        $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+    },
+    unhighlight: function(element) {
+        var id_attr = "#" + $( element ).attr("id") + "1";
+        $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+        $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+    },
+    errorElement: 'span',
+        errorClass: 'help-block',
+        errorPlacement: function(error, element) {
+            if(element.length) {
+                error.insertAfter(element);
+            } else {
+            error.insertAfter(element);
+            }
+        }
+ });
 
 	$(document).ready(function(){
 		$('[data-toggle="tooltip"]').tooltip();
