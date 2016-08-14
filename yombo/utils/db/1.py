@@ -32,6 +32,7 @@ def upgrade(Registry, **kwargs):
      `public`        INTEGER NOT NULL,
      `status`        INTEGER NOT NULL,
      `created`       INTEGER NOT NULL,
+     `updated_srv`   INTEGER NOT NULL,
      `updated`       INTEGER NOT NULL,
      PRIMARY KEY(id) );"""
     yield Registry.DBPOOL.runQuery(table)
@@ -55,6 +56,7 @@ def upgrade(Registry, **kwargs):
      `config_path`  TEXT NOT NULL,
      `config_key`   TEXT NOT NULL,
      `config_value` TEXT NOT NULL,
+     `updated_srv`  INTEGER NOT NULL,
      `updated`      INTEGER NOT NULL);"""
 #    yield Registry.DBPOOL.runQuery(table)
 #    yield Registry.DBPOOL.runQuery(create_index('configs', 'config_path'))
@@ -76,6 +78,7 @@ def upgrade(Registry, **kwargs):
      `pin_required`    INTEGER NOT NULL,
      `pin_timeout`     INTEGER DEFAULT 0,
      `created`         INTEGER NOT NULL,
+     `updated_srv`     INTEGER NOT NULL,
      `updated`         INTEGER NOT NULL,
      `status`          INTEGER NOT NULL,
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
@@ -113,6 +116,7 @@ def upgrade(Registry, **kwargs):
      `public`        INTEGER,
      `status`        INTEGER,
      `created`       INTEGER,
+     `updated_srv`   INTEGER NOT NULL,
      `updated`       INTEGER,
       UNIQUE (label) ON CONFLICT IGNORE,
       UNIQUE (machine_label) ON CONFLICT IGNORE,
@@ -170,6 +174,7 @@ def upgrade(Registry, **kwargs):
      `public`         INTEGER NOT NULL,
      `status`         INTEGER NOT NULL,
      `created`        INTEGER NOT NULL,
+     `updated_srv`    INTEGER NOT NULL,
      `updated`        INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
@@ -233,7 +238,10 @@ def upgrade(Registry, **kwargs):
     table = """CREATE TABLE `users` (
      `id`       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
      `username` TEXT NOT NULL,
-     `hash`     TEXT NOT NULL);"""
+     `hash`     TEXT NOT NULL,
+     `updated_srv`   INTEGER NOT NULL,
+     `updated`       INTEGER NOT NULL,
+     `created`       INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('users', 'username'))
 
@@ -261,6 +269,7 @@ def upgrade(Registry, **kwargs):
      `machine_label` TEXT NOT NULL,
      `label`         TEXT NOT NULL,
      `value`         TEXT NOT NULL,
+     `updated_srv`   INTEGER NOT NULL,
      `updated`       INTEGER NOT NULL,
      `created`       INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)

@@ -42,7 +42,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboMessageError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string
+from yombo.utils import percentage, random_string, dict_has_key
 from yombo.core.message import Message
 
 logger = get_logger('library.amqpyombo')
@@ -56,12 +56,22 @@ class AMQPYombo(YomboLibrary):
     """
     Handles interactions with Yombo servers through the AMQP library.
     """
+
+    config_item_map = {
+        'devices': 'gateway_devices'
+    }
+
     config_items = {
             'commands' : {
                 'table': "commands",
                 'library': "commands",
-                'function': "add_update_delete",
-                'map' : {
+                'functions': {
+                    # 'process': "enable_command",
+                    'enabled': "enable_device",
+                    'disabled': "disable_device",
+                    'deleted': "delete_device",
+                },
+                'map': {
                     'Uri' : 'uri',
                     'UUID' : 'id',
                     'machineLabel' : 'machine_label',
@@ -74,15 +84,19 @@ class AMQPYombo(YomboLibrary):
                     'updated' : 'updated',
                     'status' : 'status',
                     'public' : 'public',
-#                    '' : '',
+                    # '' : '',
                 }
             },
 ###  needs an ID of some sort for update/delete
             'command_device_types' : {
                 'table': "command_device_types",
                 'library': "commands",
-                'function': "add_or_update_device_types",
-                'map' : {
+                'functions': {
+                    'enabled': "enable_device",
+                    'disabled': "disable_device",
+                    'deleted': "delete_device",
+                },
+                'map': {
                     'device_type_id' : 'device_type_id',
                     'command_id' : 'command_id',
                 }
@@ -91,11 +105,15 @@ class AMQPYombo(YomboLibrary):
             'gateway_devices' : {
                 'table': "devices",
                 'library': "devices",
-                'function': "add_update_delete",
+                'functions': {
+                    'enabled': "enable_device",
+                    'disabled': "disable_device",
+                    'deleted': "delete_device",
+                },
                 'map' : {
                     'UUID' : 'id',
                     'Uri' : 'uri',
-#                   'machineLabel' : 'machineLabel',  #Not implemented yet.
+                    # 'machineLabel' : 'machineLabel',  #Not implemented yet.
                     'Label' : 'label',
                     'Notes' : 'notes',
                     'Description' : 'description',
@@ -116,8 +134,12 @@ class AMQPYombo(YomboLibrary):
             'device_types' : {
                 'table': "device_types",
                 'library': "devices",
-                'function': "add_or_update_device_types",
-                'map' : {
+                'functions': {
+                    'enabled': "enable_device",
+                    'disabled': "disable_device",
+                    'deleted': "delete_device",
+                },
+                'map': {
                     'UUID' : 'id',
                     'Uri' : 'uri',
                     'MachineLabel' : 'machine_label',
@@ -136,8 +158,12 @@ class AMQPYombo(YomboLibrary):
             'device_type_modules' : {
                 'table': "device_type_modules",
                 'library': "modules",
-                'function': "add_or_update_device_types",
-                'map' : {
+                'functions': {
+                    'enabled': "enable_command",
+                    'disabled': "enable_command",
+                    'deleted': "enable_command",
+                },
+                'map': {
                     'device_type_id' : 'device_type_id',
                     'module_id' : 'module_id',
                     'priority' : 'priority',
@@ -147,8 +173,12 @@ class AMQPYombo(YomboLibrary):
             'gateway_modules' : {
                 'table': "modules",
                 'library': "modules",
-                'function': "add_or_update_modules",
-                'map' : {
+                'functions': {
+                    'enabled': "enable_command",
+                    'disabled': "enable_command",
+                    'deleted': "enable_command",
+                },
+                'map': {
                     'UUID' : 'id',
                     'Uri' : 'uri',
                     'MachineLabel' : 'machine_label',
@@ -171,8 +201,12 @@ class AMQPYombo(YomboLibrary):
             'variables' : {
                 'table': "variables",
                 'library': "configuration",
-                'function': "add_or_update_configs",
-                'map' : {
+                'functions': {
+                    'enabled': "enable_command",
+                    'disabled': "enable_command",
+                    'deleted': "enable_command",
+                },
+                'map': {
                     'VariableType' : 'variable_type',
                     'ForeignUUID' : 'foreign_id',
                     'VariableUUID' : 'variable_id',
@@ -448,7 +482,11 @@ class AMQPYombo(YomboLibrary):
                         print "44"
                         config_item = self.config_items[properties.headers['config_item']]
                         library = self.loader.loadedLibraries[config_item['library']]
-                        klass = getattr(library, config_item['function'])
+                        if 'process' in config_item['functions']:
+                            klass = getattr(library, config_item['function']['process'])
+                        else:
+                            klass = self.add_update_delete
+
                         if msg['data_type'] == 'object':
                             print "555 a"
                             new_data = {}
@@ -456,7 +494,7 @@ class AMQPYombo(YomboLibrary):
                                 if key in config_item['map']:
                                     new_data[config_item['map'][key]] = value
  #                           print "new_data: %s" % new_data
-                            klass(new_data)
+                            klass(new_data, config_item)
                             self.loader.loadedLibraries['devices'].add_update_delete(new_data)
                         else:
                             print "555 b"
@@ -473,14 +511,88 @@ class AMQPYombo(YomboLibrary):
                                             value=float(value)
                                         new_data[config_item['map'][key]] = value
 
-                                print "6666 cc"
-                                klass(new_data)
+                                klass(new_data, config_item)
+                                print "6666 cc %s" % klass
                         self._remove_full_download_dueue("get_" + properties.headers['config_item'])
 
         except Exception, e:
             print "I found a bad thing: %s" % e
 #        print "valid to here: %s" % msg
 
+    # still in progress function. Need to clean up DB calls.
+    # todo: what about updates directly to the library? Just call: config_item = get_config_item('devices') 
+    @inlineCallbacks
+    def add_update_delete(self, data, config_item):
+        # print "hiiiii"
+        # print "data: %s"%data
+        required_db_keys = []
+
+        for col, col_data in self._LocalDBLibrary.db_model[config_item['table']].iteritems():
+            if col_data['notnull'] == 1:
+                required_db_keys.append(col)
+
+        # data_keys = data.keys()
+
+        # print "dbkeys: %s"%required_db_keys
+        has_required_db_keys = dict_has_key(data, required_db_keys)
+        # print "has_required_db_keys: %s"%has_required_db_keys
+
+        if has_required_db_keys is False:
+            raise YomboWarning("Cannot do anything. Must have these keys: %s" % required_db_keys, 300, 'add_update_delete', 'Devices')
+
+        action = None
+        status_change_actions = None
+        records = yield self._LocalDBLibrary.get_device_by_id(data['id'])
+        # print "records: %s" % records
+
+        library = self.loader.loadedLibraries[config_item['library']]
+
+        if len(records) == 0:
+            action = 'add'
+            db_data = data.copy()
+            db_data['updated_srv'] = data['updated']
+            yield self._LocalDBLibrary.insert(config_item['table'], db_data)
+            if 'updated' in config_item['function']:
+                klass = getattr(library, config_item['function']['updated'])
+                klass(data, True)  # True = the library doesn't need to update the database
+
+        elif len(records) == 1:
+            print "1 record"
+            record = records[0]
+            if data['status'] != record['status']:  # might have to disable
+                if data['status'] == 0:
+                    status_change_actions = 'disable'
+                    if 'disabled' in config_item['function']:
+                        klass = getattr(library, config_item['function']['disabled'])
+                        klass(data, True)
+                elif data['status'] == 1:
+                    status_change_actions = 'enable'
+                    if 'disaenabledbled' in config_item['function']:
+                        klass = getattr(library, config_item['function']['enabled'])
+                        klass(data, True)
+                elif data['status'] == 2:
+                    status_change_actions = 'delete'
+                    if 'deleted' in config_item['function']:
+                        klass = getattr(library, config_item['function']['deleted'])
+                        klass(data, True)
+                else:
+                    raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
+
+            print "if %s > %s:  # lets update!" % (data['updated'],  record['updated'])
+            if data['updated'] > record['updated']:  # lets update!
+                action = 'update'
+                db_data = data.copy()
+                db_data['updated_srv'] = data['updated']
+                self._LocalDBLibrary.dbconfig.update(config_item['table'], db_data, where=['id = ?', data['id']] )
+                if 'added' in config_item['function']:
+                    klass = getattr(library, config_item['function']['added'])
+                    klass(data, True)
+            else:
+                pass  # what needs to happen when nothing changes?  Nothing?
+        else:
+            raise YomboWarning("There are too many device records. Don't know what to do.", 300, 'add_update_delete', 'Devices')
+
+        print "device add-update-delete action: %s, status_change_action: %s" %( action, status_change_actions)
 
     # # deprecated
     # def message(self, message):
@@ -523,6 +635,13 @@ class AMQPYombo(YomboLibrary):
     #         "callback"          : None
     #         }
 
+    def get_config_item(self, library):
+        """
+        Simple lookup function to get config_item
+        :param library:
+        :return:
+        """
+        return self.config_item_map[library]
 
     def get_system_configs(self):
         self.__doing_full_configs = True

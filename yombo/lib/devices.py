@@ -210,12 +210,7 @@ class Devices(YomboLibrary):
     def _started_(self):
         self.run_state = 4
         self.rebuild_devicesByDeviceTypeByName()
-
-    def _start_(self):
-        """
-        Load devices, and load some of the device history. Setup looping
-        call to periodically save any updated device status.
-        """
+        print("devices: %s" % self._devicesByUUID)
 
     def _stop_(self):
         """
@@ -261,78 +256,43 @@ class Devices(YomboLibrary):
         This is called when records from the database are returned. Only used on startup. Just iterates and
         calls add_device.
         """
-        logger.info("Loading devices:::: {records}", records=records)
+        logger.debug("Loading devices:::: {records}", records=records)
         if len(records) > 0:
             for record in records:
-                logger.info("Loading device: {record}", record=record)
+                logger.debug("Loading device: {record}", record=record)
                 d = yield self.load_device(record)
 
-    @inlineCallbacks
-    def add_update_delete(self, data, source=None):
+    def enable_device(self, device_id):
         """
-        Updates the database. If running, it'll also update any variables and call any hooks as needed.
+        Enables a given device id.
 
-        Generally, called by the amqpyombo library, however, can called by anything that wants to make any changes.
-
-        :param data:
-        :param source: If AMQPYombo, it won't send updates to Yombo Servers.
+        :param device_id:
         :return:
         """
-        # print("devices, data222: %s" % data)
-        # print("device_meta: %s"%self._LocalDBLibrary.db_model['devices'])
-        # allowed_items = self._LocalDBLibrary.db_model['devices'].keys()
+        if device_id not in self._devicesByUUID:
+            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'enable_device', 'Devices')
 
-        required_db_keys = []
-        for col, col_data in self._LocalDBLibrary.db_model['devices'].iteritems():
-            if col_data['notnull'] == 1:
-                required_db_keys.append(col)
+    def disable_device(self, device_id):
+        """
+        Disables a given device id.
 
-        # data_keys = data.keys()
+        :param device_id:
+        :return:
+        """
+        if device_id not in self._devicesByUUID:
+            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'disable_device', 'Devices')
 
-#        print("dbkeys: %s"%required_db_keys)
-#        print("data_keys: %s"%data_keys)
-        has_required_db_keys = dict_has_key(data, required_db_keys)
-        # print("has_required_db_keys: %s"%has_required_db_keys)
+    def delete_device(self, device_id):
+        """
+        Deletes a given device id.
 
-        if has_required_db_keys is False:
-            raise YomboWarning("Cannot do anything. Must have these keys: %s" % required_db_keys, 300, 'add_update_delete', 'Devices')
+        Behind the scenes, it just updates the database status record
 
-        action = None
-        status_change_actions = None
-        records = yield self._LocalDBLibrary.get_device_by_id(data['id'])
-        # print("records: %s" % records)
-        if len(records) == 0:
-            action = 'add'
-            yield self._LocalDBLibrary.insert('devices', data)
-
-        elif len(records) == 1:
-            print("1 record")
-            record = records[0]
-            if data['status'] != record['status']:  # might have to disable
-                if data['status'] == 0:
-                    status_change_actions = 'disable'
-                    self.disable_device(data['id'])
-                elif data['status'] == 1:
-                    status_change_actions = 'enable'
-                    self.enable_device(data['id'])
-                elif data['status'] == 2:
-                    status_change_actions = 'delete'
-                    self.delete_device(data['id'])
-                else:
-                    raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
-
-            if data['updated'] > record['updated']:  # lets update!
-                action = 'update'
-                self._LocalDBLibrary.dbconfig.update("devices", data, where=['id = ?', data['id']] )
-            else:
-                pass  # what needs to happen when nothing changes?  Nothing?
-        else:
-            raise YomboWarning("There are too many device records. Don't know what to do.", 300, 'add_update_delete', 'Devices')
-
-        print("device add-update-delete action: %s, status_change_action: %s" %( action, status_change_actions))
-
-        #to make this work, i need to:
-#        _moduleDeviceTypesByID needs to be dynamic. Currently, building on startup and that's it.'
+        :param device_id:
+        :return:
+        """
+        if device_id not in self._devicesByUUID:
+            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'delete_device', 'Devices')
 
     def load_device(self, record, test_device=False):  # load ore re-load if there was an update.
         """
@@ -409,7 +369,7 @@ class Devices(YomboLibrary):
             del self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']]
             del self._devicesByDeviceTypeByName[record['device_type_machine_label']]
 
-        self._devicesByUUID[device_id].update(record, testDevice)  # update any remaining items.
+        self._devicesByUUID[device_id].update(record, test_device)  # update any remaining items.
 
         global_invoke_all('devices_update', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
 
