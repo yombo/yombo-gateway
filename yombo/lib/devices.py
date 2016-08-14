@@ -78,10 +78,10 @@ from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.message import Message
-from yombo.utils import random_string, split, epoch_from_string
-
+from yombo.utils import random_string, split, global_invoke_all, dict_has_key
 
 logger = get_logger('library.devices')
+
 
 class Devices(YomboLibrary):
     """
@@ -186,89 +186,36 @@ class Devices(YomboLibrary):
         self._devicesByDeviceTypeByName = FuzzySearch({}, .94)
         self._status_updates_to_save = {}
         self._saveStatusLoop = None
+        self.run_state = 1
 
     def _load_(self):
+        self.run_state = 2
+
+    def _start_(self):
+        self.run_state = 3
+
+        self.start_deferred = Deferred()
+        self.__load_devices()
+
+        self._saveStatusLoop = LoopingCall(self._save_status)
+        self._saveStatusLoop.start(120, False)
+
         if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
-    def mqtt_incoming(self, topic, payload, qos, retain):
-        """
-        Processes incoming MQTT requests. It understands:
+        return self.start_deferred
 
-        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/get Value - Get some attribute
-          * Value = state, human, machine, extra
-        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/cmd/CMDID|CMDMACHINELABEL Options - Send a command
-          * Options - Either a string for a single variable, or json for multiple variables
-
-        Examples: /yombo/devices/get/christmas_tree/cmd on
-
-        :param topic:
-        :param payload:
-        :param qos:
-        :param retain:
-        :return:
-        """
-        #  0       1       2       3        4
-        # yombo/devices/DEVICEID/get|cmd/option
-        parts = topic.split('/', 10)
-        print("Yombo Devices got this: %s / %s" % (topic, parts))
-
-
-        try:
-            device = self.get_device(parts[2].replace("_", " "))
-        except YomboDeviceError, e:
-            logger.info("Received MQTT request for a device that doesn't exist")
-            return
-
-#Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
-
-        if parts[3] == 'get':
-            status = device.get_status()
-            if payload == 'state':
-                self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
-            elif payload == 'human':
-                self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
-            elif payload == 'machine':
-                self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
-            elif payload == 'extra':
-                self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
-            elif payload == 'last':
-                self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
-            elif payload == 'source':
-                self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
-        elif parts[3] == 'cmd':
-            msg = device.get_message(self, cmd=parts[4])
-            msg.send()
-            if len(parts) > 5:
-                status = device.get_status()
-                if parts[5] == 'state':
-                    self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
-                elif parts[5] == 'human':
-                    self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
-                elif parts[5] == 'machine':
-                    self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
-                elif parts[5] == 'extra':
-                    self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
-                elif parts[5] == 'last':
-                    self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
-                elif parts[5] == 'source':
-                    self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
-
+    def _started_(self):
+        self.run_state = 4
+        self.rebuild_devicesByDeviceTypeByName()
 
     def _start_(self):
         """
         Load devices, and load some of the device history. Setup looping
         call to periodically save any updated device status.
         """
-        self.__load_devices()
-        self.loadDefer = Deferred()
-
-        self._saveStatusLoop = LoopingCall(self._save_status)
-        self._saveStatusLoop.start(120, False)
-
-        return self.loadDefer
 
     def _stop_(self):
         """
@@ -302,6 +249,215 @@ class Devices(YomboLibrary):
         self._moduleDeviceRoutingByName.clear()
         return self.__load_devices()
 
+
+    def rebuild_devicesByDeviceTypeByName(self):
+        print("REBUILDING rebuild__devicesByDeviceTypeByName")
+        if self.run_state <= 2:
+            return
+
+    @inlineCallbacks
+    def __do_load_devices(self, records):
+        """
+        This is called when records from the database are returned. Only used on startup. Just iterates and
+        calls add_device.
+        """
+        logger.info("Loading devices:::: {records}", records=records)
+        if len(records) > 0:
+            for record in records:
+                logger.info("Loading device: {record}", record=record)
+                d = yield self.load_device(record)
+
+    @inlineCallbacks
+    def add_update_delete(self, data, source=None):
+        """
+        Updates the database. If running, it'll also update any variables and call any hooks as needed.
+
+        Generally, called by the amqpyombo library, however, can called by anything that wants to make any changes.
+
+        :param data:
+        :param source: If AMQPYombo, it won't send updates to Yombo Servers.
+        :return:
+        """
+        # print("devices, data222: %s" % data)
+        # print("device_meta: %s"%self._LocalDBLibrary.db_model['devices'])
+        # allowed_items = self._LocalDBLibrary.db_model['devices'].keys()
+
+        required_db_keys = []
+        for col, col_data in self._LocalDBLibrary.db_model['devices'].iteritems():
+            if col_data['notnull'] == 1:
+                required_db_keys.append(col)
+
+        # data_keys = data.keys()
+
+#        print("dbkeys: %s"%required_db_keys)
+#        print("data_keys: %s"%data_keys)
+        has_required_db_keys = dict_has_key(data, required_db_keys)
+        # print("has_required_db_keys: %s"%has_required_db_keys)
+
+        if has_required_db_keys is False:
+            raise YomboWarning("Cannot do anything. Must have these keys: %s" % required_db_keys, 300, 'add_update_delete', 'Devices')
+
+        action = None
+        status_change_actions = None
+        records = yield self._LocalDBLibrary.get_device_by_id(data['id'])
+        # print("records: %s" % records)
+        if len(records) == 0:
+            action = 'add'
+            yield self._LocalDBLibrary.insert('devices', data)
+
+        elif len(records) == 1:
+            print("1 record")
+            record = records[0]
+            if data['status'] != record['status']:  # might have to disable
+                if data['status'] == 0:
+                    status_change_actions = 'disable'
+                    self.disable_device(data['id'])
+                elif data['status'] == 1:
+                    status_change_actions = 'enable'
+                    self.enable_device(data['id'])
+                elif data['status'] == 2:
+                    status_change_actions = 'delete'
+                    self.delete_device(data['id'])
+                else:
+                    raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
+
+            if data['updated'] > record['updated']:  # lets update!
+                action = 'update'
+                self._LocalDBLibrary.dbconfig.update("devices", data, where=['id = ?', data['id']] )
+            else:
+                pass  # what needs to happen when nothing changes?  Nothing?
+        else:
+            raise YomboWarning("There are too many device records. Don't know what to do.", 300, 'add_update_delete', 'Devices')
+
+        print("device add-update-delete action: %s, status_change_action: %s" %( action, status_change_actions))
+
+        #to make this work, i need to:
+#        _moduleDeviceTypesByID needs to be dynamic. Currently, building on startup and that's it.'
+
+    def load_device(self, record, test_device=False):  # load ore re-load if there was an update.
+        """
+        Instantiate (load) a new device. Doesn't update database, must call add_update_delete isntead of this.
+
+        :param record: Row of items from the SQLite3 database.
+        :type record: dict
+        :returns: Pointer to new device. Only used during unittest
+        """
+        print("load_device: %s" % record)
+        try:
+            # todo: refactor voicecommands. Need to be able to update/delete them later.
+            self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
+        except:
+            pass
+        device_id = record["id"]
+        self._devicesByUUID[device_id] = Device(record, self)
+        d = self._devicesByUUID[device_id]._init_()
+        self._devicesByName[record["label"]] = device_id
+
+        logger.debug("_add_device: {record}", record=record)
+        if record['device_type_id'] not in self._devicesByDeviceTypeByUUID:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']] = {}
+        if device_id not in self._devicesByDeviceTypeByUUID[record['device_type_id']]:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']][device_id] = self._devicesByUUID[device_id]
+
+        if record['device_type_machine_label'] not in self._devicesByDeviceTypeByName:
+            self._devicesByDeviceTypeByName[record['device_type_machine_label']] = record['device_type_id']
+
+        global_invoke_all('device_loaded', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
+        return d
+#        if test_device:
+#            returnValue(self._devicesByUUID[device_id])
+
+
+    def update_device(self, record, test_device=False):
+        """
+        Add a new device. Record must contain:
+
+        id, uri, label, notes, description, gateway_id, device_type_id, voice_cmd, voice_cmd_order,
+        Voice_cmd_src, pin_code, pin_timeout, created, updated, device_class
+
+        :param record: Row of items from the SQLite3 database.
+        :type record: dict
+        :returns: Pointer to new device. Only used during unittest
+        """
+        logger.debug("update_device: {record}", record=record)
+        if record['id'] not in self._devicesByUUID:
+            raise YomboWarning("Cannot update a device if it's ID dosn't exist.", 300, 'udpate_device', 'Devices')
+
+        # try:
+        #     # todo: refactor voicecommands. Need to be able to update/delete them later.
+        #     self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
+        # except:
+        #     pass
+
+        device_id = record["id"]
+        self._devicesByName[record['label']] = self._devicesByName.pop(record["label"])  # Update label searching
+
+        # check if device_type_id changes.
+        if record['device_type_id'] != self._devicesByUUID[device_id]['device_type_id']:
+            del self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']][device_id]
+
+        if record['device_type_id'] not in self._devicesByDeviceTypeByUUID:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']] = {}
+        if device_id not in self._devicesByDeviceTypeByUUID[record['device_type_id']]:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']][device_id] = self._devicesByUUID[device_id]
+
+        if record['device_type_machine_label'] not in self._devicesByDeviceTypeByName:
+            self._devicesByDeviceTypeByName[record['device_type_machine_label']] = record['device_type_id']
+
+        # if we've changes device types, and the old one has no records, lets remove those pointers and same memory.
+        if len(self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']]) == 0:
+            del self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']]
+            del self._devicesByDeviceTypeByName[record['device_type_machine_label']]
+
+        self._devicesByUUID[device_id].update(record, testDevice)  # update any remaining items.
+
+        global_invoke_all('devices_update', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
+
+    def delete_device(self, record, testDevice=False):
+        """
+        Delete a device. Not so fun, but life is goes on.
+
+        id, uri, label, notes, description, gateway_id, device_type_id, voice_cmd, voice_cmd_order,
+        Voice_cmd_src, pin_code, pin_timeout, created, updated, device_class
+
+        :param record: Row of items from the SQLite3 database.
+        :type record: dict
+        :returns: Pointer to new device. Only used during unittest
+        """
+        logger.debug("update_device: {record}", record=record)
+        if record['id'] not in self._devicesByUUID:
+            raise YomboWarning("Cannot update a device if it's ID dosn't exist.", 300, 'udpate_device', 'Devices')
+
+        # try:
+        #     # todo: refactor voicecommands. Need to be able to update/delete them later.
+        #     self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
+        # except:
+        #     pass
+
+        device_id = record["id"]
+        self._devicesByName[record['label']] = self._devicesByName.pop(record["label"])  # Update label searching
+
+        # check if device_type_id changes.
+        if record['device_type_id'] != self._devicesByUUID[device_id]['device_type_id']:
+            del self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']][device_id]
+
+        if record['device_type_id'] not in self._devicesByDeviceTypeByUUID:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']] = {}
+        if device_id not in self._devicesByDeviceTypeByUUID[record['device_type_id']]:
+            self._devicesByDeviceTypeByUUID[record['device_type_id']][device_id] = self._devicesByUUID[device_id]
+
+        if record['device_type_machine_label'] not in self._devicesByDeviceTypeByName:
+            self._devicesByDeviceTypeByName[record['device_type_machine_label']] = record['device_type_id']
+
+        # if we've changes device types, and the old one has no records, lets remove those pointers and same memory.
+        if len(self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']]) == 0:
+            del self._devicesByDeviceTypeByUUID[self._devicesByUUID[device_id]['device_type_id']]
+            del self._devicesByDeviceTypeByName[record['device_type_machine_label']]
+
+        self._devicesByUUID[device_id].update(record, testDevice)  # update any remaining items.
+
+        global_invoke_all('devices_delete', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
+
     @inlineCallbacks
     def __load_devices(self):
         """
@@ -311,6 +467,7 @@ class Devices(YomboLibrary):
         This also loads all the device routing. This helps messages and modules determine how to route
         commands between command modules and interface modules.
         """
+        print("__load_devices")
         devices = yield self._Libraries['LocalDB'].get_devices()
         yield self.__do_load_devices(devices)
 
@@ -383,54 +540,161 @@ class Devices(YomboLibrary):
 
         for device_id, device in self._devicesByUUID.iteritems():
             device.setup_routes()
-        self.loadDefer.callback(10)
+        self.start_deferred.callback(10)
+
+
+#     @inlineCallbacks
+#     def __load_devices(self):
+#         """
+#         Load the devices into memory. Set up various dictionaries to manage
+#         devices. This also setups all the voice commands for all the devices.
+#
+#         This also loads all the device routing. This helps messages and modules determine how to route
+#         commands between command modules and interface modules.
+#         """
+#         devices = yield self._Libraries['LocalDB'].get_devices()
+#         yield self.__do_load_devices(devices)
+#
+#
+#         # Load up lots of data about modules, and module devices. Makes it easy for modules to get data about what
+#         #devices and device types they manage.
+#
+#         device_types = []
+#
+#         records = yield self._LocalDBLibrary.get_module_routing()
+#         for mdt in records:
+#             logger.debug("load_module_data::processing MDT: {mdt}", mdt=mdt)
+#
+#             # Create list of DeviceType by UUID, so a module can find all it's deviceTypes
+#             if mdt.module_id not in self._moduleDeviceTypesByID:
+#                 self._moduleDeviceTypesByID[mdt.module_id] = []
+#             self._moduleDeviceTypesByID[mdt.module_id].append(mdt.device_type_id)
+#
+#             # Pointers to the above, used when searching.
+#             if mdt.module_machine_label not in self._moduleDeviceTypesByName:
+#                 self._moduleDeviceTypesByName[mdt.module_machine_label] = []
+# #            if mdt.device_type_id not in self._moduleDeviceTypesByName[mdt.module_machine_label]:
+#             self._moduleDeviceTypesByName[mdt.module_machine_label.lower()].append(mdt.device_type_id)
+#
+#             # How to route device types - It's here to detere what module to send to from existing modules
+#             if mdt.device_type_id not in self._moduleDeviceRoutingByID:
+#                 self._moduleDeviceRoutingByID[mdt.device_type_id] = {
+#                     'Command': None,
+#                     'Interface': None,
+#                     'Logic': None,
+#                     'Other': None,
+#                 }
+#             self._moduleDeviceRoutingByID[mdt.device_type_id][mdt.module_type] = {
+#                 'module_id' : mdt.module_id,
+#                 'module_label' : mdt.module_machine_label,
+#                 }
+#             # Pointers to the above, used when searching.
+#             if mdt.device_type_label not in self._moduleDeviceRoutingByName:
+#                 self._moduleDeviceRoutingByName[mdt.device_type_label.lower()] = FuzzySearch({}, .92)
+#             self._moduleDeviceRoutingByName[mdt.device_type_label.lower()][mdt.module_type] = {
+#                 'module_id' : mdt.module_id,
+#                 'module_label' : mdt.module_machine_label,
+#                 }
+#
+#         # Compile a list of devices for a particular module
+# #            logger.debug("devices = {devices}", devices=devices)
+#
+#             if mdt.device_type_id not in device_types:
+#                 devices = self.get_devices_by_device_type(mdt.device_type_id)
+#                 for device_id in devices:
+#                     logger.debug("Adding device_id({device_id} to self._moduleDevicesByID.", device_id=devices[device_id].device_id)
+#                     if mdt.module_id not in self._moduleDevicesByID:
+#                         self._moduleDevicesByID[mdt.module_id] = {}
+#         #                    if device['device_id'] not in self._moduleDevicesByID[mdt['moduleuuid']]:
+#         #                        self._moduleDevicesByID[mdt['moduleuuid']][device['label']] = {}
+#                     self._moduleDevicesByID[mdt.module_id][devices[device_id].device_id] = devices[device_id]
+#
+#                     if mdt.module_id not in self._moduleDevicesByName:
+#                         self._moduleDevicesByName[mdt.module_id] = FuzzySearch({}, .92)
+#         #                    if device['label'] not in self._moduleDevicesByName[mdt['moduleuuid']]:
+#         #                        self._moduleDevicesByName[mdt['moduleuuid']][device['label']] = {}
+#                     self._moduleDevicesByName[mdt.module_id][devices[device_id].label] = devices[device_id].device_id
+#
+# #        logger.debug("self._moduleDeviceTypesByID = {moduleDeviceTypesByUUID}", moduleDeviceTypesByUUID=self._moduleDeviceTypesByID)
+# #        logger.debug("self._moduleDeviceTypesByName = {moduleDeviceTypesByName}", moduleDeviceTypesByName=self._moduleDeviceTypesByName)
+# #        logger.debug("self._moduleDeviceRoutingByID = {moduleDeviceRoutingByID}", moduleDeviceRoutingByID=self._moduleDeviceRoutingByID)
+# #        logger.debug("self._moduleDeviceRoutingByName = {moduleDeviceRoutingByName}", moduleDeviceRoutingByName=self._moduleDeviceRoutingByName)
+#         logger.debug("self._moduleDevicesByID = {_moduleDevicesByID}", _moduleDevicesByID=self._moduleDevicesByID)
+#         logger.debug("self._moduleDevicesByName = {_moduleDevicesByName}", _moduleDevicesByName=self._moduleDevicesByName)
+#
+#         for device_id, device in self._devicesByUUID.iteritems():
+#             device.setup_routes()
+#         self.start_deferred.callback(10)
 
     def gotException(self, failure):
        print("Exception: %r" % failure)
        return 100  # squash exception, use 0 as value for next stage
 
-    @inlineCallbacks
-    def __do_load_devices(self, records):
+
+
+
+    def mqtt_incoming(self, topic, payload, qos, retain):
         """
-        Load the devices into memory. Set up various dictionaries to manage
-        devices. This also setups all the voice commands for all the devices.
+        Processes incoming MQTT requests. It understands:
+
+        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/get Value - Get some attribute
+          * Value = state, human, machine, extra
+        * yombo/devices/DEVICEID|DEVICEMACHINELABEL/cmd/CMDID|CMDMACHINELABEL Options - Send a command
+          * Options - Either a string for a single variable, or json for multiple variables
+
+        Examples: /yombo/devices/get/christmas_tree/cmd on
+
+        :param topic:
+        :param payload:
+        :param qos:
+        :param retain:
+        :return:
         """
-        logger.debug("Loading devices:::: {records}", records=records)
-        if len(records) > 0:
-            for record in records:
-                logger.debug("Loading device: {record}", record=record)
-                try:
-                    self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
-                except:
-                    pass
-                d = yield self._add_device(record)
+        #  0       1       2       3        4
+        # yombo/devices/DEVICEID/get|cmd/option
+        parts = topic.split('/', 10)
+        print("Yombo Devices got this: %s / %s" % (topic, parts))
 
 
-    def _add_device(self, record, testDevice=False):
-        """
-        Add a device based on data from a row in the SQL database.
+        try:
+            device = self.get_device(parts[2].replace("_", " "))
+        except YomboDeviceError, e:
+            logger.info("Received MQTT request for a device that doesn't exist")
+            return
 
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
-        :returns: Pointer to new device. Only used during unittest
-        """
-        device_id = record["id"]
-        self._devicesByUUID[device_id] = Device(record, self)
-        d = self._devicesByUUID[device_id]._init_()
-        self._devicesByName[record["label"]] = device_id
+#Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
 
-        logger.debug("_add_device: {record}", record=record)
-        if record['device_type_id'] not in self._devicesByDeviceTypeByUUID:
-            self._devicesByDeviceTypeByUUID[record['device_type_id']] = {}
-        if device_id not in self._devicesByDeviceTypeByUUID[record['device_type_id']]:
-            self._devicesByDeviceTypeByUUID[record['device_type_id']][device_id] = self._devicesByUUID[device_id]
-
-        if record['device_type_machine_label'] not in self._devicesByDeviceTypeByName:
-            self._devicesByDeviceTypeByName[record['device_type_machine_label']] = record['device_type_id']
-
-        return d
-#        if testDevice:
-#            returnValue(self._devicesByUUID[device_id])
+        if parts[3] == 'get':
+            status = device.get_status()
+            if payload == 'state':
+                self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
+            elif payload == 'human':
+                self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
+            elif payload == 'machine':
+                self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
+            elif payload == 'extra':
+                self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
+            elif payload == 'last':
+                self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
+            elif payload == 'source':
+                self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
+        elif parts[3] == 'cmd':
+            msg = device.get_message(self, cmd=parts[4])
+            msg.send()
+            if len(parts) > 5:
+                status = device.get_status()
+                if parts[5] == 'state':
+                    self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
+                elif parts[5] == 'human':
+                    self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
+                elif parts[5] == 'machine':
+                    self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
+                elif parts[5] == 'extra':
+                    self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
+                elif parts[5] == 'last':
+                    self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
+                elif parts[5] == 'source':
+                    self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
 
     def _save_status(self):
         """
@@ -687,7 +951,7 @@ class Devices(YomboLibrary):
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
                 return portion
             except Exception, e:
-                raise YomboWarning("Error while searching for device, could not be found: %s" % portion['device'],
+                raise YomboWarning("Error while searching for device, could not be found: %s" % portion['source']['device'],
                                    101, 'devices_validate_source_callback', 'lib.devices')
         else:
             raise YomboWarning("For platform 'devices' as a 'source', must have 'device' and can be either device ID or device label.  Source:%s" % portion,
@@ -827,8 +1091,8 @@ class Device:
 
         self.Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")
-        self.callBeforeChange = []
-        self.callAfterChange = []
+        self.call_before_change = []
+        self.call_after_change = []
         self.device_id = device["id"]
         self.device_type_id = device["device_type_id"]
         self.device_type_machine_label = device["device_type_machine_label"]
@@ -848,10 +1112,15 @@ class Device:
         self.devices_library = devices_library
         self.testDevice = testDevice
         self.available_commands = []
-        self.deviceVariables = {'asdf':'qwer'}
-        self._CommandsLibrary = self.devices_library._Libraries['commands']
+        self.device_variables = {'asdf':'qwer'}
         self.device_route = {}  # Destination module to send commands to
         self._helpers = {}  # Helper class provided by route module that can provide additional features.
+        self._CommandsLibrary = self.devices_library._Libraries['commands']
+
+        if device['status'] == 1:
+            self.enabled = True
+        else:
+            self.enabled = False
 
     def __str__(self):
         """

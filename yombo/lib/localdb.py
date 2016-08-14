@@ -270,6 +270,14 @@ class LocalDB(YomboLibrary):
         records = yield self.dbconfig.select("devices_view")
         returnValue(records)
 
+    @inlineCallbacks
+    def get_device_by_id(self, device_id, status=1):
+        records = yield Device.find(where=['id = ? and status = ?', device_id, status])
+        results = []
+        for record in records:
+            results.append(record.__dict__)  # we need a dictionary, not an object
+        returnValue(results)
+
     # not used, will convert from SQLDict to SQLite after heavy development is done.
     @inlineCallbacks
     def get_webinterface_session(self, id):

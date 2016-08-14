@@ -59,7 +59,7 @@ class Configuration(YomboLibrary):
 
     # Yombo constants. Used for versioning and misc tracking.
     yombo_vars = {
-        'version': '0.11.0',
+        'version': '0.12.0',
     }
     configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
     configs_details = {}  # Collected details from libs and modules about configurations
@@ -148,13 +148,13 @@ class Configuration(YomboLibrary):
             self.set("core", "externalipaddress", get_external_ip_address())
             self.set("core", "externalipaddresstime", int(time()))
 
-        if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
-            if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
-                self.set("core", "localipaddress", get_local_ip_address())
-                self.set("core", "localipaddresstime", int(time()))
-        else:
-            self.set("core", "localipaddress", get_local_ip_address())
-            self.set("core", "localipaddresstime", int(time()))
+        # if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
+        #     if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
+        #         self.set("core", "localipaddress", get_local_ip_address())
+        #         self.set("core", "localipaddresstime", int(time()))
+        # else:
+        #     self.set("core", "localipaddress", get_local_ip_address())
+        #     self.set("core", "localipaddresstime", int(time()))
 
 
         self.periodic_save_ini = LoopingCall(self.save)

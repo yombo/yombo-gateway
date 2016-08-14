@@ -56,12 +56,12 @@ HARD_LOAD["States"] = {'operation_mode':'all'}
 HARD_LOAD["Configuration"] = {'operation_mode':'all'}
 HARD_LOAD["Statistics"] = {'operation_mode':'all'}
 HARD_LOAD["Startup"] = {'operation_mode':'all'}
+HARD_LOAD["AMQP"] = {'operation_mode':'run'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
 HARD_LOAD["Automation"] = {'operation_mode':'all'}
 HARD_LOAD["CronTab"] = {'operation_mode':'all'}
-HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
-HARD_LOAD["ConfigurationUpdate"] = {'operation_mode':'run'}
+#HARD_LOAD["ConfigurationUpdate"] = {'operation_mode':'run'}
 HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_LOAD["Times"] = {'operation_mode':'all'}
 HARD_LOAD["Commands"] = {'operation_mode':'all'}
@@ -73,6 +73,7 @@ HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
+HARD_LOAD["AMQPYombo"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
@@ -95,6 +96,15 @@ class Loader(YomboLibrary, object):
     modules are unloaded, and then reloaded after configurations are done
     being downloaded.
     """
+    @property
+    def operation_mode(self):
+        return self._operation_mode
+
+    @operation_mode.setter
+    def operation_mode(self, val):
+        self.loadedLibraries['atoms']['loader.operation_mode'] = val
+        self._operation_mode = val
+
     def __getitem__(self, component_requested):
         """
         """
@@ -187,15 +197,6 @@ class Loader(YomboLibrary, object):
            },
        ]
 
-    @property
-    def operation_mode(self):
-        return self._operation_mode
-
-    @operation_mode.setter
-    def operation_mode(self, val):
-        self.loadedLibraries['atoms']['loader.operation_mode'] = val
-        self._operation_mode = val
-
     def check_component_status(self, name, function):
         if name in HARD_LOAD:
             if function in HARD_LOAD[name]:
@@ -238,6 +239,7 @@ class Loader(YomboLibrary, object):
 
             component = name.lower()
             library = self.loadedLibraries[component]
+            library._AMQP = self.loadedLibraries['amqp']
             library._Atoms = self.loadedLibraries['atoms']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']

@@ -463,12 +463,15 @@ class Statistics(YomboLibrary):
                     values_90 = []
 
                     for val in sorted_values:
-                        if val < percentile90:
+                        if val <= percentile90:
                             values_90.append(val)
                         else:
                             break
                     median_90 = percentile(values_90, 0.50)
 
+                    # print "sorted_values: %s" % sorted_values
+                    # print "valpercentile90es_90: %s" % percentile90
+                    # print "values_90: %s" % values_90
                     average_data = {
                         'count': len(sorted_values),
                         'median': median,

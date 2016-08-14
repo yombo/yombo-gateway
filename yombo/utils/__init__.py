@@ -125,7 +125,7 @@ def dict_has_key(dictionary, keys):
        from yombo.utils import dict_has_key
        a_dictionary = {'identity': {'location': {'state': 'California'}}}
        a_list = ['identity', 'location', 'state']
-       has_state = dict_has_value(a_dictionary, a_list)
+       has_state = dict_has_key(a_dictionary, a_list)
        #has_state is now: True
 
     :param dictionary: A dictionary to check
@@ -137,7 +137,7 @@ def dict_has_key(dictionary, keys):
         keys = [keys]
     try:
         for key in keys:
-             dictionary = dictionary[key]
+             tossaway = dictionary[key]
     except KeyError:
         return False
     except TypeError:

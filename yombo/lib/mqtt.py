@@ -55,9 +55,6 @@ except ImportError:
 from twisted.internet.ssl import ClientContextFactory
 from twisted.internet import protocol
 from twisted.internet import reactor
-from twisted.logger   import (
-    Logger, LogLevel, globalLogBeginner, textFileLogObserver,
-    FilteringLogObserver, LogLevelFilterPredicate)
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -172,7 +169,7 @@ class MQTT(YomboLibrary):
         Just connect with a local client. Can later be used to send messages as needed.
         :return:
         """
-        self.mqtt_local_client = self.new()
+        self.mqtt_local_client = self.new()  # System connection to send messages.
 
 
     def _stop_(self):
@@ -216,8 +213,8 @@ class MQTT(YomboLibrary):
 
     def web_interface_routes(self, webapp):
         """
-        Since this is normally done within a module and not a library, the template files would be located inside
-        the module. Web page templates would be something like: /modules/mymodule/html_templates/function1.html
+        Adds routes to the webinterface module. Normally, a module will store any template files within the module,
+        but for this example, we will store the templates within the webinterface module.
 
         :param webapp: A pointer to the webapp, it's used to setup routes.
         :return:
@@ -256,7 +253,7 @@ class MQTT(YomboLibrary):
                     returnValue(json.dumps(results))
 
 
-    def new(self, server_hostname=None, server_port=None, user=None, password=None, ssl=False,
+    def new(self, server_hostname=None, server_port=None, username=None, password=None, ssl=False,
             mqtt_incoming_callback=None, mqtt_connected_callback=None, will_topic=None, will_message=None, will_qos=0,
             will_retain=None, clean_start=True, version=v311, keepalive=0, client_id=None):
         """
@@ -288,13 +285,21 @@ class MQTT(YomboLibrary):
         if server_port is None:
             server_port = self.server_listen_port_nonsecure
 
-        if user is None:
-            user = 'yombo'
+        if username is None:
+            username = 'yombo'
 
         if password is None:
             password = self.yombo_mqtt_password
 
-        self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, user, password, ssl,
+        if mqtt_incoming_callback is not None:
+            if callable(mqtt_incoming_callback) is False:
+                raise YomboWarning("If mqtt_incoming_callback is set, it must be be callable.", 200, 'new', 'Devices')
+
+        if mqtt_connected_callback is not None:
+            if callable(mqtt_connected_callback) is False:
+                raise YomboWarning("If mqtt_connected_callback is set, it must be be callable.", 201, 'new', 'Devices')
+
+        self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, username, password, ssl,
             mqtt_incoming_callback, mqtt_connected_callback, will_topic, will_message, will_qos, will_retain, clean_start,
             version, keepalive)
         return self.client_connections[client_id]
