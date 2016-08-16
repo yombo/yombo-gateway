@@ -22,7 +22,7 @@ The command (singular) class represents one command.
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFuzzySearchError, YomboCommandError
+from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
@@ -36,7 +36,7 @@ class Commands(YomboLibrary):
     All modules already have a predefined reference to this library as
     `self._Commands`. All documentation will reference this use case.
     """
-    def __getitem__(self, commandRequested):
+    def __getitem__(self, command_requested):
         """
         Return a command, searching first by command UUID and then by command
         function (on, off, bright, dim, open, close, etc).  Modules should use
@@ -48,17 +48,17 @@ class Commands(YomboLibrary):
 
         See: :func:`yombo.core.helpers.getCommands` for full usage example.
 
-        :param commandRequested: The command UUID or command label to search for.
-        :type commandRequested: string
+        :param command_requested: The command UUID or command label to search for.
+        :type command_requested: string
         """
-        return self.get_command(commandRequested)
+        return self.get_command(command_requested)
 
     def __len__(self):
         return len(self.__yombocommands)
 
-    def __contains__(self, commandRequested):
+    def __contains__(self, command_requested):
         try:
-            self.get_command(commandRequested)
+            self.get_command(command_requested)
             return True
         except:
             return False
@@ -92,18 +92,6 @@ class Commands(YomboLibrary):
         self.loadDefer = Deferred()
         return self.loadDefer
 
-    def _stop_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
-
-    def _unload_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
-
     def _clear_(self):
         """
         Clear all devices. Should only be called by the loader module
@@ -126,7 +114,7 @@ class Commands(YomboLibrary):
         """
         return self.__yombocommandsByVoice
 
-    def get_command(self, commandRequested):
+    def get_command(self, command_requested):
         """
         Performs the actual command search.
 
@@ -135,19 +123,19 @@ class Commands(YomboLibrary):
            Modules shouldn't use this function. Use the built in reference to
            find commands: `self._Commands['8w3h4sa']`
 
-        :raises YomboCommandError: Raised when device cannot be found.
-        :param commandRequested: The device UUID or device label to search for.
-        :type commandRequested: string
-        :return: Pointer to array of all devices.
+        :raises YomboWarning: Raised when command cannot be found.
+        :param command_requested: The command ID or command label to search for.
+        :type command_requested: string
+        :return: Pointer to array of all command.
         :rtype: dict
         """
-        if commandRequested in self.__yombocommands:
-            return self.__yombocommands[commandRequested]
+        if command_requested in self.__yombocommands:
+            return self.__yombocommands[command_requested]
         else:
             try:
-                return self.__yombocommandsByName[commandRequested]
+                return self.__yombocommandsByName[command_requested]
             except YomboFuzzySearchError, e:
-                raise YomboCommandError('Searched for %s, but no good matches found.' % e.searchFor)
+                raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
 
     @inlineCallbacks
     def __loadCommands(self):

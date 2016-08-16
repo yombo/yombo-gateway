@@ -27,6 +27,8 @@ import base64
 import zlib
 import cPickle
 from sqlite3 import Binary as sqlite3Binary
+import sys
+import inspect
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -40,6 +42,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.core.exceptions import YomboWarning
 
 logger = get_logger('lib.sqlitedb')
 
@@ -90,8 +93,8 @@ class Logs(DBObject):
     TABLENAME='logs'
 
 
-class ModuleDeviceTypes(DBObject):
-    TABLENAME='moduleDeviceTypes'
+class DeviceTypeModules(DBObject):
+    TABLENAME='device_type_modules'
 
 
 class Modules(DBObject):
@@ -138,6 +141,16 @@ class ModuleRoutingView(DBObject):
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
 Registry.register(Device, DeviceStatus, Variable, DeviceType, Command)
 Registry.register(Modules, ModuleInstalled)
+
+
+TEMP_MODULE_CLASSES = inspect.getmembers(sys.modules[__name__])
+MODULE_CLASSES = {}
+for item in TEMP_MODULE_CLASSES:
+    if isinstance(item, tuple) and len(item) == 2 :
+        if inspect.isclass(item[1]):
+            if issubclass(item[1], DBObject):
+                MODULE_CLASSES[item[0]] = item[1]
+del TEMP_MODULE_CLASSES
 
 class LocalDB(YomboLibrary):
     """
@@ -219,6 +232,9 @@ class LocalDB(YomboLibrary):
         results = yield Variable.find(where=['variable_type = ? AND foreign_id = ?', 'device', device.id])
 #          results = yield DeviceType.find(where=['id = ?', device.device_variables.get()
 
+#########################
+###    Commands     #####
+#########################
     @inlineCallbacks
     def get_commands(self):
         """
@@ -228,11 +244,15 @@ class LocalDB(YomboLibrary):
         records = yield Command.all()
         returnValue(records)
 
-    @inlineCallbacks
-    def get_commands_for_device_type(self, device_type_id):
-        records = yield CommandDeviceTypes.find(where=['device_type_id = ?', device_type_id])
-        returnValue(records)
+    # @inlineCallbacks
+    # def get_commands_for_device_type(self, device_type_id):
+    #     records = yield CommandDeviceTypes.find(where=['device_type_id = ?', device_type_id])
+    #     returnValue(records)
 
+
+#########################
+###    Devices      #####
+#########################
     @inlineCallbacks
     def get_device_status(self, **kwargs):
         id = kwargs['id']
@@ -267,8 +287,27 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def get_devices(self):
-        records = yield self.dbconfig.select("devices_view")
+#        records = yield self.dbconfig.select("devices_view")
+        records = yield self.dbconfig.select("devices")
         returnValue(records)
+
+    @inlineCallbacks
+    def get_device_types(self):
+#        records = yield self.dbconfig.select("devices_view")
+        records = yield self.dbconfig.select("device_types")
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_dbitem_by_id(self, dbitem, id, status=1):
+        if dbitem not in MODULE_CLASSES:
+            raise YomboWarning("get_dbitem_by_id expects dbitem to be a DBObject")
+#        print MODULE_CLASSES
+        print "get_dbitem_by_id.  class: %s, id: %s" % (dbitem, id)
+        records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
+        results = []
+        for record in records:
+            results.append(record.__dict__)  # we need a dictionary, not an object
+        returnValue(results)
 
     @inlineCallbacks
     def get_device_by_id(self, device_id, status=1):

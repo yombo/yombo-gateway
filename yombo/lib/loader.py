@@ -65,6 +65,7 @@ HARD_LOAD["CronTab"] = {'operation_mode':'all'}
 HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_LOAD["Times"] = {'operation_mode':'all'}
 HARD_LOAD["Commands"] = {'operation_mode':'all'}
+HARD_LOAD["DeviceTypes"] = {'operation_mode':'all'}
 HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
@@ -244,6 +245,7 @@ class Loader(YomboLibrary, object):
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._DevicesLibrary = self.loadedLibraries['devices']
+            library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Libraries = self.loadedLibraries
             library._Modules = self._moduleLibrary
             library._Localize = self.loadedLibraries['localize']

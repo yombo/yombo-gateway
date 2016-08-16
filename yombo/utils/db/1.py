@@ -32,10 +32,11 @@ def upgrade(Registry, **kwargs):
      `public`        INTEGER NOT NULL,
      `status`        INTEGER NOT NULL,
      `created`       INTEGER NOT NULL,
-     `updated_srv`   INTEGER NOT NULL,
+     `updated_srv`   INTEGER NOT NULL DEFAULT 0,
      `updated`       INTEGER NOT NULL,
      PRIMARY KEY(id) );"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('commands', 'id'))
     yield Registry.DBPOOL.runQuery(create_index('commands', 'machine_label'))
     yield Registry.DBPOOL.runQuery(create_index('commands', 'voice_cmd'))
 
@@ -78,7 +79,7 @@ def upgrade(Registry, **kwargs):
      `pin_required`    INTEGER NOT NULL,
      `pin_timeout`     INTEGER DEFAULT 0,
      `created`         INTEGER NOT NULL,
-     `updated_srv`     INTEGER NOT NULL,
+     `updated_srv`     INTEGER NOT NULL DEFAULT 0,
      `updated`         INTEGER NOT NULL,
      `status`          INTEGER NOT NULL,
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
@@ -113,10 +114,11 @@ def upgrade(Registry, **kwargs):
      `device_class`  TEXT,
      `description`   TEXT,
      `live_update`   TEXT,
+     `commands`      TEXT,
      `public`        INTEGER,
      `status`        INTEGER,
      `created`       INTEGER,
-     `updated_srv`   INTEGER NOT NULL,
+     `updated_srv`   INTEGER NOT NULL DEFAULT 0,
      `updated`       INTEGER,
       UNIQUE (label) ON CONFLICT IGNORE,
       UNIQUE (machine_label) ON CONFLICT IGNORE,
@@ -126,18 +128,6 @@ def upgrade(Registry, **kwargs):
 #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_label_idx ON device_types (label) ON CONFLICT IGNORE")
 #    yield Registry.DBPOOL.runQuery(create_index('device_types', 'machine_label', unique=True))
 #    yield Registry.DBPOOL.runQuery(create_index('device_types', 'label', unique=True))
-
-    # Maps devices to a module using deviceTypes.
-    table = """CREATE TABLE `device_type_modules` (
-     `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `device_type_id` TEXT NOT NULL, /* device_type_id */
-     `module_id`      TEXT NOT NULL,
-     `priority`       INTEGER NOT NULL DEFAULT 0,
-     UNIQUE (device_type_id, module_id) ON CONFLICT IGNORE);"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_type_modules', 'module_id'))
-#    yield Registry.DBPOOL.runQuery("CREATE  INDEX IF NOT EXISTS device_type_modules_id_module_id_idx ON device_type_modules (device_type_id, module_id)")
-    # TODO: Why doesn't unique work on the index????
 
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
@@ -166,15 +156,17 @@ def upgrade(Registry, **kwargs):
      `module_type`    TEXT NOT NULL,
      `label`          TEXT NOT NULL,
      `description`    TEXT,
-     `instal_notes`   TEXT,
+     `install_notes`  TEXT,
      `doc_link`       TEXT,
      `install_branch` TEXT NOT NULL,
      `prod_version`   TEXT NOT NULL,
      `dev_version`    TEXT,
+     `device_types`   TEXT,
      `public`         INTEGER NOT NULL,
-     `status`         INTEGER NOT NULL,
+     `status`         INTEGER NOT NULL, # disabled, enabled, deleted
+#     `purpose`        TEXT,             # gateway, manage, both
      `created`        INTEGER NOT NULL,
-     `updated_srv`    INTEGER NOT NULL,
+     `updated_srv`    INTEGER NOT NULL DEFAULT 0,
      `updated`        INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
@@ -239,7 +231,7 @@ def upgrade(Registry, **kwargs):
      `id`       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
      `username` TEXT NOT NULL,
      `hash`     TEXT NOT NULL,
-     `updated_srv`   INTEGER NOT NULL,
+     `updated_srv`   INTEGER NOT NULL DEFAULT 0,
      `updated`       INTEGER NOT NULL,
      `created`       INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
@@ -269,7 +261,7 @@ def upgrade(Registry, **kwargs):
      `machine_label` TEXT NOT NULL,
      `label`         TEXT NOT NULL,
      `value`         TEXT NOT NULL,
-     `updated_srv`   INTEGER NOT NULL,
+     `updated_srv`   INTEGER NOT NULL DEFAULT 0,
      `updated`       INTEGER NOT NULL,
      `created`       INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
@@ -279,16 +271,6 @@ def upgrade(Registry, **kwargs):
     view = """CREATE VIEW devices_view AS
     SELECT devices.*, device_types.machine_label AS device_type_machine_label, device_types.device_class as device_class
     FROM devices JOIN device_types ON devices.device_type_id = device_types.id"""
-    yield Registry.DBPOOL.runQuery(view)
-
-    view = """CREATE VIEW module_routing_view AS
-    SELECT dtm.device_type_id, MAX(priority) AS priority, dt.machine_label AS device_type_label,
-    dtm.module_id, modules.machine_label as module_machine_label, modules.module_type
-    FROM device_type_modules AS dtm
-    JOIN device_types AS dt ON dtm.device_type_id = dt.id
-    JOIN modules ON dtm.module_id = modules.id
-    WHERE modules.module_type IN (SELECT distinct(modules.module_type) FROM device_type_modules)
-    GROUP BY dtm.device_type_id, modules.module_type"""
     yield Registry.DBPOOL.runQuery(view)
 
 def downgrade(Registry, **kwargs):

@@ -45,6 +45,7 @@ class Modules(YomboLibrary):
 
     _rawModulesList = {}
 
+    _moduleClasses = {}
     _modulesByUUID = {}
     _modulesByName = FuzzySearch({}, .92)
 
@@ -57,7 +58,6 @@ class Modules(YomboLibrary):
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
         self.loader = loader
-        self._DevicesLibrary = self._Libraries['devices']
         self._LocalDBLibrary = self._Libraries['localdb']
 
     def _load_(self):
@@ -175,8 +175,8 @@ class Modules(YomboLibrary):
 
         keys = self._modulesByUUID.keys()
         self.loader.library_invoke_all("_module_unload_")
-        for moduleUUID in keys:
-            module = self._modulesByUUID[moduleUUID]
+        for ModuleID in keys:
+            module = self._modulesByUUID[ModuleID]
             try:
                 self.module_invoke(module._Name, "_unload_")
             except YomboWarning:
@@ -184,7 +184,7 @@ class Modules(YomboLibrary):
             finally:
                 yield self.loader.library_invoke_all("_module_unloaded_")
                 delete_component = module._FullName
-                self.del_module(moduleUUID, module._Name.lower())
+                self.del_module(ModuleID, module._Name.lower())
                 del self.loader.loadedComponents[delete_component.lower()]
 
     @inlineCallbacks
@@ -196,35 +196,55 @@ class Modules(YomboLibrary):
             ini.readfp(fp)
             for section in ini.sections():
                 options = ini.options(section)
-                mLabel = section
-                mType = ''
-                if 'label' in options:
-                    mLabel = ini.get(section, 'label')
-                    options.remove('label')
+                if 'mod_label' in options:
+                    mod_label = ini.get(section, 'mod_label')
+                    options.remove('mod_label')
                 else:
-                    mLabel = section
+                    mod_label = section
 
-                if 'type' in options:
-                    mType = ini.get(section, 'type')
-                    options.remove('type')
+                if 'mod_description' in options:
+                    mod_description = ini.get(section, 'mod_description')
+                    options.remove('mod_description')
                 else:
-                    mType = 'other'
+                    mod_description = section
+
+                if 'mod_device_types' in options:
+                    mod_device_types = ini.get(section, 'mod_device_types')
+                    options.remove('mod_device_types')
+                else:
+                    mod_device_types = ''
+
+                if 'mod_module_type' in options:
+                    mod_module_type = ini.get(section, 'mod_module_type')
+                    options.remove('mod_module_type')
+                else:
+                    mod_module_type = ""
 
                 newUUID = yombo.utils.random_string()
                 self._rawModulesList[newUUID] = {
-                  'localsection': section,
-                  'machine_label': mLabel,
-                  'enabled': "1",
-                  'module_type': mType,
                   'id': newUUID, # module_id
-                  'install_branch': '__local__',
+                  'module_type': mod_module_type,
+                  'machine_label': mod_label,
+                  'description': mod_description,
+                  'install_notes': '',
+                  'install_branch': '',
+                  'doc_link': '',
+                  'uri': '',
+                  'prod_version': '',
+                  'dev_version': '',
+                  'public': '0',
+                  'device_types': mod_device_types,
+                  'status': '1',
+                  'created': int(time()),
+                  'updated': int(time()),
                 }
 
-                self._localModuleVars[mLabel] = {}
+
+                self._localModuleVars[mod_label] = {}
                 for item in options:
                     logger.debug("Adding module from localmodule.ini: {item}", item=item)
-                    if item not in self._localModuleVars[mLabel]:
-                        self._localModuleVars[mLabel][item] = []
+                    if item not in self._localModuleVars[mod_label]:
+                        self._localModuleVars[mod_label][item] = []
                     values = ini.get(section, item)
                     values = values.split(",")
                     for value in values:
@@ -239,7 +259,7 @@ class Modules(YomboLibrary):
                             'created': int(time()),
                             'updated': int(time()),
                         }
-                        self._localModuleVars[mLabel][variable['machine_label']].append(variable)
+                        self._localModuleVars[mod_label][variable['machine_label']].append(variable)
 
 #            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
             fp.close()
@@ -251,12 +271,12 @@ class Modules(YomboLibrary):
 #        print "modulesdb: %s" % modulesDB
         for module in modulesDB:
             self._rawModulesList[module.id] = module.__dict__
-
 #        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
     def import_modules(self):
         for module_id, module in self._rawModulesList.iteritems():
 #            print "module : %s" % module
+            self._moduleClasses[module_id] = Module(module)
             pathName = "yombo.modules.%s" % module['machine_label']
             self.loader.import_component(pathName, module['machine_label'], 'module', module['id'])
 
@@ -272,7 +292,7 @@ class Modules(YomboLibrary):
             if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
 #                logger.warn("self.get_module_devices(module['{module_id}'])", module_id=module.dump())
                 module._ModuleType = self._rawModulesList[module_id]['module_type']
-                module._ModuleUUID = module_id
+                module._ModuleID = module_id
 
                 module._Atoms = self.loader.loadedLibraries['atoms']
                 module._Commands = self.loader.loadedLibraries['commands']
@@ -286,14 +306,12 @@ class Modules(YomboLibrary):
                 module._Localize = self.loader.loadedLibraries['localize']
 
                 module._DevicesLibrary = self.loader.loadedLibraries['devices']  # Basically, all devices
-                module._Devices = self._DevicesLibrary.get_devices_for_module(module_id)
-                module._DevicesByType = getattr(self._DevicesLibrary, "get_devices_by_device_type")
-                module._DeviceTypes = self._DevicesLibrary.get_devices_type_for_module(module_id)
+                module._DevicesTypes = self.loader.loadedLibraries['devicetypes']  # Basically, all devices
 
                 # Get variables, and merge with any local variable settings
                 module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
                 module._ModuleVariables = module_variables
-
+                module._Class = self._moduleClasses[module_id]
 
                 if module._Name in self._localModuleVars:
                     module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
@@ -382,7 +400,7 @@ class Modules(YomboLibrary):
         """
         logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
         results = {}
-        for moduleUUID, module in self._modulesByUUID.iteritems():
+        for ModuleID, module in self._modulesByUUID.iteritems():
             label = module._FullName.lower() if fullName else module._Name.lower()
             try:
                  result = self.module_invoke(module._Name, hook, **kwargs)
@@ -414,10 +432,10 @@ class Modules(YomboLibrary):
         module to find another other:
 
             >>> someModule = self._Modules['137ab129da9318']  #by uuid
-        or:
-            >>> someModule = self._Modules['Homevision']  #by name
 
-        See: :func:`yombo.core.helpers.getModule` for usage example.
+        or:
+
+            >>> someModule = self._Modules['Homevision']  #by name
 
         :raises KeyError: Raised when module cannot be found.
         :param requestedItem: The module UUID or module name to search for.
@@ -452,3 +470,73 @@ class Modules(YomboLibrary):
         """
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
+
+    def module_device_types(self, module_id):
+        if module_id in self._moduleClasses:
+            return self._moduleClasses.device_types
+
+class Module:
+    """
+    A class to manage a single module.
+    """
+    def __init__(self, module):
+        """
+        This module class can make updates to the database as needed. Any changes to this class and it will
+        automatically update any required components.
+        """
+        logger.warn("module info: {module}", module=module)
+
+        self.module_id = module['id']
+        self.module_type = module['module_type']
+        self.label = module['machine_label']
+        self.description = module['description']
+        self.install_notes = module['install_notes']
+        self.doc_link = module['doc_link']
+        self.uri = module['uri']
+        self.install_branch = module['install_branch']
+        self.prod_version = module['prod_version']
+        self.dev_version = module['dev_version']
+        self.device_types = module['device_types']
+        self.public = module['public']
+        self.status = module['status']
+        self.created = module['created']
+        self.updated = module['updated']
+
+    def __str__(self):
+        """
+        Print a string when printing the class.  This will return the cmdUUID so that
+        the command can be identified and referenced easily.
+        """
+        return self.module_id
+
+    def update_registered_device(self, device):
+        self.registered_devices[device.device_id] = device
+
+    def add_registered_device(self, device):
+        self.registered_devices[device.device_id] = device
+
+    def del_registered_device(self, device):
+        if device.device_id in self.registered_devices[device.device_id]:
+            del self.registered_devices[device.device_id]
+
+    def dump(self):
+        """
+        Export command variables as a dictionary.
+        """
+        return {
+            'module_id'     : str(self.module_id),
+            'uri'           : str(self.uri),
+            'label'         : str(self.label),
+            'description'   : str(self.description),
+            'device_class'  : str(self.device_class),
+            'install_notes' : int(self.install_note),
+            'doc_link'      : int(self.doc_link),
+            'install_branch': int(self.install_branch),
+            'prod_version'  : int(self.prod_version),
+            'dev_version'   : int(self.dev_version),
+            'device_types'  : int(self.device_types),
+            'public'        : int(self.public),
+            'status'        : int(self.status),
+            'created'       : int(self.created),
+            'updated'       : int(self.updated),
+        }

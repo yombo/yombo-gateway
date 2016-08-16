@@ -128,7 +128,7 @@ class YomboModule:
     :ivar _Libraries: (dict) A dictionary of all modules. Returns pointers.
     :ivar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
     :ivar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
-    :ivar _ModuleUUID: (string) The UUID of the module.
+    :ivar _ModuleID: (string) The UUID of the module.
     :ivar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
       and set as per the user.
     :ivar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
@@ -144,7 +144,7 @@ class YomboModule:
         self._ModAuthor = "NA"
         self._ModUrl = "NA"
         self._ModuleType = None
-        self._ModuleUUID = None
+        self._ModuleID = None
 
         self._Devices = None
         self._DeviceTypes = None
@@ -154,6 +154,12 @@ class YomboModule:
         self._ModuleVariables = None
         self._ModulesLibrary = None
 
+    def _GetDeviceTypes(self):
+        return self.modules.module_device_types(self._ModuleID)
+
+    def _GetDevices(self):
+        return self._DevicesTypes.module_devices(self._ModuleID)
+
     def __str__(self):
         """
         Returns a string of this module's UUID.
@@ -161,7 +167,7 @@ class YomboModule:
         :return: A dictionary of core attributes.
         :rtype: dict
         """
-        return self._ModuleUUID
+        return self._ModuleID
 
     def _init_(self):
         """
@@ -221,7 +227,7 @@ class YomboModule:
             '_ModDescription': self._ModDescription,
             '_ModAuthor': self._ModAuthor,
             '_ModuleType': self._ModuleType,
-            '_ModuleUUID': self._ModuleUUID,
+            '_ModuleID': self._ModuleID,
             '_ModUrl': self._ModUrl,
             '_Devices': self._Devices,
             '_DevicesByType': self._DevicesByType,
