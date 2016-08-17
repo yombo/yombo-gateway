@@ -252,36 +252,6 @@ class YomboLibraryCritical(YomboCritical):
         YomboCritical.__init__(self, message, errorno, "library", module_obj._Name)
 
 
-class YomboMessageError(Exception):
-    """
-    Extends *Exception* - A non-fatal message exception used to catch message errors.
-
-    :cvar message: (message) The message object.
-    :cvar name: (string) Name of the library, component, or module rasing the exception.
-    """
-    def __init__(self, message, name="unknown"):
-        """
-        :param message: The error message to log/display.
-        :type message: string
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        """
-
-        Exception.__init__(self)
-        self.message = message
-        self.name = name
-
-    def __str__(self):
-        """
-        Formats the exception for logging to text.
-
-        :return: A formated string of the error message.
-        :rtype: string
-        """
-        output = "Message API Error: '%s' Raised from: '%s'." % (self.message, self.name)
-        return repr(output)
-
-
 class YomboFileError(YomboWarning):
     """
     Extends :class:`YomboWarning` - A missing configuration or improperly configured option.

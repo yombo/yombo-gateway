@@ -46,9 +46,10 @@ def upgrade(Registry, **kwargs):
      `device_type_id` TEXT NOT NULL,
      `command_id`     TEXT NOT NULL,
      UNIQUE (device_type_id, command_id) ON CONFLICT IGNORE);"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
-    yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'device_type_id'))
+    # yield Registry.DBPOOL.runQuery(table)
+    # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
+    # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'device_type_id'))
+
 #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
     # Defines the config table for the local gateway.
@@ -163,10 +164,9 @@ def upgrade(Registry, **kwargs):
      `dev_version`    TEXT,
      `device_types`   TEXT,
      `public`         INTEGER NOT NULL,
-     `status`         INTEGER NOT NULL, # disabled, enabled, deleted
-#     `purpose`        TEXT,             # gateway, manage, both
+     `status`         INTEGER NOT NULL, /* disabled, enabled, deleted */
      `created`        INTEGER NOT NULL,
-     `updated_srv`    INTEGER NOT NULL DEFAULT 0,
+     `updated_srv`    DEFAULT 0,
      `updated`        INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
@@ -252,10 +252,10 @@ def upgrade(Registry, **kwargs):
 
     # Stores variables for modules and devices. Variables are set by the server, and read here. Not a two-way sync (yet?).
     table = """CREATE TABLE `variables` (
-     `id`            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `id`      TEXT NOT NULL, /* moduleUUID */
      `variable_type` TEXT NOT NULL,
+     `field_id`    TEXT NOT NULL,
      `foreign_id`    TEXT NOT NULL,
-     `variable_id`   TEXT NOT NULL,
      `weight`        INTEGER DEFAULT 0,
      `data_weight`   INTEGER DEFAULT 0,
      `machine_label` TEXT NOT NULL,
@@ -263,7 +263,8 @@ def upgrade(Registry, **kwargs):
      `value`         TEXT NOT NULL,
      `updated_srv`   INTEGER NOT NULL DEFAULT 0,
      `updated`       INTEGER NOT NULL,
-     `created`       INTEGER NOT NULL );"""
+     `created` INTEGER NOT NULL,
+     PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE  INDEX IF NOT EXISTS variables_foreign_id_variable_type_idx ON variables (variable_type, foreign_id)")
 

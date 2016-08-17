@@ -148,7 +148,7 @@ class AMQPYombo(YomboLibrary):
             },
 
             'gateway_modules' : {
-                'dbclass': "DeviceType",
+                'dbclass': "Modules",
                 'table': "modules",
                 'library': "modules",
                 'functions': {
@@ -176,25 +176,27 @@ class AMQPYombo(YomboLibrary):
             },
 
             'gateway_configs' : {}, # Processed with it's own catch.
-            'variables' : {
+
+            'variables': {
+                'dbclass': "Variable",
                 'table': "variables",
                 'library': "configuration",
                 'functions': {
-                    'enabled': "enable_command",
-                    'disabled': "enable_command",
-                    'deleted': "enable_command",
                 },
                 'map': {
-                    'VariableType' : 'variable_type',
-                    'ForeignUUID' : 'foreign_id',
-                    'VariableUUID' : 'variable_id',
-                    'Weight' : 'weight',
-                    'DataWeight' : 'data_weight',
-                    'MachineLabel' : 'machine_label',
-                    'Label' : 'label',
-                    'Value' : 'value',
-                    'Updated' : 'updated',
-                    'Created' : 'created',
+                    'VariableUUID': 'id',
+                    'VariableType': 'variable_type',
+                    'ForeignUUID': 'foreign_id',
+                    'FieldUUID': 'field_id',
+                    'VariableUUID': 'id',
+                    'Weight': 'weight',
+                    'DataWeight': 'data_weight',
+                    'MachineLabel': 'machine_label',
+                    'Label': 'label',
+                    'Value': 'value',
+                    'Updated': 'updated',
+                    'UpdatedSrv': 'updated_srv',
+                    'Created': 'created',
                 }
             },
 
@@ -205,8 +207,7 @@ class AMQPYombo(YomboLibrary):
 #            "GatewayUsers",
         }
 
-    def _init_(self, loader):
-        self.loader = loader
+    def _init_(self):
         self.gwuuid = "gw_" + self._Configs.get("core", "gwuuid")
         self._startup_request_ID = random_string(length=12) #gw
         self.init_defer = defer.Deferred()
@@ -460,8 +461,8 @@ class AMQPYombo(YomboLibrary):
                 if properties.headers['response_type'] == 'config':
                     # print "333"
                     if properties.headers['config_item'] in self.config_items:
+#                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
                         self.process_config(msg, properties.headers['config_item'])
-
                         self._remove_full_download_dueue("get_" + properties.headers['config_item'])
 
         except Exception, e:
@@ -476,7 +477,6 @@ class AMQPYombo(YomboLibrary):
 #        print "valid to here: %s" % msg
 
     def process_config(self, msg, config_item):
-        logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
 
         if config_item == "gateway_configs":
             payload = msg['data']
@@ -485,12 +485,9 @@ class AMQPYombo(YomboLibrary):
                    self._Configs.set(section['Section'], key['Key'], key['Value'])
 
         elif config_item in self.config_items:
-            logger.info("amqpyombo::process_config - Doing config for: {config_item}", config_item=config_item)
-            configs_db = self.config_items[config_item]
-
             # print "44"
             config_data = self.config_items[config_item]
-            library = self.loader.loadedLibraries[config_data['library']]
+            library = self._Loader.loadedLibraries[config_data['library']]
             if 'process' in config_data['functions']:
                 klass = getattr(library, config_data['functions']['process'])
             else:
@@ -502,8 +499,10 @@ class AMQPYombo(YomboLibrary):
                 data = self.field_remap(msg['data'], config_data)
                 if 'updated' in data:
                     data['updated_srv'] = data['updated']
+#                logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
+#                logger.info("amqpyombo::process_config - data: {data}", data=data)
                 klass(data, config_item, config_data, True)
-                self.loader.loadedLibraries['devices'].add_update_delete(new_data)
+                self._Loader.loadedLibraries['devices'].add_update_delete(new_data)
                 self.process_config(data, config_item, True)
             else:
                 print "555 b"
@@ -512,21 +511,25 @@ class AMQPYombo(YomboLibrary):
                     data = self.field_remap(data, config_data)
                     if 'updated' in data:
                         data['updated_srv'] = data['updated']
+#                    logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
+#                    logger.info("amqpyombo::process_config - data: {data}", data=data)
                     klass(data, config_item, True)
         else:
             logger.warn("ConfigurationUpdate::process_config - '{config_item}' is not a valid configuration item. Skipping.", config_item=config_item)
             return
 
-    def field_remap(self, data, config_item):
+    def field_remap(self, data, config_data):
         new_data = {}
         for key, value in data.iteritems(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
-            if key in config_item['map']:
+            if key in config_data['map']:
                 # Convert ints and floats.
-                if self._LocalDBLibrary.db_model[config_item['table']][config_item['map'][key]]['type'] == "INTEGER":
+                if self._LocalDBLibrary.db_model[config_data['table']][config_data['map'][key]]['type'] == "INTEGER":
                     value=int(value)
-                elif self._LocalDBLibrary.db_model[config_item['table']][config_item['map'][key]]['type'] == "REAL":
+                elif self._LocalDBLibrary.db_model[config_data['table']][config_data['map'][key]]['type'] == "REAL":
                     value=float(value)
-                new_data[config_item['map'][key]] = value
+                new_data[config_data['map'][key]] = value
+            else:
+                new_data[key] = value
         return new_data
 
     # still in progress function. Need to clean up DB calls.
@@ -540,6 +543,7 @@ class AMQPYombo(YomboLibrary):
 
         for col, col_data in self._LocalDBLibrary.db_model[config_data['table']].iteritems():
             allowed_db_keys.append(col)
+            print "coldata: %s" % col_data
             if col_data['notnull'] == 1:
                 required_db_keys.append(col)
 
@@ -558,26 +562,73 @@ class AMQPYombo(YomboLibrary):
             for temp_data in temp:
                 local_data.append(temp_data['UUID'])
             db_data['commands'] = ','.join(local_data)
+        elif config_item == 'gateway_modules':
+            if 'ModuleConfigs' in data:
+                print "ModuleConfigs, data: %s" % data
+                for tempGroup in data['ModuleConfigs']:
+                    for tempField in tempGroup['Fields']:
+                        field = {
+                            'VariableUUID': tempGroup['VariableUUID'],
+                            'VariableType': 'module',
+                            'FieldUUID': tempField['FieldUUID'],
+                            'ForeignUUID': data['id'],  # record = module
+                            'Weight': tempGroup['Weight'],
+                            'DataWeight': tempField['Weight'],
+                            'MachineLabel': tempField['MachineLabel'],
+                            'Label': tempField['Label'],
+                            'Value': tempField['Value'],
+                            'Updated': tempField['Updated'],
+                            'UpdatedSrv': tempField['Updated'],
+                            'Created': tempField['Created'],
+                        }
+                        field
 
+                        print "ModuleConfigs, field: %s" % field
+                        field = self.field_remap(field, self.config_items['variables'])
+                        self.add_update_delete(field, 'variables', True)
+        elif config_item == 'gateway_devices':
+            if 'DeviceConfigs' in data:
+                print "DeviceConfigs, data: %s" % data
+                for tempGroup in data['DeviceConfigs']:
+                    for tempField in tempGroup['Fields']:
+                        field = {
+                            'VariableUUID': tempGroup['VariableUUID'],
+                            'VariableType': 'device',
+                            'FieldUUID': tempField['FieldUUID'],
+                            'ForeignUUID': data['id'],  # record = device
+                            'Weight': tempGroup['Weight'],
+                            'DataWeight': tempField['Weight'],
+                            'MachineLabel': tempField['MachineLabel'],
+                            'Label': tempField['Label'],
+                            'Value': tempField['Value'],
+                            'Updated': tempField['Updated'],
+                            'UpdatedSrv': tempField['Updated'],
+                            'Created': tempField['Created'],
+                        }
+                        print "DeviceConfigs, field: %s" % field
+                        field = self.field_remap(field, self.config_items['variables'])
+                        self.add_update_delete(field, 'variables', True)
 
         # print "config_data: %s"%config_data
         # print "db_data: %s"%db_data
 
         has_required_db_keys = dict_has_key(data, required_db_keys)
         if has_required_db_keys is False:
-            raise YomboWarning("Cannot do anything. Must have these keys: %s" % required_db_keys, 300, 'add_update_delete', 'Devices')
+            raise YomboWarning("Cannot do anything. Must have these keys: %s  Only had these keys: %s" % (required_db_keys, data), 300, 'add_update_delete', 'Devices')
 
 
         action = None
         status_change_actions = None
-        # print "config_item: %s" % config_item
         records = yield self._LocalDBLibrary.get_dbitem_by_id(config_data['dbclass'], db_data['id'])
-        # print "records: %s" % records
+        print "data: %s"%data
+        print "db_data['id']: %s" % db_data['id']
+        print "config_item: %s" % config_item
+        print "records: %s" % records
 
-        library = self.loader.loadedLibraries[config_data['library']]
+        library = self._Loader.loadedLibraries[config_data['library']]
 
         if len(records) == 0:
-            # print "add record!"
+            print "add record!"
             # action = 'add'
             if from_amqp_incoming:
                 db_data['updated_srv'] = data['updated']
@@ -587,26 +638,27 @@ class AMQPYombo(YomboLibrary):
                 klass(data, True)  # True = the library doesn't need to update the database
 
         elif len(records) == 1:
-            # print "1 record"
+            print "1 record"
             record = records[0]
-            if data['status'] != record['status']:  # might have to disable
-                if data['status'] == 0:
-                    status_change_actions = 'disable'
-                    if 'disabled' in config_data['functions']:
-                        klass = getattr(library, config_data['functions']['disabled'])
-                        klass(data, True)
-                elif data['status'] == 1:
-                    status_change_actions = 'enable'
-                    if 'disaenabledbled' in config_data['functions']:
-                        klass = getattr(library, config_data['functions']['enabled'])
-                        klass(data, True)
-                elif data['status'] == 2:
-                    status_change_actions = 'delete'
-                    if 'deleted' in config_data['functions']:
-                        klass = getattr(library, config_data['functions']['deleted'])
-                        klass(data, True)
-                else:
-                    raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
+            if 'status' in data:
+                if data['status'] != record['status']:  # might have to disable
+                    if data['status'] == 0:
+                        status_change_actions = 'disable'
+                        if 'disabled' in config_data['functions']:
+                            klass = getattr(library, config_data['functions']['disabled'])
+                            klass(data, True)
+                    elif data['status'] == 1:
+                        status_change_actions = 'enable'
+                        if 'disaenabledbled' in config_data['functions']:
+                            klass = getattr(library, config_data['functions']['enabled'])
+                            klass(data, True)
+                    elif data['status'] == 2:
+                        status_change_actions = 'delete'
+                        if 'deleted' in config_data['functions']:
+                            klass = getattr(library, config_data['functions']['deleted'])
+                            klass(data, True)
+                    else:
+                        raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
 
             if data['updated'] > record['updated']:  # lets update!
                 action = 'update'
@@ -650,7 +702,7 @@ class AMQPYombo(YomboLibrary):
 #            "getGatewayUserTokens",
 #            "getGatewayUsers",
         ]
-#        cur_time = int(time())
+        cur_time = int(time())
         for item in allCommands:
             logger.debug("sending command: {item}", item=item)
 
@@ -659,7 +711,7 @@ class AMQPYombo(YomboLibrary):
                 "since": self._Configs.get("amqpyombo_config_times", item, 0),
             }
 
-#            self._Configs.set("amqpyombo_config_times", item, cur_time),
+            self._Configs.set("amqpyombo_config_times", item, cur_time),
 
             requestmsg = self.generate_message_request(
                 exchange_name='ysrv.e.gw_config',

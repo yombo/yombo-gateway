@@ -94,8 +94,7 @@ class MQTT(YomboLibrary):
     """
     Provide a database backed persistent dictionary.
     """
-    def _init_(self, loader):
-        self.loader = loader
+    def _init_(self):
         self.client_connections = {}
         self.hbmqtt_config_file = abspath('.') + "/usr/etc/hbmqtt.yaml"
         self.hbmqtt_pass_file = abspath('.') + "/usr/etc/hbmqtt.pw"

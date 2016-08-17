@@ -70,7 +70,7 @@ class States(YomboLibrary, object):
     MAX_HISTORY = 100
 
     @inlineCallbacks
-    def _init_(self, loader):
+    def _init_(self):
         self._ModDescription = "Yombo States API"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
@@ -190,50 +190,29 @@ class States(YomboLibrary, object):
         :param value: Value to set state to. Can be string, list, or dictionary.
         :return: Value of state
         """
-
         if key in self.__States:
             if self.__States[key]['value'] == value:  # don't set the value to the same value
                 return
 
-            # Call any hooks
-            try:
-                state_changes = global_invoke_all('states_set', **{'keys': key, 'value': value, 'new': False})
-            except YomboHookStopProcessing:
-                logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
-                return
+        # Call any hooks
+        try:
+            state_changes = global_invoke_all('_states_', **{'keys': key, 'value': value})
+        except YomboHookStopProcessing:
+            logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
+            return
 
-            for moduleName, newValue in state_changes.iteritems():
-                if newValue is not None:
-                    logger.debug("statest::set Module ({moduleName}) changes state value to: {newValue}",
-                                 moduleName=moduleName, newValue=newValue)
-                    value = newValue
-                    break
-
+        if key in self.__States:
             self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
             self.__States[key]['value'] = value
-            self.__States[key]['updated'] = time()
-            self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
+            self.__States[key]['updated'] = int(time())
         else:
-            # Call any hooks
-            try:
-                state_changes = global_invoke_all('states_set', **{'keys': key, 'value': value, 'new': True})
-            except YomboHookStopProcessing:
-                logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
-                return
-
-            for moduleName, newValue in state_changes.iteritems():
-                if newValue is not None:
-                    logger.debug("statest::set Module ({moduleName}) changes state value to: {newValue}",
-                                 moduleName=moduleName, newValue=newValue)
-                    value = newValue
-                    break
-
             self.__States[key] = {
                 'value': value,
                 'updated': int(time()),
             }
             self._Statistics.increment("lib.states.set.new", bucket_time=60, anon=True)
-            self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
+
+        self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
         self.check_trigger(key, value)
 
     def set_live(self, key, callback, arguments={}):

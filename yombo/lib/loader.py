@@ -69,7 +69,7 @@ HARD_LOAD["DeviceTypes"] = {'operation_mode':'all'}
 HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
-HARD_LOAD["Messages"] = {'operation_mode':'all'}
+#HARD_LOAD["Messages"] = {'operation_mode':'all'}
 HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
@@ -147,7 +147,7 @@ class Loader(YomboLibrary, object):
         yield self.import_libraries() # import and init all libraries
         logger.debug("Calling load functions of libraries.")
         for name, config in HARD_LOAD.iteritems():
-            self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
+            self._log_loader('info', name, 'library', 'load', 'About to call _load_.')
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
@@ -159,6 +159,7 @@ class Loader(YomboLibrary, object):
         self._moduleLibrary = self.loadedLibraries['modules']
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
         for name, config in HARD_LOAD.iteritems():
+            self._log_loader('info', name, 'library', 'start', 'About to call _start_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_start_")
@@ -167,6 +168,7 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_start_'] = False
 
         for name, config in HARD_LOAD.iteritems():
+            self._log_loader('info', name, 'library', 'started', 'About to call _started_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_started_")
@@ -236,7 +238,7 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_init_'] = False
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
-            self._log_loader('debug', name, 'library', 'init', 'About to call _init_.')
+            self._log_loader('info', name, 'library', 'init', 'About to call _init_.')
 
             component = name.lower()
             library = self.loadedLibraries[component]
@@ -244,9 +246,10 @@ class Loader(YomboLibrary, object):
             library._Atoms = self.loadedLibraries['atoms']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
-            library._DevicesLibrary = self.loadedLibraries['devices']
+            library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Libraries = self.loadedLibraries
+            library._Loader = self
             library._Modules = self._moduleLibrary
             library._Localize = self.loadedLibraries['localize']
             library._MQTT = self.loadedLibraries['mqtt']
@@ -254,7 +257,7 @@ class Loader(YomboLibrary, object):
             library._Statistics = self.loadedLibraries['statistics']
             if hasattr(library, '_init_') and callable(library._init_) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
-                d = yield maybeDeferred(library._init_, self)
+                d = yield maybeDeferred(library._init_)
                 # try:
                 #     d = yield maybeDeferred(library._init_, self)
                 # except YomboCritical, e:
@@ -320,10 +323,7 @@ class Loader(YomboLibrary, object):
             method = getattr(library, hook)
             self._log_loader('debug', requested_library, 'library', 'library_invoke', 'About to call: %s' % hook)
             if callable(method):
-                if isCoreFunction:
-                    results = yield maybeDeferred(method)
-                else:
-                    results = yield maybeDeferred(method, **kwargs)
+                results = yield maybeDeferred(method, **kwargs)
                 self._log_loader('debug', requested_library, 'library', 'library_invoke', 'Finished with call: %s' % hook)
                 returnValue(results)
             else:

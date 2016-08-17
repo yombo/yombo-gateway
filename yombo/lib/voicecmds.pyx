@@ -73,7 +73,7 @@ the fuzzysearch phase of voice command lookup.
      voice_cmds = self._Libraries['voicecmds']
      voice_cmds.add("computer [sleep, hibernate, reset, power off]", 'module.computerTools', 0, 'nounverb')
 
-  Search for the device_id for the desklamp and get the cmdUUID based on the action:
+  Search for the device_id for the desklamp and get the command_id based on the action:
   
   .. code-block:: python
 
@@ -92,7 +92,6 @@ import re
 from yombo.core.exceptions import YomboException
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.core.message import Message
 from yombo.utils import global_invoke_all
 from yombo.utils.fuzzysearch import FuzzySearch
 
@@ -114,14 +113,13 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
     _FullName = "yombo.gateway.lib.%s" % __class__.__name__
 
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Construct a new voice_cmds Instance
 
         items is an dictionary to copy items from (optional)
         limiter is the match ratio below which mathes should not be considered
         """
-        self.loader = loader
         super(VoiceCmds, self).__init__(None, .8)
         self.commandsByVoice = self._Libraries['commands']._get_commands_by_voice()
 
@@ -245,7 +243,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
               a = { "%s %s" % (noun, verb) : { 'noun' : noun, 
                                           'verb' : verb,
                                     'device_id' : device_id,
-                                       'cmdUUID' : command.cmdUUID,
+                                       'command_id' : command.command_id,
                                           'order': 'nounverb',
                                    'destination' : destination,
                                         } }
@@ -254,7 +252,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
               a = { "%s %s" % (verb, noun) : { 'noun' : noun, 
                                           'verb' : verb,
                                     'device_id' : device_id,
-                                       'cmdUUID' : command.cmdUUID,
+                                       'command_id' : command.command_id,
                                           'order': 'nounverb',
                                    'destination' : destination,
                                         } }
@@ -264,7 +262,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
               a = { "%s %s" % (noun, verb) : { 'noun' : noun, 
                                           'verb' : verb,
                                     'device_id' : device_id,
-                                       'cmdUUID' : command.cmdUUID,
+                                       'command_id' : command.command_id,
                                           'order': 'nounverb',
                                    'destination' : destination,
                                         } }
@@ -274,35 +272,9 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
               a = { "%s %s" % (verb, noun) : { 'noun' : noun, 
                                           'verb' : verb,
                                     'device_id' : device_id,
-                                       'cmdUUID' : command.cmdUUID,
+                                       'command_id' : command.command_id,
                                           'order': 'nounverb',
                                    'destination' : destination,
                                             'id' : id,
                                         } }
               self.update(a)
-
-    def get_message(self, voice_cmd, origin = "yombo.gateway.lib.voice_cmds"):
-        """
-        Generates a message that is ready to be sent.
-
-        :param voice_cmd: The result of a voice_cmd search. This will be the payload of the message.
-        :type voice_cmd: voice_cmd search results.
-        :return: The generated msdUUID
-        """
-        payload = { 'device_id' : voice_cmd['value']['device_id'],
-                    'cmdUUID' : voice_cmd['value']['cmdUUID'],
-                  }
-        if voice_cmd['value']['device_id'] != None:
-            msg = {
-            'msgOrigin'      : origin,
-            'msgDestination' : "yombo.gateway.modules.%s" % voice_cmd['value']['destination'],
-            'msgType'        : "cmd",
-            'msgStatus'      : "new",
-            'msgStatusExtra' : '',
-            'payload'        : payload
-            }
-            message = Message(**msg)
-            return message
-        else:
-            return self._Devices[voice_cmd['value']['device_id']].get_message(self, cmd=voice_cmd['value']['cmdUUID'])
-        

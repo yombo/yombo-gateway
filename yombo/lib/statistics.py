@@ -99,13 +99,12 @@ class Statistics(YomboLibrary):
     _averages = {}  # stores averages type information
     _datapoints = {}  # stores datapoint data
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Brings the library module online. Responsible for setting up framework for storing statistics.
         :param loader: Loader library.
         :return:
         """
-        self.loader = loader
         self.enabled = self._Configs.get('statistics', 'enabled', True)
         self.enabled = self._Configs.get('statistics', 'upload', True)
         self.enabled = self._Configs.get('statistics', 'anonymous', True)

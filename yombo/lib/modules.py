@@ -53,11 +53,10 @@ class Modules(YomboLibrary):
 
     _localModuleVars = {}  # Used to store modules variables from file import
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
-        self.loader = loader
         self._LocalDBLibrary = self._Libraries['localdb']
 
     def _load_(self):
@@ -133,27 +132,27 @@ class Modules(YomboLibrary):
 
         logger.debug("starting modules::init....")
         # Init
-        yield self.loader.library_invoke_all("_module_init_")
+        yield self._Loader.library_invoke_all("_module_init_")
         yield self.module_init_invoke()  # Call "_init_" of modules
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
-        yield self.loader.library_invoke_all("_module_preload_")
+        yield self._Loader.library_invoke_all("_module_preload_")
         yield self.module_invoke_all("_preload_")
 
         # Load
-        yield self.loader.library_invoke_all("_module_load_")
+        yield self._Loader.library_invoke_all("_module_load_")
         yield self.module_invoke_all("_load_")
 
         # Pre-Start
-        yield self.loader.library_invoke_all("_module_prestart_")
+        yield self._Loader.library_invoke_all("_module_prestart_")
         yield self.module_invoke_all("_prestart_")
 
         # Start
-        yield self.loader.library_invoke_all("_module_start_")
+        yield self._Loader.library_invoke_all("_module_start_")
         yield self.module_invoke_all("_start_")
 
-        yield self.loader.library_invoke_all("_module_started_")
+        yield self._Loader.library_invoke_all("_module_started_")
         yield self.module_invoke_all("_started_")
 
     @inlineCallbacks
@@ -170,11 +169,11 @@ class Modules(YomboLibrary):
 
         :return:
         """
-        self.loader.library_invoke_all("_module_stop_")
+        self._Loader.library_invoke_all("_module_stop_")
         self.module_invoke_all("_stop_")
 
         keys = self._modulesByUUID.keys()
-        self.loader.library_invoke_all("_module_unload_")
+        self._Loader.library_invoke_all("_module_unload_")
         for ModuleID in keys:
             module = self._modulesByUUID[ModuleID]
             try:
@@ -182,10 +181,10 @@ class Modules(YomboLibrary):
             except YomboWarning:
                 pass
             finally:
-                yield self.loader.library_invoke_all("_module_unloaded_")
+                yield self._Loader.library_invoke_all("_module_unloaded_")
                 delete_component = module._FullName
                 self.del_module(ModuleID, module._Name.lower())
-                del self.loader.loadedComponents[delete_component.lower()]
+                del self._Loader.loadedComponents[delete_component.lower()]
 
     @inlineCallbacks
     def build_raw_module_list(self):
@@ -278,7 +277,7 @@ class Modules(YomboLibrary):
 #            print "module : %s" % module
             self._moduleClasses[module_id] = Module(module)
             pathName = "yombo.modules.%s" % module['machine_label']
-            self.loader.import_component(pathName, module['machine_label'], 'module', module['id'])
+            self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
 
     @inlineCallbacks
     def module_init_invoke(self):
@@ -294,19 +293,19 @@ class Modules(YomboLibrary):
                 module._ModuleType = self._rawModulesList[module_id]['module_type']
                 module._ModuleID = module_id
 
-                module._Atoms = self.loader.loadedLibraries['atoms']
-                module._Commands = self.loader.loadedLibraries['commands']
-                module._Configs = self.loader.loadedLibraries['configuration']
-                module._CronTab = self.loader.loadedLibraries['crontab']
-                module._Libraries = self.loader.loadedLibraries
+                module._Atoms = self._Loader.loadedLibraries['atoms']
+                module._Commands = self._Loader.loadedLibraries['commands']
+                module._Configs = self._Loader.loadedLibraries['configuration']
+                module._CronTab = self._Loader.loadedLibraries['crontab']
+                module._Libraries = self._Loader.loadedLibraries
                 module._Modules = self
-                module._MQTT = self.loader.loadedLibraries['mqtt']
-                module._States = self.loader.loadedLibraries['states']
-                module._Statistics = self.loader.loadedLibraries['statistics']
-                module._Localize = self.loader.loadedLibraries['localize']
+                module._MQTT = self._Loader.loadedLibraries['mqtt']
+                module._States = self._Loader.loadedLibraries['states']
+                module._Statistics = self._Loader.loadedLibraries['statistics']
+                module._Localize = self._Loader.loadedLibraries['localize']
 
-                module._DevicesLibrary = self.loader.loadedLibraries['devices']  # Basically, all devices
-                module._DevicesTypes = self.loader.loadedLibraries['devicetypes']  # Basically, all devices
+                module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
+                module._DevicesTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
 
                 # Get variables, and merge with any local variable settings
                 module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)

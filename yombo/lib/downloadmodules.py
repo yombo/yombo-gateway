@@ -73,12 +73,11 @@ class DownloadModules(YomboLibrary):
     MAX_VALUE = 50
     MAX_DOWNLOAD_CONCURRENT = 2  # config: misc:downloadmodulesconcurrent
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Gets the library setup and preconfigures some items.  Sets up the
         semaphore for queing downloads.
         """
-        self.loader = loader
         self._LocalDBLibrary = self._Libraries['localdb']
 
         self._getVersion = []

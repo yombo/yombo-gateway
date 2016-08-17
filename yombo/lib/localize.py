@@ -32,7 +32,7 @@ class Localize(YomboLibrary):
     Provides the Atom information for modules and libraries to get more
     information about the underlying system.
     """
-    def _init_(self, loader):
+    def _init_(self):
         self.atoms = {}  # All atom translations
         self.configuration = {}  # All configuration translations
         self.system_messages = {}  # Various system messages.

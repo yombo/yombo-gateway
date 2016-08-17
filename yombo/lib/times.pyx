@@ -40,11 +40,10 @@ from datetime import datetime, timedelta
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboTimeError
+from yombo.core.exceptions import YomboTimeError, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.core.message import Message
-from yombo.utils import is_one_zero
+from yombo.utils import is_one_zero, global_invoke_all
 
 logger = get_logger('library.times')
 
@@ -52,14 +51,13 @@ class Times(YomboLibrary, object):
     """
     Provide various rise/set of the sun, moon, and all things heavenly.
     """
-    def _init_(self, loader, PatchEnvironment = False):
+    def _init_(self, PatchEnvironment = False):
         """
         Setup various common objects, setup frame work if isday/night/dark/twilight.
         :param loader: A pointer to the L{Loader<yombo.lib.loader.Loader>}
         library.
         :type loader: Instance of Loader
         """
-        self.loader = loader
         if PatchEnvironment: self.runned_for_tests()
 
         self.time_ajust = 150.0
@@ -306,11 +304,11 @@ class Times(YomboLibrary, object):
         self.nextMoonset = nextMoonset
 
         if self.item_visible(item='Moon'):
-            self.CLnowMoonEvents = reactor.callLater(self.nextMoonset+0.1, self._send_status, 'now_moonset')
-            reactor.callLater(self.nextMoonset+0.1, self._setup_moon_events)
+            self.CLnowMoonEvents = reactor.callLater(self.nextMoonset+1.1, self._send_status, 'now_moonset')
+            reactor.callLater(self.nextMoonset+1, self._setup_moon_events)
         else:
-            self.CLnowMoonEvents = reactor.callLater(self.nextMoonrise+0.1, self._send_status, 'now_moonrise')
-            reactor.callLater(self.nextMoonrise+0.1, self._setup_moon_events)
+            self.CLnowMoonEvents = reactor.callLater(self.nextMoonrise+1.1, self._send_status, 'now_moonrise')
+            reactor.callLater(self.nextMoonrise+1, self._setup_moon_events)
 
     def _setup_light_dark_events(self):
         """
@@ -319,6 +317,7 @@ class Times(YomboLibrary, object):
         the second callLater is to come back to this function and redo it all.
         This is different than day/night since it accounts for twilight.
         """
+        self._CalcDayNight()
         self._CalcLightDark() # setup isLight & isDark
         #logger.info("islight: %s", self.isLight)
 
@@ -326,16 +325,16 @@ class Times(YomboLibrary, object):
         if self.isLight:
             setTime = self.sunset_twilight() - time()
             #print "%d = %d - %d" % (setTime, self.sunset_twilight(),time())
-            self.CLnowDark = reactor.callLater(setTime, self._send_status, 'now_dark')
+            self.CLnowDark = reactor.callLater(setTime+1.1, self._send_status, 'now_dark')
             #print "self.CLnowDark = reactor.callLater(setTime, self._send_status, 'nowDark')"
         else:
             setTime = self.sunrise_twilight() - time()
             #print "setTime = self.sunrise_twilight()"
             #print "%d = %d - %d" % (setTime, self.sunrise_twilight(),time())
-            self.CLnowLight = reactor.callLater(setTime, self._send_status, 'now_light')
+            self.CLnowLight = reactor.callLater(setTime+1.1, self._send_status, 'now_light')
 
         #set a callLater to redo islight/dark, and setup next broadcast.
-        reactor.callLater(setTime+0.1, self._setup_light_dark_events)
+        reactor.callLater(setTime+1, self._setup_light_dark_events)
 
     def _setup_day_night_events(self):
         """
@@ -349,14 +348,14 @@ class Times(YomboLibrary, object):
         if self.isDay:
             setTime = self.sunset() - time()
             logger.debug("NowNight event in: {setTime}", setTime=setTime)
-            self.CLnowNight = reactor.callLater(setTime, self._send_status, 'now_night')
+            self.CLnowNight = reactor.callLater(setTime+1.1, self._send_status, 'now_night')
         else:
             setTime = self.sunrise() -time()
             logger.debug("NowDay event in: {setTime}", setTime=setTime)
-            self.CLnowDay = reactor.callLater(setTime, self._send_status, 'now_day')
+            self.CLnowDay = reactor.callLater(setTime+1.1, self._send_status, 'now_day')
 
         #set a callLater to redo isday/night, and setup next broadcast.
-        reactor.callLater(setTime+self.time_ajust, self._setup_day_night_events)
+        reactor.callLater(setTime+1, self._setup_day_night_events)
 
     ###  This function is not complete.  Need to calculate when the next
     ###  twilight period is. I just copied setupDayNightEvents to here for now.
@@ -370,21 +369,22 @@ class Times(YomboLibrary, object):
         for twilight.
         """
         pass  ## we are out of service for now..
+        self._CalcDayNight()
         self._CalcTwilight()  #is it twilight right now?
         if self.isTwilight:
             setTime = self.sunset_twilight() - time()
             riseTime = self.sunrise() - time()
             twTime = min (setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowNotTwilight = reactor.callLater(twTime, self._send_status, 'nowNotTwilight')
+            self.CLnowNotTwilight = reactor.callLater(twTime+1.1, self._send_status, 'now_not_twilight')
         else:
             setTime = self.sunset() - time()
             riseTime = self.sunrise_twilight() - time()
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowTwilight = reactor.callLater(twTime, self._send_status, 'now_twilight')
+            self.CLnowTwilight = reactor.callLater(twTime+1.1, self._send_status, 'now_twilight')
 
-        reactor.callLater(twTime+self.time_ajust, self._setup_next_twilight_events)
+        reactor.callLater(twTime+1, self._setup_next_twilight_events)
 
     def _setup_next_dawn_dusk_event(self):
         """
@@ -418,27 +418,27 @@ class Times(YomboLibrary, object):
         secsSetEnd = sunset_end - curtime
         if self.isTwilight == True: # It's twilight. Sun is down.
             if secsRiseEnd < secsSetEnd: #  it's dawn right now = twilight + closer to sunrise's end
-                self.CLnowNotDawn = reactor.callLater(secsRiseEnd, self._send_now_not_dawn) # set a timer for no more dawn
-                reactor.callLater(secsRiseEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
+                self.CLnowNotDawn = reactor.callLater(secsRiseEnd+1.1, self._send_now_not_dawn) # set a timer for no more dawn
+                reactor.callLater(secsRiseEnd+1, self._setup_next_dawn_dusk_event)
                 if self.is_now_init:
                     self.isDawn = True
                     self.isDusk = False
             else: # else, closer to sunset.
-                self.CLnowNotDusk = reactor.callLater(secsSetEnd, self._send_now_not_dusk) # set a timer for no more dusk
-                reactor.callLater(secsSetEnd+self.time_ajust, self._setup_next_dawn_dusk_event)
+                self.CLnowNotDusk = reactor.callLater(secsSetEnd+1.1, self._send_now_not_dusk) # set a timer for no more dusk
+                reactor.callLater(secsSetEnd+1, self._setup_next_dawn_dusk_event)
                 if self.is_now_init:
                     self.isDawn = False
                     self.isDusk = True
         else: # it's not twilight, we need to set a time for it to start.
             if secsRise < secsSet: #  it's going to be dawn next = no twilight + closer to sunrise
-                self.CLnowDawn = reactor.callLater(secsRise, self._send_now_dawn) # set a timer for is dawn
-                reactor.callLater(secsRise+self.time_ajust, self._setup_next_dawn_dusk_event)
+                self.CLnowDawn = reactor.callLater(secsRise+1.1, self._send_now_dawn) # set a timer for is dawn
+                reactor.callLater(secsRise+1, self._setup_next_dawn_dusk_event)
                 if self.is_now_init:
                     self.isDawn = False
                     self.isDusk = False
             else: # else, we are closer to sunset!
-                self.CLnowDusk = reactor.callLater(secsSet, self._send_now_dusk) # set a timer for is dusk
-                reactor.callLater(secsSet+self.time_ajust, self._setup_next_dawn_dusk_event)
+                self.CLnowDusk = reactor.callLater(secsSet+1.1, self._send_now_dusk) # set a timer for is dusk
+                reactor.callLater(secsSet+1, self._setup_next_dawn_dusk_event)
                 if self.is_now_init:
                     self.isDawn = False
                     self.isDusk = False
@@ -474,23 +474,16 @@ class Times(YomboLibrary, object):
         self.isDusk = False
         self._send_status('now_not_dusk')
 
-    def _send_status(self, msgstatus):
+    def _send_status(self, event_msg):
         """
         Generate an "event" message of status type being the time
         event name.
         """
-        msg = {
-               'msgOrigin'      : self._FullName,
-               'msgDestination' : "yombo.gateway.all",
-               'msgType'        : 'event',
-               'msgStatus'      : 'new',
-               'uuidType'       : "0",
-               'uuidSubType'    : "040",
-               'payload'        : {'type': 'times', 'event':msgstatus},
-               }
-        logger.debug("Time event: {msg}", msg=msg)
-        message = Message(**msg)
-        message.send()
+        try:
+            state_changes = global_invoke_all('_events_', **{'type': 'times', 'value': event_msg})
+        except YomboHookStopProcessing:
+            logger.warning("Stopping processing '_send_status' due to YomboHookStopProcessing exception.")
+            return
 
     def _CalcTwilight(self):
         """
@@ -1031,7 +1024,7 @@ class Times(YomboLibrary, object):
 
         self.year_array = [0]*(365*24)
 
-        self.init(self.loader)
+        self.init(self._Loader)
 
         #        print self.call_arr
         #print self.call_dict

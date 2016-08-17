@@ -38,7 +38,7 @@ class YomboAPI(YomboLibrary):
     agent = "Yombo Service"
     timeout = 5
 
-    def _init_(self, loader):
+    def _init_(self):
         pass
 
     def _start_(self):

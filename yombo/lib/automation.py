@@ -76,12 +76,11 @@ class Automation(YomboLibrary):
     for additional automation rules defined by modules. It also implements various hooks so modules can extend the
     capabilites of the automation system.
     """
-    def _init_(self, loader):
+    def _init_(self):
         print _('hello')
         self._ModDescription = "Easy Automation for everyone"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
-        self.loader = loader
 
         self._rulesRaw = {}  # Used to store raw input from reading file.
         self._rulesParse = {}  # Used to store raw input from reading file.
@@ -610,7 +609,7 @@ class Automation(YomboLibrary):
 #         :ivar status: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
 #         :ivar deviceVariables: *(dict)* - The device variables as defined by various modules, with
 #             values entered by the user.
-#         :ivar available_commands: *(list)* - A list of cmdUUID's that are valid for this device.
+#         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
 #         """
 #
 #     def _init_(self):

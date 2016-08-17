@@ -45,8 +45,7 @@ class SQLDict(YomboLibrary):
     """
     Provide a database backed persistent dictionary.
     """
-    def _init_(self, loader):
-        self.loader = loader
+    def _init_(self,):
         self._dictionaries = {}
         self.unload_defer = None
 

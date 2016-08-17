@@ -30,12 +30,11 @@ from twisted.internet import ssl, protocol, defer
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboCritical, YomboMessageError
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string
 from yombo.utils.maxdict import MaxDict
-from yombo.core.message import Message
 
 logger = get_logger('library.amqp')
 
@@ -46,8 +45,7 @@ class AMQP(YomboLibrary):
     
     Developers should only interact with these functions and not with the factory or protocol functions.
     """
-    def _init_(self, loader):
-        self.loader = loader
+    def _init_(self):
         self.client_connections = {}
         
     def _unload_(self):

@@ -213,8 +213,7 @@ class WebInterface(YomboLibrary):
     visits = 0
     alerts = OrderedDict()
 
-    def _init_(self, loader):
-        self.loader = loader
+    def _init_(self):
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:
             return
@@ -223,9 +222,9 @@ class WebInterface(YomboLibrary):
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
 
-        self.api = self.loader.loadedLibraries['yomboapi']
+        self.api = self._Loader.loadedLibraries['yomboapi']
         self.data = {}
-        self.sessions = Sessions(self.loader)
+        self.sessions = Sessions(self._Loader)
 
         self.wi_port_nonsecure = self._Configs.get('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get('webinterface', 'secure_port', 8443)
@@ -629,10 +628,10 @@ class WebInterface(YomboLibrary):
             print "222"
             print params['command'][0]
             if params['command'][0] == 'connect':
-                self.loader._Libraries['AMQPYombo'].connect()
+                self._Loader._Libraries['AMQPYombo'].connect()
             if params['command'][0] == 'disconnect':
                 print "33a"
-#                self.loader._Libraries['AMQPYombo'].disconnect()
+#                self._Loader._Libraries['AMQPYombo'].disconnect()
         page = self.get_template(request, self._dir + 'commands/index.html')
         return page.render()
 

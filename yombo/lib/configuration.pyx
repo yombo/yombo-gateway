@@ -64,7 +64,7 @@ class Configuration(YomboLibrary):
     configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
     configs_details = {}  # Collected details from libs and modules about configurations
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Open the yombo.ini file for reading.
 
@@ -73,7 +73,6 @@ class Configuration(YomboLibrary):
         :param loader: The loader module.
         :type loader: loader
         """
-        self.loader = loader
         self.cache_dirty = False
         
 
@@ -100,7 +99,7 @@ class Configuration(YomboLibrary):
                                 value = str(value)
                     self.set(section, option, value)
         except IOError:
-            self.loader.operation_mode = 'firstrun'
+            self._Loader.operation_mode = 'firstrun'
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
             self._Atoms.set('configuration.yombo_ini.found', False)
             return

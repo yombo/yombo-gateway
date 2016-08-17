@@ -29,9 +29,8 @@ class Startup(YomboLibrary):
     Checks to make sure basic configurations are valid and other start-up operations.
     """
 #    @inlineCallbacks
-    def _init_(self, loader):
-        self.loader = loader
-        if self.loader.operation_mode != None:  # will know if firstrun already or yombo.ini is missing.
+    def _init_(self,):
+        if self._Loader.operation_mode != None:  # will know if firstrun already or yombo.ini is missing.
             return
         need_config = False
         gwuuid = self._Configs.get("core", "gwuuid", None)
@@ -55,11 +54,11 @@ class Startup(YomboLibrary):
 
         first_run = self._Configs.get('core', 'firstrun', True)
         if first_run:
-            self.loader.operation_mode = 'firstrun'
+            self._Loader.operation_mode = 'firstrun'
         elif need_config:
-            self.loader.operation_mode = 'config'
+            self._Loader.operation_mode = 'config'
         else:
-            self.loader.operation_mode = 'run'
+            self._Loader.operation_mode = 'run'
 
     def _load_(self):
         pass
@@ -75,4 +74,4 @@ class Startup(YomboLibrary):
 
     def enter_config(self, message):
         raise YomboWarning(message, 201, "_init_", "startup")
-        self.loader.operation_mode = config
+        self._Loader.operation_mode = config

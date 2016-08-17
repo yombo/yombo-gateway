@@ -114,15 +114,13 @@ class CronTab(YomboLibrary):
         
         return self._search(key)
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Setups up the basic framework.
 
         :param loader: A pointer to the Loader library.
         :type loader: Instance of Loader
         """
-        self.loader = loader
-
         self.__yombocron = {}
         
     def _load_(self):

@@ -123,8 +123,7 @@ class Atoms(YomboLibrary):
     Provides the Atom information for modules and libraries to get more
     information about the underlying system.
     """
-    def _init_(self, loader):
-        self.loader = loader
+    def _init_(self):
         self.__Atoms = {}
         self.__Atoms.update(self.os_data())
         self.triggers = {}

@@ -29,11 +29,10 @@ class GPG(YomboLibrary):
     """
     Manage all GPG functions.
     """
-    def _init_(self, loader):
+    def _init_(self):
         """
         Get the GnuPG subsystem up and loaded.
         """
-        self.loader = loader
         self.gwuuid = self._Configs.get("core", "gwuuid")
         self._key_generation_status = {}
         self.initDefer = Deferred()
@@ -114,7 +113,7 @@ class GPG(YomboLibrary):
         :param keyHash:
         :return:
         """
-        if self.loader.check_component_status('AMQPYombo', '_start_'):
+        if self._Loader.check_component_status('AMQPYombo', '_start_'):
             msg = {'key_type': 'server', 'id': key_hash}
             self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
             self.import_to_keyring
@@ -126,7 +125,7 @@ class GPG(YomboLibrary):
         :param keyHash:
         :return:
         """
-        if self.loader.check_component_status('AMQPYombo', '_start_'):
+        if self._Loader.check_component_status('AMQPYombo', '_start_'):
             msg = {'key_type': 'root'}
             self._AMQPLibrary.send_amqp_message(**self._generate_request_message('gpg_get_key', msg, self.amqp_response_get_key))
 

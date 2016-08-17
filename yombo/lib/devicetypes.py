@@ -57,7 +57,7 @@ class DeviceTypes(YomboLibrary):
         except:
             return False
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -65,7 +65,6 @@ class DeviceTypes(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
-        self.loader = loader
         self.run_state = 1
 
         self.device_types_by_id = FuzzySearch({}, .99)
@@ -96,7 +95,7 @@ class DeviceTypes(YomboLibrary):
 
     def get_device_type(self, device_type_requested):
         """
-        Performs the actual device type search.
+        Gets a device type be device type id or by device type label.
 
         .. note::
 

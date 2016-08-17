@@ -81,7 +81,8 @@ class DeviceStatus(DBObject):
 
 class DeviceType(DBObject):
     TABLENAME='device_types'
-    HABTM = [dict(name='commands', join_table='command_device_types')]
+#    HABTM = [dict(name='commands', join_table='command_device_types')]
+
 #    BELONGSTO = ['devices']
 
 
@@ -126,7 +127,6 @@ class User(DBObject):
 #    TABLENAME='users'
     pass
 
-
 class Variable(DBObject):
     TABLENAME='variables'
     BELONGSTO = ['devices', 'modules']
@@ -158,7 +158,7 @@ class LocalDB(YomboLibrary):
     """
 
     @inlineCallbacks
-    def _init_(self, loader):
+    def _init_(self):
         """
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
@@ -166,7 +166,6 @@ class LocalDB(YomboLibrary):
         self._ModDescription = "Manages the local database"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
-        self.loader = loader
         self.db_model = {}  #store generated database model here.
         # Connect to the DB
         Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread = False)
@@ -298,12 +297,16 @@ class LocalDB(YomboLibrary):
         returnValue(records)
 
     @inlineCallbacks
-    def get_dbitem_by_id(self, dbitem, id, status=1):
+    def get_dbitem_by_id(self, dbitem, id, status=None):
         if dbitem not in MODULE_CLASSES:
             raise YomboWarning("get_dbitem_by_id expects dbitem to be a DBObject")
 #        print MODULE_CLASSES
-        print "get_dbitem_by_id.  class: %s, id: %s" % (dbitem, id)
-        records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
+        if status is None:
+            records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', id])
+#            print "looking without status!"
+        else:
+            records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
+#        print "get_dbitem_by_id. class: %s, id: %s, status: %s" % (dbitem, id, status)
         results = []
         for record in records:
             results.append(record.__dict__)  # we need a dictionary, not an object

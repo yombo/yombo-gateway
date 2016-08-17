@@ -63,7 +63,7 @@ class Commands(YomboLibrary):
         except:
             return False
 
-    def _init_(self, loader):
+    def _init_(self):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -71,8 +71,6 @@ class Commands(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
-        self.loader = loader
-
         self.__yombocommands = {}
         self.__yombocommandsByName = FuzzySearch(None, .92)
         self.__yombocommandsByVoice = FuzzySearch(None, .92)
@@ -170,7 +168,7 @@ class Commands(YomboLibrary):
         if record.voice_cmd is not None:
             self.__yombocommandsByVoice[record.voice_cmd] = self.__yombocommands[cmd_id]
 #        if testCommand:
-#            return self.__yombocommands[cmdUUID]
+#            return self.__yombocommands[command_id]
 
 
 class Command:
@@ -186,7 +184,7 @@ class Command:
         """
         Setup the command object using information passed in.
 
-        :cvar cmdUUID: (string) The UUID of the command.
+        :cvar command_id: (string) The UUID of the command.
 
         :param command: A device as passed in from the devices class. This is a
             dictionary with various device attributes.
@@ -195,7 +193,7 @@ class Command:
         """
         logger.debug("command info: {command}", command=command)
 
-        self.cmdUUID = command.id
+        self.command_id = command.id
         self.uri = command.uri
         self.voice_cmd = command.voice_cmd
         self.cmd = command.machine_label
@@ -207,29 +205,30 @@ class Command:
         self.status = command.status
         self.created = command.created
         self.updated = command.updated
+        self.updated_srv = None
 
     def __str__(self):
         """
-        Print a string when printing the class.  This will return the cmdUUID so that
+        Print a string when printing the class.  This will return the command_id so that
         the command can be identified and referenced easily.
         """
-        return self.cmdUUID
+        return self.command_id
 
     def dump(self):
         """
         Export command variables as a dictionary.
         """
         return {
-            'cmdUUID'       : str(self.cmdUUID),
-            'uri'           : str(self.uri),
-            'voice_cmd'      : str(self.voice_cmd),
-            'cmd'           : str(self.cmd), # AKA machineLabel
-            'label'         : str(self.label),
-            'description'   : str(self.description),
-            'input_type_id' : int(self.input_type_id),
-            'live_update' : int(self.live_update),
-            'public'        : int(self.public),
-            'status'        : int(self.status),
-            'created'       : int(self.created),
-            'updated'       : int(self.updated),
+            'command_id'   : str(self.command_id),
+            'uri'          : str(self.uri),
+            'voice_cmd'    : str(self.voice_cmd),
+            'cmd'          : str(self.cmd), # AKA machineLabel
+            'label'        : str(self.label),
+            'description'  : str(self.description),
+            'input_type_id': int(self.input_type_id),
+            'live_update'  : int(self.live_update),
+            'public'       : int(self.public),
+            'status'       : int(self.status),
+            'created'      : int(self.created),
+            'updated'      : int(self.updated),
         }
