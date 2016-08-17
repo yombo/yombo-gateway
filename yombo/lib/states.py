@@ -181,10 +181,9 @@ class States(YomboLibrary, object):
         """
         Set the value of a given state (key).
 
-        **Hooks implemented**:
+        **Hooks called**:
 
-        * hook_states_set : Sends kwargs 'key', 'value', and 'new'. *key* is the name of the state being set, *value* is
-          the new value to set, and *new* is True if the state didn't have a value before - otherwise False.
+        * _states_set_ : Sends kwargs: *key* - The name of the state being set. *value* - The new value to set.
 
         :param key: Name of state to set.
         :param value: Value to set state to. Can be string, list, or dictionary.
@@ -196,7 +195,7 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_', **{'keys': key, 'value': value})
+            state_changes = global_invoke_all('_states_set_', **{'keys': key, 'value': value})
         except YomboHookStopProcessing:
             logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
             return

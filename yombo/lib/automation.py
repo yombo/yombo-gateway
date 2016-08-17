@@ -111,13 +111,13 @@ class Automation(YomboLibrary):
         Calls libraries and modules to check if any additional rules should be defined. It also makes calls to see
         if the automation features are being extended, such as adding new automation platforms.
 
-        **Hooks implemented**:
+        **Hooks called**:
 
-        * hook_automation_rules_list :  Expects a list of dictionarys containing automation rules.
-        * hook_automation_action_list : Expects a list of dictionarys containing automation action platforms.
-        * hook_automation_filter_list : Expects a list of filter callbacks to validate and check against
+        * _automation_rules_list_ :  Expects a list of dictionarys containing automation rules.
+        * _automation_action_list_ : Expects a list of dictionarys containing automation action platforms.
+        * _automation_filter_list_ : Expects a list of filter callbacks to validate and check against
           a library or module supports.
-        * hook_automation_source_list : Expects a list of source callbacks to get, check, and validate
+        * _automation_source_list_ : Expects a list of source callbacks to get, check, and validate
 
         **Usage**:
 
@@ -161,7 +161,7 @@ class Automation(YomboLibrary):
         For "automation_rules_list" hook, see the :ref:`Automation Example <automationexample>` example module.
 
         """
-        automation_sources = yombo.utils.global_invoke_all('automation_source_list')
+        automation_sources = yombo.utils.global_invoke_all('_automation_source_list_')
 #        print "################## %s " % automation_sources
 #        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in automation_sources.iteritems():
@@ -169,19 +169,19 @@ class Automation(YomboLibrary):
                 self.sources[vals['platform']] = vals
 #        logger.debug("sources: {sources}", sources=self.sources)
 
-        automation_filters = yombo.utils.global_invoke_all('automation_filter_list')
+        automation_filters = yombo.utils.global_invoke_all('_automation_filter_list_')
         for moduleName, item in automation_filters.iteritems():
             for vals in item:
                 self.filters[vals['platform']] = vals
 #        logger.debug("filters: {filters}", filters=self.filters)
 
-        automation_actions = yombo.utils.global_invoke_all('automation_action_list')
+        automation_actions = yombo.utils.global_invoke_all('_automation_action_list_')
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for moduleName, item in automation_actions.iteritems():
             for vals in item:
                 self.actions[vals['platform']] = vals
 
-        other_rules = yombo.utils.global_invoke_all('automation_rules_list')
+        other_rules = yombo.utils.global_invoke_all('_automation_rules_list_')
         for component, rules in other_rules.iteritems():
 #            print "Merging 1: %s" % rules['rules']
 #            print "Merging 2: %s" % self._rulesRaw['rules']
@@ -194,13 +194,11 @@ class Automation(YomboLibrary):
             logger.warn("No automation rules found.")
             return
 
-        if 'description' not in rule:
-                rule['description'] = 'None'
-        if rule['description'] == '':
-                rule['description'] = 'None'
-
         for rule in self._rulesRaw['rules']:
             self.add_rule(rule)
+            if 'description' not in rule:
+                    rule['description'] = ''
+
         logger.debug("All active rules: {rules}", rules=self.rules)
 
     def add_rule(self, rule):

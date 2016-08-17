@@ -252,9 +252,9 @@ def upgrade(Registry, **kwargs):
 
     # Stores variables for modules and devices. Variables are set by the server, and read here. Not a two-way sync (yet?).
     table = """CREATE TABLE `variables` (
-     `id`      TEXT NOT NULL, /* moduleUUID */
+     `id`      TEXT NOT NULL, /* field_id */
      `variable_type` TEXT NOT NULL,
-     `field_id`    TEXT NOT NULL,
+     `variable_id`    TEXT NOT NULL,
      `foreign_id`    TEXT NOT NULL,
      `weight`        INTEGER DEFAULT 0,
      `data_weight`   INTEGER DEFAULT 0,

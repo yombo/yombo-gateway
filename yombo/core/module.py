@@ -148,14 +148,12 @@ class YomboModule:
 
         self._Devices = None
         self._DeviceTypes = None
-        self._DevicesLibrary = None
-        self._DevicesByType = None  # A callable (function)
 
         self._ModuleVariables = None
         self._ModulesLibrary = None
 
     def _GetDeviceTypes(self):
-        return self.modules.module_device_types(self._ModuleID)
+        return self._Modules.module_device_types(self._ModuleID)
 
     def _GetDevices(self):
         return self._DevicesTypes.module_devices(self._ModuleID)

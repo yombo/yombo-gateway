@@ -71,7 +71,7 @@ class AutomationHelpers(YomboLibrary):
             raise YomboWarning("get_action_delay on accepts delays in the future, not the past.", 'get_action_delay', 'automationhelpers')
         return seconds
 
-    def AutomationHelpers_automation_action_list(self, **kwargs):
+    def _automation_action_list_(self, **kwargs):
         """
         Adds 'call_function' to the available action platforms. Allows functions to be called as an action defined
         within an automation rule.
@@ -157,7 +157,7 @@ class AutomationHelpers(YomboLibrary):
             print "method not callable: %s" % method
         return
 
-    def AutomationHelpers_automation_filter_list(self, **kwargs):
+    def _automation_filter_list_(self, **kwargs):
         return [
              {
                  'platform': 'any', # allow any value. Always returns true.

@@ -153,9 +153,9 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
 
         Expects a list of events to subscribe to.
 
-        **Hooks implemented**:
+        **Hooks called**:
 
-        * hook_voice_cmds_add : Expects a list of message subscription events to subscrib to.
+        * _voicecmds_add_ : Expects a list of message subscription events to subscrib to.
 
         **Usage**:
 
@@ -164,7 +164,7 @@ class VoiceCmds(FuzzySearch, YomboLibrary):
            def ModuleName_voice_cmds_load(self, **kwargs):
                return ['status']
         """
-        voicecommands_to_add = global_invoke_all('voice_cmds_add')
+        voicecommands_to_add = global_invoke_all('_voicecmds_add_')
 #        logger.info("voicecommands_to_add: {voice_cmds}", voice_cmds=voicecommands_to_add)
 
         for componentName, voice_cmds in voicecommands_to_add.iteritems():

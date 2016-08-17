@@ -283,6 +283,22 @@ class Modules(YomboLibrary):
     def module_init_invoke(self):
         """
         Calls the _init_ functions of modules. Can't use basic hook for this due to complex items.
+        **Hooks called**:
+
+        * _module_devicetypes_ :  Gets a list of device type ids or labels.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           def _module_devicetypes_(self, **kwargs):
+               '''
+               Adds additional platforms to the source platform. Creates additional rule triggers.
+               '''
+               return [
+                 'x10_lamp', 'x10_applicance',
+               ]
+
         """
         logger.debug("Calling init functions of modules. {modules}", modules=self._modulesByUUID)
         module_init_deferred = []
@@ -307,6 +323,12 @@ class Modules(YomboLibrary):
                 module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
                 module._DevicesTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
 
+                if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
+                    temp_device_types = module._module_devicetypes_()
+                    for dt in temp_device_types:
+                        if dt in module._DevicesTypes:
+                            self._moduleClasses[module_id].device_types.append(module._DevicesTypes[dt].device_type_id)
+
                 # Get variables, and merge with any local variable settings
                 module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
                 module._ModuleVariables = module_variables
@@ -315,6 +337,8 @@ class Modules(YomboLibrary):
                 if module._Name in self._localModuleVars:
                     module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
                     del self._localModuleVars[module._Name]
+
+                module._DevicesTypes.add_registered_module(self._moduleClasses[module_id])
 #                module._init_()
 #                continue
                 module_init_deferred.append(maybeDeferred(module._init_))
@@ -363,7 +387,7 @@ class Modules(YomboLibrary):
         if module._Name == 'yombo.core.module.YomboModule':
             raise YomboWarning("Cannot call YomboModule hooks")
         if not (hook.startswith("_") and hook.endswith("_")):
-            hook = module._Name + "_" + hook
+            hook = module._Name.lower() + "_" + hook
         self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
         if hasattr(module, hook):
             method = getattr(module, hook)
@@ -372,24 +396,23 @@ class Modules(YomboLibrary):
                 try:
 #                    results = yield maybeDeferred(method, **kwargs)
                     return method(**kwargs)
-                except YomboCritical, e:
-                    logger.error("---==(Critical Server Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
+                # except Exception, e:
+                #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
+                #     logger.error("--------------------------------------------------------")
+                #     logger.error("Error message: {e}", e=e)
+                #     logger.error("--------------------------------------------------------")
+                except Exception, e:
+                    exc_type, exc_value, exc_traceback = sys.exc_info()
+                    logger.error("------==(ERROR During {hook} of module: {name})==-------", hook=hook, name=module._FullName)
+                    logger.error("1:: {e}", e=sys.exc_info())
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
                     logger.error("--------------------------------------------------------")
-                    logger.error("Error message: {e}", e=e)
+                    logger.error("{e}", e=traceback.print_exc())
                     logger.error("--------------------------------------------------------")
-                    e.exit()
-#                except:
-#                    exc_type, exc_value, exc_traceback = sys.exc_info()
-#                    logger.error("------==(ERROR During {hooke} of module: {name})==-------", hook=hook, name=module._FullName)
-#                    logger.error("1:: {e}", e=sys.exc_info())
-#                    logger.error("---------------==(Traceback)==--------------------------")
-#                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-#                    logger.error("--------------------------------------------------------")
-#                    logger.error("{e}", e=traceback.print_exc())
-#                    logger.error("--------------------------------------------------------")
-#                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-#                              limit=5, file=sys.stdout)))
-#                    logger.error("--------------------------------------------------------")
+                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                              limit=5, file=sys.stdout)))
+                    logger.error("--------------------------------------------------------")
             else:
                 logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
 
@@ -472,7 +495,7 @@ class Modules(YomboLibrary):
 
     def module_device_types(self, module_id):
         if module_id in self._moduleClasses:
-            return self._moduleClasses.device_types
+            return self._moduleClasses[module_id].device_types
 
 class Module:
     """
@@ -483,7 +506,7 @@ class Module:
         This module class can make updates to the database as needed. Any changes to this class and it will
         automatically update any required components.
         """
-        logger.warn("module info: {module}", module=module)
+        logger.debug("New instance of Module: {module}", module=module)
 
         self.module_id = module['id']
         self.module_type = module['module_type']
@@ -495,11 +518,11 @@ class Module:
         self.install_branch = module['install_branch']
         self.prod_version = module['prod_version']
         self.dev_version = module['dev_version']
-        self.device_types = module['device_types']
         self.public = module['public']
         self.status = module['status']
         self.created = module['created']
         self.updated = module['updated']
+        self.device_types = []
 
     def __str__(self):
         """
@@ -508,15 +531,15 @@ class Module:
         """
         return self.module_id
 
-    def update_registered_device(self, device):
-        self.registered_devices[device.device_id] = device
-
-    def add_registered_device(self, device):
-        self.registered_devices[device.device_id] = device
-
-    def del_registered_device(self, device):
-        if device.device_id in self.registered_devices[device.device_id]:
-            del self.registered_devices[device.device_id]
+    # def update_registered_device(self, device):
+    #     self.registered_devices[device.device_id] = device
+    #
+    # def add_registered_device(self, device):
+    #     self.registered_devices[device.device_id] = device
+    #
+    # def del_registered_device(self, device):
+    #     if device.device_id in self.registered_devices[device.device_id]:
+    #         del self.registered_devices[device.device_id]
 
     def dump(self):
         """

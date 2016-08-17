@@ -20,6 +20,7 @@ from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.utils import global_invoke_all
 
 logger = get_logger('library.devicetypes')
 
@@ -87,11 +88,12 @@ class DeviceTypes(YomboLibrary):
         return self.start_defer
 
     def _started_(self):
-        print "device types info:"
-        for dt, data in self.device_types_by_id.iteritems():
-            print "dt: %s, commands: %s" % (data.label, data.commands)
-            print "dt: %s, registered_devices: %s" % (data.label, data.registered_devices)
-            print "dt: %s, registered_modules: %s" % (data.label, data.registered_modules)
+        # print "device types info:"
+        # for dt, data in self.device_types_by_id.iteritems():
+        #     print "dt: %s, commands: %s" % (data.label, data.commands)
+        #     print "dt: %s, registered_devices: %s" % (data.label, data.registered_devices)
+        #     print "dt: %s, registered_modules: %s" % (data.label, data.registered_modules)
+        pass
 
     def get_device_type(self, device_type_requested):
         """
@@ -108,6 +110,7 @@ class DeviceTypes(YomboLibrary):
         :return: A DeviceType instance.
         :rtype: dict
         """
+        # print "device_types_by_name: %s" % self.device_types_by_name
         if device_type_requested in self.device_types_by_id:
             return self.device_types_by_id[device_type_requested]
         else:
@@ -127,6 +130,8 @@ class DeviceTypes(YomboLibrary):
         """
         temp = []
         if module_id in self._Modules._moduleClasses:
+            # print "dt..module_id: %s" % module_id
+            # print "dt..self._Modules._moduleClasses[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
             for dt in self._Modules._moduleClasses[module_id].device_types:
                 temp.extend(self.device_types_by_id[dt].get_devices())
 
@@ -172,7 +177,7 @@ class DeviceTypes(YomboLibrary):
 
         for module_id, klass in self._Modules._moduleClasses.iteritems():
             print "device types: module_id"
-        logger.info("Done __load_device_types: {dts}", dts=dts)
+        logger.debug("Done _load_device_types: {dts}", dts=dts)
         self.start_defer.callback(10)
 
     def _load_device_type(self, record, test_device_type = False):
@@ -188,7 +193,7 @@ class DeviceTypes(YomboLibrary):
         logger.debug("record: {record}", record=record)
         dt_id = record['id']
         self.device_types_by_id[dt_id] = DeviceType(record, self)
-        self.device_types_by_name[record['label']] = self.device_types_by_id[dt_id]
+        self.device_types_by_name[record['machine_label']] = self.device_types_by_id[dt_id]
 
 #        if test_device_type:
 #            return self.__yombocommands[cmdUUID]
@@ -260,7 +265,7 @@ class DeviceType:
             dictionary with various device type attributes.
         :type command: dict
         """
-        logger.info("device_type info: {device_type}", device_type=device_type)
+        logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
 
         self._DTLibrary = device_type_library
         self.device_type_id = device_type['id']

@@ -304,10 +304,10 @@ class Times(YomboLibrary, object):
         self.nextMoonset = nextMoonset
 
         if self.item_visible(item='Moon'):
-            self.CLnowMoonEvents = reactor.callLater(self.nextMoonset+1.1, self._send_status, 'now_moonset')
+            self.CLnowMoonEvents = reactor.callLater(self.nextMoonset+1.1, self.send_event_hook, 'now_moonset')
             reactor.callLater(self.nextMoonset+1, self._setup_moon_events)
         else:
-            self.CLnowMoonEvents = reactor.callLater(self.nextMoonrise+1.1, self._send_status, 'now_moonrise')
+            self.CLnowMoonEvents = reactor.callLater(self.nextMoonrise+1.1, self.send_event_hook, 'now_moonrise')
             reactor.callLater(self.nextMoonrise+1, self._setup_moon_events)
 
     def _setup_light_dark_events(self):
@@ -325,13 +325,13 @@ class Times(YomboLibrary, object):
         if self.isLight:
             setTime = self.sunset_twilight() - time()
             #print "%d = %d - %d" % (setTime, self.sunset_twilight(),time())
-            self.CLnowDark = reactor.callLater(setTime+1.1, self._send_status, 'now_dark')
-            #print "self.CLnowDark = reactor.callLater(setTime, self._send_status, 'nowDark')"
+            self.CLnowDark = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_dark')
+            #print "self.CLnowDark = reactor.callLater(setTime, self.send_event_hook, 'nowDark')"
         else:
             setTime = self.sunrise_twilight() - time()
             #print "setTime = self.sunrise_twilight()"
             #print "%d = %d - %d" % (setTime, self.sunrise_twilight(),time())
-            self.CLnowLight = reactor.callLater(setTime+1.1, self._send_status, 'now_light')
+            self.CLnowLight = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_light')
 
         #set a callLater to redo islight/dark, and setup next broadcast.
         reactor.callLater(setTime+1, self._setup_light_dark_events)
@@ -348,11 +348,11 @@ class Times(YomboLibrary, object):
         if self.isDay:
             setTime = self.sunset() - time()
             logger.debug("NowNight event in: {setTime}", setTime=setTime)
-            self.CLnowNight = reactor.callLater(setTime+1.1, self._send_status, 'now_night')
+            self.CLnowNight = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_night')
         else:
             setTime = self.sunrise() -time()
             logger.debug("NowDay event in: {setTime}", setTime=setTime)
-            self.CLnowDay = reactor.callLater(setTime+1.1, self._send_status, 'now_day')
+            self.CLnowDay = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_day')
 
         #set a callLater to redo isday/night, and setup next broadcast.
         reactor.callLater(setTime+1, self._setup_day_night_events)
@@ -376,13 +376,13 @@ class Times(YomboLibrary, object):
             riseTime = self.sunrise() - time()
             twTime = min (setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowNotTwilight = reactor.callLater(twTime+1.1, self._send_status, 'now_not_twilight')
+            self.CLnowNotTwilight = reactor.callLater(twTime+1.1, self.send_event_hook, 'now_not_twilight')
         else:
             setTime = self.sunset() - time()
             riseTime = self.sunrise_twilight() - time()
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
-            self.CLnowTwilight = reactor.callLater(twTime+1.1, self._send_status, 'now_twilight')
+            self.CLnowTwilight = reactor.callLater(twTime+1.1, self.send_event_hook, 'now_twilight')
 
         reactor.callLater(twTime+1, self._setup_next_twilight_events)
 
@@ -449,7 +449,7 @@ class Times(YomboLibrary, object):
         Called by timer when it's nowDawn.
         """
         self.isDawn = True
-        self._send_status('now_dawn')
+        self.send_event_hook('now_dawn')
 
     def _send_now_not_dawn(self):
         """
@@ -457,14 +457,14 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dusk.
         """
         self.isDawn = False
-        self._send_status('now_not_dawn')
+        self.send_event_hook('now_not_dawn')
 
     def _send_now_dusk(self):
         """
         Called by timer when it's nowDusk.
         """
         self.isDusk = True
-        self._send_status('now_dusk')
+        self.send_event_hook('now_dusk')
 
     def _send_now_not_dusk(self):
         """
@@ -472,17 +472,22 @@ class Times(YomboLibrary, object):
         to setup the next twilight cycle for dawn.
         """
         self.isDusk = False
-        self._send_status('now_not_dusk')
+        self.send_event_hook('now_not_dusk')
 
-    def _send_status(self, event_msg):
+    def send_event_hook(self, event_msg):
         """
         Generate an "event" message of status type being the time
         event name.
+
+        **Hooks called**:
+
+        * _time_event_ : Sends kwargs: *key* - The name of the state being set. *value* - The new value to set.
+
         """
         try:
-            state_changes = global_invoke_all('_events_', **{'type': 'times', 'value': event_msg})
+            state_changes = global_invoke_all('_time_event_', **{'value': event_msg})
         except YomboHookStopProcessing:
-            logger.warning("Stopping processing '_send_status' due to YomboHookStopProcessing exception.")
+            logger.warning("Stopping processing 'send_event_hook' due to YomboHookStopProcessing exception.")
             return
 
     def _CalcTwilight(self):
@@ -814,10 +819,10 @@ class Times(YomboLibrary, object):
 
         self.year_array = [0]*(365*24)
         self.start_time = time()
-        def _send_status_my(a):
-            #print '_send_status %s on %s' % (a, datetime.fromtimestamp(time()))
+        def send_event_hook_my(a):
+            #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time()))
             ct = int ((time() - self.start_time) / 60 / 60)
-            #print '_send_status %s on %s' % (a, datetime.fromtimestamp(time()))
+            #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time()))
             if (ct >= (365*24)):
                 return
             if (a == 'nowDark'):
@@ -850,12 +855,12 @@ class Times(YomboLibrary, object):
             if (a == 'nowNotDusk'):
                 assert (self.year_array[ct] & 512) == 0, "nowNotDusk duplicate"
                 self.year_array[ct] = self.year_array[ct] | 512
-        self._send_status_old = getattr(self,'_send_status')
-        setattr(self, '_send_status', _send_status_my)
+        self.send_event_hook_old = getattr(self,'send_event_hook')
+        setattr(self, 'send_event_hook', send_event_hook_my)
 
     def finish_tests(self):
         setattr(reactor, 'callLater', self._reactor_callLater)
-        setattr(self, '_send_status', self._send_status_old)
+        setattr(self, 'send_event_hook', self.send_event_hook_old)
 
     def run_inner_tests_chk_year(self, set_olddt, set_newdt, lat, lon):
         print '************check year: lat = %s, lon = %s *********************' % (lat,lon)

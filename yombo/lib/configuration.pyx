@@ -40,7 +40,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.utils import get_external_ip_address, get_local_ip_address
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import dict_merge, global_invoke_all, is_string_bool, dict_get_value
+from yombo.utils import dict_merge, global_invoke_all, is_string_bool
 
 logger = get_logger('library.configuration')
 
@@ -244,11 +244,16 @@ class Configuration(YomboLibrary):
 
         Note: This complies with i18n translations for future use.
 
+        **Hooks called**:
+
+        * _configuration_details_ : Gets various details about a configuration item. Do not implement, not set
+        in stone. Might migrate to i18n library.
+
         **Usage**:
 
         .. code-block:: python
 
-           def ModuleName_config_details(self, **kwargs):
+           def _configuration_details_(self, **kwargs):
                return [{'webinterface': {
                            'enabled': {
                                'description': {
@@ -263,7 +268,7 @@ class Configuration(YomboLibrary):
                        },
                }]
         """
-        config_details = global_invoke_all('configuration_details')
+        config_details = global_invoke_all('_configuration_details_')
 
         for component, details in config_details.iteritems():
             if details is None:
@@ -437,7 +442,7 @@ class Configuration(YomboLibrary):
             })
         self.configs[section][option]['writes'] += 1
         self.configs_dirty = True
-        global_invoke_all('configuration_set', **{'section':section, 'option': option, 'value': value})
+        global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value})
 
 
     def get_meta(self, section, option, meta_type='time'):

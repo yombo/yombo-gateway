@@ -163,8 +163,8 @@ class Devices(YomboLibrary):
         self._AutomationLibrary = self._Loader.loadedLibraries['automation']
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
         self._LocalDBLibrary = self._Libraries['localdb']
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 1")
-        self._devicesByUUID = {}
+
+        self._devicesByUUID = FuzzySearch({}, .99)
         self._devicesByName = FuzzySearch({}, .89)
         self._status_updates_to_save = {}
         self._saveStatusLoop = None
@@ -181,11 +181,9 @@ class Devices(YomboLibrary):
         self.processing_commands = False
 
     def _load_(self):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 2")
         self.run_state = 2
 
     def _start_(self):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 3")
         self.run_state = 3
 
         self.start_deferred = Deferred()
@@ -254,13 +252,14 @@ class Devices(YomboLibrary):
                 self.do_command(request['device_id'], request['command_id'], not_before=request['not_before'],
                         max_delay=request['max_delay'], **request['kwargs'])
 
-    def do_command(self, device, cmd, pin=None, not_before=None, delay=None, max_delay=None, **kwargs):
+    def do_command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
         """
         Forwarder function to the actual device object for processing.
 
         :param device: Device ID or Label.
         :param cmd: Command ID or Label to send.
         :param pin: A pin to check.
+        :param request_id: A request ID for tracking.
         :param delay: How many seconds to delay sending the command.
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
@@ -289,11 +288,15 @@ class Devices(YomboLibrary):
         """
         Instantiate (load) a new device. Doesn't update database, must call add_update_delete isntead of this.
 
+        **Hooks called**:
+
+        * _device_loaded_ : Sends kwargs: *id* - The new device id.
+
         :param record: Row of items from the SQLite3 database.
         :type record: dict
         :returns: Pointer to new device. Only used during unittest
         """
-        print("load_device: %s" % record)
+        # print("load_device: %s" % record)
         try:
             # todo: refactor voicecommands. Need to be able to update/delete them later.
             self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
@@ -306,7 +309,7 @@ class Devices(YomboLibrary):
 
         logger.debug("_add_device: {record}", record=record)
 
-        global_invoke_all('device_loaded', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
+        global_invoke_all('_device_loaded_', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
         return d
 #        if test_device:
 #            returnValue(self._devicesByUUID[device_id])
@@ -691,7 +694,7 @@ class Device:
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
-        logger.info("New device - info: {device}", device=device)
+        logger.debug("New device - info: {device}", device=device)
 
         self.Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")
@@ -723,9 +726,8 @@ class Device:
         self._helpers = {}  # Helper class provided by route module that can provide additional features.
         self._CommandsLibrary = self._DevicesLibrary._Libraries['commands']
 
+        # this registers the device's device type so others know what kind of device this is.
         self._registered_device_type = self._DevicesLibrary._DeviceTypes.add_registered_device(self)
-
-        print("_registered_device_type: %s" % self._registered_device_type)
 
         if device['status'] == 1:
             self.enabled = True
@@ -749,6 +751,7 @@ class Device:
                 self.available_commands.append(str(command.command_id))
 
         def set_variables(vars):
+            # print("GOT DEVICE VARS!!!!! %s" % vars)
             self.device_variables = vars
 
         def gotException(failure):
@@ -759,6 +762,7 @@ class Device:
         # d.addCallback(set_commands)
         # d.addErrback(gotException)
         # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
+
         d = self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id)
         d.addErrback(gotException)
         d.addCallback(set_variables)
@@ -787,7 +791,7 @@ class Device:
                 'status_history': copy.copy(self.status_history),
                }
 
-    def do_command(self, cmd, pin=None, not_before=None, delay=None, max_delay=None, **kwargs):
+    def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
         """
         Do a command. Will call _do_command_ hook so modules can process the request.
 
@@ -805,6 +809,7 @@ class Device:
 
         :param cmd: Command ID or Label to send.
         :param pin: A pin to check.
+        :param request_id: Request ID for tracking.
         :param delay: How many seconds to delay sending the command.
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
@@ -832,7 +837,9 @@ class Device:
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
-        request_id = random_string(length=16)
+        if request_id is None:
+            request_id = random_string(length=16)
+        kwargs['request_id'] = request_id
 
         if max_delay is not None:
             if six.integer_types(max_delay) or isinstance(max_delay, float):
@@ -888,6 +895,22 @@ class Device:
         del self._DevicesLibrary.delay_queue[request_id]
 
     def do_command_hook(self, cmdobj, kwargs):
+        """
+        Performs the actual sending of a device command. It does this through the hook system. This allows any module
+        to setup any monitoring, or perfom the actual action.
+
+        When a device changes state, whatever module changes the state of a device, or is responsible for reporting
+        those changes, it *must* call "self._Devices['devicename/deviceid'].set_state()
+
+        **Hooks called**:
+
+        * _devices_command_ : Sends kwargs: *device*, the device object and *command*. This receiver will be
+          responsible for obtaining whatever information it needs to complete the action being requested.
+
+        :param cmdobj:
+        :param kwargs:
+        :return:
+        """
         kwargs['command'] = cmdobj
         kwargs['device'] = self
         global_invoke_all('_device_command_', **kwargs)
@@ -1057,4 +1080,4 @@ class Device:
                 self.device_type_id = record['device_type_id']
                 self._DevicesLibrary._devicesByDeviceTypeByUUID[self.device_type_id][self.device_id]
 
-        global_invoke_all('device_update', **{'id': record['id']})  # call hook "device_update" when adding a new device.
+        # global_invoke_all('_devices_update_', **{'id': record['id']})  # call hook "device_update" when adding a new device.

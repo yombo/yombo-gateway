@@ -226,6 +226,11 @@ class Atoms(YomboLibrary):
         """
         Get the value of a given atom (key).
 
+        **Hooks called**:
+
+        * _atoms_set_ : Sends kwargs 'key', and 'value'. *key* is the name of the atom being set and *value* is
+          the new value to set.
+
         :param key: Name of atom to set.
         :param value: Value to set the atom to.
         :return: Value of atom
@@ -235,7 +240,7 @@ class Atoms(YomboLibrary):
         # Call any hooks
         already_set = False
         try:
-            atom_changes = yombo.utils.global_invoke_all('atoms_set', **{'keys': key, 'value': value, 'new': key in self.__Atoms})
+            atom_changes = yombo.utils.global_invoke_all('_atoms_set_', **{'keys': key, 'value': value, 'new': key in self.__Atoms})
         except YomboHookStopProcessing:
             logger.warning("Stopping processing 'hook_atoms_set' due to YomboHookStopProcessing exception.")
             return

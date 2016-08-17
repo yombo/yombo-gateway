@@ -312,13 +312,13 @@ class Loader(YomboLibrary, object):
             returnValue(None)
         if not (hook.startswith("_") and hook.endswith("_")):
             isCoreFunction = False
-            hook = library._Name + "_" + hook
+            hook = library._Name.lower() + "_" + hook
         if hook in self._hook_cache:
-            if self._hook_cache[library._FullName+hook] == False:
+            if self._hook_cache[hook] == False:
 #                logger.warn("Cache hook ({library}:{hook})...passing", library=library._FullName, hook=hook)
                 returnValue(None)
         else:
-            self._hook_cache[library._FullName+hook] = None
+            self._hook_cache[hook] = None
         if hasattr(library, hook):
             method = getattr(library, hook)
             self._log_loader('debug', requested_library, 'library', 'library_invoke', 'About to call: %s' % hook)

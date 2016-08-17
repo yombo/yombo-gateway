@@ -583,6 +583,7 @@ class LocalDB(YomboLibrary):
                 }
 
             variables[record.machine_label]['value'].append(record.value)
+            variables[record.machine_label]['value'].append(record.value)
 #                print record.__dict__
         returnValue(variables)
 
