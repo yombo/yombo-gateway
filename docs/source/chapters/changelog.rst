@@ -18,15 +18,15 @@ New Features
 Enhancements
 ---------------
 
-* Updates to various items (modules, devices, commands, etc) should not be performed in near-real time and no longer
-  requires a reboot of the Yombo Gateway to get these updates. It's up to modules to implement the correct hooks to
-  recieve updates on device changes.
-*
+* Started implementing live-updates for devices and commands. However, at this time, still need a reboot
+  for everything to take affect. The goal is to allow the majority of these changes to occur without requiring reboot.
+* Started making steps to allowing the gateway to start even when offline.
 
 Misc
 -------
 
-* None..
+* Device types for a module are no longer registered with Yombo, instead, the module implements a hook so the gateway
+  can get this information directly from the module.
 
 August 5, 2016 - 0.11.0
 ==============================

@@ -1,3 +1,5 @@
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session, needs_web_pin
+
 simulate_gw = {
               'new':{
                   'label': '',
@@ -40,16 +42,14 @@ simulate_gw = {
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
         @webapp.route('/1')
-        def page_setup_wizard_1(webinterface, request):
-            if webinterface.sessions.get(request, 'setup_wizard_done') is True:
-                return webinterface.redirect(request, '/setup_wizard/6')
+        @require_auth_pin(login_redirect="/setup_wizard/2")
+        def page_setup_wizard_1(webinterface, request, session):
+            print "session = %s" % session
+            if session is not None:
+                if session.get('setup_wizard_done') is True:
+                    return webinterface.redirect(request, '/setup_wizard/6')
 
-            webinterface.sessions.set(request, 'login_redirect', '/setup_wizard/2')
-            auth = webinterface.require_auth_pin(request)
-            if auth is not None:
-                return auth
-
-            webinterface.sessions.set(request, 'setup_wizard_last_step', 1)
+            session.set('setup_wizard_last_step', 1)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
@@ -58,10 +58,12 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route('/2')
-        def page_setup_wizard_2(webinterface, request):
-            if webinterface.sessions.get(request, 'setup_wizard_done') is True:
-                return webinterface.redirect(request, '/setup_wizard/6')
-            if webinterface.sessions.get(request, 'setup_wizard_last_step') not in (1, 2, 3):
+        @require_auth()
+        def page_setup_wizard_2(webinterface, request, session):
+            if session is not None:
+                if session.get('setup_wizard_done') is True:
+                    return webinterface.redirect(request, '/setup_wizard/6')
+            if session.get('setup_wizard_last_step') not in (1, 2, 3):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                 return webinterface.redirect(request, '/setup_wizard/1')
 
@@ -75,7 +77,7 @@ def route_setup_wizard(webapp):
 #            webinterface.gateway()
             available_gateways = simulate_gw #(include_new=True)
 
-            webinterface.sessions.set(request, 'setup_wizard_last_step', 2)
+            session.set('setup_wizard_last_step', 2)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/2.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations

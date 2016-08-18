@@ -147,7 +147,7 @@ class Loader(YomboLibrary, object):
         yield self.import_libraries() # import and init all libraries
         logger.debug("Calling load functions of libraries.")
         for name, config in HARD_LOAD.iteritems():
-            self._log_loader('info', name, 'library', 'load', 'About to call _load_.')
+            self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
@@ -159,7 +159,7 @@ class Loader(YomboLibrary, object):
         self._moduleLibrary = self.loadedLibraries['modules']
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
         for name, config in HARD_LOAD.iteritems():
-            self._log_loader('info', name, 'library', 'start', 'About to call _start_.')
+            self._log_loader('debug', name, 'library', 'start', 'About to call _start_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_start_")
@@ -168,7 +168,7 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_start_'] = False
 
         for name, config in HARD_LOAD.iteritems():
-            self._log_loader('info', name, 'library', 'started', 'About to call _started_.')
+            self._log_loader('debug', name, 'library', 'started', 'About to call _started_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_started_")
@@ -238,7 +238,7 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_init_'] = False
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
-            self._log_loader('info', name, 'library', 'init', 'About to call _init_.')
+            self._log_loader('debug', name, 'library', 'init', 'About to call _init_.')
 
             component = name.lower()
             library = self.loadedLibraries[component]

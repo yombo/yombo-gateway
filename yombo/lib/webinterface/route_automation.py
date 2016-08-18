@@ -1,16 +1,15 @@
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 
 def route_automation(webapp):
     with webapp.subroute("/automation") as webapp:
         @webapp.route('/')
+        @require_auth_pin()
         def page_automation(webinterface, request):
             return webinterface.redirect(request, '/automation/index')
 
         @webapp.route('/index')
-        def page_automation_index(webinterface, request):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
-
+        @require_auth_pin()
+        def page_automation_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/index.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
@@ -21,11 +20,8 @@ def route_automation(webapp):
 
         
         @webapp.route('/details/<string:automation_id>')
-        def page_automation_details(webinterface, request, automation_id):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
-
+        @require_auth_pin()
+        def page_automation_details(webinterface, request, session, automation_id):
             try:
                 device = webinterface._DevicesLibrary[devicautomation_ide_id]
             except:
@@ -41,10 +37,8 @@ def route_automation(webapp):
                                )
     
         @webapp.route('/edit/<string:device_id>')
-        def page_devices_edit(webinterface, request, device_id):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
+        @require_auth_pin()
+        def page_devices_edit(webinterface, request, session, device_id):
 
             try:
                 device = webinterface._DevicesLibrary[device_id]

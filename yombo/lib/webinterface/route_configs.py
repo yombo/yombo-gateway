@@ -1,3 +1,5 @@
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+
 simulate_gw = {
               'new':{
                   'label': '',
@@ -40,18 +42,13 @@ simulate_gw = {
 def route_configs(webapp):
     with webapp.subroute("/configs") as webapp:
         @webapp.route('/')
-        def page_configs(webinterface, request):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
+        @require_auth()
+        def page_configs(webinterface, request, session):
             return webinterface.redirect(request, '/configs/basic')
 
         @webapp.route('/basic', methods=['GET'])
-        def page_configs_basic_get(webinterface, request):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
-
+        @require_auth()
+        def page_configs_basic_get(webinterface, request, session):
             configs = webinterface._Configs.get("*", "*")
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
@@ -63,10 +60,8 @@ def route_configs(webapp):
                                )
 
         @webapp.route('/basic', methods=['POST'])
-        def page_configs_basic_post(webinterface, request):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
+        @require_auth()
+        def page_configs_basic_post(webinterface, request, session):
 
             valid_submit = True
             # more checks to come, just doing basic for now.
@@ -149,11 +144,8 @@ def route_configs(webapp):
                                )
 
         @webapp.route('/yombo_ini')
-        def page_configs_yombo_ini(webinterface, request):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
-
+        @require_auth()
+        def page_configs_yombo_ini(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/yombo_ini.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations

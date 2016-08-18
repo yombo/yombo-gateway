@@ -2,7 +2,6 @@
 
 from twisted.web.server import Session
 
-
 from yombo.core.log import get_logger
 
 logger = get_logger("library.webconfig.session")

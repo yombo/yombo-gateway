@@ -26,7 +26,7 @@ except ImportError:
 from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, succeed, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import 3rd party libraries
 
@@ -37,6 +37,7 @@ from yombo.core.exceptions import YomboRestart
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 
 from yombo.lib.webinterface.route_automation import route_automation
 from yombo.lib.webinterface.route_api_v1 import route_api_v1
@@ -413,55 +414,6 @@ class WebInterface(YomboLibrary):
     def redirect(self, request, redirect_path):
         request.setHeader('server', 'Yombo/1.0')
         request.redirect(redirect_path)
-#        return succeed(None)
-
-    def require_auth(self, request, check_pin_only=False):
-        session = self.sessions.load(request)
-
-        if self.require_auth_pin:
-#            print "auth pin:::: %s" % session
-            # had to break these up... - kept dieing on me
-            has_pin = False
-            if session is not None:
-                if 'auth_pin' in session:
-                    if session['auth_pin'] is True:
-                        has_pin = True
-
-            if has_pin is False:
-                if self._display_pin_console_time < int(time())-30:
-                    self._display_pin_console_time = int(time())
-                    self.display_pin_console()
-                if has_pin is False:
-                    if self._display_pin_console_time < int(time())-30:
-                        self._display_pin_console_time = int(time())
-                        self.display_pin_console()
-                page = self.get_template(request, self._dir + 'pages/login_pin.html')
-                return page.render(alerts=self.get_alerts(),
-                                   data=self.data,
-                                   )
-        if check_pin_only:
-            return None
-
-        if session is not None:
-            if 'auth' in session:
-                if session['auth'] is True:
-#                    print "ddd:33"
-                    session['last_access'] = int(time())
-                    try:
-                        del session['login_redirect']
-                    except:
-                        pass
-                    return None
-
-        page = self.get_template(request, self._dir + 'pages/login_user.html')
-        print "require_auth..session: %s" % session
-        return page.render(alerts=self.get_alerts(),
-                           data=self.data,
-                           )
-
-    def require_auth_pin(self, request, alerts={}):
-        print "require_auth_pin"
-        return self.require_auth(request, True)
 
     def check_op_mode(self, request, router, **kwargs):
 #        print "op mode: %s" % self._op_mode
@@ -479,10 +431,11 @@ class WebInterface(YomboLibrary):
     def home(self, request):
         return self.check_op_mode(request, 'home')
 
-    def run_home(self, request):
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
+    @require_auth()
+    def run_home(self, request, session):
+        # auth = self.require_auth(request)
+        # if auth is not None:
+        #     return auth
 
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
         functions = {'_': _}
@@ -495,14 +448,17 @@ class WebInterface(YomboLibrary):
                            states=self._Libraries['states'].get_states(),
                            )
 
-    def config_home(self, request):
-        print "aaaaaaaa"
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
+    @require_auth()
+    def config_home(self, request, session):
+        # auth = self.require_auth(request)
+        # if auth is not None:
+        #     return auth
 
         page = self.get_template(request, self._dir + 'config_pages/index.html')
-        return page.render(data=self.data,
+        functions = {'_': _}
+        return page.render(func=self.functions,
+                           _=_,  # translations
+                           data=self.data,
                            alerts=self.get_alerts(),
                            )
 
@@ -517,20 +473,16 @@ class WebInterface(YomboLibrary):
         return self.home(request)
 
     @webapp.route('/login/user', methods=['GET'])
-    def page_login_user_get(self, request):
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
+    @require_auth_pin()
+    def page_login_user_get(self, request, session):
 
-        print request.args.get('email')
+        # print request.args.get('email')
         return self.redirect(request, '/')
 
     @webapp.route('/login/user', methods=['POST'])
+    @require_auth_pin()
     @inlineCallbacks
-    def page_login_user_post(self, request):
-        auth = self.require_auth_pin(request)
-        if auth is not None:
-            returnValue(auth)
+    def page_login_user_post(self, request, session):
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
         print "111"
@@ -541,7 +493,6 @@ class WebInterface(YomboLibrary):
         results = yield self.api.session_login_password(submitted_email, submitted_password)
         if results is not None:
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
-            session = self.sessions.load(request)
             session['auth'] = True
             session['auth_id'] = submitted_email
             session['auth_time'] = time()
@@ -588,23 +539,13 @@ class WebInterface(YomboLibrary):
         return self.home(request)
 
     @webapp.route('/login/pin', methods=['GET'])
+    @require_auth_pin()
     def page_login_pin_get(self, request):
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
         return self.redirect(request, '/')
 
-        # if self.has_auth_pin(request):
-        #     request.redirect('/')
-        #     return succeed(None)
-        #
-        # page = self.webapp.templates.get_template(self._dir + 'pages/login_pin.html')
-        # return page.render(alerts={},
-        #                    data=self.data,
-        #                    )
-
     @webapp.route('/atoms/index')
-    def page_atoms(self, request):
+    @require_auth()
+    def page_atoms(self, request, session):
         page = self.get_template(request, self._dir + 'pages/atoms/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'atoms')
         return page.render(data=self.data,
@@ -614,14 +555,16 @@ class WebInterface(YomboLibrary):
                            )
 
     @webapp.route('/commands/index')
-    def page_commands(self, request):
+    @require_auth()
+    def page_commands(self, request, session):
         page = self.get_template(request, self._dir + 'pages/commands/index.html')
         return page.render(data=self.data,
                            alerts=self.get_alerts(),
                            )
 
     @webapp.route('/commands/amqp')
-    def page_commands_amqp(self, request):
+    @require_auth()
+    def page_commands_amqp(self, request, session):
         params = self._get_parms(request)
         print "111"
         if 'command' in params:
@@ -636,11 +579,8 @@ class WebInterface(YomboLibrary):
         return page.render()
 
     @webapp.route('/modules/index')
-    def page_modules(self, request):
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
-
+    @require_auth()
+    def page_modules(self, request, session):
         page = self.get_template(request, self._dir + 'pages/modules/index.html')
         return page.render(data=self.data,
                            alerts=self.get_alerts(),
@@ -648,7 +588,8 @@ class WebInterface(YomboLibrary):
                            )
 
     @webapp.route('/states/index')
-    def page_states(self, request):
+    @require_auth()
+    def page_states(self, request, session):
         auth = self.require_auth(request)
         if auth is not None:
             return auth

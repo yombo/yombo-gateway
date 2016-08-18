@@ -158,7 +158,7 @@ class Sessions(object):
         :param cookies: All the cookies that were sent in.
         :return:
         """
-#        print "load sessions"
+        print "load session: %s" % request
         cookie_name = self.config.cookie_name
         cookies = request.received_cookies
 #        print self._data

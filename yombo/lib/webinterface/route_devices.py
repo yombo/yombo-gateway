@@ -1,14 +1,15 @@
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+
 def route_devices(webapp):
     with webapp.subroute("/devices") as webapp:
         @webapp.route('/')
-        def page_devices(webinterface, request):
+        @require_auth()
+        def page_devices(webinterface, request, session):
             return webinterface.redirect(request, '/devices/index')
 
         @webapp.route('/index')
-        def page_devices_index(webinterface, request):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
+        @require_auth()
+        def page_devices_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
@@ -19,11 +20,8 @@ def route_devices(webapp):
 
         
         @webapp.route('/details/<string:device_id>')
-        def page_devices_details(webinterface, request, device_id):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
-
+        @require_auth()
+        def page_devices_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._DevicesLibrary[device_id]
             except:
@@ -39,14 +37,12 @@ def route_devices(webapp):
                                )
     
         @webapp.route('/edit/<string:device_id>')
-        def page_devices_edit(webinterface, request, device_id):
-            auth = webinterface.require_auth(request)
-            if auth is not None:
-                return auth
-
+        @require_auth()
+        def page_devices_edit(webinterface, request, session, device_id):
             try:
-                device = webinterface._DevicesLibrary[device_id]
-            except:
+                device = webinterface._Devices.get_device(device_id)
+            except Exception, e:
+                print "device find errr: %s" % e
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')

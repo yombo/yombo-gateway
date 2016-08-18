@@ -275,7 +275,6 @@ class Devices(YomboLibrary):
         This also loads all the device routing. This helps messages and modules determine how to route
         commands between command modules and interface modules.
         """
-        print("__load_devices")
         devices = yield self._Libraries['LocalDB'].get_devices()
         logger.debug("Loading devices:::: {devices}", devices=devices)
         if len(devices) > 0:

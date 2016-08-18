@@ -6,6 +6,7 @@ except ImportError:
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, succeed, returnValue
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 
 def return_error(message, status=500):
     return {
@@ -25,7 +26,8 @@ def route_api_v1(webapp):
 
 
         @webapp.route('/devices', methods=['GET'])
-        def ajax_devices_get(webinterface, request):
+        @require_auth()
+        def ajax_devices_get(webinterface, request, session):
             try:
                 action = request.args.get('action')[0]
             except:
@@ -46,7 +48,8 @@ def route_api_v1(webapp):
 
 
         @webapp.route('/notifications', methods=['GET'])
-        def api_v1_notifications_get(webinterface, request):
+        @require_auth()
+        def api_v1_notifications_get(webinterface, request, session):
             action = request.args.get('action')[0]
             results = {}
             if action == "closed":
@@ -58,6 +61,7 @@ def route_api_v1(webapp):
             return json.dumps(results)
     
         @webapp.route('/statistics/names', methods=['GET'])
+        @require_auth()
         @inlineCallbacks
         def ajax_notifications_name_get(webinterface, request):
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
@@ -65,7 +69,8 @@ def route_api_v1(webapp):
             returnValue(json.dumps(records))
     
         @webapp.route('/statistics/range', methods=['GET'])
-        def api_v1_notifications_range_get(webinterface, request):
+        @require_auth()
+        def api_v1_notifications_range_get(webinterface, request, session):
             name = request.args.get('name')[0]
             min = request.args.get('min')[0]
             max = request.args.get('max')[0]
@@ -79,7 +84,8 @@ def route_api_v1(webapp):
             return json.dumps(results)
     
         @webapp.route('/statistics/something', methods=['GET'])
-        def api_v1_notifications_something_get(webinterface, request):
+        @require_auth()
+        def api_v1_notifications_something_get(webinterface, request, session):
             action = request.args.get('action')[0]
             results = {}
             if action == "closed":
