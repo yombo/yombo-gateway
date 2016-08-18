@@ -421,7 +421,7 @@ class MQTTClient(object):
 
     @inlineCallbacks
     def mqtt_connected(self):
-        print("client ID connected: %s" % self.client_id)
+        logger.debug("client ID connected: {client_id}", client_id=self.client_id)
         self.connected = True
         while True:
             try:

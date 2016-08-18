@@ -77,8 +77,8 @@ HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
-HARD_UNLOAD["Messages"] = {'operation_mode':'all'}
 HARD_UNLOAD["Devices"] = {'operation_mode':'all'}
 HARD_UNLOAD["AMQPYombo"] = {'operation_mode':'run'}
 HARD_UNLOAD["Configuration"] = {'operation_mode':'all'}
@@ -306,6 +306,8 @@ class Loader(YomboLibrary, object):
         """
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
+        if requested_library not in self.loadedLibraries:
+            returnValue(None)
         library = self.loadedLibraries[requested_library]
         isCoreFunction = True
         if requested_library == 'Loader':

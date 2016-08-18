@@ -378,7 +378,7 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.get.default", bucket_time=15, anon=True)
             return default
         else:
-            self._Statistics.increment("lib.configuration.get.default", bucket_time=15, anon=True)
+            self._Statistics.increment("lib.configuration.get.nodefault", bucket_time=15, anon=True)
             return None
 
     def set(self, section, option, value):

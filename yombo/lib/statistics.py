@@ -573,7 +573,7 @@ class Statistics(YomboLibrary):
             else:
                 names[name]['life'] = [0, 0, 0]
 
-        print names
+#        print names
 #{'home.kitchen.bar': {'life': [1, 3, 5]}, 'home.office.light': {'life': [2, 4, 6]}, 'home.den.light': {'life': [2, 4, 6]}}
 
 

@@ -275,7 +275,7 @@ class WebInterface(YomboLibrary):
             self.display_pin_console()
 
     def _unload_(self):
-        pass
+        return self.sessions._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
     #     return [{'webinterface': {
@@ -469,20 +469,18 @@ class WebInterface(YomboLibrary):
     def page_logout_get(self, request):
         print "logout"
         self.sessions.close_session(request)
-        request.received_cookies[self.sessions.config.cookie_name] = 'LOGOFF'
+        request.received_cookies[self.sessions.config.cookie_session] = 'LOGOFF'
         return self.home(request)
 
     @webapp.route('/login/user', methods=['GET'])
     @require_auth_pin()
-    def page_login_user_get(self, request, session):
-
-        # print request.args.get('email')
+    def page_login_user_get(self, request):
         return self.redirect(request, '/')
 
     @webapp.route('/login/user', methods=['POST'])
     @require_auth_pin()
     @inlineCallbacks
-    def page_login_user_post(self, request, session):
+    def page_login_user_post(self, request):
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
         print "111"
@@ -493,12 +491,13 @@ class WebInterface(YomboLibrary):
         results = yield self.api.session_login_password(submitted_email, submitted_password)
         if results is not None:
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
+            session = self.sessions.create(request)
             session['auth'] = True
             session['auth_id'] = submitted_email
             session['auth_time'] = time()
             session['yomboapi_sessionid'] = results['SessionID']
             session['yomboapi_sessionkey'] = results['SessionKey']
-            request.received_cookies[self.sessions.config.cookie_name] = session['session_id']
+            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
             if self._op_mode == 'firstrun':
                 self.api.save_session(session['yomboapi_sessionid'], session['yomboapi_sessionhash'])
         else:
@@ -522,24 +521,28 @@ class WebInterface(YomboLibrary):
     def page_login_pin_post(self, request):
         submitted_pin = request.args.get('authpin')[0]
         valid_pin = False
+        print "pin submit: %s" % submitted_pin
         if submitted_pin.isalnum() is False:
+            print "pin submit2: %s" % submitted_pin
             self.add_alert('Invalid authentication.', 'warning')
-            return self.require_auth(request)
+            return self.redirect(request, '/login/pin')
 
+        print "pin submit2: %s" % submitted_pin
         if self.auth_pin_type == 'pin':
             if submitted_pin == self.auth_pin:
                 print "pin post444"
-                session = self.sessions.create(request)
-                session['auth_pin'] = True
-                session['auth_pin_time'] = int(time())
-                request.received_cookies[self.sessions.config.cookie_name] = session['session_id']
+                expires = 10 * 365 * 24 * 60 * 60  # 10 years from now.
+                request.addCookie(self.sessions.config.cookie_pin, '1', domain=None, path='/',
+                          secure=self.sessions.config.secure, httpOnly=self.sessions.config.httponly,
+                          max_age=expires)
+                request.received_cookies[self.sessions.config.cookie_pin] = '1'
 #                print "session: %s" % session
             else:
                 return self.redirect(request, '/login/pin')
         return self.home(request)
 
     @webapp.route('/login/pin', methods=['GET'])
-    @require_auth_pin()
+    @require_auth()
     def page_login_pin_get(self, request):
         return self.redirect(request, '/')
 

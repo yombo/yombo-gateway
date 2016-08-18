@@ -201,7 +201,7 @@ class Devices(YomboLibrary):
 
     def _started_(self):
         self.run_state = 4
-        print("devices: %s" % self._devicesByUUID)
+        # print("devices: %s" % self._devicesByUUID)
 
     def _stop_(self):
         """

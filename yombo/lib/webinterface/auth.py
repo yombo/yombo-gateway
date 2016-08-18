@@ -1,6 +1,8 @@
 from functools import wraps
 from time import time
 
+from twisted.internet.defer import inlineCallbacks, returnValue
+
 def get_session(roles=None, *args, **kwargs):
 
     def call(f, *args, **kwargs):
@@ -22,6 +24,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
     def deco(f):
         @wraps(f)
+        # @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
             # print "auth wrapped_f roles: %s" % roles
             # print "auth wrapped_f request: %s" % request.received_cookies
@@ -41,15 +44,17 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             # request = a[1]
             # session = "mysession"
 
-            session = webinterface.sessions.load(request)
+            print "request:url: %s" % request.path
 
-            if needs_web_pin(webinterface, session):
+            if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
-                           )
+                               data=webinterface.data)
 
-            if session is not None:
+            session = webinterface.sessions.load(request)
+            print "session : %s" % session
+
+            if session is not False:
                 if 'auth' in session:
                     if session['auth'] is True:
         #                    print "ddd:33"
@@ -64,8 +69,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session
             return page.render(alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
-                               )
+                               data=webinterface.data)
         return wrapped_f
 
     return deco
@@ -94,34 +98,25 @@ def require_auth_pin(*args, **kwargs):
             # request = a[1]
             # session = "mysession"
 
-            session = webinterface.sessions.load(request)
-
-            if needs_web_pin(webinterface, session):
+            if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
-                           )
-            return call(f, webinterface, request, session, *a, **kw)
+                               data=webinterface.data)
+
+            return call(f, webinterface, request, *a, **kw)
         return wrapped_f
     return deco
 
-def needs_web_pin(webinterface, session):
+def needs_web_pin(webinterface, request):
     if webinterface.auth_pin_required:
+        cookie_pin = webinterface.sessions.config.cookie_pin
+        if cookie_pin in request.received_cookies:
+            return False
 #            print "auth pin:::: %s" % session
         # had to break these up... - kept dieing on me
-        has_pin = False
-        if session is not None:
-            if 'auth_pin' in session:
-                if session['auth_pin'] is True:
-                    has_pin = True
+        if webinterface._display_pin_console_time < int(time())-30:
+            webinterface._display_pin_console_time = int(time())
+            webinterface.display_pin_console()
 
-        if has_pin is False:
-            if webinterface._display_pin_console_time < int(time())-30:
-                webinterface._display_pin_console_time = int(time())
-                webinterface.display_pin_console()
-            if has_pin is False:
-                if webinterface._display_pin_console_time < int(time())-30:
-                    webinterface._display_pin_console_time = int(time())
-                    webinterface.display_pin_console()
-            return True
+        return True
     return False

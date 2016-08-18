@@ -131,6 +131,9 @@ class Variable(DBObject):
     TABLENAME='variables'
     BELONGSTO = ['devices', 'modules']
 
+class Sessions(DBObject):
+    TABLENAME='sessions'
+
 #### Views ####
 
 
@@ -231,6 +234,39 @@ class LocalDB(YomboLibrary):
         results = yield Variable.find(where=['variable_type = ? AND foreign_id = ?', 'device', device.id])
 #          results = yield DeviceType.find(where=['id = ?', device.device_variables.get()
 
+    @inlineCallbacks
+    def get_dbitem_by_id(self, dbitem, id, status=None):
+        if dbitem not in MODULE_CLASSES:
+            raise YomboWarning("get_dbitem_by_id expects dbitem to be a DBObject")
+#        print MODULE_CLASSES
+        if status is None:
+            records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', id])
+#            print "looking without status!"
+        else:
+            records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
+#        print "get_dbitem_by_id. class: %s, id: %s, status: %s" % (dbitem, id, status)
+        results = []
+        for record in records:
+            results.append(record.__dict__)  # we need a dictionary, not an object
+        returnValue(results)
+
+    @inlineCallbacks
+    def get_dbitem_by_id_dict(self, dbitem, where=None, status=None):
+        if dbitem not in MODULE_CLASSES:
+            # print MODULE_CLASSES
+            raise YomboWarning("get_dbitem_by_id_dict expects dbitem to be a DBObject")
+#        print MODULE_CLASSES
+        if where is None:
+            records = yield MODULE_CLASSES[dbitem].find()
+#            print "looking without status!"
+        else:
+            records = yield MODULE_CLASSES[dbitem].find(where=dictToWhere(where))
+#        print "get_dbitem_by_id. class: %s, id: %s, status: %s" % (dbitem, id, status)
+        results = []
+        for record in records:
+            results.append(record.__dict__)  # we need a dictionary, not an object
+        returnValue(results)
+
 #########################
 ###    Commands     #####
 #########################
@@ -284,6 +320,44 @@ class LocalDB(YomboLibrary):
             uploadable=uploadable,
         ).save()
 
+#########################
+###    Sessions     #####
+#########################
+    @inlineCallbacks
+    def get_session(self, session_id=None):
+        # print "session_data: %s" % session_data
+        if session_id is not None:
+            record = yield Sessions.find(session_id)
+        else:
+            record = yield Sessions.find()
+        returnValue(record)
+
+    @inlineCallbacks
+    def save_session(self, session_id, session_data, created, last_access, updated):
+        # print "session_data: %s" % session_data
+        yield Sessions(
+            id=session_id,
+            session_data=session_data,
+            created=created,
+            last_access=last_access,
+            updated=updated,
+        ).save()
+
+    @inlineCallbacks
+    def update_session(self, session_id, session_data, last_access, updated):
+        # print "session_data: %s" % session_data
+
+        args = {'session_data': session_data,
+                'last_access': last_access,
+                'updated' : updated,
+        }
+        yield self.dbconfig.update('sessions', args, where=['id = ?', session_id] )
+
+    @inlineCallbacks
+    def delete_session(self, session_id):
+        # print "session_data: %s" % session_data
+        yield self.dbconfig.delete('sessions', args, where=['id = ?', session_id] )
+
     @inlineCallbacks
     def get_devices(self):
 #        records = yield self.dbconfig.select("devices_view")
@@ -295,22 +369,6 @@ class LocalDB(YomboLibrary):
 #        records = yield self.dbconfig.select("devices_view")
         records = yield self.dbconfig.select("device_types")
         returnValue(records)
-
-    @inlineCallbacks
-    def get_dbitem_by_id(self, dbitem, id, status=None):
-        if dbitem not in MODULE_CLASSES:
-            raise YomboWarning("get_dbitem_by_id expects dbitem to be a DBObject")
-#        print MODULE_CLASSES
-        if status is None:
-            records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', id])
-#            print "looking without status!"
-        else:
-            records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
-#        print "get_dbitem_by_id. class: %s, id: %s, status: %s" % (dbitem, id, status)
-        results = []
-        for record in records:
-            results.append(record.__dict__)  # we need a dictionary, not an object
-        returnValue(results)
 
     @inlineCallbacks
     def get_device_by_id(self, device_id, status=1):

@@ -242,7 +242,7 @@ def upgrade(Registry, **kwargs):
      `id`           TEXT NOT NULL, /* moduleUUID */
      `session_data` TEXT NOT NULL,
      `created`      INTEGER NOT NULL,
-     `accessed`     INTEGER NOT NULL,
+     `last_access`     INTEGER NOT NULL,
      `updated`      INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
