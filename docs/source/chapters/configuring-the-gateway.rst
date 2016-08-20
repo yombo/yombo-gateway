@@ -4,24 +4,37 @@
 Configuring the Gateway
 ####################################
 
-Gateway setup and configuration takes place by using the ``./config``
-command in the root of the yombo-gateway directory.
+After downloading the gateway, simply executing the ``./yombo.sh`` or
+``yombod.bat`` file. You will see something like this:
 
-Execute: ``./config`` 
+..
 
-This tool can perform the following functions:
+   2016-08-18T15:23:56 ###########################################################
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 # The website can be accessed from the following urls:    #
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 # On local machine:                                       #
+   2016-08-18T15:23:56 #  http://localhost:8080                                  #
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 # On local network:                                       #
+   2016-08-18T15:23:56 #  http://10.10.1.50:8080                                 #
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 # From external network (check port forwarding):          #
+   2016-08-18T15:23:56 #  http://173.20.84.23:8080                               #
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 # Web Interface access pin code:                          #
+   2016-08-18T15:23:56 #  RrS9kV                                                 #
+   2016-08-18T15:23:56 #                                                         #
+   2016-08-18T15:23:56 ###########################################################
 
-* Complete the setup of a new gateway.
-* Change the configuration of a gateway. Note: Most configuration changes
-  are handled through the mobile or desktop applications.
-* Reset the gateway back to it's default settings.
+Visit each link until you find one that works. From here, you will be able to configure
+your server using the setup wizard.
 
 Running the gateway
 ===================
 
-The gateway can be started by executing the ``./yombo.sh`` or ``yombod.bat`` file.
-
-On startup the gateway will:
+Just execute the same command from above. On startup the gateway will:
 
 * Read to the yombo.ini file
 * Connect to Yombo Servers for any configuration updates
@@ -36,21 +49,22 @@ On startup the gateway will:
 
   The information below if for advanced settings and can break things. It's recommended that
   you stop here. The remaining sections explain making configuration changes that can normally
-  be performed though the mobile or desktop applications.
+  be performed though the configuration website or mobile apps.
 
 yombo.ini
 =========
+
+The majority of the time, the default settings will work fine. However, the
+gateway exposes many settings that allows various options to be tweaked. Some
+caution is needed: *you can break things!*
 
 .. rst-class:: floater
 
 .. warning::
 
-  Deleting the yombo.ini alone will not delete all settings. Run the
-  ``./config`` tool to complete this action.
+  Deleting the yombo.ini alone will not delete all settings. Be sure to delete the
+  database file: yombo-gateawy/usr/etc/yombo.db
 
-The majority of the time, the default settings will work fine. However, the
-gateway exposes many settings that allows various options to be tweaked. Some
-caution is needed: *you can break things!*
 
 The yombo.ini file contains various configuration settings. For details about
 it's contents see the Yombo Wiki for

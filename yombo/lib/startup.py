@@ -59,19 +59,3 @@ class Startup(YomboLibrary):
             self._Loader.operation_mode = 'config'
         else:
             self._Loader.operation_mode = 'run'
-
-    def _load_(self):
-        pass
-
-    def _start_(self):
-        pass
-
-    def _stop_(self):
-        pass
-
-    def _unload_(self):
-        pass
-
-    def enter_config(self, message):
-        raise YomboWarning(message, 201, "_init_", "startup")
-        self._Loader.operation_mode = config

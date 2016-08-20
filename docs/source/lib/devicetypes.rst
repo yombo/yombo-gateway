@@ -1,0 +1,15 @@
+.. index:: devicetypes
+
+.. _devicetypes::
+
+.. currentmodule:: yombo.lib.devicetypes
+
+====================================
+Device Types (yombo.lib.devicetypes)
+====================================
+.. automodule:: yombo.lib.devicetypes
+
+Device Types
+================
+.. autoclass:: DeviceTypes
+   :members:

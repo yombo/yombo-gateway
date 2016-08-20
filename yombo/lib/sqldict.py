@@ -48,6 +48,7 @@ class SQLDict(YomboLibrary):
     def _init_(self,):
         self._dictionaries = {}
         self.unload_defer = None
+        self._saveSQLDictLoop = None
 
     def _load_(self):
         self._saveSQLDictLoop = LoopingCall(self.save_sql_dict)
@@ -57,7 +58,8 @@ class SQLDict(YomboLibrary):
         self.save_sql_dict()
 
     def _stop_(self):
-        self._saveSQLDictLoop.stop()
+        if self._saveSQLDictLoop is not None:
+            self._saveSQLDictLoop.stop()
 
     def _unload_(self):
         self.save_sql_dict(True)

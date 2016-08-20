@@ -124,18 +124,21 @@ class Atoms(YomboLibrary):
     information about the underlying system.
     """
     def _init_(self):
+        self.run_state = 1
         self.__Atoms = {}
         self.__Atoms.update(self.os_data())
         self.triggers = {}
         self.automation = self._Libraries['automation']
         self._loaded = False
+        self.set('loader.operation_mode', 'run')
 
     def _load_(self):
+        self.run_state = 2
         self.set('running_since', time())
         self._loaded = True
 
     def _start_(self):
-        pass
+        self.run_state = 3
 
     def _stop_(self):
         pass
@@ -216,11 +219,25 @@ class Atoms(YomboLibrary):
         :param key: Name of atom to check.
         :return: Value of atom
         """
+        logger.debug('atoms:get: {key} = {value}', key=key)
         if key is None:
-            return self.__Atoms
-        keys = key.split(':')
+            raise YomboWarning("Key cannot be none")
+
         self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
-        return yombo.utils.dict_get_value(self.__Atoms, keys)
+
+        search_chars = ['#', '+']
+        if any(s in key for s in search_chars):
+            results = yombo.utils.pattern_search(key, self.__Atoms)
+            if len(results) > 1:
+                values = {}
+                for item in results:
+                    values[item] = self.__Atoms[item]
+                return values
+            else:
+                raise KeyError("Searched for atoms, none found.")
+
+        print "atoms: %s" % self.__Atoms
+        return self.__Atoms[key]
 
     def set(self, key, value):
         """
@@ -235,26 +252,32 @@ class Atoms(YomboLibrary):
         :param value: Value to set the atom to.
         :return: Value of atom
         """
-        keys = key.split(':')
+        logger.debug('atoms:set: {key} = {value}', key=key, value=value)
+
+        search_chars = ['#', '+']
+        if any(s in key for s in search_chars):
+            raise YomboWarning("atom keys cannot have # or + in them, reserved for searching.")
 
         # Call any hooks
         already_set = False
-        try:
-            atom_changes = yombo.utils.global_invoke_all('_atoms_set_', **{'keys': key, 'value': value, 'new': key in self.__Atoms})
-        except YomboHookStopProcessing:
-            logger.warning("Stopping processing 'hook_atoms_set' due to YomboHookStopProcessing exception.")
-            return
-        for moduleName, newValue in atom_changes.iteritems():
-            if newValue is not None:
-                logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
-                             moduleName=moduleName, newValue=newValue)
-                yombo.utils.dict_set_value(self.__Atoms, keys, newValue)
-                already_set = True
-                break
+        if self.run_state >= 2:  # but only if we are not during init.
+            try:
+                atom_changes = yombo.utils.global_invoke_all('_atoms_set_',
+                                        **{'keys': key, 'value': value, 'new': key in self.__Atoms})
+            except YomboHookStopProcessing:
+                logger.warning("Stopping processing 'hook_atoms_set' due to YomboHookStopProcessing exception.")
+                return
+            for moduleName, newValue in atom_changes.iteritems():
+                if newValue is not None:
+                    logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
+                                 moduleName=moduleName, newValue=newValue)
+                    self.__Atoms['key'] = newValue
+                    already_set = True
+                    break
 
         self._Statistics.increment("lib.atoms.set", bucket_time=15, anon=True)
         if not already_set:
-            yombo.utils.dict_set_value(self.__Atoms, keys, value)
+           self.__Atoms[key]= value
 
         self.check_trigger(key, value)
 

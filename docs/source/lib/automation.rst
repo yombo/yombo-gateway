@@ -14,4 +14,5 @@ Automation Class
 .. autoclass:: Automation
    :members:
 
+   .. automethod:: __init__
    .. automethod:: _module_prestart_

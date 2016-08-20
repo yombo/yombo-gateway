@@ -42,6 +42,40 @@ logger = get_logger('utils.__init__')
 # Import Yombo libraries
 from yombo.core.exceptions import YomboNoSuchLoadedComponentError, YomboWarning
 
+def pattern_search(look_for, items):
+    """
+    Allows searching thru a list of items (a dict or list). For example, a list of:
+
+    ['yombo.status.hello', 'yombo.status.bye', 'visitor.livingroom.hello']
+
+    You can search
+    using #'s for whilecards consuming any number of spaces between or +'s as a wildcard for only
+    on work.  For example, a search of "#.hello" would result in:
+
+    ['yombo.status.hello', 'visitor.livingroom.hello']
+
+    While a search of "yombo.status.+" would result in:
+
+    ['yombo.status.hello', 'yombo.status.bye']
+
+    :param look_for:
+    :param items:
+    :return:
+    """
+    regex = re.compile(look_for.replace('#', '.*').replace('$', '\$').replace('+', '[/\$\s\w\d]+'))
+    out_list = []
+    if isinstance(items, dict):
+        for item, data in items.iteritems():
+            result = regex.match(item)
+            if result is not None:
+                out_list.append(item)
+    elif isinstance(items, list):
+        for item in items:
+            result = regex.match(item)
+            if result is not None:
+                out_list.append(item)
+    return out_list
+
 def epoch_from_string( the_string ):
     """
     Receives a string and parses it into seconds. Some example strings:

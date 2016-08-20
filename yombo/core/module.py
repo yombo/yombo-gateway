@@ -203,15 +203,6 @@ class YomboModule:
         """
         pass
 
-    def message(self, message):
-        """
-        Incoming messeages from other components (internal and external to the gateway) will
-        be sent to this method.
-
-        :param message: (Message) A Yombo Message to be sent to module or library.
-        """
-        pass
-
     def _dump(self):
         """
         Returns a dictionary of core attributes about this module. Usually used for debugging.

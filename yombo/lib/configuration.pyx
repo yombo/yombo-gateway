@@ -69,15 +69,11 @@ class Configuration(YomboLibrary):
         Open the yombo.ini file for reading.
 
         Import the configuration items into the database, also prime the configs for reading.
-
-        :param loader: The loader module.
-        :type loader: loader
         """
         self.cache_dirty = False
         
 
-        self._Atoms.set('configuration.yombo_ini.found', False)
-
+        self.loading_yombo_ini = True
         try:
             config_parser = ConfigParser.SafeConfigParser()
             fp = open('yombo.ini')
@@ -99,11 +95,13 @@ class Configuration(YomboLibrary):
                                 value = str(value)
                     self.set(section, option, value)
         except IOError:
+            self._Atoms.set('configuration.yombo_ini.found', False)
             self._Loader.operation_mode = 'firstrun'
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
             self._Atoms.set('configuration.yombo_ini.found', False)
             return
         except ConfigParser.NoSectionError, e:
+            self._Atoms.set('configuration.yombo_ini.found', False)
             print "CAUGHT ConfigParser.NoSectionError!!!!  In Loading. %s" % e
         else:
             self._Atoms.set('configuration.yombo_ini.found', True)
@@ -161,6 +159,7 @@ class Configuration(YomboLibrary):
 
         if self.get('core', 'setup_stage') is None:
             self.set('core', 'setup_stage', 'first_run')
+        self.loading_yombo_ini = False
 
     def _unload_(self):
         """
@@ -283,15 +282,6 @@ class Configuration(YomboLibrary):
                     self.configs[section][option]['details'] = self.configs_details[section][option]
                 except:
                     pass
-
-    def message(self, message):
-        """
-        Defined to only catch messages sent to configuration on accident!
-
-        :param message: A yombo message.
-        :type message: :ref:`message`
-        """
-        logger.debug("A message was sent to configuration module.  No messages allowed.")
 
     def get(self, section, option=None, default=None, set_if_missing=True):
         """
@@ -442,7 +432,8 @@ class Configuration(YomboLibrary):
             })
         self.configs[section][option]['writes'] += 1
         self.configs_dirty = True
-        global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value})
+        if self.loading_yombo_ini is False:
+            global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value})
 
 
     def get_meta(self, section, option, meta_type='time'):

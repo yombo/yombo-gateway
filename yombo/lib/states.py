@@ -58,7 +58,7 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboStateNotFound, YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all
+from yombo.utils import global_invoke_all, pattern_search
 
 
 logger = get_logger("library.YomboStates")
@@ -158,24 +158,34 @@ class States(YomboLibrary, object):
         :param key: Name of state to get.
         :return: Value of state
         """
-        if key in self.__States:
-                self._Statistics.increment("lib.states.get.found", bucket_time=60, anon=True)
-                return self.__States[key]['value']
-        else:
-            self._Statistics.increment("lib.states.get.not_found", bucket_time=60, anon=True)
-            return None
+        logger.debug('states:get: {key} = {value}', key=key)
+        if key is None:
+            raise YomboWarning("Key cannot be none")
+
+        self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
+
+        search_chars = ['#', '+']
+        if any(s in key for s in search_chars):
+            results = pattern_search(key, self.__States)
+            if len(results) > 1:
+                values = {}
+                for item in results:
+                    values[item] = self.__States[item]
+                return values
+            else:
+                raise KeyError("Searched for atoms, none found.")
+
+        print "atoms: %s" % self.__States
+        return self.__States[key]
 
     def get_states(self):
         """
-        Get all states.
+        Returns a copy of the active states.
 
         :param key: Name of state to check.
         :return: Value of state
         """
-        states = {}
-        for name, state in self.__States.iteritems():
-            states[name] = state
-        return states
+        return self.__States.copy()
 
     def set(self, key, value):
         """

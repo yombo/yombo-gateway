@@ -119,14 +119,3 @@ class Empty(YomboModule):
            :lines: 112,121
         """
         pass
-
-    def message(self, message):
-        """
-        Incomming Yombo Messages from the gateway or remote sources will
-        be sent here.
-
-        .. literalinclude:: ../../../yombo/modules/empty/empty.py
-           :language: python
-           :lines: 123,132
-        """
-        pass

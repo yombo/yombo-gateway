@@ -14,7 +14,7 @@ from twisted.application.service import Service
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.lib.loader import get_loader, setup_loader
+from yombo.lib.loader import setup_loader
 from yombo.core.log import get_logger
 
 logger = get_logger('core.gwservice')

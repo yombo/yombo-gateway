@@ -173,9 +173,4 @@ class AutomationExample(YomboModule):
         pass
     
     def _unload_(self):
-
-        pass
-
-    def message(self, message):
-
         pass

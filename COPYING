@@ -127,7 +127,7 @@ License: MIT License
 Files: yombo/ext/six.py
 Copyright: 2010-2015 Benjamin Peterson
 License: BSD License
-Comment: https://bitbucket.org/gutworth/six commit hash:2c12cd64ff0c7797bb30b0d466e902f7ecd6e562
+Comment: https://bitbucket.org/gutworth/six commit hash:ca4580a5a648fc75abc568907e81abc80b05d58c
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights

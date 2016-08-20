@@ -11,16 +11,15 @@ Navigating the framework
 
 The gateway framework is split into a few directories:
 
- * core - The most basic of functions to get stuff done. Module developers
-   will mostly care about the helpers file.
+ * core - The most basic of functions to get stuff done.
  * lib - Libraries that run at startup and get the system going. Module
-   developers will mostly care about the :doc:`messages <../core/message>`, :doc:`devices <../lib/devices>`, and
+   developers will mostly care about the :doc:`devices <../lib/devices>`, and
    :doc:`commands <../lib/commands>` (in that order). The other libraries are responsible for
    starting/stopping the service.
- * modules - Where downloaded or manually installed modules go.
+ * modules - Where auto-downloaded or manually installed modules go.
  * usr - User data. Log files, database, cache, etc.
  * utils - Various utilities for getting things done.
- * ext - 3rd party extensions
+ * ext - 3rd party extensions.
 
 .. _core:
 
@@ -37,7 +36,6 @@ features to be used by libraries and modules.
    ../core/gwservice.rst
    ../core/library.rst
    ../core/log.rst
-   ../core/message.rst
    ../core/module.rst
 
 .. _lib:
@@ -51,6 +49,7 @@ gateway services.
 .. toctree::
    :maxdepth: 1
 
+   ../lib/amqp.rst
    ../lib/amqpyombo.rst
    ../lib/atoms.rst
    ../lib/automation.rst
@@ -61,10 +60,10 @@ gateway services.
    ../lib/crontab.rst
    ../lib/devices.rst
    ../lib/downloadmodules.rst
+   ../lib/devicetypes.rst
    ../lib/gpg.rst
    ../lib/loader.rst
    ../lib/localdb.rst
-   ../lib/messages.rst
    ../lib/modules.rst
    ../lib/mqtt.rst
    ../lib/sqldict
@@ -74,6 +73,7 @@ gateway services.
    ../lib/times.rst
    ../lib/yomboapi.rst
    ../lib/voicecmds.rst
+   ../lib/webinterface.rst
 
 .. _util:
 

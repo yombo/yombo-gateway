@@ -21,6 +21,7 @@ Enhancements
 * Started implementing live-updates for devices and commands. However, at this time, still need a reboot
   for everything to take affect. The goal is to allow the majority of these changes to occur without requiring reboot.
 * Started making steps to allowing the gateway to start even when offline.
+* WebInterface library now uses database to store it's session state information, versus sqldict's.
 
 Misc
 -------

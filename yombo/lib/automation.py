@@ -77,7 +77,7 @@ class Automation(YomboLibrary):
     capabilites of the automation system.
     """
     def _init_(self):
-        print _('hello')
+        # print _('hello') # demo of using i18n...
         self._ModDescription = "Easy Automation for everyone"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"

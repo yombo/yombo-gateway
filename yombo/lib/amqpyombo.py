@@ -9,7 +9,7 @@ send updates on devices, commands, modules, etc. These messages will be sent to 
 .. warning::
 
    This library is not intended to be accessed by developers or users. These functions, variables,
-    and classes **should not** be accessed directly by modules. These are documented here for completeness.
+   and classes **should not** be accessed directly by modules. These are documented here for completeness.
 
 Connection should be maintained 100% of the time. It's easier on the Yombo servers to maintain an idle connection
 than to keep raising and dropping connections.
@@ -40,6 +40,7 @@ from twisted.internet.task import LoopingCall
 
 # Import 3rd party extensions
 from yombo.ext.expiringdict import ExpiringDict
+import yombo.ext.six as six
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -207,7 +208,7 @@ class AMQPYombo(YomboLibrary):
         }
 
     def _init_(self):
-        self.gwuuid = "gw_" + self._Configs.get("core", "gwuuid")
+        self.user_id = "gw_" + self._Configs.get("core", "gwuuid")
         self._startup_request_ID = random_string(length=12) #gw
         self.init_defer = defer.Deferred()
         self.__doing_full_configs = False
@@ -232,11 +233,11 @@ class AMQPYombo(YomboLibrary):
                 amqp_host = "amqp.yombo.net"
 
         # get a new AMPQ connection.
-        self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.gwuuid,
+        self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.user_id,
             password=self._Configs.get("core", "gwhash"), client_id='amqpyombo')
 
         # Subscribe to the gateway queue.
-        self.amqp.subscribe("ygw.q." + self.gwuuid, incoming_callback=self.amqp_incoming, queue_no_ack=False, persistent=True)
+        self.amqp.subscribe("ygw.q." + self.user_id, incoming_callback=self.amqp_incoming, queue_no_ack=False, persistent=True)
 
         # Say hello, send some information about us.
         # Local IP address is needed to send to mobile apps / local clients. This allows to mobile app or local client
@@ -327,10 +328,10 @@ class AMQPYombo(YomboLibrary):
             "body"             : msgpack.dumps(body),
             "properties" : {
                 "correlation_id" : correlation_id,
-                "user_id"        : self.gwuuid,
+                "user_id"        : self.user_id,
                 "content_type"   : 'application/msgpack',
                 "headers"        : {
-                    "source"        : source + ":" + self.gwuuid,
+                    "source"        : source + ":" + self.user_id,
                     "destination"   : destination,
                     "type"          : header_type,
                     "protocol_verion": PROTOCOL_VERSION,
@@ -382,25 +383,6 @@ class AMQPYombo(YomboLibrary):
 #        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
         self._local_log("debug", "PikaProtocol::receive_item3")
-        # do nothing on requests for now.... in future if we ever accept requests, we will.
-        if properties.headers['type'] == 'request':
-            raise YomboWarning("Currently not accepting requests.")
-        # if a response, lets make sure it's something we asked for!
-        elif properties.headers['type'] == "response":
-            if properties.correlation_id is None or not isinstance(properties.correlation_id, basestring):
-                self._Statistics.increment("lib.amqpyombo.received.discarded.correlation_id_invalid", bucket_time=15, anon=True)
-                raise YomboWarning("Correlation_id must be present for 'Response' types, and must be a string.")
-            if properties.correlation_id not in self.amqp.send_correlation_ids:
-                logger.debug("{correlation_id} not in list of ids: {send_correlation_ids} ",
-                             correlation_id=properties.correlation_id, send_correlation_ids=self.amqp.send_correlation_ids.keys())
-                self._Statistics.increment("lib.amqpyombo.received.discarded.nocorrelation", bucket_time=15, anon=True)
-                raise YomboWarning("Received request {correlation_id}, but never asked for it. Discarding",
-                                   correlation_id=properties.correlation_id)
-        else:
-            self._Statistics.increment("lib.amqpyombo.received.discarded.unknown_msg_type", bucket_time=15, anon=True)
-            raise YomboWarning("Unknown message type recieved.")
-
-        self._local_log("debug", "PikaProtocol::receive_item4")
         if properties.user_id is None:
             self._Statistics.increment("lib.amqpyombo.received.discarded.nouserid", bucket_time=15, anon=True)
             raise YomboWarning("user_id missing.")
@@ -441,16 +423,25 @@ class AMQPYombo(YomboLibrary):
             else:
                 raise YomboWarning("Received msg reported msgpack, but isn't.")
 
-        # do nothing on requests for now.... in future if we ever accept requests, we will.
-        if properties.headers['type'] == 'Request':
+        # do nothing on requests for now.... in future if we ever accept requests, we will handle it here!.
+        if properties.headers['type'] == 'request':
             raise YomboWarning("Currently not accepting requests.")
         # if a response, lets make sure it's something we asked for!
-        elif properties.headers['type'] == "Response":
+        elif properties.headers['type'] == "response":
+            if properties.correlation_id is None or not isinstance(properties.correlation_id, six.string_types):
+                self._Statistics.increment("lib.amqpyombo.received.discarded.correlation_id_invalid", bucket_time=15, anon=True)
+                raise YomboWarning("Correlation_id must be present for 'Response' types, and must be a string.")
             if properties.correlation_id not in self.amqp.send_correlation_ids:
-                self._Statistics.increment("lib.amqpyombo.received.discarded.no_correlation_id", bucket_time=15, anon=True)
-                raise YomboWarning("Received request %s, but never asked for it. Discarding" % properties.correlation_id)
+                logger.debug("{correlation_id} not in list of ids: {send_correlation_ids} ",
+                             correlation_id=properties.correlation_id, send_correlation_ids=self.amqp.send_correlation_ids.keys())
+                self._Statistics.increment("lib.amqpyombo.received.discarded.nocorrelation", bucket_time=15, anon=True)
+                raise YomboWarning("Received request {correlation_id}, but never asked for it. Discarding",
+                                   correlation_id=properties.correlation_id)
+        else:
+            self._Statistics.increment("lib.amqpyombo.received.discarded.unknown_msg_type", bucket_time=15, anon=True)
+            raise YomboWarning("Unknown message type recieved.")
 
-        self._local_log("debug", "PikaProtocol::receive_item5")
+        self._local_log("debug", "PikaProtocol::receive_item4")
 
         # if we are here.. we have a valid message....
 
