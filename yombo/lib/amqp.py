@@ -1,4 +1,6 @@
 #cython: embedsignature=True
+# File is copied from gateway 100%
+
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
@@ -131,7 +133,7 @@ class AMQPClient(object):
         self._States = amqp_library._States
         self._connecting = False
         self.pika_factory = PikaFactory(self)
-        self.send_correlation_ids = MaxDict(500)  # correlate requests with responses
+        self.send_correlation_ids = MaxDict(150)  # correlate requests with responses
 
         self._local_log("debug", "AMQP::connect")
 
@@ -221,25 +223,13 @@ class AMQPClient(object):
         if exchange_auto_delete is None:
             exchange_auto_delete = False
 
-        if exchange_name in self.exchanges:
-            raise YomboWarning(
-                    "AMQP Client:{client_id} - Already has an to exchange_name: %s" % exchange_name,
-                    200, 'register_exchange', 'PikaFactory')
+        self.pika_factory.register_exchange(exchange_name, exchange_type, exchange_durable, register_persist,
+                          exchange_auto_delete)
 
-        self.exchanges[exchange_name] = {
-            'exchange_name': exchange_name,
-            'exchange_type': exchange_type,
-            'exchange_durable': exchange_durable,
-            'register_persist': register_persist,
-            'exchange_auto_delete': exchange_auto_delete,
-        }
-
-        if self.AMQPProtocol:
-            self.AMQPProtocol.do_register_exchanges()
-
-    def register_queue(self, exchange_name, exchange_type, exchange_durable=None, register_persist=None,
+    def register_queue(self, queue_name, queue_durable=None, queue_arguments=None, register_persist=None,
                           exchange_auto_delete=None):
         """
+
         Register an exchange with the server. This cannot be used on Yombo servers by the gateways as the gateways
         do not have permission to make any exchanges. This can be used when connecting to other AMQP servers that
         allow clients to perform this acction.
@@ -254,35 +244,56 @@ class AMQPClient(object):
            consumer disconencts.
         :return:
         """
-        if exchange_durable is None:
-            exchange_durable = False
+        if queue_durable is None:
+            queue_durable = False
         if register_persist is None:
             register_persist = False
         if exchange_auto_delete is None:
             exchange_auto_delete = False
 
-        if exchange_name in self.exchanges:
+        self.pika_factory.register_queue(queue_name, queue_durable, queue_arguments, register_persist)
+
+    def register_exchange_queue_binding(self, exchange_name, queue_name, routing_key=None, register_persist=None):
+        """
+        Binds a queue to an exchange.  Yombo servers don't allow clients to perform this operation/
+
+        :param exchange_name:
+        :param queue_name:
+        :param routing_key:
+        :param register_persist:
+        :return:
+        """
+        if routing_key is None:
+            routing_key = "*"
+        if register_persist is None:
+            register_persist = False
+
+        self.pika_factory.register_exchange_queue_binding(exchange_name, queue_name, routing_key,
+                          register_persist)
+
+    def subscribe(self, queue_name, incoming_callback, error_callback=None, queue_no_ack=False, persistent=True):
+        self._local_log("debug", "AMQPClient::subscribe", "queue_name: %s" % queue_name)
+
+        if callable(incoming_callback) is False:
             raise YomboWarning(
-                    "AMQP Client:{client_id} - Already has an to exchange_name: %s" % exchange_name,
-                    200, 'register_exchange', 'PikaFactory')
+                    "AMQP Client:{%s} - incoming_callback must be callabled." % self.client_id,
+                    203, 'publish', 'AMQPClient')
 
-        self.exchanges[exchange_name] = {
-            'exchange_name': exchange_name,
-            'exchange_type': exchange_type,
-            'exchange_durable': exchange_durable,
-            'register_persist': register_persist,
-            'exchange_auto_delete': exchange_auto_delete,
-        }
+        if error_callback is not None:
+            if callable(error_callback) is False:
+                print "Error_callback - %s" % error_callback
+                raise YomboWarning(
+                        "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
+                        204, 'publish', 'AMQPClient')
 
-        if self.AMQPProtocol:
-            self.AMQPProtocol.do_register_exchanges()
+        self.pika_factory.subscribe(queue_name, incoming_callback, error_callback, queue_no_ack, persistent)
 
     def publish(self, **kwargs):
         """
         Used to send a message to the AMQP server. Can direct responses back to a callback, if defined. Otherwise,
         responses will be tossed to /dev/null.
         """
-        self._local_log("debug", "send_amqp_message", "Message: %s" % kwargs)
+        self._local_log("debug", "AMQPClient::send_amqp_message", "Message: %s" % kwargs)
         callback = kwargs.get('callback', None)
         if callback is not None:
             if callable(callback) is False:
@@ -303,29 +314,11 @@ class AMQPClient(object):
                     202, 'publish', 'AMQPClient')
 
         kwargs["time_created"] = kwargs.get("time_created", datetime.now())
+        if 'routing_key' not in kwargs:
+            raise YomboWarning("subscribe must have 'routing_key', otherwise, don't know how to route!")
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
-        kwargs['correlation_id'] = kwargs.get('correlation_id', random_string(length=18))
-
-        properties = kwargs.get('properties', {})
-        properties['user_id'] = self.username
-        kwargs['properties'] = pika.BasicProperties(**properties)
 
         self.pika_factory.publish(**kwargs)
-
-    def subscribe(self, queue_name, incoming_callback, error_callback=None, queue_no_ack=False, persistent=True):
-        if callable(incoming_callback) is False:
-            raise YomboWarning(
-                    "AMQP Client:{%s} - incoming_callback must be callabled." % self.client_id,
-                    203, 'publish', 'AMQPClient')
-
-        if error_callback is not None:
-            if callable(error_callback) is False:
-                print "Error_callback - %s" % error_callback
-                raise YomboWarning(
-                        "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
-                        204, 'publish', 'AMQPClient')
-
-        self.pika_factory.subscribe(queue_name, incoming_callback, error_callback, queue_no_ack, persistent)
 
     def unsubscribe(self, queue_name):
         self.pika_factory.subscribe(queue_name)
@@ -347,10 +340,10 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.factor = 1.82503912
         self.maxDelay = 25 # this puts retrys around 17-26 seconds
 
+        self.AMQPClient = AMQPClient
         self.AMQPProtocol = None
 
         self._Statistics = AMQPClient.amqp_library._Libraries['statistics']
-        self.AMQPClient = AMQPClient
 
         self.send_queue = deque() # stores any received items like publish and subscribe until fully connected
         self.exchanges = {}  # store a list of exchanges, will try to re-establish on reconnect.
@@ -374,7 +367,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         return self.AMQPProtocol
 
     def register_exchange(self, exchange_name, exchange_type, exchange_durable, register_persist, exchange_auto_delete):
-        if exchange_name in self.queues:
+        if exchange_name in self.exchanges:
             raise YomboWarning(
                     "AMQP Protocol:{client_id} - Already has an exchange_name: %s" % exchange_name,
                     200, 'register_exchange', 'PikaFactory')
@@ -390,7 +383,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         if self.AMQPProtocol:
             self.AMQPProtocol.do_register_exchanges()
 
-    def register_queues(self, queue_name, queue_durable, queue_arguments, register_persist):
+    def register_queue(self, queue_name, queue_durable, queue_arguments, register_persist):
         if queue_name in self.queues:
             raise YomboWarning(
                     "AMQP Protocol:{client_id} - Already has a queue: %s" % queue_name,
@@ -445,7 +438,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         """
         Queues up the message, and asks the protocol to send if connected.
         """
-        self._local_log("debug", "send_amqp_message", "Message: %s" % kwargs)
+        self._local_log("debug", "PikaFactory::send_amqp_message", "Message: %s" % kwargs)
         callback = kwargs.get('callback', None)
         if callback is not None:
             if callable(callback) is False:
@@ -467,17 +460,22 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         kwargs["time_created"] = kwargs.get("time_created", datetime.now())
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
-        kwargs['correlation_id'] = kwargs.get('correlation_id', random_string(length=18))
+        correlation_id = kwargs.get('correlation_id', None)
+
+        properties = kwargs.get('properties', {})
+        properties['user_id'] = self.AMQPClient.username
+        kwargs['properties'] = properties
 
         self.send_queue.append(kwargs)
 
-        self.AMQPClient.send_correlation_ids[kwargs['properties'].correlation_id] = {
-            "time_created"      : kwargs.get("time_created", datetime.now()),
-            'time_sent'         : None,
-            "time_received"     : None,
-            "callback"          : kwargs['callback'],
-            "correlation_type"  : kwargs.get('correlation_type', None),
-        }
+        if correlation_id is not None:
+            self.AMQPClient.send_correlation_ids[kwargs['properties'].correlation_id] = {
+                "time_created"      : kwargs.get("time_created", datetime.now()),
+                'time_sent'         : None,
+                "time_received"     : None,
+                "callback"          : kwargs['callback'],
+                "correlation_type"  : kwargs.get('correlation_type', None),
+            }
 
         if self.AMQPProtocol:
             self.AMQPProtocol.do_publish()
@@ -620,7 +618,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             if fields['registered'] is False:
                 yield self.channel.queue_bind(exchange=fields['exchange_name'],
                             queue=fields['queue_name'],
-                            routing_key=fields['queue_routing_key'])
+                            routing_key=fields['routing_key'])
                 self.factory.exchange_queue_bindings[eqb_name]['subscribed'] = True
                 if fields['register_persist'] is False:
                     del self.factory.exchange_queue_bindings[eqb_name]
@@ -649,15 +647,18 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         Performs the actual binding of the queue to the AMQP channel.
         """
-#        logger.debug("In PikaProtocol send_message a: %s" % kwargs['properties'].correlation_id)
 #        prop = spec.BasicProperties(delivery_mode=2)
 
 #        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
+        logger.debug("In PikaProtocol do_publish...")
         for msg in self.factory.send_queue:
+            logger.debug("In PikaProtocol do_publish a: {msg}", msg=msg)
 #            print "do_publish: %s"  % msg
             try:
-                if msg['properties'].correlation_id in self.factory.AMQPClient.send_correlation_ids:
-                    self.factory.AMQPClient.send_correlation_ids[msg['properties'].correlation_id]['time_sent'] = datetime.now()
+                if 'correlation_id' in msg['properties']:
+                    msg['properties'] = pika.BasicProperties(**msg['properties'])
+                    if msg['properties'].correlation_id in self.factory.AMQPClient.send_correlation_ids:
+                        self.factory.AMQPClient.send_correlation_ids[msg['properties'].correlation_id]['time_sent'] = datetime.now()
     #            logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
                 yield self.channel.basic_publish(exchange=msg['exchange_name'], routing_key=msg['routing_key'], body=msg['body'], properties=msg['properties'])
             except Exception as error:
@@ -719,5 +720,6 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         channel.basic_ack(tag)
 
     def _basic_nack(self, error, channel, tag):
-        self._local_log("info", "PikaProtocol::_basic_nack", "Tag: %s" % tag)
+        self._local_log("info", "PikaProtocol::_basic_nack for client: %s  Error: %s" % (self.factory.AMQPClient.client_id, error))
+        # print "nack error: %s" % error
         channel.basic_nack(tag, False, False)

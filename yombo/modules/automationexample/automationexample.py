@@ -67,7 +67,7 @@ class AutomationExample(YomboModule):
                     {
                     'source': {
                         'platform': 'states',
-                        'name': 'times_light',
+                        'name': 'is.light',
                         },
                     'filter': {
                         'platform': 'basic_values',
@@ -149,7 +149,7 @@ class AutomationExample(YomboModule):
         }
         
     def _start_(self):
-        logger.info("States: Is Light: {times_light}", times_light=self._States['times_islight'])
+        logger.info("States: Is Light: {times_light}", times_light=self._States['is.light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
         self._States['automationexample'] = 0
 

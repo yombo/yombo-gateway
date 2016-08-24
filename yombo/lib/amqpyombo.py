@@ -270,7 +270,7 @@ class AMQPYombo(YomboLibrary):
     def generate_message_request(self, exchange_name, source, destination, body, request_type, callback=None):
         new_body = {
             "data_type": "object",
-            "request"  : body,
+            "data"  : body,
         }
         if isinstance(body, list):
             new_body['data_type'] = 'objects'
@@ -335,6 +335,7 @@ class AMQPYombo(YomboLibrary):
                     "destination"   : destination,
                     "type"          : header_type,
                     "protocol_verion": PROTOCOL_VERSION,
+                    "route": source + ":" + self.user_id,  # not validated, informational only
                     },
                 },
             "callback": callback,
@@ -447,9 +448,10 @@ class AMQPYombo(YomboLibrary):
 
         try:
             if properties.headers['type'] == 'response':
+                print "222 zz"
                 logger.debug("headers: {headers}", headers=properties.headers)
                 if properties.headers['response_type'] == 'config':
-                    # print "333"
+                    print "333 zz: %s" % properties.headers['config_item']
                     if properties.headers['config_item'] in self.config_items:
 #                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
                         self.process_config(msg, properties.headers['config_item'])
@@ -463,8 +465,8 @@ class AMQPYombo(YomboLibrary):
             logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
             logger.error("--------------------------------------------------------")
 
-    def process_config(self, msg, config_item):
 
+    def process_config(self, msg, config_item):
         if config_item == "gateway_configs":
             payload = msg['data']
             for section in payload:
@@ -479,6 +481,7 @@ class AMQPYombo(YomboLibrary):
             else:
                 klass = self.add_update_delete
 
+            print "Msg: %s" % msg
             if msg['data_type'] == 'object':
                 new_data = {}
                 data = self.field_remap(msg['data'], config_data)
@@ -675,9 +678,9 @@ class AMQPYombo(YomboLibrary):
 
         allCommands = [
             "get_commands",
-            "get_device_types", # includes commands
-            "get_gateway_devices",
-            "get_gateway_modules", # includes Module_device_types,
+            # "get_device_types", # includes commands
+            # "get_gateway_devices",
+            # "get_gateway_modules", # includes Module_device_types,
             # "get_gateway_configs",
 
 #            "GetModuleVariables",

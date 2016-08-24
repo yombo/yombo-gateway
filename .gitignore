@@ -15,6 +15,7 @@ twistd.pid
 /*.zip
 _trial_temp
 /ENV
+test.py
 
 
 # Yombo Stuff #
