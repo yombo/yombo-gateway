@@ -247,11 +247,9 @@ class WebInterface(YomboLibrary):
         if not self.enabled:
             return
         self._op_mode = self._Atoms['loader.operation_mode']
-        self.data['gateway_configured'] = self._home_gateway_configured()
-        self.data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
-        self.data['operation_mode'] = self._op_mode
 
-        self.auth_pin = self._Configs.get('webinterface', 'auth_pin', yombo.utils.random_string(length=6, letters=yombo.utils.human_alpabet()))
+        self.auth_pin = self._Configs.get('webinterface', 'auth_pin', yombo.utils.random_string(length=6,
+                                            letters=yombo.utils.human_alpabet()))
         self.auth_pin_totp = self._Configs.get('webinterface', 'auth_pin_totp', yombo.utils.random_string(length=16))
         self.auth_pin_type = self._Configs.get('webinterface', 'auth_pin_type', 'pin')
         self.auth_pin_required = self._Configs.get('webinterface', 'auth_pin_required', True)
@@ -263,11 +261,17 @@ class WebInterface(YomboLibrary):
         self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
         self._display_pin_console_time = 0
 
+        self.data['gateway_configured'] = self._home_gateway_configured()
+        self.data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
+        self.data['operation_mode'] = self._op_mode
+
         self.functions = {
-            '_': _,
             'yes_no': yombo.utils.is_yes_no,
         }
 
+        self.webapp.templates.globals['_'] = _  # i18n
+        self.webapp.templates.globals['data'] = self.data
+        self.webapp.templates.globals['funcitons'] = self.functions
 
     def _started_(self):
         if self._op_mode != 'run':
@@ -433,16 +437,10 @@ class WebInterface(YomboLibrary):
 
     @require_auth()
     def run_home(self, request, session):
-        # auth = self.require_auth(request)
-        # if auth is not None:
-        #     return auth
-
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
-        functions = {'_': _}
-        return page.render(func=self.functions,
-                           _=_,  # translations
-                           data=self.data,
-                           alerts=self.get_alerts(),
+        return page.render(alerts=self.get_alerts(),
+                           delay_commands = self._Devices.delay_queue,
+                           automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
                            states=self._Libraries['states'].get_states(),
@@ -456,10 +454,7 @@ class WebInterface(YomboLibrary):
 
         page = self.get_template(request, self._dir + 'config_pages/index.html')
         functions = {'_': _}
-        return page.render(func=self.functions,
-                           _=_,  # translations
-                           data=self.data,
-                           alerts=self.get_alerts(),
+        return page.render(alerts=self.get_alerts(),
                            )
 
     def firstrun_home(self, request):
@@ -551,8 +546,7 @@ class WebInterface(YomboLibrary):
     def page_atoms(self, request, session):
         page = self.get_template(request, self._dir + 'pages/atoms/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'atoms')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
+        return page.render(alerts=self.get_alerts(),
                            atoms=self._Libraries['atoms'].get_atoms(),
                            atoms_i18n=strings,
                            )
@@ -599,8 +593,7 @@ class WebInterface(YomboLibrary):
 
         page = self.get_template(request, self._dir + 'pages/states/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
+        return page.render(alerts=self.get_alerts(),
                            states=self._Libraries['states'].get_states(),
                            states_i18n=strings,
                            )
@@ -613,8 +606,7 @@ class WebInterface(YomboLibrary):
 
         page = self.get_template(request, self._dir + 'pages/states/index.html')
         strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
+        return page.render(alerts=self.get_alerts(),
                            states=self._Libraries['states'].get_states(),
                            states_i18n=strings,
                            )
@@ -648,8 +640,7 @@ class WebInterface(YomboLibrary):
         has['gateway_hash'] = 'True' if gwhash is not None else 'False'
         has['gpg_keyid'] = 'True' if gpgkeyid is not None else 'False'
         page = self.get_template(request, 'status/index.html')
-        return page.render(data=self.data,
-                           yombo_server_is_connected=self._States.get('amqp.connected'),
+        return page.render(yombo_server_is_connected=self._States.get('amqp.connected'),
                            )
 
     @webapp.route('/static/', branch=True)

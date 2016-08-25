@@ -5,8 +5,9 @@ except ImportError:
     import json
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, succeed, returnValue
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from twisted.internet.defer import inlineCallbacks, returnValue
+from yombo.lib.webinterface.auth import require_auth
+
 
 def return_error(message, status=500):
     return {
@@ -14,16 +15,19 @@ def return_error(message, status=500):
         'message': message,
     }
 
-def return_good(message, payload={}):
+
+def return_good(message, payload=None):
+    if payload is None:
+        payload = {}
     return {
         'status': 200,
         'message': message,
         'payload': payload,
     }
 
+
 def route_api_v1(webapp):
     with webapp.subroute("/api/v1") as webapp:
-
 
         @webapp.route('/devices', methods=['GET'])
         @require_auth()
@@ -40,12 +44,10 @@ def route_api_v1(webapp):
                 except:
                     return json.dumps(return_error('deviceid and commandid must be specified for "runcommand".'))
 
-                device = webinterface._DevicesLibrary.get_device(deviceid)
-                msg = device.get_message(webinterface, cmd=commandid)
-                msg.send()
+                device = webinterface._Devices.get_device(deviceid)
+                device.do_command(cmd=commandid)
                 a = return_good('Command executed.')
                 return json.dumps(a)
-
 
         @webapp.route('/notifications', methods=['GET'])
         @require_auth()
@@ -57,7 +59,7 @@ def route_api_v1(webapp):
                 print "alert - id: %s" % id
                 if id in webinterface.alerts:
                     del webinterface.alerts[id]
-                    results = {"status":200}
+                    results = {"status": 200}
             return json.dumps(results)
     
         @webapp.route('/statistics/names', methods=['GET'])
@@ -80,7 +82,7 @@ def route_api_v1(webapp):
                 print "alert - id: %s" % id
                 if id in webinterface.alerts:
                     del webinterface.alerts[id]
-                    results = {"status":200}
+                    results = {"status": 200}
             return json.dumps(results)
     
         @webapp.route('/statistics/something', methods=['GET'])
@@ -93,6 +95,5 @@ def route_api_v1(webapp):
                 print "alert - id: %s" % id
                 if id in webinterface.alerts:
                     del webinterface.alerts[id]
-                    results = {"status":200}
+                    results = {"status": 200}
             return json.dumps(results)
-        

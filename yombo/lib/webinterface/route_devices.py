@@ -23,16 +23,18 @@ def route_devices(webapp):
         @require_auth()
         def page_devices_details(webinterface, request, session, device_id):
             try:
-                device = webinterface._DevicesLibrary[device_id]
-            except:
-                webinterface.add_alert('Device ID was not found.', 'warning')
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
+            device_commands = device.available_commands()
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
                                data=webinterface.data,
                                alerts=webinterface.get_alerts(),
                                device=device,
+                               device_commands=device_commands,
                                commands=webinterface._Commands,
                                )
     

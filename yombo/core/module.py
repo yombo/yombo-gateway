@@ -156,7 +156,7 @@ class YomboModule:
         return self._Modules.module_device_types(self._ModuleID)
 
     def _GetDevices(self):
-        return self._DevicesTypes.module_devices(self._ModuleID)
+        return self._DeviceTypes.module_devices(self._ModuleID)
 
     def __str__(self):
         """

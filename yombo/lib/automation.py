@@ -162,8 +162,8 @@ class Automation(YomboLibrary):
 
         """
         automation_sources = yombo.utils.global_invoke_all('_automation_source_list_')
-#        print "################## %s " % automation_sources
-#        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
+#        print "################## automation_sources:%s " % automation_sources
+        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in automation_sources.iteritems():
             for vals in item:
                 self.sources[vals['platform']] = vals

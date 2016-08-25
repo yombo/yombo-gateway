@@ -1,13 +1,3 @@
-// This is a sample automation.txt file. Simply copy this file to automation.txt
-// and have fun! For more details, see:
-//https://projects.yombo.net/projects/gateway/wiki/Automation_Rules
-//
-// Quick comments: This file is actually JSON. If you know JSON or have a JSON
-// editor, it's recommended to please use that.  You can still mix JSON this format
-// together - such as using comments.
-//
-// If you don't know JSON - don't worry!
-//
 rules: [
   {
   name: my first rule
@@ -71,73 +61,6 @@ rules: [
     # lets turn this off after 2 hours. can use (s)econds, (m)inutes, (h)ours.
     delay: 2h
     # time: 11:00pm  # OR we can simply just specify the time.
-    }
-  ]
-  }
-  {
-  name: my first rule
-  description: This rule will do many things, but it won't make toast.
-
-  # the trigger defines what makes this rule fire. For now, we will
-  # will just turn on a light when it's dark
-  trigger: {
-    # lets define the source first. Where should we get our value from.
-    source: {
-        # a platform is a way to note what module or library the
-        # data is coming from. Users can write modules to create
-        # even more advanced modules or a module can even define
-        # a new platform.
-
-        # Says: From the states library, monitor the "times_dark"
-        # state for any changes.
-        platform: states
-        name: automationexample
-        }
-
-    # Once a source value is available, lets do some filtering.
-    filter: {
-        # We want it to be dark. Any value here will work: 1, true, yes
-        platform: basic_values
-        value: 0
-        }
-    }
-
-  # Conditions allow us to apply additional filters and can be and or
-  # or'd together
-  condition_type: and
-
-  # Only fire this rule if the Operating system is running linux!
-#  condition: [
-#    {
-#    source: {
-#        platform: atoms
-#        name: kernel
-#        }
-#    filter: {
-#        platform: basic_values
-#        value: linux
-#        }
-#    }
-#    ]
-
-  # actions allow us to do something after rule triggers and
-  # conditions allow it.
-  action: [
-    {
-    platform: devices
-    device: Living Room Corner Light
-    command: on
-    }
-    # a second action to turn off water fountain!
-    {
-    platform: devices
-    device: Living Room Corner Light
-    command: off
-    # lets turn this off after 2 hours.
-    # Can use english like:
-    # 2hours 2seconds  - will delay by 2 hours and 2 seconds
-    # 11pm - will issue command at 11pm
-    delay: 5s
     }
   ]
   }

@@ -87,7 +87,7 @@ class AutomationExample(YomboModule):
                     }
                 ,
                     {
-                        'platform': 'dev5ices',
+                        'platform': 'devices',
                         'device': 'Christmas tree',
                         'command': 'off',
                     }
@@ -116,7 +116,7 @@ class AutomationExample(YomboModule):
                 ,
 
                     {
-                        'platform': 'devi5ces',
+                        'platform': 'devices',
                         'device': 'Christmas tree',
                         'command': 'on',
                     }

@@ -1,6 +1,3 @@
-#cython: embedsignature=True
-# This file was created by Yombo for use with Yombo Python Gateway automation
-# software.  Details can be found at https://yombo.net
 """
 Yombo gateway connects to it's servers using the AMQP library.  It's primarily responsible for connecting to the
 server, saying hello, and getting any configuration changes that have happened. This allows the server to
@@ -51,22 +48,21 @@ import yombo.ext.umsgpack as msgpack
 
 logger = get_logger('library.amqpyombo')
 
-PROTOCOL_VERSION = 2
-PREFETCH_COUNT = 10  # determine how many messages should be received/inflight before yombo servers
-                     # stop sending us messages. Should ACK/NACK all messages quickly.
+PROTOCOL_VERSION = 3
+PREFETCH_COUNT = 10     # determine how many messages should be received/inflight before yombo servers
+                        # stop sending us messages. Should ACK/NACK all messages quickly.
 
 
 class AMQPYombo(YomboLibrary):
     """
     Handles interactions with Yombo servers through the AMQP library.
     """
-
     config_item_map = {
         'devices': 'gateway_devices'
     }
 
     config_items = {
-            'commands' : {
+            'commands': {
                 'dbclass': "Command",
                 'table': "commands",
                 'library': "commands",
@@ -77,23 +73,23 @@ class AMQPYombo(YomboLibrary):
                     'deleted': "delete_device",
                 },
                 'map': {
-                    'Uri' : 'uri',
-                    'UUID' : 'id',
-                    'machineLabel' : 'machine_label',
-                    'voice_cmd' : 'voice_cmd',
-                    'label' : 'label',
-                    'description' : 'description',
-                    'inputtype' : 'input_type_id',
-                    'liveupdate' : 'live_update',
-                    'created' : 'created',
-                    'updated' : 'updated',
-                    'status' : 'status',
-                    'public' : 'public',
-                    # '' : '',
+                    'Uri': 'uri',
+                    'UUID': 'id',
+                    'machineLabel': 'machine_label',
+                    'voice_cmd': 'voice_cmd',
+                    'label': 'label',
+                    'description': 'description',
+                    'inputtype': 'input_type_id',
+                    'liveupdate': 'live_update',
+                    'created': 'created',
+                    'updated': 'updated',
+                    'status': 'status',
+                    'public': 'public',
+                    # '': '',
                 }
             },
 
-            'gateway_devices' : {
+            'gateway_devices': {
                 'dbclass': "Device",
                 'table': "devices",
                 'library': "devices",
@@ -102,28 +98,28 @@ class AMQPYombo(YomboLibrary):
                     'disabled': "disable_device",
                     'deleted': "delete_device",
                 },
-                'map' : {
-                    'UUID' : 'id',
-                    'Uri' : 'uri',
-                    # 'machineLabel' : 'machineLabel',  #Not implemented yet.
-                    'Label' : 'label',
-                    'Notes' : 'notes',
-                    'Description' : 'description',
-                    'GatewayUUID' : 'gateway_id',
-                    'DeviceTypeUUID' : 'device_type_id',
-                    'VoiceCmd' : 'voice_cmd',
-                    'VoiceCmdOrder' : 'voice_cmd_order',
-                    'voiceCmdSrc' : 'Voice_cmd_src',
-                    'PinCode' : 'pin_code',
-                    'PinRequired' : 'pin_required',
-                    'PinTimeout' : 'pin_timeout',
-                    'Created' : 'created',
-                    'Updated' : 'updated',
-                    'Status' : 'status',
+                'map': {
+                    'UUID': 'id',
+                    'Uri': 'uri',
+                    # 'machineLabel': 'machineLabel',  #Not implemented yet.
+                    'Label': 'label',
+                    'Notes': 'notes',
+                    'Description': 'description',
+                    'GatewayUUID': 'gateway_id',
+                    'DeviceTypeUUID': 'device_type_id',
+                    'VoiceCmd': 'voice_cmd',
+                    'VoiceCmdOrder': 'voice_cmd_order',
+                    'voiceCmdSrc': 'Voice_cmd_src',
+                    'PinCode': 'pin_code',
+                    'PinRequired': 'pin_required',
+                    'PinTimeout': 'pin_timeout',
+                    'Created': 'created',
+                    'Updated': 'updated',
+                    'Status': 'status',
                 }
             },
 
-            'device_types' : {
+            'device_types': {
                 'dbclass': "DeviceType",
                 'table': "device_types",
                 'library': "devices",
@@ -133,22 +129,22 @@ class AMQPYombo(YomboLibrary):
                     'deleted': "delete_device",
                 },
                 'map': {
-                    'UUID' : 'id',
-                    'Uri' : 'uri',
-                    'MachineLabel' : 'machine_label',
-                    'Label' : 'label',
-                    'DeviceClass' : 'device_class',
-                    'Description' : 'description',
-                    'LiveUpdate' : 'live_update',
-                    'Commands' : 'commands',
-                    'Public' : 'public',
-                    'Created' : 'created',
-                    'Updated' : 'updated',
-                    'Status' : 'status',
+                    'UUID': 'id',
+                    'Uri': 'uri',
+                    'MachineLabel': 'machine_label',
+                    'Label': 'label',
+                    'DeviceClass': 'device_class',
+                    'Description': 'description',
+                    'LiveUpdate': 'live_update',
+                    'Commands': 'commands',
+                    'Public': 'public',
+                    'Created': 'created',
+                    'Updated': 'updated',
+                    'Status': 'status',
                 }
             },
 
-            'gateway_modules' : {
+            'gateway_modules': {
                 'dbclass': "Modules",
                 'table': "modules",
                 'library': "modules",
@@ -158,25 +154,25 @@ class AMQPYombo(YomboLibrary):
                     'deleted': "enable_command",
                 },
                 'map': {
-                    'UUID' : 'id',
-                    'Uri' : 'uri',
-                    'MachineLabel' : 'machine_label',
-                    'ModuleType' : 'module_type',
-                    'Label' : 'label',
-                    'Description' : 'description',
-                    'InstallNotes' : 'install_notes',
-                    'DocLink' : 'doc_link',
-                    'ProdVersion' : 'prod_version',
-                    'DevVersion' : 'dev_version',
-                    'InstallBranch' : 'install_branch',
-                    'Public' : 'public',
-                    'Created' : 'created',
-                    'Updated' : 'updated',
-                    'Status' : 'status',
+                    'UUID': 'id',
+                    'Uri': 'uri',
+                    'MachineLabel': 'machine_label',
+                    'ModuleType': 'module_type',
+                    'Label': 'label',
+                    'Description': 'description',
+                    'InstallNotes': 'install_notes',
+                    'DocLink': 'doc_link',
+                    'ProdVersion': 'prod_version',
+                    'DevVersion': 'dev_version',
+                    'InstallBranch': 'install_branch',
+                    'Public': 'public',
+                    'Created': 'created',
+                    'Updated': 'updated',
+                    'Status': 'status',
                 }
             },
 
-            'gateway_configs' : {}, # Processed with it's own catch.
+            'gateway_configs': {},  # Processed with it's own catch.
 
             'variables': {
                 'dbclass': "Variable",
@@ -199,17 +195,11 @@ class AMQPYombo(YomboLibrary):
                     'Created': 'created',
                 }
             },
-
-#            "GatewayDetails",
-#            "gateway_modules",
-#            "GatewayUserTokens",
-#            "GatewayVariables",
-#            "GatewayUsers",
         }
 
     def _init_(self):
         self.user_id = "gw_" + self._Configs.get("core", "gwuuid")
-        self._startup_request_ID = random_string(length=12) #gw
+        self._startup_request_ID = random_string(length=12)
         self.init_defer = defer.Deferred()
         self.__doing_full_configs = False
         self.__pending_updates = []
@@ -220,7 +210,7 @@ class AMQPYombo(YomboLibrary):
         amqp_port = 5671
         environment = self._Configs.get('server', 'environment', "production", False)
         if self._Configs.get("amqpyombo", 'hostname', "", False) != "":
-            amqp_host = self._Configs.get("amqpyombo", 'hostname', False)
+            amqp_host = self._Configs.get("amqpyombo", 'hostname')
             amqp_port = self._Configs.get("amqpyombo", 'port', 5671, False)
         else:
             if environment == "production":
@@ -232,9 +222,11 @@ class AMQPYombo(YomboLibrary):
             else:
                 amqp_host = "amqp.yombo.net"
 
-        # get a new AMPQ connection.
+        # get a new AMPQ connection and connect.
         self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.user_id,
-            password=self._Configs.get("core", "gwhash"), client_id='amqpyombo')
+            password=self._Configs.get("core", "gwhash"), client_id='amqpyombo',
+            connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected)
+        self.amqp.connect()
 
         # Subscribe to the gateway queue.
         self.amqp.subscribe("ygw.q." + self.user_id, incoming_callback=self.amqp_incoming, queue_no_ack=False, persistent=True)
@@ -246,7 +238,6 @@ class AMQPYombo(YomboLibrary):
         # try to connect to the external IP address. If it can not reach the gateway by either of these methods,
         # it will connect to Yombo proxy servers, requests will come through the amqp connection. This is why
         # the connection needs to be open 100% of the time.
-
         body = {
             "local_ip_address": self._Configs.get("core", "localipaddress"),
             "external_ip_address": self._Configs.get("core", "externalipaddress"),
@@ -257,29 +248,73 @@ class AMQPYombo(YomboLibrary):
             source='yombo.gateway.lib.amqpyombo',
             destination='yombo.server.configs',
             body=body,
-            request_type='startup',
+            headers={
+                "request_type": "startup",
+            }
         )
         self.amqp.publish(**requestmsg)
 
         self.get_system_configs()
         return self.init_defer
 
-    def _load_(self):
-        pass
+    def amqp_connected(self):
+        """
+        Called by AQMP when connected.
+        :return:
+        """
+        self._States.set('amqp.amqpyombo.state', True)
 
-    def generate_message_request(self, exchange_name, source, destination, body, request_type, callback=None):
+    def amqp_disconnected(self):
+        """
+        Called by AQMP when disconnected.
+        :return:
+        """
+        self._States.set('amqp.amqpyombo.state', False)
+
+    def _local_request(self, headers, request_data=""):
+        """
+        Generate a request specific to this library - configs!
+
+        :param headers:
+        :param request_data:
+        :return:
+        """
+        request_msg = self.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
+                                                    "yombo.server.configs", headers, request_data)
+        request_msg['routing_key'] = '*'
+        logger.debug("response: {request_msg}", request_msg=request_msg)
+        return request_msg
+
+    def generate_message_response(self, properties, exchange_name, source, destination, headers, body ):
+        response_msg = self.generate_message(exchange_name, source, destination, "response", headers, body)
+        if properties.correlation_id:
+           response_msg['properties']['correlation_id'] = properties.correlation_id
+#        response_msg['properties']['headers']['response_type']=response_type
+        correlation_id = random_string(length=12)
+
+        print "properties: %s" % properties
+        if 'route' in properties.headers:
+            route = str(properties.headers['route']) + ",yombo.server.configs:" + self.serverid
+            response_msg['properties']['headers']['route'] = route
+        else:
+            response_msg['properties']['headers']['route'] = "yombo.server.configs:" + self.serverid
+        return response_msg
+
+    def generate_message_request(self, exchange_name, source, destination, headers, body, callback=None):
         new_body = {
             "data_type": "object",
-            "data"  : body,
+            "request"  : body,
         }
         if isinstance(body, list):
             new_body['data_type'] = 'objects'
 
-        request_msg = self.generate_message(exchange_name, source, destination, new_body, header_type="request", callback=callback)
-        request_msg['properties']['headers']['request_type']=request_type
+        request_msg = self.generate_message(exchange_name, source, destination, "request",
+                                            headers, new_body, callback=callback)
+        request_msg['properties']['correlation_id'] = random_string(length=16)
+        # request_msg['properties']['headers']['request_type']=request_type
         return request_msg
 
-    def generate_message(self, exchange_name, source, destination, body, request_type=None, header_type=None, callback=None):
+    def generate_message(self, exchange_name, source, destination, header_type, headers, body, callback=None):
         """
         When interacting with Yombo AMQP servers, we use a standard messaging layout. The below helps other functions
         and libraries conform to this standard.
@@ -299,7 +334,6 @@ class AMQPYombo(YomboLibrary):
                  "DataType"        : "Object",
                  "Request"         : requestContent,
                },
-               "request_type"   : "GetCommands",
            }
            request = self.AMQPYombo.generateRequest(**requestData)
 
@@ -315,19 +349,16 @@ class AMQPYombo(YomboLibrary):
         :type callback: function
         :param body: The body contents for the mesage.
         :type body: dict
-        :param request_type: Value of the "request_type" field.
-        :type request_type: str
 
         :return: A dictionary that can be directly returned to Yombo Gateways via AMQP
         :rtype: dict
         """
-        correlation_id = random_string(length=12)
-        requestmsg = {
+        request_msg = {
             "exchange_name"    : exchange_name,
             "routing_key"      : '*',
             "body"             : msgpack.dumps(body),
             "properties" : {
-                "correlation_id" : correlation_id,
+                # "correlation_id" : correlation_id,
                 "user_id"        : self.user_id,
                 "content_type"   : 'application/msgpack',
                 "headers"        : {
@@ -335,7 +366,6 @@ class AMQPYombo(YomboLibrary):
                     "destination"   : destination,
                     "type"          : header_type,
                     "protocol_verion": PROTOCOL_VERSION,
-                    "route": source + ":" + self.user_id,  # not validated, informational only
                     },
                 },
             "callback": callback,
@@ -343,19 +373,21 @@ class AMQPYombo(YomboLibrary):
 
         # Lets test if we can compress. Set headers as needed.
 
-        self._Statistics.averages("lib.amqpyombo.sent.size", len(requestmsg['body']), bucket_time=15, anon=True)
-        if len(requestmsg['body']) > 800:
-            beforeZlib = len(requestmsg['body'])
-            requestmsg['body'] = zlib.compress(requestmsg['body'], 5)  # 5 appears to be the best speed/compression ratio - MSchwenk
-            requestmsg['properties']['content_encoding'] = "zlib"
-            afterZlib = len(requestmsg['body'])
+        self._Statistics.averages("lib.amqpyombo.sent.size", len(request_msg['body']), bucket_time=15, anon=True)
+        if len(request_msg['body']) > 800:
+            beforeZlib = len(request_msg['body'])
+            request_msg['body'] = zlib.compress(request_msg['body'], 5)  # 5 appears to be the best speed/compression ratio - MSchwenk
+            request_msg['properties']['content_encoding'] = "zlib"
+            afterZlib = len(request_msg['body'])
             self._Statistics.increment("lib.amqpyombo.sent.compressed", bucket_time=15, anon=True)
             self._Statistics.averages("lib.amqpyombo.sent.compressed.percentage", percentage(afterZlib, beforeZlib), anon=True)
         else:
-            requestmsg['properties']['content_encoding'] = 'text'
+            request_msg['properties']['content_encoding'] = 'text'
             self._Statistics.increment("lib.amqpyombo.sent.uncompressed", bucket_time=15, anon=True)
+        request_msg['properties']['headers'].update(headers)
 
-        return requestmsg
+        return request_msg
+
 
     def amqp_incoming(self, deliver, properties, msg, queue):
         """
@@ -374,7 +406,9 @@ class AMQPYombo(YomboLibrary):
         3) Route the message to the proper library for final handling.
         """
         self._local_log("debug", "AMQPLibrary::amqp_incoming")
-
+        # print " !!!!!!!!!!!!!!!!!!!!!!!!! "
+        # print "properties: %s" % properties
+        # print "send_correlation_ids: %s" % self.amqp.send_correlation_ids
         time_info = self.amqp.send_correlation_ids[properties.correlation_id]
         daate_time = time_info['time_received'] - time_info['time_sent']
         milliseconds = (daate_time.days * 24 * 60 * 60 + daate_time.seconds) * 1000 + daate_time.microseconds / 1000.0
@@ -448,10 +482,10 @@ class AMQPYombo(YomboLibrary):
 
         try:
             if properties.headers['type'] == 'response':
-                print "222 zz"
+                # print "222 zz"
                 logger.debug("headers: {headers}", headers=properties.headers)
                 if properties.headers['response_type'] == 'config':
-                    print "333 zz: %s" % properties.headers['config_item']
+                    # print "333 zz: %s" % properties.headers['config_item']
                     if properties.headers['config_item'] in self.config_items:
 #                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
                         self.process_config(msg, properties.headers['config_item'])
@@ -467,6 +501,17 @@ class AMQPYombo(YomboLibrary):
 
 
     def process_config(self, msg, config_item):
+        """
+        Process configuration information coming from Yombo Servers. After message is validated, the payload is
+        delivered here.
+
+        This is an intermediary method and converts the msg into usable chunks and delievered to "add_update_delete".
+        In the future, these may be delievered to the individual libraries for processing.
+
+        :param msg: raw message from AQMP
+        :param config_item: What type of configuration item.
+        :return:
+        """
         if config_item == "gateway_configs":
             payload = msg['data']
             for section in payload:
@@ -481,7 +526,7 @@ class AMQPYombo(YomboLibrary):
             else:
                 klass = self.add_update_delete
 
-            print "Msg: %s" % msg
+            # print "Msg: %s" % msg
             if msg['data_type'] == 'object':
                 new_data = {}
                 data = self.field_remap(msg['data'], config_data)
@@ -522,6 +567,16 @@ class AMQPYombo(YomboLibrary):
     # todo: what about updates directly to the library? Just call: config_item = get_config_item('devices')
     @inlineCallbacks
     def add_update_delete(self, data, config_item, from_amqp_incoming=False):
+        """
+        Adds, updates, or delete various items based on the content of the data item being sent it. It will
+        inspect the data and make a determination on what to do. It will also consider the values stored in the
+        database for add vs update.
+
+        :param data:
+        :param config_item:
+        :param from_amqp_incoming:
+        :return:
+        """
         # print "data: %s"%data
         config_data = self.config_items[config_item]
         required_db_keys = []
@@ -669,6 +724,15 @@ class AMQPYombo(YomboLibrary):
         return self.config_item_map[library]
 
     def get_system_configs(self):
+        """
+        On startup, this is called to request all configuration items.
+
+        TODO: After heavy development cycle is done, we check will be placed here to determine if the gateway
+        can reach the servers or not. It it's not possible, and we some configuration data that isn't too old,
+        we will can start without talking to the servers.
+
+        :return:
+        """
         self.__doing_full_configs = True
         self._full_download_start_time = time()
         self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
@@ -678,9 +742,9 @@ class AMQPYombo(YomboLibrary):
 
         allCommands = [
             "get_commands",
-            # "get_device_types", # includes commands
-            # "get_gateway_devices",
-            # "get_gateway_modules", # includes Module_device_types,
+            "get_device_types", # includes commands
+            "get_gateway_devices",
+            "get_gateway_modules", # includes Module_device_types,
             # "get_gateway_configs",
 
 #            "GetModuleVariables",
@@ -698,15 +762,14 @@ class AMQPYombo(YomboLibrary):
 
             self._Configs.set("amqpyombo_config_times", item, cur_time),
 
-            requestmsg = self.generate_message_request(
-                exchange_name='ysrv.e.gw_config',
-                source='yombo.gateway.lib.configurationupdate',
-                destination='yombo.server.configs',
-                body=body,
-                request_type=item,
-            )
-#            print requestmsg
-            self.amqp.publish(**requestmsg)
+            headers= {
+                "request_type": "config",
+                "config_item"  : item,
+            }
+            request = self._local_request(headers, body)
+
+#            print request
+            self.amqp.publish(**request)
 
             self._append_full_download_queue(item)
 

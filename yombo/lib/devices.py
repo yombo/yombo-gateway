@@ -432,8 +432,7 @@ class Devices(YomboLibrary):
             elif payload == 'source':
                 self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
         elif parts[3] == 'cmd':
-            msg = device.get_message(self, cmd=parts[4])
-            msg.send()
+            device.do_command(self, cmd=parts[4])
             if len(parts) > 5:
                 status = device.get_status()
                 if parts[5] == 'state':
@@ -509,6 +508,7 @@ class Devices(YomboLibrary):
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #
     # automation library!                                                                                        #
     ##############################################################################################################
+
     def check_trigger(self, device_id, new_status):
         """
         Called by the devices.set function when a device changes state. It just sends this to the automation
@@ -522,7 +522,7 @@ class Devices(YomboLibrary):
         """
         self._AutomationLibrary.triggers_check('devices', device_id, new_status)
 
-    def Devices_automation_source_list(self, **kwargs):
+    def _automation_source_list_(self, **kwargs):
         """
         Adds 'devices' to the list of source platforms (triggers)as a platform for rule sources (triggers).
 
@@ -584,7 +584,7 @@ class Devices(YomboLibrary):
 
         return portion['source']['device_pointer'].machine_status
 
-    def Devices_automation_action_list(self, **kwargs):
+    def _automation_action_list_(self, **kwargs):
         """
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
@@ -639,20 +639,17 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-#        logger.error("firing device rule: {rule}", rule=rule)
-#        logger.error("rule options: {options}", options=options)
+        logger.error("firing device rule: {rule}", rule=rule)
+        logger.error("rule options: {options}", options=options)
         for device in action['device_pointer']:
-            # print "the_message = device.get_message(self, cmd=%s)" % action['command']
-            the_message = device.get_message(self, cmd=action['command'])
-            # print "the-message = %s" % the_message
+
+            delay = None
             if 'delay' in options and options['delay'] is not None:
                 logger.debug("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
-                the_message.set_delay(delay=options['delay'])
-    #        print "the_message: %s" % the_message
-            the_message.send()
-#            try:
-#            except Exception,e :
-#                print "got exception: %s" % e
+                delay=options['delay']
+
+            # def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
+            device.do_command(cmd=action['command'], delay=delay)
 
 
 class Device:
@@ -719,7 +716,6 @@ class Device:
         self.status_history = deque({}, 30)
         self._DevicesLibrary = _DevicesLibrary
         self.testDevice = testDevice
-        self.available_commands = []
         self.device_variables = {'asdf':'qwer'}
         self.device_route = {}  # Destination module to send commands to
         self._helpers = {}  # Helper class provided by route module that can provide additional features.
@@ -745,9 +741,9 @@ class Device:
         Performs items that required deferreds.
         :return:
         """
-        def set_commands(commands):
-            for command in commands:
-                self.available_commands.append(str(command.command_id))
+        # def set_commands(commands):
+        #     for command in commands:
+        #         self.available_commands.append(str(command.command_id))
 
         def set_variables(vars):
             # print("GOT DEVICE VARS!!!!! %s" % vars)
@@ -770,6 +766,11 @@ class Device:
         if self.testDevice is False:
             d.addCallback(lambda ignored: self.load_history(35))
         return d
+
+
+    def available_commands(self):
+        print("getting dcommands for devicetypeid: %s" % self.device_type_id)
+        return self._DevicesLibrary._DeviceTypes.device_type_commands(self.device_type_id)
 
     def dump(self):
         """
@@ -830,7 +831,7 @@ class Device:
         print("cmdobj is: %s" % cmdobj)
 
 #        if self.validate_command(cmdobj) is not True:
-        if str(cmdobj.command_id) not in self.available_commands:
+        if str(cmdobj.command_id) not in self.available_commands():
             logger.warn("Requested command: {cmduuid}, but only have: {ihave}",
                         cmduuid=cmdobj.command_id, ihave=self.available_commands)
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
@@ -912,7 +913,9 @@ class Device:
         """
         kwargs['command'] = cmdobj
         kwargs['device'] = self
+        print("do_command_hooks args: %s" % kwargs)
         global_invoke_all('_device_command_', **kwargs)
+        print("done with _device_command_")
 
     def get_status(self, history=0):
         """
@@ -983,6 +986,7 @@ class Device:
         :param kwargs:
         :return:
         """
+        return  #todo: convert to hook
         logger.debug("send_status called...")
         if 'dest' in kwargs:
             dest = kwargs['dest']

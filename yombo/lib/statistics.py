@@ -178,7 +178,7 @@ class Statistics(YomboLibrary):
         self.add_bucket_lifetime('core.#', [10, 30, 365])
         self.add_bucket_lifetime('modules.#', [10, 30, 365])
 
-        stat_lifetimes = global_invoke_all('statistics_lifetimes')
+        stat_lifetimes = global_invoke_all('_statistics_lifetimes_')
 #        print "################## %s " % automation_sources
 #        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in stat_lifetimes.iteritems():

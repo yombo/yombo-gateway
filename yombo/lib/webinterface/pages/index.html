@@ -11,7 +11,7 @@
             <!-- /.row -->
             <div class="row">
                 <div class="col-lg-3 col-md-3">
-                    <div class="panel panel-primary">
+                    <div class="panel panel-info">
                         <div class="panel-heading">
                             <div class="row" onclick="location.href='/devices';">
                                 <div class="col-xs-3">
@@ -19,52 +19,52 @@
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="large">{{ devices|length }}</div>
-                                    <div class="medium">Devices</div>
+                                    <div class="medium">Devices<br>&nbsp;</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-3">
-                    <div class="panel panel-green">
+                    <div class="panel panel-warning">
                         <div class="panel-heading">
-                            <div class="row" onclick="location.href='/modules';">
-                                <div class="col-xs-3">
-                                    <i class="fa fa-cogs fa-3x"></i>
-                                </div>
-                                <div class="col-xs-9 text-right">
-                                    <div class="large">{{ modules|length }}</div>
-                                    <div class="medium">Modules</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-3 col-md-3">
-                    <div class="panel panel-yellow">
-                        <div class="panel-heading">
-                            <div class="row" onclick="location.href='/states';">
+                            <div class="row" onclick="location.href='/automation';">
                                 <div class="col-xs-3">
                                     <i class="fa fa-random fa-3x"></i>
                                 </div>
                                 <div class="col-xs-9 text-right">
-                                    <div class="large">{{ states|length }}</div>
-                                    <div class="medium">States</div>
+                                    <div class="large">{{ automation_rules }}</div>
+                                    <div class="medium">Automation<br>Rules</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-3 col-md-3">
-                    <div class="panel panel-red">
+                    <div class="panel panel-warning">
                         <div class="panel-heading">
-                            <div class="row" onclick="location.href='/atoms';">
+                            <div class="row" onclick="location.href='/devices/delayed_commands';">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-cogs fa-3x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="large">{{ delay_commands|length }}</div>
+                                    <div class="medium">Delayed<br>Commands</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <div class="panel panel-warning">
+                        <div class="panel-heading">
+                            <div class="row" onclick="location.href='/states';">
                                 <div class="col-xs-3">
                                     <i class="fa fa-list fa-3x"></i>
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="large">13</div>
-                                    <div class="medium">Atoms</div>
+                                    <div class="medium">States<br>&nbsp;</div>
                                 </div>
                             </div>
                         </div>

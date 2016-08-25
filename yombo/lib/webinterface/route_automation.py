@@ -8,36 +8,30 @@ def route_automation(webapp):
             return webinterface.redirect(request, '/automation/index')
 
         @webapp.route('/index')
-        @require_auth_pin()
+        @require_auth()
         def page_automation_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/index.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
-                               rules=webinterface.loader.loadedLibraries['automation'].rules,
+            return page.render(alerts=webinterface.get_alerts(),
+                               rules=webinterface._Loader.loadedLibraries['automation'].rules,
                                )
 
         
         @webapp.route('/details/<string:automation_id>')
-        @require_auth_pin()
+        @require_auth()
         def page_automation_details(webinterface, request, session, automation_id):
             try:
-                device = webinterface._DevicesLibrary[devicautomation_ide_id]
+                device = webinterface._DevicesLibrary[automation_id]
             except:
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/automation/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/device.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                commands=webinterface._Commands,
                                )
     
         @webapp.route('/edit/<string:device_id>')
-        @require_auth_pin()
+        @require_auth()
         def page_devices_edit(webinterface, request, session, device_id):
 
             try:
@@ -46,10 +40,7 @@ def route_automation(webapp):
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                commands=webinterface._Commands,
                                )

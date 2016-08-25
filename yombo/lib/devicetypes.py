@@ -158,8 +158,8 @@ class DeviceTypes(YomboLibrary):
         :return: A list of command id's.
         :rtype: list
         """
-        if device_type_id in self.device_type_commands:
-            return self.device_types_by_id.commands
+        if device_type_id in self.device_types_by_id:
+            return self.device_types_by_id[device_type_id].commands
         else:
             raise YomboWarning("Device type id doesn't exist: %s" % device_type_id, 200,
                 'device_type_commands', 'DeviceTypes')

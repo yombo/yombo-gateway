@@ -165,7 +165,7 @@ class Atoms(YomboLibrary):
     def __str__(self):
         return self.__Atoms
 
-    def Atoms_i18n_atoms(self, **kwargs):
+    def _i18n_atoms_(self, **kwargs):
        return [
            {'cpu.count': {
                'en': 'Number of CPUs (cores) gateway has.',
@@ -186,12 +186,11 @@ class Atoms(YomboLibrary):
            },
        ]
 
-    def Atoms_statistics_lifetimes(self, **kwargs):
+    def _statistics_lifetimes_(self, **kwargs):
         """
         We keep 10 days of max data, 30 days of hourly data, 1 of daily data
         """
         return {'name': 'lib.atoms.#', 'lifetimes': [11, 30, 365] } # we set full details for 11 days as an example/test
-
 
     def get_atoms(self):
         """
@@ -236,7 +235,7 @@ class Atoms(YomboLibrary):
             else:
                 raise KeyError("Searched for atoms, none found.")
 
-        print "atoms: %s" % self.__Atoms
+        # print "atoms: %s" % self.__Atoms
         return self.__Atoms[key]
 
     def set(self, key, value):
@@ -332,8 +331,10 @@ class Atoms(YomboLibrary):
 
         return atoms
 
-    # The remaining functions implement automation hooks. These should not be called by anything other than the
-    # automation library!
+    ##############################################################################################################
+    # The remaining functions implement automation hooks. These should not be called by anything other than the  #
+    # automation library!                                                                                        #
+    ##############################################################################################################
 
     def check_trigger(self, key, value):
         """
@@ -345,7 +346,7 @@ class Atoms(YomboLibrary):
         if self._loaded:
             results = self.automation.triggers_check('atoms', key, value)
 
-    def Atoms_automation_source_list(self, **kwargs):
+    def _automation_source_list_(self, **kwargs):
         """
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
@@ -394,7 +395,7 @@ class Atoms(YomboLibrary):
         """
         return self.get(portion['source']['name'])
 
-    def Atoms_automation_action_list(self, **kwargs):
+    def _automation_action_list_(self, **kwargs):
         """
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.

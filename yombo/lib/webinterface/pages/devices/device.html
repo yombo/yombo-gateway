@@ -65,9 +65,9 @@
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">
-                                {% for command in device.available_commands %}
+                                {% for command in device.available_commands() %}
                                 <label style="margin-top: 0px; margin-bottom: 0px">
-                                    <a class="deviceCmd" data-doc_value="{{ commands[command].cmdUUID }}" href="/api/v1/devices?action=runcommand&deviceid={{ device.device_id }}&commandid={{ commands[command].cmdUUID }}">{{ commands[command].label }}</a>
+                                    <a class="deviceCmd" data-doc_value="{{ commands[command].cmdUUID }}" href="/api/v1/devices?action=runcommand&deviceid={{ device.device_id }}&commandid={{ commands[command].command_id }}">{{ commands[command].label }}</a>
                                 </label>&nbsp;&nbsp;
                                 {% endfor %}
                             </div>

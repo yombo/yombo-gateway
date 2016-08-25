@@ -4,30 +4,15 @@ Dictionary with auto-expiring values for caching purposes.
 Expiration happens on any access, object is locked during cleanup from expired
 values. Can not store more than max_len elements - the oldest will be deleted.
 
-*Usage**:
-
-.. code-block:: python
-
-   ExpiringDict(max_len=100, max_age_seconds=10)
+>>> ExpiringDict(max_len=100, max_age_seconds=10)
 
 The values stored in the following way:
+{
+    key1: (value1, created_time1),
+    key2: (value2, created_time2)
+}
 
-*Usage**:
-
-.. code-block:: python
-
-   values = {
-       key1: (value1, created_time1),
-       key2: (value2, created_time2)
-   }
-
-.. warning::
-
-   Iteration over dict and also keys() do not remove expired values!
-
-Copyright: Anton Efimenko
-License: Apache License, 2.0 http://www.apache.org/licenses/
-Comment: https://pypi.python.org/pypi/expiringdict/1.1.2
+NOTE: iteration over dict and also keys() do not remove expired values!
 '''
 
 from time import time
@@ -41,7 +26,7 @@ except ImportError:
 
 
 class ExpiringDict(OrderedDict):
-    def __init__(self, max_len, max_age_seconds):
+    def __init__(self, max_len=100, max_age_seconds=3600):
         assert max_age_seconds >= 0
         assert max_len >= 1
 

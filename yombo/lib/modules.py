@@ -321,13 +321,13 @@ class Modules(YomboLibrary):
                 module._Localize = self._Loader.loadedLibraries['localize']
 
                 module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-                module._DevicesTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
+                module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
 
                 if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
                     temp_device_types = module._module_devicetypes_()
                     for dt in temp_device_types:
-                        if dt in module._DevicesTypes:
-                            self._moduleClasses[module_id].device_types.append(module._DevicesTypes[dt].device_type_id)
+                        if dt in module._DeviceTypes:
+                            self._moduleClasses[module_id].device_types.append(module._DeviceTypes[dt].device_type_id)
 
                 # Get variables, and merge with any local variable settings
                 module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
@@ -338,7 +338,7 @@ class Modules(YomboLibrary):
                     module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
                     del self._localModuleVars[module._Name]
 
-                module._DevicesTypes.add_registered_module(self._moduleClasses[module_id])
+                module._DeviceTypes.add_registered_module(self._moduleClasses[module_id])
 #                module._init_()
 #                continue
                 module_init_deferred.append(maybeDeferred(module._init_))

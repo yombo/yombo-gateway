@@ -3,7 +3,7 @@
 
 .. note::
 
-  For more information see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
+  For end-user documentation, see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
 
 The states library is used to collect and provide information about various states that the automation system
 can be in or exist around it. For example, it can tell if it's light outside, dawn, dusk, or if it's connected
@@ -298,8 +298,10 @@ class States(YomboLibrary, object):
         return None
 
 
-    # The remaining functions implement automation hooks. These should not be called by anything other than the
-    # automation library!
+    ##############################################################################################################
+    # The remaining functions implement automation hooks. These should not be called by anything other than the  #
+    # automation library!                                                                                        #
+    #############################################################################################################
 
     def check_trigger(self, key, value):
         """
@@ -311,13 +313,14 @@ class States(YomboLibrary, object):
         if self._loaded:
             results = self.automation.triggers_check('states', key, value)
 
-    def States_automation_source_list(self, **kwargs):
+    def _automation_source_list_(self, **kwargs):
         """
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
         :param kwargs: None
         :return:
         """
+        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   in automation source list for states"
         return [
             { 'platform': 'states',
               'validate_source_callback': self.states_validate_source_callback,  # function to call to validate a trigger
@@ -359,7 +362,7 @@ class States(YomboLibrary, object):
         """
         return self.get(portion['source']['name'])
 
-    def States_automation_action_list(self, **kwargs):
+    def _automation_action_list_(self, **kwargs):
         """
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
