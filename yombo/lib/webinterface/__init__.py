@@ -43,6 +43,7 @@ from yombo.lib.webinterface.route_automation import route_automation
 from yombo.lib.webinterface.route_api_v1 import route_api_v1
 from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
+from yombo.lib.webinterface.route_statistics import route_statistics
 
 from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
@@ -104,20 +105,10 @@ nav_side_menu = [
         'label1': 'Info',
         'label2': 'Modules',
         'priority1': 1000,
-        'priority2': 1000,
+        'priority2': 1500,
         'icon': 'fa fa-wifi fa-fw',
         'url': '/modules/index',
         'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Info',
-        'label2': 'Auotmation Rules',
-        'priority1': 1000,
-        'priority2': 1500,
-        'icon': 'fa fa-wifi fa-fw',
-        'url': '/automation/index',
-        'tooltip': 'Show Devices',
         'opmode': 'run',
     },
     {
@@ -138,6 +129,36 @@ nav_side_menu = [
         'icon': 'fa fa-wifi fa-fw',
         'url': '/atoms/index',
         'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Automation',
+        'label2': 'Rules',
+        'priority1': 1500,
+        'priority2': 500,
+        'icon': 'fa fa-random fa-fw',
+        'url': '/automation/index',
+        'tooltip': 'Show Rules',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Automation',
+        'label2': 'Platforms',
+        'priority1': 1500,
+        'priority2': 1500,
+        'icon': 'fa fa-random fa-fw',
+        'url': '/automation/platforms',
+        'tooltip': 'Automation Platforms',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Automation',
+        'label2': 'Add Rule',
+        'priority1': 1500,
+        'priority2': 1000,
+        'icon': 'fa fa-random fa-fw',
+        'url': '/automation/add_rule',
+        'tooltip': 'Automation Platforms',
         'opmode': 'run',
     },
     {
@@ -238,6 +259,7 @@ class WebInterface(YomboLibrary):
         route_configs(self.webapp)
         route_devices(self.webapp)
         route_setup_wizard(self.webapp)
+        route_statistics(self.webapp)
 
     @inlineCallbacks
     def _load_(self):
@@ -271,7 +293,7 @@ class WebInterface(YomboLibrary):
 
         self.webapp.templates.globals['_'] = _  # i18n
         self.webapp.templates.globals['data'] = self.data
-        self.webapp.templates.globals['funcitons'] = self.functions
+        self.webapp.templates.globals['func'] = self.functions
 
     def _started_(self):
         if self._op_mode != 'run':
@@ -697,10 +719,13 @@ class WebInterface(YomboLibrary):
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
 
+    def epoch_to_human(self, the_time, format=None):
+        if format is None:
+            format = '%b %d %Y %H:%M:%S'
+        return strftime(format, gmtime(the_time))
+
     def setup_basic_filters(self):
-        def epoch_to_human(the_time):
-            return strftime("%b %d %Y %H:%M:%S", gmtime(the_time))
-        self.webapp.templates.filters['epoch_to_human'] = epoch_to_human
+        self.webapp.templates.filters['epoch_to_human'] = self.epoch_to_human
 
     def WebInterface_configuration_set(self, **kwargs):
         """
@@ -836,6 +861,13 @@ class WebInterface(YomboLibrary):
         CAT_SCRIPTS_OUT = 'dist/css/mappicker.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
+
+        CAT_SCRIPTS = [
+            'source/echarts/echarts.min.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/echarts.min.js'
+
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             'source/sb-admin/js/sha256.js',

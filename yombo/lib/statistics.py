@@ -171,9 +171,10 @@ class Statistics(YomboLibrary):
         See :py:mod:`Atoms Library <yombo.lib.automationhelpers>` for demo. All other modules are defined here...
         """
         # first, set some generic defaults. The filter matcher when processing will always use the most specific.
-        self.bucket_lifetimes_default = [30, 90, 365]
+        self.bucket_lifetimes_default = [60, 120, 10000]
 
-        self.add_bucket_lifetime('lib.#', [10, 30, 365])
+        self.add_bucket_lifetime('lib.#', [15, 60, 365])
+        self.add_bucket_lifetime('lib.device.#', [60, 365, 10000])
         self.add_bucket_lifetime('lib.amqpyombo.amqp.#', [5, 15, 90])  # don't really care about this! If you do, just override with same value.
         self.add_bucket_lifetime('core.#', [10, 30, 365])
         self.add_bucket_lifetime('modules.#', [10, 30, 365])

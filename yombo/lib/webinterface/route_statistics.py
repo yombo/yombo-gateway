@@ -1,20 +1,17 @@
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 
-def route_devices(webapp):
-    with webapp.subroute("/devices") as webapp:
+def route_statistics(webapp):
+    with webapp.subroute("/statistics") as webapp:
         @webapp.route('/')
         @require_auth()
         def page_devices(webinterface, request, session):
-            return webinterface.redirect(request, '/devices/index')
+            return webinterface.redirect(request, '/statistics/index')
 
         @webapp.route('/index')
         @require_auth()
-        def page_devices_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
+        def page_statistics_index(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/statistics/index.html')
+            return page.render(alerts=webinterface.get_alerts(),
                                devices=webinterface._Libraries['devices']._devicesByUUID,
                                )
 

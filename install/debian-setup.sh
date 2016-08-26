@@ -49,6 +49,6 @@ chmod 775 /var/log/yombo
 chown $SUDO_USER:$SUDO_USER /var/log/yombo
 
 apt-get install python python-pip python-setuptools python-dev gnupg2 rng-tools build-essential git -y
-pip install Twisted python-gnupg pyephem cython gnupg service_identity parsedatetime
+pip install Twisted python-gnupg pyephem gnupg service_identity parsedatetime
 pip3 install hbmqtt
 

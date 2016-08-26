@@ -74,8 +74,84 @@
             <!-- /.row -->
             <div class="row">
                 <div class="col-lg-6 col-md-6">
+                    hi: {{ _('hello') }}
     <div id="main" style="width: 100%;height:400px;"></div>
+    <script type="text/javascript">
+        var myChart = echarts.init(document.getElementById('main'));
 
+        var option = {
+            title: {
+                text: 'Commands Sent'
+            },
+            tooltip: {},
+            legend: {
+                data:['销量']
+            },
+    toolbox: {
+        show : true,
+        feature : {
+            mark : {
+                show: false,
+                title : {
+                    mark : 'Mark',
+                    markUndo : 'Undo Mark',
+                    markClear : 'Clear Mark'
+                    }
+            },
+    dataZoom : {
+        show : true,
+        title : {
+            zoom : 'Select Zoom',
+            back : 'Reset Zoom'
+        }
+    },
+            dataView : {show: true, title: 'View'},
+    magicType: {
+        show : true,
+        type: ['line', 'bar'],
+        title : {
+            line : 'Line chart',
+            bar : 'Bar chart',
+            stack : 'Stack',
+            tiled : 'Tiled',
+            force: 'Forced',
+            chord: 'Chord',
+            pie: 'Pine',
+            funnel: 'Funnel'
+        }
+        },
+    restore : {
+        show : true,
+        title : 'Restore'
+    },
+    saveAsImage : {
+        show : true,
+        title : 'Save as image',
+        type : 'png',
+        lang : ['Save as image']
+    }
+        }
+    },
+        dataZoom : {
+        show : true,
+        realtime : true,
+        start : 1,
+        end : 80
+    },
+            xAxis: {
+                data: ["1","2","3","4","5","6","7", "8", "9", "10", "11", "12"]
+            },
+            yAxis: {},
+            series: [{
+                name: 'something',
+                type: 'bar',
+                data: [5, 20, 36, 10, 10, 20, 3, 6, 15, 18, 12]
+            }]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+    </script>
                 </div>
                 <div class="col-lg-6 col-md-6">
 
@@ -83,31 +159,4 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-{% endblock %}
-{% block body_bottom %}
-
-    <script type="text/javascript">
-    $(document).ready(function(){
-var myChart = echarts.init(document.getElementById('main'));
-myChart.showLoading({
-text: 'Loading',
-});
-//ajax get data ing...
-var url="/api/v1/statistics/echarts/buckets?name=lib.devices.commands_sent&bucket_size=900";
-$.ajax({
-type:"post",
-url:url,
-dataType: "json",
-success:function(data){
-myChart.hideLoading();
-// 图表使用-------------------
-var option=data;
-myChart.setOption(option);
-},
-error:function(error){
-alert("Error："+error);
-}
-});
-});
-</script>
 {% endblock %}

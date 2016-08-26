@@ -171,7 +171,8 @@ class LocalDB(YomboLibrary):
         self._ModUrl = "https://yombo.net"
         self.db_model = {}  #store generated database model here.
         # Connect to the DB
-        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread = False)
+        Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread=False,
+                                                cp_min=1, cp_max=1)
         self.dbconfig = Registry.getConfig()
 
         self.schema_version = 0
@@ -358,6 +359,44 @@ class LocalDB(YomboLibrary):
         # print "session_data: %s" % session_data
         yield self.dbconfig.delete('sessions', args, where=['id = ?', session_id] )
 
+#########################
+###    States     #####
+#########################
+    @inlineCallbacks
+    def get_states(self, name=None):
+        # print "name: %s" % name
+        if name is not None:
+            record = yield Sessions.findBy(name=name)
+        else:
+            record = yield Sessions.find()
+        returnValue(record)
+
+    @inlineCallbacks
+    def save_state(self, session_id, session_data, created, last_access, updated):
+        # print "session_data: %s" % session_data
+        yield Sessions(
+            id=session_id,
+            session_data=session_data,
+            created=created,
+            last_access=last_access,
+            updated=updated,
+        ).save()
+
+    @inlineCallbacks
+    def update_session(self, session_id, session_data, last_access, updated):
+        # print "session_data: %s" % session_data
+
+        args = {'session_data': session_data,
+                'last_access': last_access,
+                'updated' : updated,
+        }
+        yield self.dbconfig.update('sessions', args, where=['id = ?', session_id] )
+
+    @inlineCallbacks
+    def delete_session(self, session_id):
+        # print "session_data: %s" % session_data
+        yield self.dbconfig.delete('sessions', args, where=['id = ?', session_id] )
+
     @inlineCallbacks
     def get_devices(self):
 #        records = yield self.dbconfig.select("devices_view")
@@ -377,40 +416,6 @@ class LocalDB(YomboLibrary):
         for record in records:
             results.append(record.__dict__)  # we need a dictionary, not an object
         returnValue(results)
-
-    # not used, will convert from SQLDict to SQLite after heavy development is done.
-    @inlineCallbacks
-    def get_webinterface_session(self, id):
-        records = yield self.dbconfig.select('webinterface_sessions', select='*', where=['id = ?', id])
-        if len(records) != 1:
-            returnValue(None)
-        record = records[0]
-        record['data'] = json.loads(str(record['data']))
-        returnValue(record)
-
-    @inlineCallbacks
-    def set_webinterface_session(self, id, **kwargs):
-        created = kwargs.get('created', time())
-        updated = kwargs.get('created', time())
-        device_state = kwargs.get('device_state', 0)
-        machine_status = kwargs['machine_status']
-        machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',',':') )
-        human_status = kwargs.get('human_status', machine_status)
-        source = kwargs.get('source', '')
-        uploaded = kwargs.get('uploaded', 0)
-        uploadable = kwargs.get('uploadable', 0)
-
-        yield DeviceStatus(
-            device_id=device_id,
-            set_time=set_time,
-            device_state=device_state,
-            human_status=human_status,
-            machine_status=machine_status,
-            machine_status_extra=machine_status_extra,
-            source=source,
-            uploaded=uploaded,
-            uploadable=uploadable,
-        ).save()
 
     #################
     ### GPG     #####
@@ -450,6 +455,9 @@ class LocalDB(YomboLibrary):
         yield key.save()
 #        yield self.dbconfig.insert('gpg_keys', args, None, 'OR IGNORE' )
 
+    #################
+    ### Modules #####
+    #################
     @inlineCallbacks
     def get_modules(self, get_all=False):
         if get_all is False:
@@ -611,6 +619,42 @@ class LocalDB(YomboLibrary):
 
         returnValue(results)
 #            print "set_sql_dict: insert reuslts: %s" %results
+
+    @inlineCallbacks
+    def get_stats_sums(self, name, type=None, bucket_size=None, time_start=None, time_end=None):
+        if bucket_size is None:
+            bucket_size = 3600
+
+        wheres = []
+        values = []
+
+        wheres.append("(name like ?)")
+        values.append(name)
+
+        if type is not None:
+            wheres.append("(type > ?)")
+            values.append(time_start)
+
+        if time_start is not None:
+            wheres.append("(bucket > ?)")
+            values.append(time_start)
+
+        if time_end is not None:
+            wheres.append("(bucket < ?)")
+            values.append(time_end)
+        where_final = [(" AND ").join(wheres)] + values
+        print "where_final: %s" % where_final
+
+
+        # records = yield self.dbconfig.select('statistics',
+        #             select='sum(value), name, type, round(bucket / 3600) * 3600 AS bucket',
+        select_fields='sum(value) as value, name, type, round(bucket / %s) * %s AS bucket' % (bucket_size, bucket_size)
+        print "select_fields: %s" % select_fields
+        records = yield self.dbconfig.select('statistics',
+                    select=select_fields,
+                    where=where_final,
+                    group='bucket')
+        returnValue(records)
 
 
     @inlineCallbacks

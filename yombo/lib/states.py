@@ -175,7 +175,6 @@ class States(YomboLibrary, object):
             else:
                 raise KeyError("Searched for atoms, none found.")
 
-        print "atoms: %s" % self.__States
         return self.__States[key]
 
     def get_states(self):
@@ -313,6 +312,8 @@ class States(YomboLibrary, object):
         if self._loaded:
             results = self.automation.triggers_check('states', key, value)
 
+            results = self.automation.triggers_check('states', key, value)
+
     def _automation_source_list_(self, **kwargs):
         """
         hook_automation_source_list called by the automation library to get a list of possible sources.
@@ -320,12 +321,19 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   in automation source list for states"
         return [
             { 'platform': 'states',
+              'description': 'Allows states to be used as a source (trigger).',
               'validate_source_callback': self.states_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.states_add_trigger_callback,  # function to call to add a trigger
               'get_value_callback': self.states_get_value_callback,  # get a value
+              'field_details': [
+                  {
+                  'label': 'name',
+                  'description': 'The name of the state to monitor.',
+                  'required': True
+                  }
+              ]
             }
          ]
 
@@ -374,8 +382,21 @@ class States(YomboLibrary, object):
         """
         return [
             { 'platform': 'states',
+              'description': 'Allows states to be changed as an action.',
               'validate_action_callback': self.states_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.states_do_action_callback  # function to be called to perform an action
+              'do_action_callback': self.states_do_action_callback,  # function to be called to perform an action
+              'field_details': [
+                  {
+                  'label': 'name',
+                  'description': 'The name of the state to change.',
+                  'required': True
+                  },
+                  {
+                  'label': 'value',
+                  'description': 'The value that should be set.',
+                  'required': True
+                  }
+              ]
             }
          ]
 

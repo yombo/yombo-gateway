@@ -16,7 +16,7 @@ twistd.pid
 _trial_temp
 /ENV
 test.py
-
+*.bak
 
 # Yombo Stuff #
 ###############

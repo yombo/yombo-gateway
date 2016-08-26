@@ -355,10 +355,17 @@ class Atoms(YomboLibrary):
         """
         return [
             { 'platform': 'atoms',
+              'description': 'Allows states to be used as a source (trigger).',
               'validate_source_callback': self.atoms_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.atoms_add_trigger_callback,  # function to call to add a trigger
               'get_value_callback': self.atoms_get_value_callback,  # get a value
-            }
+              'field_details': [
+                  {
+                  'label': 'name',
+                  'description': 'The name of the atom to monitor.',
+                  'required': True
+                  }
+              ]            }
          ]
 
     def atoms_validate_source_callback(self, rule, portion, **kwargs):
@@ -407,8 +414,21 @@ class Atoms(YomboLibrary):
         """
         return [
             { 'platform': 'atom',
+              'description': 'Allows atoms to be changed as an action.',
               'validate_action_callback': self.atoms_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.atoms_do_action_callback  # function to be called to perform an action
+              'do_action_callback': self.atoms_do_action_callback,  # function to be called to perform an action
+              'field_details': [
+                  {
+                  'label': 'name',
+                  'description': 'The name of the atom to change.',
+                  'required': True
+                  },
+                  {
+                  'label': 'value',
+                  'description': 'The value that should be set.',
+                  'required': True
+                  }
+              ]
             }
          ]
 

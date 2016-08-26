@@ -103,6 +103,8 @@ class Automation(YomboLibrary):
         except Exception, e:
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
+        for rule in self._rulesRaw['rules']:
+            rule['source'] = 'hsjon'
 
     def _module_prestart_(self, **kwargs):
         """
@@ -162,16 +164,17 @@ class Automation(YomboLibrary):
 
         """
         automation_sources = yombo.utils.global_invoke_all('_automation_source_list_')
-#        print "################## automation_sources:%s " % automation_sources
         logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in automation_sources.iteritems():
             for vals in item:
+                vals['platform_source'] = moduleName._FullName
                 self.sources[vals['platform']] = vals
 #        logger.debug("sources: {sources}", sources=self.sources)
 
         automation_filters = yombo.utils.global_invoke_all('_automation_filter_list_')
         for moduleName, item in automation_filters.iteritems():
             for vals in item:
+                vals['platform_source'] = moduleName._FullName
                 self.filters[vals['platform']] = vals
 #        logger.debug("filters: {filters}", filters=self.filters)
 
@@ -179,6 +182,7 @@ class Automation(YomboLibrary):
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for moduleName, item in automation_actions.iteritems():
             for vals in item:
+                vals['platform_source'] = moduleName._FullName
                 self.actions[vals['platform']] = vals
 
         other_rules = yombo.utils.global_invoke_all('_automation_rules_list_')
@@ -186,6 +190,7 @@ class Automation(YomboLibrary):
 #            print "Merging 1: %s" % rules['rules']
 #            print "Merging 2: %s" % self._rulesRaw['rules']
             for rule in rules['rules']:
+                rule['source'] = 'callbacks'
                 self._rulesRaw['rules'].append(rule)
 #            print "Results: %s" % self._rulesRaw
 

@@ -13,6 +13,7 @@
     <!-- Bootstrap Core CSS ad metisMenu -->
     <link href="/static/css/bootsrap-metisMenu.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
+    {% block echarts %}{% endblock %}
     <!-- SB Admin 2 and Font Awesome CSS -->
     <link href="/static/css/admin2-font_awesome.min.css" rel="stylesheet">
 

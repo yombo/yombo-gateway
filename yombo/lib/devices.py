@@ -913,9 +913,8 @@ class Device:
         """
         kwargs['command'] = cmdobj
         kwargs['device'] = self
-        print("do_command_hooks args: %s" % kwargs)
         global_invoke_all('_device_command_', **kwargs)
-        print("done with _device_command_")
+        self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def get_status(self, history=0):
         """

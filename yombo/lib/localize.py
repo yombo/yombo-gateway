@@ -38,6 +38,16 @@ class Localize(YomboLibrary):
         self.system_messages = {}  # Various system messages.
         self.states = {}  # All state translations
 
+        import sys, gettext
+        kwargs = {}
+        if sys.version_info[0] > 3:
+            # In Python 2, ensure that the _() that gets installed into built-ins
+            # always returns unicodes.  This matches the default behavior under
+            # Python 3, although that keyword argument is not present in the
+            # Python 3 API.
+            kwargs['unicode'] = True
+        gettext.install('yombo', 'locale', **kwargs)
+
     def _load_(self):
         pass
 
@@ -122,6 +132,7 @@ class Localize(YomboLibrary):
                         if language not in self.configuration[msgid]:
                             self.configuration[msgid][language] = {}
                         self.configuration[msgid][language] = the_string
+
 
     def get_strings(self, accept_language, type):
         accept_languages = self.parse_accept_language(accept_language)

@@ -29,9 +29,9 @@ class AutomationExample(YomboModule):
 #        reactor.callLater(3, self.set_low)
         pass
 
-    def AutomationExample_automation_rules_list(self, **kwargs):
+    def _automation_rules_list_(self, **kwargs):
         """
-        Implements hook_automation_rules_list hook as implemented by the library automation. This defines a few
+        Implements hook _automation_rules_list_ hook as implemented by the library automation. This defines a few
         example rules. Notice the reference to 'component_function'. This the function that is called when the
         rule fires. Notice that the function name can be reference by name as if it were implemented by a text file,
         or a reference to the function be submitted. Passing a reference to a function provides higher assurance the

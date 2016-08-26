@@ -44,3 +44,33 @@ def route_automation(webapp):
                                device=device,
                                commands=webinterface._Commands,
                                )
+
+        @webapp.route('/platforms')
+        @require_auth()
+        def page_automation_platforms(webinterface, request, session):
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/platforms.html')
+            sources = webinterface._Loader.loadedLibraries['automation'].sources  # List of source processors
+            filters = webinterface._Loader.loadedLibraries['automation'].filters # List of filter processors
+            actions = webinterface._Loader.loadedLibraries['automation'].actions  # List of actionprocessors
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               source_platforms=sources,
+                               filter_platforms=filters,
+                               action_platforms=actions,
+                               )
+
+        @webapp.route('/add_rule')
+        @require_auth()
+        def page_automation_add_new(webinterface, request, session):
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/automation/add_rule.html')
+            sources = webinterface._Loader.loadedLibraries['automation'].sources  # List of source processors
+            filters = webinterface._Loader.loadedLibraries['automation'].filters # List of filter processors
+            actions = webinterface._Loader.loadedLibraries['automation'].actions  # List of actionprocessors
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               source_platforms=sources,
+                               filter_platforms=filters,
+                               action_platforms=actions,
+                               )

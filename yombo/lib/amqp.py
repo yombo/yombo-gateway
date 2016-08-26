@@ -542,6 +542,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         properties['user_id'] = self.AMQPClient.username
 
         kwargs['properties'] = properties
+
         if correlation_id is not None:
             self.AMQPClient.send_correlation_ids[correlation_id] = {
                 "time_created"      : kwargs.get("time_created", datetime.now()),
@@ -550,7 +551,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 "callback"          : kwargs['callback'],
                 "correlation_type"  : correlation_id,
             }
-
         self.send_queue.append(kwargs)
 
         if self.AMQPProtocol:
@@ -735,24 +735,31 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 
 #        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
         logger.debug("In PikaProtocol do_publish...")
-        for msg in self.factory.send_queue:
-            logger.debug("In PikaProtocol do_publish a: {msg}", msg=msg)
-#            print "do_publish: %s"  % msg
+
+        while True:
             try:
-                if 'correlation_id' in msg['properties']:
-                    if msg['properties']['correlation_id'] in self.factory.AMQPClient.send_correlation_ids:
-                        self.factory.AMQPClient.send_correlation_ids[msg['properties']['correlation_id']]['time_sent'] = datetime.now()
-                # logger.debug("exchange={exchange_name}, routing_key={routing_key}, body={body}, properties={properties}",
-                #             exchange_name=msg['exchange_name'], routing_key= msg['routing_key'], body=msg['body'], properties=msg['properties'])
-                msg['properties'] = pika.BasicProperties(**msg['properties'])
-                yield self.channel.basic_publish(exchange=msg['exchange_name'], routing_key=msg['routing_key'], body=msg['body'], properties=msg['properties'])
-            except Exception as error:
-                logger.warn("--------==(Error: While sending message.     )==--------")
-                logger.warn("--------------------------------------------------------")
-                logger.warn("{error}", error=sys.exc_info())
-                logger.warn("---------------==(Traceback)==--------------------------")
-                logger.warn("{trace}", trace=traceback.print_exc(file=sys.stdout))
-                logger.warn("--------------------------------------------------------")
+                msg = self.factory.send_queue.popleft()
+                logger.debug("In PikaProtocol do_publish a: {msg}", msg=msg)
+                # print "do_publish: %s"  % msg['properties']
+                try:
+                    if 'correlation_id' in msg['properties']:
+                        if msg['properties']['correlation_id'] in self.factory.AMQPClient.send_correlation_ids:
+                            self.factory.AMQPClient.send_correlation_ids[msg['properties']['correlation_id']]['time_sent'] = datetime.now()
+                    # logger.debug("exchange={exchange_name}, routing_key={routing_key}, body={body}, properties={properties}",
+                    #             exchange_name=msg['exchange_name'], routing_key= msg['routing_key'], body=msg['body'], properties=msg['properties'])
+                    msg['properties'] = pika.BasicProperties(**msg['properties'])
+                    yield self.channel.basic_publish(exchange=msg['exchange_name'], routing_key=msg['routing_key'], body=msg['body'], properties=msg['properties'])
+
+                except Exception as error:
+                    logger.warn("--------==(Error: While sending message.     )==--------")
+                    logger.warn("--------------------------------------------------------")
+                    logger.warn("{error}", error=sys.exc_info())
+                    logger.warn("---------------==(Traceback)==--------------------------")
+                    logger.warn("{trace}", trace=traceback.print_exc(file=sys.stdout))
+                    logger.warn("--------------------------------------------------------")
+
+            except IndexError:
+                break
 
     def _register_consumer_success(self, tossaway, queue_name):
         self.factory.consumers[queue_name]['subscribed'] = True

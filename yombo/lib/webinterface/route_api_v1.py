@@ -10,10 +10,10 @@ from yombo.lib.webinterface.auth import require_auth
 
 
 def return_error(message, status=500):
-    return {
+    return json.dumps({
         'status': status,
         'message': message,
-    }
+    })
 
 
 def return_good(message, payload=None):
@@ -35,14 +35,14 @@ def route_api_v1(webapp):
             try:
                 action = request.args.get('action')[0]
             except:
-                return json.dumps(return_error('Action must be specified.'))
+                return return_error('Action must be specified.')
 
             if action == 'runcommand':
                 try:
                     deviceid = request.args.get('deviceid')[0]
                     commandid = request.args.get('commandid')[0]
                 except:
-                    return json.dumps(return_error('deviceid and commandid must be specified for "runcommand".'))
+                    return return_error('deviceid and commandid must be specified for "runcommand".')
 
                 device = webinterface._Devices.get_device(deviceid)
                 device.do_command(cmd=commandid)
@@ -84,10 +84,10 @@ def route_api_v1(webapp):
                     del webinterface.alerts[id]
                     results = {"status": 200}
             return json.dumps(results)
-    
+
         @webapp.route('/statistics/something', methods=['GET'])
         @require_auth()
-        def api_v1_notifications_something_get(webinterface, request, session):
+        def api_v1_api_v1_statistics_something(webinterface, request, session):
             action = request.args.get('action')[0]
             results = {}
             if action == "closed":
@@ -97,3 +97,62 @@ def route_api_v1(webapp):
                     del webinterface.alerts[id]
                     results = {"status": 200}
             return json.dumps(results)
+
+        @webapp.route('/statistics/echarts/buckets', methods=['GET', 'POST'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_statistics_test(webinterface, request, session):
+            stat_name = action = request.args.get('name', [None,])[0]
+            bucket_size = action = request.args.get('bucket_size', [3600,])[0]
+            if stat_name is None:
+                returnValue(return_error('name is required.'))
+            # print "action = %s" % action
+
+            records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size)
+            # print "stat records: %s" % records
+            labels = []
+            data = []
+            for record in records:
+                labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
+                data.append(record['value'])
+            results = {
+                'title': {'text': 'Device Commands Sent'},
+                'toolbox': {
+                    'show': 'true',
+                    'feature': {
+                        'dataZoom': {
+                            'show': 'true',
+                            'title': {
+                                'zoom': 'Select Zoom',
+                                'back': 'Reset Zoom'
+                            },
+                        },
+                        'dataView': {
+                            'show': 'true',
+                            'title': 'View',
+                            'lang': ['View', 'Cancel', 'Save']
+                        },
+                        'restore': {
+                            'show': 'true',
+                            'title': 'Restore'
+                        },
+                        'saveAsImage': {
+                            'show': 'true',
+                            'title': 'Save as image',
+                            'type': 'png',
+                            'lang': ['Save as image']
+                        },
+                    },
+                },
+                'dataZoom': {
+                    'show': 'true',
+                },
+
+                'tooltip': {'show' : 'true'},
+                'legend': {'data':['Legend here']},
+                'xAxis': [{'type': 'category', 'data': labels}],
+                'yAxis': [{'type': 'value'}], 'series': [{'name':'Commands Sent','type' : 'bar','data':data}],
+
+            }
+
+            returnValue(json.dumps(results))
