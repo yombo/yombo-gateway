@@ -18,7 +18,15 @@ def route_devices(webapp):
                                devices=webinterface._Libraries['devices']._devicesByUUID,
                                )
 
-        
+        @webapp.route('/delayed_commands')
+        @require_auth()
+        def page_devices_delayed_commands(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delayed_commands.html')
+            print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
+            return page.render(alerts=webinterface.get_alerts(),
+                               delayed_commands=webinterface._Devices.delay_queue_active,
+                               )
+
         @webapp.route('/details/<string:device_id>')
         @require_auth()
         def page_devices_details(webinterface, request, session, device_id):
@@ -27,11 +35,9 @@ def route_devices(webapp):
             except Exception, e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
-            device_commands = device.available_commands()
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               device_commands=device_commands,
                                commands=webinterface._Commands,
                                )
     

@@ -75,6 +75,9 @@ class DeviceTypes(YomboLibrary):
 
     def _load_(self):
         self.run_state = 2
+        self._load_device_types()
+        self.start_defer = Deferred()
+        return self.start_defer
 
     def _start_(self):
         """
@@ -83,9 +86,6 @@ class DeviceTypes(YomboLibrary):
         self.run_state = 3
 
         # print "zzz 111"
-        self._load_device_types()
-        self.start_defer = Deferred()
-        return self.start_defer
 
     def _started_(self):
         # print "device types info:"

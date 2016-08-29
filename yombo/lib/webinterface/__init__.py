@@ -10,7 +10,7 @@ import shutil
 from collections import OrderedDict
 from os import path, listdir, mkdir
 from os.path import dirname, abspath
-from time import strftime, gmtime, time
+from time import strftime, localtime, time
 from urlparse import parse_qs, urlparse
 from operator import itemgetter
 
@@ -33,17 +33,20 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.core.exceptions import YomboRestart
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 
+from yombo.lib.webinterface.route_atoms import route_atoms
 from yombo.lib.webinterface.route_automation import route_automation
 from yombo.lib.webinterface.route_api_v1 import route_api_v1
+from yombo.lib.webinterface.route_commands import route_commands
 from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
+from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_statistics import route_statistics
+from yombo.lib.webinterface.route_states import route_states
 
 from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
@@ -194,11 +197,11 @@ nav_side_menu = [
     },
     {
         'label1': 'Settings',
-        'label2': 'Gateway Settings',
+        'label2': 'GPG Keys',
         'priority1': 4000,
         'priority2': 1000,
         'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/basic',
+        'url': '/configs/gpg_keys',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -212,16 +215,7 @@ nav_side_menu = [
         'tooltip': '',
         'opmode': 'run',
     },
-    {
-        'label1': 'Settings',
-        'label2': 'Web Interface',
-        'priority1': 4000,
-        'priority2': 2000,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/web_interface',
-        'tooltip': '',
-        'opmode': 'run',
-    },
+
 ]
 
 
@@ -254,12 +248,16 @@ class WebInterface(YomboLibrary):
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
 
+        route_atoms(self.webapp)
         route_automation(self.webapp)
         route_api_v1(self.webapp)
+        route_commands(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
+        route_modules(self.webapp)
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
+        route_states(self.webapp)
 
     @inlineCallbacks
     def _load_(self):
@@ -318,6 +316,15 @@ class WebInterface(YomboLibrary):
     #             },
     #     }]
 
+    def _configuration_set_(self, **kwargs):
+        section = kwargs['section']
+        option = kwargs['option']
+        value = kwargs['value']
+
+        if section == 'core':
+            if option == 'label':
+                self.data['gateway_label'] = value
+
     def WebInterface_i18n_configurations(self, **kwargs):
        return [
            {
@@ -371,11 +378,16 @@ class WebInterface(YomboLibrary):
             if level1 not in newlist:
                 temp_dict[level1] = item['priority1']
 
-        temp_strings = yombo.utils.global_invoke_all('webinterface_add_routes')
+        temp_strings = yombo.utils.global_invoke_all('_webinterface_add_routes_')
+        # print "new routes: %s" % temp_strings
         for component, options in temp_strings.iteritems():
+            # print "1111"
             if 'nav_side' in options:
+                # print "1111 2"
                 for new_nav in options['nav_side']:
+                    # print "1111 3"
                     if new_nav['label1'] in temp_dict:
+                        # print "1111 4"
                         new_nav['priority1'] =  temp_dict[new_nav['label1']]
                     nav_side_menu.append(new_nav)
             if 'routes' in options:
@@ -389,7 +401,7 @@ class WebInterface(YomboLibrary):
             if level1 not in self.data['nav_side']:
                 self.data['nav_side'][level1] = []
             self.data['nav_side'][level1].append(item)
-#        print self.data['nav_side']
+        # print self.data['nav_side']
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):
         """
@@ -461,7 +473,7 @@ class WebInterface(YomboLibrary):
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
         return page.render(alerts=self.get_alerts(),
-                           delay_commands = self._Devices.delay_queue,
+                           delay_commands = self._Devices.delay_queue_active,
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
@@ -475,7 +487,6 @@ class WebInterface(YomboLibrary):
         #     return auth
 
         page = self.get_template(request, self._dir + 'config_pages/index.html')
-        functions = {'_': _}
         return page.render(alerts=self.get_alerts(),
                            )
 
@@ -563,62 +574,6 @@ class WebInterface(YomboLibrary):
     def page_login_pin_get(self, request):
         return self.redirect(request, '/')
 
-    @webapp.route('/atoms/index')
-    @require_auth()
-    def page_atoms(self, request, session):
-        page = self.get_template(request, self._dir + 'pages/atoms/index.html')
-        strings = self._Localize.get_strings(request.getHeader('accept-language'), 'atoms')
-        return page.render(alerts=self.get_alerts(),
-                           atoms=self._Libraries['atoms'].get_atoms(),
-                           atoms_i18n=strings,
-                           )
-
-    @webapp.route('/commands/index')
-    @require_auth()
-    def page_commands(self, request, session):
-        page = self.get_template(request, self._dir + 'pages/commands/index.html')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
-                           )
-
-    @webapp.route('/commands/amqp')
-    @require_auth()
-    def page_commands_amqp(self, request, session):
-        params = self._get_parms(request)
-        print "111"
-        if 'command' in params:
-            print "222"
-            print params['command'][0]
-            if params['command'][0] == 'connect':
-                self._Loader._Libraries['AMQPYombo'].connect()
-            if params['command'][0] == 'disconnect':
-                print "33a"
-#                self._Loader._Libraries['AMQPYombo'].disconnect()
-        page = self.get_template(request, self._dir + 'commands/index.html')
-        return page.render()
-
-    @webapp.route('/modules/index')
-    @require_auth()
-    def page_modules(self, request, session):
-        page = self.get_template(request, self._dir + 'pages/modules/index.html')
-        return page.render(data=self.data,
-                           alerts=self.get_alerts(),
-                           modules=self._Libraries['modules']._modulesByUUID,
-                           )
-
-    @webapp.route('/states/index')
-    @require_auth()
-    def page_states(self, request, session):
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
-
-        page = self.get_template(request, self._dir + 'pages/states/index.html')
-        strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
-        return page.render(alerts=self.get_alerts(),
-                           states=self._Libraries['states'].get_states(),
-                           states_i18n=strings,
-                           )
 
     @webapp.route('/tools/index')
     def page_tools(self, request):
@@ -632,22 +587,6 @@ class WebInterface(YomboLibrary):
                            states=self._Libraries['states'].get_states(),
                            states_i18n=strings,
                            )
-    @webapp.route('/gpg_keys')
-    def page_gpg_keys(self, request):
-        page = self.get_template(request, 'gpg_keys/index.html')
-        return page.render()
-
-    @webapp.route('/gpg_keys/generate_key')
-    def page_gpg_keys_generate_key(self, request):
-        request_id = yombo.utils.random_string(length=16)
-#        self._Libraries['gpg'].generate_key(request_id)
-        page = self.get_template(request, 'gpg_keys/generate_key_started.html')
-        return page.render(request_id=request_id, getattr=getattr, type=type)
-
-    @webapp.route('/gpg_keys/genrate_key_status')
-    def page_gpg_keys_generate_key_status(self, request):
-        page = self.get_template(request, 'gpg_keys/generate_key_status.html')
-        return page.render(atoms=self._Libraries['atoms'].get_atoms(), getattr=getattr, type=type)
 
     @webapp.route('/status')
     def page_status(self, request):
@@ -668,10 +607,6 @@ class WebInterface(YomboLibrary):
     @webapp.route('/static/', branch=True)
     def static(self, request):
         return File(self._current_dir + "/lib/webinterface/static/dist")
-
-    @webapp.route('/setup_wizard/static/', branch=True)
-    def setup_wizard_static(self, request):
-        return File(self._current_dir + "/lib/webinterface/pages/setup_wizard/static")
 
     def display_pin_console(self):
         local = "http://localhost:%s" % self.wi_port_nonsecure
@@ -722,7 +657,8 @@ class WebInterface(YomboLibrary):
     def epoch_to_human(self, the_time, format=None):
         if format is None:
             format = '%b %d %Y %H:%M:%S'
-        return strftime(format, gmtime(the_time))
+        print "epoch_to_home: %s" % the_time
+        return strftime(format, localtime(the_time))
 
     def setup_basic_filters(self):
         self.webapp.templates.filters['epoch_to_human'] = self.epoch_to_human
@@ -836,19 +772,6 @@ class WebInterface(YomboLibrary):
             ]
         CAT_SCRIPTS_OUT = 'dist/js/datatables.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-
-        CAT_SCRIPTS = [
-            'source/chartist/chartist.min.js',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/js/chartist.min.js'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-        CAT_SCRIPTS = [
-            'source/chartist/chartist.min.css',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/css/chartist.min.css'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
 
         CAT_SCRIPTS = [
             'source/sb-admin/js/mappicker.js',

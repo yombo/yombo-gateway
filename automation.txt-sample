@@ -16,7 +16,7 @@ rules: [
         # Says: From the states library, monitor the "times_dark"
         # state for any changes.
         platform: states
-        name: times_dark
+        name: is.light
         }
 
     # Once a source value is available, lets do some filtering.

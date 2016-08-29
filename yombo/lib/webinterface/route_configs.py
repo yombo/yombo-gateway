@@ -1,43 +1,4 @@
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
-
-simulate_gw = {
-              'new':{
-                  'label': '',
-                  'description': '',
-                  'variables': {
-                      'elevation': '75',
-                      'latitude': '37.758',
-                      'longitude': '-122.438'
-                      }
-                  },
-              'xyz1':{
-                  'label': 'Home',
-                  'description': 'Main house gateway',
-                  'variables': {
-                      'latitude': 38.576,
-                      'longitude': -121.276,
-                      'elevation': 100,
-                      }
-                  },
-              'abc2':{
-                  'label': 'Garage',
-                  'description': 'The garage',
-                  'variables': {
-                      'latitude': 37.791,
-                      'longitude': -121.858,
-                      'elevation': 50,
-                      }
-                  },
-              'mno3':{
-                  'label': 'Shed',
-                  'description': 'In the shed!',
-                  'variables': {
-                      'latitude': 37.259,
-                      'longitude': -122.177,
-                      'elevation': 25,
-                      }
-                  },
-              }
+from yombo.lib.webinterface.auth import require_auth
 
 def route_configs(webapp):
     with webapp.subroute("/configs") as webapp:
@@ -52,10 +13,7 @@ def route_configs(webapp):
             configs = webinterface._Configs.get("*", "*")
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
                                )
 
@@ -66,57 +24,57 @@ def route_configs(webapp):
             valid_submit = True
             # more checks to come, just doing basic for now.
             try:
-                submitted_core_label = request.args.get('core-label')[0]
+                submitted_core_label = request.args.get('core_label')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Label.")
 
             try:
-                submitted_core_description = request.args.get('core-description')[0]
+                submitted_core_description = request.args.get('core_description')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Description.")
 
-            submitted_location_latitude = request.args.get('location-latitude')[0]
+            submitted_location_latitude = request.args.get('location_latitude')[0]
             try:
-                submitted_location_latitude = request.args.get('location-latitude')[0]
+                submitted_location_latitude = request.args.get('location_latitude')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Latitude222.")
 
             try:
-                submitted_location_longitude = request.args.get('location-longitude')[0]
+                submitted_location_longitude = request.args.get('location_longitude')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Longitude333.")
 
             try:
-                submitted_location_elevation = request.args.get('location-elevation')[0]
+                submitted_location_elevation = request.args.get('location_elevation')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Elevation.")
 
 
             try:
-                submitted_webinterface_enabled = request.args.get('webinterface-enabled')[0]
+                submitted_webinterface_enabled = request.args.get('webinterface_enabled')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Webinterface Enabled/Disabled value.")
 
             try:
-                submitted_webinterface_localhost_only = request.args.get('webinterface-localhost-only')[0]
+                submitted_webinterface_localhost_only = request.args.get('webinterface_localhost_only')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Webinterface Localhost Only Selection.")
 
             try:
-                submitted_webinterface_nonsecure_port = request.args.get('webinterface-nonsecure-port')[0]
+                submitted_webinterface_nonsecure_port = request.args.get('webinterface_nonsecure_port')[0]
             except:
                 valid_submit = False
-                webinterface.add_alert("Invalid webinterface non-secure port.")
+                webinterface.add_alert("Invalid webinterface non_secure port.")
 
             try:
-                submitted_webinterface_secure_port = request.args.get('webinterface-secure-port')[0]
+                submitted_webinterface_secure_port = request.args.get('webinterface_secure_port')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid webinterface secure port.")
@@ -136,10 +94,7 @@ def route_configs(webapp):
 
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
                                )
 
@@ -147,13 +102,24 @@ def route_configs(webapp):
         @require_auth()
         def page_configs_yombo_ini(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/yombo_ini.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               data=webinterface.data,
-                               alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                configs=webinterface._Libraries['configuration'].configs
                                )
 
+        @webapp.route('/gpg_keys')
+        def page_gpg_keys_index(webinterface, request):
+            print "################## gogogogogogogpgpgpgppgpg "
+            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
+            return page.render()
 
+        @webapp.route('/gpg_keys/generate_key')
+        def page_gpg_keys_generate_key(webinterface, request):
+            request_id = yombo.utils.random_string(length=16)
+    #        self._Libraries['gpg'].generate_key(request_id)
+            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_started.html')
+            return page.render(request_id=request_id, getattr=getattr, type=type)
 
-
+        @webapp.route('/gpg_keys/genrate_key_status')
+        def page_gpg_keys_generate_key_status(webinterface, request):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_status.html')
+            return page.render(atoms=self._Libraries['atoms'].get_atoms(), getattr=getattr, type=type)

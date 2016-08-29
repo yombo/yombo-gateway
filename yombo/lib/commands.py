@@ -80,15 +80,15 @@ class Commands(YomboLibrary):
         """
         Loads all commands from DB to various arrays for quick lookup.
         """
-        pass 
+        self.__loadCommands()
+        self.loadDefer = Deferred()
+        return self.loadDefer
 
     def _start_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        self.__loadCommands()
-        self.loadDefer = Deferred()
-        return self.loadDefer
+        pass
 
     def _clear_(self):
         """

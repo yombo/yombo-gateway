@@ -44,10 +44,11 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-import yombo.ext.umsgpack as msgpack
+from hashlib import sha1
 
 # Import 3rd-party libs
 import yombo.ext.hjson as hjson
+import yombo.ext.umsgpack as msgpack
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboAutomationWarning, YomboWarning
@@ -94,6 +95,8 @@ class Automation(YomboLibrary):
         self.actions = {}  # List of actionprocessors
 
         # lets load the raw json and see if we can even parse anything.
+
+    def _start_(self):
         try:
             with yombo.utils.fopen('automation.txt', 'r') as fp_:
                 temp_rules = hjson.loads(fp_.read())

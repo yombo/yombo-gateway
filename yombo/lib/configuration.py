@@ -232,9 +232,7 @@ class Configuration(YomboLibrary):
             now        = datetime.now()
             delta      = now - createtime
             if delta.days > 30:
-                print "NEED TO DELETE: %s" % fullpath
                 os.remove(fullpath)
-
 
     def _module_prestart_(self, **kwargs):
         """

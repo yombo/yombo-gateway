@@ -1,3 +1,4 @@
+from yombo.core.exceptions import YomboRestart
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session, needs_web_pin
 
 simulate_gw = {
@@ -501,3 +502,7 @@ def route_setup_wizard(webapp):
     #            return webinterface.redirect(request, '/setup_wizard/5')
 
             raise YomboRestart("Web Interface setup wizard complete.")
+
+        @webapp.route('/setup_wizard/static/', branch=True)
+        def setup_wizard_static(self, request):
+            return File(self._current_dir + "/lib/webinterface/pages/setup_wizard/static")

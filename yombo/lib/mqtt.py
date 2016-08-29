@@ -67,8 +67,9 @@ from yombo.ext.mqtt.error import ProfileValueError
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.utils import random_string
 from yombo.core.log import get_logger
+from yombo.lib.webinterface.auth import require_auth
+from yombo.utils import random_string
 
 logger = get_logger('mqtt')
 
@@ -183,7 +184,7 @@ class MQTT(YomboLibrary):
     #def _unload_(self):
         #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
 
-    def MQTT_webinterface_add_routes(self, **kwargs):
+    def _webinterface_add_routes_(self, **kwargs):
         """
         A demonstration of how to add menus and provide function calls to the web interface library. This would
         normally be used by modules and not libaries, this is here for documentation purposes.
@@ -220,24 +221,18 @@ class MQTT(YomboLibrary):
         """
         with webapp.subroute("/") as webapp:
             @webapp.route("/tools/mqtt")
-            def page_tools_mqtt(webinterface, request):
-                auth = webinterface.require_auth(request)
-                if auth is not None:
-                    return auth
-
+            @require_auth()
+            def page_tools_mqtt(webinterface, request, session):
                 page = webinterface.webapp.templates.get_template(webinterface._dir + 'pages/mqtt/index.html')
-                return page.render(data=webinterface.data,
-                                   alerts=webinterface.get_alerts(),
+                return page.render(alerts=webinterface.get_alerts(),
                                    )
 
                 return b"These stairs lead to the lair of beasts of the mqtt world: "
 
             @webapp.route("/api/v1/mqtt")
+            @require_auth()
             @inlineCallbacks
-            def api_v1_mqtt(webinterface, request):
-                auth = webinterface.require_auth(request)
-                if auth is not None:
-                    returnValue(auth)
+            def api_v1_mqtt(webinterface, request, session):
                 topic = request.args.get('topic')[0]  # please do some validation!!
                 message = request.args.get('message')[0]  # please do some validation!!
                 qos = int(request.args.get('qos')[0])  # please do some validation!!

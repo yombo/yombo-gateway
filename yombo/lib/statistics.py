@@ -82,7 +82,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-from yombo.utils import percentile, global_invoke_all
+from yombo.utils import percentile, global_invoke_all, pattern_search
 from yombo.core.log import get_logger
 
 logger = get_logger('library.statistics')
@@ -399,7 +399,7 @@ class Statistics(YomboLibrary):
         :param name: Name of the statistic to save.
         :type name: string
         :param value: How long something took in milliseconds.
-        :type value: int
+        :type value: int4
         :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
@@ -421,6 +421,48 @@ class Statistics(YomboLibrary):
 
         if lifetimes is not None:
             self.add_bucket_lifetime(name, lifetimes)
+
+    def get_stat(self, name, type=None):
+        results = []
+        # sum(value) as value, name, type, round(bucket / %s) * %s AS bucket
+        find_name = name.replace('%', '#')
+        if type is None or type is 'counter':
+            for bucket in self._counters:
+                for stat in pattern_search(find_name, self._counters[bucket]):
+                    too_add = self._counters[bucket][stat]
+                    new_result = {
+                        'name': stat,
+                        'value': too_add['value'],
+                        'type': 'counter',
+                        'bucket': bucket,
+                    }
+                    results.append(new_result)
+
+        if type is None or type is 'average':
+            for bucket in self._averages:
+                for stat in pattern_search(find_name, self._averages[bucket]):
+                    too_add = self._averages[bucket][stat]
+                    new_result = {
+                        'name': stat,
+                        'value': too_add['value'],
+                        'type': 'average',
+                        'bucket': bucket,
+                    }
+                    results.append(new_result)
+
+        if type is None or type is 'datapoint':
+            for bucket in self._datapoints:
+                for stat in pattern_search(find_name, self._datapoints[bucket]):
+                    too_add = self._datapoints[bucket][stat]
+                    new_result = {
+                        'name': stat,
+                        'value': too_add['value'],
+                        'type': 'datapoint',
+                        'bucket': bucket,
+                    }
+                    results.append(new_result)
+
+        return results
 
     @inlineCallbacks
     def _save_statistics(self, full=False):

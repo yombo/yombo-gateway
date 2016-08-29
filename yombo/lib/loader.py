@@ -69,7 +69,6 @@ HARD_LOAD["DeviceTypes"] = {'operation_mode':'all'}
 HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
-#HARD_LOAD["Messages"] = {'operation_mode':'all'}
 HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}

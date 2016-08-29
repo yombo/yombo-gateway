@@ -26,9 +26,9 @@
 							</div>
 						</div>
 						<div class="form-group">
-							<label for="core-description">Gateway Description</label>
+							<label for="core_description">Gateway Description</label>
 							<div class="input-group">
-								<textarea class="form-control" rows="5" name="core-description" id="core-description" placeholder="Detailed description" value="{{ config.core.description }}"></textarea>
+								<textarea class="form-control" rows="5" name="core_description" id="core_description" placeholder="Detailed description" value="{{ config.core.description }}"></textarea>
 								<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
 							</div>
 						</div>
@@ -39,29 +39,29 @@
 									<div class="form-group">
 										<label >Search for location</label>
 										<div class="input-group">
-											<input id="search-txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
-											<input id="search-btn" type="button" value="    Search    ">
-											<input id="detect-btn" type="button" value="Detect" disabled>
+											<input id="search_txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
+											<input id="search_btn" type="button" value="    Search    ">
+											<input id="detect_btn" type="button" value="Detect" disabled>
 										</div>
 									</div>
 									<div class="form-group">
-										<label for="location-latitude">Latitude</label>
+										<label for="location_latitude">Latitude</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location-latitude" id="location-latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
+											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
 									<div class="form-group">
-										<label for="location-longitude">Longitude</label>
+										<label for="location_longitude">Longitude</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location-longitude" id="location-longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
+											<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
 									<div class="form-group">
-										<label for="location-elevation">Elevation (in feet)</label>
+										<label for="location_elevation">Elevation (in feet)</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location-elevation" id="location-elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
+											<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
@@ -88,38 +88,38 @@
 								</div>
 							<div class="panel-body">
 								<div class="form-group">
-									<label for="webinterface-enabled" data-toggle="tooltip" title="Web Interface is the web tool you are currently using! Disable with caution.">Web Interface</label>
+									<label for="webinterface_enabled" data-toggle="tooltip" title="Web Interface is the web tool you are currently using! Disable with caution.">Web Interface</label>
 									<div class="material-switch pull-right">
-										<input id="webinterface-enabled" name="webinterface-enabled" type="checkbox" checked/>
-										<label for="webinterface-enabled" class="label-primary"></label>
+										<input id="webinterface_enabled" name="webinterface_enabled" type="checkbox" checked/>
+										<label for="webinterface_enabled" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="webinterface-localhost-only" data-toggle="tooltip" title="If enabled, only allows access from the same machine gateway is running on.">Localhost Only</label>
+									<label  for="webinterface_localhost_only" data-toggle="tooltip" title="If enabled, only allows access from the same machine gateway is running on.">Localhost Only</label>
 									<div class="material-switch pull-right">
-										<input id="webinterface-localhost-only" name="webinterface-localhost-only" type="checkbox" checked/>
-										<label for="webinterface-localhost-only" class="label-primary"></label>
+										<input id="webinterface_localhost_only" name="webinterface_localhost_only" type="checkbox" checked/>
+										<label for="webinterface_localhost_only" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="webinterface-nonsecure-port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 80 is used by web servers, but must be root to do this or using a proper startup script.">Port, Non-Secure. Usually 8080 or 80. 0 = Disabled</label>
+									<label  for="webinterface_nonsecure_port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 80 is used by web servers, but must be root to do this or using a proper startup script.">Port, Non-Secure. Usually 8080 or 80. 0 = Disabled</label>
 									<div class="input-group" data-validate="number">
-										<input type="text" class="form-control" name="validate-number" id="webinterface-nonsecure-port" placeholder="80" value="{{ config.webinterface.nonsecure_port }}" required>
+										<input type="text" class="form-control" name="webinterface_nonsecure_port" id="webinterface_nonsecure_port" placeholder="80" value="{{ config.webinterface.nonsecure_port }}" required>
 										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="webinterface-secure-port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script.">Port, Secure (SSL). Usually 8443 or 443. 0 = Disabled</label>
+									<label  for="webinterface_secure_port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script.">Port, Secure (SSL). Usually 8443 or 443. 0 = Disabled</label>
 									<div class="input-group" data-validate="number">
-										<input type="text" class="form-control" name="validate-number" id="webinterface-secure-port" placeholder="443" value="{{ config.webinterface.secure_port }}" required>
+										<input type="text" class="form-control" name="webinterface_secure_port" id="webinterface_secure_port" placeholder="443" value="{{ config.webinterface.secure_port }}" required>
 										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 									</div>
 								</div>
                     <div class="col-lg-6 col-md-6">
 								<div class="form-group">
-									<label for="webinterface-pin-type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
+									<label for="webinterface_pin_type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
 									<div class="input-group">
-										<select class="form-control" name="webinterface-pin-type" id="webinterface-pin-type" placeholder="Select Twilight Degrees">
+										<select class="form-control" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
 											<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static PIN</option>
 											<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
 											<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>
@@ -128,7 +128,7 @@
 								</div>
 					</div>
                     <div class="col-lg-6 col-md-6">
-							<button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">
+							<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
   								Scan TOPT QR Code
 							</button>
 							<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -160,38 +160,38 @@
 							</div>
 							<div class="panel-body">
 								<div class="form-group">
-									<label  for="statistics-enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
+									<label  for="statistics_enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
 									<div class="material-switch pull-right">
-										<input id="statistics-enbled" name="statistics-enbled" type="checkbox" checked/>
-										<label for="statistics-enbled" class="label-primary"></label>
+										<input id="statistics_enbled" name="statistics_enbled" type="checkbox" checked/>
+										<label for="statistics_enbled" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="statistics-upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
+									<label  for="statistics_upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
 									<div class="material-switch pull-right">
-										<input id="statistics-upload" name="statistics-upload" type="checkbox" checked/>
-										<label for="statistics-upload" class="label-primary"></label>
+										<input id="statistics_upload" name="statistics_upload" type="checkbox" checked/>
+										<label for="statistics_upload" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="statistics-anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
+									<label  for="statistics_anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
 									<div class="material-switch pull-right">
-										<input id="statistics-anonymous" name="statistics-anonymous" type="checkbox" checked/>
-										<label for="statistics-anonymous" class="label-primary"></label>
+										<input id="statistics_anonymous" name="statistics_anonymous" type="checkbox" checked/>
+										<label for="statistics_anonymous" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="device-sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
+									<label  for="device_sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
 									<div class="material-switch pull-right">
-										<input id="device-sendstatus" name="device-sendstatus" type="checkbox" checked/>
-										<label for="device-sendstatus" class="label-primary"></label>
+										<input id="device_sendstatus" name="device_sendstatus" type="checkbox" checked/>
+										<label for="device_sendstatus" class="label-primary"></label>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="device-sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
+									<label  for="device_sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
 									<div class="material-switch pull-right">
-										<input id="device-sendstatusgps" name="device-sendstatusgps" type="checkbox" checked/>
-										<label for="device-sendstatusgps" class="label-primary"></label>
+										<input id="device_sendstatusgps" name="device_sendstatusgps" type="checkbox" checked/>
+										<label for="device_sendstatusgps" class="label-primary"></label>
 									</div>
 								</div>
 
@@ -203,7 +203,7 @@
 	            <!-- /.row -->
 				<div class="row">
 					<div class="col-lg-12">
-					<button type="submit" class="btn btn-primary col-xs-12" disabled>Submit</button>
+					<button type="submit" class="btn btn-primary col-xs-12 btn-lg" disabled>Save Settings</button>
 					</div>
 					<p>&nbsp;</p>
 				</div>
@@ -219,12 +219,24 @@
     <!-- Make the tables pretty -->
     <script>
 
+$('form').on('keyup keypress', function(e) {
+  var keyCode = e.keyCode || e.which;
+  if((keyCode== 13) && ($(event.target)[0]!=$("textarea")[0])) {
+    if ($(event.target)[0]==$("#search_txt")[0]) {
+        $("#search_btn").click();
+	    e.preventDefault();
+	    return false;
+	}
+    e.preventDefault();
+    return false;
+  }
+});
 
 $('form').validate({
     rules: {
         core_label: {
             minlength: 3,
-            maxlength: 15,
+            maxlength: 20,
             required: true
         }
     },

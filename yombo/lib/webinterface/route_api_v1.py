@@ -3,6 +3,10 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from time import time
+
+# Import external libraries
+import yombo.ext.six as six
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -65,56 +69,65 @@ def route_api_v1(webapp):
         @webapp.route('/statistics/names', methods=['GET'])
         @require_auth()
         @inlineCallbacks
-        def ajax_notifications_name_get(webinterface, request):
+        def api_v1_statistics_names(webinterface, request):
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
             print records
             returnValue(json.dumps(records))
-    
-        @webapp.route('/statistics/range', methods=['GET'])
-        @require_auth()
-        def api_v1_notifications_range_get(webinterface, request, session):
-            name = request.args.get('name')[0]
-            min = request.args.get('min')[0]
-            max = request.args.get('max')[0]
-            results = {}
-            if action == "closed":
-                id = request.args.get('id')[0]
-                print "alert - id: %s" % id
-                if id in webinterface.alerts:
-                    del webinterface.alerts[id]
-                    results = {"status": 200}
-            return json.dumps(results)
-
-        @webapp.route('/statistics/something', methods=['GET'])
-        @require_auth()
-        def api_v1_api_v1_statistics_something(webinterface, request, session):
-            action = request.args.get('action')[0]
-            results = {}
-            if action == "closed":
-                id = request.args.get('id')[0]
-                print "alert - id: %s" % id
-                if id in webinterface.alerts:
-                    del webinterface.alerts[id]
-                    results = {"status": 200}
-            return json.dumps(results)
 
         @webapp.route('/statistics/echarts/buckets', methods=['GET', 'POST'])
         @require_auth()
         @inlineCallbacks
-        def api_v1_statistics_test(webinterface, request, session):
-            stat_name = action = request.args.get('name', [None,])[0]
-            bucket_size = action = request.args.get('bucket_size', [3600,])[0]
-            if stat_name is None:
-                returnValue(return_error('name is required.'))
-            # print "action = %s" % action
+        def api_v1_statistics_echarts_buckets(webinterface, request, session):
+            time_last = request.args.get('last', [None,])[0]
+            time_start = request.args.get('start', [None,])[0]
+            time_end = request.args.get('end', [None,])[0]
+            stat_type = request.args.get('type', [None,])[0]
+            stat_name = request.args.get('name', [None,])[0]
+            bucket_size = int(request.args.get('bucket_size', [3600,])[0])
 
-            records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size)
+            if stat_name is None:
+                returnValue(return_error("'name' is required."))
+            if not isinstance(stat_name, six.string_types):
+                returnValue(return_error("'name' Must be a string. Got: %s" % stat_name))
+
+            if time_start is not None:
+                if not isinstance(time_start, int) or time_start < 0:
+                    returnValue(return_error("'start' must be an int and must be greater than 0"))
+
+            if time_end is not None:
+                if not isinstance(time_end, int) or time_end < 0:
+                    returnValue(return_error("'end' must be an int and must be greater than 0"))
+
+            if stat_type is not None:
+                if stat_type is not isinstance(stat_type, six.string_types):
+                    returnValue(return_error("'type' Must be a string"))
+                if stat_type not in ('counter', 'datapoint', 'average'):
+                    returnValue(return_error("'type' must be either: 'counter', 'datapoint', or 'average'"))
+
+            if bucket_size is not None:
+                if bucket_size < 0:
+                    returnValue(return_error("'bucket_size' must be an int and must be greater than 0."))
+
+            if time_last is not None:
+                time_last = int(time_last)
+                if time_last < 0:
+                    returnValue(return_error("'last' must be an int and must be greater than 0."))
+                time_start = int(time()) - time_last
+
+            records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size,
+                                    type=stat_type, time_start=time_start, time_end=time_end)
             # print "stat records: %s" % records
             labels = []
             data = []
             for record in records:
                 labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
                 data.append(record['value'])
+
+            live_stats = webinterface._Statistics.get_stat(stat_name, stat_type)
+            for record in live_stats:
+                labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
+                data.append(record['value'])
+
             results = {
                 'title': {'text': 'Device Commands Sent'},
                 'toolbox': {

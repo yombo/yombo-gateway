@@ -44,7 +44,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             # request = a[1]
             # session = "mysession"
 
-            print "request:url: %s" % request.path
+            # print "request:url: %s" % request.path
 
             if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
@@ -52,7 +52,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                                data=webinterface.data)
 
             session = webinterface.sessions.load(request)
-            print "session : %s" % session
+            # print "session : %s" % session
 
             if session is not False:
                 if 'auth' in session:

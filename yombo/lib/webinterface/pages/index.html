@@ -85,29 +85,29 @@
             <!-- /.row -->
 {% endblock %}
 {% block body_bottom %}
+<script type="text/javascript">
+$(document).ready(function(){
+    var myChart = echarts.init(document.getElementById('main'));
+    myChart.showLoading({
+        text: 'Loading',
+    });
 
-    <script type="text/javascript">
-    $(document).ready(function(){
-var myChart = echarts.init(document.getElementById('main'));
-myChart.showLoading({
-text: 'Loading',
-});
-//ajax get data ing...
-var url="/api/v1/statistics/echarts/buckets?name=lib.devices.commands_sent&bucket_size=900";
-$.ajax({
-type:"post",
-url:url,
-dataType: "json",
-success:function(data){
-myChart.hideLoading();
-// 图表使用-------------------
-var option=data;
-myChart.setOption(option);
-},
-error:function(error){
-alert("Error："+error);
-}
-});
+    //ajax get data...
+    var url="/api/v1/statistics/echarts/buckets?name=lib.devices.commands_sent&bucket_size=900&last=1209600";
+    $.ajax({
+        type:"post",
+        url:url,
+        dataType: "json",
+        success:function(data){
+            myChart.hideLoading();
+
+            var option=data;
+            myChart.setOption(option);
+        },
+        error:function(error){
+            alert("Error："+error);
+        }
+    });
 });
 </script>
 {% endblock %}

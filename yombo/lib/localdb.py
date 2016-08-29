@@ -643,13 +643,12 @@ class LocalDB(YomboLibrary):
             wheres.append("(bucket < ?)")
             values.append(time_end)
         where_final = [(" AND ").join(wheres)] + values
-        print "where_final: %s" % where_final
-
+        # print "where_final: %s" % where_final
 
         # records = yield self.dbconfig.select('statistics',
         #             select='sum(value), name, type, round(bucket / 3600) * 3600 AS bucket',
         select_fields='sum(value) as value, name, type, round(bucket / %s) * %s AS bucket' % (bucket_size, bucket_size)
-        print "select_fields: %s" % select_fields
+        # print "select_fields: %s" % select_fields
         records = yield self.dbconfig.select('statistics',
                     select=select_fields,
                     where=where_final,

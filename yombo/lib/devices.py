@@ -54,7 +54,7 @@ To send a command to a device is simple.
 """
 # Import python libraries
 from __future__ import print_function
-
+from hashlib import sha1
 import copy
 from collections import deque, namedtuple
 from time import time
@@ -73,7 +73,7 @@ from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, split, global_invoke_all
-
+from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
 
 
@@ -136,6 +136,12 @@ class Devices(YomboLibrary):
     def __iter__(self):
         return self._devicesByUUID.__iter__()
 
+    def __len__(self):
+        return len(self.self._devicesByUUID)
+
+    def __str__(self):
+        return self._devicesByUUID
+
     def keys(self):
         return self._devicesByUUID.keys()
     def items(self):
@@ -151,7 +157,6 @@ class Devices(YomboLibrary):
     def has_key(self):
         return self._devicesByUUID.has_key()
 
-    @inlineCallbacks
     def _init_(self):
         """
         Setups up the basic framework. Nothing is loaded in here until the
@@ -170,24 +175,26 @@ class Devices(YomboLibrary):
         self._saveStatusLoop = None
         self.run_state = 1
 
-        self.delay_queue = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
-        # {'lmnop123', { 'not_before':123, 'max_delay': 100, 'kwargs':**kwargs} }
+        # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
+        # store the above, but after hydration.
+        self.delay_queue_active = {}
+        self.delay_queue_unique = {}  # allows us to only create delayed commands for unique instances.
 
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
-        # {'abc123-xyz123', { 'not_before':123, 'max_delay': 100, 'kwargs':**kwargs} }
-        #
-        self.reactors = {} # map device:command request ID's to reactor.
         self.delay_deviceList = {} # list of devices that have pending messages.
         self.processing_commands = False
+        # self.init_deferred = Deferred()
+        # return self.init_deferred
 
     def _load_(self):
         self.run_state = 2
+        self.start_deferred = Deferred()
+        self.__load_devices()
+        return self.start_deferred
 
     def _start_(self):
         self.run_state = 3
 
-        self.start_deferred = Deferred()
-        self.__load_devices()
 
         self._saveStatusLoop = LoopingCall(self._save_status)
         self._saveStatusLoop.start(120, False)
@@ -197,7 +204,6 @@ class Devices(YomboLibrary):
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
-        return self.start_deferred
 
     def _started_(self):
         self.run_state = 4
@@ -219,6 +225,35 @@ class Devices(YomboLibrary):
     def _reload_(self):
         return self.__load_devices()
 
+    @inlineCallbacks
+    def _load_delay_queue(self):
+        self.delay_queue_storage = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
+        # Now check to existing delayed messages.  If not too old, send otherwise delete them.  If time is in
+        #  future, setup a new reactor to send in future.
+        logger.debug("module_started: delayQueue: {delay}", delay=self.delay_queue_storage)
+        for request_id in self.delay_queue_storage.keys():
+            if self.delay_queue_storage[request_id]['unique_hash'] is not None:
+                self.delay_queue_unique[self.delay_queue_storage[request_id]['unique_hash']] = request_id
+            if request_id in self.delay_queue_active:
+                logger.debug("Message already scheduled for delivery later. Possible from an automation rule. Skipping.")
+                continue
+            request = self.delay_queue_storage[request_id]
+            if float(request['not_before']) < time(): # if delay message time has past, maybe process it.
+                if time() - float(request['not_before']) > float(request['max_delay']):
+                    # we're too late, just delete it.
+                    del self.delay_queue_storage[request_id]
+                    continue
+                else:
+                    #we're good, lets hydrate the request and send it.
+                    self.do_command(request['device_id'], request['command_id'], request['kwargs'])
+
+            else: # Still good, but still in the future. Set them up.
+                self.do_command(request['device_id'], request['command_id'], request_id=request_id,
+                        not_before=request['not_before'],max_delay=request['max_delay'], **request['kwargs'])
+        # self.init_deferred.callback(10)
+        self.start_deferred.callback(10)
+
+
     def _module_started_(self):
         """
         On start, sends all queued messages. Then, check delayed messages for any messages that were missed. Send
@@ -229,28 +264,6 @@ class Devices(YomboLibrary):
             self.do_command(request['device_id'], request['command_id'], not_before=request['not_before'],
                     max_delay=request['max_delay'], **request['kwargs'])
         self.startup_queue.clear()
-
-
-        # Now check to existing delayed messages.  If not too old, send otherwise delete them.  If time is in
-        #  future, setup a new reactor to send in future.
-        logger.debug("module_started: delayQueue: {delay}", delay=self.delay_queue)
-        for request_id in self.delay_queue.keys():
-            if request_id in self.reactors:
-                logger.debug("Message already scheduled for delivery later. Possible from an automation rule. Skipping.")
-                continue
-            request = self.delay_queue[request_id]
-            if float(request['not_before']) < time(): # if delay message time has past, maybe process it.
-                if time() - float(request['not_before']) > float(request['max_delay']):
-                    # we're too late, just delete it.
-                    del self.delay_queue[request_id]
-                    continue
-                else:
-                    #we're good, lets hydrate the request and send it.
-                    self.do_command(request['device_id'], request['command_id'], request['kwargs'])
-
-            else: # Still good, but still in the future. Set them up.
-                self.do_command(request['device_id'], request['command_id'], not_before=request['not_before'],
-                        max_delay=request['max_delay'], **request['kwargs'])
 
     def do_command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
         """
@@ -264,7 +277,7 @@ class Devices(YomboLibrary):
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
-        return self.get_device(device).do_command(device, cmd, pin, not_before, delay, max_delay, **kwargs)
+        return self.get_device(device).do_command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
 
     @inlineCallbacks
     def __load_devices(self):
@@ -281,7 +294,7 @@ class Devices(YomboLibrary):
             for record in devices:
                 logger.debug("Loading device: {record}", record=record)
                 d = yield self.load_device(record)
-        self.start_deferred.callback(10)
+        yield self._load_delay_queue()
 
     def load_device(self, record, test_device=False):  # load ore re-load if there was an update.
         """
@@ -407,7 +420,6 @@ class Devices(YomboLibrary):
         # yombo/devices/DEVICEID/get|cmd/option
         parts = topic.split('/', 10)
         print("Yombo Devices got this: %s / %s" % (topic, parts))
-
 
         try:
             device = self.get_device(parts[2].replace("_", " "))
@@ -553,7 +565,7 @@ class Devices(YomboLibrary):
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00011"
                 device = self.get_device(portion['source']['device'], .89)
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00022"
-                portion['source']['device_pointer'] = device
+                portion['source']['device_pointers'] = device
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
                 return portion
             except Exception, e:
@@ -571,7 +583,7 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointer'].device_id)
+        self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointers'].device_id)
 
     def devices_get_value_callback(self, rule, portion, **kwargs):
         """
@@ -582,7 +594,7 @@ class Devices(YomboLibrary):
         :return:
         """
 
-        return portion['source']['device_pointer'].machine_status
+        return portion['source']['device_pointers'].machine_status
 
     def _automation_action_list_(self, **kwargs):
         """
@@ -621,7 +633,7 @@ class Devices(YomboLibrary):
                 devices = []
                 for device_text in devices_text:
                     devices.append(self.get_device(action['device']))
-                action['device_pointer'] = devices
+                action['device_pointers'] = devices
                 return action
             except:
                 raise YomboWarning("Error while searching for device, could not be found: %s" % action['device'],
@@ -641,15 +653,16 @@ class Devices(YomboLibrary):
         """
         logger.error("firing device rule: {rule}", rule=rule)
         logger.error("rule options: {options}", options=options)
-        for device in action['device_pointer']:
-
+        for device in action['device_pointers']:
             delay = None
             if 'delay' in options and options['delay'] is not None:
                 logger.debug("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
                 delay=options['delay']
 
             # def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
-            device.do_command(cmd=action['command'], delay=delay)
+
+            unique_hash = sha1('automation' + rule['name'] + action['command'] + device.label).hexdigest()
+            device.do_command(cmd=action['command'], delay=delay, **{'unique_hash': unique_hash})
 
 
 class Device:
@@ -767,9 +780,8 @@ class Device:
             d.addCallback(lambda ignored: self.load_history(35))
         return d
 
-
     def available_commands(self):
-        print("getting dcommands for devicetypeid: %s" % self.device_type_id)
+        # print("getting available_commands for devicetypeid: %s" % (self.device_type_id, ))
         return self._DevicesLibrary._DeviceTypes.device_type_commands(self.device_type_id)
 
     def dump(self):
@@ -823,76 +835,111 @@ class Device:
 
         logger.debug("device kwargs: {kwargs}", kwargs=kwargs)
 
-        if isinstance(cmd, Device):
+        if isinstance(cmd, Command):
             cmdobj = cmd
         else:
             cmdobj = self._CommandsLibrary.get_command(cmd)
 
-        print("cmdobj is: %s" % cmdobj)
+        # print("cmdobj is: %s" % cmdobj)
 
 #        if self.validate_command(cmdobj) is not True:
         if str(cmdobj.command_id) not in self.available_commands():
             logger.warn("Requested command: {cmduuid}, but only have: {ihave}",
-                        cmduuid=cmdobj.command_id, ihave=self.available_commands)
+                        cmduuid=cmdobj.command_id, ihave=self.available_commands())
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
+        # print("in device do_command: request_id: %s" % request_id)
+        # print("in device do_command: kwargs: %s" % kwargs)
+        # print("in device do_command: self._DevicesLibrary.delay_queue_unique: %s" % self._DevicesLibrary.delay_queue_unique)
+
         if request_id is None:
-            request_id = random_string(length=16)
-        kwargs['request_id'] = request_id
+            if 'unique_hash' in kwargs:
+                unique_hash = kwargs['unique_hash']
+            else:
+                unique_hash = None
+            if unique_hash in self._DevicesLibrary.delay_queue_unique:
+                request_id = self._DevicesLibrary.delay_queue_unique[unique_hash]
+            else:
+                request_id = random_string(length=16)
+        # print("in device do_command: rquest_id 2: %s" % request_id)
 
         if max_delay is not None:
-            if six.integer_types(max_delay) or isinstance(max_delay, float):
+            if isinstance(max_delay, six.integer_types) or isinstance(max_delay, float):
                 if max_delay < 0:
                     raise YomboDeviceError("'max_delay' should be positive only.")
 
         if not_before is not None:
-            if six.integer_types(not_before) or isinstance(not_before, float):
+            if isinstance(not_before, six.integer_types) or isinstance(not_before, float):
                 if not_before < cur_time:
                     raise YomboDeviceError("'not_before' time should be epoch second in the future, not the past.")
 
-                # self.delay_queue = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
-                # {'lmnop123', { 'not_before':123, 'max_delay': 100, 'kwargs':**kwargs} }
-
                 when = not_before - time()
-                self._DevicesLibrary.delay_queue[request_id] = {
-                        'command': cmdobj.command_id,
-                        'not_before': when,
+                if request_id not in self._DevicesLibrary.delay_queue_storage:  # condition incase it's a reload
+                    self._DevicesLibrary.delay_queue_storage[request_id] = {
+                        'command_id': cmdobj.command_id,
+                        'device_id': self.device_id,
+                        'not_before': not_before,
                         'max_delay': max_delay,
+                        'unique_hash': unique_hash,
+                        'request_id': request_id,
                         'kwargs': kwargs,
                     }
-                self._DevicesLibrary.reactors[request_id] = reactor.callLater(when, self.do_command_delayed, request_id)
+                self._DevicesLibrary.delay_queue_active[request_id] = {
+                    'command': cmdobj,
+                    'device': self,
+                    'not_before': not_before,
+                    'max_delay': max_delay,
+                    'kwargs': kwargs,
+                    'request_id': request_id,
+                    'reactor': None,
+                }
+                self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
             else:
                 raise YomboDeviceError("not_before' must be a float or int.")
 
         elif delay is not None:
-            if six.integer_types(delay) or isinstance(delay, float):
+            # print("delay = %s" % delay)
+            if isinstance(delay, six.integer_types) or isinstance(delay, float):
                 if delay < 0:
                     raise YomboDeviceError("'delay' should be positive only.")
 
-                # {'lmnop123', { 'not_before':123, 'max_delay': 100, 'kwargs':**kwargs} }
-
                 when = time() + delay
-                self._DevicesLibrary.delay_queue[request_id] = {
-                        'command': cmdobj.command_id,
+                if request_id not in self._DevicesLibrary.delay_queue_storage:  # condition incase it's a reload
+                    self._DevicesLibrary.delay_queue_storage[request_id] = {
+                        'command_id': cmdobj.command_id,
+                        'device_id': self.device_id,
                         'not_before': when,
                         'max_delay': max_delay,
                         'kwargs': kwargs,
+                        'unique_hash': unique_hash,
+                        'request_id': request_id,
                     }
-                self._DevicesLibrary.reactors[request_id] = reactor.callLater(when, self.do_command_delayed, request_id)
+                self._DevicesLibrary.delay_queue_active[request_id] = {
+                    'command': cmdobj,
+                    'device': self,
+                    'not_before': when,
+                    'max_delay': max_delay,
+                    'kwargs': kwargs,
+                    'request_id': request_id,
+                    'reactor': None,
+                }
+                self._DevicesLibrary.delay_queue_unique[unique_hash] = request_id
+                self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
             else:
                 raise YomboDeviceError("'not_before' must be a float or int.")
 
         else:
+            kwargs['request_id'] = request_id
             self.do_command_hook(cmdobj, kwargs)
         return request_id
 
     def do_command_delayed(self, request_id):
-
-        request = self._DevicesLibrary.delay_queue[request_id]
-        cmdobj = self._CommandsLibrary.get_command(request['command'])
-        self.do_command_hook(cmdobj, request['kwargs'])
-        del self._DevicesLibrary.delay_queue[request_id]
+        request = self._DevicesLibrary.delay_queue_active[request_id]
+        request['kwargs']['request_id'] = request_id
+        self.do_command_hook(request['command'], request['kwargs'])
+        del self._DevicesLibrary.delay_queue_storage[request_id]
+        del self._DevicesLibrary.delay_queue_active[request_id]
 
     def do_command_hook(self, cmdobj, kwargs):
         """
@@ -1059,7 +1106,7 @@ class Device:
 
     def validate_command(self, command_id):
 #        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, command_id, self.available_commands)
-        if str(command_id) in self.available_commands:
+        if str(command_id) in self.available_commands():
             return True
         else:
             return False

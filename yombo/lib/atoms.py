@@ -165,6 +165,21 @@ class Atoms(YomboLibrary):
     def __str__(self):
         return self.__Atoms
 
+    def keys(self):
+        return self._devicesByUUID.keys()
+    def items(self):
+        return self._devicesByUUID.items()
+    def iteritems(self):
+        return self._devicesByUUID.iteritems()
+    def iterkeys(self):
+        return self._devicesByUUID.iterkeys()
+    def itervalues(self):
+        return self._devicesByUUID.itervalues()
+    def values(self):
+        return self._devicesByUUID.values()
+    def has_key(self):
+        return self._devicesByUUID.has_key()
+
     def _i18n_atoms_(self, **kwargs):
        return [
            {'cpu.count': {

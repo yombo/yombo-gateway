@@ -4,7 +4,7 @@ def route_statistics(webapp):
     with webapp.subroute("/statistics") as webapp:
         @webapp.route('/')
         @require_auth()
-        def page_devices(webinterface, request, session):
+        def page_statistics(webinterface, request, session):
             return webinterface.redirect(request, '/statistics/index')
 
         @webapp.route('/index')
@@ -18,7 +18,7 @@ def route_statistics(webapp):
         
         @webapp.route('/details/<string:device_id>')
         @require_auth()
-        def page_devices_details(webinterface, request, session, device_id):
+        def page_statistics_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
             except Exception, e:
@@ -34,7 +34,7 @@ def route_statistics(webapp):
     
         @webapp.route('/edit/<string:device_id>')
         @require_auth()
-        def page_devices_edit(webinterface, request, session, device_id):
+        def page_statistics_edit(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices.get_device(device_id)
             except Exception, e:

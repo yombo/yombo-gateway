@@ -53,29 +53,29 @@
 									<div class="form-group">
 										<label >Search for location</label>
 										<div class="input-group">
-											<input id="search-txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
-											<input id="search-btn" type="button" value="    Search    ">
-											<input id="detect-btn" type="button" value="Detect" disabled>
+											<input id="search_txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
+											<input id="search_btn" type="button" value="    Search    ">
+											<input id="detect_btn" type="button" value="Detect" disabled>
 										</div>
 									</div>
 									<div class="form-group">
-										<label for="location-latitude">Latitude</label>
+										<label for="location_latitude">Latitude</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location-latitude" id="location-latitude" placeholder="37.757" value="{{ gw_fields.variables.latitude }}" required>
+											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
 									<div class="form-group">
-										<label for="location-longitude">Longitude</label>
+										<label for="location_longitude">Longitude</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location-longitude" id="location-longitude" placeholder="-122.437" value="{{ gw_fields.variables.longitude }}" required>
+											<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
 									<div class="form-group">
-										<label for="location-elevation">Elevation (in feet)</label>
+										<label for="location_elevation">Elevation (in feet)</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location-elevation" id="location-elevation" placeholder="90"  value="{{ gw_fields.variables.elevation }}" required>
+											<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
@@ -84,8 +84,7 @@
 								<div id="map-search">
 									<div id="gmap"></div>
 								</div>
-							</div>
-						</div> <!-- /row -->
+							</div>						</div> <!-- /row -->
                         <div class="row">
                             <div class="col-md-12">
                             <div>&nbsp;</div>
@@ -102,5 +101,56 @@
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
 {% endblock %}
 
+    <script>
+
+$('form').on('keyup keypress', function(e) {
+  var keyCode = e.keyCode || e.which;
+  if((keyCode== 13) && ($(event.target)[0]!=$("textarea")[0])) {
+    if ($(event.target)[0]==$("#search_txt")[0]) {
+        $("#search_btn").click();
+	    e.preventDefault();
+	    return false;
+	}
+    e.preventDefault();
+    return false;
+  }
+});
+
+$('form').validate({
+    rules: {
+        core_label: {
+            minlength: 3,
+            maxlength: 20,
+            required: true
+        }
+    },
+    highlight: function(element) {
+        var id_attr = "#" + $( element ).attr("id") + "1";
+        $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+        $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+    },
+    unhighlight: function(element) {
+        var id_attr = "#" + $( element ).attr("id") + "1";
+        $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+        $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+    },
+    errorElement: 'span',
+        errorClass: 'help-block',
+        errorPlacement: function(error, element) {
+            if(element.length) {
+                error.insertAfter(element);
+            } else {
+            error.insertAfter(element);
+            }
+        }
+ });
+
+	$(document).ready(function(){
+		$('[data-toggle="tooltip"]').tooltip();
+		$("#times-twilight").val("{{ config.times.twilighthorizon }}");
+	});
+    </script>
+{% endblock %}
