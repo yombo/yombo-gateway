@@ -30,9 +30,9 @@
                                     </thead>
                                     <tbody>{% for state_name, state in states.iteritems() %}
                                          <tr>
-                                            <td><a href="/states/state/{{ state_name }}">{{ state_name }}</a></td>
-                                             <td>{{ state['value'] }}</td>
-                                             <td>{{ state['updated']|epoch_to_human }}</td>
+                                            <td><a href="/states/details/{{ state_name }}">{{ state_name }}</a></td>
+                                             <td>{{ state['value_human'] }}</td>
+                                             <td>{{ state['created']|epoch_to_human }}</td>
                                              <td>{{ states_i18n[state_name] }}</td>
                                          </tr>{% endfor %}
                                     </tbody>

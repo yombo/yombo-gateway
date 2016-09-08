@@ -35,18 +35,23 @@ def route_configs(webapp):
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Description.")
 
-            submitted_location_latitude = request.args.get('location_latitude')[0]
+            try:
+                submitted_location_searchtext = request.args.get('location_searchtext')[0]
+            except:
+                valid_submit = False
+                webinterface.add_alert("Invalid Gateway Location Search Entry.")
+
             try:
                 submitted_location_latitude = request.args.get('location_latitude')[0]
             except:
                 valid_submit = False
-                webinterface.add_alert("Invalid Gateway Latitude222.")
+                webinterface.add_alert("Invalid Gateway Lattitude.")
 
             try:
                 submitted_location_longitude = request.args.get('location_longitude')[0]
             except:
                 valid_submit = False
-                webinterface.add_alert("Invalid Gateway Longitude333.")
+                webinterface.add_alert("Invalid Gateway Longitude.")
 
             try:
                 submitted_location_elevation = request.args.get('location_elevation')[0]
@@ -82,6 +87,7 @@ def route_configs(webapp):
             if valid_submit is True:
                 webinterface._Configs.set('core', 'label', submitted_core_label)
                 webinterface._Configs.set('core', 'description', submitted_core_description)
+                webinterface._Configs.set('location', 'searchbox', submitted_location_searchtext)
                 webinterface._Configs.set('location', 'latitude', submitted_location_latitude)
                 webinterface._Configs.set('location', 'longitude', submitted_location_longitude)
                 webinterface._Configs.set('location', 'elevation', submitted_location_elevation)

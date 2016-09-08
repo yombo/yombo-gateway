@@ -23,6 +23,7 @@ import parsedatetime.parsedatetime as pdt
 from struct import pack as struct_pack, unpack as struct_unpack
 from socket import inet_aton, inet_ntoa
 import math
+from time import strftime, localtime, time
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -75,6 +76,11 @@ def pattern_search(look_for, items):
             if result is not None:
                 out_list.append(item)
     return out_list
+
+def epoch_to_string(the_time, format=None):
+    if format is None:
+        format = '%b %d %Y %H:%M:%S %Z'
+    return strftime(format, localtime(the_time))
 
 def epoch_from_string( the_string ):
     """

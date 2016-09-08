@@ -114,7 +114,7 @@ class Loader(YomboLibrary, object):
             return self.loadedComponents[component_requested]
         elif component_requested in self.loadedLibraries:
             logger.debug("found by loadedLibraries! {component_requested}", component_requested=component_requested)
-            return self.loadedComponents[component_requested]
+            return self.loadedLibraries[component_requested]
         elif component_requested in self._moduleLibrary:
             logger.debug("found by self._moduleLibrary! {component_requested}", component_requested=self._moduleLibrary)
             return self._moduleLibrary[component_requested]

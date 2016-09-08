@@ -342,7 +342,6 @@ class InteractionBase(object):
             h[colname] = values[index]
         return h
 
-
     def getSchema(self, tablename, txn=None):
         """
         Get the schema (in the form of a list of column names) for

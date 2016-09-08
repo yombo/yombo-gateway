@@ -12,7 +12,7 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post">
+            <form method="post" id="basicconfig">
 				<div class="row">
 					<div class="panel panel-default">
 						<div class="panel-heading">
@@ -28,7 +28,7 @@
 						<div class="form-group">
 							<label for="core_description">Gateway Description</label>
 							<div class="input-group">
-								<textarea class="form-control" rows="5" name="core_description" id="core_description" placeholder="Detailed description" value="{{ config.core.description }}"></textarea>
+								<textarea class="form-control" rows="5" name="core_description" id="core_description" placeholder="Detailed description">{{ config.core.description }}</textarea>
 								<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
 							</div>
 						</div>
@@ -39,7 +39,7 @@
 									<div class="form-group">
 										<label >Search for location</label>
 										<div class="input-group">
-											<input id="search_txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
+											<input id="search_txt" type="text" size="30" value="{{ config.location.searchbox }}" maxlength="1000"><br>
 											<input id="search_btn" type="button" value="    Search    ">
 											<input id="detect_btn" type="button" value="Detect" disabled>
 										</div>
@@ -47,6 +47,7 @@
 									<div class="form-group">
 										<label for="location_latitude">Latitude</label>
 										<div class="input-group">
+		                                    <input class="form-control" id="location_searchtext" name="location_searchtext" type="hidden">
 											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
@@ -261,9 +262,16 @@ $('form').validate({
         }
  });
 
+
 	$(document).ready(function(){
 		$('[data-toggle="tooltip"]').tooltip();
 		$("#times-twilight").val("{{ config.times.twilighthorizon }}");
+
+$( "#basicconfig" ).submit(function( event ) {
+
+$('#location_searchtext').val($('#search_txt').val());
+});
+
 	});
     </script>
 {% endblock %}

@@ -52,14 +52,13 @@ from collections import deque
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboStateNotFound, YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all, pattern_search
-
+from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string
 
 logger = get_logger("library.YomboStates")
 
@@ -69,7 +68,6 @@ class States(YomboLibrary, object):
     """
     MAX_HISTORY = 100
 
-    @inlineCallbacks
     def _init_(self):
         self._ModDescription = "Yombo States API"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
@@ -78,8 +76,11 @@ class States(YomboLibrary, object):
 
         self.__States = {}
         self._loaded = False
-        self.__History = yield self._Libraries['SQLDict'].get(self, 'History')
-#        logger.info("Recovered YomboStates: {states}", states=self.__States)
+
+        self._LocalDB = self._Loader['localdb']
+        self.init_deferred = Deferred()
+        self.load_states()
+        return self.init_deferred
 
     def _load_(self):
         self._loaded = True
@@ -116,6 +117,18 @@ class States(YomboLibrary, object):
                 states[key] = state['value']
         return states
 
+    @inlineCallbacks
+    def load_states(self):
+        states = yield self._LocalDB.get_states()
+        print "states: %s" % states
+        for state in states:
+            self.__States['name'] = {
+                'value': state['value'],
+                'value_type': state['value'],
+                'created': state['created'],
+            }
+        self.init_deferred.callback(10)
+
     # def __repr__(self):
     #     states = {}
     #     for key, state in self.__States.iteritems():
@@ -147,11 +160,11 @@ class States(YomboLibrary, object):
         :rtype: float
         """
         if key in self.__States:
-            return self.__States[key]['updated']
+            return self.__States[key]['created']
         else:
             raise YomboStateNotFound("Cannot get state time: %s not found" % key)
 
-    def get(self, key=None):
+    def get(self, key=None, human=None, full=None):
         """
         Get the value of a given state (key).
 
@@ -174,8 +187,12 @@ class States(YomboLibrary, object):
                 return values
             else:
                 raise KeyError("Searched for atoms, none found.")
-
-        return self.__States[key]
+        if human is True:
+            return self.__States[key]['value']
+        elif full is True:
+            return self.__States[key]
+        else:
+            return self.__States[key]['value_human']
 
     def get_states(self):
         """
@@ -186,7 +203,7 @@ class States(YomboLibrary, object):
         """
         return self.__States.copy()
 
-    def set(self, key, value):
+    def set(self, key, value, value_type=None, function=None, arguments=None):
         """
         Set the value of a given state (key).
 
@@ -196,10 +213,14 @@ class States(YomboLibrary, object):
 
         :param key: Name of state to set.
         :param value: Value to set state to. Can be string, list, or dictionary.
+        :param value_type: If set, allows a human filter to be applied for display.
+        :param function: If this a living state, provide a function to be called to get value. Value will be used
+          to set the initial value.
+        :param arguments: kwarg (arguments) to send to function.
         :return: Value of state
         """
         if key in self.__States:
-            if self.__States[key]['value'] == value:  # don't set the value to the same value
+            if self.__States[key]['value'] == value and function is None:  # don't set the value to the same value
                 return
 
         # Call any hooks
@@ -211,59 +232,62 @@ class States(YomboLibrary, object):
 
         if key in self.__States:
             self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
-            self.__States[key]['value'] = value
-            self.__States[key]['updated'] = int(time())
+            self.__States[key]['created'] = int(time())
         else:
             self.__States[key] = {
-                'value': value,
-                'updated': int(time()),
+                'created': int(time()),
             }
             self._Statistics.increment("lib.states.set.new", bucket_time=60, anon=True)
 
-        self.__set_history(key, self.__States[key]['value'], self.__States[key]['updated'])
-        self.check_trigger(key, value)
+        self.__States[key]['value'] = value
+        self.__States[key]['function'] = function
+        self.__States[key]['arguments'] = arguments
+        self.__States[key]['value_type'] = value_type
 
-    def set_live(self, key, callback, arguments={}):
-        """
-        Set a live state. This is a state that will call a function for each request of the value.
+        self.__States[key]['value_human'] = self.convert_to_human(value, value_type)
 
-        :param key:
-        :param callback:
-        :param arguments:
-        :return:
-        """
-        # Not implemented yet. Considerations: blocking calls.
-        pass
+        live = False
+        if function is not None:
+            live = True
 
-    def __set_history(self, key, value, updated):
-        data = {'value' : value, 'updated' : updated}
-#        print "saving state history: %s:%s" % (key, value)
-        if key in self.__History:
-            self.__History[key].appendleft(data)
-#            print "appending: %s" % self.__History[key]
+        self._LocalDB.save_state(key, value, value_type, live)
+        self.check_trigger(key, value)  # Check if any automation items need to fire!
+
+    def convert_to_human(self, value, value_type):
+        if value_type == 'bool':
+            results = is_true_false(value)
+            if results is not None:
+                return results
+            else:
+                return value
+
+        elif value_type == 'epoch':
+            return epoch_to_string(value)
         else:
-            self.__History[key] = deque([data], self.MAX_HISTORY)
+            return value
 
-    def get_history(self, key, position=1):
+    @inlineCallbacks
+    def get_history(self, key, offset=None, limit=None):
         """
         Returns a previous version of the state. Returns a dictionary with "value" and "updated" inside. See
         :py:func:`history_length` to deterine how many entries there are. Max of MAX_HISTORY (currently 100).
 
         :param key: Name of the state to get.
-        :param position: How far back to go. 0 is current, 1 is previous, etc.
+        :param offset: How far back to go. 0 is current, 1 is previous, etc.
+        :limit limit: How many records to provide
         :return:
         """
-        if key in self.__States:
-            if key in self.__History:
-                if position == -1:  # Lets return all the history
-                    return self.__History[key]
-                if len(self.__History[key]) < position:
-                    raise YomboStateNotFound("History doesn't exist. Only %s entries exist. %s" % len(self.__History[key]))
-                return self.__History[key][position]
-            else:
-                raise YomboStateNotFound("Cannot get state history, does not exist: %s" % key)
+        if offset is None:
+            offset = 1
+        if limit is None:
+            limit = 1
+        results = yield self._LocalDB.get_state_history(key, limit, offset)
+        if len(results) == 1:
+            returnValue(results['value'])
+        elif len(results) > 1:
+            returnValue(results)
         else:
-            raise YomboStateNotFound("Cannot get state: %s not found" % key)
+            returnValue(None)
 
     def history_length(self, key):
         """
@@ -273,13 +297,8 @@ class States(YomboLibrary, object):
         :return: How many records there are for a given state.
         :rtype: int
         """
-        if key in self.__States:
-            if key in self.__History:
-                return len(self.__History[key])
-            else:
-                raise YomboStateNotFound("Cannot get state history, no history for: %s" % key)
-        else:
-            raise YomboStateNotFound("Cannot get state: %s not found" % key)
+        results = yield self._LocalDB.get_state_count(key)
+        returnValue(results)
 
     def delete(self, key):
         """

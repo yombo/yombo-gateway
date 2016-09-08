@@ -43,6 +43,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
+from yombo.utils import clean_dict
 
 logger = get_logger('lib.sqlitedb')
 
@@ -114,6 +115,10 @@ class ModuleInstalled(DBObject):
 
 class Schema_Version(DBObject):
     TABLENAME='schema_version'
+
+
+class States(DBObject):
+    TABLENAME='states'
 
 
 class Statistics(DBObject):
@@ -364,39 +369,96 @@ class LocalDB(YomboLibrary):
 #########################
     @inlineCallbacks
     def get_states(self, name=None):
+        """
+        Gets the last version of a state. Note: Only returns states that were set within the last 60 days.
+
+        :param name:
+        :return:
+        """
         # print "name: %s" % name
         if name is not None:
-            record = yield Sessions.findBy(name=name)
+            extra_where = "AND name = %s" % name
         else:
-            record = yield Sessions.find()
-        returnValue(record)
+            extra_where = ''
+
+        sql = """SELECT name, value, value_type, live, created
+FROM states s1
+WHERE created = (SELECT MAX(created) from states s2 where s1.id = s2.id)
+%s
+AND created > %s
+GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
+        states = yield Registry.DBPOOL.runQuery(sql)
+        results = []
+        for state in states:
+            results.append({
+                'name': state[0],
+                'value': state[1],
+                'value_type': state[2],
+                'live': state[3],
+                'created': state[4],
+            })
+        returnValue(results)
 
     @inlineCallbacks
-    def save_state(self, session_id, session_data, created, last_access, updated):
-        # print "session_data: %s" % session_data
-        yield Sessions(
-            id=session_id,
-            session_data=session_data,
-            created=created,
-            last_access=last_access,
-            updated=updated,
+    def get_state_count(self, name=None):
+        """
+        Get a count of historical values for state
+
+        :param name:
+        :return:
+        """
+        count = yield States.count(where=['name = ?', name])
+        returnValue(count)
+
+    @inlineCallbacks
+    def del_state(self, name=None):
+        """
+        Deletes all history of a state. (Deciding to implement)
+
+        :param name:
+        :return:
+        """
+        count = yield States.count(where=['name = ?', name])
+        returnValue(count)
+
+
+    @inlineCallbacks
+    def get_state_history(self, name, limit=None, offset=None):
+        """
+        Get an state history.
+
+        :param name:
+        :param limit:
+        :param offset:
+        :return:
+        """
+        if limit is None:
+            limit = 1
+
+        if offset is not None:
+            limit = (limit, offset)
+
+        results = yield States.find(where=['name = ?', name], limit=limit)
+        records = []
+        for item in results:
+            records.append(clean_dict(item.__dict__))
+        returnValue(records)
+
+    @inlineCallbacks
+    def save_state(self, name, value, value_type=None, live=None):
+        if live is None:
+            live = 0
+        yield States(
+            name=name,
+            value=value,
+            value_type=value_type,
+            live=live,
+            created=int(time()),
         ).save()
 
-    @inlineCallbacks
-    def update_session(self, session_id, session_data, last_access, updated):
-        # print "session_data: %s" % session_data
-
-        args = {'session_data': session_data,
-                'last_access': last_access,
-                'updated' : updated,
-        }
-        yield self.dbconfig.update('sessions', args, where=['id = ?', session_id] )
-
-    @inlineCallbacks
-    def delete_session(self, session_id):
-        # print "session_data: %s" % session_data
-        yield self.dbconfig.delete('sessions', args, where=['id = ?', session_id] )
-
+#########################
+###    Devices     #####
+#########################
     @inlineCallbacks
     def get_devices(self):
 #        records = yield self.dbconfig.select("devices_view")

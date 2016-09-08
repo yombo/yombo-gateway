@@ -218,6 +218,8 @@ nav_side_menu = [
 
 ]
 
+class NotFound(Exception):
+    pass
 
 class WebInterface(YomboLibrary):
     """
@@ -258,6 +260,17 @@ class WebInterface(YomboLibrary):
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
+
+    @webapp.handle_errors(NotFound)
+    def notfound(self, request, failure):
+        request.setResponseCode(404)
+        return 'Not found, I say'
+
+    @webapp.route('/<path:catchall>')
+    def page_404(self, request, catchall):
+        request.setResponseCode(404)
+        page = self.get_template(request, self._dir + 'pages/404.html')
+        return page.render()
 
     @inlineCallbacks
     def _load_(self):
@@ -574,20 +587,6 @@ class WebInterface(YomboLibrary):
     def page_login_pin_get(self, request):
         return self.redirect(request, '/')
 
-
-    @webapp.route('/tools/index')
-    def page_tools(self, request):
-        auth = self.require_auth(request)
-        if auth is not None:
-            return auth
-
-        page = self.get_template(request, self._dir + 'pages/states/index.html')
-        strings = self._Localize.get_strings(request.getHeader('accept-language'), 'states')
-        return page.render(alerts=self.get_alerts(),
-                           states=self._Libraries['states'].get_states(),
-                           states_i18n=strings,
-                           )
-
     @webapp.route('/status')
     def page_status(self, request):
 
@@ -656,12 +655,12 @@ class WebInterface(YomboLibrary):
 
     def epoch_to_human(self, the_time, format=None):
         if format is None:
-            format = '%b %d %Y %H:%M:%S'
-        print "epoch_to_home: %s" % the_time
+            format = '%b %d %Y %H:%M:%S %Z'
         return strftime(format, localtime(the_time))
 
     def setup_basic_filters(self):
         self.webapp.templates.filters['epoch_to_human'] = self.epoch_to_human
+        self.webapp.templates.filters['states_to_human'] = self.epoch_to_human
 
     def WebInterface_configuration_set(self, **kwargs):
         """

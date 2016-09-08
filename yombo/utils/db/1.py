@@ -200,14 +200,16 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'dict_name'))
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'component'))
 
-    # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
+    # Defines the tables used to store state information.
     table = """CREATE TABLE `states` (
-     `id`      TEXT NOT NULL, /* moduleUUID */
+     `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
      `name`    TEXT NOT NULL,
+     `value_type` TEXT,
      `value`   INTEGER NOT NULL,
-     `created` INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+     `live`   INTEGER NOT NULL,
+     `created` INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('states', 'name'))
     yield Registry.DBPOOL.runQuery(create_index('states', 'created'))
 
     #  Defines the statistics data table. Stores statistics.

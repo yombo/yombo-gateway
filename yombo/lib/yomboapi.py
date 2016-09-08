@@ -1,9 +1,5 @@
-#cython: embedsignature=True
-#copied from gateway, 100%
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
 """
-Manages interactions with api.yombo.net
+Manages interactions with api.yombo.net.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.11.0
@@ -129,7 +125,7 @@ class YomboAPI(YomboLibrary):
     @inlineCallbacks
     def do_validate_session(self, session_id, session_key):
         try:
-            results = yield self.requestAPI("GET", "/v1/session/validate?sessionid=%s&sessionkey=%s" % (session_id, session_key))
+            results = yield self.request("GET", "/v1/session/validate?sessionid=%s&sessionkey=%s" % (session_id, session_key))
         except Exception, e:
             logger.debug("$$$ API Errror: {error}", error=e)
             returnValue(False)
@@ -142,21 +138,21 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def session_login_password(self, username, password):
-        results = yield self.requestAPI("GET", "/v1/session/login?username=%s&password=%s" % (username, password))
-        logger.debug("$$$ REsults from API: {results}", results=results)
+        results = yield self.request("GET", "/v1/session/login?username=%s&password=%s" % (username, password))
+        logger.info("$$$ REsults from API: {results}", results=results)
 
-        if results['Code'] == 200:  # life is good!
-            returnValue(results['Response']['Session'])
+        if results['code'] == 200:  # life is good!
+            returnValue(results['content']['Response']['Session'])
         else:
             returnValue(False)
 
     @inlineCallbacks
     def gateways(self, session_info=None):
-        results = yield self.requestAPI("GET", "/v1/gateway")
+        results = yield self.request("GET", "/v1/gateway")
         logger.debug("$$$ REsults from API: {results}", results=results)
 
-        if results['Code'] == 200:  # life is good!
-            returnValue(results['Response']['Gateway'])
+        if results['code'] == 200:  # life is good!
+            returnValue(results['content']['Response']['Gateway'])
         else:
             returnValue(False)
 
@@ -246,12 +242,14 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def decode_results(self, response):
-        print "raw headers: %s" % response.headers
         headers = self.response_headers(response)
-        print "decoded headers: %s" % headers
-        print "headers: %s" % headers['content-type'][0]
+        # print "decoded headers: %s" % headers
+        if 'content_type' in headers:
+            content_type = headers['content-type'][0]
+            print "headers: %s" % headers['content-type'][0]
+        else:
+            content_type = None
 
-        content_type = headers['content-type'][0]
         content = yield treq.content(response)
 
         if content_type == 'application/json':
