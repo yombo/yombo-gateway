@@ -406,13 +406,11 @@ class Modules(YomboLibrary):
                     logger.error("------==(ERROR During {hook} of module: {name})==-------", hook=hook, name=module._FullName)
                     logger.error("1:: {e}", e=sys.exc_info())
                     logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
                     logger.error("{e}", e=traceback.print_exc())
                     logger.error("--------------------------------------------------------")
-                    logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                              limit=5, file=sys.stdout)))
-                    logger.error("--------------------------------------------------------")
+                    # logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+                    #           limit=10, file=sys.stdout)))
+                    # logger.error("--------------------------------------------------------")
             else:
                 logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
 

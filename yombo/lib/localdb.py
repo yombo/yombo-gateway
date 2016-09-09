@@ -456,6 +456,25 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
             created=int(time()),
         ).save()
 
+    @inlineCallbacks
+    def clean_states_table(self, name=None):
+        """
+        Remove records over 60 days, only keep the last 100 records for a given state. So save history for longer
+        term, use the statistics library.
+
+        :param name:
+        :return:
+        """
+        sql = "DELETE FROM states WHERE created < %s" % str(int(time()) - 60*60*24*60)
+        yield Registry.DBPOOL.runQuery(sql)
+        sql = """DELETE FROM states WHERE id IN
+              (SELECT id
+               FROM states AS s
+               WHERE s.name = states.name
+               ORDER BY created DESC
+               LIMIT -1 OFFSET 100)"""
+        yield Registry.DBPOOL.runQuery(sql)
+
 #########################
 ###    Devices     #####
 #########################
@@ -622,8 +641,28 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
         find_where = dictToWhere(where)
         records = yield Statistics.find(where=find_where)
 
-        print "stat records: %s" % records
+        # print "stat records: %s" % records
         returnValue(records)
+
+    @inlineCallbacks
+    def get_stat_last_datapoints(self):
+        sql = """SELECT s1.name, s1.value
+FROM  statistics s1
+INNER JOIN
+(
+    SELECT Max(updated) updated, name
+    FROM   statistics
+    WHERE type = 'datapoint'
+    GROUP BY name
+) AS s2
+    ON s1.name = s2.name
+    AND s1.updated = s2.updated
+ORDER BY id desc"""
+        stats = yield Registry.DBPOOL.runQuery(sql)
+        results = {}
+        for stat in stats:
+            results[stat[0]] = stat[1]
+        returnValue(results)
 
     @inlineCallbacks
     def save_statistic(self, bucket, type, name, value, anon, in_average_data=None):

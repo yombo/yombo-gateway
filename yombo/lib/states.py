@@ -53,6 +53,8 @@ from time import time
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.task import LoopingCall
+
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboStateNotFound, YomboWarning, YomboHookStopProcessing
@@ -87,7 +89,8 @@ class States(YomboLibrary, object):
         pass
 
     def _start_(self):
-        pass
+        self.clean_states_loop = LoopingCall(self.clean_states_table)
+        self.clean_states_loop.start(60*60*6)  # clean the database every 6 hours.
 
     def _stop_(self):
         pass
@@ -120,14 +123,22 @@ class States(YomboLibrary, object):
     @inlineCallbacks
     def load_states(self):
         states = yield self._LocalDB.get_states()
-        print "states: %s" % states
         for state in states:
-            self.__States['name'] = {
+            self.__States[state['name']] = {
                 'value': state['value'],
-                'value_type': state['value'],
+                'value_human': self.convert_to_human(state['value'], state['value_type']),
+                'value_type': state['value_type'],
                 'created': state['created'],
             }
         self.init_deferred.callback(10)
+
+    def clean_states_table(self):
+        """
+        Periodically called to remove old records.
+
+        :return:
+        """
+        self._LocalDB.clean_states_table()
 
     # def __repr__(self):
     #     states = {}
@@ -219,9 +230,19 @@ class States(YomboLibrary, object):
         :param arguments: kwarg (arguments) to send to function.
         :return: Value of state
         """
+        # if key in self.__States:
+        #     if self.__States[key]['value'] == value and function is None:  # don't set the value to the same value
+        #         return
         if key in self.__States:
-            if self.__States[key]['value'] == value and function is None:  # don't set the value to the same value
+            if self.__States[key]['value'] == value:
                 return
+            self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
+            self.__States[key]['created'] = int(round(time()))
+        else:
+            self.__States[key] = {
+                'created': int(time()),
+            }
+            self._Statistics.increment("lib.states.set.new", bucket_time=60, anon=True)
 
         # Call any hooks
         try:
@@ -230,14 +251,6 @@ class States(YomboLibrary, object):
             logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
             return
 
-        if key in self.__States:
-            self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
-            self.__States[key]['created'] = int(time())
-        else:
-            self.__States[key] = {
-                'created': int(time()),
-            }
-            self._Statistics.increment("lib.states.set.new", bucket_time=60, anon=True)
 
         self.__States[key]['value'] = value
         self.__States[key]['function'] = function

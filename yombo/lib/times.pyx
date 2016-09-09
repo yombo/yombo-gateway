@@ -216,11 +216,11 @@ class Times(YomboLibrary, object):
     def nextSunrise(self, val):
         if '__nextSunrise' in locals():
             if val != self.__nextSunrise:
-                self._States.set('next.sunrise', val, 'epoch')
+                self._States.set('next.sunrise', int(round(val)), 'epoch')
                 self.__nextSunrise = val
         else:
             self.__nextSunrise = val
-            self._States.set('next.sunrise', val, 'epoch')
+            self._States.set('next.sunrise', int(round(val)), 'epoch')
 
     @property
     def nextSunset(self, val):
@@ -230,10 +230,10 @@ class Times(YomboLibrary, object):
     def nextSunset(self, val):
         if '__nextSunset' in locals():
             if val != self.__nextSunset:
-                self._States.set('next.sunset', val, 'epoch')
+                self._States.set('next.sunset', int(round(val)), 'epoch')
                 self.__nextSunset = val
         else:
-            self._States.set('next.sunset', val, 'epoch')
+            self._States.set('next.sunset', int(round(val)), 'epoch')
             self.__nextSunset = val
 
     @property
@@ -244,10 +244,10 @@ class Times(YomboLibrary, object):
     def nextMoonrise(self, val):
         if '__moonRise' in locals():
             if val != self.__moonRise:
-                self._States.set('next.moonrise', val, 'epoch')
+                self._States.set('next.moonrise', int(round(val)), 'epoch')
                 self.__moonRise = val
         else:
-            self._States.set('next.moonrise', val, 'epoch')
+            self._States.set('next.moonrise', int(round(val)), 'epoch')
             self.__moonRise = val
 
     @property
@@ -258,10 +258,10 @@ class Times(YomboLibrary, object):
     def nextMoonset(self, val):
         if '__moonSet' in locals():
             if val != self.__moonSet:
-                self._States.set('next.moonset', val, 'epoch')
+                self._States.set('next.moonset', int(round(val)), 'epoch')
                 self.__moonSet = val
         else:
-            self._States.set('next.moonset', val, 'epoch')
+            self._States.set('next.moonset', int(round(val)))
             self.__moonSet = val
 
     def _load_(self):

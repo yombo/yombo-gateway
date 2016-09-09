@@ -230,7 +230,7 @@ class Devices(YomboLibrary):
         self.delay_queue_storage = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
         # Now check to existing delayed messages.  If not too old, send otherwise delete them.  If time is in
         #  future, setup a new reactor to send in future.
-        logger.debug("module_started: delayQueue: {delay}", delay=self.delay_queue_storage)
+        logger.info("module_started: delayQueue: {delay}", delay=self.delay_queue_storage)
         for request_id in self.delay_queue_storage.keys():
             if self.delay_queue_storage[request_id]['unique_hash'] is not None:
                 self.delay_queue_unique[self.delay_queue_storage[request_id]['unique_hash']] = request_id
@@ -239,6 +239,7 @@ class Devices(YomboLibrary):
                 continue
             request = self.delay_queue_storage[request_id]
             if float(request['not_before']) < time(): # if delay message time has past, maybe process it.
+                print("if float(request['not_before']) - %s > float(request['max_delay']) - %s" %( request['not_before'] , request['max_delay'] ))
                 if time() - float(request['not_before']) > float(request['max_delay']):
                     # we're too late, just delete it.
                     del self.delay_queue_storage[request_id]

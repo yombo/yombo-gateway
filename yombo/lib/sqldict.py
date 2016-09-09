@@ -52,7 +52,7 @@ class SQLDict(YomboLibrary):
 
     def _load_(self):
         self._saveSQLDictLoop = LoopingCall(self.save_sql_dict)
-        self._saveSQLDictLoop.start(6)
+        self._saveSQLDictLoop.start(60)
 
     def _start_(self):
         self.save_sql_dict()

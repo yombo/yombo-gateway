@@ -33,9 +33,11 @@ Some addtional examples:
   * system.cpu.free
   * system.storage.disk1.used
   * system.storage.disk1.free
+  * devices.myhome.groundfloor.kitchen.main_light = 1 - on
+  * energy.myhome.groundfloor.kitchen.main_light = 100 - watts
+  * devices.myhome.groundfloor.kitchen.accent
 
-Here are
-some guidelines:
+Here are some guidelines:
 
   1) The first section should be either lib or module.
   2) The second section should be the name of the library or module.
@@ -98,6 +100,7 @@ class Statistics(YomboLibrary):
     _counters = {}  # stores counter information before it's saved to database
     _averages = {}  # stores averages type information
     _datapoints = {}  # stores datapoint data
+    _datapoint_last_value = {}  # Used to track duplicates. Duplicate values are removed as it adds no value!
 
     def _init_(self):
         """
@@ -105,6 +108,7 @@ class Statistics(YomboLibrary):
         :param loader: Loader library.
         :return:
         """
+        self._LocalDB = self._Libraries['localdb']
         self.enabled = self._Configs.get('statistics', 'enabled', True)
         self.enabled = self._Configs.get('statistics', 'upload', True)
         self.enabled = self._Configs.get('statistics', 'anonymous', True)
@@ -137,6 +141,10 @@ class Statistics(YomboLibrary):
 
         self.unload_defer = None
 
+        self.init_deferred = Deferred()
+        self.load_last_datapoints()
+        return self.init_deferred
+
     def _stop_(self):
         """
         Saves statistics data to database.
@@ -154,6 +162,10 @@ class Statistics(YomboLibrary):
     def unload_errback(self, reason):
         logger.warn("Error unloading statistics: {reason}", reason=reason)
 
+    @inlineCallbacks
+    def load_last_datapoints(self):
+        self._datapoint_last_value = yield self._LocalDB.get_stat_last_datapoints()
+        self.init_deferred.callback(10)
 
     def _module_prestart_(self, **kwargs):
         """
@@ -253,7 +265,7 @@ class Statistics(YomboLibrary):
 
     def datapoint(self, name, value, anon=False, lifetimes=None):
         """
-        Set a datapoint numberic value. For example, set the amount of memory used every so often.
+        Set a datapoint numberic value. For example, set the current measured temperature.
 
         .. code-block:: python
 
@@ -272,8 +284,11 @@ class Statistics(YomboLibrary):
             return
 
         self._validate_name(name)
-        #bucket = datetime.datetime.now().strftime('%s')
-        bucket = self._get_bucket_time('datapoint')
+
+        if self._datapoint_last_value[name] == value:  # we don't save duplicates!
+            return
+
+        bucket = self._get_bucket_time('datapoint')  # not really a bucket, just standardized call.
         if bucket not in self._datapoints:
             self._datapoints[bucket] = {}
         if name not in self._datapoints:
@@ -480,7 +495,7 @@ class Statistics(YomboLibrary):
         for bucket in self._counters.keys():
             if full or bucket < (current_count_bucket):
                 for name in self._counters[bucket].keys():
-                    yield self._Libraries['localdb'].save_statistic(bucket, "counter", name,
+                    yield self._LocalDB.save_statistic(bucket, "counter", name,
                                                                     self._counters[bucket][name]['value'],
                                                                     self._counters[bucket][name]['anon'])
             if full:                    
@@ -524,7 +539,7 @@ class Statistics(YomboLibrary):
                         'median_90': median_90,
                     }
 #                    print "average data: %s" % average_data
-                    yield self._Libraries['localdb'].save_statistic(bucket, "average", name, median_90, anon, average_data)
+                    yield self._LocalDB.save_statistic(bucket, "average", name, median_90, anon, average_data)
             if full:                    
                 del self._averages[bucket]
             else:
@@ -534,7 +549,7 @@ class Statistics(YomboLibrary):
             if full or bucket < (current_datapoint_bucket):
 #                print "buck datapoints: %s" % self._datapoints[bucket]
                 for name in self._datapoints[bucket].keys():
-                    yield self._Libraries['localdb'].save_statistic(bucket, "datapoint", name,
+                    yield self._LocalDB.save_statistic(bucket, "datapoint", name,
                                                                     self._datapoints[bucket][name]['value'],
                                                                     self._datapoints[bucket][name]['anon'])
     
@@ -560,7 +575,7 @@ class Statistics(YomboLibrary):
         """
 
         #        1) Generate full list of names.
-        records = yield self._Libraries['localdb'].get_distinct_stat_names()
+        records = yield self._LocalDB.get_distinct_stat_names()
 
         names = {}
         for record in records:
