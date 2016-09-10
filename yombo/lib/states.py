@@ -82,6 +82,7 @@ class States(YomboLibrary, object):
         self._LocalDB = self._Loader['localdb']
         self.init_deferred = Deferred()
         self.load_states()
+        self.automation_startup_check = []
         return self.init_deferred
 
     def _load_(self):
@@ -343,8 +344,7 @@ class States(YomboLibrary, object):
         """
         if self._loaded:
             results = self.automation.triggers_check('states', key, value)
-
-            results = self.automation.triggers_check('states', key, value)
+            # results = self.automation.triggers_check('states', key, value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -358,6 +358,7 @@ class States(YomboLibrary, object):
               'description': 'Allows states to be used as a source (trigger).',
               'validate_source_callback': self.states_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.states_add_trigger_callback,  # function to call to add a trigger
+              'startup_trigger_callback': self.states_startup_trigger_callback,  # function to call to check all triggers
               'get_value_callback': self.states_get_value_callback,  # get a value
               'field_details': [
                   {
@@ -390,7 +391,19 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
+        if 'run_on_start' in rule:
+            if rule['run_on_start'] is True:
+                self.automation_startup_check.append(rule['trigger']['source']['name'])
         self.automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
+
+    def states_startup_trigger_callback(self):
+        """
+        called when automation rules are active. Check for any automation rules that are marked with run_on_start
+        :return:
+        """
+        for name in self.automation_startup_check:
+            if name in self.__States:
+                self.check_trigger(name, self.__States[name]['value'])
 
     def states_get_value_callback(self, rule, portion, **kwargs):
         """

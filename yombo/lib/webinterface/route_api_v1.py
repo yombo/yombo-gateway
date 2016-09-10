@@ -119,11 +119,12 @@ def route_api_v1(webapp):
             # print "stat records: %s" % records
             labels = []
             data = []
+            live_stats = webinterface._Statistics.get_stat(stat_name, stat_type)
+
             for record in records:
                 labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
                 data.append(record['value'])
 
-            live_stats = webinterface._Statistics.get_stat(stat_name, stat_type)
             for record in live_stats:
                 labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
                 data.append(record['value'])

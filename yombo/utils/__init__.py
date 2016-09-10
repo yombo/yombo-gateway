@@ -629,14 +629,14 @@ def is_true_false(input, only_bool=False):
     :param only_bool: If true, will only return bools. Otherwise, None will be returned if indeterminate input.
     :return:
     """
-    if isinstance(input, six.string_types):
-        input = input.lower()
-        if input in ("1", "open", "on", "running"):
-            return True
-        if input in ("0", "closed", "off", "stopped"):
-            return False
-    elif isinstance(input, bool):
+    if isinstance(input, bool):
             return input
+    elif isinstance(input, six.string_types):
+        input = input.lower()
+        if input in ("true", "1", "open", "on", "running"):
+            return True
+        if input in ("false", "0", "closed", "off", "stopped"):
+            return False
     elif isinstance(input, six.integer_types):
             if input == 1:
                 return True

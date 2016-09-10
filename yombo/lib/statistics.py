@@ -285,8 +285,9 @@ class Statistics(YomboLibrary):
 
         self._validate_name(name)
 
-        if self._datapoint_last_value[name] == value:  # we don't save duplicates!
-            return
+        if name in self._datapoint_last_value:
+            if self._datapoint_last_value[name] == value:  # we don't save duplicates!
+                return
 
         bucket = self._get_bucket_time('datapoint')  # not really a bucket, just standardized call.
         if bucket not in self._datapoints:

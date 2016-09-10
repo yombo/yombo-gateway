@@ -137,7 +137,7 @@ class Variable(DBObject):
     BELONGSTO = ['devices', 'modules']
 
 class Sessions(DBObject):
-    TABLENAME='sessions'
+    TABLENAME='webinterface_sessions'
 
 #### Views ####
 
@@ -298,7 +298,7 @@ class LocalDB(YomboLibrary):
     def get_device_status(self, **kwargs):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
-        records = yield self.dbconfig.select('device_status', select='device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable', where=['device_id = ?', id], orderby='set_time', limit=limit)
+        records = yield self.dbconfig.select('device_status', select='device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable', where=['device_id = ?', id], orderby='set_time', limit=limit)
         for index in range(len(records)):
             records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
         returnValue(records)
@@ -306,18 +306,19 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def save_device_status(self, device_id, **kwargs):
         set_time = kwargs.get('set_time', time())
-        device_state = kwargs.get('device_state', 0)
+        energy_usage = kwargs['energy_usage']
         machine_status = kwargs['machine_status']
-        machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',',':') )
         human_status = kwargs.get('human_status', machine_status)
+        machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',',':') )
         source = kwargs.get('source', '')
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
 
+        print "kwargs: %s" % kwargs
         yield DeviceStatus(
             device_id=device_id,
             set_time=set_time,
-            device_state=device_state,
+            energy_usage=energy_usage,
             human_status=human_status,
             machine_status=machine_status,
             machine_status_extra=machine_status_extra,
@@ -357,12 +358,12 @@ class LocalDB(YomboLibrary):
                 'last_access': last_access,
                 'updated' : updated,
         }
-        yield self.dbconfig.update('sessions', args, where=['id = ?', session_id] )
+        yield self.dbconfig.update('webinterface_sessions', args, where=['id = ?', session_id] )
 
     @inlineCallbacks
     def delete_session(self, session_id):
         # print "session_data: %s" % session_data
-        yield self.dbconfig.delete('sessions', args, where=['id = ?', session_id] )
+        yield self.dbconfig.delete('webinterface_sessions', args, where=['id = ?', session_id] )
 
 #########################
 ###    States     #####

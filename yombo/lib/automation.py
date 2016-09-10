@@ -203,11 +203,16 @@ class Automation(YomboLibrary):
             return
 
         for rule in self._rulesRaw['rules']:
-            self.add_rule(rule)
+            if 'run_on_start' in rule:
+                rule['run_on_start'] = yombo.utils.is_true_false(rule['run_on_start'])
             if 'description' not in rule:
                     rule['description'] = ''
+            self.add_rule(rule)
 
         logger.debug("All active rules: {rules}", rules=self.rules)
+        for source, functions in self.sources.iteritems():
+            if 'startup_trigger_callback' in functions:
+                functions['startup_trigger_callback']()
 
     def add_rule(self, rule):
         """

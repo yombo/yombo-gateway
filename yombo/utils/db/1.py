@@ -79,6 +79,11 @@ def upgrade(Registry, **kwargs):
      `pin_code`        TEXT,
      `pin_required`    INTEGER NOT NULL,
      `pin_timeout`     INTEGER DEFAULT 0,
+     `location_label`  TEXT,
+     `energy_type`     TEXT,
+     `energy_tracker_source` TEXT,
+     `energy_tracker_device` TEXT,
+     `energy_map`      BLOB,
      `created`         INTEGER NOT NULL,
      `updated_srv`     INTEGER NOT NULL DEFAULT 0,
      `updated`         INTEGER NOT NULL,
@@ -94,7 +99,7 @@ def upgrade(Registry, **kwargs):
      `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
      `device_id`            TEXT NOT NULL, /* device_id */
      `set_time`             REAL NOT NULL,
-     `device_state`         REAL, /* Used for graphs. */
+     `energy_usage`         INTEGER NOT NULL,
      `human_status`         TEXT NOT NULL,
      `machine_status`       TEXT NOT NULL,
      `machine_status_extra` TEXT,

@@ -28,6 +28,8 @@ import zlib
 from time import time
 import sys
 import traceback
+import cPickle
+from sqlite3 import Binary as sqlite3Binary
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -113,6 +115,11 @@ class AMQPYombo(YomboLibrary):
                     'PinCode': 'pin_code',
                     'PinRequired': 'pin_required',
                     'PinTimeout': 'pin_timeout',
+                    'LocationLabel' : 'location_label',
+                    'EnergyType' : 'energy_type',
+                    'EnergyTrackerSource' : 'energy_tracker_source',
+                    'EnergyTrackerDevice' : 'energy_tracker_device',
+                    'EnergyMap' : 'energy_map',
                     'Created': 'created',
                     'Updated': 'updated',
                     'Status': 'status',
@@ -625,6 +632,8 @@ class AMQPYombo(YomboLibrary):
                         field = self.field_remap(field, self.config_items['variables'])
                         self.add_update_delete(field, 'variables', True)
         elif config_item == 'gateway_devices':
+            if 'energy_map' in db_data:
+                db_data['energy_map'] = sqlite3Binary(cPickle.dumps(db_data['energy_map'], cPickle.HIGHEST_PROTOCOL))
             if 'DeviceConfigs' in data:
                 # print "DeviceConfigs, data: %s" % data
                 for tempGroup in data['DeviceConfigs']:
@@ -672,6 +681,7 @@ class AMQPYombo(YomboLibrary):
             # action = 'add'
             if from_amqp_incoming:
                 db_data['updated_srv'] = data['updated']
+            print "inserting into: %s   data: %s" % (config_data['table'], db_data)
             yield self._LocalDBLibrary.insert(config_data['table'], db_data)
             if 'added' in config_data['functions']:
                 klass = getattr(library, config_data['functions']['updated'])

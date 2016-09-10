@@ -58,6 +58,9 @@ from hashlib import sha1
 import copy
 from collections import deque, namedtuple
 from time import time
+import cPickle
+from sqlite3 import Binary as sqlite3Binary
+from collections import OrderedDict
 
 # Import 3rd-party libs
 import yombo.ext.six as six
@@ -171,7 +174,6 @@ class Devices(YomboLibrary):
 
         self._devicesByUUID = FuzzySearch({}, .99)
         self._devicesByName = FuzzySearch({}, .89)
-        self._status_updates_to_save = {}
         self._saveStatusLoop = None
         self.run_state = 1
 
@@ -195,10 +197,6 @@ class Devices(YomboLibrary):
     def _start_(self):
         self.run_state = 3
 
-
-        self._saveStatusLoop = LoopingCall(self._save_status)
-        self._saveStatusLoop.start(120, False)
-
         if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
             self.mqtt.subscribe("yombo/devices/+/get")
@@ -213,14 +211,13 @@ class Devices(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        if hasattr(self, '_saveStatusLoop') and self._saveStatusLoop is not None and self._saveStatusLoop.running is True:
-            self._saveStatusLoop.stop()
+        pass
 
     def _unload_(self):
         """
         Stop periodic loop, save status updates.
         """
-        self._save_status()
+        pass
 
     def _reload_(self):
         return self.__load_devices()
@@ -238,8 +235,8 @@ class Devices(YomboLibrary):
                 logger.debug("Message already scheduled for delivery later. Possible from an automation rule. Skipping.")
                 continue
             request = self.delay_queue_storage[request_id]
+            # print("loading delayed command: %s" % request)
             if float(request['not_before']) < time(): # if delay message time has past, maybe process it.
-                print("if float(request['not_before']) - %s > float(request['max_delay']) - %s" %( request['not_before'] , request['max_delay'] ))
                 if time() - float(request['not_before']) > float(request['max_delay']):
                     # we're too late, just delete it.
                     del self.delay_queue_storage[request_id]
@@ -293,6 +290,11 @@ class Devices(YomboLibrary):
         logger.debug("Loading devices:::: {devices}", devices=devices)
         if len(devices) > 0:
             for record in devices:
+                if record['energy_map'] is not None:
+                    map = cPickle.loads(str(record['energy_map']))
+                    map = OrderedDict(sorted(map.items(), key=lambda (x,y):float(x)))
+                    record['energy_map'] = map
+
                 logger.debug("Loading device: {record}", record=record)
                 d = yield self.load_device(record)
         yield self._load_delay_queue()
@@ -428,13 +430,11 @@ class Devices(YomboLibrary):
             logger.info("Received MQTT request for a device that doesn't exist")
             return
 
-#Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
+#Status = namedtuple('Status', "device_id, set_time, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
 
         if parts[3] == 'get':
             status = device.get_status()
-            if payload == 'state':
-                self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
-            elif payload == 'human':
+            if payload == 'human':
                 self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
             elif payload == 'machine':
                 self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
@@ -448,9 +448,7 @@ class Devices(YomboLibrary):
             device.do_command(self, cmd=parts[4])
             if len(parts) > 5:
                 status = device.get_status()
-                if parts[5] == 'state':
-                    self.mqtt.publish('yombo/devices/%s/state/state' % device.label.replace(" ", "_"), str(status.device_state))
-                elif parts[5] == 'human':
+                if parts[5] == 'human':
                     self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
                 elif parts[5] == 'machine':
                     self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
@@ -461,26 +459,11 @@ class Devices(YomboLibrary):
                 elif parts[5] == 'source':
                     self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
 
-    def _save_status(self):
-        """
-        Function that does actual work. Saves items in the self._toStaveStatus
-        queue to the SQLite database.
-        """
-        if len(self._status_updates_to_save) == 0:
-            return
-
-        logger.info("Saving device status to disk.")
-        for key in self._status_updates_to_save.keys():
-            ss = self._status_updates_to_save[key]
-            self._LocalDBLibrary.save_device_status(**ss.__dict__)
-            del self._status_updates_to_save[key]
-
     def _clear_(self):
         """
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. **Do not call this function!**
         """
-        self._save_status()
         self._devicesByUUID.clear()
         self._devicesByName.clear()
         self._devicesByDeviceTypeByUUID.clear()
@@ -660,10 +643,18 @@ class Devices(YomboLibrary):
                 logger.debug("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
                 delay=options['delay']
 
+                if 'max_delay' in options:
+                    max_delay=options['max_delay']
+                else:
+                    max_delay=60  # allow up to 60 seconds to pass...
+            else:
+                delay = None
+                max_delay = None
+
             # def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
 
             unique_hash = sha1('automation' + rule['name'] + action['command'] + device.label).hexdigest()
-            device.do_command(cmd=action['command'], delay=delay, **{'unique_hash': unique_hash})
+            device.do_command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
 
 
 class Device:
@@ -704,9 +695,10 @@ class Device:
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
-        logger.debug("New device - info: {device}", device=device)
+        self._DevicesLibrary = _DevicesLibrary
+        logger.info("New device - info: {device}", device=device)
 
-        self.Status = namedtuple('Status', "device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
+        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")
 
         self.call_before_command = []
@@ -722,13 +714,28 @@ class Device:
         self.pin_timeout = int(device["pin_timeout"])
         self.voice_cmd = device["voice_cmd"]
         self.voice_cmd_order = device["voice_cmd_order"]
+        self.location_label = device["location_label"]  # 'myhome.groundfloor.kitchen'
         self.created = int(device["created"])
         self.updated = int(device["updated"])
         self.updated_srv = int(device["updated_srv"])
 
+
+        self.energy_type = None  # electric, gas, etc.
+        self.energy_tracker_source = None  # Source of tracking: None, calc, device
+        self.energy_tracker_device = None  # Only required if above is 'device'
+        self.energy_map = None  # Used to calculate energy usage
+
+        if 'energy_type' in device:
+            self.energy_type = device['energy_type']
+        if 'energy_tracker_source' in device:
+            self.energy_tracker_source = device['energy_tracker_source']
+            if self.energy_tracker_source == 'calc':
+                self.energy_map = {float(k):v for k,v in device['energy_map'].items()}  # fix for JSON
+            elif self.energy_tracker_source == 'device':
+                self.energy_tracker_device = device['energy_tracker_device']
+
         self.last_command = deque({}, 30)
         self.status_history = deque({}, 30)
-        self._DevicesLibrary = _DevicesLibrary
         self.testDevice = testDevice
         self.device_variables = {'asdf':'qwer'}
         self.device_route = {}  # Destination module to send commands to
@@ -865,7 +872,9 @@ class Device:
                 request_id = random_string(length=16)
         # print("in device do_command: rquest_id 2: %s" % request_id)
 
-        if max_delay is not None:
+        if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
+            if max_delay is None:
+                    raise YomboDeviceError("'max_delay' Is required when delay or not_before is set!")
             if isinstance(max_delay, six.integer_types) or isinstance(max_delay, float):
                 if max_delay < 0:
                     raise YomboDeviceError("'max_delay' should be positive only.")
@@ -964,6 +973,62 @@ class Device:
         global_invoke_all('_device_command_', **kwargs)
         self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
 
+    def energy_get_usage(self, machine_status):
+        """
+        Determine the current energy usage.  Currently only support energy maps.
+
+        :param machine_status: New status
+        :return:
+        """
+        if self.energy_tracker_source == 'calc':
+            return self.energy_calc(machine_status)
+        return 0
+
+    def energy_calc(self, machine_status):
+        """
+        Returns the energy being used based on a percentage the device is on.  Inspired by:
+        http://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
+
+        :param machine_status:
+        :param map:
+        :return:
+        """
+        # map = {
+        #     0: 1,
+        #     0.5: 100,
+        #     1: 400,
+        # }
+
+        if self.energy_map == None:
+            return 0   # if no map is found, we always return 0
+
+        items = self.energy_map.items()
+        for i in range(0, len(self.energy_map)-1):
+            if items[i][0] <= machine_status <= items[i+1][0]:
+                # print "translate(key, items[counter][0], items[counter+1][0], items[counter][1], items[counter+1][1])"
+                # print "%s, %s, %s, %s, %s" % (key, items[counter][0], items[counter+1][0], items[counter][1], items[counter+1][1])
+                return self.energy_translate(machine_status, items[i][0], items[i+1][0], items[i][1], items[i+1][1])
+        raise KeyError("Cannot find map value for: %s  Must be between 0 and 1" % machine_status)
+
+    def energy_translate(self, value, leftMin, leftMax, rightMin, rightMax):
+        """
+        Calculates the energy consumed based on the energy_map.
+
+        :param value:
+        :param leftMin:
+        :param leftMax:
+        :param rightMin:
+        :param rightMax:
+        :return:
+        """
+        # Figure out how 'wide' each range is
+        leftSpan = leftMax - leftMin
+        rightSpan = rightMax - rightMin
+        # Convert the left range into a 0-1 range (float)
+        valueScaled = float(value - leftMin) / float(leftSpan)
+        # Convert the 0-1 range into a value in the right range.
+        return rightMin + (valueScaled * rightSpan)
+
     def get_status(self, history=0):
         """
         Gets the history of the device status.
@@ -985,7 +1050,6 @@ class Device:
             - If payload was set, but not a dictionary. Errorno: 122
         :param kwargs: key/value dictionary with the following keys-
 
-            - device_state *(float)* - Soemthing that can be used to graph. on = 1, off =0. Lamp at 50% = 0.5
             - human_status *(int or string)* - The new status.
             - machine_status *(int or string)* - The new status.
             - machine_status_extra *(dict)* - Extra status as a dictionary.
@@ -1006,21 +1070,19 @@ class Device:
         if 'machine_status' not in kwargs:
             raise YomboDeviceError("set_status was called without a real machine_status!", errorno=120)
 
-        device_state = kwargs.get('device_state', 0)
         human_status = kwargs.get('human_status', machine_status)
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', '')
+        energy_usage = self.energy_get_usage(machine_status)
         source = kwargs.get('source', 'unknown')
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
 
-        new_status = self.Status(self.device_id, set_time, device_state, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
+        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.testDevice is False:
-            self._DevicesLibrary._status_updates_to_save[random_string(length=12)] = new_status
-            if len(self._DevicesLibrary._status_updates_to_save) > 120:
-                self._DevicesLibrary._save_status()
+            self._DevicesLibrary._LocalDBLibrary.save_device_status(**new_status.__dict__)
         self._DevicesLibrary.check_trigger(self.device_id, new_status)
 
     def send_status(self, **kwargs):
@@ -1097,11 +1159,11 @@ class Device:
 
     def _do_load_history(self, records):
         if len(records) == 0:
-            self.status_history.append(self.Status(self.device_id, 0, 0, 'NA', 'NA', {}, '', 0, 0))
+            self.status_history.append(self.StatusTuple(self.device_id, 0, 0, 'NA', 'NA', {}, '', 0, 0))
         else:
             for record in records:
-                self.status_history.appendleft(self.Status(record['device_id'], record['set_time'], record['device_state'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['source'], record['uploaded'], record['uploadable']))
-#                              self.Status = namedtuple('Status',  "device_id,           set_time,           device_state,           human_status,           machine_status,                             machine_status_extra,             source,           uploaded,           uploadable")
+                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['source'], record['uploaded'], record['uploadable']))
+#                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           machine_status,                             machine_status_extra,             source,           uploaded,           uploadable")
 
         #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
