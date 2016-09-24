@@ -84,12 +84,12 @@ class Devices(YomboLibrary):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
-        - :func:`get_device` - Get a pointer to all devices.
+        - :func:`get_all` - Get a pointer to all devices.
         - :func:`get_devices_by_device_type` - Get all device for a certain deviceType (UUID or MachineLabel)
         - :func:`search` - Get a pointer to a device, using device_id or device label.
     """
 
-    def __contains__(self, deviceRequested):
+    def __contains__(self, device_requested):
         """
         Checks to if a provided device name or device uuid exists.
 
@@ -101,20 +101,18 @@ class Devices(YomboLibrary):
 
             >>> if 'living room light' in self._Devices['137ab129da9318']:  #by uuid
 
-        See: :func:`yombo.utils.get_devices` for full usage example.
-
-        :param deviceRequested: The device UUID or device label to search for.
-        :type deviceRequested: string
+        :param device_requested: The device UUID or device label to search for.
+        :type device_requested: string
         :return: Returns true if exists, otherwise false.
         :rtype: bool
         """
         try:
-            self.get_device(deviceRequested)
+            self.get(device_requested)
             return True
         except:
             return False
 
-    def __getitem__(self, deviceRequested):
+    def __getitem__(self, device_requested):
         """
         Attempts to find the device requested using a couple of methods.
 
@@ -126,15 +124,13 @@ class Devices(YomboLibrary):
 
             >>> self._Devices['living room light']  #by name
 
-        See: :func:`yombo.utils.get_devices` for full usage example.
-
         :raises YomboDeviceError: Raised when device cannot be found.
-        :param deviceRequested: The device UUID or device label to search for.
-        :type deviceRequested: string
+        :param device_requested: The device UUID or device label to search for.
+        :type device_requested: string
         :return: Pointer to array of all devices.
         :rtype: dict
         """
-        return self.get_device(deviceRequested)
+        return self.get(device_requested)
 
     def __iter__(self):
         return self._devicesByUUID.__iter__()
@@ -227,7 +223,7 @@ class Devices(YomboLibrary):
         self.delay_queue_storage = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
         # Now check to existing delayed messages.  If not too old, send otherwise delete them.  If time is in
         #  future, setup a new reactor to send in future.
-        logger.info("module_started: delayQueue: {delay}", delay=self.delay_queue_storage)
+        logger.debug("module_started: delayQueue: {delay}", delay=self.delay_queue_storage)
         for request_id in self.delay_queue_storage.keys():
             if self.delay_queue_storage[request_id]['unique_hash'] is not None:
                 self.delay_queue_unique[self.delay_queue_storage[request_id]['unique_hash']] = request_id
@@ -275,7 +271,7 @@ class Devices(YomboLibrary):
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
-        return self.get_device(device).do_command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
+        return self.get(device).do_command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
 
     @inlineCallbacks
     def __load_devices(self):
@@ -311,16 +307,18 @@ class Devices(YomboLibrary):
         :type record: dict
         :returns: Pointer to new device. Only used during unittest
         """
-        # print("load_device: %s" % record)
-        try:
-            # todo: refactor voicecommands. Need to be able to update/delete them later.
-            self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
-        except:
-            pass
         device_id = record["id"]
         self._devicesByUUID[device_id] = Device(record, self)
         d = self._devicesByUUID[device_id]._init_()
         self._devicesByName[record["label"]] = device_id
+
+        # print("load_device: %s" % record)
+        self._VoiceCommandsLibrary.add_by_string(record["voice_cmd"], None, record["id"], record["voice_cmd_order"])
+        # try:
+        #     # todo: refactor voicecommands. Need to be able to update/delete them later.
+        # except Exception, e:
+        #     logger.warn("Error while adding voice command for device: {err}", err=e)
+
 
         logger.debug("_add_device: {record}", record=record)
 
@@ -425,7 +423,7 @@ class Devices(YomboLibrary):
         print("Yombo Devices got this: %s / %s" % (topic, parts))
 
         try:
-            device = self.get_device(parts[2].replace("_", " "))
+            device = self.get(parts[2].replace("_", " "))
         except YomboDeviceError, e:
             logger.info("Received MQTT request for a device that doesn't exist")
             return
@@ -471,7 +469,7 @@ class Devices(YomboLibrary):
     def list_devices(self):
         return list(self._devicesByName.keys())
 
-    def get_device(self, device_requested, limiter_override=.99):
+    def get(self, device_requested, limiter_override=.99):
         """
         Performs the actual device search.
 
@@ -479,8 +477,6 @@ class Devices(YomboLibrary):
 
            Modules shouldn't use this function. Use the built in reference to
            find commands: `self._Devices['8w3h4sa']`
-
-        See: :func:`yombo.core.helpers.get_device` for full usage example.
 
         :raises YomboDeviceError: Raised when device cannot be found.
         :param device_requested: The device UUID or device label to search for.
@@ -547,7 +543,7 @@ class Devices(YomboLibrary):
         if 'device' in portion['source']:
             try:
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00011"
-                device = self.get_device(portion['source']['device'], .89)
+                device = self.get(portion['source']['device'], .89)
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00022"
                 portion['source']['device_pointers'] = device
 #                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
@@ -616,7 +612,7 @@ class Devices(YomboLibrary):
                 devices_text = split(action['device'])
                 devices = []
                 for device_text in devices_text:
-                    devices.append(self.get_device(action['device']))
+                    devices.append(self.get(action['device']))
                 action['device_pointers'] = devices
                 return action
             except:
@@ -696,7 +692,7 @@ class Device:
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
         self._DevicesLibrary = _DevicesLibrary
-        logger.info("New device - info: {device}", device=device)
+        logger.debug("New device - info: {device}", device=device)
 
         self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")

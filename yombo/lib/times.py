@@ -261,7 +261,7 @@ class Times(YomboLibrary, object):
                 self._States.set('next.moonset', int(round(val)), 'epoch')
                 self.__moonSet = val
         else:
-            self._States.set('next.moonset', int(round(val)))
+            self._States.set('next.moonset', int(round(val)), 'epoch')
             self.__moonSet = val
 
     def _load_(self):

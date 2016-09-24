@@ -44,9 +44,11 @@ from yombo.lib.webinterface.route_api_v1 import route_api_v1
 from yombo.lib.webinterface.route_commands import route_commands
 from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
+from yombo.lib.webinterface.route_devtools import route_devtools
 from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_statistics import route_statistics
 from yombo.lib.webinterface.route_states import route_states
+from yombo.lib.webinterface.route_voicecmds import route_voicecmds
 
 from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
@@ -135,6 +137,16 @@ nav_side_menu = [
         'opmode': 'run',
     },
     {
+        'label1': 'Info',
+        'label2': 'Voice Commands',
+        'priority1': 1000,
+        'priority2': 4000,
+        'icon': 'fa fa-wifi fa-fw',
+        'url': '/voicecmds/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
         'label1': 'Automation',
         'label2': 'Rules',
         'priority1': 1500,
@@ -179,7 +191,7 @@ nav_side_menu = [
         'label2': 'General',
         'priority1': 3000,
         'priority2': 500,
-        'icon': 'fa fa-code fa-fw',
+        'icon': 'fa fa-wrench fa-fw',
         'url': '/tools/index',
         'tooltip': '',
         'opmode': 'run',
@@ -190,7 +202,7 @@ nav_side_menu = [
         'label2': 'Basic Settings',
         'priority1': 4000,
         'priority2': 500,
-        'icon': 'fa fa-wrench fa-fw',
+        'icon': 'fa fa-cogs fa-fw',
         'url': '/configs/basic',
         'tooltip': '',
         'opmode': 'run',
@@ -212,6 +224,17 @@ nav_side_menu = [
         'priority2': 1500,
         'icon': 'fa fa-wrench fa-fw',
         'url': '/configs/yombo_ini',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+
+    {
+        'label1': 'Developer Tools',
+        'label2': 'General',
+        'priority1': 5000,
+        'priority2': 500,
+        'icon': 'fa fa-code fa-fw',
+        'url': '/devtools/index',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -241,6 +264,7 @@ class WebInterface(YomboLibrary):
         self._build_dist()  # Make all the JS and CSS files
 
         self.api = self._Loader.loadedLibraries['yomboapi']
+        self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.data = {}
         self.sessions = Sessions(self._Loader)
 
@@ -256,10 +280,12 @@ class WebInterface(YomboLibrary):
         route_commands(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
+        route_devtools(self.webapp)
         route_modules(self.webapp)
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
+        route_voicecmds(self.webapp)
 
     @webapp.handle_errors(NotFound)
     def notfound(self, request, failure):
@@ -276,7 +302,16 @@ class WebInterface(YomboLibrary):
     def _load_(self):
         yield self.sessions.init()
 
+
     def _start_(self):
+        def status_to_human(input):
+            if int(input) == 0:
+                return "Disabled"
+            elif int(input) == 1:
+                return "Enabled"
+            elif int(input) == 2:
+                return "Deleted"
+
         if not self.enabled:
             return
         self._op_mode = self._Atoms['loader.operation_mode']
@@ -300,6 +335,7 @@ class WebInterface(YomboLibrary):
 
         self.functions = {
             'yes_no': yombo.utils.is_yes_no,
+            'status_to_human': status_to_human,
         }
 
         self.webapp.templates.globals['_'] = _  # i18n
@@ -536,6 +572,7 @@ class WebInterface(YomboLibrary):
             session['auth'] = True
             session['auth_id'] = submitted_email
             session['auth_time'] = time()
+            print "login results: %s" % results
             session['yomboapi_sessionid'] = results['SessionID']
             session['yomboapi_sessionkey'] = results['SessionKey']
             request.received_cookies[self.sessions.config.cookie_session] = session.session_id

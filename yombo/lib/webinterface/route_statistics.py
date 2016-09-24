@@ -36,7 +36,7 @@ def route_statistics(webapp):
         @require_auth()
         def page_statistics_edit(webinterface, request, session, device_id):
             try:
-                device = webinterface._Devices.get_device(device_id)
+                device = webinterface._Devices.get(device_id)
             except Exception, e:
                 print "device find errr: %s" % e
                 webinterface.add_alert('Device ID was not found.', 'warning')

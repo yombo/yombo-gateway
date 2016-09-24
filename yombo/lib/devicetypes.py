@@ -37,7 +37,7 @@ class DeviceTypes(YomboLibrary):
         function (on, off, bright, dim, open, close, etc).  Modules should use
         `self._Commands` to search with:
 
-            >>> self._Commands['137ab129da9318]  #by uuid
+            >>> self._DeviceTypes['137ab129da9318]  #by uuid
         or::
             >>> self._Commands['living room light']  #by name
 
@@ -46,14 +46,14 @@ class DeviceTypes(YomboLibrary):
         :param commandRequested: The command UUID or command label to search for.
         :type commandRequested: string
         """
-        return self.get_device_type(device_type_requested)
+        return self.get(device_type_requested)
 
     def __len__(self):
         return len(self.device_types_by_id)
 
     def __contains__(self, device_type_requested):
         try:
-            self.get_device_type(device_type_requested)
+            self.get(device_type_requested)
             return True
         except:
             return False
@@ -71,7 +71,7 @@ class DeviceTypes(YomboLibrary):
         self.device_types_by_id = FuzzySearch({}, .99)
         self.device_types_by_name = FuzzySearch({}, .89)
 
-        self.local_db = self._Libraries['localdb']
+        self._LocalDB = self._Libraries['localdb']
 
     def _load_(self):
         self.run_state = 2
@@ -95,7 +95,7 @@ class DeviceTypes(YomboLibrary):
         #     print "dt: %s, registered_modules: %s" % (data.label, data.registered_modules)
         pass
 
-    def get_device_type(self, device_type_requested):
+    def get(self, device_type_requested):
         """
         Gets a device type be device type id or by device type label.
 
@@ -146,7 +146,7 @@ class DeviceTypes(YomboLibrary):
         :return: A list of device id's.
         :rtype: list
         """
-        device_type = self.get_device_type(requested_device_type)
+        device_type = self.get(requested_device_type)
         return device_type.get_devices(return_value)
 
     def device_type_commands(self, device_type_id):
@@ -169,18 +169,18 @@ class DeviceTypes(YomboLibrary):
         """
         Load device types into memory.
         """
-        dts = yield self.local_db.get_device_types()
+        dts = yield self._LocalDB.get_device_types()
         # print "zzz 222: %s" % dts
 
         for dt in dts:
-            self._load_device_type(dt)
-
-        for module_id, klass in self._Modules._moduleClasses.iteritems():
-            print "device types: module_id"
+            self._add_device_type(dt)
+        #
+        # for module_id, klass in self._Modules._moduleClasses.iteritems():
+        #     print "device types: module_id"
         logger.debug("Done _load_device_types: {dts}", dts=dts)
         self.start_defer.callback(10)
 
-    def _load_device_type(self, record, test_device_type = False):
+    def _add_device_type(self, record, test_device_type = False):
         """
         Add a device_type based on data from a row in the SQL database.
 

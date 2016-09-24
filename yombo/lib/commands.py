@@ -42,7 +42,7 @@ class Commands(YomboLibrary):
         function (on, off, bright, dim, open, close, etc).  Modules should use
         `self._Commands` to search with:
 
-            >>> self._Commands['137ab129da9318]  #by uuid
+            >>> self._Commands['137ab129da9318']  #by uuid
         or::
             >>> self._Commands['living room light']  #by name
 
@@ -102,7 +102,7 @@ class Commands(YomboLibrary):
     def _reload_(self):
         self.__loadCommands()
 
-    def _get_commands_by_voice(self):
+    def get_commands_by_voice(self):
         """
         This function shouldn't be used by modules. Internal use only. For modules,
         use: `self._Commands['on']` to search by name.
@@ -111,6 +111,30 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         return self.__yombocommandsByVoice
+
+    def get_public_commands(self):
+        """
+        Return a dictionary with all the public commands.
+
+        :return:
+        """
+        results = {}
+        for command_id, command in self.__yombocommands.iteritems():
+            if command.public == 2:
+                results[command_id] = command
+        return results
+
+    def get_local_commands(self):
+        """
+        Return a dictionary with all the public commands.
+
+        :return:
+        """
+        results = {}
+        for command_id, command in self.__yombocommands.iteritems():
+            if command.public <= 1:
+                results[command_id] = command
+        return results
 
     def get_command(self, command_requested):
         """
@@ -198,9 +222,9 @@ class Command:
         self.voice_cmd = command.voice_cmd
         self.cmd = command.machine_label
         self.label = command.label
+        self.machine_label = command.machine_label
         self.description = command.description
         self.input_type_id = command.input_type_id
-        self.live_update = command.live_update
         self.public = command.public
         self.status = command.status
         self.created = command.created
@@ -224,9 +248,9 @@ class Command:
             'voice_cmd'    : str(self.voice_cmd),
             'cmd'          : str(self.cmd), # AKA machineLabel
             'label'        : str(self.label),
+            'machine_label': str(self.machine_label),
             'description'  : str(self.description),
             'input_type_id': int(self.input_type_id),
-            'live_update'  : int(self.live_update),
             'public'       : int(self.public),
             'status'       : int(self.status),
             'created'      : int(self.created),

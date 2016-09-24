@@ -236,8 +236,8 @@ class Modules(YomboLibrary):
                   'status': '1',
                   'created': int(time()),
                   'updated': int(time()),
+                  'load_source': 'localmodules.ini'
                 }
-
 
                 self._localModuleVars[mod_label] = {}
                 for item in options:
@@ -270,6 +270,8 @@ class Modules(YomboLibrary):
 #        print "modulesdb: %s" % modulesDB
         for module in modulesDB:
             self._rawModulesList[module.id] = module.__dict__
+            self._rawModulesList[module.id]['load_source'] = 'sql'
+
 #        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
     def import_modules(self):
@@ -314,6 +316,7 @@ class Modules(YomboLibrary):
                 module._Configs = self._Loader.loadedLibraries['configuration']
                 module._CronTab = self._Loader.loadedLibraries['crontab']
                 module._Libraries = self._Loader.loadedLibraries
+                module._Libraries = self._Loader.loadedLibraries
                 module._Modules = self
                 module._MQTT = self._Loader.loadedLibraries['mqtt']
                 module._States = self._Loader.loadedLibraries['states']
@@ -322,6 +325,7 @@ class Modules(YomboLibrary):
 
                 module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
                 module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
+                module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
 
                 if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
                     temp_device_types = module._module_devicetypes_()
@@ -520,6 +524,7 @@ class Module:
         self.status = module['status']
         self.created = module['created']
         self.updated = module['updated']
+        self.load_source = module['load_source']
         self.device_types = []
 
     def __str__(self):
@@ -559,4 +564,5 @@ class Module:
             'status'        : int(self.status),
             'created'       : int(self.created),
             'updated'       : int(self.updated),
+            'load_source'   : int(self.load_source),
         }

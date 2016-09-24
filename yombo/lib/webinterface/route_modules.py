@@ -14,3 +14,21 @@ def route_modules(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                modules=webinterface._Libraries['modules']._modulesByUUID,
                                )
+
+        @webapp.route('/details/<string:module_id>')
+        @require_auth()
+        def page_modules_details(webinterface, request, session, module_id):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               module=webinterface._Modules[module_id]._Class,
+                               variables=webinterface._Modules[module_id]._ModuleVariables,
+                               )
+
+        @webapp.route('/edit/<string:module_id>')
+        @require_auth()
+        def page_modules_edit(webinterface, request, session, module_id):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               module=webinterface._Modules[module_id]._Class,
+                               variables=webinterface._Modules[module_id]._ModuleVariables,
+                               )

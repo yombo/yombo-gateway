@@ -292,6 +292,14 @@ class LocalDB(YomboLibrary):
 
 
 #########################
+###    Device Types     #####
+#########################
+    @inlineCallbacks
+    def get_input_types(self):
+        records = yield self.dbconfig.select("input_types")
+        returnValue(records)
+
+#########################
 ###    Devices      #####
 #########################
     @inlineCallbacks
@@ -314,7 +322,6 @@ class LocalDB(YomboLibrary):
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
 
-        print "kwargs: %s" % kwargs
         yield DeviceStatus(
             device_id=device_id,
             set_time=set_time,
@@ -442,7 +449,9 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
         results = yield States.find(where=['name = ?', name], limit=limit)
         records = []
         for item in results:
-            records.append(clean_dict(item.__dict__))
+            temp = clean_dict(item.__dict__)
+            del temp['errors']
+            records.append(temp)
         returnValue(records)
 
     @inlineCallbacks
@@ -785,7 +794,6 @@ ORDER BY id desc"""
                     'value': [],
                 }
 
-            variables[record.machine_label]['value'].append(record.value)
             variables[record.machine_label]['value'].append(record.value)
 #                print record.__dict__
         returnValue(variables)

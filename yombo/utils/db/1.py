@@ -117,7 +117,7 @@ def upgrade(Registry, **kwargs):
      `uri`           TEXT,
      `machine_label` TEXT NOT NULL,
      `label`         TEXT NOT NULL,
-     `device_class`  TEXT,
+     `category`  TEXT,
      `description`   TEXT,
      `live_update`   TEXT,
      `commands`      TEXT,
@@ -147,6 +147,25 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'endpoint'))
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
+
+    # Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
+    table = """CREATE TABLE `input_types` (
+     `id`            TEXT NOT NULL,
+     `uri`           TEXT,
+     `machine_label` TEXT NOT NULL,
+     `label`         TEXT NOT NULL,
+     `category`      TEXT,
+     `description`   TEXT,
+     `commands`      TEXT,
+     `public`        INTEGER,
+     `status`        INTEGER,
+     `created`       INTEGER,
+     `updated_srv`   INTEGER NOT NULL DEFAULT 0,
+     `updated`       INTEGER,
+      UNIQUE (label) ON CONFLICT IGNORE,
+      UNIQUE (machine_label) ON CONFLICT IGNORE,
+      PRIMARY KEY(id) ON CONFLICT IGNORE);"""
+    yield Registry.DBPOOL.runQuery(table)
 
     # To be completed
     table = """CREATE TABLE `logs` (

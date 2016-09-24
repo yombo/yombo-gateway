@@ -78,7 +78,7 @@ class AMQPYombo(YomboLibrary):
                     'Uri': 'uri',
                     'UUID': 'id',
                     'machineLabel': 'machine_label',
-                    'voice_cmd': 'voice_cmd',
+                    'voiceCmd': 'voice_cmd',
                     'label': 'label',
                     'description': 'description',
                     'inputtype': 'input_type_id',

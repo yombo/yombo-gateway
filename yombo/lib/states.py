@@ -296,9 +296,7 @@ class States(YomboLibrary, object):
         if limit is None:
             limit = 1
         results = yield self._LocalDB.get_state_history(key, limit, offset)
-        if len(results) == 1:
-            returnValue(results['value'])
-        elif len(results) > 1:
+        if len(results) >= 1:
             returnValue(results)
         else:
             returnValue(None)
