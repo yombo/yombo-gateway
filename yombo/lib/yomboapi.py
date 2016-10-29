@@ -43,7 +43,7 @@ class YomboAPI(YomboLibrary):
         self.base_url = self._Configs.get('api', 'baseurl', "https://api.yombo.net/api", False)
         self.allow_system_session = self._Configs.get('yomboapi', 'allow_system_session', True)
         self.api_key = self._Configs.get('yomboapi', 'api_key', 'pZEi9fbEuU4bTpxs', False)
-        self.init_defer = None
+        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.valid_system_session = None
         self.session_validation_cache = ExpiringDict()
         if self.allow_system_session:
@@ -55,15 +55,16 @@ class YomboAPI(YomboLibrary):
 
     def _load_(self):
         if self._Atoms['loader.operation_mode'] == 'run':
-            self.init_defer = Deferred()
+            self.load_deferred = Deferred()
             self.validate_system_session()
-            return self.init_defer
+            return self.load_deferred
 
     def _load_(self):
         pass
 
     def _stop_(self):
-        pass
+        if self.load_deferred is not None and self.load_deferred.called is False:
+            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _unload_(self):
         pass
@@ -90,19 +91,20 @@ class YomboAPI(YomboLibrary):
     def validate_system_session(self):
         if self.allow_system_session is False:
             self._States.set('yomboapi.valid_system_session', False)
-            self.init_defer.callback(10)
+            self.load_deferred.callback(10)
             returnValue(False)
 
         if self.auth_session_id is None or self.auth_session_key is None:
             logger.warn("No saved system session information. Disabling autoamted system changes.")
             self._States.set('yomboapi.valid_system_session', False)
-            self.init_defer.callback(10)
+            self.load_deferred.callback(10)
             returnValue(None)
 
         self.clear_session_cache()
         results = yield self.do_validate_session(self.auth_session_id, self.auth_session_key)
         self._States.set('yomboapi.valid_system_session', results)
-        self.init_defer.callback(10)
+        print "here?!"
+        self.load_deferred.callback(10)
         returnValue(results)
 
     @inlineCallbacks

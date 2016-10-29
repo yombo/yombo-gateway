@@ -49,7 +49,6 @@ class GPG(YomboLibrary):
         Get the root cert from database and make sure it's in our public keyring.
         """
         self._AMQPLibrary = self._Libraries['AMQPYombo']
-
         pass
 
     def _start_(self):

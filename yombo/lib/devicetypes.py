@@ -66,6 +66,7 @@ class DeviceTypes(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
+        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.run_state = 1
 
         self.device_types_by_id = FuzzySearch({}, .99)
@@ -76,8 +77,8 @@ class DeviceTypes(YomboLibrary):
     def _load_(self):
         self.run_state = 2
         self._load_device_types()
-        self.start_defer = Deferred()
-        return self.start_defer
+        self.load_deferred = Deferred()
+        return self.load_deferred
 
     def _start_(self):
         """
@@ -178,7 +179,11 @@ class DeviceTypes(YomboLibrary):
         # for module_id, klass in self._Modules._moduleClasses.iteritems():
         #     print "device types: module_id"
         logger.debug("Done _load_device_types: {dts}", dts=dts)
-        self.start_defer.callback(10)
+        self.load_deferred.callback(10)
+
+    def _stop_(self):
+        if self.load_deferred is not None and self.load_deferred.called is False:
+            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _add_device_type(self, record, test_device_type = False):
         """

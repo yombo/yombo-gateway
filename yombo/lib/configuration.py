@@ -166,7 +166,6 @@ class Configuration(YomboLibrary):
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        logger.debug("saving config file...")
         self.save(True)
 
     def Configuration_i18n_atoms(self, **kwargs):
@@ -183,6 +182,7 @@ class Configuration(YomboLibrary):
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
         if self.configs_dirty is True or force_save is True:
+            logger.debug("saving config file...")
             Config = ConfigParser.ConfigParser()
             for section, options in self.configs.iteritems():
                 Config.add_section(section)

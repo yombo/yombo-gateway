@@ -3,7 +3,7 @@
 
 .. note::
 
-  For end-user documentation, see: `Stats @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/States>`_
+  For end-user documentation, see: `States @ Module Development <https://yombo.net/docs/modules/states/>`_
 
 The states library is used to collect and provide information about various states that the automation system
 can be in or exist around it. For example, it can tell if it's light outside, dawn, dusk, or if it's connected
@@ -94,7 +94,8 @@ class States(YomboLibrary, object):
         self.clean_states_loop.start(60*60*6)  # clean the database every 6 hours.
 
     def _stop_(self):
-        pass
+        if self.init_deferred is not None and self.init_deferred.called is False:
+            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _unload_(self):
         pass
@@ -247,7 +248,7 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_set_', **{'keys': key, 'value': value})
+            state_changes = global_invoke_all('_states_set_', **{'key': key, 'value': value})
         except YomboHookStopProcessing:
             logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
             return

@@ -4,7 +4,7 @@
 .. note::
 
   For more information see:
-  `Voice Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Voice_Commands>`_
+  `Voice Commands @ Module Development <https://yombo.net/docs/modules/voicecommands/>`_
 
 The term "Voice commands" may be misleading. Think of voice commands as
 noun/verb or verb/noun pairs to control devices. The verb is the "what",

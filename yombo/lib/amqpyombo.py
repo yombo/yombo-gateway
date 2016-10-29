@@ -33,8 +33,7 @@ from sqlite3 import Binary as sqlite3Binary
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
-from twisted.internet import defer
-from twisted.internet import reactor
+from twisted.internet import defer, reactor
 from twisted.internet.task import LoopingCall
 
 # Import 3rd party extensions
@@ -207,13 +206,20 @@ class AMQPYombo(YomboLibrary):
     def _init_(self):
         self.user_id = "gw_" + self._Configs.get("core", "gwuuid")
         self._startup_request_ID = random_string(length=12)
-        self.init_defer = defer.Deferred()
+        self.init_defer = defer.Deferred()  # Prevents loader from moving on until we are done.
         self.__doing_full_configs = False
         self.__pending_updates = []
         self._LocalDBLibrary = self._Libraries['localdb']
+        self.init_startup_count = 0
 
         self.save_cache = ExpiringDict(max_len=100, max_age_seconds=5)
+        self.amqp = None
+        self._getAllConfigsLoggerLoop = None
+        self.reconnect = True
 
+        return self.connect()
+
+    def connect(self):
         amqp_port = 5671
         environment = self._Configs.get('server', 'environment', "production", False)
         if self._Configs.get("amqpyombo", 'hostname', "", False) != "":
@@ -229,10 +235,12 @@ class AMQPYombo(YomboLibrary):
             else:
                 amqp_host = "amqp.yombo.net"
 
+        # amqp_host = "yahoo.com"
         # get a new AMPQ connection and connect.
-        self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.user_id,
-            password=self._Configs.get("core", "gwhash"), client_id='amqpyombo',
-            connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected)
+        if self.amqp is None:
+            self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.user_id,
+                password=self._Configs.get("core", "gwhash"), client_id='amqpyombo',
+                connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected)
         self.amqp.connect()
 
         # Subscribe to the gateway queue.
@@ -262,7 +270,65 @@ class AMQPYombo(YomboLibrary):
         self.amqp.publish(**requestmsg)
 
         self.get_system_configs()
+        reactor.callLater(30, self.check_download_done) #
         return self.init_defer
+
+    def disconnect(self):
+        self.reconnect = False
+        self.__pending_updates = []
+        if self._getAllConfigsLoggerLoop is not None and self._getAllConfigsLoggerLoop.running:
+            self._getAllConfigsLoggerLoop.stop()
+        self.amqp.disconnect()
+        logger.debug("Disconnected from Yombo message server.")
+
+    def _stop_(self):
+        self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
+        if self.init_defer.called is False:
+            # reactor.callLater(0.1, self.init_defer.callback, 10) #
+            self.init_defer.callback(1)  # if we don't check for this, we can't stop!
+            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  amqpyombo _stop_"
+
+    def done_with_startup_downloads(self):
+        """
+        Called when configuration downloads are complete.
+        :return:
+        """
+        self._Configs.set("amqpyombo", 'lastcomplete', int(time()))
+        if self.init_defer.called is False:
+            self.init_defer.callback(1)  # if we don't check for this, we can't stop!
+
+    def check_download_done(self):
+        """
+        Called after 30 seconds to check if downloads have completed. If they haven't, it will just give up and move on.
+
+        :return:
+        """
+        if self.__doing_full_configs == True:
+            last_complete = self._Configs.get("amqpyombo", 'lastcomplete')
+            if last_complete == None:
+                if self.init_startup_count > 5:
+                    logger.error("Unable to reach or contact server. If problem persists, check your configs. (Help link soon.)")
+                    self.reconnect = False
+                    reactor.stop()
+                    return
+                logger.warn("Try #{count}, haven't been able to download configurations. However, there are no existing configs. Will keep trying.",
+                            count=self.init_startup_count)
+            else:
+                if last_complete < int(time() - 60*60*48):
+                    logger.warn("Try #{count}, haven't been able to download configurations. Will continue trying in background.",
+                            count=self.init_startup_count)
+                    logger.warn("Using old configuration information. If this persists, check your configs. (Help link soon.)")
+                    if self.init_defer.called is False:
+                        self.init_defer.callback(1)  # if we don't check for this, we can't stop!
+                else:
+                    logger.error("Unable to reach or contact server. Configurations too old to keep using. If problem persists, check your configs. (Help link soon.)")
+                    self.reconnect = False
+                    reactor.stop()
+                    return
+
+            self.disconnect()
+            self.init_startup_count = self.init_startup_count + 1
+            reactor.callLater(30, self.check_download_done) #
 
     def amqp_connected(self):
         """
@@ -277,6 +343,8 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         self._States.set('amqp.amqpyombo.state', False)
+        if self.reconnect is True:
+            self.connect()
 
     def _local_request(self, headers, request_data=""):
         """
@@ -817,7 +885,7 @@ class AMQPYombo(YomboLibrary):
         if len(self.__pending_updates) == 0 and self.__doing_full_configs is True:
             self.__doing_full_configs = False
             self._getAllConfigsLoggerLoop.stop()
-            reactor.callLater(0.1, self.init_defer.callback, 10) # give DB some breathing room
+            reactor.callLater(0.1, self.done_with_startup_downloads) # give DB some breathing room
 
     def _show_pending_configs(self):
         waitingTime = time() - self._full_download_start_time

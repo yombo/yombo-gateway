@@ -171,7 +171,7 @@ class YomboModule:
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.
         """
-        raise NotImplementedError()
+        pass
 
     def _load_(self):
         """

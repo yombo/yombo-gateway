@@ -2,7 +2,7 @@
 A starting point to creating your own module. This is a simple,
 nearly empty starter module.
 
-:copyright: 2012-2015 Yombo
+:copyright: 2012-2016 Yombo
 :license: GPL
 """
 from twisted.internet import reactor
@@ -15,7 +15,9 @@ logger = get_logger("modules.empty")
 class Empty(YomboModule):
     """
     This is an empty module used to bootstrap your own module. Simply copy/paste this
-    directory to a new directy. Be sure to edit the __init__.py to match the new name.
+    directory to a new directory. Be sure to edit the __init__.py to match the new name.
+
+    All methods (functions) defined below are optional.
     """
     def _init_(self):
         """
@@ -26,13 +28,11 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 20,31-34
+           :lines: 20,33-35
         """
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
-
-        self._Times = self._Libraries['times']  # So we can access some time functions
 
     def _load_(self):
         """
@@ -49,15 +49,15 @@ class Empty(YomboModule):
            :lines: 37,51-60
         """
         logger.debug("Empty module is loading.")
-        if self._ModVariables != {}:
+        if self._ModuleVariables != {}:
             logger.info("Empty module has the following module variables:")
-            for variable in self._ModVariables:
-                # Remember, each variable can be multi-valued. Internally,
-                # variables are treated the same if allowed to hav multiple
-                # values or not. Hence the [0]
-                logging.info("%s", self._ModVariables[variable][0])
+            for variable in self._ModuleVariables:
+                # Remember, each variable can be multi-valued. Within each variable, contains a lot of additional
+                # information, such as when it was created, last updated, etc.
+                logger.info("{key} = {value}", key=variable, value=self._ModuleVariables[variable][0]['value'])
+                logger.info("Full dictionary of data: {data}", data=self._ModuleVariables[variable][0])
         else:
-            logger.debug("Empty module has no defined variables.")
+            logger.info("Empty module has no defined variables.")
 
         # an example to call a function at a later time. This example calles
         # self.loaded 2 seconds from now.
@@ -92,11 +92,11 @@ class Empty(YomboModule):
            :language: python
            :lines: 83,95-99
         """
-        logger.debug("Is Light: {light}", light=self._States['is_light'])
-        logger.debug("Is Dark: {dark}", dark=self._States['is_dark'])
-        logger.debug("Is Day: {day}", day=self._States['is_day'])
-        logger.debug("Is Night: {night}", night=self._States['is_night'])
-        logger.debug("Mars Next Rise: {mars_rise}", mars_rise=self._Times.objRise(dayOffset=1, object='Mars'))
+        logger.info("Is Light: {light}", light=self._States['is.light'])
+        logger.info("Is Dark: {dark}", dark=self._States['is.dark'])
+        logger.info("Is Day: {day}", day=self._States['is.day'])
+        logger.info("Is Night: {night}", night=self._States['is.night'])
+        logger.info("Mars Next Rise: {mars_rise}", mars_rise=self._Times.item_rise(dayOffset=1, item='Mars'))
     
     def _stop_(self):
         """

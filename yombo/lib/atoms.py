@@ -3,16 +3,16 @@
 
 .. note::
 
-  For more information see: `Atoms @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Atoms>`_
+  For more information see: `Atoms @ Module Development <https://yombo.net/docs/modules/atoms/>`_
 
 Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
 some exceptions such as IP address changes. Libraries and modules and get and set additional atoms as desired.
 
 For dynamically changing data, use :py:mod:`yombo.lib.states`.
 
-If a request atom doesn't exist, a value of None will be returned instead of an exception.
+If a requested atom doesn't exist, a value of None will be returned instead of an exception.
 
-*Usage**:
+**Usage**:
 
 .. code-block:: python
 
@@ -179,27 +179,6 @@ class Atoms(YomboLibrary):
         return self._devicesByUUID.values()
     def has_key(self):
         return self._devicesByUUID.has_key()
-
-    def _i18n_atoms_(self, **kwargs):
-       return [
-           {'cpu.count': {
-               'en': 'Number of CPUs (cores) gateway has.',
-               },
-           },
-           {'mem'
-            'mem.total': {
-               'en': 'Total memory on gateway.',
-               },
-           },
-           { 'os': {
-               'en': 'Operating system type.',
-               },
-           },
-           { 'os.family': {
-               'en': 'Which family the operating system belongs to.',
-               },
-           },
-       ]
 
     def _statistics_lifetimes_(self, **kwargs):
         """

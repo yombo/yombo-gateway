@@ -6,7 +6,7 @@
 
 .. note::
 
-  For more information see: `Modules @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Modules>`_
+  For more information see: `Modules @ Module Features <https://yombo.net/docs/features/modules/>`_
 
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
@@ -207,17 +207,23 @@ class Modules(YomboLibrary):
                 else:
                     mod_description = section
 
-                if 'mod_device_types' in options:
-                    mod_device_types = ini.get(section, 'mod_device_types')
-                    options.remove('mod_device_types')
-                else:
-                    mod_device_types = ''
-
                 if 'mod_module_type' in options:
                     mod_module_type = ini.get(section, 'mod_module_type')
                     options.remove('mod_module_type')
                 else:
                     mod_module_type = ""
+
+                if 'mod_install_notes' in options:
+                    mod_install_notes = ini.get(section, 'mod_install_notes')
+                    options.remove('mod_install_notes')
+                else:
+                    mod_install_notes = ""
+
+                if 'mod_doc_link' in options:
+                    mod_doc_link = ini.get(section, 'mod_doc_link')
+                    options.remove('mod_doc_link')
+                else:
+                    mod_doc_link = ""
 
                 newUUID = yombo.utils.random_string()
                 self._rawModulesList[newUUID] = {
@@ -225,14 +231,13 @@ class Modules(YomboLibrary):
                   'module_type': mod_module_type,
                   'machine_label': mod_label,
                   'description': mod_description,
-                  'install_notes': '',
+                  'install_notes': mod_install_notes,
                   'install_branch': '',
-                  'doc_link': '',
+                  'doc_link': mod_doc_link,
                   'uri': '',
                   'prod_version': '',
                   'dev_version': '',
                   'public': '0',
-                  'device_types': mod_device_types,
                   'status': '1',
                   'created': int(time()),
                   'updated': int(time()),
@@ -276,7 +281,6 @@ class Modules(YomboLibrary):
 
     def import_modules(self):
         for module_id, module in self._rawModulesList.iteritems():
-#            print "module : %s" % module
             self._moduleClasses[module_id] = Module(module)
             pathName = "yombo.modules.%s" % module['machine_label']
             self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
@@ -302,67 +306,65 @@ class Modules(YomboLibrary):
                ]
 
         """
-        logger.debug("Calling init functions of modules. {modules}", modules=self._modulesByUUID)
         module_init_deferred = []
         for module_id, module in self._modulesByUUID.iteritems():
             self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
-            if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
-#                logger.warn("self.get_module_devices(module['{module_id}'])", module_id=module.dump())
-                module._ModuleType = self._rawModulesList[module_id]['module_type']
-                module._ModuleID = module_id
+            # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
+            module._ModuleType = self._rawModulesList[module_id]['module_type']
+            module._ModuleID = module_id
 
-                module._Atoms = self._Loader.loadedLibraries['atoms']
-                module._Commands = self._Loader.loadedLibraries['commands']
-                module._Configs = self._Loader.loadedLibraries['configuration']
-                module._CronTab = self._Loader.loadedLibraries['crontab']
-                module._Libraries = self._Loader.loadedLibraries
-                module._Libraries = self._Loader.loadedLibraries
-                module._Modules = self
-                module._MQTT = self._Loader.loadedLibraries['mqtt']
-                module._States = self._Loader.loadedLibraries['states']
-                module._Statistics = self._Loader.loadedLibraries['statistics']
-                module._Localize = self._Loader.loadedLibraries['localize']
+            module._Atoms = self._Loader.loadedLibraries['atoms']
+            module._Commands = self._Loader.loadedLibraries['commands']
+            module._Configs = self._Loader.loadedLibraries['configuration']
+            module._CronTab = self._Loader.loadedLibraries['crontab']
+            module._Libraries = self._Loader.loadedLibraries
+            module._Libraries = self._Loader.loadedLibraries
+            module._Modules = self
+            module._MQTT = self._Loader.loadedLibraries['mqtt']
+            module._States = self._Loader.loadedLibraries['states']
+            module._Statistics = self._Loader.loadedLibraries['statistics']
+            module._Times = self._Loader.loadedLibraries['times']
+            module._Localize = self._Loader.loadedLibraries['localize']
 
-                module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-                module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
-                module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
+            module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
+            module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
+            module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
 
-                if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
-                    temp_device_types = module._module_devicetypes_()
-                    for dt in temp_device_types:
-                        if dt in module._DeviceTypes:
-                            self._moduleClasses[module_id].device_types.append(module._DeviceTypes[dt].device_type_id)
+            if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
+                temp_device_types = module._module_devicetypes_()
+                for dt in temp_device_types:
+                    if dt in module._DeviceTypes:
+                        self._moduleClasses[module_id].device_types.append(module._DeviceTypes[dt].device_type_id)
 
-                # Get variables, and merge with any local variable settings
-                module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
-                module._ModuleVariables = module_variables
-                module._Class = self._moduleClasses[module_id]
+            # Get variables, and merge with any local variable settings
+            module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
+            module._ModuleVariables = module_variables
+            module._Class = self._moduleClasses[module_id]
 
-                if module._Name in self._localModuleVars:
-                    module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
-                    del self._localModuleVars[module._Name]
+            if module._Name in self._localModuleVars:
+                module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
+                del self._localModuleVars[module._Name]
 
-                module._DeviceTypes.add_registered_module(self._moduleClasses[module_id])
-#                module._init_()
+            module._DeviceTypes.add_registered_module(self._moduleClasses[module_id])
+#                module_init_deferred.append(maybeDeferred(module._init_))
 #                continue
-                module_init_deferred.append(maybeDeferred(module._init_))
-                continue
-                try:
-                    d = yield maybeDeferred(module._init_)
+            try:
+#                module_init_deferred.append(maybeDeferred(module._init_))
+                d = yield maybeDeferred(module._init_)
 #                    d.errback(self.SomeError)
 #                    yield d
-                except YomboCritical, e:
-                    logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
-                    logger.error("--------------------------------------------------------")
-                    logger.error("Error message: {e}", e=e)
-                    logger.error("--------------------------------------------------------")
-                    e.exit()
-                except:
-                    logger.error("-------==(Error in init function for library: {name})==---------", name=module._FullName)
-                    logger.error("1:: {e}", e=sys.exc_info())
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                    logger.error("--------------------------------------------------------")
+            except YomboCritical, e:
+                logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
+                logger.error("--------------------------------------------------------")
+                logger.error("Error message: {e}", e=e)
+                logger.error("--------------------------------------------------------")
+                e.exit()
+            except:
+                logger.error("-------==(Error in init function for module: {name})==---------", name=module._FullName)
+                logger.error("1:: {e}", e=sys.exc_info())
+                logger.error("---------------==(Traceback)==--------------------------")
+                logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+                logger.error("--------------------------------------------------------")
                 # except:
                 #     exc_type, exc_value, exc_traceback = sys.exc_info()
                 #     logger.error("------==(ERROR During _init_ of module: {module})==-------", module=module._FullName)
@@ -376,7 +378,7 @@ class Modules(YomboLibrary):
                 #               limit=5, file=sys.stdout)))
                 #     logger.error("--------------------------------------------------------")
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!1 About to yield while waiting for module_init's to be done!")
-        yield DeferredList(module_init_deferred)
+#        yield DeferredList(module_init_deferred)
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!2 Done yielding for while waiting for module_init's to be done!")
 
     def SomeError(self, error):
@@ -525,7 +527,7 @@ class Module:
         self.created = module['created']
         self.updated = module['updated']
         self.load_source = module['load_source']
-        self.device_types = []
+        self.device_types = [] # populated by Modules::module_init_invoke
 
     def __str__(self):
         """

@@ -6,9 +6,9 @@
 
 .. note::
 
-  For more information see: `Cron Tab @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Cron_Tab>`_
+  For more information see: `CronTab @ Module Development <https://yombo.net/docs/modules/crontab/>`_
 
-Cron like library that can be used to perform activites. Can be used by modules to call a function at set times.
+Cron like library that can be used to perform scheduled actions. Can be used by modules to call a function at set times.
 
 Idea and partial code from: http://stackoverflow.com/questions/373335/suggestions-for-a-cron-like-scheduler-in-python
 
@@ -70,7 +70,7 @@ from twisted.internet import reactor
 # Import Yombo libraries
 from yombo.utils import random_string
 from yombo.utils.fuzzysearch import FuzzySearch
-from yombo.core.exceptions import YomboFuzzySearchError, YomboCronTabError
+from yombo.core.exceptions import YomboFuzzySearchError, YomboCronTabError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
@@ -96,7 +96,7 @@ class CronTab(YomboLibrary):
     """
     Manages all cron jobs.
     """
-    def __getitem__(self, key):
+    def __getitem__(self, cron_id):
         """
         Cron jobs are already accessible through a pre-defined variable
         in all modules: self._CronTab.
@@ -108,11 +108,10 @@ class CronTab(YomboLibrary):
 
         See: :func:`yombo.core.helpers.getCronTab` for full usage example.
 
-        :param key: The cron UUID / cron job name
-        :type key: string
+        :param cron_id: The cron UUID / cron job name
+        :type cron_id: string
         """
-        
-        return self._search(key)
+        return self.get_cron(cron_id)
 
     def _init_(self):
         """
@@ -121,8 +120,9 @@ class CronTab(YomboLibrary):
         :param loader: A pointer to the Loader library.
         :type loader: Instance of Loader
         """
-        self.__yombocron = {}
-        
+        self._yombocron = {}
+        self._yombocronbylabel = FuzzySearch({}, .92)
+
     def _load_(self):
         """
         Setup the looping call function.
@@ -149,8 +149,8 @@ class CronTab(YomboLibrary):
         logger.debug("Cron check: %s" % datetime.now())
 
         t=datetime(*datetime.now().timetuple()[:5])
-        for e in self.__yombocron:
-          self.__yombocron[e].check(t)
+        for e in self._yombocron:
+          self._yombocron[e].check(t)
 
     def _stop_(self):
         """
@@ -164,36 +164,28 @@ class CronTab(YomboLibrary):
         """
         pass
 
-    def _search(self, cronRequested):
+    def get_cron(self, cronRequested):
         """
-        Attempts to find the cron job requested using a couple of methods.
+        Attempts to find a cron by its ID or by Label. It's prefered to always use ID when possible.
 
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
            find cron jobs: `self._CronTab['8w3h4sa']`
 
-        See: :func:`yombo.core.helpers.getCronTab` for full usage example.
-        
-        :raises YomboCronTabError: Raised when cron job cannot be found.
+        :raises YomboWarning: Raised when cron job cannot be found.
         :param cronRequested: The device UUID or device label to search for.
         :type cronRequested: string
         :return: Pointer to array to requested cron job.
         :rtype: dict
         """
-        if cronRequested in self.__yombocron:
-            return self.__yombocron[cronRequested]
+        if cronRequested in self._yombocron:
+            return self._yombocron[cronRequested]
         else:
-            theCrons = FuzzySearch({}, .95)
-            for cron in self.__yombocron:
-              theCrons[cron] = self.__yombocron[cron]
             try:
-              results = theCrons[cronRequested]
-              if results['valid']:
-                return self.__yombocron[results['key']]
+                return self._yombocronbylabel[cronRequested]
             except YomboFuzzySearchError, e:
-                raise YomboCronTabError('Searched for %s, but no good matches found. Best match: %s' % (e.searchFor, e.others[0].label) )
-        raise YomboCronTabError('Searched for %s, but no matches found. ' % cronRequested )
+                raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
 
     def new(self, crontab_callback, min=allMatch, hour=allMatch, day=allMatch,
             month=allMatch, dow=allMatch, label='', enabled=True, args=(),
@@ -225,10 +217,10 @@ class CronTab(YomboLibrary):
         newCron = CronJob(crontab_callback, min=min, hour=hour, day=day, month=month,
             dow=dow, label=label, enabled=enabled, crontab=self, args=args,
             kwargs=kwargs)
-        self.__yombocron[newCron.cronUUID] = newCron
+        self._yombocron[newCron.cron_id] = newCron
         return newCron
 
-    def remove(self, key):
+    def remove(self, cron_id):
         """
         Removes a cronjob. Accepts either cron uuid or cron name.
 
@@ -238,14 +230,14 @@ class CronTab(YomboLibrary):
             >>> self._CronTab.remove('module.YomboBot.MyCron')  #by name
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
-        :param key: The cron UUID / cron job name
-        :type key: string
+        :param cron_id: The cron UUID / cron job name
+        :type cron_id: string
         """
-        cronjob = self._search(key)
+        cronjob = self.get_cron(cron_id)
         cronjob.disable()
-        del self.__yombocron[cronjob.cronUUID]
+        del self._yombocron[cronjob.cron_id]
 
-    def enable(self, key):
+    def enable(self, cron_id):
         """
         Enable a cronjob. Accepts either cron uuid or cron name.
 
@@ -255,13 +247,13 @@ class CronTab(YomboLibrary):
             >>> self._CronTab.enable('module.YomboBot.MyCron')  #by name
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
-        :param key: The cron UUID / cron job name
-        :type key: string
+        :param cron_id: The cron UUID / cron job name
+        :type cron_id: string
         """
-        cronjob = self._search(key)
+        cronjob = self.get_cron(cron_id)
         cronjob.enable()
 
-    def disable(self, key):
+    def disable(self, cron_id):
         """
         Disable a cronjob. Accepts either cron uuid or cron name.
 
@@ -270,14 +262,14 @@ class CronTab(YomboLibrary):
         or::
             >>> self._CronTab.disable('module.YomboBot.MyCron')  #by name
 
-        :param key: The cron UUID / cron job name
-        :type key: string
+        :param cron_id: The cron UUID / cron job name
+        :type cron_id: string
         """
-        cronjob = self._search(key)
+        cronjob = self.get_cron(cron_id)
         cronjob.disable()
 
 
-    def run_now(self, key):
+    def run_now(self, cron_id):
         """
         Runs a cronjob now.
 
@@ -286,13 +278,13 @@ class CronTab(YomboLibrary):
         or::
             >>> self._CronTab.run_now('module.YomboBot.MyCron')  #by name
 
-        :param key: The cron UUID / cron job name
-        :type key: string
+        :param cron_id: The cron UUID / cron job name
+        :type cron_id: string
         """
-        cronjob = self._search(key)
-        cronjob.runNow()
+        cronjob = self.get_cron(cron_id)
+        cronjob.run_now()
 
-    def set_label(self, key, label):
+    def set_label(self, cron_id, label):
         """
         Set job label.
 
@@ -300,12 +292,12 @@ class CronTab(YomboLibrary):
             >>> self._CronTab.set_label('7s453hhxl3', 'modules.mymodule.mycronjob')  #by cron uuid
 
         :raises YomboCronTabError: Raised when cron job cannot be found.
-        :param key: The cron UUID
-        :type key: string
+        :param cron_id: The cron UUID
+        :type cron_id: string
         :param label: New label for cron job.
         :type label: string
         """
-        cronjob = self._search(key)
+        cronjob = self.get_cron(cron_id)
         cronjob.label = label
 
     def run_at(self, crontab_callback, timestring, label='', args=(), kwargs={}):
@@ -366,7 +358,7 @@ class CronJob(object):
         self.crontab = crontab
         self.args = args
         self.kwargs = kwargs
-        self.cronUUID = random_string(length=24)
+        self.cron_id = random_string(length=10)
 
     def __del__(self):
         """
@@ -375,7 +367,7 @@ class CronJob(object):
         """
         self.enabled = False
         if self.crontab is not None:
-          self.crontab.remove(self.cronUUID)
+          self.crontab.remove(self.cron_id)
 
     def enable(self):
         """
@@ -404,5 +396,9 @@ class CronJob(object):
             self._Statistics.increment("lib.crontab.jobs", bucket_time=15, anon=True)
             self.crontab_callback(*self.args, **self.kwargs)
 
-    def runNow(self):
-       self.crontab_callback(*self.args, **self.kwargs)
+    def run_now(self):
+        """
+        Run the cron task now.
+        :return:
+        """
+        self.crontab_callback(*self.args, **self.kwargs)

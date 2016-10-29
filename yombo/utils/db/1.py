@@ -53,15 +53,14 @@ def upgrade(Registry, **kwargs):
 #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
     # Defines the config table for the local gateway.
-    table = """CREATE TABLE `configs` (
+    table = """CREATE TABLE `meta` (
      `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `config_path`  TEXT NOT NULL,
-     `config_key`   TEXT NOT NULL,
-     `config_value` TEXT NOT NULL,
-     `updated_srv`  INTEGER NOT NULL,
+     `meta_key`  TEXT NOT NULL,
+     `meta_value`   TEXT NOT NULL,
+     `created`       INTEGER NOT NULL,
      `updated`      INTEGER NOT NULL);"""
 #    yield Registry.DBPOOL.runQuery(table)
-#    yield Registry.DBPOOL.runQuery(create_index('configs', 'config_path'))
+#    yield Registry.DBPOOL.runQuery(create_index('meta', 'meta_key'))
 #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS configs_config_key_config_key_IDX ON configs (config_path, config_key)")
 
     # Defines the devices table. Lists all possible devices for local gateway and related remote gateways.

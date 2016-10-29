@@ -26,8 +26,6 @@ if not os.path.exists('usr/bak'):
     os.makedirs('usr/bak')
 if not os.path.exists('usr/bak/yombo_ini'):
     os.makedirs('usr/bak/yombo_ini')
-if not os.path.exists('usr/lang'):
-    os.makedirs('usr/lang')
 if not os.path.exists('usr/etc/gpg'):
     os.makedirs('usr/etc/gpg')
     os.chmod('usr/etc/gpg', 0700)

@@ -1,18 +1,19 @@
-.. rubric:: Yombo Gateway Documentation
+.. title:: Yombo Python API Reference - Index
 
-Be sure to visit our `Home page <https://yombo.net/>`_ and `Projects.Yombo.net <https://projects.yombo.net/>`_ for
-more information.
+.. rubric:: Yombo Python API Reference
 
-.. rubric:: TL;DR - Quick Start Guide
+Welcome to the Python API reference documentation for the Yombo Automation Gateway. These documents contain detailed
+information about the API's of the Yombo Gateway. They are intented as reference material for looking up function calls
+for modules, or enhancing the core gateway. These documents are not intended for end users just getting started.
 
-In a hurry? Visit the :doc:`Getting Started with Yombo <chapters/getting-started-with-yombo>` page.
+**Useful links**:
 
-.. rubric:: Other Resources
-
-* `Yombo.net <https://yombo.net/>`_ - Main website for Yombo
-* `Projects.Yombo.net <https://projects.yombo.net/>`_ - Forums, submit tickets, feature requests, wiki.
-* `bitbucket.org/yombo/ <https://bitbucket.org/yombo/>`_ - Where all the Yombo open source
-  code lives.
+* `Yombo Home <https://yombo.net/>`_
+* `End user documentation <https://yombo.net/documents/>`_
+* `Getting started with Yombo Automation <https://yombo.net/docs/gateway/getting_started/>`_
+* `How to to build a module <https://yombo.net/docs/modules/building-your-first-module/>`_
+* `Projects.yombo.net - Various Yombo roadmaps <https://projects.yombo.net/>`_ - Forums, submit tickets, feature requests, wiki.
+* `github.com/yombo/yombo-gateway <https://github.com/yombo/yombo-gateway>`_ - Where all the Yombo open source code lives.
 
 .. rubric:: Table of Contents
 
@@ -21,24 +22,17 @@ In a hurry? Visit the :doc:`Getting Started with Yombo <chapters/getting-started
    :numbered:
    :includehidden:
 
-   chapters/install-gateway.rst
-   chapters/configuring-the-gateway.rst
-   chapters/updating.rst
    chapters/hooks.rst
    chapters/yombo-framework.rst
    chapters/developing-yombo-modules.rst
-   chapters/changelog.rst
 
-.. rubric:: Contributing to Documentation
+.. rubric:: Contributing to Developer Documentation
 
-Yombo uses self documenting code. This document is generated directly from the
-source code itself, as well as a few index files (such as this page).
+The Yombo Gateway uses self documenting code. All documentation found on this website is generated directly from the
+source code itself.
 
-Making changes is easy: simply find the section of the code and update the
-code comment. This website is periodically updated from the source code.
-
-If you wish to make changes to the index pages, the source code to that is
-located in : docs/source/
+Making changes is easy: simply find the section of the code and update the code comment. This website is periodically
+updated from the source code.
 
 .. rubric:: Index and search
 

@@ -139,7 +139,7 @@ class Statistics(YomboLibrary):
         self.sendDataLoop = LoopingCall(self._save_statistics)
         self.sendDataLoop.start(self.time_between_saves, False)
 
-        self.unload_defer = None
+        self.unload_deferred = None
 
         self.init_deferred = Deferred()
         self.load_last_datapoints()
@@ -152,15 +152,14 @@ class Statistics(YomboLibrary):
         """
         # self._save_statistics(True)
         # return
-        if self.enabled is True:
-            self.unload_defer = Deferred()
-            self.unload_defer.callback(10)
-            self.unload_defer.addCallback(lambda ignored: self._save_statistics(True))
-            self.unload_defer.addErrback(self.unload_errback)
-            return self.unload_defer
+        if self.init_deferred is not None and self.init_deferred.called is False:
+            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def unload_errback(self, reason):
-        logger.warn("Error unloading statistics: {reason}", reason=reason)
+        if self.enabled is True:
+            # todo: test more. Changed Oct 28, 2016. Previous method worked, just unclean.
+            self.unload_deferred = Deferred()
+            self._save_statistics(True, True)
+            return self.unload_deferred
 
     @inlineCallbacks
     def load_last_datapoints(self):
@@ -481,7 +480,7 @@ class Statistics(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def _save_statistics(self, full=False):
+    def _save_statistics(self, full=False, final_save=False):
         """
         Internal function to save the statistics information to database. This is performed regularly while the gateway
         is running and during shutdown. For perfomance reasons, it's not saved instantly.
@@ -557,6 +556,9 @@ class Statistics(YomboLibrary):
             if full:                    
                 del self._datapoints[bucket]
                 self.consolidate_db()  # for testing
+
+        if final_save is True:
+            self.unload_deferred.callback(1)
 
     @inlineCallbacks
     def consolidate_db(self):

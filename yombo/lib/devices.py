@@ -6,7 +6,7 @@
 
 .. note::
 
-  For more information see: `Devices @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Devices>`_
+  For more information see: `Devices @ Module Development <https://yombo.net/docs/modules/devices/>`_
 
 The devices library is primarily responsible for: maintaining device state and
 sending commands to devices.
@@ -164,6 +164,8 @@ class Devices(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
+        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
+
         self._AutomationLibrary = self._Loader.loadedLibraries['automation']
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
         self._LocalDBLibrary = self._Libraries['localdb']
@@ -183,12 +185,13 @@ class Devices(YomboLibrary):
         self.processing_commands = False
         # self.init_deferred = Deferred()
         # return self.init_deferred
+        self.load_deferred = None
 
     def _load_(self):
         self.run_state = 2
-        self.start_deferred = Deferred()
+        self.load_deferred = Deferred()
         self.__load_devices()
-        return self.start_deferred
+        return self.load_deferred
 
     def _start_(self):
         self.run_state = 3
@@ -204,10 +207,8 @@ class Devices(YomboLibrary):
         # print("devices: %s" % self._devicesByUUID)
 
     def _stop_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
+        if self.load_deferred is not None and self.load_deferred.called is False:
+            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _unload_(self):
         """
@@ -245,7 +246,7 @@ class Devices(YomboLibrary):
                 self.do_command(request['device_id'], request['command_id'], request_id=request_id,
                         not_before=request['not_before'],max_delay=request['max_delay'], **request['kwargs'])
         # self.init_deferred.callback(10)
-        self.start_deferred.callback(10)
+        self.load_deferred.callback(10)
 
 
     def _module_started_(self):

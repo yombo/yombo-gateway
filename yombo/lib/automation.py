@@ -6,7 +6,7 @@
 .. note::
 
   For more information see:
-  `Automation @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Automation>`_
+  `Atoms @ Module Development <https://yombo.net/docs/features/automation-rules/>`_
 
 The automation library provides users an easy method to setup simple automation rules and tasks without the need
 to write a single line of code.
@@ -78,7 +78,6 @@ class Automation(YomboLibrary):
     capabilites of the automation system.
     """
     def _init_(self):
-        # print _('hello') # demo of using i18n...
         self._ModDescription = "Easy Automation for everyone"
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"

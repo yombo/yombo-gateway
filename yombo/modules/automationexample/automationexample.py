@@ -8,8 +8,8 @@ This module also creates a few rules for demonstration.
 """
 from twisted.internet import reactor
 
-from yombo.core.module import YomboModule
 from yombo.core.log import get_logger
+from yombo.core.module import YomboModule
 
 logger = get_logger("modules.automationexample")
 
@@ -19,6 +19,17 @@ class AutomationExample(YomboModule):
     This module adds a couple rules and toggles
     """
     def _init_(self):
+        # self._i18n = i18n.items()
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('hello') # demo of using i18n...
+        print _('states_demo.automationexample') # demo of using i18n...
+
         self._ModDescription = "Empty module, copy to get started building a new module."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
         self._ModUrl = "https://yombo.net"
@@ -46,7 +57,7 @@ class AutomationExample(YomboModule):
                 'trigger': {
                     'source': {
                         'platform': 'states',
-                        'name': 'automationexample',
+                        'name': 'demo.automationexample',
                     },
                     'filter': {
                         'platform': 'basic_values',
@@ -98,7 +109,7 @@ class AutomationExample(YomboModule):
                 'trigger': {
                     'source': {
                         'platform': 'states',
-                        'name': 'automationexample',
+                        'name': 'demo.automationexample',
                     },
                     'filter': {
                         'platform': 'basic_values',
@@ -151,15 +162,15 @@ class AutomationExample(YomboModule):
     def _start_(self):
         logger.info("States: Is Light: {times_light}", times_light=self._States['is.light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
-        self._States['automationexample'] = 0
+        self._States['demo.automationexample'] = 0
 
     def set_high(self):
         logger.info("in set_high - setting automationexample = 1")
-        self._States['automationexample'] = 1
+        self._States['demo.automationexample'] = 1
 
     def set_low(self):
         logger.info("in set_low - setting automationexample = 0")
-        self._States['automationexample'] = 0
+        self._States['demo.automationexample'] = 0
 
     def call_when_high(self, **kwargs):
         logger.info("it's now high! {kwargs}", kwargs=kwargs)

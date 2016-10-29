@@ -6,7 +6,7 @@
 
 .. note::
 
-  For more information see: `Commands @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Commands>`_
+  For more information see: `Atoms @ Module Development <https://yombo.net/docs/modules/commands/>`_
 
 This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
@@ -71,6 +71,7 @@ class Commands(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
+        self.start_deferred = None  # Prevents loader from moving on past _start_ until we are done.
         self.__yombocommands = {}
         self.__yombocommandsByName = FuzzySearch(None, .92)
         self.__yombocommandsByVoice = FuzzySearch(None, .92)
@@ -81,14 +82,18 @@ class Commands(YomboLibrary):
         Loads all commands from DB to various arrays for quick lookup.
         """
         self.__loadCommands()
-        self.loadDefer = Deferred()
-        return self.loadDefer
+        self.start_deferred = Deferred()
+        return self.start_deferred
 
     def _start_(self):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
+
+    def _stop_(self):
+        if self.start_deferred is not None and self.start_deferred.called is False:
+            self.start_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _clear_(self):
         """
@@ -102,43 +107,9 @@ class Commands(YomboLibrary):
     def _reload_(self):
         self.__loadCommands()
 
-    def get_commands_by_voice(self):
-        """
-        This function shouldn't be used by modules. Internal use only. For modules,
-        use: `self._Commands['on']` to search by name.
-
-        :return: Pointer to array of all devices.
-        :rtype: dict
-        """
-        return self.__yombocommandsByVoice
-
-    def get_public_commands(self):
-        """
-        Return a dictionary with all the public commands.
-
-        :return:
-        """
-        results = {}
-        for command_id, command in self.__yombocommands.iteritems():
-            if command.public == 2:
-                results[command_id] = command
-        return results
-
-    def get_local_commands(self):
-        """
-        Return a dictionary with all the public commands.
-
-        :return:
-        """
-        results = {}
-        for command_id, command in self.__yombocommands.iteritems():
-            if command.public <= 1:
-                results[command_id] = command
-        return results
-
     def get_command(self, command_requested):
         """
-        Performs the actual command search.
+        Returns details about a command. If not loaded, will force load a command from the database.
 
         .. note::
 
@@ -159,6 +130,40 @@ class Commands(YomboLibrary):
             except YomboFuzzySearchError, e:
                 raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
 
+    def get_commands_by_voice(self):
+        """
+        This function shouldn't be used by modules. Internal use only. For modules,
+        use: `self._Commands['on']` to search by name.
+
+        :return: Pointer to array of all devices.
+        :rtype: dict
+        """
+        return self.__yombocommandsByVoice
+
+    def get_local_commands(self):
+        """
+        Return a dictionary with all the public commands.
+
+        :return:
+        """
+        results = {}
+        for command_id, command in self.__yombocommands.iteritems():
+            if command.public <= 1:
+                results[command_id] = command
+        return results
+
+    def get_public_commands(self):
+        """
+        Return a dictionary with all the public commands.
+
+        :return:
+        """
+        results = {}
+        for command_id, command in self.__yombocommands.iteritems():
+            if command.public == 2:
+                results[command_id] = command
+        return results
+
     @inlineCallbacks
     def __loadCommands(self):
         """
@@ -172,7 +177,7 @@ class Commands(YomboLibrary):
         for command in commands:
             self._addCommand(command)
         logger.debug("Done load_commands: {yombocommands}", yombocommands=self.__yombocommands)
-        self.loadDefer.callback(10)
+        self.start_deferred.callback(10)
 #        print self.__yombocommandsByName
 
     def _addCommand(self, record, testCommand = False):

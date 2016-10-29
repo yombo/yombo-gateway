@@ -145,6 +145,7 @@ class YomboCritical(RuntimeWarning):
         """
         from twisted.internet import reactor
         import os
+        print "caught ctrl-c"
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 1)
         reactor.stop()
 

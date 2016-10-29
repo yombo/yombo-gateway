@@ -78,6 +78,7 @@ class DownloadModules(YomboLibrary):
         Gets the library setup and preconfigures some items.  Sets up the
         semaphore for queing downloads.
         """
+        self.download_list_deferred = None
         self._LocalDBLibrary = self._Libraries['localdb']
 
         self._getVersion = []
@@ -105,23 +106,9 @@ class DownloadModules(YomboLibrary):
             
         return self.download_modules()
 
-    def _start_(self):
-        """
-        Not used, here to prevent method not implemented exception.
-        """
-        pass
-
     def _stop_(self):
-        """
-        Not used, here to prevent method not implemented exception.
-        """
-        pass
-
-    def _unload_(self):
-        """
-        Not used, here to prevent method not implemented exception.
-        """
-        pass
+        if self.download_list_deferred is not None and self.download_list_deferred.called is False:
+            self.download_list_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     @defer.inlineCallbacks
     def download_modules(self):
@@ -179,8 +166,8 @@ class DownloadModules(YomboLibrary):
                 d.addCallback(self.update_database, data)
                 d.addErrback(self.update_database_failed, data)
 
-        finalD = yield defer.DeferredList(self.allDownloads)
-        defer.returnValue(finalD)
+        self.download_list_deferred = yield defer.DeferredList(self.allDownloads)
+        defer.returnValue(self.download_list_deferred)
     
     def download_cleanup(self, something):
         """

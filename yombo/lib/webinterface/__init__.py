@@ -338,9 +338,11 @@ class WebInterface(YomboLibrary):
             'status_to_human': status_to_human,
         }
 
-        self.webapp.templates.globals['_'] = _  # i18n
         self.webapp.templates.globals['data'] = self.data
         self.webapp.templates.globals['func'] = self.functions
+
+    def _module_started_(self, **kwargs):
+        self.webapp.templates.globals['_'] = _  # i18n
 
     def _started_(self):
         if self._op_mode != 'run':

@@ -67,6 +67,8 @@ class InputTypes(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
+        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
+
         self.input_types = {}
         self.input_types_by_name = FuzzySearch(None, .92)
         self._LocalDB = self._Libraries['localdb']
@@ -76,14 +78,12 @@ class InputTypes(YomboLibrary):
         Loads all commands from DB to various arrays for quick lookup.
         """
         self._load_input_types()
-        self.loadDefer = Deferred()
-        return self.loadDefer
+        self.load_deferred = Deferred()
+        return self.load_deferred
 
-    def _start_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
+    def _stop_(self):
+        if self.load_deferred is not None and self.load_deferred.called is False:
+            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _clear_(self):
         """
@@ -138,7 +138,7 @@ class InputTypes(YomboLibrary):
         for input in input_types:
             self._add_input_type(input)
         logger.debug("Done _load_input_types: {input_types}", input_types=self.input_types)
-        self.loadDefer.callback(10)
+        self.load_deferred.callback(10)
 
     def _add_input_type(self, record, testCommand = False):
         """

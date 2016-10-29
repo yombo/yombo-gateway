@@ -3,7 +3,7 @@
 
 .. note::
 
-  For end-user documentation, see: `AMQP @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/AMQP>`_
+  For end-user documentation, see: `amqp @ Module Development <https://yombo.net/docs/modules/amqp/>`_
 
 AMQP protocol can be used for sending messages to other systems for processing, status updates, or requests. For
 for more informatin, see the `RabbitMQ Tutorials <https://www.rabbitmq.com/getstarted.html>`_.
@@ -12,7 +12,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 
 .. seealso::
 
-   The `:mod:MQTT Library <yombo.lib.mqtt> can connect to MQTT brokers and is more light weight for automation controlls.
+   The :py:mod:`yombo.lib.mqtt` can connect to MQTT brokers and is more light weight for automation controlls.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
@@ -60,7 +60,10 @@ class AMQP(YomboLibrary):
         self.client_connections = {}
 
     def _unload_(self):
+        self._local_log("debug", "AMQP::_unload_")
+        print "amqp - removing all clients.."
         for client_id, client in self.client_connections.iteritems():
+            print "amqp-clinet: %s" % client_id
             try:
                 client.disconnect()  # this tells the factory to tell the protocol to close.
 #                client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
@@ -68,7 +71,6 @@ class AMQP(YomboLibrary):
             except:
                 pass
 
-        self.self._local_log("debug", "AMQP::_unload_")
 
     def _i18n_states_(self, **kwargs):
        return [
@@ -262,8 +264,8 @@ class AMQPClient(object):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
-        if self.disconnect_callback:
-            self.disconnect_callback()
+        if self.disconnected_callback:
+            self.disconnected_callback()
 
     def register_exchange(self, exchange_name, exchange_type, exchange_durable=None, register_persist=None,
                           exchange_auto_delete=None):
@@ -586,7 +588,29 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self._local_log("debug", "!!!!PikaFactory::close")
 #        print "amqp factory about to call close: %s" % self.AMQPProtocol
         self.AMQPProtocol.close()
-        self.AMQPYombo.disconnected()
+
+    def disconnected(self):
+        """
+        Called by the protocol when the connection closes.
+        :return:
+        """
+        for item_key, item in self.exchanges.iteritems():
+            if item['register_persist']:
+                self.exchanges[item_key]['registered'] = False
+
+        for item_key, item in self.queues.iteritems():
+            if item['register_persist']:
+                self.queues[item_key]['registered'] = False
+
+        for item_key, item in self.exchange_queue_bindings.iteritems():
+            if item['register_persist']:
+                self.exchange_queue_bindings[item_key]['registered'] = False
+
+        for item_key, item in self.consumers.iteritems():
+            if item['subscribed']:
+                self.consumers[item_key]['subscribed'] = False
+
+        self.AMQPClient.disconnected()
 
     def clientConnectionLost(self, connector, reason):
         logger.debug("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
@@ -634,8 +658,9 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.channel = yield connection.channel()
 
         def close_connection(channel, replyCode, replyText):
-            logger.info("!!!!!!!!!!Trying to nicely close connection!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-            connection.close()
+             logger.info("close_channel: %s : %s : %s" % (channel, replyCode, replyText))
+             connection.close()
+             self.factory.disconnected()
         self.channel.add_on_close_callback(close_connection)
 
         yield self.channel.basic_qos(prefetch_count=self.factory.AMQPClient.prefetch_count)

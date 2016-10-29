@@ -6,7 +6,7 @@
 
 .. note::
 
-  For more information see: `Times @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Times>`_
+  For more information see: `Times @ Module Development <https://yombo.net/docs/modules/times/>`_
 
 Sets up various times and events for: dusk, dawn, sunrise, sunset. Also send event messages when a status change
 changes.  It also configures many State items such as times_light, times_dark, times_dawn, times_dusk
@@ -89,54 +89,6 @@ class Times(YomboLibrary, object):
         self._setup_next_dawn_dusk_event()
         self._setup_moon_events()
         self.is_now_init = False
-
-    def Times_i18n_states(self, **kwargs):
-       return [
-           {'is.dark': {
-               'en': 'True if sun is below horizon and not twilight',
-               },
-           },
-           {'is.light': {
-               'en': 'True if sun is above horizon and twilight.',
-               },
-           },
-           {'is.day': {
-               'en': 'True if sun above horizon.',
-               },
-           },
-           {'is.night': {
-               'en': 'True if sun below horizon.',
-               },
-           },
-           {'is.dawn': {
-               'en': 'True if sun below horizon, sun rising and still below horizon.',
-               },
-           },
-           {'is.dusk': {
-               'en': 'True if sun below horizon, sun setting and below horizon.',
-               },
-           },
-           {'is.twilight': {
-               'en': 'True if sun below horizon but still light.',
-               },
-           },
-           {'next.sunrise': {
-            'en': 'Time until next sunrise.',
-               },
-           },
-           {'next.sunset': {
-            'en': 'Time until next sunset.',
-               },
-           },
-           {'next.moonrise': {
-            'en': 'Time until next moon rise.',
-               },
-           },
-           {'next.moonset': {
-            'en': 'Time until next moon set.',
-               },
-           },
-       ]
 
     @property
     def isTwilight(self):
@@ -587,9 +539,7 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            from yombo.core.helpers import getTimes
-            time = getTimes()
-            saturnVisible = time.item_visible('Saturn') # Is Saturn above the horizon? (True/False)
+            saturn_visible = self._Times.item_visible('Saturn') # Is Saturn above the horizon? (True/False)
 
         :raises YomboTimeError: Raised when function encounters an error.
         :param item: The device UUID or device label to search for.
@@ -621,9 +571,7 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            from yombo.core.helpers import getTime
-            time = getTimes()
-            saturnRise = time.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Saturn.
+            mars_rise = self._Times.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Mars.
 
         :raises YomboTimeError: Raised when function encounters an error.
         :param dayOffset: Default=0. How many days in future to find when item rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
@@ -656,9 +604,7 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            from yombo.core.helpers import getTime
-            time = getTimes()
-            saturnRise = time.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Saturn.
+            pluto_set = self._Times.item_set(dayOffset=0, item='Pluto') # the NEXT (0) setting of Pluto.
 
         :raises YomboTimeError: Raised when function encounters an error.
         :param dayOffset: Default=0. How many days in future to find when item sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
