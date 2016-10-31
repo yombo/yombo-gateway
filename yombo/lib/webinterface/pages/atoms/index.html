@@ -32,7 +32,7 @@
                                         <tr>
                                             <td>{{ atom_name }}</td>
                                             <td>{{ atom_value }}</td>
-                                             <td>{{ atoms_i18n[atom_name] }}</td>
+                                             <td>{% if _('atoms:::' + atom_name) != 'atoms:::' + atom_name %}{{ _('atoms:::' + atom_name) }} {% endif %}</td>
                                         </tr>{% endfor %}
                                     </tbody>
                                 </table>

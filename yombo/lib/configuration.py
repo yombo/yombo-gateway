@@ -175,6 +175,7 @@ class Configuration(YomboLibrary):
                },
            },
        ]
+
     def save(self, force_save=False):
         """
         Save the configuration configs to the INI file.
@@ -183,18 +184,42 @@ class Configuration(YomboLibrary):
         """
         if self.configs_dirty is True or force_save is True:
             logger.debug("saving config file...")
-            Config = ConfigParser.ConfigParser()
+            config_file = open("yombo.ini",'w')
+            config_file.write(_("yombo.ini header"))
+
+            # first parse sections to make sure each section has a value!
+            configs = {}
             for section, options in self.configs.iteritems():
-                Config.add_section(section)
+                if section not in configs:
+                    configs[section] = {}
                 for item, data in options.iteritems():
                     if 'value' not in data:  # incase it's documented, but not used. Usually bad doco.
                         continue
-                    Config.set(section, item, data['value'])
-                if len(Config.options(section)) == 0:  # Don't save empty sections.
-                    Config.remove_section(section)
+                    configs[section][item] = data['value']
 
-            config_file = open("yombo.ini",'w')
-            Config.write(config_file)
+            #now we save the sections and the items...with i18n comments!
+            for section, options in configs.iteritems():
+                config_file.write('\n')
+
+                i18n_label = _("configs:section:%s:" % section)
+                if i18n_label != "configs:section:%s:" % section:
+                    config_file.write("# %s: %s\n" % (section, i18n_label))
+                else:
+                    config_file.write("# %s: " % section + _("No translation found for:") + " '%s'\n" % i18n_label )
+                config_file.write("[%s]\n" % section)
+
+                try:
+                    for item, data in options.iteritems():
+                        i18n_label = _("configs:item:%s:%s" % (section, item))
+                        if i18n_label != "configs:item:%s:%s" % (section, item):
+                            config_file.write("# %s: %s\n" % (item, i18n_label))
+                        temp = str(data)
+                        temp = str(data).split("\n")
+                        temp = "\n\t".join(temp)
+                        config_file.write("%s = %s\n" % (item, temp))
+                except Exception as E:
+                    logger.warn("Caught error in saving ini file: {e}", e=E)
+
             config_file.close()
 
             Config = ConfigParser.ConfigParser()

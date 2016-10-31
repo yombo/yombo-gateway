@@ -36,7 +36,6 @@ from collections import deque
 # since applications now have ClientService and its retryPolicy parameter
 # See chapter "Getting Connected with Endpoints" in the Twisted manual
 from twisted.internet.protocol import ReconnectingClientFactory
-from twisted.logger import Logger
 
 # -----------
 # Own modules
@@ -45,7 +44,9 @@ from twisted.logger import Logger
 from ..      import __version__
 from ..error import ProfileValueError
 
-log = Logger(namespace='mqtt')
+# Yombo Modules
+from yombo.core.log import get_logger
+log = get_logger('ext.mqtt.factory')
 
 class MQTTFactory(ReconnectingClientFactory):
 

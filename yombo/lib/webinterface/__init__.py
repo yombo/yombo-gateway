@@ -342,6 +342,11 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['func'] = self.functions
 
     def _module_started_(self, **kwargs):
+        """
+        to be deprecated. use i18n below.
+        :param kwargs:
+        :return:
+        """
         self.webapp.templates.globals['_'] = _  # i18n
 
     def _started_(self):
@@ -376,19 +381,14 @@ class WebInterface(YomboLibrary):
             if option == 'label':
                 self.data['gateway_label'] = value
 
-    def WebInterface_i18n_configurations(self, **kwargs):
-       return [
-           {
-               'webinterface': {
-                   'enabled': {
-                       'en': 'Enables/disables the web interface.',
-                   },
-                   'port': {
-                       'en': 'Port number for the web interface to listen on.'
-                   },
-                },
-           },
-       ]
+    def i18n(self, request):
+        """
+        Gets a translator based on the language the browser provides us.
+
+        :param request: The browser request.
+        :return:
+        """
+        return self._Localize.get_translation(self._Localize.parse_accept_language(request.getHeader('accept-language')))
 
     def _module_prestart_(self, **kwargs):
         """

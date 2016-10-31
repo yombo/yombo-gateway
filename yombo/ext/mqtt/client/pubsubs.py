@@ -33,7 +33,6 @@ from collections import deque
 
 from zope.interface   import implementer
 from twisted.internet import defer, reactor, error
-from twisted.logger   import Logger
 
 # -----------
 # Own modules
@@ -46,8 +45,10 @@ from .interfaces import IMQTTSubscriber, IMQTTPublisher
 from .interval   import Interval, IntervalLinear
 from .base       import MQTTBaseProtocol, IdleState as BaseIdleState, ConnectingState as BaseConnectingState, ConnectedState as BaseConnectedState
 
+# Yombo Modules
+from yombo.core.log import get_logger
 
-log = Logger(namespace='mqtt')
+log = get_logger('ext.mqtt.pubsubs')
 
 
 class MQTTSessionCleared(Exception):

@@ -11,8 +11,8 @@ def route_atoms(webapp):
         @require_auth()
         def page_atoms_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/atoms/index.html')
-            strings = webinterface._Localize.get_strings(request.getHeader('accept-language'), 'atoms')
+            i18n = webinterface.i18n(request)
             return page.render(alerts=webinterface.get_alerts(),
                                atoms=webinterface._Libraries['atoms'].get_atoms(),
-                               atoms_i18n=strings,
+                               _=i18n,
                                )

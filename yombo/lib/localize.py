@@ -22,7 +22,7 @@ seperate the header portion from the content portion. See the Empty module files
 """
 # Import python libraries
 from time import time
-from os import path, listdir, makedirs
+from os import path, listdir, makedirs, environ
 import inspect
 import sys, gettext
 try:  # Prefer simplejson if installed, otherwise json will work swell.
@@ -31,6 +31,7 @@ except ImportError:
     import json
 from hashlib import md5
 from time import gmtime, strftime
+from os.path import abspath
 
 # Import 3rd-party libs
 import yombo.ext.polib as polib
@@ -55,6 +56,8 @@ class Localize(YomboLibrary):
             self.hashes = json.loads(temp)
 
         self.files = {}
+
+        self.locale_files = abspath('.') + "/usr/locale/"
 
     def _load_(self):
         pass
@@ -136,7 +139,7 @@ class Localize(YomboLibrary):
             # Python 3, although that keyword argument is not present in the
             # Python 3 API.
             kwargs['unicode'] = True
-        gettext.install('yombo', 'usr/locale', **kwargs)
+        gettext.install('yombo', self.locale_files, **kwargs)
 
 
     def parse_directory(self, directory):
@@ -185,20 +188,24 @@ class Localize(YomboLibrary):
                 else:
                     self.files[name[0]].append(directory + "/" + file)
 
-    def get_strings(self, accept_language, type):
-        accept_languages = self.parse_accept_language(accept_language)
+    def get_translation(self, languages):
+        """
+        Returns a translator function based on a list of languages provided.
+        :param languages:
+        :return:
+        """
 
-        strings = getattr(self, type)
-
-        results = {}
-        for msgid, languages in strings.iteritems():
-
-            for accept_lang, number in accept_languages:
-                if accept_lang in languages:
-                    results[msgid] = languages[accept_lang]
-                else:
-                    results[msgid] = ""
-        return results
+        # The below code is for both python 2 and 3.
+        kwargs = {}
+        if sys.version_info[0] > 3:
+            # In Python 2, ensure that the _() that gets installed into built-ins
+            # always returns unicodes.  This matches the default behavior under
+            # Python 3, although that keyword argument is not present in the
+            # Python 3 API.
+            kwargs['unicode'] = True
+        kwargs['languages'] = languages
+        trans = gettext.translation('yombo', '/home/mitch/Yombo/yombo-gateway/usr/locale', **kwargs)
+        return trans.ugettext
 
     def parse_accept_language(self, accept_language):
         """
@@ -208,18 +215,17 @@ class Localize(YomboLibrary):
         :return:
         """
         languages = accept_language.split(",")
-        locale_q_pairs = []
+        locales = []
 
         for language in languages:
-            if language.split(";")[0] == language:
-                # no q => q = 1
-                language = language.strip()
-                lang_parts = language.split('-')
-                locale_q_pairs.append((lang_parts[0], "1"))
-            else:
-                locale = language.split(";")[0].strip()
-                q = language.split(";")[1].split("=")[1]
-                lang_parts = locale.split('-')
-                locale_q_pairs.append((lang_parts[0], q))
+            lang = language.split(";")
+            lang = lang[0].strip()
+            lang_parts = lang.split('-')
+            if lang not in locales:
+                locales.append(lang.replace("-", "_"))
+            if lang_parts[0] not in locales:
+                locales.append(lang_parts[0])
+        if 'en' not in locales:
+            locales.append('en') # TODO: learn how to do fallback languages, and use that instead!
+        return locales
 
-        return locale_q_pairs
