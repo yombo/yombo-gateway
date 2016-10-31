@@ -1,0 +1,41 @@
+# Spanish translations for core components.
+# Copyright (C) 2016 Yombo
+# This file is distributed under the same license as the Yombo package.
+# Mitch Schwenk <mitch@yombo.net>, 2016.
+msgid ""
+msgstr ""
+"Project-Id-Version: git\n"
+"Report-Msgid-Bugs-To: mitch-tr@yombo.net\n"
+"POT-Creation-Date: 2016-10-28 17:12-0400\n"
+"Last-Translator: Mitch Schwenk <mitch@yombo.net>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "hello"
+msgstr "hola(traducido)"
+
+msgid "Current locale: None"
+msgstr "Current locale: es"
+
+msgid "No translation found for:"
+msgstr "No hay traducción para:"
+
+#, fuzzy
+msgid "yombo.ini header"
+msgstr ""
+"# \n"
+"# Esto almacena información de configuración de archivos sobre el sistema.\n"
+"# ADVERTENCIA: No edite este archivo mientras el sistema está en funcionamiento, se perderán los cambios.\n"
+"# \n"
+
+msgid "Dashboard"
+msgstr ""
+
+msgid "Devices"
+msgstr "Aparato"
+
+msgid "devices"
+msgstr "aparato"

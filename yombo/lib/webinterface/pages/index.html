@@ -4,7 +4,7 @@
 {% block content %}
             <div class="row">
                 <div cass="col-lg-12 col-md-12">
-                    <h1 class="page-header">Dashboard</h1>
+                    <h1 class="page-header">{{ _('Dashboard') }}</h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -19,7 +19,7 @@
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="large">{{ devices|length }}</div>
-                                    <div class="medium">Devices<br>&nbsp;</div>
+                                    <div class="medium">{{ _('Devices') }}<br>&nbsp;</div>
                                 </div>
                             </div>
                         </div>
@@ -34,7 +34,7 @@
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="large">{{ automation_rules }}</div>
-                                    <div class="medium">Automation<br>Rules</div>
+                                    <div class="medium">{{ _('Automation<br>Rules') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -49,7 +49,7 @@
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="large">{{ delay_commands|length }}</div>
-                                    <div class="medium">Delayed<br>Commands</div>
+                                    <div class="medium">{{ _('Delayed<br>Commands') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -63,8 +63,8 @@
                                     <i class="fa fa-list fa-3x"></i>
                                 </div>
                                 <div class="col-xs-9 text-right">
-                                    <div class="large">13</div>
-                                    <div class="medium">States<br>&nbsp;</div>
+                                    <div class="large">{{ states|length }}</div>
+                                    <div class="medium">{{ _('States') }}<br>&nbsp;</div>
                                 </div>
                             </div>
                         </div>

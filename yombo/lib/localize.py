@@ -50,13 +50,13 @@ class Localize(YomboLibrary):
     def _init_(self):
         self._Database = self._Loader['localdb']
         temp = self._Configs.get('localize', 'hashes')
+        self.default_lang = self._Configs.get('localize', 'default_lang', 'en')
         if temp is None:
             self.hashes = {}
         else:
             self.hashes = json.loads(temp)
 
         self.files = {}
-
         self.locale_files = abspath('.') + "/usr/locale/"
 
     def _load_(self):
@@ -81,53 +81,86 @@ class Localize(YomboLibrary):
         rebuilt on each run.
         :return:
         """
-        self.parse_directory("yombo/utils/locale")
+        self.parse_directory("yombo/utils/locale", has_header=True)
 
         for item, data in self._Modules._modulesByUUID.iteritems():
             the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale"
             if path.exists(the_directory):
                 self.parse_directory(the_directory)
 
-        for lang, files in self.files.iteritems():
+        print "localize . self.files: %s" % self.files
+        languages_to_update = {}
 
+        #always check english. If it gets updated, we need to update them all!
+        hash_obj = md5(open(self.files['en'][0], 'rb').read())
+        for fname in self.files['en'][1:]:
+            hash_obj.update(open(fname, 'rb').read())
+        checksum = hash_obj.hexdigest()
+        if checksum != self.hashes['en']:
+            self.hashes = {}
+
+        for lang, files in self.files.iteritems():
             # parse the files quickly and generate a hash. Only re-render po and mo file if needed.
             hash_obj = md5(open(files[0], 'rb').read())
             for fname in files[1:]:
                 hash_obj.update(open(fname, 'rb').read())
             checksum = hash_obj.hexdigest()
-            # print "self.hashes: %s" % self.hashes
-            # print "checksum: %s" % checksum
+            print "self.hashes: %s" % self.hashes
+            print "checksum: %s" % checksum
             if lang in self.hashes:
-                # print "self.hashes[lang]: %s" % self.hashes[lang]
+                #print "self.hashes[lang]: %s" % self.hashes[lang]
                 if checksum == self.hashes[lang]:
                     continue
-            else:
-                self.hashes[lang] = checksum
 
-            po = None
-            output_folder = 'usr/locale/' + lang + '/LC_MESSAGES'
-            # print "files in lang (%s): %s" % (lang, files)
+                languages_to_update[lang] = 'aaa'
+            self.hashes[lang] = checksum
 
-            if not path.exists(output_folder):
-                makedirs(output_folder)
+        # Lets validate the default language has actual translations. If not, we check the environment for possibilities
+        if self.default_lang != 'en':
+            if self.default_lang not in self.files:
+                lang_parts = self.default_lang.split('_')
+                if lang_parts[0] in self.files:
+                    self.default_lang = lang_parts[0]
+                else:
+                    self.default_lang = None
+                    # still can't find a good default language amongst the possible ones. Lets try checking envrionment.
+                    for item in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+                        print "checking for possible default language in: %s" % item
+                        if item in environ:
+                            self.default_lang = environ.get(item).split(".")[0]
+                            # self.default_lang = temp_lang[0]
+                            if self.default_lang not in self.files:
+                                lang_parts = self.default_lang.split('_')
+                                if lang_parts[0] in self.files:
+                                    self.default_lang = lang_parts[0]
 
-            # merge files
-            with open(output_folder + '/yombo.po', 'w') as outfile:
-                outfile.write("# BEGIN Combining files (%s) for locale: %s\n" % (strftime("%Y-%m-%d %H:%M:%S", gmtime()), lang) )
-                for fname in files:
-                    outfile.write("# BEGIN File: %s\n" % fname)
-                    with open(fname) as infile:
-                        outfile.write(infile.read())
-                    outfile.write("\n# END File: %s\n\n" % fname)
-                outfile.write("# END Combining files for locale: %s\n" % lang)
+        if self.default_lang is None:
+            self.default_lang = 'en'
 
-            # save binary file
-            po = polib.pofile(output_folder + "/yombo.po")
-            po.save_as_mofile(output_folder + "/yombo.mo")
-            del po
+        if 'en' in languages_to_update and self.default_lang not in languages_to_update:
+            languages_to_update[self.default_lang] = 'aaa'
+
+        print "localize . languages_to_update: %s" % languages_to_update
+
+        # we do english first, sorry. It's the base language.
+        if 'en' in languages_to_update:
+            self.do_update('en')
+            del languages_to_update['en']
+
+        # do system default language next.
+        if self.default_lang in languages_to_update:
+            self.do_update(self.default_lang)
+            del languages_to_update[self.default_lang]
+
+        self.default_lang = 'es'
+        self._States['localize.default_language'] = self.default_lang
+
+        for lang, files in languages_to_update.iteritems():
+            self.do_update(lang)
 
         # Save the updated hash into the configuration for next time.
         # print "hashes: %s" % self.hashes
+        print "setting hashes: %s" % json.dumps(self.hashes, separators=(',',':'))
         self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
         # print self._Configs.get('localize', 'hashed')
 
@@ -142,7 +175,78 @@ class Localize(YomboLibrary):
         gettext.install('yombo', self.locale_files, **kwargs)
 
 
-    def parse_directory(self, directory):
+    def do_update(self, language):
+        output_folder = 'usr/locale/' + language + '/LC_MESSAGES'
+        # print "files in lang (%s): %s" % (lang, files)
+
+        if not path.exists(output_folder):
+            makedirs(output_folder)
+
+        # merge files
+        with open(output_folder + '/combined.po', 'w') as outfile:
+            outfile.write("# BEGIN Combining files (%s) for locale: %s\n" % (strftime("%Y-%m-%d %H:%M:%S", gmtime()), language) )
+            for fname in self.files[language]:
+                outfile.write("# BEGIN File: %s\n" % fname)
+                with open(fname) as infile:
+                    outfile.write(infile.read())
+                outfile.write("\n# END File: %s\n\n" % fname)
+            outfile.write("# END Combining files for locale: %s\n" % language)
+
+        # print "do_update: language: %s" % language
+        # print "do_update: default lang: %s" % self.default_lang
+        try:
+            if language == 'en':
+                po_en = polib.pofile('usr/locale/en/LC_MESSAGES/combined.po')
+                po_en.save_as_mofile(output_folder + "/yombo.mo")
+            elif language == self.default_lang:
+                po_en = polib.pofile('usr/locale/en/LC_MESSAGES/combined.po')
+                po_default = polib.pofile('usr/locale/%s/LC_MESSAGES/combined.po' % self.default_lang)
+
+                self.merge(po_en, po_default)
+
+                # for entry in po_en:
+                #     print "item2: %s (%s) %s" % (entry.msgid, entry.previous_msgctxt, entry.msgstr)
+
+                po_en.save(output_folder + "/lang_merged.po")  # this is really the merged file...
+                po_en.save_as_mofile(output_folder + "/yombo.mo")
+            else:
+                po_default = polib.pofile('usr/locale/%s/LC_MESSAGES/combined.po' % self.default_lang)
+                po_lang = polib.pofile('usr/locale/%s/LC_MESSAGES/combined.po' % language)
+
+                self.merge(po_default, po_lang)
+
+                po_lang.save(output_folder + "/lang_merged.po")
+                po_lang.save_as_mofile(output_folder + "/yombo.mo")
+        except Exception as e:
+            print "Translation error: %s" % e
+
+    def merge(self, existing, tomerge):
+        """
+        Merges a locale onto a default langauge base. This results in strings preferencing user locale, gateway
+        define default set by gateway admin, system locale, then finally english.
+        :return:
+        """
+        # print "existing: %s" % existing
+        # print "tomerge: %s" % tomerge
+        existing_entries = dict((entry.msgid, entry) for entry in existing)
+        tomerge_entries = dict((entry.msgid, entry) for entry in tomerge)
+#        print "existing_entries: %s" % existing_entries
+        print "tomerge_entries: %s" % tomerge_entries
+
+        for msgid, tomerge_entry in tomerge_entries.iteritems():
+            if msgid not in existing_entries:
+                print "adding new entry: %s" % tomerge_entry.msgstr
+                existing.append(tomerge_entry)
+            else:
+                print "updating: %s" % tomerge_entry.msgstr
+                # existing_entries.get(entry.msgid) =
+                previous_msgctxt = existing_entries[msgid].msgstr
+                if previous_msgctxt == '':
+                    previous_msgctxt = existing_entries[msgid].msgid
+                existing_entries[msgid].merge(tomerge_entries[msgid])
+                existing_entries[msgid].previous_msgctxt = previous_msgctxt
+
+    def parse_directory(self, directory, has_header=False):
         """
         Checks a directory for any .po or .po.head files to combine them. This allows modules to have translation
         files.
@@ -183,15 +287,21 @@ class Localize(YomboLibrary):
                         self.files[name[0]].append(directory + "/" + file + ".head")
                         self.files[name[0]].append(directory + "/" + file)
                     else:
-                        logger.warn("Yombo core doesn't have a locale for: {lang}  Cannot merge file. Additionally, no '.head' file exists. (Help link soon.)",
-                            lang=name[0])
+                        if has_header == True:
+                            self.files[name[0]] = []
+                            self.files[name[0]].append(directory + "/" + file)
+                        else:
+                            logger.warn("Yombo core doesn't have a locale for: {lang}  Cannot merge file. Additionally, no '.head' file exists. (Help link soon.)",
+                                lang=name[0])
                 else:
                     self.files[name[0]].append(directory + "/" + file)
 
     def get_translation(self, languages):
         """
-        Returns a translator function based on a list of languages provided.
-        :param languages:
+        Returns a translator function based on a list of languages provided. If request through a webbrowser, send
+        the request to :py:meth:parse_accept_language first.
+
+        :param languages: list of locales to check, in order of list items.
         :return:
         """
 
@@ -225,7 +335,9 @@ class Localize(YomboLibrary):
                 locales.append(lang.replace("-", "_"))
             if lang_parts[0] not in locales:
                 locales.append(lang_parts[0])
+        if self.default_lang not in locales:
+            locales.append(self.default_lang)  # toss in the gateway default language, which may be the system lang
         if 'en' not in locales:
-            locales.append('en') # TODO: learn how to do fallback languages, and use that instead!
+            locales.append('en')  # if all else fails, show english.
         return locales
 

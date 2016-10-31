@@ -1108,6 +1108,7 @@ class POEntry(_BaseEntry):
         Merge the current entry with the given pot entry.
         """
         self.msgid = other.msgid
+        self.msgstr = other.msgstr
         self.msgctxt = other.msgctxt
         self.occurrences = other.occurrences
         self.comment = other.comment

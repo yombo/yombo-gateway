@@ -523,12 +523,14 @@ class WebInterface(YomboLibrary):
     @require_auth()
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
+        i18n = self.i18n(request)
         return page.render(alerts=self.get_alerts(),
                            delay_commands = self._Devices.delay_queue_active,
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
                            states=self._Libraries['states'].get_states(),
+                           _=i18n,
                            )
 
     @require_auth()

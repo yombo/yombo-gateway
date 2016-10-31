@@ -31,6 +31,7 @@ import cPickle
 from shutil import copyfile
 import os
 from datetime import datetime
+import inspect
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -183,9 +184,14 @@ class Configuration(YomboLibrary):
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
         if self.configs_dirty is True or force_save is True:
+            has_i18n = True
+            if '_' not in globals():
+                has_i18n = False
+
             logger.debug("saving config file...")
             config_file = open("yombo.ini",'w')
-            config_file.write(_("yombo.ini header"))
+            if has_i18n:
+                config_file.write(_("yombo.ini header"))
 
             # first parse sections to make sure each section has a value!
             configs = {}
@@ -199,26 +205,26 @@ class Configuration(YomboLibrary):
 
             #now we save the sections and the items...with i18n comments!
             for section, options in configs.iteritems():
-                config_file.write('\n')
-
-                i18n_label = _("configs:section:%s:" % section)
-                if i18n_label != "configs:section:%s:" % section:
-                    config_file.write("# %s: %s\n" % (section, i18n_label))
-                else:
-                    config_file.write("# %s: " % section + _("No translation found for:") + " '%s'\n" % i18n_label )
+                if has_i18n:
+                    i18n_label = _("configs:section:%s:" % section)
+                    if i18n_label != "configs:section:%s:" % section:
+                        config_file.write("# %s: %s\n" % (section, i18n_label))
+                    else:
+                        config_file.write("# %s: " % section + _("No translation found for:") + " '%s'\n" % i18n_label )
                 config_file.write("[%s]\n" % section)
 
                 try:
                     for item, data in options.iteritems():
-                        i18n_label = _("configs:item:%s:%s" % (section, item))
-                        if i18n_label != "configs:item:%s:%s" % (section, item):
-                            config_file.write("# %s: %s\n" % (item, i18n_label))
-                        temp = str(data)
+                        if has_i18n:
+                            i18n_label = _("configs:item:%s:%s" % (section, item))
+                            if i18n_label != "configs:item:%s:%s" % (section, item):
+                                config_file.write("# %s: %s\n" % (item, i18n_label))
                         temp = str(data).split("\n")
                         temp = "\n\t".join(temp)
                         config_file.write("%s = %s\n" % (item, temp))
                 except Exception as E:
                     logger.warn("Caught error in saving ini file: {e}", e=E)
+                config_file.write('\n')
 
             config_file.close()
 
