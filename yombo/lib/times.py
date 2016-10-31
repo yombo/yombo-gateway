@@ -23,7 +23,8 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 
 .. todo::
 
-  Polar region debug (some strange glitches like nowNight message when it is polar day (I think we need variables for polar day and night begin/end)
+  Polar region debug (some strange glitches like nowNight message when it is polar day (I think we need variables for
+  polar day and night begin/end)
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -49,7 +50,8 @@ logger = get_logger('library.times')
 
 class Times(YomboLibrary, object):
     """
-    Provide various rise/set of the sun, moon, and all things heavenly.
+    Provides light/dark/dusk/dawn status, times, and events. Also provides various rise/set of the sun, moon, and all
+    things heavenly.
     """
     def _init_(self, PatchEnvironment = False):
         """
@@ -394,7 +396,8 @@ class Times(YomboLibrary, object):
                 if self.is_now_init:
                     self.isDawn = False
                     self.isDusk = False
-        logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})", secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
+        logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})",
+                     secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
 
     def _send_now_dawn(self):
         """

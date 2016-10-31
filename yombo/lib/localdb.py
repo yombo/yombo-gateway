@@ -782,19 +782,20 @@ ORDER BY id desc"""
         variables = {}
         for record in records:
             if record.machine_label not in variables:
-                variables[record.machine_label] = {
-                    'machine_label': record.machine_label,
-                    'label': record.label,
-                    'updated': record.updated,
-                    'created': record.created,
-                    'weight': record.weight,
-                    'data_weight': record.data_weight,
-                    'foreign_id': record.foreign_id,
-                    'id': record.id,
-                    'value': [],
-                }
+                variables[record.machine_label] = []
 
-            variables[record.machine_label]['value'].append(record.value)
+            variables[record.machine_label].append({
+                'machine_label': record.machine_label,
+                'label': record.label,
+                'updated': record.updated,
+                'created': record.created,
+                'weight': record.weight,
+                'data_weight': record.data_weight,
+                'foreign_id': record.foreign_id,
+                'id': record.id,
+                'value': record.value,
+            })
+            # variables[record.machine_label]['value'].append(record.value)
 #                print record.__dict__
         returnValue(variables)
 

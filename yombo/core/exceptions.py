@@ -447,7 +447,7 @@ class YomboHookStopProcessing(YomboWarning):
     Raise this during a hook call to stop processing any remain hook calls and to stop further processing
     of the remaining request.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component"):
+    def __init__(self, message, errorno=101, name="unknown", component="component", collected=None, by_who=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
 

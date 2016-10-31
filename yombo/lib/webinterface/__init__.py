@@ -345,9 +345,9 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_'] = _  # i18n
 
     def _started_(self):
-        if self._op_mode != 'run':
-            self._display_pin_console_time = int(time())
-            self.display_pin_console()
+        # if self._op_mode != 'run':
+        self._display_pin_console_time = int(time())
+        self.display_pin_console()
 
     def _unload_(self):
         return self.sessions._unload_()

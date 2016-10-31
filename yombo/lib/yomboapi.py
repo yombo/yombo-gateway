@@ -39,8 +39,8 @@ class YomboAPI(YomboLibrary):
 
     def _init_(self):
         self.custom_agent = Agent(reactor, connectTimeout=20)
-        self.contentType = self._Configs.get('api', 'contenttype', 'application/json', False)  # TODO: Msgpack later
-        self.base_url = self._Configs.get('api', 'baseurl', "https://api.yombo.net/api", False)
+        self.contentType = self._Configs.get('yomboapi', 'contenttype', 'application/json', False)  # TODO: Msgpack later
+        self.base_url = self._Configs.get('yomboapi', 'baseurl', "https://api.yombo.net/api", False)
         self.allow_system_session = self._Configs.get('yomboapi', 'allow_system_session', True)
         self.api_key = self._Configs.get('yomboapi', 'api_key', 'pZEi9fbEuU4bTpxs', False)
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.

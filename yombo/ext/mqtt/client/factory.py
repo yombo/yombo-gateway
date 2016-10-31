@@ -45,11 +45,7 @@ from twisted.logger import Logger
 from ..      import __version__
 from ..error import ProfileValueError
 
-
-# Yombo Modules
-from yombo.core.log import get_logger
-
-log = get_logger('ext.mqtt.factory')
+log = Logger(namespace='mqtt')
 
 class MQTTFactory(ReconnectingClientFactory):
 
@@ -96,7 +92,11 @@ class MQTTFactory(ReconnectingClientFactory):
         self.windowSubscribe[addr] = v
         v = self.windowUnsubscribe.get(addr, dict())
         self.windowUnsubscribe[addr] = v
-        return MQTTProtocol(self, addr)
+
+        # Keeps a persistent reference to the last protocol built
+        # This is ok *only* when connecting to a single broker. 
+        self.protocol = MQTTProtocol(self, addr)
+        return self.protocol
 
 
     def clientConnectionLost(self, connector, reason):

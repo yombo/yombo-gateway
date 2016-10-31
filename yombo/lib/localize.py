@@ -9,9 +9,9 @@ These files will be appended to the main gateway language files. Because they ar
 the PO, just the msgid and msgstr/msgstrs.
 
 If you are supporting a language currently not supported by yombo, create an additional file to contain the language
-file header. Using the same example for filenames: en_US.po.base, en.po.base, es.po.base
+file header. Using the same example for filenames: en_US.po.head, en.po.head, es.po.head
 
-When the gateway starts up, if the language is unsupported, the system will use your combine your .po.base file with
+When the gateway starts up, if the language is unsupported, the system will use your combine your .po.head file with
  your .po file.
 
 The formatting of the .po is the same used for any python gettext po and any PO editor should work. Just make note to
@@ -25,7 +25,10 @@ from time import time
 from os import path, listdir, makedirs
 import inspect
 import sys, gettext
-import json
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 from hashlib import md5
 from time import gmtime, strftime
 
@@ -69,19 +72,19 @@ class Localize(YomboLibrary):
         """
         Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
 
-        This combines any module .po/.po.base files with the system po files. Then creates .mo binary files.
+        This combines any module .po/.po.head files with the system po files. Then creates .mo binary files.
 
-        # Todo: Create a hash system so we don't have to keep rebuilding everything.
+        Uses a basic MD5 hash to validate if files have changes or not between runs. This prevents the files to be
+        rebuilt on each run.
         :return:
         """
-        self.parse_directory("yombo/utils/locale", True)
+        self.parse_directory("yombo/utils/locale")
 
         for item, data in self._Modules._modulesByUUID.iteritems():
             the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale"
             if path.exists(the_directory):
                 self.parse_directory(the_directory)
 
-        print "all files: %s" % self.files
         for lang, files in self.files.iteritems():
 
             # parse the files quickly and generate a hash. Only re-render po and mo file if needed.
@@ -89,8 +92,10 @@ class Localize(YomboLibrary):
             for fname in files[1:]:
                 hash_obj.update(open(fname, 'rb').read())
             checksum = hash_obj.hexdigest()
-            print "checksum: %s" % checksum
+            # print "self.hashes: %s" % self.hashes
+            # print "checksum: %s" % checksum
             if lang in self.hashes:
+                # print "self.hashes[lang]: %s" % self.hashes[lang]
                 if checksum == self.hashes[lang]:
                     continue
             else:
@@ -98,7 +103,7 @@ class Localize(YomboLibrary):
 
             po = None
             output_folder = 'usr/locale/' + lang + '/LC_MESSAGES'
-            print "files in lang (%s): %s" % (lang, files)
+            # print "files in lang (%s): %s" % (lang, files)
 
             if not path.exists(output_folder):
                 makedirs(output_folder)
@@ -115,13 +120,13 @@ class Localize(YomboLibrary):
 
             # save binary file
             po = polib.pofile(output_folder + "/yombo.po")
-            print po.save_as_mofile(output_folder + "/yombo.mo")
+            po.save_as_mofile(output_folder + "/yombo.mo")
             del po
 
         # Save the updated hash into the configuration for next time.
-        print "hashes: %s" % self.hashes
-        self._Configs.set('localize', 'hashed', json.dumps(self.hashes, separators=(',',':')))
-        print self._Configs.get('localize', 'hashed')
+        # print "hashes: %s" % self.hashes
+        self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
+        # print self._Configs.get('localize', 'hashed')
 
         # The below code is for both python 2 and 3.
         kwargs = {}
@@ -134,48 +139,51 @@ class Localize(YomboLibrary):
         gettext.install('yombo', 'usr/locale', **kwargs)
 
 
-    def parse_directory(self, directory, primary=False):
-        print "Checking folder: %s" % directory
+    def parse_directory(self, directory):
+        """
+        Checks a directory for any .po or .po.head files to combine them. This allows modules to have translation
+        files.
+        :param directory: The directory to check.
+        :return:
+        """
+        # print "Checking folder: %s" % directory
         for file in listdir(directory):
             if file.endswith(".po"):
                 filename = file.split('.')
                 filename = filename[0]
-                print "Checking filename: %s" % file
+                # print "Checking filename: %s" % file
                 name = filename.split('-')
                 locale = name[0].split('_')
                 if len(locale) == 0 or len(locale) > 2:
-                    print "Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: %s" % file
+                    logger.warn("Bad language_country code split. Must be <ISO 639 lang code>_<ISO 3166 REGION CODE (optional)>: {file}", file=file)
 
                 if len(locale) >= 1:
                     if locale[0].islower() is False:
-                        print "Invalid file, ISO 639 lang code must be lower case: %s" % file
+                        logger.warn("Invalid file, ISO 639 lang code must be lower case: %s", file=file)
                         continue
                     elif len(locale[0]) != 2:
-                        print "Invalid file, ISO 639 lang code must be 2 letters: %s" % file
+                        logger.warn("Invalid file, ISO 639 lang code must be 2 letters: %s", file=file)
                         continue
 
                 if len(locale) == 2:
                     if locale[0].isupper() is False:
-                        print "Invalid file, ISO 6166 region code must be upper case: %s" % file
+                        logger.warn("Invalid file, ISO 6166 region code must be upper case: %s", file=file)
                         continue
                     elif len(locale[0]) != 2:
-                        print "Invalid file, ISO 6166 region code must be 2 letters: %s" % file
+                        logger.warn("Invalid file, ISO 6166 region code must be 2 letters: %s", file=file)
                         continue
 
-                print "adding file: %s  to locale: %s" % (file, name[0])
-                if primary:
-                    if name[0] not in self.files:
+                logger.debug("Adding file: {file}  to locale: {lang}", file=file, lang=name[0])
+                if name[0] not in self.files:
+                    if path.exists(directory + "/" + file + ".head"):
                         self.files[name[0]] = []
-                    self.files[name[0]].append(directory + "/" + file)
-                else:
-                    if name[0] not in self.files:
-                        if path.exists(directory + "/" + file + ".base"):
-                            self.files[name[0]] = []
-                            self.files[name[0]].append(directory + "/" + file)
-                        else:
-                            print "Yombo core doesn't have a locale for: %s   Cannot merge file. Additionally, no '.base' file exists. (Help link soon.)"
-                    else:
+                        self.files[name[0]].append(directory + "/" + file + ".head")
                         self.files[name[0]].append(directory + "/" + file)
+                    else:
+                        logger.warn("Yombo core doesn't have a locale for: {lang}  Cannot merge file. Additionally, no '.head' file exists. (Help link soon.)",
+                            lang=name[0])
+                else:
+                    self.files[name[0]].append(directory + "/" + file)
 
     def get_strings(self, accept_language, type):
         accept_languages = self.parse_accept_language(accept_language)

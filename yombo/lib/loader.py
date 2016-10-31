@@ -42,7 +42,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, 
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError
+from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError, YomboHookStopProcessing
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -153,7 +153,7 @@ class Loader(YomboLibrary, object):
         self.libraryNames = {}
         self.__localModuleVars = {}
         self._moduleLibrary = None
-        self._hook_cache = {}
+        self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self._operation_mode = None  # One of: firstrun, config, run
         self.sigint = False  # will be set to true if SIGINT is received
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
@@ -311,6 +311,7 @@ class Loader(YomboLibrary, object):
             library._Modules = self._moduleLibrary
             library._Localize = self.loadedLibraries['localize']
             library._MQTT = self.loadedLibraries['mqtt']
+            library._SQLDict = self.loadedLibraries['sqldict']
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
             if hasattr(library, '_init_') and callable(library._init_) \
@@ -367,32 +368,31 @@ class Loader(YomboLibrary, object):
         """
         if requested_library not in self.loadedLibraries:
             returnValue(None)
+        cache_key = requested_library + hook
+        if cache_key in self._invoke_list_cache:
+            if self._invoke_list_cache[cache_key] is False:
+                # logger.warn("Cache hook ({cache_key})...SKIPPED", cache_key=cache_key)
+                returnValue(None) # skip. We already know function doesn't exist.
         library = self.loadedLibraries[requested_library]
         if requested_library == 'Loader':
             returnValue(None)
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = library._Name.lower() + "_" + hook
-        if hook in self._hook_cache:
-            if self._hook_cache[hook] == False:
-#                logger.warn("Cache hook ({library}:{hook})...passing", library=library._FullName, hook=hook)
-                returnValue(None)
-        else:
-            self._hook_cache[hook] = None
         if hasattr(library, hook):
             method = getattr(library, hook)
             self._log_loader('debug', requested_library, 'library', 'library_invoke', 'About to call: %s' % hook)
             if callable(method):
+                self._invoke_list_cache[cache_key] = True
                 results = yield maybeDeferred(method, **kwargs)
                 self._log_loader('debug', requested_library, 'library', 'library_invoke', 'Finished with call: %s' % hook)
                 returnValue(results)
             else:
- #               self._hook_cache[library._FullName+hook] = False
-                logger.warn("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+                logger.warn("Cache library hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
                 logger.debug("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
                 raise YomboWarning("Hook is not callable: %s" % hook)
         else:
-#            logger.warn("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
-            self._hook_cache[library._FullName+hook] = False
+#            logger.debug("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+            self._invoke_list_cache[cache_key] = False
 
     def library_invoke_all(self, hook, fullName=False, **kwargs):
         """
@@ -419,6 +419,11 @@ class Loader(YomboLibrary, object):
                       results[label] = result
             except YomboWarning:
                 pass
+            except YomboHookStopProcessing as e:
+                e.collected = results
+                e.by_who =  label
+                raise
+
         return results
 
     def import_component(self, pathName, componentName, componentType, componentUUID=None):

@@ -7,13 +7,14 @@ Acts exactly like a dictionary {}, however when the dictionary
 is updated, the correlating database record for the dictionary
 gets updated.
 
+For performance reasons, data is only saved to disk periodically or when
+the gateway exits.
+
 *Usage**:
 
 .. code-block:: python
 
-   from yombo.core.sqldict import SQLDict  #load at the top of the file.
-
-   resources  = SQLDict(self, "someVars") # 'self' is required for data isolation
+   resources  = yield self._SQLDict.get(self, "someVars") # 'self' is required for data isolation
     
    resources['apple'] = 'ripe'
    resources['fruits'] = ['grape', 'orange', 'plum']
@@ -46,28 +47,46 @@ class SQLDict(YomboLibrary):
     Provide a database backed persistent dictionary.
     """
     def _init_(self,):
+        """
+        Sets up a few variables. Doesn't do much.
+        :return:
+        """
         self._dictionaries = {}
         self.unload_defer = None
         self._saveSQLDictLoop = None
 
     def _load_(self):
+        """
+        Starts the loop to save data to SQL every so often.
+        :return:
+        """
         self._saveSQLDictLoop = LoopingCall(self.save_sql_dict)
-        self._saveSQLDictLoop.start(60)
-
-    def _start_(self):
-        self.save_sql_dict()
+        self._saveSQLDictLoop.start(self._Configs.get('sqldict', 'save_interval', 60, False))
 
     def _stop_(self):
+        """
+        When gateway stops, we stop the save interval timer. Will be saved in _unload_.
+        :return:
+        """
         if self._saveSQLDictLoop is not None:
             self._saveSQLDictLoop.stop()
 
     def _unload_(self):
+        """
+        Save any data to disk (sql).
+        :return: A deferred. Will be called once save is complete.
+        """
         self.save_sql_dict(True)
         self.unload_defer = Deferred()
         return self.unload_defer
 
     @inlineCallbacks
     def get(self, owner_object, dict_name):
+        """
+        Used to get or create a new SQL backed dictionary. You method must be decorated with @inlineCallbacks and then
+        yield the results of this call.
+        :return: Deferred, eventually a dictionary
+        """
         if isinstance(owner_object, string_types):
             component_name = owner_object.lower()
         else:
@@ -91,10 +110,10 @@ class SQLDict(YomboLibrary):
     @inlineCallbacks
     def save_sql_dict(self, save_all=False):
         """
-        Called by SQLDictionary to save a dictionary to the SQL database.
+        Called periodically and on exit to save a dictionary to the SQL database.
 
         This allows multiple updates to happen to a dictionary without the overhead of constantly updating the
-        matching SQL record. This can lead to some data loss.
+        matching SQL record. This can lead to some data loss if data is constantly updating and the system crashes.
 
         :param save_all: If true, save all the SQL Dictionaries
         :return:

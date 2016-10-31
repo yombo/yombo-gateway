@@ -19,6 +19,10 @@ lib
 ----------
 Responsible for running the Yombo Gateway, and contains some APIs.
 
+locale
+----------
+Contains base language translations for i18n.
+
 modules
 ----------
 Where modules are installed by the Gateway.

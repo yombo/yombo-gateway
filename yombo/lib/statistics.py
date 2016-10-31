@@ -66,6 +66,11 @@ or "house.upstairs.*.temperature"
    self._Statistics.averages("house.upstairs.den.temperature", data['den'])
    self._Statistics.datapoint("house.upstairs.den.occupied", occupied_sensor['den'])
 
+**Developer Notes/Ideas/Todo**:
+
+An idea to mitigrate data loss would be to save data points more often, but marked as temporary. This would allow
+the benefits of better averages, but mitigate loss of data. This is at a cost of higher CPU resources.
+
 .. versionadded:: 0.11.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -92,10 +97,13 @@ logger = get_logger('library.statistics')
 
 class Statistics(YomboLibrary):
     """
-    Library to process all the statics.
+    Library to process all the statistics. Allows long running data to be collectd on devices regardless of
+    system actually running the devices. For example, can keep all history of a light bulb even when changing between
+    X10, Insteon, or Z-Wave devices running the actual device. This also collections various system performance
+    metrics.
     """
-    enabled = True  # set to tru to start, will be updated when configurations is loaded.
-    count_bucket_duration = 5
+    enabled = True  # set to True to start, will be updated when configurations is loaded.
+    count_bucket_duration = 5  # How many minutes
     averages_bucket_duration = 5
     _counters = {}  # stores counter information before it's saved to database
     _averages = {}  # stores averages type information
@@ -124,12 +132,15 @@ class Statistics(YomboLibrary):
 
         # defines how long to keep things. All values in days! 0 - forever
         self.count_bucket_life_full = self._Configs.get('statistics', 'count_bucket_life_full', 30, False)
-        self.count_bucket_life_hourly = self._Configs.get('statistics', 'count_bucket_life_hourly', 120, False)
+        self.count_bucket_life_qtr_hour = self._Configs.get('statistics', 'count_bucket_life_qtr_hour', 120, False)
+        self.count_bucket_life_hourly = self._Configs.get('statistics', 'count_bucket_life_hourly', 180, False)
         self.count_bucket_life_daily = self._Configs.get('statistics', 'count_bucket_life_daily', 0, False)
         self.averages_bucket_life_full = self._Configs.get('statistics', 'averages_bucket_life_full', 30, False)
+        self.averages_bucket_life_qtr_hour = self._Configs.get('statistics', 'averages_bucket_life_qtr_hour', 120, False)
         self.averages_bucket_life_hourly = self._Configs.get('statistics', 'averages_bucket_life_hourly', 120, False)
         self.averages_bucket_life_daily = self._Configs.get('statistics', 'averages_bucket_life_daily', 0, False)
         self.datapoint_bucket_life_full = self._Configs.get('statistics', 'datapoint_bucket_life_full', 30, False)
+        self.datapoint_bucket_life_qtr_hour = self._Configs.get('statistics', 'datapoint_bucket_life_qtr_hour', 120, False)
         self.datapoint_bucket_life_hourly = self._Configs.get('statistics', 'datapoint_bucket_life_hourly', 120, False)
         self.datapoint_bucket_life_daily = self._Configs.get('statistics', 'datapoint_bucket_life_daily', 0, False)
 
@@ -148,7 +159,7 @@ class Statistics(YomboLibrary):
     def _stop_(self):
         """
         Saves statistics data to database.
-        :return:
+        :return: A deferred that the shutdown functions use to wait on.
         """
         # self._save_statistics(True)
         # return
@@ -163,6 +174,17 @@ class Statistics(YomboLibrary):
 
     @inlineCallbacks
     def load_last_datapoints(self):
+        """
+        Datapoints save a specific value at a specific time. Sometimes multiple datapoints are saved with the same
+        value. Although this is data, it does not provide additional information. For example, if a thermostat
+        module makes a node of the current temperate every 60 seconds, this data becomes usesless. We only care
+        about when things change and can deduce that the temperate was the same between datapoints.
+
+        This saves a lot of storage and processing later.
+
+        This function calls a database method to collet a list of datapoints and their last value. It sets this
+        into a variable to be used on lookup when a new datapoint is provided. See: :py:meth:`~datapoint`
+        """
         self._datapoint_last_value = yield self._LocalDB.get_stat_last_datapoints()
         self.init_deferred.callback(10)
 
@@ -284,7 +306,7 @@ class Statistics(YomboLibrary):
 
         self._validate_name(name)
 
-        if name in self._datapoint_last_value:
+        if name in self._datapoint_last_value:  # lookup last value saved.
             if self._datapoint_last_value[name] == value:  # we don't save duplicates!
                 return
 

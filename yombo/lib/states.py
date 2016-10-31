@@ -248,24 +248,30 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_set_', **{'key': key, 'value': value})
-        except YomboHookStopProcessing:
-            logger.warning("Stopping processing 'hook_states_set' due to YomboHookStopProcessing exception.")
+            state_changes = global_invoke_all('_states_preset_', **{'key': key, 'value': value})
+        except YomboHookStopProcessing as e:
+            logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
+                           state=key, resource=e.by_who)
             return
-
 
         self.__States[key]['value'] = value
         self.__States[key]['function'] = function
         self.__States[key]['arguments'] = arguments
         self.__States[key]['value_type'] = value_type
-
         self.__States[key]['value_human'] = self.convert_to_human(value, value_type)
+
+        # Call any hooks
+        try:
+            state_changes = global_invoke_all('_states_set_', **{'key': key, 'value': value})
+        except YomboHookStopProcessing:
+            pass
 
         live = False
         if function is not None:
             live = True
 
         self._LocalDB.save_state(key, value, value_type, live)
+
         self.check_trigger(key, value)  # Check if any automation items need to fire!
 
     def convert_to_human(self, value, value_type):

@@ -1,20 +1,285 @@
-# Core Yombo translations
-# Copyright (C) 2016 Yombo
-# This file is distributed under the same license as the Yombo package.
-# Mitch Schwenk <mitch@yombo.net>, 2016.
-#
-#, fuzzy
-msgid ""
-msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-10-28 17:12-0400\n"
-"Last-Translator: Mitch Schwenk <mitch@yombo.net>\n"
-"Language: \n"
-"MIME-Version: 1.0\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
 msgid "hello"
 msgstr "hello(translated)"
+
+msgid "Current locale: None"
+msgstr "Current locale: en"
+
+#: defined in atoms library
+msgid "atoms:::cpu.count"
+msgstr "Number of CPUs (cores) gateway has."
+
+#: defined in atoms library
+msgid "atoms:::mem.total"
+msgstr "Total memory on gateway."
+
+#: defined in atoms library
+msgid "atoms:::os"
+msgstr "Operating system type."
+
+#: defined in atoms library
+msgid "atoms:::os.family"
+msgstr "Which family the operating system belongs to."
+
+#: defined in mqtt library
+msgid "configs:section:mqtt:"
+msgstr "Items specific to the statistics library."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:client_enabled"
+msgstr "When True, allows client connections to be made externally."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_enabled"
+msgstr "When True, starts the MQTT broker."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_listen_ip"
+msgstr ""
+"The IP address to bind to. For security reasons, the default only allows connections from the local machine. Change "
+"to the IP address of the local machine or network card to allow from only that network card. Or, us '0.0.0.0 to "
+"allow from all network sources."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_max_connections"
+msgstr "Max connections allowed on the MQTT broker. Sets 'max_connections' for the MQTT broker configs."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_timeout_disconnect_delay"
+msgstr "MQTT broker timeout disconnect. Sets 'timeout_disconnect_delay' for the MQTT broker configs."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_listen_port_nonsecure"
+msgstr ""
+"Non-secure (non-ssl) port to listen on. 0 = disabled.  Use non-secure port only when connecting to the local machine. "
+"Using the non-secure port for local connections reduces load on CPU for low-powered devices."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_listen_port_ssl"
+msgstr "SSL Connection port to listen on."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_listen_port_websockets"
+msgstr "Websockets port to listen on."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:server_allow_anonymous"
+msgstr "Allow un-authenticated users. To add users, edit the yombo.ini file, add useds to 'mtqq_users' section."
+
+#: defined in mqtt library
+msgid "configs:item:mqtt:yombo_mqtt_password"
+msgstr "Yombo's mqtt password. You shouldn't use this password so it can be easily rotated."
+
+#: defined in statistics library
+msgid "configs:section:statistics:"
+msgstr "Items specific to the statistics library."
+
+#: defined in statistics library
+msgid "configs:item:statistics:enabled"
+msgstr "Enable or disable entire library. When disabled, calls still work, nothing actually done."
+
+#: defined in statistics library
+msgid "configs:item:statistics:upload"
+msgstr "Allow uploading of statistics to Yombo servers"
+
+#: defined in statistics library
+msgid "configs:item:statistics:anonymous"
+msgstr ""
+"Allow collection of anaonymous statistics. If enabled, will allow upload regardless of 'upload' enabled for private "
+"statistics."
+
+#: defined in statistics library
+msgid "configs:item:statistics:count_bucket_life_full"
+msgstr "How many days of history to keep full detailed statistics for basic counters."
+
+#: defined in statistics library
+msgid "configs:item:statistics:count_bucket_life_qtr_hour"
+msgstr "How many days of history to keep 15 minute resolution statistics for basic counters."
+
+#: defined in statistics library
+msgid "configs:item:statistics:count_bucket_life_hourly"
+msgstr "How many days to history to keep hourly resolution statistics for basic counters."
+
+#: defined in statistics library
+msgid "configs:item:statistics:count_bucket_life_daily"
+msgstr "How many days to history to keep daily resolution statistics for basic counters."
+
+#: defined in statistics library
+msgid "configs:item:statistics:averages_bucket_life_full"
+msgstr "How many days of history to keep full detailed statistics for average collections."
+
+#: defined in statistics library
+msgid "configs:item:statistics:averages_bucket_life_qtr_hour"
+msgstr "How many days of history to keep 15 minute resolution statistics for average collections."
+
+#: defined in statistics library
+msgid "configs:item:statistics:averages_bucket_life_hourly"
+msgstr "How many days to history to keep hourly resolution statistics for average collections."
+
+#: defined in statistics library
+msgid "configs:item:statistics:averages_bucket_life_daily"
+msgstr "How many days to history to keep daily resolution statistics for average collections."
+
+#: defined in statistics library
+msgid "configs:item:statistics:datapoint_bucket_life_full"
+msgstr "How many days of history to keep full detailed statistics for specific datapoints."
+
+#: defined in statistics library
+msgid "configs:item:statistics:datapoint_bucket_life_qtr_hour"
+msgstr "How many days of history to keep 15 minute averaged statistics for specific datapoints."
+
+#: defined in statistics library
+msgid "configs:item:statistics:datapoint_bucket_life_hourly"
+msgstr "How many days to history to keep hourly averaged statistics for specific datapoints."
+
+#: defined in statistics library
+msgid "configs:item:statistics:datapoint_bucket_life_daily"
+msgstr "How many days to history to keep daily averaged statistics for specific datapoints."
+
+#: defined in statistics library
+msgid "configs:item:statistics:time_between_saves"
+msgstr ""
+"Seconds between datasaves. Stats are collected and processed in memory memeory before being dumped. Longer is better "
+"for averages, but at a risk to dataloss."
+
+#: defined in statistics library
+msgid "configs:item:statistics:time_between_saves_averages"
+msgstr ""
+"For averages, how many seconds between data saves from memory to disk. Longer is better for averages, but at a risk "
+"to dataloss."
+
+#: defined in statistics library
+msgid "configs:item:statistics:count_bucket_duration"
+msgstr "How minutes of information to collect for count based time buckets."
+
+#: defined in statistics library
+msgid "configs:item:statistics:averages_bucket_duration"
+msgstr "How minutes of information to collect for average based time buckets."
+
+#: defined in times library
+msgid "configs:section:location:"
+msgstr "Location information about the gateway. Used for calculating light/dark, sunrise, etc."
+
+#: defined in times library
+msgid "configs:item:location:latitude"
+msgstr "Latitude of the gateway."
+
+#: defined in times library
+msgid "configs:item:location:longitude"
+msgstr "Longitude of the gateway."
+
+#: defined in times library
+msgid "configs:item:location:elevation"
+msgstr "Elevation of the gateway, in feet."
+
+#: defined in times library
+msgid "configs:section:times:"
+msgstr "Items specific to the times library."
+
+#: defined in times library
+msgid "configs:item:times:twilighthorizon"
+msgstr "How many degrees below the horizon must the sun be before it's considered dark. Civil = -6, Nautical = -12, Astronomical = -18"
+
+#: defined in times library
+msgid "states:::is.twilight"
+msgstr "True if it's twilight. Sun his below horizon, but less then 'twilighthorizon' below the horizon."
+
+#: defined in times library
+msgid "states:::is.light"
+msgstr "True if it's light. This includes sun above 'twilighthorizon' and includes sun above horizon. "
+
+#: defined in times library
+msgid "states:::is.dark"
+msgstr "True if it's dark. The sun is below 'twilighthorizon'."
+
+#: defined in times library
+msgid "states:::is.day"
+msgstr "True if it's daytime. Day time is when sun is above horizon."
+
+#: defined in times library
+msgid "states:::is.night"
+msgstr "True if it's dark. Night time is when sun is below horizon."
+
+#: defined in times library
+msgid "states:::is.dawn"
+msgstr "True is sun is rising and above 'twilighthorizon', but below horizon."
+
+#: defined in times library
+msgid "states:::is.dusk"
+msgstr "True is sun is setting and above 'twilighthorizon', but below horizon."
+
+#: defined in times library
+msgid "states:::next.sunrise"
+msgstr "When the next time sun is at the horizon, and rising."
+
+#: defined in times library
+msgid "states:::next.sunset"
+msgstr "When the next time sun is at the horizon, and setting."
+
+#: defined in times library
+msgid "states:::next.moonrise"
+msgstr "When the next moon rise is."
+
+#: defined in times library
+msgid "states:::next.moonset"
+msgstr "When the next moon set is."
+
+#: defined in yomboapi library
+msgid "configs:section::yomboapi"
+msgstr "API related items for communicating with remote Yombo API system."
+
+#: defined in yomboapi library
+msgid "configs:item:yomboapi:contenttype"
+msgstr "Sets the header of Content-Type in the request to Yombo API system"
+
+#: defined in yomboapi library
+msgid "configs:item:yomboapi:baseurl"
+msgstr "URL to prepend requests to."
+
+#: defined in yomboapi library
+msgid "configs:item:yomboapi:allow_system_session"
+msgstr ""
+"Allows the gateway to store admin credentials in a hashed form to make calls on behalf of itself. This allows the "
+"gateway make changes to various items without admin input."
+
+#: defined in yomboapi library
+msgid "configs:item:yomboapi:sessionid_id"
+msgstr "When allow_system_session is true, this is used for logging into the API."
+
+#: defined in yomboapi library
+msgid "configs:item:yomboapi:sessionid_key"
+msgstr "When allow_system_session is true, this is used for logging into the API."
+
+
+#: defined in yomboapi library
+msgid "configs:item:yomboapi:api_key"
+msgstr "API Key to use when making requests. Note: This key will rotate to prevent abuse as needed."
+
+#: defined in startup library
+msgid "configs:section:core:"
+msgstr "Core components of the gateway. Required items needed to run ths system, most with no defaults"
+
+#: defined in startup library
+msgid "configs:item:core:gwuuid"
+msgstr "The ID of the gateway. Should not give this out freely, but not a secret."
+
+#: defined in startup library
+msgid "configs:item:core:gwhash"
+msgstr "The secret key of the gateway. Used by the gateway to authenticate to the server."
+
+#: defined in startup library
+msgid "configs:item:core:firstrun"
+msgstr "Used to help determine if this is the first time the gateway as run."
+
+#: defined in startup library
+msgid "configs:item:gpg:keyid"
+msgstr ""
+"GPG Key ID. This should be used by other devices wishing to send this gateway secrets. Or used to store secrets "
+"in the database."
+
+#: defined in SQLDict library
+msgid "configs:section:sqldict:"
+msgstr "Specific items relating to the SQLDict library."
+
+#: defined in SQLDict library
+msgid "configs:item:sqldict:save_interval"
+msgstr "How many seconds between saving the dictionaries to SQL."

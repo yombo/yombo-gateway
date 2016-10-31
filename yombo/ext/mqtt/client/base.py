@@ -58,7 +58,8 @@ from random import randint
 from zope.interface import implementer
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor, defer, task
-#from twisted.python   import failure
+from twisted.logger   import Logger
+from twisted.python   import failure
 
 # -----------
 # Own modules
@@ -73,11 +74,6 @@ from ..error     import ( MQTTStateError, MQTTWindowError, MQTTTimeoutError, Tim
 from .interfaces import IMQTTClientControl
 from .interval   import Interval
 
-# Yombo Modules
-from yombo.core.log import get_logger
-
-log = get_logger('ext.mqtt.base')
-
 
 MQTT_CONNECT_CODES = [
     "Connection Accepted",
@@ -87,6 +83,8 @@ MQTT_CONNECT_CODES = [
     "Connection Refused, bad user name or password",
     "Connection Refused, not authorized",
 ]
+
+log = Logger(namespace='mqtt')
 
 
 # ---------------------------------------
@@ -123,11 +121,6 @@ class BaseState(object):
     def unsubscribe(self, request):
         state = self.__class__.__name__
         return defer.fail(MQTTStateError("Unexpected unsubscribe() operation,", state))
-
-
-    def setPublishHandler(self, callback):
-        state = self.__class__.__name__
-        raise MQTTStateError("Unexpected setPublishHandler() operation,", state)
 
 
     def publish(self, request):
@@ -303,7 +296,7 @@ class MQTTBaseProtocol(Protocol):
         self._pingReq.timer = None
         self._pingReq.alarm = None
         self._pingReq.pdu   = self._pingReq.encode()    # reuses the same PDU over and over again
-        self._onDisconnect  = None # callback to be invoked
+        self.onDisconnection = None # callback to be invoked
 
  # ------------------------------------------------------------------------
 
@@ -435,7 +428,6 @@ class MQTTBaseProtocol(Protocol):
         '''
         response = PUBREL()
         response.decode(packet)
-        print "About to call handlePUBREL"
         self.state.handlePUBREL(response)
 
     # ------------------------------------------------------------------------
@@ -469,13 +461,17 @@ class MQTTBaseProtocol(Protocol):
     
 
     def connectionLost(self, reason):
+        log.debug("--- Connection to MQTT Broker lost")
         if self._pingReq.timer:
             self._pingReq.timer.stop()
             self._pingReq.timer = None
         if self._pingReq.alarm:
             self._pingReq.alarm.cancel()
             self._pingReq.alarm = None
+        self.doConnectionLost(reason)
         self.state = self.IDLE
+        if self.onDisconnection:
+            self.onDisconnection(reason)
         
 
     # ---------------------------------
@@ -529,14 +525,6 @@ class MQTTBaseProtocol(Protocol):
         if not (0 < n <= self.MAX_WINDOW):
             raise WindowValueError(n)
         self._window = min(n, self.MAX_WINDOW)
-
-    # ------------------------------------------------------------------------
-
-    def setDisconnectCallback(self, callback):
-        '''
-        API Entry Point
-        '''
-        self._onDisconnect = callback
 
     # ------------------------------------------------------------------------
 
@@ -640,7 +628,7 @@ class MQTTBaseProtocol(Protocol):
         def connectError():
             request.deferred.errback(MQTTTimeoutError("CONNACK"))
             request.deferred = None
-            self.transport.loseConnection()            
+            self.transport.abortConnection()            
 
         try:
             self._checkConnect(request)
@@ -661,13 +649,23 @@ class MQTTBaseProtocol(Protocol):
     # ------------------------------------------------------------------------
 
     def doPingRequest(self):
-        '''Performs the actual work of sending PINGREQ packets'''
+        '''
+        Performs the actual work of sending PINGREQ packets
+        '''
+        def doPingError():
+            log.warn("--- {packet:7} Timeout", packet="PINGREQ")
+            self.transport.abortConnection()
         log.debug("==> {packet:7}", packet="PINGREQ")
         self.transport.write(self._pingReq.pdu)
-        self._pingReq.alarm = self.callLater(
-            self._pingReq.keepalive, 
-            self.transport.loseConnection
-        )
+        self._pingReq.alarm = self.callLater(self._pingReq.keepalive, doPingError)
+
+    # ------------------------------------------------------------------------
+
+    def doConnectionLost(self, reason):
+        '''
+        To bse subclassed
+        '''
+        pass
 
     # --------------
     # Helper methods

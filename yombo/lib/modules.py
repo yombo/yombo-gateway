@@ -30,7 +30,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, DeferredList, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFuzzySearchError, YomboNoSuchLoadedComponentError, YomboWarning, YomboCritical
+from yombo.core.exceptions import YomboFuzzySearchError, YomboHookStopProcessing, YomboWarning, YomboCritical
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -58,6 +58,7 @@ class Modules(YomboLibrary):
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
         self._LocalDBLibrary = self._Libraries['localdb']
+        self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
 
     def _load_(self):
         """
@@ -250,7 +251,7 @@ class Modules(YomboLibrary):
                     if item not in self._localModuleVars[mod_label]:
                         self._localModuleVars[mod_label][item] = []
                     values = ini.get(section, item)
-                    values = values.split(",")
+                    values = values.split(":::")
                     for value in values:
                         variable = {
                             'machine_label': item,
@@ -389,9 +390,16 @@ class Modules(YomboLibrary):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
         """
+        cache_key = requestedModule + hook
+        if cache_key in self._invoke_list_cache:
+            if self._invoke_list_cache[cache_key] is False:
+                return  # skip. We already know function doesn't exist.
         module = self.get_module(requestedModule)
         if module._Name == 'yombo.core.module.YomboModule':
-            raise YomboWarning("Cannot call YomboModule hooks")
+            self._invoke_list_cache[cache_key] is False
+            # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
+            return
+            # raise YomboWarning("Cannot call YomboModule hooks")
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = module._Name.lower() + "_" + hook
         self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
@@ -401,6 +409,7 @@ class Modules(YomboLibrary):
 #                return method(**kwargs)
                 try:
 #                    results = yield maybeDeferred(method, **kwargs)
+                    self._invoke_list_cache[cache_key] = True
                     return method(**kwargs)
                 # except Exception, e:
                 #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
@@ -419,6 +428,9 @@ class Modules(YomboLibrary):
                     # logger.error("--------------------------------------------------------")
             else:
                 logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
+        else:
+            self._invoke_list_cache[cache_key] = False
+            # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
 
     def module_invoke_all(self, hook, fullName=False, **kwargs):
         """
@@ -434,6 +446,10 @@ class Modules(YomboLibrary):
                      results[label] = result
             except YomboWarning:
                 pass
+            except YomboHookStopProcessing as e:
+                e.collected = results
+                e.by_who =  label
+                raise
 
         return results
 

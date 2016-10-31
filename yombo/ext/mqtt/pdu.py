@@ -32,6 +32,8 @@
 # Twisted  modules
 # ----------------
 
+from twisted.logger import Logger
+
 # -----------
 # Own modules
 # -----------
@@ -39,11 +41,8 @@
 from .     import PY2, v31, v311
 from .error import StringValueError, PayloadValueError, PayloadTypeError
 
-# Yombo Modules
-from yombo.core.log import get_logger
 
-log = get_logger('ext.mqtt.pdu')
-
+log = Logger(namespace='mqtt')
 
 # ---------------------------------------
 # MQTT Encoding/Decoding Helper functions

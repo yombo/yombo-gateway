@@ -255,10 +255,11 @@ class Atoms(YomboLibrary):
         already_set = False
         if self.run_state >= 2:  # but only if we are not during init.
             try:
-                atom_changes = yombo.utils.global_invoke_all('_atoms_set_',
+                atom_changes = yombo.utils.global_invoke_all('_atoms_preset_',
                                         **{'keys': key, 'value': value, 'new': key in self.__Atoms})
-            except YomboHookStopProcessing:
-                logger.warning("Stopping processing 'hook_atoms_set' due to YomboHookStopProcessing exception.")
+            except YomboHookStopProcessing as e:
+                logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
+                               state=key, resource=e.by_who)
                 return
             for moduleName, newValue in atom_changes.iteritems():
                 if newValue is not None:
@@ -271,6 +272,13 @@ class Atoms(YomboLibrary):
         self._Statistics.increment("lib.atoms.set", bucket_time=15, anon=True)
         if not already_set:
            self.__Atoms[key]= value
+
+        if self.run_state >= 2:  # but only if we are not during init.
+            # Call any hooks
+            try:
+                state_changes = yombo.utils.global_invoke_all('_atoms_set_', **{'key': key, 'value': value})
+            except YomboHookStopProcessing:
+                pass
 
         self.check_trigger(key, value)
 

@@ -143,16 +143,22 @@ class Devices(YomboLibrary):
 
     def keys(self):
         return self._devicesByUUID.keys()
+
     def items(self):
         return self._devicesByUUID.items()
+
     def iteritems(self):
         return self._devicesByUUID.iteritems()
+
     def iterkeys(self):
         return self._devicesByUUID.iterkeys()
+
     def itervalues(self):
         return self._devicesByUUID.itervalues()
+
     def values(self):
         return self._devicesByUUID.values()
+
     def has_key(self):
         return self._devicesByUUID.has_key()
 
@@ -632,8 +638,8 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        logger.error("firing device rule: {rule}", rule=rule)
-        logger.error("rule options: {options}", options=options)
+        logger.debug("firing device rule: {rule}", rule=rule)
+        logger.debug("rule options: {options}", options=options)
         for device in action['device_pointers']:
             delay = None
             if 'delay' in options and options['delay'] is not None:
