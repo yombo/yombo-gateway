@@ -91,9 +91,9 @@ class DownloadModules(YomboLibrary):
         Prepare the cloudfront download location, and :func:`checkModules`
         to see if any modules need to be downloaded.
         """
-        environment = self._Configs.get("server", 'environment', "production")
-        if self._Configs.get("server", 'cloudfront', "") != "":
-            self.cloudfront = "http://%s/" % self._Configs.get("server", 'cloudfront')
+        environment = self._Configs.get("core", 'environment', "production", False)
+        if self._Configs.get("core", 'module_domain', "", False) != "":
+            self.cloudfront = "http://%s/" % self._Configs.get("core", 'module_domain')
         else:
             if(environment == "production"):
                 self.cloudfront = "http://cloudfront.yombo.net/"

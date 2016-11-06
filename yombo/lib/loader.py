@@ -73,10 +73,10 @@ HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
 HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
-HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'all'}
+HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Localize"] = {'operation_mode':'all'}

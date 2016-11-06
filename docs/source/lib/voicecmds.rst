@@ -15,3 +15,5 @@ VoiceCmds Class
    :members:
 
    .. automethod:: _module_prestart_
+
+Last updated: |today|

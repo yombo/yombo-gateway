@@ -13,3 +13,5 @@ Web Interface
 ================
 .. autoclass:: WebInterface
    :members:
+
+Last updated: |today|

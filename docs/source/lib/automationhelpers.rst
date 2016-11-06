@@ -13,3 +13,5 @@ AutomationHelpers Class
 ===========================================
 .. autoclass:: AutomationHelpers
    :members:
+
+Last updated: |today|

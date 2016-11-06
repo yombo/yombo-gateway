@@ -39,18 +39,14 @@ from __future__ import print_function
 import yaml
 from os.path import abspath
 from os import environ
-#import signal
 import crypt
 import random
 import string
 from collections import deque
-#import sys
-# Import python libraries
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from os import path
 import yaml
 
 # Import twisted libraries

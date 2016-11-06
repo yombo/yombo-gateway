@@ -18,6 +18,7 @@ Perhaps disconnect and reconnect to another server? -Mitch
 
 :copyright: Copyright 2015-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqpyombo.py>`_
 """
 # Import python libraries
 try:  # Prefer simplejson if installed, otherwise json will work swell.
@@ -204,6 +205,11 @@ class AMQPYombo(YomboLibrary):
         }
 
     def _init_(self):
+        """
+        Loads various variables and calls :py:meth:connect()
+
+        :return:
+        """
         self.user_id = "gw_" + self._Configs.get("core", "gwuuid")
         self._startup_request_ID = random_string(length=12)
         self.init_defer = defer.Deferred()  # Prevents loader from moving on until we are done.
@@ -220,12 +226,17 @@ class AMQPYombo(YomboLibrary):
         return self.connect()
 
     def connect(self):
-        amqp_port = 5671
+        """
+        Connect to Yombo AMQP server.
+
+        :return:
+        """
         environment = self._Configs.get('server', 'environment', "production", False)
         if self._Configs.get("amqpyombo", 'hostname', "", False) != "":
             amqp_host = self._Configs.get("amqpyombo", 'hostname')
             amqp_port = self._Configs.get("amqpyombo", 'port', 5671, False)
         else:
+            amqp_port = 5671
             if environment == "production":
                 amqp_host = "amqp.yombo.net"
             elif environment == "staging":

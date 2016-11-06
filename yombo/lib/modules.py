@@ -315,17 +315,21 @@ class Modules(YomboLibrary):
             module._ModuleID = module_id
 
             module._Atoms = self._Loader.loadedLibraries['atoms']
+            module._Automation = self._Loader.loadedLibraries['automation']
+            module._AMQP = self._Loader.loadedLibraries['amqp']
             module._Commands = self._Loader.loadedLibraries['commands']
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
             module._Libraries = self._Loader.loadedLibraries
             module._Libraries = self._Loader.loadedLibraries
+            module._Localize = self._Loader.loadedLibraries['localize']
             module._Modules = self
             module._MQTT = self._Loader.loadedLibraries['mqtt']
+            module._SQLDict = self._Loader.loadedLibraries['sqldict']
             module._States = self._Loader.loadedLibraries['states']
             module._Statistics = self._Loader.loadedLibraries['statistics']
             module._Times = self._Loader.loadedLibraries['times']
-            module._Localize = self._Loader.loadedLibraries['localize']
+            module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
 
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices

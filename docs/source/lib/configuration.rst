@@ -15,3 +15,5 @@ Configuration Class
    :members:
 
    .. automethod:: __init__
+
+Last updated: |today|

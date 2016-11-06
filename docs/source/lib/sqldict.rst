@@ -16,3 +16,5 @@ SQLDict Class
 
    .. automethod:: __init__
 
+
+Last updated: |today|

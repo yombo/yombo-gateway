@@ -15,3 +15,5 @@ YomboAPI class
    :members:
 
    .. automethod:: __init__
+
+Last updated: |today|

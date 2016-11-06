@@ -232,10 +232,8 @@ class States(YomboLibrary, object):
         :param arguments: kwarg (arguments) to send to function.
         :return: Value of state
         """
-        # if key in self.__States:
-        #     if self.__States[key]['value'] == value and function is None:  # don't set the value to the same value
-        #         return
         if key in self.__States:
+            # If state is already set to value, we don't do anything.
             if self.__States[key]['value'] == value:
                 return
             self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)

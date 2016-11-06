@@ -13,3 +13,5 @@ Modules Class
 ================
 .. autoclass:: Modules
    :members:
+
+Last updated: |today|

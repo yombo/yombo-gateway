@@ -13,3 +13,5 @@ Device Types
 ================
 .. autoclass:: DeviceTypes
    :members:
+
+Last updated: |today|

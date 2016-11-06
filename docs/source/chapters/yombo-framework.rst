@@ -63,6 +63,7 @@ gateway services.
    ../lib/devicetypes.rst
    ../lib/gpg.rst
    ../lib/loader.rst
+   ../lib/localize.rst
    ../lib/localdb.rst
    ../lib/modules.rst
    ../lib/mqtt.rst

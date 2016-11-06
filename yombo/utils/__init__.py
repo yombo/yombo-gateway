@@ -329,9 +329,9 @@ def dict_merge(original, changes):
 
 def fopen(*args, **kwargs):
     """
-    A help function that wraps around python open() function.
+    A help function that wraps around python open() function. Makes handling files a across platforms easier.
 
-    This function should be used by modules. Use the
+    Modules that are looking to keep files open for reading, such as file monitoring, should use the the
     :py:mod:`yombo.utils.filereader` class.
     """
     # For windows, always use binary mode.

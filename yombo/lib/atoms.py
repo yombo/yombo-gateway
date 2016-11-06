@@ -1,14 +1,13 @@
 """
-.. rst-class:: floater
 
 .. note::
 
-  For more information see: `Atoms @ Module Development <https://yombo.net/docs/modules/atoms/>`_
+  For developer documentation, see: `Atoms @ Module Development <https://yombo.net/docs/modules/atoms/>`_
 
 Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
-some exceptions such as IP address changes. Libraries and modules and get and set additional atoms as desired.
+some exceptions such as IP address changes.
 
-For dynamically changing data, use :py:mod:`yombo.lib.states`.
+For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
 
 If a requested atom doesn't exist, a value of None will be returned instead of an exception.
 
@@ -22,6 +21,7 @@ If a requested atom doesn't exist, a value of None will be returned instead of a
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/atoms.py>`_
 """
 # Import python libraries
 try:

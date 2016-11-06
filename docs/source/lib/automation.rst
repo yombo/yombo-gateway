@@ -16,3 +16,5 @@ Automation Class
 
    .. automethod:: __init__
    .. automethod:: _module_prestart_
+
+Last updated: |today|

@@ -1,10 +1,11 @@
 """
-.. rst-class:: floater
 
 .. note::
 
-  For end-user documentation, see: `amqp @ Module Development <https://yombo.net/docs/modules/amqp/>`_
+  For developer documentation, see: `AMQP @ Module Development <https://yombo.net/docs/modules/amqp/>`_
 
+AMQP messaging is implemented by this library. It's used by Yombo Gateway to commuicate with it's servers. This
+library also exposes and API that modules can use to connect to other servers.
 AMQP protocol can be used for sending messages to other systems for processing, status updates, or requests. For
 for more informatin, see the `RabbitMQ Tutorials <https://www.rabbitmq.com/getstarted.html>`_.
 
@@ -12,13 +13,14 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 
 .. seealso::
 
-   The :py:mod:`yombo.lib.mqtt` can connect to MQTT brokers and is more light weight for automation controlls.
+   The :py:mod:`mqtt library <yombo.lib.mqtt>` can connect to MQTT brokers, this a light weight message broker.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
 :copyright: Copyright 2015-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqp.py>`_
 """
 # Import python libraries
 try:  # Prefer simplejson if installed, otherwise json will work swell.
@@ -61,7 +63,7 @@ class AMQP(YomboLibrary):
 
     def _unload_(self):
         self._local_log("debug", "AMQP::_unload_")
-        print "amqp - removing all clients.."
+        # print "amqp - removing all clients.."
         for client_id, client in self.client_connections.iteritems():
             print "amqp-clinet: %s" % client_id
             try:
@@ -71,14 +73,6 @@ class AMQP(YomboLibrary):
             except:
                 pass
 
-
-    def _i18n_states_(self, **kwargs):
-       return [
-           {'amqp.+.connected': {
-               'en': 'True if AMQP connection exists to Yombo servers.',
-               },
-           },
-       ]
 
     def _local_log(self, level, location="", msg=""):
         logit = getattr(logger, level)

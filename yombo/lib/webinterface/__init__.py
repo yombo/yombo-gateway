@@ -388,7 +388,7 @@ class WebInterface(YomboLibrary):
         :param request: The browser request.
         :return:
         """
-        return self._Localize.get_translation(self._Localize.parse_accept_language(request.getHeader('accept-language')))
+        return self._Localize.get_ugettext(self._Localize.parse_accept_language(request.getHeader('accept-language')))
 
     def _module_prestart_(self, **kwargs):
         """
