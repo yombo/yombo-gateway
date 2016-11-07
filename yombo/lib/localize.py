@@ -27,6 +27,8 @@ from hashlib import md5
 from time import gmtime, strftime
 from os.path import abspath
 import __builtin__
+import sys
+import traceback
 
 # Import 3rd-party libs
 import yombo.ext.polib as polib
@@ -51,6 +53,9 @@ class Localize(YomboLibrary):
             self.hashes = {'en':None}
         else:
             self.hashes = json.loads(temp)
+
+        if 'en' not in self.hashes:
+            self.hashes['en'] = ''
 
         self.files = {}
         self.locale_files = abspath('.') + "/usr/locale/"
@@ -108,16 +113,20 @@ class Localize(YomboLibrary):
                     hash_obj.update(open(fname, 'rb').read())
                 checksum = hash_obj.hexdigest()
                 # print "self.hashes: %s" % self.hashes
-                # print "checksum: %s" % checksum
+                # print "checksum (%s): %s" % (lang, checksum)
                 if lang in self.hashes:
                     # print "self.hashes[lang]: %s" % self.hashes[lang]
                     if checksum == self.hashes[lang]:
                         # print "skipping lang due to checksum match: %s" % lang
+                        self.hashes[lang] = checksum
                         continue
 
+                self.hashes[lang] = checksum
                 # print "not skipping lang due to checksum mismatch: %s" % lang
                 languages_to_update[lang] = 'aaa'
 
+            # print "languages_to_update: %s" % languages_to_update
+            # print "self.default_lang 11: %s" % self.default_lang
             # If we have a default language, lets make sure we have language files for it.
             if self.default_lang is not None:
                 if self.default_lang not in self.files:
@@ -125,7 +134,6 @@ class Localize(YomboLibrary):
                     language = self.default_lang.split('_')[0]
                     if language in self.files:
                         self.default_lang = language
-
             # If no default lang, try the system language.
             if self.default_lang is None:
                 language = self.get_system_language()
@@ -158,7 +166,7 @@ class Localize(YomboLibrary):
 
             # self.default_lang = 'es' # some testing...
             self._States['localize.default_language'] = self.default_lang
-            self._Configs.set('localize', 'default_lang', json.dumps(self.hashes, separators=(',',':')))
+            self._Configs.set('localize', 'default_lang', self.default_lang)
 
             for lang, files in languages_to_update.iteritems():
                 self.do_update(lang)
@@ -170,6 +178,11 @@ class Localize(YomboLibrary):
             __builtin__.__dict__['_'] = self.handle_translate
         except Exception as e: # if problem with translation, at least return msgid...
             logger.error("Unable to load translations. Gettng null one. Reason: %s" % e)
+            logger.error("--------------------------------------------------------")
+            logger.error("{error}", error=sys.exc_info())
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
+            logger.error("--------------------------------------------------------")
             self.translator = self.get_translator(get_null=True)
             __builtin__.__dict__['_'] = self.handle_translate
 
@@ -212,7 +225,7 @@ class Localize(YomboLibrary):
             except Exception as e: # if problem with translation, at least return msgid...
                 logger.error("Unable to load translations: %s" % e)
                 # we will still install _() so our system doesn't break!
-                return gettext.NullTranslations()
+        return gettext.NullTranslations()
 
     def handle_translate(self, msgctxt, msgid1=None, msgid2=None, num=None, translator=None):
         # fix args...

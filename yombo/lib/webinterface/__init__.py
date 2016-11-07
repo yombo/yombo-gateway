@@ -238,7 +238,16 @@ nav_side_menu = [
         'tooltip': '',
         'opmode': 'run',
     },
-
+    {
+        'label1': 'Developer Tools',
+        'label2': 'Debug',
+        'priority1': 5000,
+        'priority2': 1000,
+        'icon': 'fa fa-code fa-fw',
+        'url': '/devtools/debug',
+        'tooltip': '',
+        'opmode': 'run',
+    },
 ]
 
 class NotFound(Exception):

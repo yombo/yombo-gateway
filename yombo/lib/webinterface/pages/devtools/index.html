@@ -1,5 +1,4 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
-{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
 
 {% block content %}
             <div class="row">
@@ -16,9 +15,14 @@
                             <h4 class="modal-title" id="myModalLabel">Developer Tools</h4>
                           </div>
                           <div class="modal-body">
-                              <p>The developer tools allows you to create new types of automation controls, such as new types of commands, publish
-                              new modules, etc.</p>
-                              <p>More to come...</p>
+        <p>Developer tools allows you to create new types of automation items. This includes new commands, device
+            types, and modules that are available. Settings here do no directly affect the local gateway.
+        </p>
+        <p><b>Public VS Local (private)</b>Public items are available to every Yombo user and gateway.
+            Local items are only available to your user or gateway.
+        </p>
+        <p>For items that affect the local gateway, see the <a href="/configs/basic">settings area.</a>
+        </p>
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
@@ -26,81 +30,37 @@
                         </div>
                       </div>
                     </div>
-
-                    <p>Developer tools allows the primary account hodler to create now types of automation controls. This
-                        includes Commands, Device Types, Modules, and Input Types</p>
-                </div>
-                <!-- /.col-lg-12 -->
-            </div>
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4>Commands</h4>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <a class="btn btn-md btn-primary" href="/devtools/commands/public">Show Public</a>
-                            <a class="btn btn-md btn-primary" href="/devtools/commands/local">Show Local</a>
-                            <a class="btn btn-md btn-success" href="/devtools/commands/new">Add New</a>
-                        </div>
-                    </div>
-                    <!-- /.panel-body -->
-                </div>
-                <!-- /.col-lg-6 -->
-            </div>
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4>Device Types</h4>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <a class="btn btn-md btn-primary" href="/devtools/devicetypes/all">Show Public</a>
-                            <a class="btn btn-md btn-primary" href="/devtools/devicetypes/mine">Show Local</a>
-                            <a class="btn btn-md btn-success" href="/devtools/devicetypes/new">Add New</a>
-                        </div>
-                    </div>
-                    <!-- /.panel-body -->
-                </div>
-                <!-- /.col-lg-6 -->
-            </div>
-            <!-- /.row -->
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h4>Modules</h4>
-                        </div>
-                        <!-- /.panel-heading -->
-                        <div class="panel-body">
-                            <a class="btn btn-md btn-primary" href="/devtools/modules/all">Show Public</a>
-                            <a class="btn btn-md btn-primary" href="/devtools/modules/mine">Show Local</a>
-                            <a class="btn btn-md btn-success" href="/devtools/modules/new">Add New</a>
-                        </div>
-                    </div>
-                    <!-- /.panel-body -->
-                </div>
-                <!-- /.col-lg-6 -->
-            </div>
-            <!-- /.row -->
+                    <p>Create or manage automation items. See help (above) for details.
+                    </p>
+                    <p>
+                        <ul>
+                        <li><b>Commands</b> - Used to control devices.
+                            <ul>
+                                <li>
+                                <a href="/devtools/commands/public">Show Public</a>,
+                                <a href="/devtools/commands/local">Show Local</a>,
+                                <a href="/devtools/commands/new">Add New</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><b>Device Types</b> - Types of devices available.
+                            <ul>
+                                <li>
+                                <a href="/devtools/devicetypes/public">Show Public</a>,
+                                <a href="/devtools/devicetypes/local">Show Local</a>,
+                                <a href="/devtools/devicetypes/new">Add New</a>
+                                </li>
+                            </ul>
+                        <li><b>Modules</b> - Modules users can download and use on their gateways.
+                            <ul>
+                                <li>
+                                <a href="/devtools/modules/public">Show Public</a>,
+                                <a href="/devtools/modules/local">Show Local</a>,
+                                <a href="/devtools/modules/new">Add New</a>
+                                </li>
+                            </ul>
+                        </ul>
+                    </p>
+                </div> <!-- /.col-lg-12 -->
+            </div> <!-- /.row -->
 {% endblock %}
-
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
-
-{% block body_bottom %}
-    <!-- Make the tables pretty -->
-    <script>
-    $(document).ready(function() {
-        $('#dataTables-example').DataTable({
-                responsive: true,
-                paging: true,
-                iDisplayLength: 50
-        });
-    });
-    </script>
-{% endblock %}
-

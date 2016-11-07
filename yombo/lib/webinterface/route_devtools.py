@@ -12,9 +12,7 @@ def route_devtools(webapp):
         def page_devtools_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/index.html')
             return page.render(alerts=webinterface.get_alerts(),
-                               rules=webinterface._Loader.loadedLibraries['automation'].rules,
                                )
-
 
         @webapp.route('/commands/public')
         @require_auth()
@@ -65,3 +63,25 @@ def route_devtools(webapp):
                                commands=webinterface._Commands,
                                )
 
+
+        @webapp.route('/debug')
+        @require_auth()
+        def page_devtools_debug(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/index.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               )
+        @webapp.route('/debug/hooks_called_libraries')
+        @require_auth()
+        def page_devtools_debug_hooks_called_libraries(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/hooks_called_libraries.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               hooks_called=webinterface._Loader.hook_counts
+                               )
+
+        @webapp.route('/debug/hooks_called_modules')
+        @require_auth()
+        def page_devtools_debug_hooks_called_modules(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/hooks_called_modules.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               hooks_called=webinterface._Modules.hook_counts
+                               )

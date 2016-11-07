@@ -156,6 +156,7 @@ class Loader(YomboLibrary, object):
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self._operation_mode = None  # One of: firstrun, config, run
         self.sigint = False  # will be set to true if SIGINT is received
+        self.hook_counts = OrderedDict()  # keep track of hook names, and how many times it's called.
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
         # signal(SIGINT, self.shutdown2)
 
@@ -200,7 +201,7 @@ class Loader(YomboLibrary, object):
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
-                yield self.library_invoke(libraryName, "_load_")
+                yield self.library_invoke(libraryName, "_load_", self)
                 HARD_LOAD[name]['_load_'] = True
             else:
                 HARD_LOAD[name]['_load_'] = False
@@ -214,7 +215,7 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'start', 'About to call _start_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
-                yield self.library_invoke(libraryName, "_start_")
+                yield self.library_invoke(libraryName, "_start_", self)
                 HARD_LOAD[name]['_start_'] = True
             else:
                 HARD_LOAD[name]['_start_'] = False
@@ -225,7 +226,7 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'started', 'About to call _started_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
-                yield self.library_invoke(libraryName, "_started_")
+                yield self.library_invoke(libraryName, "_started_", self)
                 HARD_LOAD[name]['_started_'] = True
             else:
                 HARD_LOAD[name]['_started_'] = False
@@ -362,12 +363,17 @@ class Loader(YomboLibrary, object):
                     return True
 
     @inlineCallbacks
-    def library_invoke(self, requested_library, hook, **kwargs):
+    def library_invoke(self, requested_library, hook, called_by=None, **kwargs):
         """
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
         if requested_library not in self.loadedLibraries:
             returnValue(None)
+        if called_by is not None:
+            called_by = called_by._FullName
+        else:
+            called_by = 'Unknown'
+
         cache_key = requested_library + hook
         if cache_key in self._invoke_list_cache:
             if self._invoke_list_cache[cache_key] is False:
@@ -382,6 +388,16 @@ class Loader(YomboLibrary, object):
             method = getattr(library, hook)
             self._log_loader('debug', requested_library, 'library', 'library_invoke', 'About to call: %s' % hook)
             if callable(method):
+                if library._Name not in self.hook_counts:
+                    self.hook_counts[library._Name] = {}
+                if hook not in self.hook_counts:
+                    self.hook_counts[library._Name][hook] = {'Total Count': {'count': 0}}
+                # print "hook counts: %s" % self.hook_counts
+                # print "hook counts: %s" % self.hook_counts[library._Name][hook]
+                if called_by not in self.hook_counts[library._Name][hook]:
+                    self.hook_counts[library._Name][hook][called_by] = {'count': 0}
+                self.hook_counts[library._Name][hook][called_by]['count'] = self.hook_counts[library._Name][hook][called_by]['count'] + 1
+                self.hook_counts[library._Name][hook]['Total Count']['count'] = self.hook_counts[library._Name][hook]['Total Count']['count'] + 1
                 self._invoke_list_cache[cache_key] = True
                 results = yield maybeDeferred(method, **kwargs)
                 self._log_loader('debug', requested_library, 'library', 'library_invoke', 'Finished with call: %s' % hook)
@@ -394,7 +410,7 @@ class Loader(YomboLibrary, object):
 #            logger.debug("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
             self._invoke_list_cache[cache_key] = False
 
-    def library_invoke_all(self, hook, fullName=False, **kwargs):
+    def library_invoke_all(self, hook, fullName=False, called_by=None, **kwargs):
         """
         Calls library_invoke for all loaded libraries.
         """
@@ -411,7 +427,7 @@ class Loader(YomboLibrary, object):
         for library_name, label in self.loadedLibraries.iteritems():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
             try:
-                d = self.library_invoke(library_name, hook, **kwargs)
+                d = self.library_invoke(library_name, hook, called_by=called_by, **kwargs)
                 if isinstance(d, Deferred):
                     result = getattr(d, 'result', None)
                     if result is not None:

@@ -1,0 +1,45 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">Debug Tools
+                        <a style="float: right;" href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-lg"></i></a>
+                    </h1>
+                    <!-- Modal -->
+                    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                      <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title" id="myModalLabel">Developer Tools</h4>
+                          </div>
+                          <div class="modal-body">
+                              <p>View various information, not normally used by users. These tools can help you dig into
+                                  the gateway system and view lots of extra details about what's going on under
+                                  the hood.</p>
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p>
+                        <ul>
+                            <li><b>Hooks</b> - View what hooks have been called and how many times.
+                            <ul>
+                                <li>
+                                    <a href="/devtools/debug/hooks_called_libraries">Library hooks called.</a>
+                                </li>
+                                <li>
+                                    <a href="/devtools/debug/hooks_called_modules">Module hooks called.</a?
+                                </li>
+                            </ul>
+                        </li>
+                        </ul>
+                    </p>
+                </div> <!-- /.col-lg-12 -->
+            </div> <!-- /.row -->
+{% endblock %}

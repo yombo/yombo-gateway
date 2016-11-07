@@ -698,6 +698,8 @@ class Device:
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
+        self._FullName = 'yombo.gateway.lib.Devices.Device'
+        self._Name = 'Devices.Device'
         self._DevicesLibrary = _DevicesLibrary
         logger.debug("New device - info: {device}", device=device)
 
@@ -973,7 +975,7 @@ class Device:
         """
         kwargs['command'] = cmdobj
         kwargs['device'] = self
-        global_invoke_all('_device_command_', **kwargs)
+        global_invoke_all('_device_command_', called_by=self, **kwargs)
         self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def energy_get_usage(self, machine_status):

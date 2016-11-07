@@ -118,8 +118,7 @@ class States(YomboLibrary, object):
     def __str__(self):
         states = {}
         for key, state in self.__States.iteritems():
-            if state['readKey'] is None:
-                states[key] = state['value']
+            states[key] = state['value']
         return states
 
     @inlineCallbacks
@@ -246,7 +245,7 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_preset_', **{'key': key, 'value': value})
+            state_changes = global_invoke_all('_states_preset_', **{'called_by': self,'key': key, 'value': value})
         except YomboHookStopProcessing as e:
             logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                            state=key, resource=e.by_who)
@@ -260,7 +259,7 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_set_', **{'key': key, 'value': value})
+            state_changes = global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value})
         except YomboHookStopProcessing:
             pass
 

@@ -165,7 +165,7 @@ class Automation(YomboLibrary):
         For "automation_rules_list" hook, see the :ref:`Automation Example <automationexample>` example module.
 
         """
-        automation_sources = yombo.utils.global_invoke_all('_automation_source_list_')
+        automation_sources = yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
         logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in automation_sources.iteritems():
             for vals in item:
@@ -173,21 +173,21 @@ class Automation(YomboLibrary):
                 self.sources[vals['platform']] = vals
 #        logger.debug("sources: {sources}", sources=self.sources)
 
-        automation_filters = yombo.utils.global_invoke_all('_automation_filter_list_')
+        automation_filters = yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
         for moduleName, item in automation_filters.iteritems():
             for vals in item:
                 vals['platform_source'] = moduleName._FullName
                 self.filters[vals['platform']] = vals
 #        logger.debug("filters: {filters}", filters=self.filters)
 
-        automation_actions = yombo.utils.global_invoke_all('_automation_action_list_')
+        automation_actions = yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for moduleName, item in automation_actions.iteritems():
             for vals in item:
                 vals['platform_source'] = moduleName._FullName
                 self.actions[vals['platform']] = vals
 
-        other_rules = yombo.utils.global_invoke_all('_automation_rules_list_')
+        other_rules = yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
         for component, rules in other_rules.iteritems():
 #            print "Merging 1: %s" % rules['rules']
 #            print "Merging 2: %s" % self._rulesRaw['rules']

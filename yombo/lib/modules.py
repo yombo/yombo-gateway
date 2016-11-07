@@ -59,6 +59,7 @@ class Modules(YomboLibrary):
         """
         self._LocalDBLibrary = self._Libraries['localdb']
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
+        self.hook_counts = {}  # keep track of hook names, and how many times it's called.
 
     def _load_(self):
         """
@@ -133,28 +134,28 @@ class Modules(YomboLibrary):
 
         logger.debug("starting modules::init....")
         # Init
-        yield self._Loader.library_invoke_all("_module_init_")
+        yield self._Loader.library_invoke_all("_module_init_", called_by=self)
         yield self.module_init_invoke()  # Call "_init_" of modules
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
-        yield self._Loader.library_invoke_all("_module_preload_")
-        yield self.module_invoke_all("_preload_")
+        yield self._Loader.library_invoke_all("_module_preload_", called_by=self)
+        yield self.module_invoke_all("_preload_", called_by=self)
 
         # Load
-        yield self._Loader.library_invoke_all("_module_load_")
-        yield self.module_invoke_all("_load_")
+        yield self._Loader.library_invoke_all("_module_load_", called_by=self)
+        yield self.module_invoke_all("_load_", called_by=self)
 
         # Pre-Start
-        yield self._Loader.library_invoke_all("_module_prestart_")
-        yield self.module_invoke_all("_prestart_")
+        yield self._Loader.library_invoke_all("_module_prestart_", called_by=self)
+        yield self.module_invoke_all("_prestart_", called_by=self)
 
         # Start
-        yield self._Loader.library_invoke_all("_module_start_")
-        yield self.module_invoke_all("_start_")
+        yield self._Loader.library_invoke_all("_module_start_", called_by=self)
+        yield self.module_invoke_all("_start_", called_by=self)
 
-        yield self._Loader.library_invoke_all("_module_started_")
-        yield self.module_invoke_all("_started_")
+        yield self._Loader.library_invoke_all("_module_started_", called_by=self)
+        yield self.module_invoke_all("_started_", called_by=self)
 
     @inlineCallbacks
     def unload_modules(self):
@@ -170,19 +171,19 @@ class Modules(YomboLibrary):
 
         :return:
         """
-        self._Loader.library_invoke_all("_module_stop_")
+        self._Loader.library_invoke_all("_module_stop_", called_by=self)
         self.module_invoke_all("_stop_")
 
         keys = self._modulesByUUID.keys()
-        self._Loader.library_invoke_all("_module_unload_")
+        self._Loader.library_invoke_all("_module_unload_", called_by=self)
         for ModuleID in keys:
             module = self._modulesByUUID[ModuleID]
             try:
-                self.module_invoke(module._Name, "_unload_")
+                self.module_invoke(module._Name, "_unload_", called_by=self)
             except YomboWarning:
                 pass
             finally:
-                yield self._Loader.library_invoke_all("_module_unloaded_")
+                yield self._Loader.library_invoke_all("_module_unloaded_", called_by=self)
                 delete_component = module._FullName
                 self.del_module(ModuleID, module._Name.lower())
                 del self._Loader.loadedComponents[delete_component.lower()]
@@ -390,10 +391,14 @@ class Modules(YomboLibrary):
         logger.error("Received an error: {error}", error=error)
 
 #    @inlineCallbacks
-    def module_invoke(self, requestedModule, hook, **kwargs):
+    def module_invoke(self, requestedModule, hook, called_by=None, **kwargs):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
         """
+        if called_by is not None:
+            called_by = called_by._FullName
+        else:
+            called_by = 'Unknown'
         cache_key = requestedModule + hook
         if cache_key in self._invoke_list_cache:
             if self._invoke_list_cache[cache_key] is False:
@@ -410,6 +415,16 @@ class Modules(YomboLibrary):
         if hasattr(module, hook):
             method = getattr(module, hook)
             if callable(method):
+                if module._Name not in self.hook_counts:
+                    self.hook_counts[module._Name] = {}
+                if hook not in self.hook_counts:
+                    self.hook_counts[module._Name][hook] = {'Total Count': {'count': 0}}
+                # print "hook counts: %s" % self.hook_counts
+                # print "hook counts: %s" % self.hook_counts[library._Name][hook]
+                if called_by not in self.hook_counts[module._Name][hook]:
+                    self.hook_counts[module._Name][hook][called_by] = {'count': 0}
+                self.hook_counts[module._Name][hook][called_by]['count'] = self.hook_counts[module._Name][hook][called_by]['count'] + 1
+                self.hook_counts[module._Name][hook]['Total Count']['count'] = self.hook_counts[module._Name][hook]['Total Count']['count'] + 1
 #                return method(**kwargs)
                 try:
 #                    results = yield maybeDeferred(method, **kwargs)
@@ -436,7 +451,7 @@ class Modules(YomboLibrary):
             self._invoke_list_cache[cache_key] = False
             # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
 
-    def module_invoke_all(self, hook, fullName=False, **kwargs):
+    def module_invoke_all(self, hook, fullName=False, called_by=None, **kwargs):
         """
         Calls module_invoke for all loaded modules.
         """
@@ -445,7 +460,7 @@ class Modules(YomboLibrary):
         for ModuleID, module in self._modulesByUUID.iteritems():
             label = module._FullName.lower() if fullName else module._Name.lower()
             try:
-                 result = self.module_invoke(module._Name, hook, **kwargs)
+                 result = self.module_invoke(module._Name, hook, called_by=called_by, **kwargs)
                  if result is not None:
                      results[label] = result
             except YomboWarning:
