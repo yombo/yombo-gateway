@@ -74,6 +74,7 @@ from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, split, global_invoke_all
+from yombo.utils.maxdict import MaxDict
 from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
 
@@ -722,6 +723,7 @@ class Device:
         self.updated = int(device["updated"])
         self.updated_srv = int(device["updated_srv"])
 
+        self.do_command_requests = MaxDict(300, {})
 
         self.energy_type = None  # electric, gas, etc.
         self.energy_tracker_source = None  # Source of tracking: None, calc, device
@@ -832,7 +834,7 @@ class Device:
 
         :param cmd: Command ID or Label to send.
         :param pin: A pin to check.
-        :param request_id: Request ID for tracking.
+        :param request_id: Request ID for tracking. If none given, one will be created.
         :param delay: How many seconds to delay sending the command.
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
@@ -865,15 +867,13 @@ class Device:
         # print("in device do_command: self._DevicesLibrary.delay_queue_unique: %s" % self._DevicesLibrary.delay_queue_unique)
 
         if request_id is None:
-            if 'unique_hash' in kwargs:
-                unique_hash = kwargs['unique_hash']
-            else:
-                unique_hash = None
-            if unique_hash in self._DevicesLibrary.delay_queue_unique:
-                request_id = self._DevicesLibrary.delay_queue_unique[unique_hash]
-            else:
-                request_id = random_string(length=16)
+            request_id = random_string(length=16)
         # print("in device do_command: rquest_id 2: %s" % request_id)
+
+        self.do_command_requests[request_id] = {
+            'cmdid': cmdobj.command_id,
+            'status': 'new',  # new, delayed, sent, received, completed
+        }
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
             if max_delay is None:
@@ -894,7 +894,6 @@ class Device:
                         'device_id': self.device_id,
                         'not_before': not_before,
                         'max_delay': max_delay,
-                        'unique_hash': unique_hash,
                         'request_id': request_id,
                         'kwargs': kwargs,
                     }
@@ -908,6 +907,7 @@ class Device:
                     'reactor': None,
                 }
                 self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
+                self.do_command_requests[request_id]['status'] = 'delayed'
             else:
                 raise YomboDeviceError("not_before' must be a float or int.")
 
@@ -925,7 +925,6 @@ class Device:
                         'not_before': when,
                         'max_delay': max_delay,
                         'kwargs': kwargs,
-                        'unique_hash': unique_hash,
                         'request_id': request_id,
                     }
                 self._DevicesLibrary.delay_queue_active[request_id] = {
@@ -937,8 +936,8 @@ class Device:
                     'request_id': request_id,
                     'reactor': None,
                 }
-                self._DevicesLibrary.delay_queue_unique[unique_hash] = request_id
                 self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
+                self.do_command_requests[request_id]['status'] = 'delayed'
             else:
                 raise YomboDeviceError("'not_before' must be a float or int.")
 
@@ -967,6 +966,7 @@ class Device:
         * _devices_command_ : Sends kwargs: *device*, the device object and *command*. This receiver will be
           responsible for obtaining whatever information it needs to complete the action being requested.
 
+        :param request_id:
         :param cmdobj:
         :param kwargs:
         :return:
@@ -974,7 +974,14 @@ class Device:
         kwargs['command'] = cmdobj
         kwargs['device'] = self
         global_invoke_all('_device_command_', called_by=self, **kwargs)
+        self.do_command_requests[kwargs['request_id']]['status'] = 'sent'
         self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
+
+    def command_received(self, request_id):
+        self.do_command_requests[request_id]['status'] = 'received'
+
+    def command_done(self, request_id):
+        self.do_command_requests[request_id]['status'] = 'done'
 
     def energy_get_usage(self, machine_status):
         """
@@ -1065,7 +1072,7 @@ class Device:
         logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
-            self.send_status(**kwargs)
+            self.send_status()
 
     def _set_status(self, **kwargs):
         logger.debug("_set_status called...")
@@ -1090,49 +1097,20 @@ class Device:
 
     def send_status(self, **kwargs):
         """
-        Tell the message system to broadcast the current status of a device. This
-        is typically only called internally when a device status changes. Shouldn't
-        need to call this from a module. Just send a command to the device and
-        this function will be called automatically as needed.
+        Sends current status. Use set_status() to set the status, it will call this method for you.
+
+        Calls the _device_status_ hook to send current device status. Useful if you just want to send a status of
+        a device without actually changing the status.
 
         :param kwargs:
         :return:
         """
-        return  #todo: convert to hook
-        logger.debug("send_status called...")
-        if 'dest' in kwargs:
-            dest = kwargs['dest']
-        else:
-            dest = 'yombo.gateway.all'
-        if 'src' in kwargs:
-            src = kwargs['src']
-        else:
-            src = 'yombo.gateway.core.device'
-        if 'payloadAddon' in kwargs:
-            payloadAddon = kwargs['payloadAddon']
-        else:
-            payloadAddon = {}
-
-        payload = {"deviceobj" : self,
-                   "status" : self.status_history[0],
-                   "previous_status" : self.status_history[1],
-                  }
-        try:
-            payload.update(payloadAddon)
-        except:
-            pass
-        self._DevicesLibrary._Statistics.increment("lib.devices.status_change", anon=True)
-        msg = {
-               'msgOrigin'     : src,
-               'msgDestination': dest,
-               'msgType'       : "status",
-               'msgStatus'     : "new",
-               'msgStatusExtra': "",
-               'uuidtype'      : "APDS",
-               'payload'       : payload,
-              }
-        message = Message(**msg)
-        message.send()
+        kwargs.update({"deviceobj" : self,
+                       "status" : self.status_history[0],
+                       "previous_status" : self.status_history[1],
+                       "old_stats" : self.status_history[2],
+                      } )
+        global_invoke_all('_device_status_', called_by=self, **kwargs)
 
     def remove_delayed(self):
         """
