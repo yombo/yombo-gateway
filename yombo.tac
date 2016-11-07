@@ -1,4 +1,4 @@
-import pyximport; pyximport.install()
+#import pyximport; pyximport.install()
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """

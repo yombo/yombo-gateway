@@ -332,7 +332,7 @@ class Modules(YomboLibrary):
             module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
 
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-            module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # Basically, all devices
+            module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
 
             if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):

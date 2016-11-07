@@ -384,6 +384,12 @@ class WebInterface(YomboLibrary):
     #     }]
 
     def _configuration_set_(self, **kwargs):
+        """
+        Receive configuruation updates and adjust as needed.
+
+        :param kwargs: section, option(key), value
+        :return:
+        """
         section = kwargs['section']
         option = kwargs['option']
         value = kwargs['value']

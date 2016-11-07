@@ -161,6 +161,15 @@ class Configuration(YomboLibrary):
             self.set('core', 'setup_stage', 'first_run')
         self.loading_yombo_ini = False
 
+    def _start_(self):
+        """
+        Define some default configuration items.
+        :return:
+        """
+        self.set('misc', 'temp_display', 'f')
+        self.set('misc', 'length_display', 'imperial')  # will we ever get to metric?
+
+
     def _unload_(self):
         """
         Save the items in the config table to yombo.ini.  This allows

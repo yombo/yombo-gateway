@@ -215,7 +215,7 @@ class Statistics(YomboLibrary):
         This will create statistics save duration with the following values:
         {'full':180, '5m':180, '15m':90, '60m':365, '6hr':730, '24h':1825}
 
-        Notes: set any value to 0 to not store any days at a given interval. Except for 24h, 0 = keep forever.
+        Notes: set any value to 0 and it will keep that level of data forever!
 
         See :py:mod:`Atoms Library <yombo.lib.automationhelpers>` for demo.
         """
@@ -321,7 +321,7 @@ class Statistics(YomboLibrary):
         :type name: string
         :param value: A numbered value to set.
         :type value: int
-        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
@@ -354,7 +354,7 @@ class Statistics(YomboLibrary):
         :type name: string
         :param value: A numbered value to set.
         :type value: int
-        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
@@ -385,7 +385,7 @@ class Statistics(YomboLibrary):
         :type name: string
         :param count: How many to increment by, defaults to 1.
         :type count: int
-        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
@@ -423,7 +423,7 @@ class Statistics(YomboLibrary):
         :type name: string
         :param count: How many to increment by, defaults to -1.
         :type count: int
-        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
@@ -462,7 +462,7 @@ class Statistics(YomboLibrary):
         :type name: string
         :param value: How long something took in milliseconds.
         :type value: int4
-        :param bucket_time: How many minutes the bucket should be. Must be divisable by 60.
+        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool

@@ -742,7 +742,7 @@ class Device:
         self.last_command = deque({}, 30)
         self.status_history = deque({}, 30)
         self.testDevice = testDevice
-        self.device_variables = {'asdf':'qwer'}
+        self.device_variables = {}
         self.device_route = {}  # Destination module to send commands to
         self._helpers = {}  # Helper class provided by route module that can provide additional features.
         self._CommandsLibrary = self._DevicesLibrary._Libraries['commands']
@@ -764,7 +764,8 @@ class Device:
 
     def _init_(self):
         """
-        Performs items that required deferreds.
+        Performs items that require deferreds.
+
         :return:
         """
         # def set_commands(commands):
