@@ -1,3 +1,5 @@
+# This file was created by Yombo for use with Yombo Python gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Manages interactions with api.yombo.net.
 

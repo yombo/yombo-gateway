@@ -1,3 +1,5 @@
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Helpers for automation items. Adds some core platforms to the source, filters, and actions systems. See
 :py:mod:`yombo.lib.automationhelpers` for additional details.

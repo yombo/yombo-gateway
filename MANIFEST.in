@@ -1,6 +1,9 @@
-include LICENSE Makefile yombo.tac yombod localmodules.ini setup.py
-recursive-include yombo *
-include yombod
+recursive-include yombo *.py
+recursive-include yombo *.py
+include yombo.sh
 include yombo.tac
-include readme.txt
 include LICENSE
+include COPYING
+include HACKING.rst
+include README.rst
+include automation.txt-sample

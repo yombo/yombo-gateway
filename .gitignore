@@ -39,6 +39,7 @@ yombo/lib/html5*
 yombo/lib/old*
 yombo/lib/webinterface/static/dist
 *.jar
+*ombo.egg-info*
 
 # Logs and Databases #
 ######################

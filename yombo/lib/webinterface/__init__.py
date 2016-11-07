@@ -1,3 +1,5 @@
+# This file was created by Yombo for use with Yombo Python gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Provides web interface for configuration of the Yombo system.
 

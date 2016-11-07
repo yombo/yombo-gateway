@@ -1,6 +1,5 @@
-# cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# This file was created by Yombo for use with Yombo Python gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Module developers must use the *YomboModule* class as their base class. This class
 gets their module setup and running with basic functions, predefined variables,

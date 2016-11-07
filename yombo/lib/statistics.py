@@ -1,3 +1,5 @@
+# This file was created by Yombo for use with Yombo Python gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Statistics allow the gateway to trace various data points. This can be used to track how much time of a day the
 sun is up, or average temperatures, number of commands sent, etc.  Statistics can be used in conjunction with

@@ -1,5 +1,5 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
-#software.  Details can be found at https://yombo.net
+# software.  Details can be found at https://yombo.net
 """
 This is a simple helper library to manage device type mapping. This is a mapping between modules, device types,
 and commands.

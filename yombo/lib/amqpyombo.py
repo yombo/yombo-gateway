@@ -1,3 +1,5 @@
+# This file was created by Yombo for use with Yombo Python Gateway automation
+# software.  Details can be found at https://yombo.net
 """
 Yombo gateway connects to it's servers using the AMQP library.  It's primarily responsible for connecting to the
 server, saying hello, and getting any configuration changes that have happened. This allows the server to
