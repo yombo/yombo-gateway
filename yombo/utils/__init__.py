@@ -825,4 +825,3 @@ def is_fcntl_available(check_sunos=False):
     if check_sunos and is_sunos():
         return False
     return HAS_FCNTL
-

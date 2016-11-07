@@ -186,7 +186,8 @@ class Atoms(YomboLibrary):
         """
         We keep 10 days of max data, 30 days of hourly data, 1 of daily data
         """
-        return {'name': 'lib.atoms.#', 'lifetimes': [11, 30, 365] } # we set full details for 11 days as an example/test
+        return {'lib.atoms.#': {'full':10, '5m':10, '15m':10, '60m':90, '6hr':0, '24h':720} }
+        # we don't keep 6h averages.
 
     def get_atoms(self):
         """

@@ -134,16 +134,18 @@ class Statistics(YomboLibrary):
 
         # defines how long to keep things. All values in days! 0 - forever
         self.count_bucket_life_full = self._Configs.get('statistics', 'count_bucket_life_full', 30, False)
-        self.count_bucket_life_qtr_hour = self._Configs.get('statistics', 'count_bucket_life_qtr_hour', 120, False)
-        self.count_bucket_life_hourly = self._Configs.get('statistics', 'count_bucket_life_hourly', 180, False)
+        self.count_bucket_life_5m = self._Configs.get('statistics', 'count_bucket_life_5m', 120, False)
+        self.count_bucket_life_15m = self._Configs.get('statistics', 'count_bucket_life_15m', 120, False)
+        self.count_bucket_life_60m = self._Configs.get('statistics', 'count_bucket_life_60m', 180, False)
         self.count_bucket_life_daily = self._Configs.get('statistics', 'count_bucket_life_daily', 0, False)
+        self.averages_bucket_life_5m = self._Configs.get('statistics', 'averages_bucket_life_5m', 120, False)
         self.averages_bucket_life_full = self._Configs.get('statistics', 'averages_bucket_life_full', 30, False)
-        self.averages_bucket_life_qtr_hour = self._Configs.get('statistics', 'averages_bucket_life_qtr_hour', 120, False)
-        self.averages_bucket_life_hourly = self._Configs.get('statistics', 'averages_bucket_life_hourly', 120, False)
+        self.averages_bucket_life_15m = self._Configs.get('statistics', 'averages_bucket_life_15m', 120, False)
+        self.averages_bucket_life_60m = self._Configs.get('statistics', 'averages_bucket_life_60m', 120, False)
         self.averages_bucket_life_daily = self._Configs.get('statistics', 'averages_bucket_life_daily', 0, False)
         self.datapoint_bucket_life_full = self._Configs.get('statistics', 'datapoint_bucket_life_full', 30, False)
-        self.datapoint_bucket_life_qtr_hour = self._Configs.get('statistics', 'datapoint_bucket_life_qtr_hour', 120, False)
-        self.datapoint_bucket_life_hourly = self._Configs.get('statistics', 'datapoint_bucket_life_hourly', 120, False)
+        self.datapoint_bucket_life_15m = self._Configs.get('statistics', 'datapoint_bucket_life_15m', 120, False)
+        self.datapoint_bucket_life_60m = self._Configs.get('statistics', 'datapoint_bucket_life_60m', 120, False)
         self.datapoint_bucket_life_daily = self._Configs.get('statistics', 'datapoint_bucket_life_daily', 0, False)
 
         self.bucket_lifetimes = {}  # caches meta life duration. Might get set many times, no need to hammer database
@@ -192,36 +194,55 @@ class Statistics(YomboLibrary):
 
     def _module_prestart_(self, **kwargs):
         """
-        This function is called before the _start_ function of all modules is called. This in turn calls the
-        hook_statistics_lifetimes hook to get lifetime information about statistics.
+        This function is called before the _start_ function of all modules is called. This implements the hook:
+        _statistics_lifetimes_.  The hook should return a dictionary with the following possible keys - not
+        all keys are required, only ones should override the default.
 
-        This allows libraries and modules to limit the lifetime of statistics. It expects a dictionary in return:
-        return {'name': 'lib.amqpyombo.amqp.#',
-                'lifetimes': [15, 30, 365],
-               }
+        How these values work: If your module is saving stats every 30 seconds, this can consume a lot of data. After
+        a while this data might be useless (or important). Periodically, the statistics are merged and save space. The
+        following default values: {'full':60, '5m':90, '15m':90, '60m':365, '6hr':730, '24h':1825}  that the system
+        will keep full statistics for 60 days. Then, it'll collapse this down to 15 minute averages. It will keep this
+        for an additional 90 days. After that, it will keep 15 minute averages for 90 days. At this point, we have 195
+        days worth of statistics. The remaining consolidations should be self explanatory.
 
-        The name is the filter to apply. A * can replace one section of the name, while a # will grab any name
-        segments after it.
+        *Usage**:
 
-        See :py:mod:`Atoms Library <yombo.lib.automationhelpers>` for demo. All other modules are defined here...
+        .. code-block:: python
+
+           def _statistics_lifetimes_(**kwargs):
+               return {'modules.mymodulename': {'full':180, '5m':180}}
+
+        This will create statistics save duration with the following values:
+        {'full':180, '5m':180, '15m':90, '60m':365, '6hr':730, '24h':1825}
+
+        Notes: set any value to 0 to not store any days at a given interval. Except for 24h, 0 = keep forever.
+
+        See :py:mod:`Atoms Library <yombo.lib.automationhelpers>` for demo.
         """
         # first, set some generic defaults. The filter matcher when processing will always use the most specific.
-        self.bucket_lifetimes_default = [60, 120, 10000]
-
-        self.add_bucket_lifetime('lib.#', [15, 60, 365])
-        self.add_bucket_lifetime('lib.device.#', [60, 365, 10000])
-        self.add_bucket_lifetime('lib.amqpyombo.amqp.#', [5, 15, 90])  # don't really care about this! If you do, just override with same value.
-        self.add_bucket_lifetime('core.#', [10, 30, 365])
-        self.add_bucket_lifetime('modules.#', [10, 30, 365])
+        # full, 5m, 15m, 60m
+        self.bucket_lifetimes_default = {
+            'full':60, '5m':90, '15m':90, '60m':365, '6hr':730, '24h':1825
+        }
+        self.add_bucket_lifetime('#', self.bucket_lifetimes_default)
+        self.add_bucket_lifetime('lib.#', {'full':15, '5m':30, '15m':60, '60m':90, '6hr':180, '24h':1000})
+        self.add_bucket_lifetime('lib.device.#', {'full':60, '5m':90, '15m':90, '60m':90, '6hr':180, '24h':1000})
+        self.add_bucket_lifetime('lib.amqpyombo.amqp.#', {'full':5, '5m':10, '15m':15, '60m':15, '6hr':15, '24h':90})
+        self.add_bucket_lifetime('lib.#', {'full':10, '5m':15, '15m':15, '60m':15, '6hr':180, '24h':720})
+        self.add_bucket_lifetime('modules.#', {'full':30, '5m':15, '15m':15, '60m':15, '6hr':180, '24h':1000})
 
         stat_lifetimes = global_invoke_all('_statistics_lifetimes_', called_by=self)
-#        print "################## %s " % automation_sources
+        print "################## %s " % stat_lifetimes
 #        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in stat_lifetimes.iteritems():
             if isinstance(item, dict):
-                    self.add_bucket_lifetime(item['name'], item['lifetimes'])
+                for bucket, values in item.iteritems():
+                    print "hook....bucket: %s" % bucket
+                    print "hook....bucket: %s" % values
+                    self.add_bucket_lifetime(bucket, values)
 
-#        print 'lifetimes: %s' % self.bucket_lifetimes
+        for name, data in self.bucket_lifetimes.iteritems():
+            print "name: %s, data: %s" % (name, data)
 
     def _get_bucket_time(self, type, bucket_time=None):
         """
@@ -279,12 +300,14 @@ class Statistics(YomboLibrary):
         :param lifetimes: list - [full, hourly, daily]
         :return:
         """
-        if isinstance(lifetimes, list) is False or len(lifetimes) != 3:
-            raise YomboWarning("Bucket lifetimes must be a list of life int values.")
-        for item in lifetimes:
-            if isinstance(item, int) is False:
-                raise YomboWarning("Bucket lifetimes must be a list of life int values.")
-        self.bucket_lifetimes[name] = {'life': lifetimes}
+        if isinstance(lifetimes, dict) is False:
+            raise YomboWarning("Bucket lifetimes must be a dictionary.")
+        base_dict = self.bucket_lifetimes_default.copy()
+        for key, value in lifetimes.iteritems():
+            if key in self.bucket_lifetimes_default:
+                base_dict[key] = value
+
+        self.bucket_lifetimes[name] = {'life': base_dict}
 
     def datapoint(self, name, value, anon=False, lifetimes=None):
         """

@@ -85,3 +85,11 @@ def route_devtools(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                hooks_called=webinterface._Modules.hook_counts
                                )
+
+        @webapp.route('/debug/statistic_bucket_lifetimes')
+        @require_auth()
+        def page_devtools_debug_statistic_bucket_lifetimes(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/statistic_bucket_lifetimes.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               bucket_lifetimes=webinterface._Statistics.bucket_lifetimes
+                               )
