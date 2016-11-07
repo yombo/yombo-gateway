@@ -229,8 +229,8 @@ class Devices(YomboLibrary):
         self.delay_queue_storage = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
         # Now check to existing delayed messages.  If not too old, send otherwise delete them.  If time is in
         #  future, setup a new reactor to send in future.
-        logger.debug("module_started: delayQueue: {delay}", delay=self.delay_queue_storage)
         for request_id in self.delay_queue_storage.keys():
+            logger.info("module_started: delayQueue: {delay}", delay=self.delay_queue_storage[request_id])
             if self.delay_queue_storage[request_id]['unique_hash'] is not None:
                 self.delay_queue_unique[self.delay_queue_storage[request_id]['unique_hash']] = request_id
             if request_id in self.delay_queue_active:
@@ -866,9 +866,14 @@ class Device:
         # print("in device do_command: kwargs: %s" % kwargs)
         # print("in device do_command: self._DevicesLibrary.delay_queue_unique: %s" % self._DevicesLibrary.delay_queue_unique)
 
-        if request_id is None:
-            request_id = random_string(length=16)
-        # print("in device do_command: rquest_id 2: %s" % request_id)
+        if 'unique_hash' in kwargs:
+            unique_hash = kwargs['unique_hash']
+        else:
+            unique_hash = None
+        if unique_hash in self._DevicesLibrary.delay_queue_unique:
+            request_id = self._DevicesLibrary.delay_queue_unique[unique_hash]
+        elif request_id is None:
+            request_id = random_string(length=16)        # print("in device do_command: rquest_id 2: %s" % request_id)
 
         self.do_command_requests[request_id] = {
             'cmdid': cmdobj.command_id,
@@ -894,6 +899,7 @@ class Device:
                         'device_id': self.device_id,
                         'not_before': not_before,
                         'max_delay': max_delay,
+                        'unique_hash': unique_hash,
                         'request_id': request_id,
                         'kwargs': kwargs,
                     }
@@ -902,6 +908,7 @@ class Device:
                     'device': self,
                     'not_before': not_before,
                     'max_delay': max_delay,
+                    'unique_hash': unique_hash,
                     'kwargs': kwargs,
                     'request_id': request_id,
                     'reactor': None,
@@ -924,6 +931,7 @@ class Device:
                         'device_id': self.device_id,
                         'not_before': when,
                         'max_delay': max_delay,
+                        'unique_hash': unique_hash,
                         'kwargs': kwargs,
                         'request_id': request_id,
                     }
@@ -932,6 +940,7 @@ class Device:
                     'device': self,
                     'not_before': when,
                     'max_delay': max_delay,
+                    'unique_hash': unique_hash,
                     'kwargs': kwargs,
                     'request_id': request_id,
                     'reactor': None,

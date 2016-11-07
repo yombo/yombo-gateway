@@ -1,6 +1,5 @@
-# cython: embedsignature=True
-#This file was created by Yombo for use with Yombo Python gateway automation
-#software.  Details can be found at http://yombo.net
+#This file was created by Yombo for use with Yombo Python Gateway automation
+#software.  Details can be found at https://yombo.net
 """
 Allows fuzzy, non-exact, key search on dictionary keys. This expands on the base dictionary class.
 

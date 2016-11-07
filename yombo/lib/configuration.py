@@ -183,6 +183,9 @@ class Configuration(YomboLibrary):
         #Todo: convert to fdesc for non-blocking. Need example of usage.
         """
         try:
+            # If for some reason startup fails, we won't get _() defined. We just try to print _() and test...
+            logger.debug(_('system', 'Current locale: None'))
+
             if self.configs_dirty is True or force_save is True:
                 logger.debug("saving config file...")
                 config_file = open("yombo.ini",'w')
