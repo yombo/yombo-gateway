@@ -24,6 +24,7 @@ from struct import pack as struct_pack, unpack as struct_unpack
 from socket import inet_aton, inet_ntoa
 import math
 from time import strftime, localtime, time
+import decimal
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -737,6 +738,54 @@ def hashid_decode(input, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXY
     hashid = Hashids(salt, min_length, alphabet)
     return hashid.decode(input)
 
+# basic conversions
+
+unit_converters = {
+    'km_mi': lambda x: x*0.62137119,  # miles
+    'mi_km': lambda x: x*1.6093,  # kilometers
+    'm_ft': lambda x: x*3.28084,  # feet
+    'ft_m': lambda x: x*0.3048,  # meters
+    'cm_in': lambda x: x*0.39370079,  # inches
+    'in_cm': lambda x: x*2.54,  # inches
+    'oz_g': lambda x: x*28.34952,  # grams
+    'g_oz': lambda x: x*0.03527396195,  # ounces
+    'kg_lb': lambda x: x*2.20462262185,  # pounds
+    'lb_kg': lambda x: x*0.45359237,  # pounds
+    'f_c': lambda x: float((x - 32) * (5.0/9.0)),  # celsius
+    'c_f': lambda x: float((9.0/5.0) * (x + 32)),  # fahrenheit
+    'btu_kwh': lambda x: x*0.00029307107017,  # kilowatt-hour
+    'kwh_btu': lambda x: x*3412.14163312794,  # btu
+}
+
+def unit_convert(unit_type, unit_size):
+    """
+    Converst various types of lenghts, masses, and temperatures. The format of the list below is: (from)_(to)
+    For example, "g_oz" converts from grams to ounces.
+
+    Usage: yombo.utils.unit_convert('km_mi', 10)  # returns 10 km in miles.
+
+    Valid unit_types:
+    'km_mi' - kilometers to miles
+    'mi_km' - miles to kilometers
+    'm_ft' - meters to feet
+    'ft_m' - feet to meters
+    'cm_in' - centimeter to inches
+    'in_cm' - inches to centimeters
+    'oz_g' - ounces to grames
+    'g_oz' - grames to ounces
+    'kg_lb' - kilograms to pounds
+    'lb_kg' - pounts to kilograms
+    'f_c' - fahrenheit to celsius
+    'c_f' - celsius to fahrenheit
+    'btu_kwh' - btu's to kilowatt-hours
+    'kwh_btu' - kilowatt-hours to btu's
+
+    :param unit_type: string - unit types to convert from_to
+    :param unit_size: int or float - value to convert
+    :return: float - converted unit
+    """
+    return unit_converters[unit_type](unit_size)
+
 @memoize_
 def is_freebsd():
     """
@@ -777,47 +826,3 @@ def is_fcntl_available(check_sunos=False):
         return False
     return HAS_FCNTL
 
-# #TODO: This will be removed - will based off kerberos method, but using GPG.
-# def getUserGWToken(username, gwtokenid, fetchRemote=False):
-#     """
-#     Fetches a gateway token for a username from yombo service. Used by the
-#     authention tool when validating users. (UNTESTED!!)
-#
-#     :param username: Username of user trying to get in.
-#     :type username: string
-#     :param gwtokenid: GW Token ID to use for user.
-#     :type gwtokenid: string
-#     """
-#     global yombodbtools
-#     if yombodbtools is None:
-#         yombodbtools = get_dbtools()
-#     record = yombodbtools.getUserGWToken(username, gwtokenid)
-#     if record is None:
-#       if fetchRemote == True:
-#         logger.info("Requesting user tokens.")
-#         beforeTime = getConfigValue('local', 'lastUserTokens')
-#         self.gateway_control.sendQueueAdd(self._generateMessage({'cmd' : 'getFullUsers'}))
-#         message = {'msgOrigin'      : "yombo.gateway.lib.GatewayConfigs:%s" % getConfigValue("core", "gwuuid"),
-#                    'msgDestination' : "yombo.svc.lib.GatewayConfigs",
-#                    'msgType'        : "config",
-#                    'msgStatus'      : "request",
-#                    'uuidType'       : "0",
-#                    'uuidSubType'    : "010",
-#                    'payload'        : {'cmd' : 'getFullUserGWTokens'},
-#                   }
-#         message = Message(**msg)
-#         message.send()
-#         for x in range (0,10):
-#           logger.info("Waiting for user tokens to flow in.")
-#           #todo: WHAT?!?!?!?!!?  No sleeping allowed...
-#           sleep(0.2)
-#           afterTime = getConfigValue('local', 'lastUserTokens')
-#           if beforeTime != beforeTime:
-#             recordNew = yombodbtools.getUserGWToken(username, gwtokenid)
-#             if recordNew is not None:
-#               return recordNew
-#             else:
-#               return None
-#         return None
-#     else:
-#       return record
