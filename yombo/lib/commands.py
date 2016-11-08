@@ -1,8 +1,6 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-.. rst-class:: floater
-
 .. note::
 
   For more information see: `Atoms @ Module Development <https://yombo.net/docs/modules/commands/>`_

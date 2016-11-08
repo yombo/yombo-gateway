@@ -85,7 +85,6 @@ class Automation(YomboLibrary):
         self._rulesParse = {}  # Used to store raw input from reading file.
         self.rules = {}   # Store processed / active rules
         self.active_triggers = {}  # Track various triggers - help find what rules to fire whena trigger matches.
-        self._AutomationHelpersLibrary = self._Libraries['automationhelpers']
 
         self.tracker = {}  # Registered items to track, will be checked against if a trigger check fires.
         self.sources = {}  # List of source processors
@@ -165,29 +164,30 @@ class Automation(YomboLibrary):
 
         """
         automation_sources = yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
-        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
-        for moduleName, item in automation_sources.iteritems():
+        logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
+        for component_name, item in automation_sources.iteritems():
             for vals in item:
-                vals['platform_source'] = moduleName._FullName
+                vals['platform_source'] = component_name
                 self.sources[vals['platform']] = vals
 #        logger.debug("sources: {sources}", sources=self.sources)
 
         automation_filters = yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
-        for moduleName, item in automation_filters.iteritems():
+        logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
+        for component_name, item in automation_filters.iteritems():
             for vals in item:
-                vals['platform_source'] = moduleName._FullName
+                vals['platform_source'] = component_name
                 self.filters[vals['platform']] = vals
 #        logger.debug("filters: {filters}", filters=self.filters)
 
         automation_actions = yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
-        for moduleName, item in automation_actions.iteritems():
+        for component_name, item in automation_actions.iteritems():
             for vals in item:
-                vals['platform_source'] = moduleName._FullName
+                vals['platform_source'] = component_name
                 self.actions[vals['platform']] = vals
 
         other_rules = yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
-        for component, rules in other_rules.iteritems():
+        for component_name, rules in other_rules.iteritems():
 #            print "Merging 1: %s" % rules['rules']
 #            print "Merging 2: %s" % self._rulesRaw['rules']
             for rule in rules['rules']:
@@ -211,6 +211,20 @@ class Automation(YomboLibrary):
         for source, functions in self.sources.iteritems():
             if 'startup_trigger_callback' in functions:
                 functions['startup_trigger_callback']()
+
+    def get_action_delay(self, delay):
+        """
+        Used to check the 'delay' field of an action. It's used to send delayed commands. It converts strings such as
+        '1m 3s', '1 hour', '6 min' into an epoch time so that the automation system can handle it. Must be a time
+        in the future, any times set to the past will be disable the rule.
+
+        :param delay: String - A string to be parsed into epoch time in the future.
+        :return: Float in seconds in the future.
+        """
+        seconds = (float(epoch_from_string(delay)) - float(time()))
+        if seconds <0:
+            raise YomboWarning("get_action_delay on accepts delays in the future, not the past.", 'get_action_delay', 'automationhelpers')
+        return seconds
 
     def add_rule(self, rule):
         """
@@ -289,7 +303,7 @@ class Automation(YomboLibrary):
             # during rule run time.
             if 'delay' in rule['action'][item]:
                 try:
-                    self._AutomationHelpersLibrary.get_action_delay(rule['action'][item]['delay'])
+                    self.get_action_delay(rule['action'][item]['delay'])
                 except Exception, e:
                     logger.warn("Error parsing 'delay' within action, dropping rule. Delay:{delay}. Other reasons: {e}",
                                 delay=rule['action'][item]['delay'], e=e)
@@ -574,7 +588,7 @@ class Automation(YomboLibrary):
             options = {}
             if 'delay' in rule['action'][item]:
                 try:
-                    options['delay'] = self._AutomationHelpersLibrary.get_action_delay(rule['action'][item]['delay'])
+                    options['delay'] = self.get_action_delay(rule['action'][item]['delay'])
                 except Exception, e:
                     logger.error("Error parsing 'delay' within action. Cannot perform action: {e}", e=e)
                     raise YomboWarning("Error parsing 'delay' within action. Cannot perform action. (%s)" % rule['action'][item]['delay'],

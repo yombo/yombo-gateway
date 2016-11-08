@@ -72,7 +72,7 @@ HARD_LOAD["InputTypes"] = {'operation_mode':'all'}
 HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
-HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
+# HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'all'}
@@ -90,7 +90,7 @@ HARD_UNLOAD["Commands"] = {'operation_mode':'all'}
 HARD_UNLOAD["DeviceTypes"] = {'operation_mode':'all'}
 HARD_UNLOAD["InputTypes"] = {'operation_mode':'all'}
 HARD_UNLOAD["VoiceCmds"] = {'operation_mode':'all'}
-HARD_UNLOAD["AutomationHelpers"] = {'operation_mode':'all'}
+# HARD_UNLOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_UNLOAD["Devices"] = {'operation_mode':'all'}
 HARD_UNLOAD["Atoms"] = {'operation_mode':'all'}
 HARD_UNLOAD["States"] = {'operation_mode':'all'}
@@ -424,7 +424,7 @@ class Loader(YomboLibrary, object):
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
 
-        for library_name, label in self.loadedLibraries.iteritems():
+        for library_name, library in self.loadedLibraries.iteritems():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
             try:
                 d = self.library_invoke(library_name, hook, called_by=called_by, **kwargs)
@@ -432,7 +432,7 @@ class Loader(YomboLibrary, object):
                     result = getattr(d, 'result', None)
                     if result is not None:
 #                      logger.warn("1111aaa:: {libraryName} {hook} {result}", libraryName=libraryName, hook=hook, result=result)
-                      results[label] = result
+                      results[library._FullName] = result
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:

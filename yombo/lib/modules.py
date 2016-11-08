@@ -37,6 +37,25 @@ import yombo.utils
 
 logger = get_logger('library.modules')
 
+SYSTEM_MODULES = {}
+SYSTEM_MODULES['automationhelpers'] = {
+    'id': 'hvKhds9znRsmy2', # module_id
+    'module_type': 'logic',
+    'machine_label': 'AutomationHelpers',
+    'description': "Adds basic platforms to the automation rules.",
+    'install_notes': '',
+    'install_branch': '',
+    'doc_link': 'https://yombo.net/docs/features/automation-rules/',
+    'uri': 'https://yombo.net/docs/features/automation-rules/',
+    'prod_version': '',
+    'dev_version': '',
+    'public': '2',
+    'status': '1',
+    'created': int(time()),
+    'updated': int(time()),
+    'load_source': 'system modules',
+    }
+
 class Modules(YomboLibrary):
     """
     A single place for modudule management and reference.
@@ -271,6 +290,10 @@ class Modules(YomboLibrary):
         except IOError as (errno, strerror):
             logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
 
+        # Local system modules.
+
+        for module_name, data in SYSTEM_MODULES.iteritems():
+            self._rawModulesList[data['id']] = data
 
         modulesDB = yield self._LocalDBLibrary.get_modules()
 #        print "modulesdb: %s" % modulesDB
