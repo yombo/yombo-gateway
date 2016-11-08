@@ -61,11 +61,12 @@ mitchlog.*
 old/*
 .idea/*
 
-# Ignore Modules folder, except for empty! #
-##########################################
+# Ignore Modules folder, except for system modules and demos #
+##############################################################
 yombo/modules/*
 !yombo/modules/__init__.py
-!yombo/modules/automationexample/*
+!yombo/modules/automationexample/
+!yombo/modules/automationhelpers/
 !yombo/modules/empty/
 !yombo/modules/logreader/
 !yombo/modules/logwriter/
