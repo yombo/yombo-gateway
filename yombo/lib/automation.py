@@ -293,6 +293,7 @@ class Automation(YomboLibrary):
                 if rule['condition'][item]['filter']['platform'] not in self.filters:
                     logger.info("Platform ({platform}) doesn't exist as a filter: ({rule}) {required}",
                                 platform=rule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                    print self.filters
                     return False
 
         for item in range(len(rule['action'])):

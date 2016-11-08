@@ -291,9 +291,9 @@ class Modules(YomboLibrary):
             logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
 
         # Local system modules.
-
         for module_name, data in SYSTEM_MODULES.iteritems():
-            if self._Configs.get('system_modules', data.machine_label, 'enabled') == 'enabled':
+            # print data
+            if self._Configs.get('system_modules', data['machine_label'], 'enabled') != 'enabled':
                 continue
             self._rawModulesList[data['id']] = data
 

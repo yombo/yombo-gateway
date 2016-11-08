@@ -32,6 +32,11 @@ import os
 from datetime import datetime
 import sys
 import traceback
+import base64
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -72,6 +77,8 @@ class Configuration(YomboLibrary):
         Import the configuration items into the database, also prime the configs for reading.
         """
         self.cache_dirty = False
+        self.automation_startup_check = []
+        self._loaded = False
 
         self.loading_yombo_ini = True
         try:
@@ -160,6 +167,9 @@ class Configuration(YomboLibrary):
         if self.get('core', 'setup_stage') is None:
             self.set('core', 'setup_stage', 'first_run')
         self.loading_yombo_ini = False
+
+    def _load_(self):
+        self._loaded = True
 
     def _start_(self):
         """
@@ -499,28 +509,172 @@ class Configuration(YomboLibrary):
             if option in self.configs[section]:
                 del self.configs[section][option]
 
-    def i18n_gettext(self):
+    ##############################################################################################################
+    # The remaining functions implement automation hooks. These should not be called by anything other than the  #
+    # automation library!                                                                                        #
+    #############################################################################################################
+
+    def check_trigger(self, section, option, value):
         """
-        Starting to implement i18n.
+        Called by the configs.set function when a new value is set. It asks the automation library if this key is
+        trigger, and if so, fire any rules.
+
+        True - Rules fired, fale - no rules fired.
+        """
+        input = {'s': section, 'o':option}
+        key = json.dumps(input, separators=(',',':') )
+        if self._loaded:
+            results = self.automation.triggers_check('configs', key, value)
+
+    def _automation_source_list_(self, **kwargs):
+        """
+        hook_automation_source_list called by the automation library to get a list of possible sources.
+
+        :param kwargs: None
+        :return:
+        """
+        return [
+            { 'platform': 'configs',
+              'description': 'Allows configurations to be used as a source (trigger).',
+              'validate_source_callback': self.configs_validate_source_callback,  # function to call to validate a trigger
+              'add_trigger_callback': self.configs_add_trigger_callback,  # function to call to add a trigger
+              'startup_trigger_callback': self.configs_startup_trigger_callback,  # function to call to check all triggers
+              'get_value_callback': self.configs_get_value_callback,  # get a value
+              'field_details': [
+                  {
+                  'label': 'section',
+                  'description': 'The section of the configuration to monitor.',
+                  'required': True
+                  },
+                  {
+                  'label': 'option',
+                  'description': 'The option of the configuration to monitor. Example: section.option',
+                  'required': True
+                  },
+                  {
+                  'label': 'default',
+                  'description': "A default value to use if the configuration value doesn't exist.",
+                  'required': False
+                  },
+              ]
+            }
+         ]
+
+    def configs_validate_source_callback(self, rule, portion, **kwargs):
+        """
+        A callback to check if a provided source is valid before being added as a possible source.
+
+        :param rule: The potential rule being added.
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
+        :return:
+        """
+        if all( required in portion['source'] for required in ['platform', 'section', 'option']):
+            return True
+        raise YomboWarning("Source doesn't have required parameters: platform, section, and option",
+                101, 'configs_validate_source_callback', 'configs')
+
+    def configs_add_trigger_callback(self, rule, **kwargs):
+        """
+        Called to add a trigger.  We simply use the automation library for the heavy lifting.
+
+        :param rule: The potential rule being added.
+        :param kwargs: None
+        :return:
+        """
+        if 'run_on_start' in rule:
+            if rule['run_on_start'] is True:
+                section = rule['trigger']['source']['section']
+                option = rule['trigger']['source']['option']
+                input = {'s': section, 'o':option}
+                key = json.dumps(input, separators=(',',':') )
+                self.automation_startup_check.append(key)
+        self.automation.triggers_add(rule['rule_id'], 'configs', key)
+
+    def configs_startup_trigger_callback(self):
+        """
+        Called when automation rules are active. Check for any automation rules that are marked with run_on_start
 
         :return:
         """
-        strings = {}
-        for section, options in self.configs.iteritems():
-            for option, data in options.iteritems():
-                has_string = False
-                if 'details' in data:
-                    if 'description' in data['details']:
-                        for lang, value in data['details'].iteritems():
-                            if lang not in strings:
-                                strings[lang] = {}
-                            strings[lang]['config.%s.%s' % (section, option)] = {
-                                'msgstr': data['details'][lang]
-                            }
-                            has_string = True
+        for key in self.automation_startup_check:
+            input = json.loads(key)
+            section = input['s']
+            option = input['o']
+            if section in self.configs:
+                if option in self.configs[section]:
+                    if self._loaded:
+                        results = self.automation.triggers_check('configs', key, self.configs[section][option]['value'])
 
-                if has_string is False:
-                    strings['en']['config.%s.%s' % (section, option)] = {
-                        'msgstr': "Configuration: %s - %s" % (section, option)
-                    }
-        return strings
+    def configs_get_value_callback(self, rule, portion, **kwargs):
+        """
+        A callback to the value for platform "states". We simply just do a get based on key_name.
+
+        :param rule: The potential rule being added.
+        :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
+        :return:
+        """
+        if 'default' in portion['source']:
+            default = portion['source']['default']
+        else:
+            default = None
+        return self.get(portion['source']['section'], portion['source']['section'], default, None)
+
+    def _automation_action_list_(self, **kwargs):
+        """
+        hook_automation_action_list called by the automation library to list possible actions this module can
+        perform.
+
+        This implementation allows autoamtion rules set easily set Atom values.
+
+        :param kwargs: None
+        :return:
+        """
+        return [
+            { 'platform': 'configs',
+              'description': 'Allows configs to be changed as an action.',
+              'validate_action_callback': self.configs_validate_action_callback,  # function to call to validate an action is possible.
+              'do_action_callback': self.configs_do_action_callback,  # function to be called to perform an action
+              'field_details': [
+                  {
+                  'label': 'section',
+                  'description': 'The section of the configuration to change.',
+                  'required': True
+                  },
+                  {
+                  'label': 'option',
+                  'description': 'The option of the configuration to change. Example: section.option',
+                  'required': True
+                  },
+                  {
+                  'label': 'value',
+                  'description': 'The value that should be set.',
+                  'required': True
+                  }
+              ]
+            }
+         ]
+
+    def configs_validate_action_callback(self, rule, action, **kwargs):
+        """
+        A callback to check if a provided action is valid before being added as a possible action.
+
+        :param rule: The potential rule being added.
+        :param action: The action portion of the rule.
+        :param kwargs: None
+        :return:
+        """
+        if all( required in action for required in ['section', 'option', 'value']):
+            return True
+        raise YomboWarning("configs_validate_action_callback: action is required to have parameters: section, option, and value",
+                101, 'configs_validate_action_callback', 'configs')
+
+    def configs_do_action_callback(self, rule, action, **kwargs):
+        """
+        A callback to perform an action.
+
+        :param rule: The complete rule being fired.
+        :param action: The action portion of the rule.
+        :param kwargs: None
+        :return:
+        """
+        return self.set(action['section'], action['option'], action['value'])

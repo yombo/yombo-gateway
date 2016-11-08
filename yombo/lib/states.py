@@ -88,7 +88,6 @@ class States(YomboLibrary, object):
 
     def _load_(self):
         self._loaded = True
-        pass
 
     def _start_(self):
         self.clean_states_loop = LoopingCall(self.clean_states_table)
@@ -401,7 +400,8 @@ class States(YomboLibrary, object):
 
     def states_startup_trigger_callback(self):
         """
-        called when automation rules are active. Check for any automation rules that are marked with run_on_start
+        Called when automation rules are active. Check for any automation rules that are marked with run_on_start
+
         :return:
         """
         for name in self.automation_startup_check:
@@ -457,9 +457,10 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
-        if 'value' not in action:
-            raise YomboWarning("In states_validate_action_callback: action is required to have 'value', so I know what to set.",
-                               101, 'states_validate_action_callback', 'states')
+        if all( required in action for required in ['name', 'value']):
+            return True
+        raise YomboWarning("In states_validate_action_callback: action is required to have 'name' and 'value', so I know what to set.",
+                           101, 'states_validate_action_callback', 'states')
 
     def states_do_action_callback(self, rule, action, **kwargs):
         """
