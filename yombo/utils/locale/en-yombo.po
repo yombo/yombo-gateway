@@ -285,7 +285,20 @@ msgid "localize:hashes"
 msgstr "Store hasing information on the locale files. Used to determine if locale files need to be rebuilt."
 
 ## End localize library
-## Begin mqtt library
+## Begin modules library
+
+#: defined in localize library
+msgctxt "config_section"
+msgid "system_modules"
+msgstr "Controls where system modules are loaded or not."
+
+#: defined in localize library
+msgctxt "config_item"
+msgid "system_modules:AutomationHelpers"
+msgstr "Adds additional platforms to the automation rules system."
+
+## End localize library
+## Begin modules library
 
 #: defined in mqtt library
 msgctxt "config_section"

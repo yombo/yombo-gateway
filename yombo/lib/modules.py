@@ -293,6 +293,8 @@ class Modules(YomboLibrary):
         # Local system modules.
 
         for module_name, data in SYSTEM_MODULES.iteritems():
+            if self._Configs.get('system_modules', data.machine_label, 'enabled') == 'enabled':
+                continue
             self._rawModulesList[data['id']] = data
 
         modulesDB = yield self._LocalDBLibrary.get_modules()
