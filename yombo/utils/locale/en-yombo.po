@@ -15,6 +15,68 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+# Begin Common Translations
+
+msgctxt "common"
+msgid "Off"
+msgstr ""
+
+msgctxt "common"
+msgid "off"
+msgstr ""
+
+msgctxt "common"
+msgid "On"
+msgstr ""
+
+msgctxt "common"
+msgid "on"
+msgstr ""
+
+msgctxt "common"
+msgid "Heat stage 1"
+msgstr ""
+
+msgctxt "common"
+msgid "Heat stage 2"
+msgstr ""
+
+msgctxt "common"
+msgid "Heat stage 3"
+msgstr ""
+
+msgctxt "common"
+msgid "Cool stage 1"
+msgstr ""
+
+msgctxt "common"
+msgid "Cool stage 1"
+msgstr ""
+
+msgctxt "common"
+msgid "Cool stage 1"
+msgstr ""
+
+msgctxt "common"
+msgid "Cool"
+msgstr ""
+
+msgctxt "common"
+msgid "Heat"
+msgstr ""
+
+msgctxt "common"
+msgid "Running"
+msgstr ""
+
+msgctxt "common"
+msgid "Stopped"
+msgstr ""
+
+msgctxt "common"
+msgid "Stopping"
+msgstr ""
+
 # Begin General system messages
 
 #. TRANSLATORS: Just a test string that says hello and that the translation system is working.

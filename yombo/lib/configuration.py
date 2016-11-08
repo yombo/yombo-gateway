@@ -166,7 +166,7 @@ class Configuration(YomboLibrary):
         Define some default configuration items.
         :return:
         """
-        self.set('misc', 'temp_display', 'f')
+        self.set('misc', 'tempurature_display', 'f')
         self.set('misc', 'length_display', 'imperial')  # will we ever get to metric?
 
 

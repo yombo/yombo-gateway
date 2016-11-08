@@ -309,7 +309,7 @@ class Statistics(YomboLibrary):
 
         self.bucket_lifetimes[name] = {'life': base_dict}
 
-    def datapoint(self, name, value, anon=False, lifetimes=None):
+    def datapoint(self, name, value, anon=False):
         """
         Set a datapoint numberic value. For example, set the current measured temperature.
 
@@ -342,8 +342,6 @@ class Statistics(YomboLibrary):
             self._datapoints[bucket][name] = {}
         self._datapoints[bucket][name]['value'] = value
         self._datapoints[bucket][name]['anon'] = anon
-        if lifetimes is not None:
-            self.add_bucket_lifetime(name, lifetimes)
 
     def count(self, name, value, bucket_time=None, anon=False, lifetimes=None):
         """
