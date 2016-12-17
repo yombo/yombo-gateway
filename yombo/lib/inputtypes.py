@@ -27,7 +27,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
 
-logger = get_logger('library.commands')
+logger = get_logger('library.inputtypes')
 
 class InputTypes(YomboLibrary):
     """
@@ -154,7 +154,7 @@ class InputTypes(YomboLibrary):
         logger.debug("record: {record}", record=record)
         input_type_id = record.id
         self.input_types[input_type_id] = InputType(record)
-        self.input_types_by_name[record.label] = self.input_types_by_name[input_type_id]
+        self.input_types_by_name[record.label] = self.input_types[input_type_id]
 #        if testCommand:
 #            return self.__yombocommands[command_id]
 
@@ -179,16 +179,20 @@ class InputType:
         :type command: dict
 
         """
-        logger.info("command info: {command}", command=command)
+        logger.debug("input_type info: {input_type}", input_type=input_type)
 
         self.input_type_id = input_type.id
-        self.uri = input_type.uri
-        self.label = input_type.label
+        self.category_id = input_type.category_id
         self.machine_label = input_type.machine_label
+        self.label = input_type.label
         self.description = input_type.description
-        self.category = input_type.category
-        self.public = input_type.public
+        self.encrypted = input_type.encrypted
+        self.address_casing = input_type.address_casing
+        self.address_regex = input_type.address_regex
+        self.admin_notes = input_type.admin_notes
+        self.always_load = input_type.always_load
         self.status = input_type.status
+        self.public = input_type.public
         self.created = input_type.created
         self.updated = input_type.updated
         self.updated_srv = None
@@ -206,11 +210,16 @@ class InputType:
         """
         return {
             'input_type_id': str(self.input_type_id),
-            'uri'          : str(self.uri),
-            'label'        : str(self.label),
+            'category_id'          : str(self.category_id),
             'machine_label': str(self.machine_label),
+            'label'        : str(self.label),
             'description'  : str(self.description),
-            'category'     : str(self.category),
+            'encrypted'    : str(self.encrypted),
+            'address_casing': str(self.address_casing),
+            'address_regex': str(self.address_regex),
+            'admin_notes'  : str(self.admin_notes),
+            'always_load'  : str(self.always_load),
+            'always_load'  : str(self.always_load),
             'public'       : int(self.public),
             'status'       : int(self.status),
             'created'      : int(self.created),

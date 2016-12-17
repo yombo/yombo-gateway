@@ -18,7 +18,7 @@
                             </div>                    </div>
                     <div class="panel-body">
                         <p></p>
-{% if existing_gateways|length == 0 %}
+{% if available_gateways|length == 0 %}
                         <form action="/setup_wizard/3" method="POST" role="form">
                         <h2>Create New Gateway</h2>
                         <p>No previously configured gateway were found in your account.</p>
@@ -35,16 +35,16 @@
                                         <select name="gateway-id" required class="selectpicker show-tick" title="New or Existing Gateway">
                                             <option value="new" style="background: #e6f7ff; color: #000;"{% if selected_gateway == 'new' %} selected{% endif %}>Create New</option>
                                             <option data-divider="true"></option>
-                                            {% for id, name in existing_gateways.iteritems() if id != 'new'%}
-                                            <option value="{{ id }}"{% if selected_gateway == id %} selected{% endif %}>{{ name.label }}</option>
-                                            {% endfor %}
+                                            {% for id, gateway in available_gateways.iteritems() -%}
+                                            <option value="{{ gateway.id }}"{% if selected_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
+                                            {%- endfor %}
                                         </select>
                                     </div>
                                 </fieldset>
                                 <a class="btn btn-md btn-warning" href="/setup_wizard/1"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
                                 <button type="submit" id="submit-login" class="btn btn-lg btn-success">Select Gateway</button>
                             </form>
-{% endif %}
+{%- endif %}
                     </div>
                 </div>
             </div>

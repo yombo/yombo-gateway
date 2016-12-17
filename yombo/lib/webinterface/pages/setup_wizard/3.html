@@ -35,14 +35,14 @@
                         <div class="form-group">
                             <label for="gateway-label">Gateway Label</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="gateway-label" id="gateway-label" placeholder="'House', 'Garagage', 'Shed'" value="{{ gw_fields.label }}" autofocus required>
+                                <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ gw_fields.label }}" autofocus required>
                                 <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                             </div>
                         </div>
                         <div class="form-group">
                             <label for="gateway-description">Gateway Description</label>
                             <div class="input-group">
-                                <textarea class="form-control" rows="5" name="gateway-description" id="gateway-description" placeholder="Detailed description" value="{{ gw_fields.description }}"></textarea>
+                                <textarea class="form-control" rows="5" name="gateway_description" id="gateway_description" placeholder="Detailed description">{{ gw_fields.description }}</textarea>
                                 <span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
                             </div>
                         </div>
@@ -61,21 +61,21 @@
 									<div class="form-group">
 										<label for="location_latitude">Latitude</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
+											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ settings.location.latitude.data }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
 									<div class="form-group">
 										<label for="location_longitude">Longitude</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
+											<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ settings.location.longitude.data }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
 									<div class="form-group">
 										<label for="location_elevation">Elevation (in feet)</label>
 										<div class="input-group">
-											<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
+											<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ settings.location.elevation.data }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
 									</div>
@@ -102,7 +102,6 @@
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
 {% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
-{% endblock %}
 
     <script>
 
@@ -150,7 +149,7 @@ $('form').validate({
 
 	$(document).ready(function(){
 		$('[data-toggle="tooltip"]').tooltip();
-		$("#times-twilight").val("{{ config.times.twilighthorizon }}");
+		$("#times-twilight").val("{{ settings.times.twilighthorizon.data }}");
 	});
     </script>
 {% endblock %}

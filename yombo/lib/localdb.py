@@ -51,20 +51,19 @@ LATEST_SCHEMA_VERSION = 1
 
 #### Various SQLite tables within the database. ####
 
-
-class CommandDeviceTypes(DBObject):
-    TABLENAME='command_device_types'
-
+class Category(DBObject):
+    TABLENAME='categories'
 
 class Command(DBObject):
     HABTM = [dict(name='device_types', join_table='CommandDeviceTypes')]
     pass
 
+class CommandDeviceTypes(DBObject):
+    TABLENAME='command_device_types'
 
 class Config(DBObject):
 #    TABLENAME='devsadf'
     pass
-
 
 class Device(DBObject):
 #    HASMANY = [{'name':'device_status', 'class_name':'DeviceStatus', 'foreign_key':'id', 'association_foreign_key':'device_id'},
@@ -75,10 +74,13 @@ class Device(DBObject):
     TABLENAME='devices'
 #    pass
 
+class DeviceCommandInput(DBObject):
+    TABLENAME='device_command_inputs'
+    BELONGSTO = ['devices']
+
 class DeviceStatus(DBObject):
     TABLENAME='device_status'
     BELONGSTO = ['devices']
-
 
 class DeviceType(DBObject):
     TABLENAME='device_types'
@@ -86,55 +88,63 @@ class DeviceType(DBObject):
 
 #    BELONGSTO = ['devices']
 
+class DeviceTypeCommand(DBObject):
+    TABLENAME='device_type_commands'
+
+# class DeviceTypeModules(DBObject):
+#     TABLENAME='device_type_modules'
 
 class GpgKey(DBObject):
     TABLENAME='gpg_keys'
 
+class InputType(DBObject):
+    TABLENAME='input_types'
 
 class Logs(DBObject):
     TABLENAME='logs'
-
-
-class DeviceTypeModules(DBObject):
-    TABLENAME='device_type_modules'
-
-
-class Modules(DBObject):
-    HASONE = [{'name':'module_installed', 'class_name':'ModuleInstalled', 'foreign_key':'module_id'}]
-    TABLENAME='modules'
-
-
-class ModulesView(DBObject):
-    TABLENAME='modules_view'
-
 
 class ModuleInstalled(DBObject):
     TABLENAME='module_installed'
     BELONGSTO = ['modules']
 
+class Modules(DBObject):
+    HASONE = [{'name':'module_installed', 'class_name':'ModuleInstalled', 'foreign_key':'module_id'}]
+    TABLENAME='modules'
+
+class ModulesView(DBObject):
+    TABLENAME='modules_view'
 
 class Schema_Version(DBObject):
     TABLENAME='schema_version'
 
+class Sqldict(DBObject):
+    TABLENAME='sqldict'
 
 class States(DBObject):
     TABLENAME='states'
 
-
 class Statistics(DBObject):
     TABLENAME='statistics'
-
-class Sqldict(DBObject):
-    TABLENAME='sqldict'
-
 
 class User(DBObject):
 #    TABLENAME='users'
     pass
 
-class Variable(DBObject):
-    TABLENAME='variables'
-    BELONGSTO = ['devices', 'modules']
+class VariableData(DBObject):
+    TABLENAME='variable_data'
+
+class VariableFields(DBObject):
+    TABLENAME='variable_fields'
+
+class VariableGroups(DBObject):
+    TABLENAME='variable_groups'
+
+class VariableDataView(DBObject):
+    TABLENAME='variable_data_view'
+
+# class Variable(DBObject):
+#     TABLENAME='variables'
+#     BELONGSTO = ['devices', 'modules']
 
 class Sessions(DBObject):
     TABLENAME='webinterface_sessions'
@@ -147,8 +157,11 @@ class ModuleRoutingView(DBObject):
 
 #Registry.register(Config)
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
-Registry.register(Device, DeviceStatus, Variable, DeviceType, Command)
+Registry.register(Device, DeviceStatus, VariableData, DeviceType, Command)
 Registry.register(Modules, ModuleInstalled)
+Registry.register(VariableGroups, VariableData)
+Registry.register(Category)
+Registry.register(DeviceTypeCommand)
 
 
 TEMP_MODULE_CLASSES = inspect.getmembers(sys.modules[__name__])
@@ -228,7 +241,7 @@ class LocalDB(YomboLibrary):
         device = yield Device.find('device1')
         if device is None:
           device = yield Device(id='device1', machine_label='on', label='Lamp1', gateway_id='gateway1', device_type_id='devicetype1', pin_required=0, pin_timeout=0, status=1, created=1, updated=1, description='desc', notes='note', Voice_cmd_src='auto', voice_cmd='lamp on').save()
-          variable = yield Variable(variable_type='device', variable_id="variable_id1", foreign_id='deviceVariable1', device_id=device.id, weigh=0, machine_label='device_var_1', label='Device Var 1', value='somevalue1', updated=1, created=1).save()
+          # variable = yield Variable(variable_type='device', variable_id="variable_id1", foreign_id='deviceVariable1', device_id=device.id, weigh=0, machine_label='device_var_1', label='Device Var 1', value='somevalue1', updated=1, created=1).save()
 
         deviceType = yield DeviceType.find('devicetype1')
         if deviceType is None:
@@ -237,7 +250,7 @@ class LocalDB(YomboLibrary):
           yield self.dbconfig.insert('command_device_types', args)
 
         device = yield Device.find('device1')
-        results = yield Variable.find(where=['variable_type = ? AND foreign_id = ?', 'device', device.id])
+        # results = yield Variable.find(where=['variable_type = ? AND foreign_id = ?', 'device', device.id])
 #          results = yield DeviceType.find(where=['id = ?', device.device_variables.get()
 
     @inlineCallbacks
@@ -247,7 +260,7 @@ class LocalDB(YomboLibrary):
 #        print MODULE_CLASSES
         if status is None:
             records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', id])
-#            print "looking without status!"
+            # print "looking without status! %s = %s (%s)" % (dbitem, id, len(records))
         else:
             records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
 #        print "get_dbitem_by_id. class: %s, id: %s, status: %s" % (dbitem, id, status)
@@ -277,12 +290,12 @@ class LocalDB(YomboLibrary):
 ###    Commands     #####
 #########################
     @inlineCallbacks
-    def get_commands(self):
+    def get_commands(self, always_load=1):
         """
         Get all commands
         :return:
         """
-        records = yield Command.all()
+        records = yield Command.find(where=['always_load = ?', always_load])
         returnValue(records)
 
     # @inlineCallbacks
@@ -292,21 +305,28 @@ class LocalDB(YomboLibrary):
 
 
 #########################
-###    Device Types     #####
-#########################
-    @inlineCallbacks
-    def get_input_types(self):
-        records = yield self.dbconfig.select("input_types")
-        returnValue(records)
-
-#########################
 ###    Devices      #####
 #########################
+    @inlineCallbacks
+    def get_devices(self):
+        #        records = yield self.dbconfig.select("devices_view")
+        records = yield Device.all()
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_device_by_id(self, device_id, status=1):
+        records = yield Device.find(where=['id = ? and status = ?', device_id, status])
+        results = []
+        for record in records:
+            results.append(record.__dict__)  # we need a dictionary, not an object
+        returnValue(results)
+
     @inlineCallbacks
     def get_device_status(self, **kwargs):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
-        records = yield self.dbconfig.select('device_status', select='device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable', where=['device_id = ?', id], orderby='set_time', limit=limit)
+        records = yield self.dbconfig.select('device_status', select='device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable',
+                                             where=['device_id = ?', id], orderby='set_time', limit=limit)
         for index in range(len(records)):
             records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
         returnValue(records)
@@ -333,6 +353,26 @@ class LocalDB(YomboLibrary):
             uploaded=uploaded,
             uploadable=uploadable,
         ).save()
+
+
+#############################
+###    Device Types     #####
+#############################
+    @inlineCallbacks
+    def get_device_types(self, always_load=1):
+        records = yield DeviceType.find(where=['always_load = ?', always_load])
+        returnValue(records)
+
+
+#############################
+###    Input Types      #####
+#############################
+    @inlineCallbacks
+    def get_input_types(self, always_load=1):
+        # records = yield InputType.find(where=['status = 1 AND always_load = ?', always_load])
+        records = yield InputType.find(where=['status = 1'])
+        returnValue(records)
+
 
 #########################
 ###    Sessions     #####
@@ -370,7 +410,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def delete_session(self, session_id):
         # print "session_data: %s" % session_data
-        yield self.dbconfig.delete('webinterface_sessions', args, where=['id = ?', session_id] )
+        yield self.dbconfig.delete('webinterface_sessions', where=['id = ?', session_id] )
 
 #########################
 ###    States     #####
@@ -484,29 +524,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
                ORDER BY created DESC
                LIMIT -1 OFFSET 100)"""
         yield Registry.DBPOOL.runQuery(sql)
-
-#########################
-###    Devices     #####
-#########################
-    @inlineCallbacks
-    def get_devices(self):
-#        records = yield self.dbconfig.select("devices_view")
-        records = yield self.dbconfig.select("devices")
-        returnValue(records)
-
-    @inlineCallbacks
-    def get_device_types(self):
-#        records = yield self.dbconfig.select("devices_view")
-        records = yield self.dbconfig.select("device_types")
-        returnValue(records)
-
-    @inlineCallbacks
-    def get_device_by_id(self, device_id, status=1):
-        records = yield Device.find(where=['id = ? and status = ?', device_id, status])
-        results = []
-        for record in records:
-            results.append(record.__dict__)  # we need a dictionary, not an object
-        returnValue(results)
 
     #################
     ### GPG     #####
@@ -768,7 +785,7 @@ ORDER BY id desc"""
 
 
     @inlineCallbacks
-    def get_variables(self, variable_type, foreign_id = None):
+    def get_variables(self, relation_type, relation_id):
         """
         Gets available variables for a given device_id.
 
@@ -778,30 +795,60 @@ ORDER BY id desc"""
         :param foreign_id:
         :return:
         """
-        records = yield Variable.find(where=['variable_type = ? AND foreign_id =?', variable_type, foreign_id], orderby='weight ASC, data_weight ASC')
+        records = yield VariableDataView.find(where=['relation_type = ? AND relation_id =?', relation_type, relation_id], orderby='field_weight ASC, data_weight ASC')
+        # records = yield VariableDataView.all()
         variables = {}
         for record in records:
-            if record.machine_label not in variables:
-                variables[record.machine_label] = []
 
-            variables[record.machine_label].append({
-                'machine_label': record.machine_label,
-                'label': record.label,
-                'updated': record.updated,
-                'created': record.created,
-                'weight': record.weight,
-                'data_weight': record.data_weight,
-                'foreign_id': record.foreign_id,
-                'id': record.id,
-                'value': record.value,
+            if record.field_machine_label not in variables:
+                variables[record.field_machine_label] = {
+                    'id': record.id,
+                    'relation_id': record.relation_id,
+                    'relation_type': record.relation_type,
+                    'field_machine_label': record.field_machine_label,
+                    'field_label': record.field_label,
+                    'field_weight': record.field_weight,
+                    'encryption_required': record.encryption_required,
+                    'input_type_id': record.input_type_id,
+                    'default_value': record.default_value,
+                    'help_text': record.help_text,
+                    'required': record.required,
+                    'multiple': record.multiple,
+                    'data_weight': record.data_weight,
+                    'created': record.field_created,
+                    'updated': record.field_updated,
+                    'data': [],
+                }
+
+            variables[record.field_machine_label]['data'].append({
+                'value': record.data,
+                'weight': record.data_weight,
+                'created': record.data_created,
+                'updated': record.data_updated,
             })
             # variables[record.machine_label]['value'].append(record.value)
 #                print record.__dict__
         returnValue(variables)
 
+    @inlineCallbacks
+    def get_device_type_commands(self, device_type_id):
+        """
+        Gets available variables for a given device_id.
 
+        Called by: library.Devices::_init_
 
-#        returnValue(variables)
+        :param variable_type:
+        :param foreign_id:
+        :return:
+        """
+        records = yield DeviceTypeCommand.find(
+            where=['device_type_id = ?', device_type_id])
+        commands = []
+        for record in records:
+            if record.command_id not in commands:
+                commands.append(record.command_id)
+
+        returnValue(commands)
 
     @inlineCallbacks
     def delete(self, table, where=None):

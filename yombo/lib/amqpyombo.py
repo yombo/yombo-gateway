@@ -66,27 +66,48 @@ class AMQPYombo(YomboLibrary):
     }
 
     config_items = {
-            'commands': {
+            'categories': {
+                'dbclass': "Category",
+                'table': "categories",
+                'library': None,
+                'functions': {
+                    # 'process': "enable_command",
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'map': {
+                    'id': 'id',
+                    'category_type': 'category_type',
+                    'machine_label': 'machine_label',
+                    'label': 'label',
+                    'description': 'description',
+                    'status': 'status',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                    # '': '',
+                }
+            },
+
+            'gateway_commands': {
                 'dbclass': "Command",
                 'table': "commands",
                 'library': "commands",
                 'functions': {
                     # 'process': "enable_command",
-                    'enabled': "enable_device",
-                    'disabled': "disable_device",
-                    'deleted': "delete_device",
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
                 },
                 'map': {
-                    'Uri': 'uri',
-                    'UUID': 'id',
-                    'machineLabel': 'machine_label',
-                    'voiceCmd': 'voice_cmd',
+                    'id': 'id',
+                    'machine_label': 'machine_label',
+                    'voice_cmd': 'voice_cmd',
                     'label': 'label',
                     'description': 'description',
-                    'inputtype': 'input_type_id',
-                    'liveupdate': 'live_update',
-                    'created': 'created',
-                    'updated': 'updated',
+                    'always_load': 'always_load',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
                     'status': 'status',
                     'public': 'public',
                     # '': '',
@@ -103,53 +124,117 @@ class AMQPYombo(YomboLibrary):
                     'deleted': "delete_device",
                 },
                 'map': {
-                    'UUID': 'id',
-                    'Uri': 'uri',
-                    # 'machineLabel': 'machineLabel',  #Not implemented yet.
-                    'Label': 'label',
-                    'Notes': 'notes',
-                    'Description': 'description',
-                    'GatewayUUID': 'gateway_id',
-                    'DeviceTypeUUID': 'device_type_id',
-                    'VoiceCmd': 'voice_cmd',
-                    'VoiceCmdOrder': 'voice_cmd_order',
-                    'voiceCmdSrc': 'Voice_cmd_src',
-                    'PinCode': 'pin_code',
-                    'PinRequired': 'pin_required',
-                    'PinTimeout': 'pin_timeout',
-                    'LocationLabel' : 'location_label',
-                    'EnergyType' : 'energy_type',
-                    'EnergyTrackerSource' : 'energy_tracker_source',
-                    'EnergyTrackerDevice' : 'energy_tracker_device',
-                    'EnergyMap' : 'energy_map',
-                    'Created': 'created',
-                    'Updated': 'updated',
-                    'Status': 'status',
+                    'id': 'id',
+                    'label': 'label',
+                    'notes': 'notes',
+                    'description': 'description',
+                    'gateway_id': 'gateway_id',
+                    'device_type_id': 'device_type_id',
+                    'voice_cmd': 'voice_cmd',
+                    'voice_cmd_order': 'voice_cmd_order',
+                    'voice_cmd_src': 'voice_cmd_src',
+                    'pin_code': 'pin_code',
+                    'pin_required': 'pin_required',
+                    'pin_timeout': 'pin_timeout',
+                    'location_label' : 'location_label',
+                    'energy_type' : 'energy_type',
+                    'energy_tracker_source' : 'energy_tracker_source',
+                    'energy_tracker_device' : 'energy_tracker_device',
+                    'energy_map' : 'energy_map',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                    'status': 'status',
                 }
             },
 
-            'device_types': {
+            'gateway_device_command_inputs': {
+                'dbclass': "DeviceCommandInput",
+                'table': "device_command_inputs",
+                'library': None,
+                'functions': {
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'map': {
+                    'id': 'id',
+                    'category_id': 'category_id',
+                    'device_type_id': 'device_type_id',
+                    'command_id': 'command_id',
+                    'input_type_id': 'input_type_id',
+                    'live_update': 'live_update',
+                    'required': 'required',
+                    'notes': 'notes',
+                    'always_load': 'always_load',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
+
+            'gateway_device_types': {
                 'dbclass': "DeviceType",
                 'table': "device_types",
                 'library': "devices",
                 'functions': {
-                    'enabled': "enable_device",
-                    'disabled': "disable_device",
-                    'deleted': "delete_device",
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
                 },
                 'map': {
-                    'UUID': 'id',
-                    'Uri': 'uri',
-                    'MachineLabel': 'machine_label',
-                    'Label': 'label',
-                    'DeviceClass': 'device_class',
-                    'Description': 'description',
-                    'LiveUpdate': 'live_update',
-                    'Commands': 'commands',
-                    'Public': 'public',
-                    'Created': 'created',
-                    'Updated': 'updated',
-                    'Status': 'status',
+                    'id': 'id',
+                    'category_id': 'category_id',
+                    'machine_label': 'machine_label',
+                    'label': 'label',
+                    'description': 'description',
+                    'always_load': 'always_load',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                    'public': 'public',
+                    'status': 'status',
+                }
+            },
+
+            'gateway_device_type_commands': {
+                'dbclass': "DeviceTypeCommand",
+                'table': "device_type_commands",
+                'library': None,
+                'functions': {
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'map': {
+                    'id': 'id',
+                    'device_type_id': 'device_type_id',
+                    'command_id': 'command_id',
+                    'updated_at': 'updated',
+                }
+            },
+
+            'gateway_input_types': {
+                'dbclass': "InputType",
+                'table': "input_types",
+                'library': "inputtypes",
+                'functions': {
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'map': {
+                    'id': 'id',
+                    'category_id': 'category_id',
+                    'machine_label': 'machine_label',
+                    'label': 'label',
+                    'description': 'description',
+                    'encrypted': 'encrypted',
+                    'address_casing': 'address_casing',
+                    'address_regex': 'address_regex',
+                    'admin_notes': 'admin_notes',
+                    'always_load': 'always_load',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                    'public': 'public',
+                    'status': 'status',
                 }
             },
 
@@ -158,53 +243,100 @@ class AMQPYombo(YomboLibrary):
                 'table': "modules",
                 'library': "modules",
                 'functions': {
-                    'enabled': "enable_command",
-                    'disabled': "enable_command",
-                    'deleted': "enable_command",
+                    # 'enabled': "enable_command",
+                    # 'disabled': "enable_command",
+                    # 'deleted': "enable_command",
                 },
                 'map': {
-                    'UUID': 'id',
-                    'Uri': 'uri',
-                    'MachineLabel': 'machine_label',
-                    'ModuleType': 'module_type',
-                    'Label': 'label',
-                    'Description': 'description',
-                    'InstallNotes': 'install_notes',
-                    'DocLink': 'doc_link',
-                    'ProdVersion': 'prod_version',
-                    'DevVersion': 'dev_version',
-                    'InstallBranch': 'install_branch',
-                    'Public': 'public',
-                    'Created': 'created',
-                    'Updated': 'updated',
-                    'Status': 'status',
+                    'module_id': 'id',
+                    'gateway_id': 'gateway_id',
+                    'machine_label': 'machine_label',
+                    'module_type': 'module_type',
+                    'label': 'label',
+                    'description': 'description',
+                    'install_notes': 'install_notes',
+                    'doc_link': 'doc_link',
+                    'git_link': 'git_link',
+                    'prod_branch': 'prod_branch',
+                    'dev_branch': 'dev_branch',
+                    'prod_version': 'prod_version',
+                    'dev_version': 'dev_version',
+                    'install_branch': 'install_branch',
+                    'always_load': 'always_load',
+                    'public': 'public',
+                    'status': 'status',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
                 }
             },
 
             'gateway_configs': {},  # Processed with it's own catch.
 
-            'variables': {
-                'dbclass': "Variable",
-                'table': "variables",
+            'variable_groups': {
+                'dbclass': "VariableGroups",
+                'table': "variable_groups",
                 'library': "configuration",
                 'functions': {
                 },
                 'map': {
-                    'FieldUUID': 'id',
-                    'VariableUUID': 'variable_id',
-                    'VariableType': 'variable_type',
-                    'ForeignUUID': 'foreign_id',
-                    'Weight': 'weight',
-                    'DataWeight': 'data_weight',
-                    'MachineLabel': 'machine_label',
-                    'Label': 'label',
-                    'Value': 'value',
-                    'Updated': 'updated',
-                    'UpdatedSrv': 'updated_srv',
-                    'Created': 'created',
+                    'id': 'id',
+                    'relation_id': 'relation_id',
+                    'relation_type': 'relation_type',
+                    'group_machine_label': 'group_machine_label',
+                    'group_label': 'group_label',
+                    'group_description': 'group_description',
+                    'group_weight': 'group_weight',
+                    'status': 'status',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
                 }
             },
-        }
+
+            'variable_fields': {
+                'dbclass': "VariableFields",
+                'table': "variable_fields",
+                'library': "configuration",
+                'functions': {
+                },
+                'map': {
+                    'id': 'id',
+                    'group_id': 'group_id',
+                    'field_machine_label': 'field_machine_label',
+                    'field_label': 'field_label',
+                    'field_description': 'field_description',
+                    'field_weight': 'field_weight',
+                    'encryption_required': 'encryption_required',
+                    'input_type_id': 'input_type_id',
+                    'default_value': 'default_value',
+                    'help_text': 'help_text',
+                    'required': 'required',
+                    'multiple': 'multiple',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
+
+            'variable_data': {
+                'dbclass': "VariableData",
+                'table': "variable_data",
+                'library': "configuration",
+                'functions': {
+                },
+                'map': {
+                    'id': 'id',
+                    'gateway_id': 'gateway_id',
+                    'field_id': 'field_id',
+                    'relation_id': 'relation_id',
+                    'relation_type': 'relation_type',
+                    'data': 'data',
+                    'data_weight': 'data_weight',
+                    'install_branch': 'install_branch',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
+
+    }
 
     def _init_(self):
         """
@@ -212,7 +344,8 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        self.user_id = "gw_" + self._Configs.get("core", "gwuuid")
+        self.user_id = "gw_" + self._Configs.get("core", "gwid")
+        self.login_user_id = self.user_id + "_" + self._Configs.get("core", "gwuuid")
         self._startup_request_ID = random_string(length=12)
         self.init_defer = defer.Deferred()  # Prevents loader from moving on until we are done.
         self.__doing_full_configs = False
@@ -251,7 +384,7 @@ class AMQPYombo(YomboLibrary):
         # amqp_host = "yahoo.com"
         # get a new AMPQ connection and connect.
         if self.amqp is None:
-            self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.user_id,
+            self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.login_user_id,
                 password=self._Configs.get("core", "gwhash"), client_id='amqpyombo',
                 connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected)
         self.amqp.connect()
@@ -497,6 +630,10 @@ class AMQPYombo(YomboLibrary):
         # print " !!!!!!!!!!!!!!!!!!!!!!!!! "
         # print "properties: %s" % properties
         # print "send_correlation_ids: %s" % self.amqp.send_correlation_ids
+        if properties.correlation_id not in self.amqp.send_correlation_ids:
+            self._Statistics.increment("lib.amqpyombo.received.discarded.correlation_id_missing", bucket_time=15, anon=True)
+            raise YomboWarning("correlation_id missing.")
+
         time_info = self.amqp.send_correlation_ids[properties.correlation_id]
         daate_time = time_info['time_received'] - time_info['time_sent']
         milliseconds = (daate_time.days * 24 * 60 * 60 + daate_time.seconds) * 1000 + daate_time.microseconds / 1000.0
@@ -600,6 +737,8 @@ class AMQPYombo(YomboLibrary):
         :param config_item: What type of configuration item.
         :return:
         """
+        # print "processing config.... %s" % config_item
+        # print "processing msg.... %s" % msg
         if config_item == "gateway_configs":
             payload = msg['data']
             for section in payload:
@@ -608,53 +747,81 @@ class AMQPYombo(YomboLibrary):
 
         elif config_item in self.config_items:
             config_data = self.config_items[config_item]
-            library = self._Loader.loadedLibraries[config_data['library']]
-            if 'process' in config_data['functions']:
-                klass = getattr(library, config_data['functions']['process'])
-            else:
+            klass = None
+            if config_data['library'] is not None:
+                library = self._Loader.loadedLibraries[config_data['library']]
+                if 'process' in config_data['functions'] and library is not None:
+                    klass = getattr(library, config_data['functions']['process'])
+            if klass is None:
                 klass = self.add_update_delete
 
             # print "Msg: %s" % msg
             if msg['data_type'] == 'object':
                 new_data = {}
                 data = self.field_remap(msg['data'], config_data)
-                if 'updated' in data:
-                    data['updated_srv'] = data['updated']
+                # if 'updated' in data:
+                #     data['updated_srv'] = data['updated']
 #                logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
 #                logger.info("amqpyombo::process_config - data: {data}", data=data)
-                klass(data, config_item, config_data, True)
-                self._Loader.loadedLibraries['devices'].add_update_delete(new_data)
-                self.process_config(data, config_item, True)
+                klass(msg, data, config_item, config_data, True)
+                # self._Loader.loadedLibraries['devices'].add_update_delete(new_data)
+                self.process_config(data, config_item)
             else:
                 for data in msg['data']:
                     data = self.field_remap(data, config_data)
-                    if 'updated' in data:
-                        data['updated_srv'] = data['updated']
+                    # if 'updated' in data:
+                    #     data['updated_srv'] = data['updated']
 #                    logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
 #                    logger.info("amqpyombo::process_config - data: {data}", data=data)
-                    klass(data, config_item, True)
+                    klass(msg, data, config_item, True)
         else:
             logger.warn("ConfigurationUpdate::process_config - '{config_item}' is not a valid configuration item. Skipping.", config_item=config_item)
             return
 
     def field_remap(self, data, config_data):
+        # print "field remap"
+        # print "field remap - config_data =%s" % config_data
+        # print "field remap - data =%s" % data
         new_data = {}
-        for key, value in data.iteritems(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
-            if key in config_data['map']:
-                # Convert ints and floats.
-                if self._LocalDBLibrary.db_model[config_data['table']][config_data['map'][key]]['type'] == "INTEGER":
-                    value=int(value)
-                elif self._LocalDBLibrary.db_model[config_data['table']][config_data['map'][key]]['type'] == "REAL":
-                    value=float(value)
-                new_data[config_data['map'][key]] = value
-            else:
-                new_data[key] = value
-        return new_data
+        # print "remap data: %s" % data
+        table_meta = self._LocalDBLibrary.db_model[config_data['table']]
+        # print "tablemeta: %s" % table_meta
+        key = None
+        value = None
+        try:
+            for key, value in data.iteritems(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
+                if key in config_data['map']:
+                    # print "field remap - key = %s (%s)" % (key, table_meta[config_data['map'][key]]['type'])
+                    # Convert ints and floats.
+                    if value is None:
+                        pass
+                    elif table_meta[config_data['map'][key]]['type'] == "INTEGER":
+                        value=int(value)
+                    elif table_meta[config_data['map'][key]]['type'] == "REAL":
+                        value=float(value)
+                    new_data[config_data['map'][key]] = value
+                else:
+                    new_data[key] = value
+            return new_data
+        except Exception, e:
+            print "error in field remap.  Last key: %s" % key
+            print "table info for key: %s" % table_meta[config_data['map'][key]]
+            print "input value: %s" % value
+            print "field remap - config_data =%s" % config_data
+            print "field remap - data =%s" % data
+            print "tablemeta: %s" % table_meta
+
+            logger.error("--------==(Error: Something bad              )==--------")
+            logger.error("--------------------------------------------------------")
+            logger.error("{error}", error=sys.exc_info())
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
+            logger.error("--------------------------------------------------------")
 
     # still in progress function. Need to clean up DB calls.
     # todo: what about updates directly to the library? Just call: config_item = get_config_item('devices')
     @inlineCallbacks
-    def add_update_delete(self, data, config_item, from_amqp_incoming=False):
+    def add_update_delete(self, msg, data, config_item, from_amqp_incoming=False):
         """
         Adds, updates, or delete various items based on the content of the data item being sent it. It will
         inspect the data and make a determination on what to do. It will also consider the values stored in the
@@ -665,12 +832,15 @@ class AMQPYombo(YomboLibrary):
         :param from_amqp_incoming:
         :return:
         """
+        # print "add_update_delete config_item111111: %s" % config_item
+        # print "add_update_delete msg....11111111111 %s" % msg
         # print "data: %s"%data
         config_data = self.config_items[config_item]
         required_db_keys = []
         allowed_db_keys = []
 
-        for col, col_data in self._LocalDBLibrary.db_model[config_data['table']].iteritems():
+        table_cols = self._LocalDBLibrary.db_model[config_data['table']].iteritems()
+        for col, col_data in table_cols:
             allowed_db_keys.append(col)
             if col_data['notnull'] == 1:
                 required_db_keys.append(col)
@@ -690,52 +860,24 @@ class AMQPYombo(YomboLibrary):
             for temp_data in temp:
                 local_data.append(temp_data['UUID'])
             db_data['commands'] = ','.join(local_data)
-        elif config_item == 'gateway_modules':
-            if 'ModuleConfigs' in data:
-                # print "ModuleConfigs, data: %s" % data
-                for tempGroup in data['ModuleConfigs']:
-                    for tempField in tempGroup['Fields']:
-                        field = {
-                            'VariableUUID': tempGroup['VariableUUID'],
-                            'VariableType': 'module',
-                            'FieldUUID': tempField['FieldUUID'],
-                            'ForeignUUID': data['id'],  # record = module
-                            'Weight': tempGroup['Weight'],
-                            'DataWeight': tempField['Weight'],
-                            'MachineLabel': tempField['MachineLabel'],
-                            'Label': tempField['Label'],
-                            'Value': tempField['Value'],
-                            'Updated': tempField['Updated'],
-                            'UpdatedSrv': tempField['Updated'],
-                            'Created': tempField['Created'],
-                        }
-                        # print "ModuleConfigs, field: %s" % field
-                        field = self.field_remap(field, self.config_items['variables'])
-                        self.add_update_delete(field, 'variables', True)
-        elif config_item == 'gateway_devices':
-            if 'energy_map' in db_data:
-                db_data['energy_map'] = sqlite3Binary(cPickle.dumps(db_data['energy_map'], cPickle.HIGHEST_PROTOCOL))
-            if 'DeviceConfigs' in data:
-                # print "DeviceConfigs, data: %s" % data
-                for tempGroup in data['DeviceConfigs']:
-                    for tempField in tempGroup['Fields']:
-                        field = {
-                            'VariableUUID': tempGroup['VariableUUID'],  # id of the variable, shared with various values
-                            'VariableType': 'device',
-                            'FieldUUID': tempField['FieldUUID'],  # unique ID for each value
-                            'ForeignUUID': data['id'],  # record = device
-                            'Weight': tempGroup['Weight'],
-                            'DataWeight': tempField['Weight'],
-                            'MachineLabel': tempField['MachineLabel'],
-                            'Label': tempField['Label'],
-                            'Value': tempField['Value'],
-                            'Updated': tempField['Updated'],
-                            'UpdatedSrv': tempField['Updated'],
-                            'Created': tempField['Created'],
-                        }
-                        # print "DeviceConfigs, field: %s" % field
-                        field = self.field_remap(field, self.config_items['variables'])
-                        self.add_update_delete(field, 'variables', True)
+
+        if 'variable_groups' in data:
+            if len(data['variable_groups']):
+                newMsg = msg.copy()
+                newMsg['data'] = data['variable_groups']
+                self.process_config(newMsg, 'variable_groups')
+
+        if 'variable_fields' in data:
+            if len(data['variable_fields']):
+                newMsg = msg.copy()
+                newMsg['data'] = data['variable_fields']
+                self.process_config(newMsg, 'variable_fields')
+
+        if 'variable_data' in data:
+            if len(data['variable_data']):
+                newMsg = msg.copy()
+                newMsg['data'] = data['variable_data']
+                self.process_config(newMsg, 'variable_data')
 
         # print "config_data: %s"%config_data
         # print "db_data: %s"%db_data
@@ -751,18 +893,21 @@ class AMQPYombo(YomboLibrary):
 
         # if config_item == 'variables':
         #     print "data: %s"%data
-        #     print "db_data['id']: %s" % db_data['id']
-        #     print "config_item: %s" % config_item
-        #     print "records: %s" % records
-
-        library = self._Loader.loadedLibraries[config_data['library']]
+        library = None
+        if config_data['library'] is not None:
+            library = self._Loader.loadedLibraries[config_data['library']]
 
         if len(records) == 0:
             # print "add record!"
             # action = 'add'
             if from_amqp_incoming:
-                db_data['updated_srv'] = data['updated']
-            print "inserting into: %s   data: %s" % (config_data['table'], db_data)
+                if 'updated_srv' in table_cols:
+                    db_data['updated_srv'] = data['updated']
+            # print "db_data['id']: %s" % db_data['id']
+            # print "config_data['dbclass']: %s" % config_data['dbclass']
+            #     print "config_item: %s" % config_item
+            # print "records: %s" % records
+            # print "inserting into: %s   data: %s" % (config_data['table'], db_data)
             yield self._LocalDBLibrary.insert(config_data['table'], db_data)
             if 'added' in config_data['functions']:
                 klass = getattr(library, config_data['functions']['updated'])
@@ -791,14 +936,16 @@ class AMQPYombo(YomboLibrary):
                     else:
                         raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
 
-            if data['updated'] > record['updated']:  # lets update!
-                action = 'update'
-                if from_amqp_incoming:
-                    db_data['updated_srv'] = data['updated']
-                self._LocalDBLibrary.dbconfig.update(config_data['table'], db_data, where=['id = ?', data['id']] )
-                if 'added' in config_data['functions']:
-                    klass = getattr(library, config_data['functions']['added'])
-                    klass(data, True)
+            if 'updated' in data and 'updated' in record:
+                if data['updated'] > record['updated']:  # lets update!
+                    action = 'update'
+                    if from_amqp_incoming:
+                        if 'updated_srv' in table_cols:
+                            db_data['updated_srv'] = data['updated']
+                    self._LocalDBLibrary.dbconfig.update(config_data['table'], db_data, where=['id = ?', data['id']] )
+                    if 'added' in config_data['functions']:
+                        klass = getattr(library, config_data['functions']['added'])
+                        klass(data, True)
             else:
                 pass  # what needs to happen when nothing changes?  Nothing?
         else:
@@ -832,10 +979,17 @@ class AMQPYombo(YomboLibrary):
         logger.debug("request_system_configs.....")
 
         allCommands = [
-            "get_commands",
-            "get_device_types", # includes commands
-            "get_gateway_devices",
-            "get_gateway_modules", # includes Module_device_types,
+            "get_categories",
+            "get_gateway_commands",
+            "get_gateway_devices", # Includes device variable groups/fields/data
+            "get_gateway_device_types",
+            "get_gateway_modules", # Includes module variable groups/fields/data
+
+            "get_gateway_device_type_commands",
+            "get_gateway_device_command_inputs",
+            "get_gateway_input_types",
+            # "get_gateway_input_types",
+
             # "get_gateway_configs",
 
 #            "GetModuleVariables",

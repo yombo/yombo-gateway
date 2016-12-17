@@ -1,25 +1,27 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
+.. note::
+
+  For more information see:
+  `Configuration @ Module Development <https://yombo.net/docs/modules/configuration/>`_
+
 Handles loading, storing, updating, and saving gateway configuration items.
 
-Module developers do not need to access any methods or variables here.
-Instead, module developers should user L{SQLDict} to store any values
-that need to be persistent. This includes module specific settings or
-configuration not set using the standard module variables portion
-for the module as defined in the 'Deverlopers Corner'.
+If you wish to store persistent data for your module, use the
+:py:mod:`SQLDict Library <yombo.lib.sqldict>`.
 
-Implements a basic cache system for speed so database reads
-are kept to a minimum.
+*Usage**:
 
-.. warning::
+.. code-block:: python
 
-   These resources are NOT meant for direct access.  To get and set configuration
-   values, use :ref:`getConfigValue` and :ref:`setConfigValue>.
+   latitude = self._Configs.get("location", "latitude")  # also can accept default and if a default value should be saved.
+   latitude = self._Configs.get("location", "latitude", "0", False)  # example of default and no save if default is used.
+   self._Configs.set("location", "latitude", "100")  # Save a new latitude location.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -32,7 +34,6 @@ import os
 from datetime import datetime
 import sys
 import traceback
-import base64
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -153,13 +154,13 @@ class Configuration(YomboLibrary):
             self.set("core", "externalipaddress", get_external_ip_address())
             self.set("core", "externalipaddresstime", int(time()))
 
-        # if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
-        #     if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
-        #         self.set("core", "localipaddress", get_local_ip_address())
-        #         self.set("core", "localipaddresstime", int(time()))
-        # else:
-        #     self.set("core", "localipaddress", get_local_ip_address())
-        #     self.set("core", "localipaddresstime", int(time()))
+        if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
+            if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
+                self.set("core", "localipaddress", get_local_ip_address())
+                self.set("core", "localipaddresstime", int(time()))
+        else:
+            self.set("core", "localipaddress", get_local_ip_address())
+            self.set("core", "localipaddresstime", int(time()))
 
         self.periodic_save_ini = LoopingCall(self.save)
         self.periodic_save_ini.start(14400, False)

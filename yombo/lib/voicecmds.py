@@ -88,7 +88,7 @@ the fuzzysearch phase of voice command lookup.
 from inspect import isclass
 import re
 
-from yombo.core.exceptions import YomboException
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import global_invoke_all, random_string
@@ -218,9 +218,9 @@ class VoiceCmds(YomboLibrary):
         are added. In the above example, specifying 'devicecmd', then only the first two items are added.
 
         Either a callback function must be provided or a device must be provided. Otherwise, the voice command
-        will not be added and a YomboException will be raised if either or both are defined.
+        will not be added and a YomboWarning will be raised if either or both are defined.
 
-        :raises YomboException: If voiceString or destination is invalid.
+        :raises YomboWarning: If voiceString or destination is invalid.
         :param voice_string: Voice command string to process: "desklamp [on, off]"
         :type voice_string: string
         :param call_back: A function to send the voice command id, device, and command objects to.
@@ -230,12 +230,12 @@ class VoiceCmds(YomboLibrary):
         :param order: The ordering in which to add voice command text lookup. Default: devicecmd
         :type order: string
         """
-        logger.debug("Adding voice command: {voice_string}", voice_string=voice_string)
+        logger.info("Adding voice command: {voice_string}", voice_string=voice_string)
         if call_back is None and device is None:
-            raise YomboException("'call_back' and 'device' are mising.", 1000, 'add_by_string', 'voicecmds')
+            raise YomboWarning("'call_back' and 'device' are mising.", 1000, 'add_by_string', 'voicecmds')
 
         if call_back is not None and device is not None:
-            raise YomboException("Either specifiy 'call_back' or 'device', not both.", 1001, 'add_by_string', 'voicecmds')
+            raise YomboWarning("Either specifiy 'call_back' or 'device', not both.", 1001, 'add_by_string', 'voicecmds')
 
         tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))
         string_parts = tag_re.split(voice_string)
@@ -251,7 +251,7 @@ class VoiceCmds(YomboLibrary):
         commands = []
 
         if len(string_parts) > 2:
-            raise YomboException("Invalid format for 'voice_string'", 1003, 'add_by_string', 'voicecmds')
+            raise YomboWarning("Invalid format for 'voice_string'", 1003, 'add_by_string', 'voicecmds')
 
         for part in range(len(string_parts)):
             string_parts[part] = string_parts[part].strip()
@@ -265,7 +265,7 @@ class VoiceCmds(YomboLibrary):
                 device_label = string_parts[part]
 
         if len(commands) == 0:
-            raise YomboException("No commands found in voice_string.", 1003, 'add_by_string', 'voicecmds')
+            raise YomboWarning("No commands found in voice_string.", 1003, 'add_by_string', 'voicecmds')
 
         # logger.debug("commands by voice: {commandsByVoice}:{verb}", commandsByVoice=self.commandsByVoice, verb=verb)
         for cmd in commands:

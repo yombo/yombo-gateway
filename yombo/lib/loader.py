@@ -35,7 +35,7 @@ import sys
 import traceback
 from re import search as ReSearch
 from collections import OrderedDict
-from signal import signal, SIGINT
+# from signal import signal, SIGINT
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
@@ -75,7 +75,7 @@ HARD_LOAD["Modules"] = {'operation_mode':'all'}
 # HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
-HARD_LOAD["AMQPYombo"] = {'operation_mode':'all'}
+HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
@@ -470,8 +470,9 @@ class Loader(YomboLibrary, object):
             return
 
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
-#        print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
+        # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
         class_ = getattr(module_tail, pyclassname)
+        # print "class_: %s  " % class_
 
         # Put the component into various lists for mgmt
         try:

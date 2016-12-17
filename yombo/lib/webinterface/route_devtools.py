@@ -1,3 +1,4 @@
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 
 def route_devtools(webapp):
@@ -21,7 +22,7 @@ def route_devtools(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                commands=webinterface._Commands.get_public_commands(),
                                page_label='Public Commands',
-                               page_description='Puiblicly available commands.'
+                               page_description='Publicly available commands.'
                                )
 
         @webapp.route('/commands/local')
@@ -47,22 +48,6 @@ def route_devtools(webapp):
                                command=command,
                                input_types=webinterface._InputTypes.get_all()
                                )
-
-        @webapp.route('/command/edit/<string:device_id>')
-        @require_auth()
-        def page_devices_command_edit(webinterface, request, session, device_id):
-
-            try:
-                device = webinterface._DevicesLibrary[device_id]
-            except:
-                webinterface.add_alert('Device ID was not found.', 'warning')
-                return webinterface.redirect(request, '/devices/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device.html')
-            return page.render(alerts=webinterface.get_alerts(),
-                               device=device,
-                               commands=webinterface._Commands,
-                               )
-
 
         @webapp.route('/debug')
         @require_auth()
@@ -92,4 +77,52 @@ def route_devtools(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/statistic_bucket_lifetimes.html')
             return page.render(alerts=webinterface.get_alerts(),
                                bucket_lifetimes=webinterface._Statistics.bucket_lifetimes
+                               )
+
+        @webapp.route('/devicetypes/public')
+        @require_auth()
+        def page_devtools_devicetypes_public(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/devicetypes_list.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               items=webinterface._DeviceTypes.get_public_devicetypes(),
+                               page_label='Public Device Types',
+                               page_description='Publicly available device types.'
+                               )
+
+        @webapp.route('/devicetypes/local')
+        @require_auth()
+        def page_devtools_devicetypes_local(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/devicetypes_list.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               items=webinterface._DeviceTypes.get_local_devicetypes(),
+                               page_label='Local Device  Types',
+                               page_description='Local device types, only available to the primary account holder.'
+                               )
+
+        @webapp.route('/devicetypes/details/<string:devicetype_id>')
+        @require_auth()
+        def page_devtools_devicetypes_details(webinterface, request, session, devicetype_id):
+            try:
+                devicetype = webinterface._DeviceTypes[devicetype_id]
+            except YomboWarning:
+                webinterface.add_alert('Device Type ID was not found: %s' % devicetype_id, 'warning')
+                return webinterface.redirect(request, '/devtools/index')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/devicetype_details.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               devicetype=devicetype,
+                               input_types=webinterface._InputTypes.get_all()
+                               )
+
+        @webapp.route('/devicetypes/edit/<string:device_id>')
+        @require_auth()
+        def page_devtools_devicetypes_edit(webinterface, request, session, device_id):
+            try:
+                device = webinterface._Devices[device_id]
+            except:
+                webinterface.add_alert('Device Type ID was not found.', 'warning')
+                return webinterface.redirect(request, '/devtools/devicetypes/index')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/devicetype_edit.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               device=device,
+                               input_types=webinterface._InputTypes.get_all()
                                )

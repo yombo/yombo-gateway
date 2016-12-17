@@ -2,12 +2,15 @@
 Yombo Gateway Overview
 ======================
 
-The Yombo Gateway Framework provides a base foundation that allows users to
-quickly and easily automate various devices (Z-Wave, X10, Insteon, etc).
-This framework can also act a bridge between vendor protocols. For example,
-an X10 controler can be mapped to control Z-Wave or Insteon products.
+The Yombo Gateway Framework is used for home and business automation. This
+framework provides a base foundation that can be easily extended with module
+to provide advanced functionality. Support for automation protocols occurs
+through the use of modules; such as X10, Z-Wave, Insteon, Zigbee, etc.
 
-The gateway can also be easily extended using modules. The modules can:
+This framework can also act a bridge between vendor protocols. For example,
+an X10 controler can be used to control Z-Wave products.
+
+Modules can:
 
 * Extend the features of the framework throug the use of hooks.
 * Provide additional API features to other modules.
@@ -17,17 +20,32 @@ The gateway can also be easily extended using modules. The modules can:
 Documentation
 =============
 
-For new users, check out the quick start guide at https://docs.yombo.net
+For new users, check out the quick start guide at https://yombo.net/docs/gateway/getting_started/
 
-For those wishing to dive deeper into the code, the API, or want to develop modules,
-vist the porjects page at: https://projects.yombo.net/
+==================
+Developing Modules
+==================
+
+Documentation for developing modules can be found at: https://yombo.net/docs/modules
+
+A quick start guide to developing modules can be found her:
+https://yombo.net/docs/modules/building-your-first-module/
 
 ===============================
 Getting Help / Other Resources
 ===============================
 
-For issue (tickets), feature requests, forums, and wiki articles, visit
-`Yombo Gateway Projects <https://projects.yombo.net/projects/gateway>`_ page.
+For issue (tickets), feature requests, and roadmaps, visit
+`Yombo Projects <https://projects.yombo.net/>`_ page.
+
+==============
+Privacy Policy
+==============
+
+The full privacy policy is located here: https://yombo.net/policies/privacy
+
+In short: It's your data. We don't sell it or give it away, unless required to
+do so by court order.
 
 =========================
 Yombo Gateway License 

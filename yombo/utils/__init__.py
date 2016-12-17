@@ -467,9 +467,9 @@ def get_external_ip_address():
     :rtype: string
     """
     import urllib3
-    urllib3.disable_warnings()
+    # urllib3.disable_warnings()
     http = urllib3.PoolManager()
-    r = http.request("GET", "https://wtfismyip.com/text")
+    r = http.request("GET", "https://yombo.net/tools/clientip.php")
     return r.data.strip()
 
 def ip_address_to_int(address):

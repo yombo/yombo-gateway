@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `Atoms @ Module Development <https://yombo.net/docs/modules/commands/>`_
+  For more information see: `Commands @ Module Development <https://yombo.net/docs/modules/commands/>`_
 
 This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
@@ -220,13 +220,12 @@ class Command:
         logger.debug("command info: {command}", command=command)
 
         self.command_id = command.id
-        self.uri = command.uri
-        self.voice_cmd = command.voice_cmd
         self.cmd = command.machine_label
-        self.label = command.label
         self.machine_label = command.machine_label
+        self.label = command.label
         self.description = command.description
-        self.input_type_id = command.input_type_id
+        self.voice_cmd = command.voice_cmd
+        self.always_load = command.always_load
         self.public = command.public
         self.status = command.status
         self.created = command.created
@@ -246,7 +245,7 @@ class Command:
         """
         return {
             'command_id'   : str(self.command_id),
-            'uri'          : str(self.uri),
+            'always_load'          : str(self.always_load),
             'voice_cmd'    : str(self.voice_cmd),
             'cmd'          : str(self.cmd), # AKA machineLabel
             'label'        : str(self.label),

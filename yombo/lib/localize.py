@@ -47,7 +47,6 @@ class Localize(YomboLibrary):
     """
     def _init_(self):
         self.MSGCTXT_GLUE = "\004"
-        self._Database = self._Loader['localdb']
         temp = self._Configs.get('localize', 'hashes')
         self.default_lang = self._Configs.get('localize', 'default_lang', None, False)
         if temp is None:

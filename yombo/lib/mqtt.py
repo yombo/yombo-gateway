@@ -1,7 +1,6 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
 .. note::
 
   For more information see: `MQTT @ Module Development <https://yombo.net/docs/modules/mqtt/>`_
@@ -95,6 +94,8 @@ class MQTT(YomboLibrary):
     """
     Manages MQTT broker and client connections.
     """
+    client_enabled = True
+
     def _init_(self):
         """
         Builds the configuration and password files. Also starts the MQTT broker if enabled.

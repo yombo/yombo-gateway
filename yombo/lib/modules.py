@@ -39,16 +39,21 @@ logger = get_logger('library.modules')
 
 SYSTEM_MODULES = {}
 SYSTEM_MODULES['automationhelpers'] = {
-    'id': 'hvKhds9znRsmy2', # module_id
+    'id': 'load1', # module_id
+    'gateway_id': 'local',
     'module_type': 'logic',
     'machine_label': 'AutomationHelpers',
+    'label': 'Automation Helpers',
     'description': "Adds basic platforms to the automation rules.",
     'install_notes': '',
     'install_branch': '',
-    'doc_link': 'https://yombo.net/docs/features/automation-rules/',
-    'uri': 'https://yombo.net/docs/features/automation-rules/',
+    'prod_branch': '',
+    'dev_branch': '',
     'prod_version': '',
     'dev_version': '',
+    'doc_link': 'https://yombo.net/docs/features/automation-rules/',
+    'git_link': '',
+    'always_load': '1',
     'public': '2',
     'status': '1',
     'created': int(time()),
@@ -204,7 +209,8 @@ class Modules(YomboLibrary):
                 yield self._Loader.library_invoke_all("_module_unloaded_", called_by=self)
                 delete_component = module._FullName
                 self.del_module(ModuleID, module._Name.lower())
-                del self._Loader.loadedComponents[delete_component.lower()]
+                if delete_component.lower() in self._Loader.loadedComponents:
+                    del self._Loader.loadedComponents[delete_component.lower()]
 
     @inlineCallbacks
     def build_raw_module_list(self):
@@ -215,6 +221,12 @@ class Modules(YomboLibrary):
             ini.readfp(fp)
             for section in ini.sections():
                 options = ini.options(section)
+                if 'mod_machine_label' in options:
+                    mod_machine_label = ini.get(section, 'mod_machine_label')
+                    options.remove('mod_machine_label')
+                else:
+                    mod_machine_label = section
+
                 if 'mod_label' in options:
                     mod_label = ini.get(section, 'mod_label')
                     options.remove('mod_label')
@@ -248,13 +260,18 @@ class Modules(YomboLibrary):
                 newUUID = yombo.utils.random_string()
                 self._rawModulesList[newUUID] = {
                   'id': newUUID, # module_id
+                  'gateway_id': 'local',
                   'module_type': mod_module_type,
-                  'machine_label': mod_label,
+                  'machine_label': mod_machine_label,
+                  'label': mod_label,
                   'description': mod_description,
                   'install_notes': mod_install_notes,
                   'install_branch': '',
+                  'prod_branch': '',
+                  'dev_branch': '',
                   'doc_link': mod_doc_link,
-                  'uri': '',
+                  'git_link': '',
+                  'always_load': '1',
                   'prod_version': '',
                   'dev_version': '',
                   'public': '0',
@@ -273,17 +290,20 @@ class Modules(YomboLibrary):
                     values = values.split(":::")
                     for value in values:
                         variable = {
-                            'machine_label': item,
-                            'weight': 0,
+                            'relation_id': newUUID,
+                            'relation_type': 'module',
+                            'field_machine_label': item,
+                            'field_label': item,
                             'value': value,
-                            'label': item,
                             'data_weight': 0,
-                            'module_id': newUUID,
+                            'field_weight': 0,
+                            'encryption_required': 0,
+                            'input_type_id': "any",
                             'variable_id': 'xxx',
                             'created': int(time()),
                             'updated': int(time()),
                         }
-                        self._localModuleVars[mod_label][variable['machine_label']].append(variable)
+                        self._localModuleVars[mod_label][variable['field_machine_label']].append(variable)
 
 #            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
             fp.close()
@@ -572,15 +592,20 @@ class Module:
         logger.debug("New instance of Module: {module}", module=module)
 
         self.module_id = module['id']
+        self.gateway_id = module['gateway_id']
         self.module_type = module['module_type']
-        self.label = module['machine_label']
+        self.machine_label = module['machine_label']
+        self.label = module['label']
         self.description = module['description']
         self.install_notes = module['install_notes']
         self.doc_link = module['doc_link']
-        self.uri = module['uri']
+        self.git_link = module['git_link']
         self.install_branch = module['install_branch']
+        self.prod_branch = module['prod_branch']
+        self.dev_branch = module['prod_branch']
         self.prod_version = module['prod_version']
         self.dev_version = module['dev_version']
+        self.always_load = module['always_load']
         self.public = module['public']
         self.status = module['status']
         self.created = module['created']
@@ -611,16 +636,18 @@ class Module:
         """
         return {
             'module_id'     : str(self.module_id),
-            'uri'           : str(self.uri),
+            'gateway_id'    : str(self.gateway_id),
             'label'         : str(self.label),
             'description'   : str(self.description),
-            'device_class'  : str(self.device_class),
             'install_notes' : int(self.install_note),
             'doc_link'      : int(self.doc_link),
+            'git_link'      : int(self.git_link),
             'install_branch': int(self.install_branch),
+            'prod_branch'   : int(self.prod_branch),
+            'dev_branch'    : int(self.dev_branch),
             'prod_version'  : int(self.prod_version),
             'dev_version'   : int(self.dev_version),
-            'device_types'  : int(self.device_types),
+            'always_load'   : str(self.always_load),
             'public'        : int(self.public),
             'status'        : int(self.status),
             'created'       : int(self.created),

@@ -286,6 +286,7 @@ class Devices(YomboLibrary):
         logger.debug("Loading devices:::: {devices}", devices=devices)
         if len(devices) > 0:
             for record in devices:
+                record = record.__dict__
                 if record['energy_map'] is not None:
                     energy_map = cPickle.loads(str(record['energy_map']))
                     energy_map = OrderedDict(sorted(energy_map.items(), key=lambda (x, y): float(x)))
@@ -315,7 +316,10 @@ class Devices(YomboLibrary):
         self._devicesByName[record["label"]] = device_id
 
         # print("load_device: %s" % record)
-        self._VoiceCommandsLibrary.add_by_string(record["voice_cmd"], None, record["id"], record["voice_cmd_order"])
+        try:
+            self._VoiceCommandsLibrary.add_by_string(record["voice_cmd"], None, record["id"], record["voice_cmd_order"])
+        except YomboWarning:
+            logger.info("Device {label} has an invalid voice_cmd {voice_cmd}", label=record["label"], voice_cmd=record["voice_cmd"])
         # try:
         #     # todo: refactor voicecommands. Need to be able to update/delete them later.
         # except Exception, e:
@@ -793,6 +797,7 @@ class Device:
         # d.addErrback(gotException)
         # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
 
+        # print("getting device variables for: %s" % self.device_id)
         d = self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id)
         d.addErrback(gotException)
         d.addCallback(set_variables)
@@ -891,7 +896,7 @@ class Device:
             'sent_time': None,
             'device_id': self.device_id,
             'cmd_id': cmdobj.command_id,
-            'status': 'new',  # new, delayed, sent, received, pending, completed
+            'status': 'new',  # new, delayed, sent, received, failed, pending, completed
             'message': '',  #contains any notes about the status. Errors, etc.
         }
 
@@ -1184,7 +1189,6 @@ class Device:
         kwargs.update({"deviceobj" : self,
                        "status" : self.status_history[0],
                        "previous_status" : self.status_history[1],
-                       "old_stats" : self.status_history[2],
                       } )
         global_invoke_all('_device_status_', called_by=self, **kwargs)
 

@@ -36,8 +36,11 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/details.html')
+            print device.available_commands()
+            print device.device_variables
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
+                               devicetypes=webinterface._DeviceTypes,
                                commands=webinterface._Commands,
                                )
     

@@ -1,7 +1,6 @@
 {% extends "lib/webinterface/fragments/layout_blank.tpl" %}
 {% block head_bottom %}
 <script src='https://www.google.com/recaptcha/api.js'></script>
-<script src='/static/js/sha256.js'></script>
 {% endblock %}
 
 {% block content %}
@@ -43,8 +42,7 @@
                                           </p>
                                           <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
                                               <h4>It's Safe</h4> <p>You're credentials (email or password) will not be stored
-                                              in plaintext on the gateway. This form submits a secure version of your password thru
-                                              your gateway to Yombo for processing. Your password never leaves the browser.</p>
+                                              in plaintext on the gateway.</p>
                                           </div>
                                           <div class="bs-callout bs-callout-danger" id=callout-images-ie-rounded-corners>
                                               <h4>Security Warning</h4> <p>A hashed version of your credentials and the
@@ -66,20 +64,19 @@
                             <form action="/login/user" method="POST" role="form">
                                 <fieldset>
                                     <div class="form-group">
-                                        <input class="form-control" placeholder="E-mail or Username" id="email" name="email" type="text" autofocus>
+                                        <input class="form-control" placeholder="E-mail" id="email" name="email" type="text" autofocus>
                                     </div>
                                     <div class="form-group">
-                                        <input class="form-control" placeholder="Password" id="password-input" type="password" value="">
+                                        <input class="form-control" placeholder="Password" id="password" name="password" type="password" value="">
                                     </div>
                                     <div class="checkbox">
                                         <label>
-                                            <input name="remember" type="checkbox" value="Remember Me">Remember Me
+                                            <input name="remember" type="checkbox" value="yes">Remember Me
                                         </label>
                                     </div>
                                     <!-- Change this to a button or input when using this as a form -->
                                     <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
                                     <div>&nbsp;</div>
-                                    <input class="form-control" placeholder="Password" id="password" name="password" type="hidden" value="">
                                     <button type="submit" id="submit-login" class="btn btn-lg btn-success btn-block">Login</button>
                                 </fieldset>
                             </form>
@@ -90,12 +87,3 @@
             <!-- /.row -->
 {% endblock %}
 
-{% block body_bottom %}
-    <script>
-        $(document).ready(function() {
-                $('#submit-login').on('click', function (e) {
-                    $('#password').val(Sha256.hash($('#password-input').val()));
-            })
-        });
-    </script>
-{% endblock %}

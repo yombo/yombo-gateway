@@ -27,23 +27,22 @@ logger = get_logger('library.devicetypes')
 
 class DeviceTypes(YomboLibrary):
     """
-    Manages device type database tabls. Just simple update a module's device types or device type's available commands
+    Manages device type database tabels. Just simple update a module's device types or device type's available commands
     and any required database tables are updated. Also maintains a list of module device types and device type commands
     in memory for access.
     """
     def __getitem__(self, device_type_requested):
         """
-        Return a command, searching first by command UUID and then by command
+        Return a device type, searching first by command ID and then by command
         function (on, off, bright, dim, open, close, etc).  Modules should use
         `self._Commands` to search with:
 
-            >>> self._DeviceTypes['137ab129da9318]  #by uuid
+            >>> self._DeviceTypes['137ab129da9318']  #by id
         or::
-            >>> self._Commands['living room light']  #by name
+            >>> self._DeviceTypes['x10_appliance']  #by name
 
-        See: :func:`yombo.core.helpers.getCommands` for full usage example.
 
-        :param commandRequested: The command UUID or command label to search for.
+        :param commandRequested: The device type ID or device type label to search for.
         :type commandRequested: string
         """
         return self.get(device_type_requested)
@@ -62,6 +61,7 @@ class DeviceTypes(YomboLibrary):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
+
         :param loader: A pointer to the L{Loader<yombo.lib.loader.Loader>}
         library.
         :type loader: Instance of Loader
@@ -165,6 +165,30 @@ class DeviceTypes(YomboLibrary):
             raise YomboWarning("Device type id doesn't exist: %s" % device_type_id, 200,
                 'device_type_commands', 'DeviceTypes')
 
+    def get_local_devicetypes(self):
+        """
+        Return a dictionary with all the public device types.
+
+        :return:
+        """
+        results = {}
+        for item_id, item in self.device_types_by_id.iteritems():
+            if item.public <= 1:
+                results[item_id] = item
+        return results
+
+    def get_public_devicetypes(self):
+        """
+        Return a dictionary with all the public commands.
+
+        :return:
+        """
+        results = {}
+        for item_id, item in self.device_types_by_id.iteritems():
+            if item.public == 2:
+                results[item_id] = item
+        return results
+
     @inlineCallbacks
     def _load_device_types(self):
         """
@@ -174,7 +198,7 @@ class DeviceTypes(YomboLibrary):
         # print "zzz 222: %s" % dts
 
         for dt in dts:
-            self._add_device_type(dt)
+            yield self.add_device_type(dt)
         #
         # for module_id, klass in self._Modules._moduleClasses.iteritems():
         #     print "device types: module_id"
@@ -185,7 +209,7 @@ class DeviceTypes(YomboLibrary):
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _add_device_type(self, record, test_device_type = False):
+    def add_device_type(self, record, test_device_type = False):
         """
         Add a device_type based on data from a row in the SQL database.
 
@@ -196,8 +220,10 @@ class DeviceTypes(YomboLibrary):
         :returns: Pointer to new device type. Only used during unittest
         """
         logger.debug("record: {record}", record=record)
+        record = record.__dict__
         dt_id = record['id']
         self.device_types_by_id[dt_id] = DeviceType(record, self)
+        d = self.device_types_by_id[dt_id]._init_()
         self.device_types_by_name[record['machine_label']] = self.device_types_by_id[dt_id]
 
 #        if test_device_type:
@@ -274,23 +300,49 @@ class DeviceType:
 
         self._DTLibrary = device_type_library
         self.device_type_id = device_type['id']
-        self.uri = device_type['uri']
-        self.label = device_type['machine_label']
+        self.category_id = device_type['category_id']
+        self.machine_label = device_type['machine_label']
+        self.label = device_type['label']
         self.description = device_type['description']
-        self.device_class = device_type['device_class']
-        self.live_update = device_type['live_update']
         self.public = device_type['public']
         self.status = device_type['status']
         self.created = device_type['created']
         self.updated = device_type['updated']
-        if len(device_type['commands']) > 0:
-            self.commands = device_type['commands'].split(',')
-        else:
-            self.commands = []
+        # if len(device_type['commands']) > 0:
+        #     self.commands = device_type['commands'].split(',')
+        # else:
+        #     self.commands = []
+        self.commands = []
 
         self.registered_devices = {}
         self.registered_modules = {}
 #        self.updated_srv = device_type.updated_srv
+
+    def _init_(self):
+        """
+        Loads any related commands for the given device type.
+
+        :return:
+        """
+
+        def set_commands(vars):
+            # print("GOT DEVICE VARS!!!!! %s" % vars)
+            self.commands = vars
+
+        def gotException(failure):
+           print("Exception 1: %r" % failure)
+           return 100  # squash exception, use 0 as value for next stage
+
+        # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
+        # d.addCallback(set_commands)
+        # d.addErrback(gotException)
+        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
+
+        d = self._DTLibrary._Libraries['localdb'].get_device_type_commands(self.device_type_id)
+        d.addErrback(gotException)
+        d.addCallback(set_commands)
+        d.addErrback(gotException)
+        return d
 
     def __str__(self):
         """
@@ -330,9 +382,9 @@ class DeviceType:
         return {
             'device_type_id': str(self.device_type_id),
             'uri'           : str(self.uri),
+            'machine_label' : str(self.machine_label),
             'label'         : str(self.label),
             'description'   : str(self.description),
-            'device_class'  : str(self.device_class),
             'live_update'   : int(self.live_update),
             'public'        : int(self.public),
             'status'        : int(self.status),

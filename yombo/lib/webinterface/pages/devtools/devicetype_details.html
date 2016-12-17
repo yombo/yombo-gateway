@@ -1,0 +1,76 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+</a> Device Information</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-12">
+                    {{ macros.modal("cmdresultmodal", 'Command Results', '
+                    <p><div id="cmdresult"></div></p>') }}
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Basic Information</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label><br>
+                                {{ devicetype.machine_label }}<br>
+
+                                <label style="margin-top: 15px; margin-bottom: 0px">Label: </label><br>
+                                {{ devicetype.label }}<br>
+
+                                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                                {{ devicetype.description }}<br>
+
+                                <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
+                                {{ func.yes_no(devicetype.status) }}<br>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Current State</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                </div>
+                <!-- /.col-lg-6 -->
+            </div>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+$('.deviceCmd').click(function (event){
+     event.preventDefault();
+     $.ajax({
+        url: $(this).attr('href'),
+        dataType: 'json',
+        success: function(resp){
+            $("#cmdresult").html(resp.message);
+            $("#cmdresultmodal").modal('show');
+            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
+     })
+     return false; //for good measure
+});
+
+    </script>
+{% endblock %}

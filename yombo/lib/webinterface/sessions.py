@@ -67,7 +67,7 @@ class Sessions(object):
         })
         self.localdb = self.loader.loadedLibraries['localdb']
         self.active_sessions = {}
-        self.active_sessions_cache = ExpiringDict(200, 1)  # keep 200 entries, for at most 1 second
+        self.active_sessions_cache = ExpiringDict(200, 5)  # keep 200 entries, for at most 1 second...???
 
     @inlineCallbacks
     def init(self):
@@ -179,7 +179,11 @@ class Sessions(object):
         """
         if self.has_session(request):
             try:
-                self._data[request.received_cookies[self.config.cookie_session]][name] = value
+                # print "name: %s" % name
+                # print "self.config.cookie_session: %s" % self.config.cookie_session
+                # print "data: %s" % self.active_sessions
+                # print "request.received_cookies[self.config.cookie_session]: %s" % request.received_cookies[self.config.cookie_session]
+                self.active_sessions[request.received_cookies[self.config.cookie_session]][name] = value
                 return True
             except:
                 return False
@@ -194,7 +198,7 @@ class Sessions(object):
         """
         if self.has_session(request):
             try:
-                return self._data[request.received_cookies[self.config.cookie_session]][name]
+                return self.active_sessions[request.received_cookies[self.config.cookie_session]][name]
             except:
                 return None
         return None
@@ -208,7 +212,7 @@ class Sessions(object):
         """
         if self.has_session(request):
             try:
-                del self._data[request.received_cookies[self.config.cookie_session]][name]
+                del self.active_sessions[request.received_cookies[self.config.cookie_session]][name]
                 return True
             except:
                 return False
@@ -293,10 +297,18 @@ class Session(dict):
         self.updated = int(time())
 
     def __getitem__(self, key):
-        self.last_access = int(time())
-        return dict.__getitem__(self, key)
+        return self.get(key)
+
+    def get(self, key, default=None):
+        if key in self:
+            self.last_access = int(time())
+            return dict.__getitem__(self, key)
+        return default
 
     def __setitem__(self, key, val):
+        return self.set(key, val)
+
+    def set(self, key, val):
         if key not in ('last_access', 'created', 'updated'):
             self.updated = int(time())
         dict.__setitem__(self, key, val)

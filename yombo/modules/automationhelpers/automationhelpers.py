@@ -149,7 +149,6 @@ class AutomationHelpers(YomboModule):
         return
 
     def _automation_filter_list_(self, **kwargs):
-        print "!!! automation helpers filter list..."
         return [
              {
                  'platform': 'any', # allow any value. Always returns true.
