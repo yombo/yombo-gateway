@@ -13,6 +13,10 @@ try:
 except ImportError:
     # fcntl is not available on windows
     HAS_FCNTL = False
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 import inspect
 import random
 import string
@@ -785,6 +789,32 @@ def unit_convert(unit_type, unit_size):
     :return: float - converted unit
     """
     return unit_converters[unit_type](unit_size)
+
+def is_json(myjson):
+    """
+    Helper function to determine if data is json or not.
+
+    :param myjson:
+    :return:
+    """
+    try:
+        json_object = json.loads(myjson)
+    except:
+        return False
+    return True
+
+def is_msgpack(mymsgpack):
+    """
+    Helper function to determine if data is msgpack or not.
+
+    :param mymsgpack:
+    :return:
+    """
+    try:
+        json_object = msgpack.loads(mymsgpack)
+    except:
+        return False
+    return True
 
 @memoize_
 def is_freebsd():

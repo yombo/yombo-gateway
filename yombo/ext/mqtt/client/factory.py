@@ -73,11 +73,11 @@ class MQTTFactory(ReconnectingClientFactory):
 
     def buildProtocol(self, addr):
         if   self.profile == self.SUBSCRIBER:
-            from mqtt.client.subscriber import MQTTProtocol
+            from yombo.ext.mqtt.client.subscriber import MQTTProtocol
         elif self.profile == self.PUBLISHER:
-            from mqtt.client.publisher import MQTTProtocol
+            from yombo.ext.mqtt.client.publisher import MQTTProtocol
         elif self.profile == (self.SUBSCRIBER | self.PUBLISHER):
-            from mqtt.client.pubsubs import MQTTProtocol
+            from yombo.ext.mqtt.client.pubsubs import MQTTProtocol
         else:
             raise ProfileValueError("profile value not supported" , self.profile)
         

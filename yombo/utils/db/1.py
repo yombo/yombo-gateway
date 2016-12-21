@@ -340,8 +340,7 @@ def upgrade(Registry, **kwargs):
      `multiple`            INTEGER NOT NULL,
      `updated_srv`         INTEGER DEFAULT 0,
      `updated`             INTEGER NOT NULL,
-     `created`             INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+     `created`             INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
 
     table = """ CREATE TABLE `variable_data` (

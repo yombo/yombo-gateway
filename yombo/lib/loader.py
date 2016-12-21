@@ -471,13 +471,17 @@ class Loader(YomboLibrary, object):
 
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
         # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
-        class_ = getattr(module_tail, pyclassname)
-        # print "class_: %s  " % class_
+        klass = getattr(module_tail, pyclassname)
+        # print "klass: %s  " % klass
 
         # Put the component into various lists for mgmt
+        if not callable(klass):
+            logger.warn("Unable to start class '{classname}', it's not callable.", classname=pyclassname)
+            return
+
         try:
             # Instantiate the class
-            moduleinst = class_()  # start the class, only libraries get the loader
+            moduleinst = klass()  # start the class, only libraries get the loader
             if componentType == 'library':
                 if componentName.lower() == 'modules':
                     self._moduleLibrary = moduleinst

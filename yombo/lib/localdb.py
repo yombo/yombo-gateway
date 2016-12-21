@@ -828,6 +828,7 @@ ORDER BY id desc"""
             })
             # variables[record.machine_label]['value'].append(record.value)
 #                print record.__dict__
+#         print "variables %s:%s = %s" % (relation_type, relation_id, variables)
         returnValue(variables)
 
     @inlineCallbacks

@@ -241,8 +241,8 @@ class Statistics(YomboLibrary):
                     print "hook....bucket: %s" % values
                     self.add_bucket_lifetime(bucket, values)
 
-        for name, data in self.bucket_lifetimes.iteritems():
-            print "name: %s, data: %s" % (name, data)
+        # for name, data in self.bucket_lifetimes.iteritems():
+            # print "name: %s, data: %s" % (name, data)
 
     def _get_bucket_time(self, type, bucket_time=None):
         """

@@ -138,6 +138,13 @@ class Devices(YomboLibrary):
     def __str__(self):
         return self._devicesByUUID
 
+    def __contains__(self, device_requested):
+        try:
+            self.get(device_requested)
+            return True
+        except:
+            return False
+
     def keys(self):
         return self._devicesByUUID.keys()
 

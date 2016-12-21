@@ -69,7 +69,7 @@ from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import random_string
 
-logger = get_logger('mqtt')
+logger = get_logger('library.mqtt')
 
 def sha512_crypt(password, salt=None, rounds=None):
     """
@@ -170,7 +170,6 @@ class MQTT(YomboLibrary):
             logger.info("Embedded MQTT Disabled.")
             return
 
-#        self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
     def _start_(self):
         """
@@ -178,6 +177,7 @@ class MQTT(YomboLibrary):
         :return:
         """
         self.mqtt_local_client = self.new()  # System connection to send messages.
+        # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
 
     def _stop_(self):
@@ -254,7 +254,7 @@ class MQTT(YomboLibrary):
                     results = {'status':200, 'message': 'MQTT message sent successfully.'}
                     returnValue(json.dumps(results))
                 except Exception, e:
-                    print("whathahtahthat %s" % e)
+                    # print("whathahtahthat %s" % e)
                     results = {'status':500, 'message': 'MQTT message count not be sent.'}
                     returnValue(json.dumps(results))
 
@@ -326,13 +326,14 @@ class MQTT(YomboLibrary):
         self.mqtt_test_conenction.subscribe("yombo/#")
 
         self.sendDataLoop = LoopingCall(self.test_send_data)
-        self.sendDataLoop.start(15, True)
+        self.sendDataLoop.start(5, True)
 
     def test_on_connect(self):
         print("in on connect in library...")
         self.test_send_data()
 
     def test_send_data(self):
+        print("mqtt sending test package")
         self.mqtt_test_conenction.publish("yombo/devices/asdf/asdf", 'open')
 
     def test_mqtt_in(self, topic, payload, qos, retain):
@@ -423,6 +424,8 @@ class MQTTClient(object):
         :param qos: 0, 1, or 2. Default is 0.
         :return:
         """
+        # print("publishing (%s): %s" % (topic, message))
+        # print("client connected: %s" % self.connected)
         if self.connected:
             yield self.factory.protocol.publish(topic=topic, message=message, qos=qos)
             self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
@@ -481,7 +484,7 @@ class MQTTClient(object):
         while True:
             try:
                 item = self.send_queue.popleft()
-                logger.info("mqtt_connected. Item: {item}", item=item)
+                logger.debug("mqtt_connected. Item: {item}", item=item)
                 if item['type'] == 'subscribe':
                     yield self.subscribe(item['topic'], item['qos'])
                 elif item['type'] == 'unsubscribe':
@@ -506,7 +509,7 @@ class MQTTClient(object):
         :param mqtt_msg_id: MQTT Msg ID. Used to detect duplicates.
         :return:
         """
-        print("mqtt_incoming - topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, mqtt_msg_id:%s" % (topic, payload, qos, dup, retain, mqtt_msg_id))
+        # print("mqtt_incoming - topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, mqtt_msg_id:%s" % (topic, payload, qos, dup, retain, mqtt_msg_id))
 
 #        print("client ID incomin: %s" % self.client_id)
         if self.mqtt_incoming_callback:
@@ -539,14 +542,16 @@ class MQTTYomboProtocol(MQTTProtocol):
     Makes minor tweaks to the MQTTProtocol for use with Yombo.
     """
     def connectionMade(self):  # Empty through stack of twisted and MQTT library
-
+        #
+        # print("connectionMade!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         # call the mqtt_client.mqtt_connectin function once fully connected. This allows to send queued messages.
-        self._onMqttConnectionMade = self.factory.mqtt_client.mqtt_connected
+        self.onMqttConnectionMade = self.factory.mqtt_client.mqtt_connected
         self.connect("Yombo-%s" % self.factory.mqtt_client.client_id, keepalive=self.factory.keepalive,
             willTopic=self.factory.will_topic, willMessage=self.factory.will_message,
             willQoS=self.factory.will_qos, willRetain=self.factory.will_retain,
             username=self.factory.username, password=self.factory.password,
             cleanStart=self.factory.clean_start)
+
 
 class MQTTTYomboFactory(MQTTFactory):
 
@@ -558,24 +563,25 @@ class MQTTTYomboFactory(MQTTFactory):
         elif self.profile == (self.SUBSCRIBER | self.PUBLISHER):
             from yombo.ext.mqtt.client.pubsubs import MQTTProtocol
         else:
-            raise ProfileValueError("profile value not supported" , self.profile)
+            raise ProfileValueError("profile value not supported", self.profile)
 
         v = self.queuePublishTx.get(addr, deque())
         self.queuePublishTx[addr] = v
-        v = self.windowPublish.get(addr, dict() )
+        v = self.windowPublish.get(addr, dict())
         self.windowPublish[addr] = v
-        v = self.windowPubRelease.get(addr, dict() )
+        v = self.windowPubRelease.get(addr, dict())
         self.windowPubRelease[addr] = v
         v = self.windowPubRx.get(addr, dict())
         self.windowPubRx[addr] = v
-        v = self.windowSubscribe.get(addr, dict() )
+        v = self.windowSubscribe.get(addr, dict())
         self.windowSubscribe[addr] = v
         v = self.windowUnsubscribe.get(addr, dict())
         self.windowUnsubscribe[addr] = v
 
         self.protocol = MQTTYomboProtocol(self, addr)  # Everything above is from mqtt.client.factory
-        self.protocol.onPublish       = self.mqtt_client.mqtt_incoming
+        self.protocol.onPublish = self.mqtt_client.mqtt_incoming
         return self.protocol                           # submitted pull request to get this into source
+
 
 class MQTTServer(protocol.ProcessProtocol):
     def __init__(self, config_file):

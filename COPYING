@@ -60,7 +60,7 @@ Comment: https://github.com/davidaurelio/hashids-python commit hash:0de5c0f5b30a
 Files: yombo/ext/mqtt
 Copyright: 2015 astrorafael
 License: MIT License
-Comment: https://github.com/astrorafael/twisted-mqtt commit: 745dc35e0300e5eeabcff18ad585e03cd4c51193
+Comment: https://github.com/astrorafael/twisted-mqtt commit: 4df7b8656d5dadb1910d2d288e208562f957c0cd
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights

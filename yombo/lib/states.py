@@ -49,19 +49,23 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 :license: LICENSE for details.
 """
 # Import python libraries
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 from collections import deque
 from time import time
+import urllib
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from twisted.internet.task import LoopingCall
 
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboStateNotFound, YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string
+from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, is_json, random_string
 
 logger = get_logger("library.YomboStates")
 
@@ -92,6 +96,13 @@ class States(YomboLibrary, object):
     def _start_(self):
         self.clean_states_loop = LoopingCall(self.clean_states_table)
         self.clean_states_loop.start(60*60*6)  # clean the database every 6 hours.
+
+        if self._Atoms['loader.operation_mode'] == 'run':
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='states')
+            self.mqtt.subscribe("yombo/states/+/get")
+            self.mqtt.subscribe("yombo/states/+/get/+")
+            self.mqtt.subscribe("yombo/states/+/set")
+            self.mqtt.subscribe("yombo/states/+/set/+")
 
     def _stop_(self):
         if self.init_deferred is not None and self.init_deferred.called is False:
@@ -331,6 +342,109 @@ class States(YomboLibrary, object):
             raise YomboStateNotFound("Cannot delete state: %s not found" % key)
         return None
 
+    def mqtt_incoming(self, topic, payload, qos, retain):
+        """
+        Processes incoming MQTT requests. See `MQTT @ Module Development <https://yombo.net/docs/modules/mqtt/>`_
+
+        Examples:
+
+        * /yombo/states/statename/get  - returns a json (preferred)
+        * /yombo/states/statename/get abc1234 - returns a json, sends a message ID as a string for tracking
+          * A message can only be returned with the above items, cannot be used when requesting a single value.
+        * /yombo/states/statename/get/value - returns a string
+        * /yombo/states/statename/get/value_type - returns a string
+        * /yombo/states/statename/get/value_human - returns a string
+        * /yombo/states/statesname/set {"value":"working","value_type":"string"}
+
+        :param topic:
+        :param payload:
+        :param qos:
+        :param retain:
+        :return:
+        """
+        #  0       1       2      3        4
+        # yombo/states/statename/get/requested_value
+        payload = str(payload)
+
+        parts = topic.split('/', 10)
+        print("Yombo States got this: %s / %s" % (topic, parts))
+        # requested_state = urllib.unquote(parts[2])
+        requested_state = parts[2].replace("$", ".")
+        # requested_state = decoded_state.replace("_", " ")
+        if len(parts) <= 3 or len(parts) > 5:
+            logger.warn("States received an invalid MQTT topic, discarding. Too long or too short. '%s'" % topic)
+            return
+
+        if  parts[3] not in ('get', 'set'):
+            # logger.warn("States received an invalid MQTT topic, discarding. Must have either 'set' or 'get'. '%s'" % topic)
+            return
+
+
+        if requested_state not in self.__States:
+            self.mqtt.publish('yombo/states/%s/get_response' % parts[2], str('invalid: state not found'))
+            return
+
+        state = self.__States[requested_state]
+
+        if parts[3] == 'get':
+            request_id = random_string(length=30)
+
+            if len(payload) > 0 and len(payload) < 40:
+                if not is_json(payload):
+                    request_id = payload
+
+            if len(parts) == 5:
+                if parts[4] not in ('value', 'value_type', 'value_human'):
+                    logger.warn(
+                        "States received an invalid MQTT topic, discarding. '%s'" % topic)
+                    return
+                self.mqtt.publish('yombo/states/%s/get_response/%s' % (parts[2], parts[4]),
+                                  str(state[parts[4]]))
+                return
+
+
+            response = {
+                'value': state['value'],
+                'value_type': state['value_type'],
+                'value_human': state['value_human'],
+                'request_id': request_id,
+            }
+            self.mqtt.publish('yombo/states/%s/get_response' % parts[2],
+                              str(response) )
+            return
+
+        elif parts[3] == 'set':
+            request_id = random_string(length=30)
+
+            if not self.is_json(payload):
+                self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
+                                  str(
+                                      'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
+                                  )
+
+            data = json.loads(payload)
+            if 'request_id' in data:
+                request_id = data['request_id']
+
+            if 'value' not in data:
+                self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
+                                  str(
+                                      'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
+                                  )
+
+            for key in data.keys():
+                if key not in ('value', 'value_type', 'request_id'):
+                    self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
+                          str('invalid (%s): json contents can only contain value, value_type and request_id' %
+                              request_id)
+                                      )
+
+            if 'value_type' not in data:
+                data['value_type'] = None
+
+
+
+            self.set(requested_state, value, value_type=data['value_type'], function=None, arguments=None)
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #

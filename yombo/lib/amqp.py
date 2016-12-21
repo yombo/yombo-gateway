@@ -379,7 +379,9 @@ class AMQPClient(object):
 
         kwargs["time_created"] = kwargs.get("time_created", datetime.now())
         if 'routing_key' not in kwargs:
-            raise YomboWarning("subscribe must have 'routing_key', otherwise, don't know how to route!")
+            raise YomboWarning(
+                    "AMQP Client:{%s} - Must have routing_key to publish to, therwise, don't know how to route!" % self.client_id,
+                    201, 'publish', 'AMQPClient')
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
 
         self.pika_factory.publish(**kwargs)
@@ -789,7 +791,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         This function is called with EVERY incoming message. We don't have logic here, just send to factory.
         """
-#        print "protocol1: receive_item"
+        # print "protocol1: receive_item"
 #        print "protocol: queue_no_ack %s" % queue_no_ack
 #        print "protocol: callback %s" % callback
         (channel, deliver, props, msg,) = item
