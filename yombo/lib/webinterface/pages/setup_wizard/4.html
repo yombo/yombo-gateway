@@ -60,7 +60,7 @@
                                     </li>
                                   </ul>
                                 </div>
-                                Sending device status allows you to accss your device status externally. For example, if the
+                                Sending device status allows you to access your device status externally. For example, if the
                                 mobile app is not able to connect directly to your gateway, it can retrieve this information
                                 from Yombo Servers.
                                 <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
@@ -69,6 +69,9 @@
                                     even if you cannot directly connect to your gateway while outside your local network.</p>
                                     <p>Disabling this field will
                                     prevent any mobile apps from accessing your device status if the mobile app cannot directly connect to your gateway.
+                                    </p>
+                                    <p>
+                                        Disabling this will also disable modules that require this, for example, Amazon Alexa and Google Home.
                                     </p>
                                 </div>') }}
                             </div>
@@ -107,12 +110,12 @@
                             <hr>
                         </div>
                         <div class="form-group">
-                            <label for="security-gps-status" data-toggle="tooltip" title="Save statistics information in the Yombo cloud.">Allow statistics information to be sent to Yombo</label>
+                            <label for="security-sent-private-stats" data-toggle="tooltip" title="Save private statistics information in the Yombo cloud.">Allow private statistics information to be sent to Yombo</label>
                             <div class="material-switch pull-right">
-                                <input id="security-sent-private-stats" name="ssecurity-sent-private-stats" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
+                                <input id="security-sent-private-stats" name="security-sent-private-stats" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
                                 <label for="security-sent-private-stats" class="label-primary"></label>
                                 &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysentprivatestats"> <i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitysentprivatestats", 'Send statistics to Yombo', '
+                                {{ macros.modal("securitysentprivatestats", 'Send private statistics to Yombo', '
                                 <div class="alert alert-success">
                                   <ul class="fa-ul">
                                     <li>
@@ -121,7 +124,9 @@
                                     </li>
                                   </ul>
                                 </div>
-                                Statistics information is summarized. It is used to show trends, such as energy used, etc.
+                                Device and system statistics allows you to view detailed trends and historical details online. This includes
+                                energy used, device status trends, and more. It also acts as a backup
+                                in the event your gateway hardware become corrupt.
                                 <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
                                     <h4>If disabled: No problem</h4>
                                     <p>You will not be able to see long term trends as easily.
@@ -130,7 +135,31 @@
                             </div>
                             <hr>
                         </div>
-
+                        <div class="form-group">
+                            <label for="security-sent-anon-stats" data-toggle="tooltip" title="Save statistics information in the Yombo cloud.">Allow anonymous statistics information to be sent to Yombo</label>
+                            <div class="material-switch pull-right">
+                                <input id="security-sent-anon-stats" name="ssecurity-sent-anon-stats" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
+                                <label for="security-sent-anon-stats" class="label-primary"></label>
+                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysentanonstats"> <i class="fa fa-question-circle  fa-2x"></i></a>
+                                {{ macros.modal("securitysentanonstats", 'Send anonymous statistics to Yombo', '
+                                <div class="alert alert-success">
+                                  <ul class="fa-ul">
+                                    <li>
+                                      <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
+                                      Risk: Very Low
+                                    </li>
+                                  </ul>
+                                </div>
+                                Anonymous statistics includes system usage such as number of commands processed, number of dropped messages to/from the servers,
+                                and more. This information helps us design a more robust system.
+                                <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
+                                    <h4>If disabled: No problem</h4>
+                                    <p>The data will still be collected as it\'s hard carded into the code, but it won\'t be uploaded!
+                                    </p>
+                                </div>') }}
+                            </div>
+                            <hr>
+                        </div>
                         <a class="btn btn-md btn-warning" href="/setup_wizard/3"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
                         <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">Next</button>
                     </div>

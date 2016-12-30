@@ -1,26 +1,42 @@
-Logreader Example
-==================
+Usage
+=====
 
-Monitors a text file. Any lines are sent to the yombobot module for
-processing.
+This module extends the capabilities of the `Yombo Gateway <https://yombo.net/>`_
+by adding the ability to monitor a text file for device commands.
 
-A great example of how a simple logic module can be combined to
-extend the capabilites of another modules.  Also, a great way
-to show how simple FileReader can be.
+Logreader
+=========
+
+With this module, you can simple echo in a command to be peformed:
+
+echo "bathroom light on" >> monitored_file.txt
+
+This is useful if you want basic scripts or other utilities to control automation
+devices.
+
+.. warning::
+
+   Be sure to grant write access only to users and applications that should
+   be able to send commands.
+
+The actual commands are processed by the YomboBot module and is required.
 
 Installation
 ============
 
 Simply mark this module as being used by the gateway, and the gateway will
-download this module and install this module automatically.
+download and install this module automatically.
 
 Requirements
 ============
 
-The Yombobot module is required to be installed and running.
+YomboBot module is required for parsing the commands.
 
 License
 =======
 
-Same license as Yombo Gateway.
+The `Yombo <https://yombo.net/>`_ team and other contributors
+hopes that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
+See LICENSE file for full details.

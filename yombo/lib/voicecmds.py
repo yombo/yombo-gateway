@@ -237,18 +237,22 @@ class VoiceCmds(YomboLibrary):
         if call_back is not None and device is not None:
             raise YomboWarning("Either specifiy 'call_back' or 'device', not both.", 1001, 'add_by_string', 'voicecmds')
 
-        tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))
-        string_parts = tag_re.split(voice_string)
-        string_parts = filter(None, string_parts) # remove empty bits
+        try:
+            tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))
+            string_parts = tag_re.split(voice_string)
+            string_parts = filter(None, string_parts) # remove empty bits
 
-        device_obj = None
-        if device is not None:
-            if isclass(device):
-                device_obj = device
-            else:
-                device_obj = self._Devices[device]
+            device_obj = None
+            if device is not None:
+                if isclass(device):
+                    device_obj = device
+                else:
+                    device_obj = self._Devices[device]
 
-        commands = []
+            commands = []
+        except:
+            raise YomboWarning("Invalid format for 'voice_string'", 1010, 'add_by_string', 'voicecmds')
+
 
         if len(string_parts) > 2:
             raise YomboWarning("Invalid format for 'voice_string'", 1003, 'add_by_string', 'voicecmds')

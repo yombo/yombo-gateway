@@ -315,6 +315,12 @@ class Session(dict):
 
         return dict.__getitem__(self, key)
 
+    def delete(self, key):
+        if key in self:
+            self.last_access = int(time())
+            return dict.__delitem__(self, key)
+        return None
+
     def touch(self):
         self.last_access = int(time())
 

@@ -52,11 +52,15 @@ To send a command to a device is simple.
 """
 # Import python libraries
 from __future__ import print_function
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
+
 from hashlib import sha1
 import copy
 from collections import deque, namedtuple
 from time import time
-import cPickle
 from collections import OrderedDict
 
 # Import 3rd-party libs
@@ -64,14 +68,14 @@ import yombo.ext.six as six
 
 # Import twisted libraries
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, split, global_invoke_all
+from yombo.utils import random_string, split, global_invoke_all, string_to_number
 from yombo.utils.maxdict import MaxDict
 from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
@@ -176,6 +180,7 @@ class Devices(YomboLibrary):
         self._AutomationLibrary = self._Loader.loadedLibraries['automation']
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
         self._LocalDBLibrary = self._Libraries['localdb']
+        self.gwid = self._Configs.get("core", "gwid")
 
         self._devicesByUUID = FuzzySearch({}, .99)
         self._devicesByName = FuzzySearch({}, .89)
@@ -295,9 +300,12 @@ class Devices(YomboLibrary):
             for record in devices:
                 record = record.__dict__
                 if record['energy_map'] is not None:
-                    energy_map = cPickle.loads(str(record['energy_map']))
-                    energy_map = OrderedDict(sorted(energy_map.items(), key=lambda (x, y): float(x)))
-                    record['energy_map'] = energy_map
+                    energy_map = json.loads(str(record['energy_map']))
+                    energy_map_final = {}
+                    for percent, rate in energy_map.iteritems():
+                        energy_map_final[string_to_number(percent)] = string_to_number(rate)
+                    energy_map_final = OrderedDict(sorted(energy_map_final.items(), key=lambda (x, y): float(x)))
+                    record['energy_map'] = energy_map_final
 
                 logger.debug("Loading device: {record}", record=record)
                 yield self.load_device(record)
@@ -516,6 +524,85 @@ class Devices(YomboLibrary):
                 return self._devicesByUUID[requestedUUID]
             except YomboFuzzySearchError, e:
                 raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
+
+    @inlineCallbacks
+    def add_device(self, data, **kwargs):
+        """
+        Add a new device. This will also make an API request to add device at the server too.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'gateway_id': self.gwid,
+            'label': data['label'],
+            'description': data['description'],
+            'status': data['status'],
+            'statistic_label': data['statistic_label'],
+            'device_type_id': data['device_type_id'],
+            'pin_required': data['pin_required'],
+            'pin_code': data['pin_code'],
+            'pin_timeout': data['pin_timeout'],
+            'energy_type': data['energy_type'],
+            'energy_map': json.dumps(data['energy_map'], separators=(',',':')),
+        }
+
+        if data['device_id'] == '':
+            print("POSTING device. api data: %s" % api_data)
+            device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
+            print("add new device results: %s" % device_results)
+        else:
+            print("PATCHING device. api data: %s" % api_data)
+            del api_data['gateway_id']
+            del api_data['device_type_id']
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % data['device_id'], api_data)
+            print("edit device results: %s" % device_results)
+
+        if device_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add device",
+                'apimsgl': device_results['content']['message'],
+                'apimsghtml': device_results['content']['html_message'],
+                'device_id': '',
+            }
+            returnValue(results)
+
+        # self.load_device
+
+        if 'variable_data' in data:
+            variable_data = data['variable_data']
+            for field_id, data in variable_data.iteritems():
+                for data_id, value in data.iteritems():
+                    post_data = {
+                        'gateway_id': self.gwid,
+                        'field_id': field_id,
+                        'relation_id': device_results['data']['id'],
+                        'relation_type': 'device',
+                        'data_weight': 0,
+                        'data': value,
+                    }
+                    print("post_data: %s" % post_data)
+                    var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                    if var_data_results['code'] != 200:
+                        print("var data results: %s" % var_data_results)
+                        results = {
+                            'status': 'failed',
+                            'msg': "Couldn't add device variables",
+                            'apimsgl': var_data_results['content']['message'],
+                            'apimsghtml': var_data_results['content']['html_message'],
+                            'device_id': device_results['data']['id']
+                        }
+                        returnValue(results)
+
+        print("device edit results: %s" % device_results)
+        results = {
+            'status': 'success',
+            'msg': "Device Added",
+            'device_id': device_results['data']['id']
+        }
+        returnValue(results)
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #
@@ -737,7 +824,7 @@ class Device:
         self.pin_timeout = int(device["pin_timeout"])
         self.voice_cmd = device["voice_cmd"]
         self.voice_cmd_order = device["voice_cmd_order"]
-        self.location_label = device["location_label"]  # 'myhome.groundfloor.kitchen'
+        self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
         self.created = int(device["created"])
         self.updated = int(device["updated"])
         self.updated_srv = int(device["updated_srv"])
@@ -751,12 +838,14 @@ class Device:
 
         if 'energy_type' in device:
             self.energy_type = device['energy_type']
-        if 'energy_tracker_source' in device:
-            self.energy_tracker_source = device['energy_tracker_source']
-            if self.energy_tracker_source == 'calc':
-                self.energy_map = {float(k):v for k,v in device['energy_map'].items()}  # fix for JSON
-            elif self.energy_tracker_source == 'device':
-                self.energy_tracker_device = device['energy_tracker_device']
+        self.energy_tracker_source = device['energy_tracker_source']
+        # if self.energy_tracker_source == 'calc':
+        # print("energ_map1 : %s" % device['energy_map'])
+
+        # self.energy_map = {float(k):v for k,v in device['energy_map'].items()}  # fix for JSON
+        self.energy_map = device['energy_map']
+        # elif self.energy_tracker_source == 'device':
+        self.energy_tracker_device = device['energy_tracker_device']
 
         self.last_command = deque({}, 30)
         self.status_history = deque({}, 30)
@@ -768,6 +857,7 @@ class Device:
 
         # this registers the device's device type so others know what kind of device this is.
         self._registered_device_type = self._DevicesLibrary._DeviceTypes.add_registered_device(self)
+        self._DevicesLibrary._DeviceTypes.ensure_loaded(device["device_type_id"])
 
         if device['status'] == 1:
             self.enabled = True
@@ -813,6 +903,88 @@ class Device:
         if self.test_device is False:
             d.addCallback(lambda ignored: self.load_history(35))
         return d
+
+    @inlineCallbacks
+    def edit_device(self, data, **kwargs):
+        """
+        Edit device settings. Accepts a list of items to change. This will also make an API request to update
+        the server too.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        api_data = {}
+        for key, value in data.iteritems():
+            if hasattr(self, key):
+                setattr(self, key, value)
+                print("key (%s) is in this class... = %s" % (key, value))
+                if key == 'energy_map':
+                    api_data['energy_map'] = json.dumps(value, separators=(',',':'))
+                    print("energy map json: %s" % json.dumps(value, separators=(',',':')))
+                else:
+                    api_data[key] = value
+
+        print("send this data to api: %s" % api_data)
+        device_results = yield self._DevicesLibrary._YomboAPI.request('PATCH', '/v1/device/%s' % self.device_id, api_data)
+        if device_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add device",
+                'apimsgl': device_results['content']['message'],
+                'apimsghtml': device_results['content']['html_message'],
+                'device_id': '',
+            }
+            returnValue(results)
+
+        if 'variable_data' in data:
+            variable_data = data['variable_data']
+            for field_id, data in variable_data.iteritems():
+                for data_id, value in data.iteritems():
+                    if data_id.startswith('new_'):
+                        post_data = {
+                            'gateway_id': self._DevicesLibrary.gwid,
+                            'field_id': field_id,
+                            'relation_id': self.device_id,
+                            'relation_type': 'device',
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        print("post_data: %s" % post_data)
+                        var_data_results = yield self._DevicesLibrary._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        if var_data_results['code'] != 200:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add device variables",
+                                'apimsgl': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'device_id': device_results['data']['id']
+                            }
+                            returnValue(results)
+                    else:
+                        post_data = {
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        print("post_data: %s" % post_data)
+                        var_data_results = yield self._DevicesLibrary._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
+                        if var_data_results['code'] != 200:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add device variables",
+                                'apimsgl': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'device_id': device_results['data']['id']
+                            }
+                            returnValue(results)
+
+        print("device edit results: %s" % device_results)
+        results = {
+            'status': 'success',
+            'msg': "Device Added",
+            'device_id': device_results['data']['id']
+        }
+        returnValue(results)
 
     def available_commands(self):
         # print("getting available_commands for devicetypeid: %s" % (self.device_type_id, ))

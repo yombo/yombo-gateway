@@ -120,6 +120,18 @@ class DeviceTypes(YomboLibrary):
             except YomboFuzzySearchError, e:
                 raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
 
+    @inlineCallbacks
+    def ensure_loaded(self, device_type_id):
+        """
+        Called by the device class to make sure the requsted device type id is loaded. This happens in
+        the background.
+
+        :param device_type_id:
+        :return:
+        """
+        dt = yield self._LocalDB.get_device_type(device_type_id)
+        self.add_device_type(dt[0])
+
     def module_devices(self, module_id):
         """
         A list of devices types for a given module id.

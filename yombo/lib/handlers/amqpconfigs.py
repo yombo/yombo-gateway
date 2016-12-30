@@ -121,7 +121,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'pin_code': 'pin_code',
                     'pin_required': 'pin_required',
                     'pin_timeout': 'pin_timeout',
-                    'location_label': 'location_label',
+                    'statistic_label': 'statistic_label',
                     'energy_type': 'energy_type',
                     'energy_tracker_source': 'energy_tracker_source',
                     'energy_tracker_device': 'energy_tracker_device',
@@ -433,10 +433,10 @@ class AmqpConfigHandler(YomboLibrary):
         if properties.headers['config_item'] not in self.config_items:
             raise YomboWarning("Configuration item '%s' not configured." % properties.headers['config_item'])
             #                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
-        self.process_config(msg, properties.headers['config_item'])
+        self.process_config(msg, properties.headers['config_item'], properties.headers['config_type'])
 
     @inlineCallbacks
-    def process_config(self, msg, config_item):
+    def process_config(self, msg, config_item, config_type=None):
         """
         Process configuration information coming from Yombo Servers. After message is validated, the payload is
         delivered here.
@@ -460,8 +460,10 @@ class AmqpConfigHandler(YomboLibrary):
         elif config_item in self.config_items:
             config_data = self.config_items[config_item]
             # print "Msg: %s" % msg
+            if config_type == 'full':
+                yield self._LocalDBLibrary.truncate(config_data['table'])
+
             if msg['data_type'] == 'object':
-                new_data = {}
                 data = self.field_remap(msg['data'], config_data)
                 # if 'updated' in data:
                 #     data['updated_srv'] = data['updated']

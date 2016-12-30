@@ -315,6 +315,7 @@ class Loader(YomboLibrary, object):
             library._SQLDict = self.loadedLibraries['sqldict']
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
+            library._YomboAPI = self.loadedLibraries['yomboapi']
             if hasattr(library, '_init_') and callable(library._init_) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = yield maybeDeferred(library._init_)

@@ -46,26 +46,37 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             # print "request:url: %s" % request.path
 
+            session = webinterface.sessions.load(request)
+            if login_redirect is not None:
+                if session is False:
+                    session = webinterface.sessions.create(request)
+                    session['auth'] = False
+                    session['auth_id'] = ''
+                    session['auth_time'] = 0
+                    session['yomboapi_session'] = ''
+                    session['yomboapi_login_key'] = ''
+                    request.received_cookies[webinterface.sessions.config.cookie_session] = session.session_id
+                session['login_redirect'] = login_redirect
+
             if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                data=webinterface.data)
 
-            session = webinterface.sessions.load(request)
-            # print "session : %s" % session
 
             if session is not False:
                 if 'auth' in session:
                     if session['auth'] is True:
         #                    print "ddd:33"
                         session['last_access'] = int(time())
-                        try:
-                            del session['login_redirect']
-                        except:
-                            pass
+                        # try:
+                        #     del session['login_redirect']
+                        # except:
+                        #     pass
                         return call(f, webinterface, request, session, *a, **kw)
-            if login_redirect is not None:
-                session.set('login_redirect', login_redirect)
+            print "session : %s" % session
+
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session
             return page.render(alerts=webinterface.get_alerts(),

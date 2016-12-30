@@ -137,6 +137,12 @@ def split(the_string, delimiter=','):
     """
     return [x.strip() for x in the_string.split(',')]
 
+def string_to_number(input):
+    try:
+        return int(input)
+    except ValueError:
+        return float(input)
+
 def clean_kwargs(**kwargs):
     """
     Returns a dictionary without any keys starting with "__" (double underscore).

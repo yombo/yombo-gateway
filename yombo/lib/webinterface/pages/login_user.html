@@ -38,27 +38,25 @@
                                       <div class="modal-body">
                                           <p>Logging into your Yombo account allows this gateway to download
                                           configuration information from a previously installed gateway or to create a
-                                          new gateway.
+                                          new gateway. This also allows your to manage your gateway, it's devices, and
+                                          configured modules.
                                           </p>
                                           <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
-                                              <h4>It's Safe</h4> <p>You're credentials (email or password) will not be stored
-                                              in plaintext on the gateway.</p>
-                                          </div>
-                                          <div class="bs-callout bs-callout-danger" id=callout-images-ie-rounded-corners>
-                                              <h4>Security Warning</h4> <p>A hashed version of your credentials and the
-                                              gateway's access credentails to Yombo servers are stored in the
-                                              yombo.ini file. Although your credentail information cannot be derived from
-                                              this information, it can be used to access some features.</p>
+                                              <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
+                                              in plantext on the gateway. A new login key stored that represents your account.
+                                              </p>
                                           </div>
                                       </div>
                                       <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary">Save changes</button>
+                                        <button type="button" class="btn btn-primary">Close</button>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                             </div>
-                            <h3 class="panel-title"><center><strong>{{ data.gateway_label }}</strong><br> Sign into Yombo Account - <a href="https://yombo.net">Create</a></center></h3>
+                            <h3 class="panel-title"><center><strong>{{ data.gateway_label }}</strong>
+                                <p> Sign into your account
+                                <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
                         </div>
                         <div class="panel-body">
                             <form action="/login/user" method="POST" role="form">
@@ -69,11 +67,6 @@
                                     <div class="form-group">
                                         <input class="form-control" placeholder="Password" id="password" name="password" type="password" value="">
                                     </div>
-                                    <div class="checkbox">
-                                        <label>
-                                            <input name="remember" type="checkbox" value="yes">Remember Me
-                                        </label>
-                                    </div>
                                     <!-- Change this to a button or input when using this as a form -->
                                     <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
                                     <div>&nbsp;</div>
@@ -81,6 +74,10 @@
                                 </fieldset>
                             </form>
                         </div>
+                    </div>
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <center>This site is running <a href="https://yombo.net">Yombo Gateway</a> automation software. For help, see <a href="https://yombo.net/documents/">documentation</a>.</center>
                     </div>
                 </div>
             </div>

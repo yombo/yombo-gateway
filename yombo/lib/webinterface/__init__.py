@@ -33,6 +33,8 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 # Import 3rd party libraries
 
 # Import Yombo libraries
+from yombo.core.exceptions import YomboRestart, YomboWarningCredentails
+
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
@@ -250,6 +252,16 @@ nav_side_menu = [
         'tooltip': '',
         'opmode': 'run',
     },
+    {
+        'label1': 'Restart',
+        'label2': 'Debug',
+        'priority1': 6000,
+        'priority2': 1000,
+        'icon': 'fa fa-recycle fa-fw',
+        'url': '/tools/restart',
+        'tooltip': '',
+        'opmode': 'run',
+    },
 ]
 
 class NotFound(Exception):
@@ -270,6 +282,7 @@ class WebInterface(YomboLibrary):
         if not self.enabled:
             return
 
+        self.gwid = self._Configs.get("core", "gwid")
         self._current_dir = dirname(dirname(dirname(abspath(__file__))))
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
@@ -299,12 +312,14 @@ class WebInterface(YomboLibrary):
         route_voicecmds(self.webapp)
 
     @webapp.handle_errors(NotFound)
+    @require_auth()
     def notfound(self, request, failure):
         request.setResponseCode(404)
         return 'Not found, I say'
 
     @webapp.route('/<path:catchall>')
-    def page_404(self, request, catchall):
+    @require_auth()
+    def page_404(self, request, session, catchall):
         request.setResponseCode(404)
         page = self.get_template(request, self._dir + 'pages/404.html')
         return page.render()
@@ -559,13 +574,12 @@ class WebInterface(YomboLibrary):
         page = self.get_template(request, self._dir + 'config_pages/index.html')
         return page.render(alerts=self.get_alerts(),
                            )
-
     def firstrun_home(self, request):
         return self.redirect(request, '/setup_wizard/1')
 
     @webapp.route('/logout', methods=['GET'])
     def page_logout_get(self, request):
-        print "logout"
+        # print "logout"
         self.sessions.close_session(request)
         request.received_cookies[self.sessions.config.cookie_session] = 'LOGOFF'
         return self.home(request)
@@ -581,7 +595,6 @@ class WebInterface(YomboLibrary):
     def page_login_user_post(self, request):
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
-        print "111"
         # if submitted_pin.isalnum() is False:
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
@@ -589,18 +602,22 @@ class WebInterface(YomboLibrary):
         results = yield self.api.user_login_with_credentials(submitted_email, submitted_password)
         if results is not False:
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
-            session = self.sessions.create(request)
+            session = self.sessions.load(request)
+            if session is False:
+                session = self.sessions.create(request)
+
             session['auth'] = True
             session['auth_id'] = submitted_email
             session['auth_time'] = time()
-            print "login results: %s" % results
             session['yomboapi_session'] = results['session']
             session['yomboapi_login_key'] = results['login_key']
             request.received_cookies[self.sessions.config.cookie_session] = session.session_id
 
             if self._op_mode == 'firstrun':
-                self.api.save_system_session(session['yomboapi_session'])
-                self.api.save_system_login_key(session['yomboapi_login_key'])
+                # print "###############33  saving system session stufff...."
+                self.api.save_system_login_key(results['login_key'])
+                # print "###############33  saving system session stufff....done"
+                self.api.save_system_session(results['session'])
         else:
             self.add_alert('Invalid login credentails', 'warning')
 #            self.sessions.load(request)
@@ -610,9 +627,15 @@ class WebInterface(YomboLibrary):
                                )
                        )
 
+        print "session: %s" % session
         login_redirect = "/"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']
+            # print "$$$$$$$$$$$$$$$$$$ login redirect is set..."
+            session.delete('login_redirect')
+
+        # print "111 login_rdirect: %s" % login_redirect
+
 #        print "delete login redirect... %s" % self.sessions.delete(request, 'login_redirect')
 #        print "login/user:login_redirect: %s" % login_redirect
 #        print "after delete rediret...session: %s" % session
@@ -637,6 +660,14 @@ class WebInterface(YomboLibrary):
                           secure=self.sessions.config.secure, httpOnly=self.sessions.config.httponly,
                           max_age=expires)
                 request.received_cookies[self.sessions.config.cookie_pin] = '1'
+                session = self.sessions.create(request)
+                session['auth'] = False
+                session['auth_id'] = ''
+                session['auth_time'] = 0
+                session['yomboapi_session'] = ''
+                session['yomboapi_login_key'] = ''
+                request.received_cookies[self.sessions.config.cookie_session] = session.session_id
+
 #                print "session: %s" % session
             else:
                 return self.redirect(request, '/login/pin')
@@ -662,6 +693,20 @@ class WebInterface(YomboLibrary):
         page = self.get_template(request, 'status/index.html')
         return page.render(yombo_server_is_connected=self._States.get('amqp.connected'),
                            )
+    @webapp.route('/tools/restart')
+    def page_status(self, request):
+        return self.restart(request)
+
+    def restart(self, request):
+        page = self.get_template(request, self._dir + 'pages/restart.html')
+        reactor.callLater(0.1, self.do_restart)
+        return page.render()
+
+    def do_restart(self):
+        try:
+            raise YomboRestart("Web Interface setup wizard complete.")
+        except:
+            pass
 
     @webapp.route('/static/', branch=True)
     def static(self, request):
@@ -855,6 +900,12 @@ class WebInterface(YomboLibrary):
             'source/sb-admin/js/sha256.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/sha256.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/sb-admin/js/jquery.serializejson.min.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/jquery.serializejson.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         # Just copy files

@@ -363,6 +363,10 @@ class LocalDB(YomboLibrary):
         records = yield DeviceType.find(where=['always_load = ?', always_load])
         returnValue(records)
 
+    @inlineCallbacks
+    def get_device_type(self, id):
+        records = yield DeviceType.find(where=['id = ?', id])
+        returnValue(records)
 
 #############################
 ###    Input Types      #####
@@ -832,6 +836,48 @@ ORDER BY id desc"""
         returnValue(variables)
 
     @inlineCallbacks
+    def get_variable_groups(self, relation_type, relation_id):
+        """
+        Gets all variable groups for a given type and by id.
+
+        :param relation_type:
+        :param relation_id:
+        :return:
+        """
+        records = yield VariableGroups.find(
+            where=['relation_type = ? AND relation_id =?', relation_type, relation_id],
+            orderby='group_weight ASC')
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_variable_fields_by_group(self, group_id):
+        """
+        Get all variable fields by groupId
+
+        :param group_id:
+        :param relation_id:
+        :return:
+        """
+        records = yield VariableFields.find(
+            where=['group_id = ?', group_id],
+            orderby='field_weight ASC')
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_variable_data_by_relation(self, field_id, relation_id):
+        """
+        Get variable data for a give field/relation
+
+        :param field_id:
+        :param relation_id:
+        :return:
+        """
+        records = yield VariableData.find(
+            where=['field_id = ? and relation_id = ?', field_id, relation_id],
+            orderby='data_weight ASC')
+        returnValue(records)
+
+    @inlineCallbacks
     def get_device_type_commands(self, device_type_id):
         """
         Gets available variables for a given device_id.
@@ -892,6 +938,7 @@ ORDER BY id desc"""
         :param table:
         :return:
         """
+        print "trunvating table: %s" % table
         records = yield self.dbconfig.truncate(table)
         returnValue(records)
 

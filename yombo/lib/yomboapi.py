@@ -29,7 +29,7 @@ import yombo.ext.treq as treq
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
@@ -81,7 +81,9 @@ class YomboAPI(YomboLibrary):
         elif results['code'] == 404:
             raise YomboWarning("Server cannot get gateways")
         else:
-            raise YomboWarning("Unknown error: %s" % results['content']['message'])
+            if results['content']['message'] == "Invalid Token.":
+                raise YomboWarningCredentails("URI: '%s' requires credentials." % results['content']['response']['uri'])
+            raise YomboWarning("Unknown error: %s" % results['content'])
 
     @inlineCallbacks
     def gateway_get(self, gateway_id, session=None):
@@ -136,17 +138,25 @@ class YomboAPI(YomboLibrary):
     # Below are the core help functions
 
     def save_system_session(self, session):
+        print "api save_system_session0: %s" % session
+        self.system_session = session
+        print "api save_system_session1: %s" % session
         self._Configs.set('yomboapi', 'auth_session', session)  # to be encrypted with gpg later
+        print "api save_system_session2: %s" % session
 
     def save_system_login_key(self, login_key):
-        self._Configs.set('yomboapi', 'auth_login_key', login_key)  # to be encrypted with gpg later
+        print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@api save_system_login_key: %s" % login_key
+        self.system_login_key = login_key
+        print "api save_system_login_key1: %s" % login_key
+        self._Configs.set('yomboapi', 'login_key', login_key)  # to be encrypted with gpg later
+        print "api save_system_login_key2: %s" % login_key
 
     def select_session(self, session_id=None, session_key=None):
         if session_id is None or session_key is None:
             if self.allow_system_session:
                 return self.system_session, self.system_login_key
 
-        logger.debug("Yombo API has no session data for 'selection_session'")
+        logger.info("select_session: Yombo API has no session data for 'selection_session'")
         return None, None
 
     def clear_session_cache(self, session=None):
@@ -170,10 +180,13 @@ class YomboAPI(YomboLibrary):
             returnValue(False)
 
         if self.system_session is None and self.system_login_key is None:
+            print "validate_system_login: self.system_session: %s" % self.system_session
+            print "validate_system_login: self.system_login_key: %s" % self.system_login_key
             logger.warn("No saved system session information and no login_key. Disabling automated system changes.")
             self._States.set('yomboapi.valid_system_session', False)
             self.valid_system_session = False
-            self.init_defer.callback(10)
+            if self.init_defer is not None:
+                self.init_defer.callback(10)
             returnValue(None)
 
         self.clear_session_cache()
@@ -198,7 +211,7 @@ class YomboAPI(YomboLibrary):
                 self.init_defer.callback(10)
                 returnValue(True)
 
-        print "has something...but didn't work..."
+        print "API system has some data, but it's invalid!"
         self._States.set('yomboapi.valid_system_session', False)
         self.valid_system_session = False
         self.init_defer.callback(10)
@@ -286,7 +299,7 @@ class YomboAPI(YomboLibrary):
     def make_headers(self, session):
         headers = {
             'Content-Type': self.contentType,
-            'User-Agent': 'Yombo Gateway API',
+            'Authorization': 'Yombo-Gateway-v1',
             'x-api-key': self.api_key,
         }
         if session is not None:
@@ -304,13 +317,15 @@ class YomboAPI(YomboLibrary):
         # print "base_url: %s" % self.base_url
         # print "path: %s" % path
         path = self.base_url + path
-        # print "path full: %s" % path
+        print "method: %s" % method
+        print "path full: %s" % path
         # print "session: %s" % session
         # if session is False:
         #     session = None
         if session is None:
             if self.system_session is None:
-                raise YomboWarning("Yombo request needs 'session', no default session exists.")
+                if self.validate_system_login() is False:
+                    raise YomboWarningCredentails("Yombo request needs an API session.")
             session = self.system_session
         if session is False:
             session = None
@@ -384,12 +399,12 @@ class YomboAPI(YomboLibrary):
 
     def decode_results(self, content, headers, code, phrase):
         # print "raw headers: %s" % response.headers
-        print "decoded headers: %s" % headers
+        # print "decoded headers: %s" % headers
         # print "headers: %s" % headers['content-type'][0]
 
         content_type = headers['content-type'][0]
 
-        print "######  content: %s" % content
+        # print "######  content: %s" % content
         if content_type == 'application/json':
             if self.is_json(content):
                 content = json.loads(content)

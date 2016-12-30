@@ -35,3 +35,12 @@ class SQLiteDBConfig(InteractionBase):
         """
         q = "PRAGMA %s" % pragma_string
         return self.runInteraction(self._doselect, q, [], 'PRAGMA_table_info')
+
+    def truncate(self, tablename):
+        """
+        Truncate the given tablename.
+
+        @return: A C{Deferred}.
+        """
+        q = "DELETE FROM %s" % tablename
+        return self.executeOperation(q, [])

@@ -5,6 +5,58 @@
 {% endblock %}
 
 {% block content %}
+<!-- Modal -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Local Required</h4>
+      </div>
+      <div class="modal-body">
+          <p>The location of the gateway allows the gateway to calculate sunrise, sunset, when it's
+          dark or light outside, and collect weather information.
+          </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>It's Safe</h4> <p>Unless you are using modules for geo-fencing or need very
+              accurate location for a specific use, just place the location marker within 5 or
+              10 miles of the actual location.
+              </p>
+              <p>
+              We won't share or sell this information, unless required by a court order. We do our best to
+              keep your informaiton private.
+              </p>
+          </div>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>Precision</h4>
+              <p>
+                  By default, this tool limits precision to 3 decimal places. If you wish to enter a more precise location,
+                  here is a website to help you: <a target="_blank" href="http://www.latlong.net/">latlong.net</a>
+              </p>
+              <p>
+                  You can also increase the vagueness of your location by only using 2 decimal places in the latitude
+                  and longitude. For example, instead of "-123.437", change this to "-122.43".
+              </p>
+              <p>
+                  For reference, here are the degrees of precision:
+                  <ul>
+              <li>The <b>first</b> decimal place is worth up to 11.1 km: it can distinguish the position of one large city from a neighboring large city.</li>
+              <li>The <b>second</b> decimal place is worth up to 1.1 km: it can separate one village or town from the next.</li>
+              <li>The <b>third</b> decimal place is worth up to 110 m: it can identify a large agricultural field or institutional campus.</li>
+              <li>The <b>fourth</b> decimal place is worth up to 11 m: it can identify a parcel of land.</li>
+          </ul>
+              <a target='_blank' href="http://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude">Reference</a>
+              </p>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
     <form action="/setup_wizard/4" method="POST" role="form">
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
@@ -33,9 +85,17 @@
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
+                            <label for="gateway-machine-label">Gateway Machine Label</label>
+                            <br>Lower case, no spaces. Dashes and underscores are ok.
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" autofocus required>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
                             <label for="gateway-label">Gateway Label</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ gw_fields.label }}" autofocus required>
+                                <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" required>
                                 <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                             </div>
                         </div>
@@ -52,6 +112,7 @@
 								<div id="map-output"></div>
 									<div class="form-group">
 										<label >Search for location</label>
+                                <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
 										<div class="input-group">
 											<input id="search_txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
 											<input id="search_btn" type="button" value="    Search    ">

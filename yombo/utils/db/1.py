@@ -61,7 +61,7 @@ def upgrade(Registry, **kwargs):
      `device_type_id`  TEXT NOT NULL,
      `label`           TEXT NOT NULL,
      `description`     TEXT,
-     `location_label`  TEXT,
+     `statistic_label` TEXT,
      `notes`           TEXT,
      `voice_cmd`       TEXT,
      `voice_cmd_order` TEXT,
@@ -324,6 +324,7 @@ def upgrade(Registry, **kwargs):
      `created`             INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_groups_relation_id_type_idx ON variable_groups (relation_id, relation_type)")
 
     table = """ CREATE TABLE `variable_fields` (
      `id`                  TEXT NOT NULL, /* field_id */
@@ -342,6 +343,8 @@ def upgrade(Registry, **kwargs):
      `updated`             INTEGER NOT NULL,
      `created`             INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('variable_fields', 'group_id'))
+    #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 
     table = """ CREATE TABLE `variable_data` (
      `id`            TEXT NOT NULL,  /* field_id */
@@ -356,6 +359,7 @@ def upgrade(Registry, **kwargs):
      `created`       INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_data_id_type_idx ON variable_data (field_id, relation_id)")
 
     ## Create view for easily consuming the above tables during gateway startup
     # view = """CREATE VIEW variables_view AS

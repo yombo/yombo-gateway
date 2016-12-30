@@ -32,7 +32,7 @@
                             <form action="/setup_wizard/3" method="POST" role="form">
                                 <fieldset>
                                     <div class="form-group">
-                                        <select name="gateway-id" required class="selectpicker show-tick" title="New or Existing Gateway">
+                                        <select name="gateway-id" required class="selectpicker show-tick" title="Select...">
                                             <option value="new" style="background: #e6f7ff; color: #000;"{% if selected_gateway == 'new' %} selected{% endif %}>Create New</option>
                                             <option data-divider="true"></option>
                                             {% for id, gateway in available_gateways.iteritems() -%}

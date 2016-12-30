@@ -367,7 +367,7 @@ class States(YomboLibrary, object):
         payload = str(payload)
 
         parts = topic.split('/', 10)
-        print("Yombo States got this: %s / %s" % (topic, parts))
+        # print("Yombo States got this: %s / %s" % (topic, parts))
         # requested_state = urllib.unquote(parts[2])
         requested_state = parts[2].replace("$", ".")
         # requested_state = decoded_state.replace("_", " ")
@@ -401,7 +401,6 @@ class States(YomboLibrary, object):
                 self.mqtt.publish('yombo/states/%s/get_response/%s' % (parts[2], parts[4]),
                                   str(state[parts[4]]))
                 return
-
 
             response = {
                 'value': state['value'],
@@ -441,8 +440,6 @@ class States(YomboLibrary, object):
 
             if 'value_type' not in data:
                 data['value_type'] = None
-
-
 
             self.set(requested_state, value, value_type=data['value_type'], function=None, arguments=None)
 
