@@ -192,6 +192,7 @@ class AMQPClient(object):
 
         self._connecting = False
         self.pika_factory = PikaFactory(self)
+        self.pika_factory.noisy = False  # turn off Starting/stopping message
         self.send_correlation_ids = MaxDict(150)  # correlate requests with responses
 
         self._local_log("debug", "AMQP::connect")

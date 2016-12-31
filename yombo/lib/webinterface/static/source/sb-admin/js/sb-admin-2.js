@@ -54,7 +54,7 @@ var handleSidebarToggler = function () {
 
 		var sidebarMenuSubs = $('#sidebar .nav-second-level, #sidebar .nav-third-level');
 
-		//collapse("toggle") した際にheightが「0」になるため、height style削除
+		//collapse("toggle") ã—ãŸéš›ã«heightãŒã€Œ0ã€ã«ãªã‚‹ãŸã‚ã€height styleå‰Šé™¤
 		$("#sidebar-area .dropdown-collapse").parent("li").children("ul").css('height', '');
 
 		$(".sidebar-search", $('.page-sidebar')).removeClass("open");

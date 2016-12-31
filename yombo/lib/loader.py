@@ -40,6 +40,8 @@ from collections import OrderedDict
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 from twisted.internet import reactor
+from twisted.web import client
+client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError, YomboHookStopProcessing
