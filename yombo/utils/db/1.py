@@ -69,7 +69,7 @@ def upgrade(Registry, **kwargs):
      `energy_type`     TEXT,
      `energy_tracker_source` TEXT,
      `energy_tracker_device` TEXT,
-     `energy_map`      BLOB,
+     `energy_map`      TEXT,
      `pin_code`        TEXT,
      `pin_required`    INTEGER NOT NULL,
      `pin_timeout`     INTEGER DEFAULT 0,
@@ -92,7 +92,7 @@ def upgrade(Registry, **kwargs):
          `input_type_id`  TEXT NOT NULL,
          `live_update`    INTEGER NOT NULL,
          `required`       INTEGER NOT NULL,
-         `notes`          BLOB,
+         `notes`          TEXT,
          `always_load`   INTEGER DEFAULT 0,
          `updated`         INTEGER NOT NULL,
          `created`         INTEGER NOT NULL,
@@ -188,9 +188,13 @@ def upgrade(Registry, **kwargs):
 
     # To be completed
     table = """CREATE TABLE `logs` (
-     `id`       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `created`  INTEGER NOT NULL,
-     `log_line` TEXT NOT NULL);"""
+     `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `type`         TEXT NOT NULL, /* system, user, etc */
+     `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
+     `source`       TEXT NOT NULL, /* where this message was created */
+     `message`      TEXT, /* Message data */
+     `meta`         TEXT, /* Any extra meta data. JSON format */
+     `created`      INTEGER NOT NULL);"""
 
     # Defines the config table for the local gateway.
     table = """CREATE TABLE `meta` (
@@ -244,6 +248,21 @@ def upgrade(Registry, **kwargs):
     SELECT modules.*, module_installed.installed_version, module_installed. install_time, module_installed.last_check
     FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
     yield Registry.DBPOOL.runQuery(view)
+
+    #  Defines the statistics data table. Stores statistics.
+    table = """CREATE TABLE `notifications` (
+     `id`           TEXT NOT NULL,
+     `type`         TEXT NOT NULL, /* system, user, etc */
+     `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
+     `source`       TEXT NOT NULL, /* where this message was created */
+     `expire`       INTEGER NOT NULL, /* timestamp when msg should expire */
+     `acknowledged` INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user */
+     `title`        TEXT, /* Message data */
+     `message`      TEXT, /* Message data */
+     `meta`         TEXT, /* Any extra meta data. JSON format */
+     `created`      INTEGER NOT NULL);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('notifications', 'id'))
 
     # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
     table = """CREATE TABLE `sqldict` (

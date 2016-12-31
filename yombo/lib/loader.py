@@ -51,6 +51,7 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
+HARD_LOAD["Notifications"] = {'operation_mode':'all'}
 HARD_LOAD["LocalDB"] = {'operation_mode':'all'}
 HARD_LOAD["SQLDict"] = {'operation_mode':'all'}
 HARD_LOAD["Atoms"] = {'operation_mode':'all'}
@@ -231,8 +232,9 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]['_started_'] = False
 
-
         yield self._moduleLibrary.load_modules()
+        self.loadedLibraries['notifications'].add({'title': 'System started',
+            'message': 'System successfully started.', 'timeout': 300, 'source': 'Yombo Gateway System'})
 
     @inlineCallbacks
     def unload(self):
@@ -310,6 +312,7 @@ class Loader(YomboLibrary, object):
             library._Libraries = self.loadedLibraries
             library._Loader = self
             library._Modules = self._moduleLibrary
+            library._Notifications = self.loadedLibraries['notifications']
             library._Localize = self.loadedLibraries['localize']
             library._MQTT = self.loadedLibraries['mqtt']
             library._SQLDict = self.loadedLibraries['sqldict']

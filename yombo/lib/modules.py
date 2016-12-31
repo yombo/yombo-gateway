@@ -370,6 +370,7 @@ class Modules(YomboLibrary):
             module._Localize = self._Loader.loadedLibraries['localize']
             module._Modules = self
             module._MQTT = self._Loader.loadedLibraries['mqtt']
+            module._Notifications = self._Loader.loadedLibraries['notifications']
             module._SQLDict = self._Loader.loadedLibraries['sqldict']
             module._States = self._Loader.loadedLibraries['states']
             module._Statistics = self._Loader.loadedLibraries['statistics']

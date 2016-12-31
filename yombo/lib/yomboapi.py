@@ -64,8 +64,9 @@ class YomboAPI(YomboLibrary):
             return self.init_defer
 
     def _start_(self):
-        print "system_session status: %s" % self.system_session
-        print "system_login_key status: %s" % self.system_login_key
+        # print "system_session status: %s" % self.system_session
+        # print "system_login_key status: %s" % self.system_login_key
+        pass
 
     def _stop_(self):
         pass
@@ -317,8 +318,8 @@ class YomboAPI(YomboLibrary):
         # print "base_url: %s" % self.base_url
         # print "path: %s" % path
         path = self.base_url + path
-        print "method: %s" % method
-        print "path full: %s" % path
+        # print "method: %s" % method
+        # print "path full: %s" % path
         # print "session: %s" % session
         # if session is False:
         #     session = None
@@ -356,7 +357,7 @@ class YomboAPI(YomboLibrary):
         # response = yield treq.get(path, params=args, agent=self.custom_agent, headers=headers)
         response = yield treq.get(path, headers=headers, params=args)
         content = yield treq.content(response)
-        logger.info("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
+        logger.debug("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         returnValue(final_response)
 

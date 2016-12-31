@@ -680,7 +680,7 @@ class AmqpConfigHandler(YomboLibrary):
         self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
         self._getAllConfigsLoggerLoop.start(5, False)  # Display a log line for pending downloaded, false - Dont' show now
 
-        logger.debug("request_system_configs.....")
+        logger.info("Requesting system configurations from server. This can take a few seconds.")
 
         allCommands = [
             "get_categories",
@@ -766,6 +766,9 @@ class AmqpConfigHandler(YomboLibrary):
         self.parent._Configs.set("amqpyombo", 'lastcomplete', int(time()))
         if self.init_defer.called is False:
             self.init_defer.callback(1)  # if we don't check for this, we can't stop!
+            self.parent._Notifications.add(
+                {'title': 'Configs Downloaded', 'message': 'Downloaded system configurations from Yombo server.',
+                 'timeout': 300, 'source': 'Yombo Gateway System'})
 
 
     def _show_pending_configs(self):

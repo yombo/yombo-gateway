@@ -1,7 +1,14 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-Various pycrypto tools, if available, to create strong random strings.
+This library handles encrypting and decrypting content. This library allows data at rest to be encrypted, which
+means any passwords or sensitive data will be encrypted before it is saved to disk. This library doesn't
+attempt to manage data in memory or saved in a swap file.
+
+The gateway starts up, any variables that are encryptes (such as passwords), we passed to this library for
+decryption. A decrypted version of the data is stored in memory. This allows modules to access the data as needed.
+
+It's important to note that any module within the Yombo system will have access to this data, unencumbered.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -20,7 +27,6 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
-#from yombo.core.message import Message
 from yombo.utils import random_string
 
 from yombo.core.log import get_logger
@@ -34,10 +40,13 @@ class GPG(YomboLibrary):
         """
         Get the GnuPG subsystem up and loaded.
         """
+        self.gwid = self._Configs.get("core", "gwid")
         self.gwuuid = self._Configs.get("core", "gwuuid")
-        self._key_generation_status = {}
-        self.initDefer = Deferred()
         self.mykeyid = self._Configs.get('gpg', 'keyid')
+
+        self._key_generation_status = {}
+
+        self.initDefer = Deferred()
         self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
         logger.debug("syncing gpg keys into db")
         self.sync_keyring_to_db()
@@ -50,7 +59,6 @@ class GPG(YomboLibrary):
         Get the root cert from database and make sure it's in our public keyring.
         """
         self._AMQPLibrary = self._Libraries['AMQPYombo']
-        pass
 
     def _start_(self):
         """

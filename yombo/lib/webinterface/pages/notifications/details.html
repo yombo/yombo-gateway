@@ -1,0 +1,44 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/notifications/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+</a> Notification Details</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Notification</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 5px; margin-bottom: 0px">Priority: </label><br>
+                            {{ notice.priority }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Title: </label><br>
+                            {{ notice.title }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Message: </label><br>
+                            {{ notice.message }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Source: </label><br>
+                            {{ notice.source }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                            {{ notice.created|epoch_to_human }} ({{ notice.created|epoch_to_pretty_date }})<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Expires: </label><br>
+                            {{ notice.expire|epoch_to_human }}<br>
+                        </div>
+                    <!-- /.panel-body -->
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+            </div>
+            <!-- /.row -->
+{% endblock %}
+

@@ -230,7 +230,7 @@ class VoiceCmds(YomboLibrary):
         :param order: The ordering in which to add voice command text lookup. Default: devicecmd
         :type order: string
         """
-        logger.info("Adding voice command: {voice_string}", voice_string=voice_string)
+        logger.debug("Adding voice command: {voice_string}", voice_string=voice_string)
         if call_back is None and device is None:
             raise YomboWarning("'call_back' and 'device' are mising.", 1000, 'add_by_string', 'voicecmds')
 

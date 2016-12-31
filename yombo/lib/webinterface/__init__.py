@@ -50,6 +50,7 @@ from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
 from yombo.lib.webinterface.route_devtools import route_devtools
 from yombo.lib.webinterface.route_modules import route_modules
+from yombo.lib.webinterface.route_notices import route_notices
 from yombo.lib.webinterface.route_statistics import route_statistics
 from yombo.lib.webinterface.route_states import route_states
 from yombo.lib.webinterface.route_voicecmds import route_voicecmds
@@ -306,6 +307,7 @@ class WebInterface(YomboLibrary):
         route_devices(self.webapp)
         route_devtools(self.webapp)
         route_modules(self.webapp)
+        route_notices(self.webapp)
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
@@ -349,6 +351,7 @@ class WebInterface(YomboLibrary):
         self.auth_pin_required = self._Configs.get('webinterface', 'auth_pin_required', True)
 
         self.web_factory = Site(self.webapp.resource(), None, logPath='/dev/null')
+        self.web_factory.noisy = False  # turn off Starting/stopping message
 #        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
 
@@ -358,6 +361,7 @@ class WebInterface(YomboLibrary):
         self.data['gateway_configured'] = self._home_gateway_configured()
         self.data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
         self.data['operation_mode'] = self._op_mode
+        self.data['notifications'] = self._Notifications
 
         self.functions = {
             'yes_no': yombo.utils.is_yes_no,
@@ -766,6 +770,7 @@ class WebInterface(YomboLibrary):
     def setup_basic_filters(self):
         self.webapp.templates.filters['epoch_to_human'] = self.epoch_to_human
         self.webapp.templates.filters['states_to_human'] = self.epoch_to_human
+        self.webapp.templates.filters['epoch_to_pretty_date'] = yombo.utils.pretty_date # yesterday, 5 minutes ago, etc.
 
     def WebInterface_configuration_set(self, **kwargs):
         """

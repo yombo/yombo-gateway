@@ -64,9 +64,6 @@ class InputTypes(YomboLibrary):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
-        :param loader: A pointer to the L{Loader<yombo.lib.loader.Loader>}
-        library.
-        :type loader: Instance of Loader
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
 
@@ -107,14 +104,14 @@ class InputTypes(YomboLibrary):
 
     def get(self, input_type_requested):
         """
-        Performs the actual command search.
+        Performs the actual search.
 
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
            find commands: `self._Commands['8w3h4sa']`
 
-        :raises YomboWarning: Raised when command cannot be found.
+        :raises YomboWarning: Raised when command input type be found.
         :param input_type_requested: The input type ID or input type label to search for.
         :type input_type_requested: string
         :return: A dict containing details about the input type
@@ -149,7 +146,7 @@ class InputTypes(YomboLibrary):
         :type record: dict
         :param test: If true, is a test and not from SQL, only used for unittest.
         :type test: bool
-        :returns: Pointer to new device. Only used during unittest
+        :returns: Pointer to new input type. Only used during unittest
         """
         logger.debug("record: {record}", record=record)
         input_type_id = record.id

@@ -393,7 +393,7 @@ class MQTTClient(object):
         self.send_queue = deque() # stores any received items like publish and subscribe until fully connected
 
         self.factory = MQTTTYomboFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER)
-
+        self.factory.noisy = False  # turn off Starting/stopping message
         self.factory.mqtt_client=self
         self.factory.username = username
         self.factory.password = password

@@ -68,7 +68,7 @@ class MQTTFactory(ReconnectingClientFactory):
         self.windowSubscribe   = {} # SUBSCRIBE messages window, waiting fr SUBACK
         self.windowUnsubscribe = {} # UNSUBSCRIBE messages window, waiting fr UNSUBACK
 
-        log.info("MQTT Client library version {version}", version=__version__)
+        log.debug("MQTT Client library version {version}", version=__version__)
     
 
     def buildProtocol(self, addr):

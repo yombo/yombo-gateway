@@ -197,7 +197,6 @@ class Devices(YomboLibrary):
         self.processing_commands = False
         # self.init_deferred = Deferred()
         # return self.init_deferred
-        self.load_deferred = None
 
     def _load_(self):
         self.run_state = 2

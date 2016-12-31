@@ -114,6 +114,9 @@ class Modules(DBObject):
 class ModulesView(DBObject):
     TABLENAME='modules_view'
 
+class Notifications(DBObject):
+    TABLENAME='notifications'
+
 class Schema_Version(DBObject):
     TABLENAME='schema_version'
 
@@ -377,6 +380,41 @@ class LocalDB(YomboLibrary):
         records = yield InputType.find(where=['status = 1'])
         returnValue(records)
 
+#############################
+###    Notifications    #####
+#############################
+    @inlineCallbacks
+    def get_notifications(self):
+        cur_time = int(time())
+        records = yield Notifications.find(where=['expire > ?', cur_time], orderby='created DESC')
+        returnValue(records)
+
+    @inlineCallbacks
+    def delete_notification(self, id):
+        records = yield Notifications.delete(where=['id = ?', id])
+        returnValue(records)
+
+    @inlineCallbacks
+    def delete_expired_notifications(self):
+        cur_time = int(time())
+        records = yield self.dbconfig.delete('notifications', where=['expire < ?', cur_time])
+        returnValue(records)
+
+    @inlineCallbacks
+    def add_notification(self, notice, **kwargs):
+        results = yield Notifications(
+            id=notice['id'],
+            type=notice['type'],
+            priority=notice['priority'],
+            source=notice['source'],
+            expire=notice['expire'],
+            acknowledged=notice['acknowledged'],
+            title=notice['title'],
+            message=notice['message'],
+            meta=json.dumps(notice['meta'], separators=(',',':') ),
+            created=notice['created'],
+        ).save()
+        returnValue(results)
 
 #########################
 ###    Sessions     #####
@@ -938,7 +976,6 @@ ORDER BY id desc"""
         :param table:
         :return:
         """
-        print "trunvating table: %s" % table
         records = yield self.dbconfig.truncate(table)
         returnValue(records)
 
