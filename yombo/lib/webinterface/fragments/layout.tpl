@@ -15,7 +15,8 @@
     {% block head_css %}{% endblock %}
     {% block echarts %}{% endblock %}
     <!-- SB Admin 2 and Font Awesome CSS -->
-    <link href="/static/css/admin2-font_awesome.min.css" rel="stylesheet">
+    <link href="/static/css/admin2.min.css" rel="stylesheet">
+    <link href="/static/css/font_awesome.min.css" rel="stylesheet">
 
 	{% block head_bottom %}{% endblock %}
    </head>
@@ -27,6 +28,68 @@
 		{% else %}{% include 'lib/webinterface/fragments/config_top_nav.tpl' %}
         {% endif %}
 	</header>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">Confirm Logout</h4>
+          </div>
+          <div class="modal-body">
+              <p>Ready to logout?</p>
+          </div>
+          <div class="modal-footer">
+              <a href="#" id="logoutBtnYes" class="btn btn-danger">Yes</a>
+              <a href="#" data-dismiss="modal" aria-hidden="true" class="btn btn-primary">No</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="restartModal" tabindex="-1" role="dialog" aria-labelledby="restartModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">Confirm Restart</h4>
+          </div>
+          <div class="modal-body">
+              <p>Restart the Yombo Automation Gateway?</p>
+          </div>
+          <div class="modal-footer">
+              <a href="#" id="restartBtnYes" class="btn btn-danger">Yes</a>
+              <a href="#" data-dismiss="modal" aria-hidden="true" class="btn btn-primary">No</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="shutdownModal" tabindex="-1" role="dialog" aria-labelledby="shutdownModalLabel">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel">Confirm Shutdown</h4>
+          </div>
+          <div class="modal-body">
+              <p>Are you sure you want to shutdown the gateway?</p>
+              <div class="bs-callout bs-callout-danger" id=callout-images-ie-rounded-corners>
+                  <h4>Warning</h4>
+                  <p>
+                      By shutting down the gateway softawre, this web interface will no longer function. The gateway
+                      software will need to be manually started.
+                  </p>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <a href="#" id="shutdownBtnYes" class="btn btn-danger">Yes</a>
+              <a href="#" data-dismiss="modal" aria-hidden="true" class="btn btn-primary">No</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="wrapper">
         <!-- Side Navigation -->
 		{%- include 'lib/webinterface/fragments/side_nav.tpl' -%}
@@ -68,6 +131,40 @@
     <script src="/static/js/sb-admin2.min.js"></script>
 
    {% block body_bottom %}{% endblock %}
+    <script>
+
+
+    $('.confirm-logout').on('click', function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        $('#logoutModal').data('id', id).modal('show');
+    });
+    $('#logoutBtnYes').click(function() {
+        $('#logoutModal').modal('hide');
+        window.location.href = "/logout1";
+    });
+
+    $('.confirm-restart').on('click', function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        $('#restartModal').data('id', id).modal('show');
+    });
+    $('#restartBtnYes').click(function() {
+        $('#restartModal').modal('hide');
+        window.location.href = "/system/control/restart1";
+    });
+
+    $('.confirm-shutdown').on('click', function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        $('#shutdownModal').data('id', id).modal('show');
+    });
+    $('#shutdownBtnYes').click(function() {
+        $('#shutdownModal').modal('hide');
+        window.location.href = "/system/control/shutdown1";
+    });
+
+</script>
    </body>
 </html>
 

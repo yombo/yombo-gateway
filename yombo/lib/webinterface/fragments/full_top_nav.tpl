@@ -64,12 +64,19 @@
 	                        <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
 	                    </a>
 	                    <ul class="dropdown-menu dropdown-user">
-	                        <li><a href="#"><i class="fa fa-user fa-fw"></i> User Profile</a>
+	                        <li><a href="https://my.yombo.net"><i class="fa fa-user fa-fw"></i> User Profile</a>
 	                        </li>
-	                        <li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a>
+	                        <li><a href="https://yombo.net/documents/"><i class="fa fa-file-text fa-fw"></i> Documentation</a>
+	                        </li>
+	                        <li><a href="https://yombo.net/"><i class="fa fa-globe fa-fw"></i> Yombo.Net</a>
 	                        </li>
 	                        <li class="divider"></li>
-	                        <li><a href="login.html"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+	                        <li><a class="confirm-logout" href="#"><i class="fa fa-sign-out fa-fw"></i> Logout</a>
+	                        </li>
+	                        <li class="divider"></li>
+	                        <li><a class="confirm-restart" href="#"><i class="fa fa-recycle fa-fw"></i> Restart</a>
+	                        </li>
+	                        <li><a class="confirm-shutdown" href="#"><i class="fa fa-power-off fa-fw"></i> Shutdown</a>
 	                        </li>
 	                    </ul>
 	                    <!-- /.dropdown-user -->
@@ -80,3 +87,4 @@
 			</div>
             <!-- /.navbar-header -->
         </nav>
+

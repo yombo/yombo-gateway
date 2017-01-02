@@ -53,6 +53,42 @@ def route_api_v1(webapp):
                 a = return_good('Command executed.')
                 return json.dumps(a)
 
+        @webapp.route('/modules/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_modules_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/module?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            returnValue(json.dumps(data))
+
+        @webapp.route('/modules/show/<string:module_id>', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_modules_show_one(webinterface, request, session, module_id):
+            # action = request.args.get('action')[0]
+            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            returnValue(json.dumps(results['data']))
+
         @webapp.route('/notifications', methods=['GET'])
         @require_auth()
         def api_v1_notifications_get(webinterface, request, session):

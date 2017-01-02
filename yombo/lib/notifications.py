@@ -136,7 +136,7 @@ class Notifications(YomboLibrary):
         Called by looping call to periodically purge expired notifications.
         :return:
         """
-        cur_time = int(time())
+        cur_time = time()
         for id, notice in self.notifications.iteritems():
             if cur_time > notice.expire:
                 del self.notifications[id]
@@ -183,7 +183,7 @@ class Notifications(YomboLibrary):
         notifications = yield self._LocalDB.get_notifications()
         for notice in notifications:
             notice = notice.__dict__
-            if notice['expire'] < int(time()):
+            if notice['expire'] < time():
                 continue
             notice['meta'] = json.loads(notice['meta'])
             self.add(notice, from_db=True)
@@ -209,14 +209,14 @@ class Notifications(YomboLibrary):
 
         if 'expire' not in notice:
             if 'timeout' in notice:
-                notice['expire'] = int(time()) + notice['timeout']
+                notice['expire'] = time() + notice['timeout']
             else:
-                notice['expire'] = int(time()) + 3600
+                notice['expire'] = time() + 3600
         else:
-            if notice['expire'] > int(time()):
+            if notice['expire'] > time():
                 YomboWarning("New notification is set to expire before current time.")
         if 'created' not in notice:
-            notice['created'] = int(time())
+            notice['created'] = time()
 
         if 'acknowledged' not in notice:
             notice['acknowledged'] = False

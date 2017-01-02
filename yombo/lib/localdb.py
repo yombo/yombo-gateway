@@ -396,8 +396,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def delete_expired_notifications(self):
-        cur_time = int(time())
-        records = yield self.dbconfig.delete('notifications', where=['expire < ?', cur_time])
+        records = yield self.dbconfig.delete('notifications', where=['expire < ?', time()])
         returnValue(records)
 
     @inlineCallbacks

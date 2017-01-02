@@ -320,7 +320,7 @@ class YomboAPI(YomboLibrary):
         # print "path: %s" % path
         path = self.base_url + path
         # print "method: %s" % method
-        # print "path full: %s" % path
+        print "path full: %s" % path
         # print "session: %s" % session
         # if session is False:
         #     session = None

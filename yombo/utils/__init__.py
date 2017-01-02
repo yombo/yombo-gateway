@@ -533,6 +533,8 @@ def pretty_date(time=False):
     """
     from datetime import datetime
     now = datetime.now()
+    if type(time) is float:
+        time = int(round(time))
     if type(time) is int:
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time,datetime):

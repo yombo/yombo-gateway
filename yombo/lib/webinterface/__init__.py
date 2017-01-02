@@ -33,7 +33,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 # Import 3rd party libraries
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboRestart, YomboWarningCredentails
+from yombo.core.exceptions import YomboRestart, YomboCritical
 
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -53,6 +53,7 @@ from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_notices import route_notices
 from yombo.lib.webinterface.route_statistics import route_statistics
 from yombo.lib.webinterface.route_states import route_states
+from yombo.lib.webinterface.route_system import route_system
 from yombo.lib.webinterface.route_voicecmds import route_voicecmds
 
 from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
@@ -254,12 +255,22 @@ nav_side_menu = [
         'opmode': 'run',
     },
     {
-        'label1': 'Restart',
-        'label2': 'Debug',
+        'label1': 'System',
+        'label2': 'Status',
+        'priority1': 6000,
+        'priority2': 500,
+        'icon': 'fa fa-hdd-o fa-fw',
+        'url': '/system/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System',
+        'label2': 'Control',
         'priority1': 6000,
         'priority2': 1000,
-        'icon': 'fa fa-recycle fa-fw',
-        'url': '/tools/restart',
+        'icon': 'fa fa-hdd-o fa-fw',
+        'url': '/system/control',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -311,6 +322,7 @@ class WebInterface(YomboLibrary):
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
+        route_system(self.webapp)
         route_voicecmds(self.webapp)
 
     @webapp.handle_errors(NotFound)
@@ -682,33 +694,36 @@ class WebInterface(YomboLibrary):
     def page_login_pin_get(self, request):
         return self.redirect(request, '/')
 
-    @webapp.route('/status')
-    def page_status(self, request):
+    @webapp.route('/ping')
+    def page_ping(self, request):
+        return "pong"
 
-        gwuuid = self._Configs.get("core", "gwuuid", None)
-        gwhash = self._Configs.get("core", "gwhash", None)
-        gpgkeyid = self._Configs.get('core', 'gpgkeyid', None)
+    def restart(self, request, message=None, redirect=None):
+        if message is None:
+            message = "Web interface requested restart."
+        if redirect is None:
+            redirect = "/"
 
-        has = {}
-
-        has['gateway_uuid'] = 'True' if gwuuid is not None else 'False'
-        has['gateway_hash'] = 'True' if gwhash is not None else 'False'
-        has['gpg_keyid'] = 'True' if gpgkeyid is not None else 'False'
-        page = self.get_template(request, 'status/index.html')
-        return page.render(yombo_server_is_connected=self._States.get('amqp.connected'),
-                           )
-    @webapp.route('/tools/restart')
-    def page_status(self, request):
-        return self.restart(request)
-
-    def restart(self, request):
         page = self.get_template(request, self._dir + 'pages/restart.html')
-        reactor.callLater(0.1, self.do_restart)
-        return page.render()
+        reactor.callLater(0.3, self.do_restart)
+        return page.render(message=message,
+                           redirect=redirect
+                           )
 
     def do_restart(self):
         try:
             raise YomboRestart("Web Interface setup wizard complete.")
+        except:
+            pass
+
+    def shutdown(self, request):
+        page = self.get_template(request, self._dir + 'pages/shutdown.html')
+        # reactor.callLater(0.3, self.do_shutdown)
+        return page.render()
+
+    def do_shutdown(self):
+        try:
+            raise YomboCritical("Web Interface setup wizard complete.")
         except:
             pass
 
@@ -845,11 +860,18 @@ class WebInterface(YomboLibrary):
         ]
         CAT_SCRIPTS_OUT = 'dist/js/jquery.validate-1.15.0.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
         CAT_SCRIPTS = [
             'source/bootstrap/dist/css/bootstrap.min.css',
             'source/metisMenu/metisMenu.min.css',
         ]
         CAT_SCRIPTS_OUT = 'dist/css/bootsrap-metisMenu.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/bootstrap/dist/css/bootstrap.min.css',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/css/bootsrap.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -862,9 +884,14 @@ class WebInterface(YomboLibrary):
         CAT_SCRIPTS = [
             'source/sb-admin/css/sb-admin-2.css',
             'source/sb-admin/css/yombo.css',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/css/admin2.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
             'source/font-awesome/css/font-awesome.min.css',
             ]
-        CAT_SCRIPTS_OUT = 'dist/css/admin2-font_awesome.min.css'
+        CAT_SCRIPTS_OUT = 'dist/css/font_awesome.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -880,6 +907,20 @@ class WebInterface(YomboLibrary):
             'source/datatables-responsive/js/dataTables.responsive.min.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/datatables.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/creative/js/jquery.easing.min.js',
+            'source/creative/js/scrollreveal.min.js',
+            'source/creative/js/creative.min.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/creative.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/creative/css/creative.css',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/css/creative.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [

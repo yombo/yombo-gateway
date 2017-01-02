@@ -1,4 +1,5 @@
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 def route_modules(webapp):
     with webapp.subroute("/modules") as webapp:
@@ -14,6 +15,21 @@ def route_modules(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                modules=webinterface._Libraries['modules']._modulesByUUID,
                                )
+
+        @webapp.route('/add_index')
+        @require_auth()
+        def page_modules_add_index(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               )
+        @webapp.route('/server_details/<string:module_id>')
+        @require_auth()
+        @inlineCallbacks
+        def page_modules_details_from_server(webinterface, request, session, module_id):
+            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details_server.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                               module=results['data']))
 
         @webapp.route('/details/<string:module_id>')
         @require_auth()
