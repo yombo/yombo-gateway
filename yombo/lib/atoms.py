@@ -33,6 +33,7 @@ except ImportError:
     HAS_PSUTIL = False
 
 import platform
+from os.path import dirname, abspath
 import re
 
 from platform import _supported_dists
@@ -129,10 +130,12 @@ class Atoms(YomboLibrary):
         self.run_state = 1
         self.__Atoms = {}
         self.__Atoms.update(self.os_data())
+
         self.triggers = {}
         self.automation = self._Libraries['automation']
         self._loaded = False
         self.set('loader.operation_mode', 'run')
+        self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
 
     def _load_(self):
         self.run_state = 2

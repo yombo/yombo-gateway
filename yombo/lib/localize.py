@@ -59,6 +59,8 @@ class Localize(YomboLibrary):
 
         self.files = {}
         self.locale_files = abspath('.') + "/usr/locale/"
+        self.translator = self.get_translator()
+        __builtin__.__dict__['_'] = self.handle_translate
 
     def _load_(self):
         pass

@@ -28,13 +28,13 @@
                 <div class="col-lg-3 col-md-3">
                     <div class="panel panel-warning">
                         <div class="panel-heading">
-                            <div class="row" onclick="location.href='/automation/index';">
+                            <div class="row" onclick="location.href='/modules/index';">
                                 <div class="col-xs-3">
-                                    <i class="fa fa-random fa-3x"></i>
+                                    <i class="fa fa-puzzle-piece fa-3x"></i>
                                 </div>
                                 <div class="col-xs-9 text-right">
-                                    <div class="large">{{ automation_rules }}</div>
-                                    <div class="medium">{{ _('Automation<br>Rules') }}</div>
+                                    <div class="large">{{ modules|length }}</div>
+                                    <div class="medium">{{ _('Modules') }}<br> &nbsp;</div>
                                 </div>
                             </div>
                         </div>
@@ -45,7 +45,7 @@
                         <div class="panel-heading">
                             <div class="row" onclick="location.href='/devices/delayed_commands';">
                                 <div class="col-xs-3">
-                                    <i class="fa fa-cogs fa-3x"></i>
+                                    <i class="fa fa-clock-o fa-3x"></i>
                                 </div>
                                 <div class="col-xs-9 text-right">
                                     <div class="large">{{ delay_commands|length }}</div>

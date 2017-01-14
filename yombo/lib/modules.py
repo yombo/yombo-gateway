@@ -26,7 +26,7 @@ from time import time
 
 # Import twisted libraries
 #from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, DeferredList, Deferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboHookStopProcessing, YomboWarning, YomboCritical
@@ -34,6 +34,7 @@ from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
+from yombo.utils.maxdict import MaxDict
 
 logger = get_logger('library.modules')
 
@@ -80,9 +81,11 @@ class Modules(YomboLibrary):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
+        self.gwid = self._Configs.get("core", "gwid")
         self._LocalDBLibrary = self._Libraries['localdb']
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
+        self.hooks_called = MaxDict(200, {})
 
     def _load_(self):
         """
@@ -115,16 +118,16 @@ class Modules(YomboLibrary):
         """
         Attempts to find the modules requested using a couple of methods.
 
-        See get_module()
+        See get()
         """
-        return self.get_module(moduleRequested)
+        return self.get(moduleRequested)
 
 #    def __iter__(self):
 #        return self._modulesByUUID.__iter__()
 
     def __contains__(self, moduleRequested):
         try:
-            self.get_module(moduleRequested)
+            self.get(moduleRequested)
             return True
         except:
             return False
@@ -208,7 +211,7 @@ class Modules(YomboLibrary):
             finally:
                 yield self._Loader.library_invoke_all("_module_unloaded_", called_by=self)
                 delete_component = module._FullName
-                self.del_module(ModuleID, module._Name.lower())
+                self.del_imported_module(ModuleID, module._Name.lower())
                 if delete_component.lower() in self._Loader.loadedComponents:
                     del self._Loader.loadedComponents[delete_component.lower()]
 
@@ -327,7 +330,7 @@ class Modules(YomboLibrary):
 
     def import_modules(self):
         for module_id, module in self._rawModulesList.iteritems():
-            self._moduleClasses[module_id] = Module(module)
+            self._moduleClasses[module_id] = Module(self, module)
             pathName = "yombo.modules.%s" % module['machine_label']
             self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
 
@@ -448,7 +451,7 @@ class Modules(YomboLibrary):
         if cache_key in self._invoke_list_cache:
             if self._invoke_list_cache[cache_key] is False:
                 return  # skip. We already know function doesn't exist.
-        module = self.get_module(requestedModule)
+        module = self.get(requestedModule)
         if module._Name == 'yombo.core.module.YomboModule':
             self._invoke_list_cache[cache_key] is False
             # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
@@ -462,7 +465,7 @@ class Modules(YomboLibrary):
             if callable(method):
                 if module._Name not in self.hook_counts:
                     self.hook_counts[module._Name] = {}
-                if hook not in self.hook_counts:
+                if hook not in self.hook_counts[module._Name]:
                     self.hook_counts[module._Name][hook] = {'Total Count': {'count': 0}}
                 # print "hook counts: %s" % self.hook_counts
                 # print "hook counts: %s" % self.hook_counts[library._Name][hook]
@@ -470,7 +473,12 @@ class Modules(YomboLibrary):
                     self.hook_counts[module._Name][hook][called_by] = {'count': 0}
                 self.hook_counts[module._Name][hook][called_by]['count'] = self.hook_counts[module._Name][hook][called_by]['count'] + 1
                 self.hook_counts[module._Name][hook]['Total Count']['count'] = self.hook_counts[module._Name][hook]['Total Count']['count'] + 1
-#                return method(**kwargs)
+                self.hooks_called[int(time())] = {
+                    'module': module._Name,
+                    'hook': hook,
+                    'called_by': called_by,
+                }
+
                 try:
 #                    results = yield maybeDeferred(method, **kwargs)
                     self._invoke_list_cache[cache_key] = True
@@ -522,17 +530,17 @@ class Modules(YomboLibrary):
 
         self.startDefer.callback(10)
 
-    def add_module(self, module_id, module_label, modulePointer):
+    def add_imported_module(self, module_id, module_label, modulePointer):
         logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
         self._modulesByUUID[module_id] = modulePointer
         self._modulesByName[module_label] = module_id
 
-    def del_module(self, module_id, module_label):
+    def del_imported_module(self, module_id, module_label):
         logger.debug("deleting module_id: {module_id} from this list: {list}", module_id=module_id, list=self._modulesByUUID)
         del self._modulesByName[module_label]
         del self._modulesByUUID[module_id]
 
-    def get_module(self, requestedItem):
+    def get(self, requestedItem):
         """
         Attempts to find the module requested using a couple of methods. Use the already defined pointer within a
         module to find another other:
@@ -581,11 +589,39 @@ class Modules(YomboLibrary):
         if module_id in self._moduleClasses:
             return self._moduleClasses[module_id].device_types
 
+    @inlineCallbacks
+    def add_module(self, data, **kwargs):
+        """
+        Adds a module to be installed. A restart is required to complete.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'module_id': data['module_id'],
+            'installed_version': data['installed_version'],
+            'status': 1,
+        }
+
+        module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s', api_data)
+        print("add module results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+                'module_id': '',
+            }
+            returnValue(results)
+
 class Module:
     """
     A class to manage a single module.
     """
-    def __init__(self, module):
+    def __init__(self, _ModuleLibrary, module):
         """
         This module class can make updates to the database as needed. Any changes to this class and it will
         automatically update any required components.
@@ -613,6 +649,7 @@ class Module:
         self.updated = module['updated']
         self.load_source = module['load_source']
         self.device_types = [] # populated by Modules::module_init_invoke
+        self._ModuleLibrary = _ModuleLibrary
 
     def __str__(self):
         """
@@ -655,3 +692,37 @@ class Module:
             'updated'       : int(self.updated),
             'load_source'   : int(self.load_source),
         }
+
+    @inlineCallbacks
+    def edit_module(self, data, **kwargs):
+        """
+        Edit the module installation information. A reboot is required for this to take effect.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'install_branch': data['install_branch'],
+            'status': 1,
+        }
+
+        module_results = yield self._ModuleLibrary._YomboAPI.request('POST', '/v1/gateway/%s/module/%' % (self._ModuleLibrary.gwid, data['module_id']), api_data)
+        print("module edit results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+                'device_id': '',
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module edited.",
+            'device_id': module_results['data']['id']
+        }
+        returnValue(results)

@@ -381,6 +381,51 @@ class LocalDB(YomboLibrary):
         returnValue(records)
 
 #############################
+###    Modules          #####
+#############################
+    @inlineCallbacks
+    def get_modules(self, get_all=False):
+        if get_all is False:
+            records = yield Modules.find(where=['status = ?', 1])
+        else:
+            records = yield Modules.all()
+
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_modules_view(self, get_all=False):
+        if get_all is False:
+            records = yield ModulesView.find(where=['status = ?', 1])
+        else:
+            records = yield ModulesView.all()
+
+        returnValue(records)
+
+    @inlineCallbacks
+    def modules_install_new(self, data):
+        results = yield ModuleInstalled(module_id=data['module_id'],
+                              installed_version = data['installed_version'],
+                              install_time = data['install_time'],
+                              last_check = data['install_time'],
+                              ).save()
+        returnValue(results)
+
+    @inlineCallbacks
+    def get_module_routing(self, where=None):
+        """
+        Used to load a list of deviceType routing information.
+
+        Called by: lib.Modules::load_data
+
+        :param where: Optional - Can be used to append a where statement
+        :type returnType: string
+        :return: Modules used for routing device message packets
+        :rtype: list
+        """
+        records = yield ModuleRoutingView.all()
+        returnValue(records)
+
+#############################
 ###    Notifications    #####
 #############################
     @inlineCallbacks
@@ -604,41 +649,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
         yield key.save()
 #        yield self.dbconfig.insert('gpg_keys', args, None, 'OR IGNORE' )
 
-    #################
-    ### Modules #####
-    #################
-    @inlineCallbacks
-    def get_modules(self, get_all=False):
-        if get_all is False:
-            records = yield Modules.find(where=['status = ?', 1])
-        else:
-            records = yield Modules.all()
-
-        returnValue(records)
-
-    @inlineCallbacks
-    def get_modules_view(self, get_all=False):
-        if get_all is False:
-            records = yield ModulesView.find(where=['status = ?', 1])
-        else:
-            records = yield ModulesView.all()
-
-        returnValue(records)
-
-    @inlineCallbacks
-    def get_module_routing(self, where = None):
-        """
-        Used to load a list of deviceType routing information.
-
-        Called by: lib.Modules::load_data
-
-        :param where: Optional - Can be used to append a where statement
-        :type returnType: string
-        :return: Modules used for routing device message packets
-        :rtype: list
-        """
-        records = yield ModuleRoutingView.all()
-        returnValue(records)
 
     #################
     ### SQLDict #####

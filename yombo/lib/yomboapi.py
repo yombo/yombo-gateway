@@ -438,10 +438,11 @@ class YomboAPI(YomboLibrary):
             'phrase': phrase,
             'headers': headers,
         }
-        if 'locator' in content['response']:
-            results['data'] = content['response'][content['response']['locator']]
-        else:
-            results['data'] = []
+        if 'response' in content:
+            if 'locator' in content['response']:
+                results['data'] = content['response'][content['response']['locator']]
+            else:
+                results['data'] = []
         return results
 
     def is_json(self, myjson):

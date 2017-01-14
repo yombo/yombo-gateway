@@ -26,18 +26,18 @@
                             <label style="margin-top: 0px; margin-bottom: 0px">Install Version: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalinstallverion"><i class="fa fa-question fa-lg"></i></a>
                                 {{ macros.modal("modalinstallverion", 'Install Version', "
-                                <p>Select the version of the module to install and use. Typically, you can select from \"master\" or \"develop\".
-                                    This refers to the branches the developer has created. Usually, you will always want to
-                                    user 'master' as this is usually the most stable version.
+                                <p>Select the version of the module to install and use. Typically, you can select from \"production\", and if
+                                    the module developer has specified, you can select \"development\".</p>
+                                <p>Production is usually selected, unless there is a need to test bleeding edge features of a module.
                                 </p>
                                 ") }}
                                 <br>
                             <div class="input-group">
                                 <select required class="selectpicker show-tick form-control" name="install_branch" id="install_branch" placeholder="">
-                                    <option value="{{ server_module.prod_branch }}"{% if module.install_branch == server_module.prod_branch %} selected{% endif %}>{{ server_module.prod_branch }}</option>
+                                    <option value="production"{% if module.install_branch == server_module.prod_branch %} selected{% endif %}>Production</option>
                                     {%- if server_module.dev_branch != "" %}
                                         <option data-divider="true"></option>
-                                        <option value="{{ server_module.dev_branch }}"{% if module.install_branch == server_module.dev_branch %} selected{% endif %}>{{ server_module.dev_branch }}</option>
+                                        <option value="development"{% if module.install_branch == server_module.dev_branch %} selected{% endif %}>Development (High risk)</option>
                                     {%- endif %}
                                 </select>
                             </div>

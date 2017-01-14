@@ -69,7 +69,11 @@ REQUIRES=[
         'pyephem',
         'gnupg',
         'service_identity',
-        'parsedatetime'
+        'parsedatetime',
+        'psutil',
+        'jinja2',
+        'klein',
+        'pytest'
         ],
 
 Y_CORE = list_files("yombo/core")

@@ -1,0 +1,10 @@
+hbmqtt; python_version > '3.1'
+Twisted; python_version = '2.7'
+python-gnupg
+gnupg
+service_identity
+parsedatetime
+psutil
+jinja2
+klein
+pytest

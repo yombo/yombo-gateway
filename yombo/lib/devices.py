@@ -562,46 +562,62 @@ class Devices(YomboLibrary):
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add device",
-                'apimsgl': device_results['content']['message'],
+                'apimsg': device_results['content']['message'],
                 'apimsghtml': device_results['content']['html_message'],
                 'device_id': '',
             }
             returnValue(results)
 
-        # self.load_device
-
         if 'variable_data' in data:
             variable_data = data['variable_data']
             for field_id, data in variable_data.iteritems():
                 for data_id, value in data.iteritems():
-                    post_data = {
-                        'gateway_id': self.gwid,
-                        'field_id': field_id,
-                        'relation_id': device_results['data']['id'],
-                        'relation_type': 'device',
-                        'data_weight': 0,
-                        'data': value,
-                    }
-                    print("post_data: %s" % post_data)
-                    var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                    if var_data_results['code'] != 200:
-                        print("var data results: %s" % var_data_results)
-                        results = {
-                            'status': 'failed',
-                            'msg': "Couldn't add device variables",
-                            'apimsgl': var_data_results['content']['message'],
-                            'apimsghtml': var_data_results['content']['html_message'],
-                            'device_id': device_results['data']['id']
+                    if data_id.startswith('new_'):
+                        post_data = {
+                            'gateway_id': self.gwid,
+                            'field_id': field_id,
+                            'relation_id': device_results['data']['id'],
+                            'relation_type': 'device',
+                            'data_weight': 0,
+                            'data': value,
                         }
-                        returnValue(results)
+                        print("post_data: %s" % post_data)
+                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        if var_data_results['code'] != 200:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Device added, but couldn't save device configurations.",
+                                'apimsg': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'device_id': device_results['data']['id']
+                            }
+                            returnValue(results)
+                    else:
+                        post_data = {
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        print("post_data: %s" % post_data)
+                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
+                        if var_data_results['code'] != 200:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Device added, but couldn't save device configurations.",
+                                'apimsg': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'device_id': device_results['data']['id']
+                            }
+                            returnValue(results)
 
         print("device edit results: %s" % device_results)
         results = {
             'status': 'success',
-            'msg': "Device Added",
+            'msg': "Device added.",
             'device_id': device_results['data']['id']
         }
         returnValue(results)
+
+
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #
@@ -929,8 +945,8 @@ class Device:
         if device_results['code'] != 200:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't add device",
-                'apimsgl': device_results['content']['message'],
+                'msg': "Couldn't edit device",
+                'apimsg': device_results['content']['message'],
                 'apimsghtml': device_results['content']['html_message'],
                 'device_id': '',
             }
@@ -955,7 +971,7 @@ class Device:
                             results = {
                                 'status': 'failed',
                                 'msg': "Couldn't add device variables",
-                                'apimsgl': var_data_results['content']['message'],
+                                'apimsg': var_data_results['content']['message'],
                                 'apimsghtml': var_data_results['content']['html_message'],
                                 'device_id': device_results['data']['id']
                             }
@@ -971,7 +987,7 @@ class Device:
                             results = {
                                 'status': 'failed',
                                 'msg': "Couldn't add device variables",
-                                'apimsgl': var_data_results['content']['message'],
+                                'apimsg': var_data_results['content']['message'],
                                 'apimsghtml': var_data_results['content']['html_message'],
                                 'device_id': device_results['data']['id']
                             }
@@ -980,7 +996,7 @@ class Device:
         print("device edit results: %s" % device_results)
         results = {
             'status': 'success',
-            'msg': "Device Added",
+            'msg': "Device edited.",
             'device_id': device_results['data']['id']
         }
         returnValue(results)
@@ -1182,6 +1198,7 @@ class Device:
         kwargs['device'] = self
         self.do_command_requests[kwargs['request_id']]['sent_time'] = time()
         global_invoke_all('_device_command_', called_by=self, **kwargs)
+        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.device_id, kwargs['command'].machine_label), "", 1)
         self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def device_command_received(self, request_id, **kwargs):

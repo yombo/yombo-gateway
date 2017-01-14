@@ -499,7 +499,7 @@ class Loader(YomboLibrary, object):
                 self.libraryNames[temp[-1]] = moduleinst
             else:
                 self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
-                self._moduleLibrary.add_module(componentUUID, str(componentName.lower()), moduleinst)
+                self._moduleLibrary.add_imported_module(componentUUID, str(componentName.lower()), moduleinst)
 
         except YomboCritical, e:
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")

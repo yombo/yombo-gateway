@@ -217,9 +217,22 @@
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
+<script src="/static/js/jquery.are-you-sure.js"></script>
+
+<script>
+  $(function() {
+    $('#basicconfig).areYouSure(
+      {
+        message: 'It looks like you have been editing something. '
+               + 'If you leave before saving, your changes will be lost.'
+      }
+    );
+  });
+
+</script>
+
     <!-- Make the tables pretty -->
     <script>
-
 $('form').on('keyup keypress', function(e) {
   var keyCode = e.keyCode || e.which;
   if((keyCode== 13) && ($(event.target)[0]!=$("textarea")[0])) {

@@ -4,9 +4,7 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/modules/add_index" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i>
-</a> Module Information - From Server</h1>
+                    <h1 class="page-header"> Module Information - From Server</h1>
 Current information from server.
                     <p></p>
                 </div>
@@ -20,31 +18,38 @@ Current information from server.
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <label>Module Information</label>
+                                {{ server_module.id}} in:
+                                {{ modules }}
+                                {% if server_module.id in modules %}
+                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/edit/{{ server_module.id }}" class="btn btn-primary ">Manage Module</a>
+                                {% else %}
+                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/add/{{ server_module.id }}" class="btn btn-primary ">Add module to gateway</a>
+                                {% endif %}
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
-                                {{ module.label }}<br>
+                                {{ server_module.label }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Documentation Link: </label><br>
-                                {{ module.doc_link }}<br>
+                                {{ server_module.doc_link }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                                {{ module.description }}<br>
+                                {{ server_module.description }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Install Notes: </label><br>
-                                {{ module.install_notes }}<br>
+                                {{ server_module.install_notes }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Requirements: </label><br>
-                                {{ module.requirements }}<br>
+                                {{ server_module.requirements }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Known Issues: </label><br>
-                                {{ module.known_issues }}<br>
+                                {{ server_module.known_issues }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Recommended Modules: </label><br>
-                                {{ module.recommended_modules }}<br>
+                                {{ server_module.recommended_modules }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Related Modules: </label><br>
-                                {{ module.related_modules }}<br>
+                                {{ server_module.related_modules }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Final Thoughts: </label><br>
-                                {{ module.final_thoughts }}<br>
+                                {{ server_module.final_thoughts }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ module.created_at|epoch_to_human }}<br>
+                                {{ server_module.created_at|epoch_to_human }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                                {{ module.updated_at|epoch_to_human }}<br>
+                                {{ server_module.updated_at|epoch_to_human }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->
@@ -68,10 +73,10 @@ Current information from server.
                                             <th>Variable Group</th><th>Fields</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for variable_group in module.variable_groups %}
+                                    <tbody>{% for variable_group in server_module.variable_groups %}
                                          <tr>
                                              <td>{{ variable_group.group_label }}</a></td>
-                                             <td>{% for variable_field in module.variable_fields %}
+                                             <td>{% for variable_field in server_module.variable_fields %}
                                                  <ul>
                                                  {% if variable_field.group_id == variable_group.id %}
                                                      <li>{{ variable_field.field_label }}</li>

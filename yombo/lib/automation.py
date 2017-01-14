@@ -103,8 +103,10 @@ class Automation(YomboLibrary):
         except Exception, e:
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
-        for rule in self._rulesRaw['rules']:
-            rule['source'] = 'hsjon'
+        else:
+            if 'rules' in self._rulesRaw:
+                for rule in self._rulesRaw['rules']:
+                    rule['source'] = 'hsjon'
 
     def _module_prestart_(self, **kwargs):
         """

@@ -8,12 +8,12 @@
                     <div class="login-panel panel panel-default">
                         <div class="panel-heading">
                             <h3 class="panel-title">
-                                <center><h3 class="modal-title" id="myModalLabel">New Device Wizard</h3><br>Step 2 of 2: Device Details</center></h3>
+                                <center><h3 class="modal-title" id="myModalLabel">New Device Wizard</h3><br>Step 2 of 3: Device Details</center></h3>
                                 <p></p>
                                 <div class="col-md-8 col-md-offset-2">
                                     <div class="progress">
-                                      <div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="50" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: 50%">
-                                        50%
+                                      <div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="66" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: 66%">
+                                        66%
                                       </div>
                                     </div>
                                 </div>
@@ -22,9 +22,8 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-lg-12" style="padding-left: 0px">
-                    <div class="col-lg-4 col-md-4">
+                <div class="col-lg-12">
+                    <div class="col-lg-6 col-md-6">
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <label>Basic Information</label>
@@ -81,6 +80,32 @@
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Description of device." value="{{ device.location_label }}">
                                 </div>
+                                <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalenergytype", 'Energy Type', "
+                                <p>Allows you to track energy various types of energy or consumables consumed or produced by by this device.</p>
+                                ") }}
+                                <br>
+                                <div class="input-group">
+                                    <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                                        <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
+                                        <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
+                                        <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
+                                        <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.col-lg-6 -->
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Basic Information</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Pin Required: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
                                 {{ macros.modal("modalpinrequired", 'Pin required', '
@@ -114,100 +139,61 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- /.panel-body -->
-                    </div>
-                    <!-- /.col-lg-4 -->
-                    <div class="col-lg-8 col-md-8">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <label>Energy Information</label>
-                            </div>
-                            <!-- /.panel-heading -->
-                            <div class="panel-body">
-                                <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalenergytype", 'Energy Type', "
-                                <p>Allows you to track energy various types of energy or consumables consumed or produced by by this device.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
-                                        <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
-                                        <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
-                                        <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
-                                        <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
-                                    </select>
-                                </div>
-
-                                <label style="margin-top: 15px; margin-bottom: 0px">Energy Info Source: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalenergysource"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalenergytype", 'Energy Information Source', "
-                                <p>Energy information can be collected from various sources.
-                                <ul>
-                                <li>Device - Allows a device to specified. It's value will be used as the energy value.</li>
-                                <li>State - A state's value will be used as the energy value.</li>
-                                <li>Map - Using the map below, the value of energy </li>
-                                </ul>
-                                </p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
-                                        <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
-                                        <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
-                                        <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
-                                        <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
-                                    </select>
-                                </div>
-
-                                <label  style="margin-top: 15px;">Energy Map Information <a href="#" data-toggle="modal" data-target="#modalenergymap"><i class="fa fa-question fa-lg"></i></a></label>
-                                {{ macros.modal("modalenergymap", 'Energy Map', "
-                                <p>Allows you to specify ranges of energy consumption or generation for any particular device, including
-                                water usage. With an energy 'map', Yombo Gateway can calculate the energy usage (or generation) for a
-                                particular device. For example, if a lamp module is on 25%, it will calculate how much energy is being
-                                consumed at 25% power.</p>
-                                <p>Typically, you will have 0% and 100%. For 0%, you might put 1 or 2 watts as most insteon,
-                                zwave, x10 devices consume some power all the time, regardless of the state. For 100%, you would put in
-                                the bulb usage power plus the 0% rate. So, for a 40 watt bulb, you would enter 41 or 42.</p>
-                                <h3>Advanced use</h3>
-                                <p>The 'map' feature allows you to be very precise. For example, if your device consumes more power at lower
-                                set states (for exaple, at 25% on, it consumes relatively more power than at 40%). You can then specify that from
-                                0% to %50, the device can consume up 200 watts, but from 51% to 100%, it can consume up to 300 watts. In this
-                                example, a device at 25% power would consume 100 watts, but at 75%, it would consume 250watts.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <table width="100%" class="table table-striped table-bordered table-hover" id="energymap">
-                                        <thead>
-                                            <tr>
-                                                <th>Percent</th><th>Value</th><th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                    <tbody>
-                                    {% if device.energy_map is not none -%}
-                                        {% for start_value, energy_usage in device.energy_map.iteritems() %}
-                                         <tr>
-                                            <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value * 100 }}"></td>
-                                            <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>
-                                            <td><a href="#">Delete</a></td>
-                                         </tr>{% endfor %}
-                                    {% endif %}
-                                         <tr>
-                                            <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>
-                                            <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>
-                                            <td><a class="deleterow" href="#">Delete</a></td>
-                                         </tr>
-                                    </tbody>
-                                    </table>
-                                    <a id="add_row" class="btn btn-md btn-primary pull-left">Add Row</a><p></p>
-                                </div>
-
-                            </div>
-                        </div>
                     </div>
                     <!-- /.col-lg-6 -->
                 </div>
                 <!-- /.col-lg-12 -->
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Energy Map Information <a href="#" data-toggle="modal" data-target="#modalenergymap"><i class="fa fa-question fa-lg"></i></a></label>
+                        {{ macros.modal("modalenergymap", 'Energy Type', "
+                        <p>Allows you to specify ranges of energy consumption or generation for any particular device, including
+                        water usage. With an energy 'map', Yombo Gateway can calculate the energy usage (or generation) for a
+                        particular device. For example, if a lamp module is on 25%, it will calculate how much energy is being
+                        consumed at 25% power.</p>
+                        <p>Typically, you will have 0% and 100%. For 0%, you might put 1 or 2 watts as most insteon,
+                        zwave, x10 devices consume some power all the time, regardless of the state. For 100%, you would put in
+                        the bulb usage power plus the 0% rate. So, for a 40 watt bulb, you would enter 41 or 42.</p>
+                        <h3>Advanced use</h3>
+                        <p>The 'map' feature allows you to be very precise. For example, if your device consumes more power at lower
+                        set states (for exaple, at 25% on, it consumes relatively more power than at 40%). You can then specify that from
+                        0% to %50, the device can consume up 200 watts, but from 51% to 100%, it can consume up to 300 watts. In this
+                        example, a device at 25% power would consume 100 watts, but at 75%, it would consume 250watts.</p>
+                        ") }}
+                        <br>
+                        </div>
+                        <div class="panel-body">
+                            <div class="input-group">
+                                <a id="add_row" class="btn btn-md btn-primary pull-left">Add Row</a><p></p>
+                                <table width="100%" class="table table-striped table-bordered table-hover" id="energymap">
+                                    <thead>
+                                        <tr>
+                                            <th>Percent</th><th>Value</th><th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                <tbody>
+                                {% if device.energy_map is not none -%}
+                                    {% for start_value, energy_usage in device.energy_map.iteritems() %}
+                                     <tr>
+                                        <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value * 100 }}"></td>
+                                        <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>
+                                        <td><a href="#">Delete</a></td>
+                                     </tr>{% endfor %}
+                                {% endif %}
+                                     <tr>
+                                        <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>
+                                        <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>
+                                        <td><a class="deleterow" href="#">Delete</a></td>
+                                     </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <!-- /.row -->
             <div class="row">
@@ -227,12 +213,7 @@
                             <div class="input-group">
         {% if dev_variables is not none -%}
             {% for group in dev_variables %}
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h4>{{ group.group_label }}</h4>
-                </div>
-                <div class="panel-body">
-
+            <h4>{{ group.group_label }}</h4>
             {{ group.group_description }}
                 {% for field in group.fields %}
                     <table width="100%" class="table table-striped table-bordered table-hover" id="{{ group.id }}">
@@ -246,16 +227,10 @@
                             <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
                             <td> {% if field.data|length > 0 %}
                                 {% for data in field.data %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data.id }}]" id="vars[{{ field.id }}][{{ data.id }}]" value="{{ data.data }}"
-                                    {% if field.required %} required{% endif %}>
+                                    <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data.id }}]" id="vars[{{ field.id }}][{{ data.id }}]" value="{{ data.data }}">
                                 {% endfor %}
                                 {% else %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value=""
-                                    {% if field.required %} required{% endif %}>
-                                {% endif %}
-                                {% if field.multiple %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][new_2]" id="vars[{{ field.id }}][new_1]" value=""
-                                    {% if field.required %} required{% endif %}>
+                                    <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value="">
                                 {% endif %}
                             </td>
                          </tr>
@@ -265,9 +240,6 @@
                 {% endfor %}
             {% endfor %}
         {% endif %}
-                </div>
-            </div>
-
                             </div>
                         </div>
                     </div>
@@ -277,7 +249,7 @@
             <input type="hidden" name="device_id" id="device_id" value="{{ device.device_id }}">
             <input type="hidden" name="device_type_id" id="device_type_id" value="{{ device.device_type_id }}">
             <input type="hidden" name="json_output" id="json_output" value="">
-            <button type="submit" class="btn btn-success">Submit</button>
+            <input type="submit" />
             </form>
 {% endblock %}
 

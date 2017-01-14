@@ -31,6 +31,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import 3rd party libraries
+from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboRestart, YomboCritical
@@ -103,31 +104,62 @@ simulate_gw = {
 
 nav_side_menu = [
     {
-        'label1': 'Info',
+        'label1': 'Settings',
         'label2': 'Devices',
-        'priority1': 1000,
+        'priority1': 500,
         'priority2': 500,
-        'icon': 'fa fa-wifi fa-fw',
+        'icon': 'fa fa-cogs fa-fw',
         'url': '/devices/index',
         'tooltip': 'Show Devices',
         'opmode': 'run',
     },
     {
-        'label1': 'Info',
+        'label1': 'Settings',
         'label2': 'Modules',
-        'priority1': 1000,
+        'priority1': 500,
         'priority2': 1500,
-        'icon': 'fa fa-wifi fa-fw',
+        'icon': 'fa fa-cogs fa-fw',
         'url': '/modules/index',
         'tooltip': '',
         'opmode': 'run',
     },
     {
+        'label1': 'Settings',
+        'label2': 'Basic Settings',
+        'priority1': 500,
+        'priority2': 2000,
+        'icon': 'fa fa-cogs fa-fw',
+        'url': '/configs/basic',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Settings',
+        'label2': 'GPG Keys',
+        'priority1': 500,
+        'priority2': 2500,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/gpg_keys',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Settings',
+        'label2': 'Yombo.Ini',
+        'priority1': 500,
+        'priority2': 3000,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/yombo_ini',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+
+    {
         'label1': 'Info',
         'label2': 'States',
         'priority1': 1000,
         'priority2': 2000,
-        'icon': 'fa fa-wifi fa-fw',
+        'icon': 'fa fa-info fa-fw',
         'url': '/states/index',
         'tooltip': '',
         'opmode': 'run',
@@ -137,7 +169,7 @@ nav_side_menu = [
         'label2': 'Atoms',
         'priority1': 1000,
         'priority2': 3000,
-        'icon': 'fa fa-wifi fa-fw',
+        'icon': 'fa fa-info fa-fw',
         'url': '/atoms/index',
         'tooltip': '',
         'opmode': 'run',
@@ -147,11 +179,12 @@ nav_side_menu = [
         'label2': 'Voice Commands',
         'priority1': 1000,
         'priority2': 4000,
-        'icon': 'fa fa-wifi fa-fw',
+        'icon': 'fa fa-info fa-fw',
         'url': '/voicecmds/index',
         'tooltip': '',
         'opmode': 'run',
     },
+
     {
         'label1': 'Automation',
         'label2': 'Rules',
@@ -203,36 +236,7 @@ nav_side_menu = [
         'opmode': 'run',
     },
 
-    {
-        'label1': 'Settings',
-        'label2': 'Basic Settings',
-        'priority1': 4000,
-        'priority2': 500,
-        'icon': 'fa fa-cogs fa-fw',
-        'url': '/configs/basic',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Settings',
-        'label2': 'GPG Keys',
-        'priority1': 4000,
-        'priority2': 1000,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/gpg_keys',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Settings',
-        'label2': 'Yombo.Ini',
-        'priority1': 4000,
-        'priority2': 1500,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/yombo_ini',
-        'tooltip': '',
-        'opmode': 'run',
-    },
+
 
     {
         'label1': 'Developer Tools',
@@ -324,6 +328,8 @@ class WebInterface(YomboLibrary):
         route_states(self.webapp)
         route_system(self.webapp)
         route_voicecmds(self.webapp)
+
+        self.temp_data = ExpiringDict(max_age_seconds=1800)
 
     @webapp.handle_errors(NotFound)
     @require_auth()
@@ -819,6 +825,8 @@ class WebInterface(YomboLibrary):
             mkdir('yombo/lib/webinterface/static/dist/css')
         if not path.exists('yombo/lib/webinterface/static/dist/js'):
             mkdir('yombo/lib/webinterface/static/dist/js')
+        if not path.exists('yombo/lib/webinterface/static/dist/fonts'):
+            mkdir('yombo/lib/webinterface/static/dist/fonts')
 
         def do_cat(inputs, output):
             output = 'yombo/lib/webinterface/static/' + output
@@ -952,6 +960,12 @@ class WebInterface(YomboLibrary):
             'source/sb-admin/js/jquery.serializejson.min.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/jquery.serializejson.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/yombo/jquery.are-you-sure.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/jquery.are-you-sure.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         # Just copy files

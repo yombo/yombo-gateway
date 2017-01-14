@@ -65,12 +65,11 @@ class DownloadModules(YomboLibrary):
     A semaphore is used to allow processing and downloading of 2 modules at
     a time.
     """
-
     MAX_PATH = 50
     DL_PATH = "usr/opt/"
     MAX_KEY = 50
     MAX_VALUE = 50
-    MAX_DOWNLOAD_CONCURRENT = 2  # config: misc:downloadmodulesconcurrent
+    MAX_DOWNLOAD_CONCURRENT = 3  # config: misc:downloadmodulesconcurrent
 
     def _init_(self):
         """
@@ -81,9 +80,10 @@ class DownloadModules(YomboLibrary):
         self._LocalDBLibrary = self._Libraries['localdb']
 
         self._getVersion = []
-        self.maxDownload = self._Configs.get("misc", 'downloadmodulesconcurrent', self.MAX_DOWNLOAD_CONCURRENT)
+        self.maxDownloadConcurrent = self._Configs.get("misc", 'downloadmodulesconcurrent', self.MAX_DOWNLOAD_CONCURRENT)
+        self.download_path = self._Atoms.get('yombo.path') + "/" + self.DL_PATH
         self.allDownloads = []   # to start deferreds
-        self.mysemaphore = defer.DeferredSemaphore(2)  #used to queue deferreds
+        self.mysemaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  #used to queue deferreds
 
     def _load_(self):
         """
@@ -92,16 +92,16 @@ class DownloadModules(YomboLibrary):
         """
         environment = self._Configs.get("core", 'environment', "production", False)
         if self._Configs.get("core", 'module_domain', "", False) != "":
-            self.cloudfront = "http://%s/" % self._Configs.get("core", 'module_domain')
+            self.cloudfront = "https://%s/" % self._Configs.get("core", 'module_domain')
         else:
             if(environment == "production"):
-                self.cloudfront = "http://cloudfront.yombo.net/"
+                self.cloudfront = "https://gwdl.yombo.net/"
             elif (environment == "staging"):
-                self.cloudfront = "http://cloudfrontstg.yombo.net/"
+                self.cloudfront = "https://gwdlstg.yombo.net/"
             elif (environment == "development"):
-                self.cloudfront = "http://cloudfrontdev.yombo.net/"
+                self.cloudfront = "https://gwdldev.yombo.net/"
             else:
-                self.cloudfront = "http://cloudfront.yombo.net/"
+                self.cloudfront = "https://gwdl.yombo.net/"
             
         return self.download_modules()
 
@@ -130,22 +130,23 @@ class DownloadModules(YomboLibrary):
               ( module.dev_version != '' and module.dev_version != None and module.dev_version != "*INVALID*") ) and
 #              module.install_branch != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel )  ):
               module.install_branch != 'local') and ( not os.path.exists("yombo/modules/%s/.git" % modulelabel) and not os.path.exists("yombo/modules/%s/.freeze" % modulelabel)  ):
-                logger.warn("Module doesn't have freeze: yombo/modules/{modulelabel}/.freeze", modulelabel=modulelabel)
+                logger.debug("Module doesn't have freeze: yombo/modules/{modulelabel}/.freeze", modulelabel=modulelabel)
 
                 modulus = moduleuuid[0:1]
-                clouduri = self.cloudfront + "gateway/modules/%s/%s/" % (str(modulus), str(moduleuuid))
+                clouduri = self.cloudfront + "modules/%s/%s/" % (str(modulus), str(moduleuuid))
                 data = {}
 
-                if (module.install_branch == 'prodbranch' and module.installed_version != module.prod_version) or module.dev_version != "":
+                if module.install_branch == 'production' and module.installed_version != module.prod_version:
+                    print "version compare: %s != %s" % (module.installed_version, module.prod_version)
                     data = {'download_uri'    : str(clouduri + module.prod_version + ".zip"),
-                            'zip_file'   : self.DL_PATH + modulelabel + "_" + module.prod_version + ".zip",
+                            'zip_file'   : self.download_path + modulelabel + "_" + module.prod_version + ".zip",
                             'type'      : "prod_version",
                             'install_version': module.prod_version,
                             'module'    : module,
                             }
-                elif module.install_branch == 'devbranch' and module.dev_version != "" and module.installed_version != module.dev_version:
+                elif module.install_branch == 'development' and module.dev_version != "" and module.installed_version != module.dev_version:
                     data = {'download_uri': str(clouduri + module.dev_version + ".zip"),
-                            'zip_file': self.DL_PATH + modulelabel + "_" + module.dev_version + ".zip",
+                            'zip_file': self.download_path + modulelabel + "_" + module.dev_version + ".zip",
                             'type': "dev_version",
                             'install_version': module.dev_version,
                             'module': module,
@@ -154,7 +155,7 @@ class DownloadModules(YomboLibrary):
                     logger.debug("Either no correct version to install, or version already installed..")
                     continue
 
-                logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zip_uri'])
+                logger.debug("Adding to download module queue: {modulelable} (zipurl})", modulelabel=modulelabel, zipurl=data['zip_file'])
                
 #                d = self.mysemaphore.run(downloadPage, data['zip_uri'], data['zip_file'])
                 d = self.mysemaphore.run(self.download_file, data)
@@ -178,7 +179,7 @@ class DownloadModules(YomboLibrary):
         """
         Helper function to download the module as a zip file.
         """
-        logger.debug("!! Downlod version:::  {data}", data=data)
+        logger.debug("download_file data:  {data}", data=data)
         download_uri =  data['download_uri']
         zip_file =  data['zip_file']
         logger.debug("getting uri: {download_uri}  saving to:{zip_file}", download_uri=download_uri, zip_file=zip_file)
@@ -203,7 +204,10 @@ class DownloadModules(YomboLibrary):
         :param data: Contains the module information, passed on.
         :type data: dict
         """
-        moduleLabel = data['module']['modulelabel']
+        logger.debug("unzip_file data:  {data}", data=data)
+        logger.debug("unzip_file data:  {data_module}", data_module=data['module'])
+        logger.debug("unzip_file data:  {data_module_label}", data_module_label=data['module'].machine_label)
+        moduleLabel = data['module'].machine_label
         moduleLabel = moduleLabel.lower()
         logger.debug("Modulelabel = {moduleLabel}", moduleLabel=moduleLabel)
         zip_file = data['zip_file']
@@ -217,9 +221,9 @@ class DownloadModules(YomboLibrary):
                     os.unlink(os.path.join(root, f))
                 for d in dirs:
                     shutil.rmtree(os.path.join(root, d))
-        z = zip_file.ZipFile(zip_file)
+        z = zipfile.ZipFile(zip_file)
         z.extractall(modDir)
-        listing = os.listdir(modDir)
+        # listing = os.listdir(modDir)
         return "1"
 
     def unzip_file_failed(self, data, data2):
@@ -241,20 +245,20 @@ class DownloadModules(YomboLibrary):
         :return:
         """
         module = data['module']
-        moduleUUID = module.id
+        module_id = module.id
 
-        c = self.dbpool.cursor()
         ModuleInstalled = self._LocalDBLibrary.get_model_class("ModuleInstalled")
 
-        if module.instal_ltime is None:
-            module_installed = ModuleInstalled(module_id=moduleUUID,
-                                                                    installed_version=data['install_version'],
-                                                                    install_time=time.time())
-            module_installed.save()
+        if module.install_time is None:
+            module_installed = self._LocalDBLibrary.modules_install_new(
+                {'module_id': module_id,
+                 'installed_version': data['install_version'],
+                 'install_time': int(time.time())
+                 })
         else:
-            module_installed = ModuleInstalled.find(['module_id = ?', moduleUUID, "Smith"])
+            module_installed = ModuleInstalled.find(['module_id = ?', module_id])
             module_installed.installed_version = data['install_version']
-            module_installed.install_time = time.time()
+            module_installed.install_time = int(time.time())
             module_installed.save()
         return "1"
 

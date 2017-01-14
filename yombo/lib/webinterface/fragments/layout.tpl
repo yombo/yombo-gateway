@@ -151,7 +151,7 @@
     });
     $('#restartBtnYes').click(function() {
         $('#restartModal').modal('hide');
-        window.location.href = "/system/control/restart1";
+        window.location.href = "/system/control/restart";
     });
 
     $('.confirm-shutdown').on('click', function(e) {
@@ -161,7 +161,7 @@
     });
     $('#shutdownBtnYes').click(function() {
         $('#shutdownModal').modal('hide');
-        window.location.href = "/system/control/shutdown1";
+        window.location.href = "/system/control/shutdown";
     });
 
 </script>

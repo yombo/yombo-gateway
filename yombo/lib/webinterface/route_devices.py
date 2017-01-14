@@ -4,9 +4,12 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from time import time
 
 from twisted.internet.defer import inlineCallbacks, returnValue
+
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.utils import random_string
 
 def route_devices(webapp):
     with webapp.subroute("/devices") as webapp:
@@ -62,8 +65,13 @@ def route_devices(webapp):
                 print "device find errr: %s" % e
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
 
+            page = yield page_devices_edit_form(webinterface, request, session, device, None)
+            returnValue(page)
+
+        @inlineCallbacks
+        def page_devices_edit_form(webinterface, request, session, device, var_data):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
             var_groups = yield webinterface._Libraries['localdb'].get_variable_groups('device_type', device.device_type_id)
             var_groups_final = []
             for group in var_groups:
@@ -72,10 +80,19 @@ def route_devices(webapp):
                 fields_final = []
                 for field in fields:
                     field = field.__dict__
-                    var_data = yield webinterface._Libraries['localdb'].get_variable_data_by_relation(field['id'],
+                    if var_data is None:
+                        var_data_field = yield webinterface._Libraries['localdb'].get_variable_data_by_relation(field['id'],
                                                                                                   device.device_id)
+                    else:
+                        if field['id'] in var_data:
+                            var_data_field = var_data[field['id']]
+                        else:
+                            var_data_field = []
+
+                    print "device var_data_field: %s" % var_data_field
+
                     var_data_final = []
-                    for data in var_data:
+                    for data in var_data_field:
                         var_data_final.append(data.__dict__)
                     field['data'] = var_data_final
 
@@ -150,7 +167,7 @@ def route_devices(webapp):
 
             results = yield device.edit_device(data)
 
-            if results['code'] != 200:
+            if results['status'] == 'failed':
                 var_groups = yield webinterface._Libraries['localdb'].get_variable_groups('device_type',
                                                                                           device.device_type_id)
                 var_groups_final = []
@@ -185,6 +202,13 @@ def route_devices(webapp):
         @webapp.route('/add')
         @require_auth()
         def page_devices_add_select_device_type_get(webinterface, request, session):
+            # session['add_device'] = {
+            #     'start': time(),
+            #     'id': random_string(length=10),
+            #     'stage': 0,
+            # }
+            # webinterface.temp_data[session['add_device']['id']] = {}
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_select_device_type.html')
 
             return page.render(alerts=webinterface.get_alerts(),
@@ -194,7 +218,7 @@ def route_devices(webapp):
         @webapp.route('/add_details', methods=['POST'])
         @require_auth()
         @inlineCallbacks
-        def page_devices_add_get(webinterface, request, session):
+        def page_devices_add_post(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_details.html')
             device_type_id = request.args.get('device_type_id')[0]
             try:
@@ -305,7 +329,7 @@ def route_devices(webapp):
         @webapp.route('/addsss', methods=['POST'])
         @require_auth()
         @inlineCallbacks
-        def page_devices_add_post(webinterface, request, session, device_id):
+        def page_devices_add_postasdfasdfasdf(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices.get(device_id)
             except Exception, e:

@@ -127,8 +127,8 @@ class AMQP(YomboLibrary):
         if virtual_host is None:
             raise YomboWarning("New AMQP client must has a virtual host to connect to.", 200, 'new', 'AMQP')
 
-        if ssl is None:
-            raise YomboWarning("New AMQP client must have ssl set as True or False..", 200, 'new', 'AMQP')
+        if use_ssl is None:
+            raise YomboWarning("New AMQP client must have use_ssl set as True or False..", 200, 'new', 'AMQP')
 
         if connected_callback is not None:
             if callable(connected_callback) is False:
