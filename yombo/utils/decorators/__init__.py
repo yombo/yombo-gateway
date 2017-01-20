@@ -76,7 +76,7 @@ class memoize_ttl(object):
         self.ttl = ttl
     def __call__(self, f):
         def wrapped_f(*args):
-            now = time.time()
+            now = time()
             try:
                 value, last_update = self.cache[args]
                 if self.ttl > 0 and now - last_update > self.ttl:
