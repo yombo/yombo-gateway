@@ -29,6 +29,11 @@ from socket import inet_aton, inet_ntoa
 import math
 from time import strftime, localtime, time
 import decimal
+import netifaces
+import netaddr
+import socket
+import struct
+import binascii
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -36,7 +41,7 @@ from twisted.internet import reactor
 
 # Import 3rd-party libs
 from yombo.core.exceptions import YomboWarning
-from yombo.utils.decorators import memoize_
+from yombo.utils.decorators import memoize_, memoize_ttl
 import yombo.ext.six as six
 from yombo.ext.hashids import Hashids
 
@@ -427,28 +432,145 @@ def get_method_definition_level(meth):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
 
-def get_local_ip_address():
+@memoize_ttl(3600)
+def get_local_network_info(ethernet_name = None):
     """
-    Get the ip address of the local machine.
-
-
-    No single/simple way to do this.  First, do a simple get (works on windows).
-    Then if that doesn't work, use the hostname -I function of the os.
-
-    #@TODO: The second method needs to be fixed. Needs to prompt or something
+    Collects various information about the local network.
+    From: http://stackoverflow.com/questions/3755863/trying-to-use-my-subnet-address-in-python-code
+    :return:
     """
-    import socket
-    addr = socket.gethostbyname(socket.gethostname())
+    ifaces = netifaces.interfaces()
+    # => ['lo', 'eth0', 'eth1']
 
-    badips = ['127.0.0.1', '127.0.1.1']
+    if ethernet_name is not None:
+        myiface = ethernet_name
+    else:
+        gws = netifaces.gateways()
+        myiface = gws['default'][netifaces.AF_INET][1]
 
-    if addr in badips:
-       import commands
-       addr = commands.getoutput("hostname -I")
+    gws = netifaces.gateways()
+    gateway_ip = gws['default'].values()[0][0]
 
-    addr = addr.split()
-    addr = addr[0]
-    return addr.strip()
+    addrs = netifaces.ifaddresses(myiface)
+    # {2: [{'addr': '192.168.1.150',
+    #             'broadcast': '192.168.1.255',
+    #             'netmask': '255.255.255.0'}],
+    #   10: [{'addr': 'fe80::21a:4bff:fe54:a246%eth0',
+    #                'netmask': 'ffff:ffff:ffff:ffff::'}],
+    #   17: [{'addr': '00:1a:4b:54:a2:46', 'broadcast': 'ff:ff:ff:ff:ff:ff'}]}
+
+    # Get ipv4 stuff
+    ipinfo = addrs[socket.AF_INET][0]
+    address = ipinfo['addr']
+    netmask = ipinfo['netmask']
+
+    # Create ip object and get
+    cidr = netaddr.IPNetwork('%s/%s' % (address, netmask))
+    # => IPNetwork('192.168.1.150/24')
+    network = cidr.network
+    # => IPAddress('192.168.1.0')
+
+    print 'Network info for %s:' % myiface
+    print '--'
+    print 'address:', address
+    print 'netmask:', netmask
+    print '   cidr:', cidr
+    print 'network:', network
+
+    return {'address': str(address), 'netmask': str(netmask), 'cidr': str(cidr), 'network': str(network), 'gateway': str(gateway_ip)}
+
+@memoize_ttl(600)
+def ip_address_in_network(ip_address, subnetwork):
+    """
+    from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
+
+    Returns True if the given IP address belongs to the
+    subnetwork expressed in CIDR notation, otherwise False.
+    Both parameters are strings.
+
+    Both IPv4 addresses/subnetworks (e.g. "192.168.1.1"
+    and "192.168.1.0/24") and IPv6 addresses/subnetworks (e.g.
+    "2a02:a448:ddb0::" and "2a02:a448:ddb0::/44") are accepted.
+    """
+    print "ip: %s" % ip_address
+    print "subnetwork: %s" % subnetwork
+
+    (ip_integer, version1) = ip_to_integer(ip_address)
+    (ip_lower, ip_upper, version2) = subnetwork_to_ip_range(subnetwork)
+
+    if version1 != version2:
+        raise ValueError("incompatible IP versions")
+
+    print "lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper)
+    return (ip_lower <= ip_integer <= ip_upper)
+
+
+def ip_to_integer(ip_address):
+    """
+    from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
+
+    Converts an IP address expressed as a string to its
+    representation as an integer value and returns a tuple
+    (ip_integer, version), with version being the IP version
+    (either 4 or 6).
+
+    Both IPv4 addresses (e.g. "192.168.1.1") and IPv6 addresses
+    (e.g. "2a02:a448:ddb0::") are accepted.
+    """
+
+    # try parsing the IP address first as IPv4, then as IPv6
+    for version in (socket.AF_INET, socket.AF_INET6):
+
+        try:
+            ip_hex = socket.inet_pton(version, ip_address)
+            ip_integer = int(binascii.hexlify(ip_hex), 16)
+
+            return (ip_integer, 4 if version == socket.AF_INET else 6)
+        except:
+            pass
+
+    raise ValueError("invalid IP address")
+
+
+def subnetwork_to_ip_range(subnetwork):
+    """
+    from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
+
+    Returns a tuple (ip_lower, ip_upper, version) containing the
+    integer values of the lower and upper IP addresses respectively
+    in a subnetwork expressed in CIDR notation (as a string), with
+    version being the subnetwork IP version (either 4 or 6).
+
+    Both IPv4 subnetworks (e.g. "192.168.1.0/24") and IPv6
+    subnetworks (e.g. "2a02:a448:ddb0::/44") are accepted.
+    """
+
+    try:
+        fragments = subnetwork.split('/')
+        network_prefix = fragments[0]
+        netmask_len = int(fragments[1])
+
+        # try parsing the subnetwork first as IPv4, then as IPv6
+        for version in (socket.AF_INET, socket.AF_INET6):
+
+            ip_len = 32 if version == socket.AF_INET else 128
+
+            try:
+                suffix_mask = (1 << (ip_len - netmask_len)) - 1
+                netmask = ((1 << ip_len) - 1) - suffix_mask
+                ip_hex = socket.inet_pton(version, network_prefix)
+                ip_lower = int(binascii.hexlify(ip_hex), 16) & netmask
+                ip_upper = ip_lower + suffix_mask
+
+                return (ip_lower,
+                        ip_upper,
+                        4 if version == socket.AF_INET else 6)
+            except:
+                pass
+    except:
+        pass
+
+    raise ValueError("invalid subnetwork")
 
 def get_external_ip_address():
     """
