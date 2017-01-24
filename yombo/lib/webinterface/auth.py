@@ -1,5 +1,6 @@
 from functools import wraps
 from time import time
+from yombo.utils import get_local_network_info, ip_address_in_network
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -119,6 +120,24 @@ def require_auth_pin(*args, **kwargs):
     return deco
 
 def needs_web_pin(webinterface, request):
+    """
+    First checks if request is within the local network, we don't prompt for pin.
+
+    If otherwise, we check the cookies to see if client already sent a valid pin.
+
+    :param webinterface:
+    :param request:
+    :return:
+    """
+    client_ip = request.getClientIP()
+    if client_ip == "127.0.0.1":
+        return False
+
+    network_info = get_local_network_info()
+    if ip_address_in_network(client_ip, network_info['cidr']):
+        if client_ip != network_info['gateway']:
+            return False
+
     if webinterface.auth_pin_required:
         cookie_pin = webinterface.sessions.config.cookie_pin
         if cookie_pin in request.received_cookies:

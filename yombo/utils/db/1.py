@@ -310,16 +310,34 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('statistics', 'name'))
     yield Registry.DBPOOL.runQuery(create_index('statistics', 'type'))
 
-    # To be completed
     table = """CREATE TABLE `users` (
-     `id`       INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `username` TEXT NOT NULL,
-     `hash`     TEXT NOT NULL,
-     `updated_srv`   INTEGER DEFAULT 0,
+     `id`         TEXT NOT NULL,
+     `gateway_id` TEXT NOT NULL,
+     `user_id`    TEXT NOT NULL,
+     `email`      TEXT NOT NULL,
+     `updated`    INTEGER NOT NULL,
+     `created`    INTEGER NOT NULL );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('users', 'id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('users', 'email'))
+
+    table = """CREATE TABLE `user_permission` (
+     `id`            TEXT NOT NULL,
+     `user_id`       TEXT NOT NULL,
+     `gateway_id`    TEXT NOT NULL,
+     `permission_id` TEXT NOT NULL,
      `updated`       INTEGER NOT NULL,
      `created`       INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('users', 'username'))
+    yield Registry.DBPOOL.runQuery(create_index('user_permission', 'id', unique=True))
+
+    table = """CREATE TABLE `permissions` (
+     `id`         TEXT NOT NULL,
+     `gateway_id` TEXT NOT NULL,
+     `updated`    INTEGER NOT NULL,
+     `created`    INTEGER NOT NULL );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('permissions', 'id', unique=True))
 
     # Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information
     table = """CREATE TABLE `webinterface_sessions` (

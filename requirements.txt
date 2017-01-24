@@ -8,3 +8,7 @@ psutil
 jinja2
 klein
 pytest
+netifaces
+netaddr
+docutils
+markdown

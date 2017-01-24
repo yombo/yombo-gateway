@@ -129,9 +129,8 @@ class States(DBObject):
 class Statistics(DBObject):
     TABLENAME='statistics'
 
-class User(DBObject):
-#    TABLENAME='users'
-    pass
+class Users(DBObject):
+    TABLENAME = 'users'
 
 class VariableData(DBObject):
     TABLENAME='variable_data'
@@ -834,6 +833,16 @@ ORDER BY id desc"""
                     group='bucket')
         returnValue(records)
 
+###########################
+###  Users              ###
+###########################
+    @inlineCallbacks
+    def get_gateway_user_by_email(self, gateway_id, email):
+        records = yield Users.find(where=['gateway_id = ? and email = ?', gateway_id, email])
+        results = []
+        for record in records:
+            results.append(record.__dict__)  # we need a dictionary, not an object
+        returnValue(results)
 
     @inlineCallbacks
     def get_variables(self, relation_type, relation_id):
@@ -872,6 +881,7 @@ ORDER BY id desc"""
                 }
 
             variables[record.field_machine_label]['data'].append({
+                'id': record.id,
                 'value': record.data,
                 'weight': record.data_weight,
                 'created': record.data_created,

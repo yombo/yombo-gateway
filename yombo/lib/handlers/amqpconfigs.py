@@ -238,8 +238,14 @@ class AmqpConfigHandler(YomboLibrary):
                     'machine_label': 'machine_label',
                     'module_type': 'module_type',
                     'label': 'label',
+                    'short_description': 'short_description',
                     'description': 'description',
+                    'description_formatting': 'description_formatting',
                     'install_notes': 'install_notes',
+                    'see_also': 'see_also',
+                    'repository_link': 'repository_link',
+                    'issue_tracker_link': 'issue_tracker_link',
+                    'install_count': 'install_count',
                     'doc_link': 'doc_link',
                     'git_link': 'git_link',
                     'prod_branch': 'prod_branch',
@@ -256,6 +262,22 @@ class AmqpConfigHandler(YomboLibrary):
             },
 
             'gateway_configs': {},  # Processed with it's own catch.
+
+            'gateway_users': {
+                'dbclass': "Users",
+                'table': "users",
+                'library': None,
+                'functions': {
+                },
+                'map': {
+                    'id': 'id',
+                    'gateway_id': 'gateway_id',
+                    'user_id': 'user_id',
+                    'email': 'email',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
 
             'variable_groups': {
                 'dbclass': "VariableGroups",
@@ -692,6 +714,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_device_type_commands",
             "get_gateway_device_command_inputs",
             "get_gateway_input_types",
+            "get_gateway_users",
             # "get_gateway_input_types",
 
             # "get_gateway_configs",

@@ -4,8 +4,14 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"> Module Information - From Server</h1>
-Current information from server.
+                    <h1 class="page-header"> Module: {{ server_module.label }}</h1>
+                    <h3>Data Source: Yombo Server
+                                {% if server_module.id in modules %}
+                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/edit/{{ server_module.id }}" class="btn btn-primary ">Manage Module</a>
+                                {% else %}
+                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/add/{{ server_module.id }}" class="btn btn-primary ">Add module to gateway</a>
+                        {% endif %}</h3>
+
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -13,39 +19,23 @@ Current information from server.
             <!-- /.row -->
 
             <div class="row">
-                <div class="col-lg-12">
-                    <div class="col-lg-6 col-md-6">
+                    <div class="col-lg-3 col-md-5">
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <label>Module Information</label>
-                                {{ server_module.id}} in:
-                                {{ modules }}
-                                {% if server_module.id in modules %}
-                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/edit/{{ server_module.id }}" class="btn btn-primary ">Manage Module</a>
-                                {% else %}
-                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/add/{{ server_module.id }}" class="btn btn-primary ">Add module to gateway</a>
-                                {% endif %}
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
                                 {{ server_module.label }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Documentation Link: </label><br>
-                                {{ server_module.doc_link }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                                {{ server_module.description }}<br>
+                                {{ server_module.doc_link|make_link("Link", "_blank") }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Source Code Link: </label><br>
+                                {{ server_module.repository_link|make_link("Link", "_blank") }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Issue Tracker Link: </label><br>
+                                {{ server_module.issue_tracker_link|make_link("Link", "_blank") }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Install Notes: </label><br>
                                 {{ server_module.install_notes }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Requirements: </label><br>
-                                {{ server_module.requirements }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Known Issues: </label><br>
-                                {{ server_module.known_issues }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Recommended Modules: </label><br>
-                                {{ server_module.recommended_modules }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Related Modules: </label><br>
-                                {{ server_module.related_modules }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Final Thoughts: </label><br>
-                                {{ server_module.final_thoughts }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
                                 {{ server_module.created_at|epoch_to_human }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
@@ -54,8 +44,19 @@ Current information from server.
                         </div>
                         <!-- /.panel-body -->
                     </div>
+                    <div class="col-lg-9 col-md-7">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Description</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                    {{ server_module.description|format_markdown(server_module.description_formatting) }}<br>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
                <!-- /.col-lg-6 -->
-                </div>
             </div>
             <!-- /.row -->
             <div class="row">

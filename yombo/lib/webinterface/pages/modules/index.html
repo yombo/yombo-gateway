@@ -28,10 +28,10 @@
                                          <tr>
                                              <td><a href="/modules/details/{{ moduleID }}">{{ module._Name }}</a></td>
                                              <td>{{ module._ModDescription }}</td>
-                                             {% if module._Class.load_source == 'sql' -%}
-                                                {% if module._Class.status == '0' -%}
+                                             {% if module._Details.load_source == 'sql' -%}
+                                                {% if module._Details.status == '0' -%}
                                              <td><a href="/modules/enable/{{ moduleID }}">Enable</a> &nbsp; <a href="/modules/remove/{{ moduleID }}">Remove</a></td>
-                                                {% elif module._Class.status == 1 -%}
+                                                {% elif module._Details.status == 1 -%}
                                              <td><a href="/modules/edit/{{ moduleID }}">Edit</a> &nbsp; <a href="/modules/disable/{{ moduleID }}">Disble</a> &nbsp; <a href="/modules/remove/{{ moduleID }}">Remove</a></td>
                                                  {% endif %}
                                              {% else %}

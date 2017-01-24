@@ -44,7 +44,7 @@ from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import get_external_ip_address, get_local_ip_address
+from yombo.utils import get_external_ip_address, get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import dict_merge, global_invoke_all, is_string_bool, fopen
@@ -156,10 +156,19 @@ class Configuration(YomboLibrary):
 
         if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
             if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
-                self.set("core", "localipaddress", get_local_ip_address())
+                address_info = get_local_network_info()
+                self.set("core", "localipaddress", address_info['address'])
+                self.set("core", "localipaddress_netmask", address_info['netmask'])
+                self.set("core", "localipaddress_cidr", address_info['cidr'])
+                self.set("core", "localipaddress_network", address_info['network'])
                 self.set("core", "localipaddresstime", int(time()))
         else:
-            self.set("core", "localipaddress", get_local_ip_address())
+            address_info = get_local_network_info()
+            self.set("core", "localipaddress", address_info['address'])
+            self.set("core", "localipaddress_netmask", address_info['netmask'])
+            self.set("core", "localipaddress_cidr", address_info['cidr'])
+            self.set("core", "localipaddress_network", address_info['network'])
+            self.set("core", "localipaddresstime", int(time()))
             self.set("core", "localipaddresstime", int(time()))
 
         self.periodic_save_ini = LoopingCall(self.save)

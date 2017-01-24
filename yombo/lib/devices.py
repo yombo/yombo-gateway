@@ -948,7 +948,7 @@ class Device:
                 'msg': "Couldn't edit device",
                 'apimsg': device_results['content']['message'],
                 'apimsghtml': device_results['content']['html_message'],
-                'device_id': '',
+                'device_id': self.device_id,
             }
             returnValue(results)
 

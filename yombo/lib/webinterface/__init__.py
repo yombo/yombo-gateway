@@ -15,9 +15,10 @@ from os.path import dirname, abspath
 from time import strftime, localtime, time
 from urlparse import parse_qs, urlparse
 from operator import itemgetter
-
 import jinja2
 from klein import Klein
+import markdown
+from docutils.core import publish_parts
 
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -299,6 +300,7 @@ class WebInterface(YomboLibrary):
             return
 
         self.gwid = self._Configs.get("core", "gwid")
+        self._LocalDb = self._Loader.loadedLibraries['localdb']
         self._current_dir = dirname(dirname(dirname(abspath(__file__))))
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
@@ -362,8 +364,8 @@ class WebInterface(YomboLibrary):
             return
         self._op_mode = self._Atoms['loader.operation_mode']
 
-        self.auth_pin = self._Configs.get('webinterface', 'auth_pin', yombo.utils.random_string(length=6,
-                                            letters=yombo.utils.human_alpabet()))
+        self.auth_pin = self._Configs.get('webinterface', 'auth_pin',
+              yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
         self.auth_pin_totp = self._Configs.get('webinterface', 'auth_pin_totp', yombo.utils.random_string(length=16))
         self.auth_pin_type = self._Configs.get('webinterface', 'auth_pin_type', 'pin')
         self.auth_pin_required = self._Configs.get('webinterface', 'auth_pin_required', True)
@@ -621,6 +623,18 @@ class WebInterface(YomboLibrary):
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
 
+        if self._op_mode != 'firstrun':
+            print "1111"
+            results = yield self._LocalDb.get_gateway_user_by_email(self.gwid, submitted_email)
+            if len(results) != 1:
+                self.add_alert('Email address not allowed to access gateway.', 'warning')
+                #            self.sessions.load(request)
+                page = self.get_template(request, self._dir + 'pages/login_user.html')
+                returnValue(page.render(alerts=self.get_alerts(),
+                                        data=self.data,
+                                        )
+                            )
+
         results = yield self.api.user_login_with_credentials(submitted_email, submitted_password)
         if results is not False:
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
@@ -788,10 +802,26 @@ class WebInterface(YomboLibrary):
             format = '%b %d %Y %H:%M:%S %Z'
         return strftime(format, localtime(the_time))
 
+    def format_markdown(webinterface, description, description_formatting):
+        if description_formatting == 'restructured':
+            return publish_parts(description, writer_name='html')['html_body']
+        elif description_formatting == 'markdown':
+            return markdown.markdown(description, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
+        return description
+
+    def make_link(webinterface, link, link_text, target = None):
+        if link == '' or link is None or link.lower() == "None":
+            return "None"
+        if target is None:
+            target = "_self"
+        return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
+
     def setup_basic_filters(self):
+        self.webapp.templates.filters['make_link'] = self.make_link
         self.webapp.templates.filters['epoch_to_human'] = self.epoch_to_human
         self.webapp.templates.filters['states_to_human'] = self.epoch_to_human
         self.webapp.templates.filters['epoch_to_pretty_date'] = yombo.utils.pretty_date # yesterday, 5 minutes ago, etc.
+        self.webapp.templates.filters['format_markdown'] = self.format_markdown
 
     def WebInterface_configuration_set(self, **kwargs):
         """

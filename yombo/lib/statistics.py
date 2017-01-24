@@ -232,13 +232,13 @@ class Statistics(YomboLibrary):
         self.add_bucket_lifetime('modules.#', {'full':30, '5m':15, '15m':15, '60m':15, '6hr':180, '24h':1000})
 
         stat_lifetimes = global_invoke_all('_statistics_lifetimes_', called_by=self)
-        print "################## %s " % stat_lifetimes
+#        print "################## %s " % stat_lifetimes
 #        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in stat_lifetimes.iteritems():
             if isinstance(item, dict):
                 for bucket, values in item.iteritems():
-                    print "hook....bucket: %s" % bucket
-                    print "hook....bucket: %s" % values
+                    # print "hook....bucket: %s" % bucket
+                    # print "hook....bucket: %s" % values
                     self.add_bucket_lifetime(bucket, values)
 
         # for name, data in self.bucket_lifetimes.iteritems():

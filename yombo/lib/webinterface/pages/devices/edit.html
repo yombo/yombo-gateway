@@ -218,12 +218,12 @@
                          <tr>
                             <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
                             <td> {% if field.data|length > 0 %}
-                                {% for data in field.data %}
+                                {%- for data in field.data %}
                                     <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data.id }}]" id="vars[{{ field.id }}][{{ data.id }}]" value="{{ data.data }}">
-                                {% endfor %}
-                                {% else %}
+                                {%- endfor %}
+                                {%- else %}
                                     <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value="">
-                                {% endif %}
+                                {%- endif %}
                             </td>
                          </tr>
                     </tbody>

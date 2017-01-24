@@ -23,6 +23,7 @@ import ConfigParser
 import sys
 import traceback
 from time import time
+import hashlib
 
 # Import twisted libraries
 #from twisted.internet import reactor
@@ -45,13 +46,19 @@ SYSTEM_MODULES['automationhelpers'] = {
     'module_type': 'logic',
     'machine_label': 'AutomationHelpers',
     'label': 'Automation Helpers',
+    'short_description': "Adds basic platforms to the automation rules.",
     'description': "Adds basic platforms to the automation rules.",
-    'install_notes': '',
+    'description_formatting': 'text',
     'install_branch': '',
+    'install_notes': '',
+    'install_count': '',
+    'see_also': '',
     'prod_branch': '',
     'dev_branch': '',
     'prod_version': '',
     'dev_version': '',
+    'repository_link': '',
+    'issue_tracker_link': '',
     'doc_link': 'https://yombo.net/docs/features/automation-rules/',
     'git_link': '',
     'always_load': '1',
@@ -236,11 +243,23 @@ class Modules(YomboLibrary):
                 else:
                     mod_label = section
 
+                if 'mod_short_description' in options:
+                    mod_short_description = ini.get(section, 'mod_short_description')
+                    options.remove('mod_short_description')
+                else:
+                    mod_short_description = section
+
                 if 'mod_description' in options:
                     mod_description = ini.get(section, 'mod_description')
                     options.remove('mod_description')
                 else:
                     mod_description = section
+
+                if 'mod_description_formatting' in options:
+                    mod_description_formatting = ini.get(section, 'mod_description_formatting')
+                    options.remove('mod_description_formatting')
+                else:
+                    mod_description_formatting = 'text'
 
                 if 'mod_module_type' in options:
                     mod_module_type = ini.get(section, 'mod_module_type')
@@ -254,24 +273,42 @@ class Modules(YomboLibrary):
                 else:
                     mod_install_notes = ""
 
+                if 'mod_see_also' in options:
+                    mod_see_also = ini.get(section, 'mod_see_also')
+                    options.remove('mod_see_also')
+                else:
+                    mod_see_also = ""
+
+                if 'mod_module_type' in options:
+                    mod_module_type = ini.get(section, 'mod_module_type')
+                    options.remove('mod_module_type')
+                else:
+                    mod_module_type = ""
+
                 if 'mod_doc_link' in options:
                     mod_doc_link = ini.get(section, 'mod_doc_link')
                     options.remove('mod_doc_link')
                 else:
                     mod_doc_link = ""
 
-                newUUID = yombo.utils.random_string()
+                newUUID = hashlib.md5(mod_machine_label).hexdigest()
                 self._rawModulesList[newUUID] = {
                   'id': newUUID, # module_id
                   'gateway_id': 'local',
                   'module_type': mod_module_type,
                   'machine_label': mod_machine_label,
                   'label': mod_label,
+                  'short_description': mod_short_description,
                   'description': mod_description,
+                  'description_formatting': mod_description_formatting,
                   'install_notes': mod_install_notes,
+                  'see_also': mod_see_also,
+                  'install_count': 1,
                   'install_branch': '',
                   'prod_branch': '',
                   'dev_branch': '',
+                  'repository_link': '',
+                  'issue_tracker_link': '',
                   'doc_link': mod_doc_link,
                   'git_link': '',
                   'always_load': '1',
@@ -391,9 +428,11 @@ class Modules(YomboLibrary):
                         self._moduleClasses[module_id].device_types.append(module._DeviceTypes[dt].device_type_id)
 
             # Get variables, and merge with any local variable settings
+            print "getting vars for module: %s" % module_id
             module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
+            print "getting vars: %s "% module_variables
             module._ModuleVariables = module_variables
-            module._Class = self._moduleClasses[module_id]
+            module._Details = self._moduleClasses[module_id]
 
             if module._Name in self._localModuleVars:
                 module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
@@ -633,8 +672,14 @@ class Module:
         self.module_type = module['module_type']
         self.machine_label = module['machine_label']
         self.label = module['label']
+        self.short_description = module['short_description']
         self.description = module['description']
+        self.description_formatting = module['description_formatting']
         self.install_notes = module['install_notes']
+        self.install_count = module['install_count']
+        self.see_also = module['see_also']
+        self.repository_link = module['repository_link']
+        self.issue_tracker_link = module['issue_tracker_link']
         self.doc_link = module['doc_link']
         self.git_link = module['git_link']
         self.install_branch = module['install_branch']
@@ -707,8 +752,10 @@ class Module:
             'status': 1,
         }
 
-        module_results = yield self._ModuleLibrary._YomboAPI.request('POST', '/v1/gateway/%s/module/%' % (self._ModuleLibrary.gwid, data['module_id']), api_data)
-        print("module edit results: %s" % module_results)
+        # print("api_data: %s" % api_data)
+
+        module_results = yield self._ModuleLibrary._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self._ModuleLibrary.gwid, data['module_id']), api_data)
+        # print("module edit results: %s" % module_results)
 
         if module_results['code'] != 200:
             results = {
@@ -716,13 +763,59 @@ class Module:
                 'msg': "Couldn't add module",
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
-                'device_id': '',
+                'module_id': data['module_id'],
             }
             returnValue(results)
+
+        if 'variable_data' in data:
+            variable_data = data['variable_data']
+            for field_id, data in variable_data.iteritems():
+                # print "data: %s" % data
+                for data_id, value in data.iteritems():
+                    if data_id.startswith('new_'):
+                        post_data = {
+                            'gateway_id': self._ModuleLibrary.gwid,
+                            'field_id': field_id,
+                            'relation_id': self.module_id,
+                            'relation_type': 'module',
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        # print("post_data: %s" % post_data)
+                        var_data_results = yield self._ModuleLibrary._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        # print "var_data_results: %s"  % var_data_results
+                        if var_data_results['code'] != 200:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add module variables",
+                                'apimsg': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'module_id': module_results['data']['id']
+                            }
+                            returnValue(results)
+                    else:
+                        post_data = {
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        # print("posting to: /v1/variable/data/%s" % data_id)
+                        # print("post_data: %s" % post_data)
+                        var_data_results = yield self._ModuleLibrary._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
+                        if var_data_results['code'] != 200:
+                            # print("bad results module_results: %s" % module_results)
+                            # print("bad results var_data_results: %s" % var_data_results)
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add module variables",
+                                'apimsg': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'module_id': module_results['data']['id']
+                            }
+                            returnValue(results)
 
         results = {
             'status': 'success',
             'msg': "Module edited.",
-            'device_id': module_results['data']['id']
+            'module_id': module_results['data']['module_id']
         }
         returnValue(results)

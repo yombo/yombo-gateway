@@ -469,14 +469,6 @@ def get_local_network_info(ethernet_name = None):
     # => IPNetwork('192.168.1.150/24')
     network = cidr.network
     # => IPAddress('192.168.1.0')
-
-    print 'Network info for %s:' % myiface
-    print '--'
-    print 'address:', address
-    print 'netmask:', netmask
-    print '   cidr:', cidr
-    print 'network:', network
-
     return {'address': str(address), 'netmask': str(netmask), 'cidr': str(cidr), 'network': str(network), 'gateway': str(gateway_ip)}
 
 @memoize_ttl(600)

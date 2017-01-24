@@ -95,7 +95,6 @@
 		{%- include 'lib/webinterface/fragments/side_nav.tpl' -%}
         <!-- Page Content -->
         <div id="page-wrapper">
-            <div class="container-fluid">
                 {% if alerts|length != 0 %}
                 <div class="row">
                     <div class="col-lg-12">
@@ -114,7 +113,6 @@
                 <!-- /.row -->
                 {% endif %}
                 {% block content %}{% endblock %}
-           </div>
             <!-- /.container-fluid -->
         </div>
         <!-- /#page-wrapper -->
