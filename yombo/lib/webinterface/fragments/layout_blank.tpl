@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Yombo - {{ data.gateway_label }}</title>
+    <title>Yombo - {{ misc_wi_data.gateway_label }}</title>
 	{% block head_top %}{% endblock %}
 
     <!-- Bootstrap Core CSS ad metisMenu -->
@@ -62,7 +62,7 @@
 
     <!-- Custom Theme JavaScript -->
     <script src="/static/js/sb-admin2.min.js"></script>
-    {% if data.display_captcha %}<div class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>{% endif %}
+    {% if misc_wi_data.display_captcha %}<div class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>{% endif %}
 
    {% block body_bottom %}{% endblock %}
    </body>

@@ -307,7 +307,7 @@ class WebInterface(YomboLibrary):
 
         self.api = self._Loader.loadedLibraries['yomboapi']
         self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
-        self.data = {}
+        self.misc_wi_data = {}
         self.sessions = Sessions(self._Loader)
 
         self.wi_port_nonsecure = self._Configs.get('webinterface', 'nonsecure_port', 8080)
@@ -378,17 +378,17 @@ class WebInterface(YomboLibrary):
         self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
         self._display_pin_console_time = 0
 
-        self.data['gateway_configured'] = self._home_gateway_configured()
-        self.data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
-        self.data['operation_mode'] = self._op_mode
-        self.data['notifications'] = self._Notifications
+        self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
+        self.misc_wi_data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
+        self.misc_wi_data['operation_mode'] = self._op_mode
+        self.misc_wi_data['notifications'] = self._Notifications
 
         self.functions = {
             'yes_no': yombo.utils.is_yes_no,
             'status_to_human': status_to_human,
         }
 
-        self.webapp.templates.globals['data'] = self.data
+        self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         self.webapp.templates.globals['func'] = self.functions
 
     def _module_started_(self, **kwargs):
@@ -435,7 +435,7 @@ class WebInterface(YomboLibrary):
 
         if section == 'core':
             if option == 'label':
-                self.data['gateway_label'] = value
+                self.misc_wi_data['gateway_label'] = value
 
     def i18n(self, request):
         """
@@ -501,14 +501,14 @@ class WebInterface(YomboLibrary):
                 for new_route in options['routes']:
                     new_route(self.webapp)
 
-        self.data['nav_side'] = OrderedDict()
+        self.misc_wi_data['nav_side'] = OrderedDict()
         newlist = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
         for item in newlist:
             level1 = item['label1']
-            if level1 not in self.data['nav_side']:
-                self.data['nav_side'][level1] = []
-            self.data['nav_side'][level1].append(item)
-        # print self.data['nav_side']
+            if level1 not in self.misc_wi_data['nav_side']:
+                self.misc_wi_data['nav_side'][level1] = []
+            self.misc_wi_data['nav_side'][level1].append(item)
+        # print self.misc_wi_data['nav_side']
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):
         """
@@ -624,14 +624,12 @@ class WebInterface(YomboLibrary):
         #     return self.require_auth(request, alerts)
 
         if self._op_mode != 'firstrun':
-            print "1111"
             results = yield self._LocalDb.get_gateway_user_by_email(self.gwid, submitted_email)
             if len(results) != 1:
                 self.add_alert('Email address not allowed to access gateway.', 'warning')
                 #            self.sessions.load(request)
                 page = self.get_template(request, self._dir + 'pages/login_user.html')
                 returnValue(page.render(alerts=self.get_alerts(),
-                                        data=self.data,
                                         )
                             )
 
@@ -659,7 +657,6 @@ class WebInterface(YomboLibrary):
 #            self.sessions.load(request)
             page = self.get_template(request, self._dir + 'pages/login_user.html')
             returnValue(page.render(alerts=self.get_alerts(),
-                               data=self.data,
                                )
                        )
 

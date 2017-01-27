@@ -24,9 +24,9 @@ def route_devices(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
             return page.render(func=webinterface.functions,
                                _=_,  # translations
-                               data=webinterface.data,
                                alerts=webinterface.get_alerts(),
                                devices=webinterface._Libraries['devices']._devicesByUUID,
+                               devicetypes=webinterface._DeviceTypes.device_types_by_id,
                                )
 
         @webapp.route('/delayed_commands')
@@ -47,14 +47,57 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/details.html')
-            print device.available_commands()
-            print device.device_variables
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
                                commands=webinterface._Commands,
                                )
     
+        @webapp.route('/delete/<string:device_id>', methods=['GET'])
+        @require_auth()
+        def page_device_delete_get(webinterface, request, session, device_id):
+            try:
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
+                return webinterface.redirect(request, '/devices/index')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delete.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               device=device,
+                               devicetypes=webinterface._DeviceTypes,
+                               )
+
+        @webapp.route('/delete/<string:device_id>', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_device_delete_post(webinterface, request, session, device_id):
+            # print "in device delete post"
+            try:
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
+                returnValue(webinterface.redirect(request, '/devices/index'))
+            confirm = request.args.get('confirm')[0]
+            if confirm != "delete":
+                page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delete.html')
+                webinterface.add_alert('Must enter "delete" in the confirmation box to delete the device.', 'warning')
+                returnValue(page.render(alerts=webinterface.get_alerts(),
+                                   device=device,
+                                   devicetypes=webinterface._DeviceTypes,
+                                   ))
+
+            results = yield webinterface._Devices.delete_device(device.device_id)
+            msg = {
+                'header': 'Device Deleted',
+                'label': 'Device deleted successfully',
+                'description': '',
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
         @webapp.route('/edit/<string:device_id>', methods=['GET'])
         @require_auth()
         @inlineCallbacks
@@ -165,7 +208,7 @@ def route_devices(webapp):
                 'variable_data':  json_output['vars'],
             }
 
-            results = yield device.edit_device(data)
+            results = yield webinterface._Devices.device.edit_device(device_id, data)
 
             if results['status'] == 'failed':
                 var_groups = yield webinterface._Libraries['localdb'].get_variable_groups('device_type',
@@ -196,8 +239,16 @@ def route_devices(webapp):
                                commands=webinterface._Commands,
                                ))
 
-            webinterface.add_alert('Device updated.')
-            returnValue(webinterface.redirect(request, '/devices/index'))
+            msg = {
+                'header': 'Device Updated',
+                'label': 'Device updated successfully',
+                'description': '',
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
 
         @webapp.route('/add')
         @require_auth()
@@ -300,8 +351,16 @@ def route_devices(webapp):
                 print "aaa4"
 
                 if results['status'] == 'success':
-                    webinterface.add_alert('Device added. A <a href="/tools/restart?location=/device/details/%s">restart is required</a>' % results['device_id'])
-                    returnValue(webinterface.redirect(request, '/devices/index'))
+                    msg = {
+                        'header':'Device Added',
+                        'label':'Device added successfully',
+                        'description': '',
+                    }
+
+                    page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+                    returnValue(page.render(alerts=webinterface.get_alerts(),
+                                            msg=msg,
+                                            ))
                 else:
                     webinterface.add_alert("%s: %s" % (results['msg'], results['apimsghtml']))
                     device['device_id'] = results['device_id']

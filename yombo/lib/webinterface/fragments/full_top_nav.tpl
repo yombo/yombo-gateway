@@ -12,7 +12,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </div>
-                <a class="navbar-brand" href="/">{{ data.gateway_label }}</a>
+                <a class="navbar-brand" href="/">{{ misc_wi_data.gateway_label }}</a>
 
 	            <ul class="nav navbar-top-links navbar-right">
 	                <!-- /.dropdown -->
@@ -21,8 +21,8 @@
 	                        <i class="fa fa-bell fa-fw"></i>  <i class="fa fa-caret-down"></i>
 	                    </a>
 	                    <ul class="dropdown-menu dropdown-alerts">
-						{% if data.notifications|length > 0 %}
-							{% for id, notice in data.notifications.notifications[:6].iteritems() %}
+						{% if misc_wi_data.notifications|length > 0 %}
+							{% for id, notice in misc_wi_data.notifications.notifications[:6].iteritems() %}
 								<li>
 									<a href="/notifications/details/{{ id }}">
 										<div>
@@ -47,7 +47,7 @@
 	                        <li>
 	                            <div style="text-align:center">
 									<a class="text-center" href="/notifications/index">
-	                                <strong>See All ({{ data.notifications.__len__() }})</strong>
+	                                <strong>See All ({{ misc_wi_data.notifications.__len__() }})</strong>
 	                                <i class="fa fa-angle-right"></i>
 	                            </a>
 								</div>

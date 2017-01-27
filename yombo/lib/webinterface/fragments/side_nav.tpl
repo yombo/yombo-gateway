@@ -2,24 +2,24 @@
             <div class="navbar-default sidebar" role="navigation">
                 <div class="sidebar-nav navbar-collapse" id="sidebar-area">
                     <ul class="nav" id="sidebar">
-                        <li class="sidebar-search">
-                            <div class="input-group custom-search-form">
-                                <input type="text" class="form-control" placeholder="Search...">
-                                <span class="input-group-btn">
-                                <button class="btn btn-default" type="button">
-                                    <i class="fa fa-search"></i>
-                                </button>
-                            </span>
-                            </div>
-                            <div  class="search-icon">
-                            	<a href="#"><i class="fa fa fa-search fa-fw"></i></a>
-                            </div>
-                            <!-- /input-group -->
-                        </li>
+                        <!--<li class="sidebar-search">-->
+                            <!--<div class="input-group custom-search-form">-->
+                                <!--<input type="text" class="form-control" placeholder="Search...">-->
+                                <!--<span class="input-group-btn">-->
+                                <!--<button class="btn btn-default" type="button">-->
+                                    <!--<i class="fa fa-search"></i>-->
+                                <!--</button>-->
+                            <!--</span>-->
+                            <!--</div>-->
+                            <!--<div  class="search-icon">-->
+                            	<!--<a href="#"><i class="fa fa fa-search fa-fw"></i></a>-->
+                            <!--</div>-->
+                            <!--&lt;!&ndash; /input-group &ndash;&gt;-->
+                        <!--</li>-->
                         <li>
                             <a href="/"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
                         </li>
-        {%- for priority1, items in data.nav_side.iteritems() -%}
+        {%- for priority1, items in misc_wi_data.nav_side.iteritems() -%}
             {% set printed_nested_header = False -%}
             {% for item in items -%}
                 {% if items|length > 1 -%}

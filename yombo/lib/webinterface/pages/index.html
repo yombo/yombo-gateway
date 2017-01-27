@@ -2,9 +2,36 @@
 {% block head_css %}{% include 'lib/webinterface/fragments/echarts_js.tpl' %}{% endblock %}
 
 {% block content %}
+<!-- Modal -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Dashboard</h4>
+      </div>
+      <div class="modal-body">
+          <p>This is the starting point for the Yombo Gateway configuration web interface.</p>
+          <p>These pages were designed to easily allow configuration of the Yombo Gateway, they were not
+              intented to directly control automation devices. However, the <a href="/devices/index">devices pages</a>
+              do have basic control features to test that the device is responding properly.
+          </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>Navigation</h4> <p>Most items are access by the left side navigation bar. This includes basic
+              and advanced settings as well as debug tools.
+              </p>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
             <div class="row">
                 <div cass="col-lg-12 col-md-12">
-                    <h1 class="page-header">{{ _('Dashboard') }}</h1>
+                    <h1 class="page-header">{{ _('Dashboard') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question "></i></a></h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>

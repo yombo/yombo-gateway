@@ -2,7 +2,7 @@
 Yombo Gateway Overview
 ======================
 
-The Yombo Gateway Framework is used for home and business automation. This
+The `Yombo Gateway Framework <https://yombo.net/>`_ is used for home and business automation. This
 framework provides a base foundation that can be easily extended with module
 to provide advanced functionality. Support for automation protocols occurs
 through the use of modules; such as X10, Z-Wave, Insteon, Zigbee, etc.

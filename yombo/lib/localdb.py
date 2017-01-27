@@ -310,10 +310,16 @@ class LocalDB(YomboLibrary):
 ###    Devices      #####
 #########################
     @inlineCallbacks
-    def get_devices(self):
-        #        records = yield self.dbconfig.select("devices_view")
-        records = yield Device.all()
-        returnValue(records)
+    def get_devices(self, status=None):
+        if status == True:
+            records = yield Device.all()
+            returnValue(records)
+        elif status is None:
+            records = yield Device.find(where=['status = ? OR status = ?', 1, 0])
+            returnValue(records)
+        else:
+            records = yield Device.find(where=['status = ? ', status])
+            returnValue(records)
 
     @inlineCallbacks
     def get_device_by_id(self, device_id, status=1):
@@ -385,7 +391,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_modules(self, get_all=False):
         if get_all is False:
-            records = yield Modules.find(where=['status = ?', 1])
+            records = yield Modules.find(where=['status = ? OR status = ?', 1, 0])
         else:
             records = yield Modules.all()
 

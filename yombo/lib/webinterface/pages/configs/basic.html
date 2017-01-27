@@ -1,4 +1,5 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
 {% block head_css %}
 {% include 'lib/webinterface/fragments/select_css.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
@@ -21,12 +22,25 @@
 					<div class="panel-body">
 						<div class="form-group">
 							<label for="core_label">Gateway Label</label>
+							<a href="#" data-toggle="modal" data-target="#core_label"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("core_label", 'Gateway Label', '
+                                A personal label for this gateway. A way to identify this gateway from other systems.
+                                <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
+                                    <h4>Try not to change</h4>
+                                    <p>It is suggested to not change this. Eventually, you may start referencing this label
+										in your notes, or software code if you start developing modules. Changing this is not
+										the end of the world, but should be avoided if possible.</p>
+                                </div>') }}
 							<div class="input-group">
-								<input type="text" class="form-control" name="core_label" id="core_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ config.core.label }}" autofocus required>
+								<input type="text" class="form-control" name="core_label" id="core_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ config.core.label }}" autofocus required size="40">
 							</div>
 						</div>
 						<div class="form-group">
 							<label for="core_description">Gateway Description</label>
+							<a href="#" data-toggle="modal" data-target="#core_description"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("core_description", 'Gateway Description', '
+                                A place to make reference notes about the system. Such as how GPIO ports are used.
+                                ') }}
 							<div class="input-group">
 								<textarea class="form-control" rows="5" name="core_description" id="core_description" placeholder="Detailed description">{{ config.core.description }}</textarea>
 								<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
@@ -38,6 +52,47 @@
 								<div id="map-output"></div>
 									<div class="form-group">
 										<label >Search for location</label>
+										<a href="#" data-toggle="modal" data-target="#searchforlocation"><i class="fa fa-question fa-lg"></i></a>
+											{{ macros.modal("searchforlocation", 'Gateway Location', '
+											The location allows the gateway to calculate sunrise, sunset, when it is
+          									dark or light outside, and collect weather information.
+										  <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+											  <h4>We do not share this</h4>
+											  <p>
+											  We won\'t share or sell this information, unless required by a court order. We do our best to
+											  keep your information private.
+											  </p>
+										  </div>
+										  <p>
+											  Depending on your use case, you may or may not desire to have a precise location set. Doing allows
+											  you to geo-fence things, such as automatically opening gates and garage doors when driving home. Or
+											  setting a thermostat to away mode when leaving the house.
+										  </p>
+										  <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+											  <h4>Precision</h4>
+											  <p>
+
+											  </p>
+											  <p>
+												  By default, this tool limits precision to 3 decimal places. If you wish to enter a more precise location,
+												  here is a website to help you: <a target="_blank" href="http://www.latlong.net/">latlong.net</a>
+											  </p>
+											  <p>
+												  You can also increase the vagueness of your location by only using 2 decimal places in the latitude
+												  and longitude. For example, instead of "-123.437", change this to "-122.43".
+											  </p>
+											  <p>
+												  For reference, here are the degrees of precision:
+												  <ul>
+											  <li>The <b>first</b> decimal place is worth up to 11.1 km: it can distinguish the position of one large city from a neighboring large city.</li>
+											  <li>The <b>second</b> decimal place is worth up to 1.1 km: it can separate one village or town from the next.</li>
+											  <li>The <b>third</b> decimal place is worth up to 110 m: it can identify a large agricultural field or institutional campus.</li>
+											  <li>The <b>fourth</b> decimal place is worth up to 11 m: it can identify a parcel of land.</li>
+										  </ul>
+											  <a target="_blank" href="http://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude">Reference</a>
+											  </p>
+										  </div>
+										') }}
 										<div class="input-group">
 											<input id="search_txt" type="text" size="30" value="{{ config.location.searchbox }}" maxlength="1000"><br>
 											<input id="search_btn" type="button" value="    Search    ">
@@ -250,7 +305,7 @@ $('form').validate({
     rules: {
         core_label: {
             minlength: 3,
-            maxlength: 20,
+            maxlength: 40,
             required: true
         }
     },

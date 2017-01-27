@@ -4,7 +4,7 @@
 .. note::
 
   For more information see:
-  `Atoms @ Module Development <https://yombo.net/docs/modules/automation-rules/>`_
+  `Atoms @ Module Development <https://yombo.net/docs/modules/automation/>`_
 
 The automation library provides users an easy method to setup simple automation rules and tasks without the need to
 write a single line of code. It can also be extended by modules to include additional platforms. See link above for
@@ -44,6 +44,7 @@ Developers should review the following modules for examples of implementation:
 """
 # Import python libraries
 from hashlib import sha1
+from time import time
 
 # Import 3rd-party libs
 import yombo.ext.hjson as hjson
@@ -223,7 +224,7 @@ class Automation(YomboLibrary):
         :param delay: String - A string to be parsed into epoch time in the future.
         :return: Float in seconds in the future.
         """
-        seconds = (float(epoch_from_string(delay)) - float(time()))
+        seconds = (float(yombo.utils.epoch_from_string(delay)) - float(time()))
         if seconds <0:
             raise YomboWarning("get_action_delay on accepts delays in the future, not the past.", 'get_action_delay', 'automationhelpers')
         return seconds

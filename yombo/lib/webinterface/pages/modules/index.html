@@ -2,9 +2,42 @@
 {% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
 
 {% block content %}
+<!-- Modal -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Manage System Modules</h4>
+      </div>
+      <div class="modal-body">
+          <p>
+              Modules extend and enhance the capabilites of the gateway. Without any modules installed, you will not
+              be able to create any automation devices. For example, to control Insteon devices, two modules are required:
+              Insteon API and Insteon PLM.
+          </p>
+          <p>
+              Modules tell the gateway what types of automation devices it can handle and will add the ability to add new
+              device types from the <a href="/devices/add">add device page</a>.
+          </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>Performance with many modules</h4>
+              <p>
+                  We have not found any run time performance issues with large numbers of modules, however startup times
+                  can be affected as the python modules are compiled at run-time.
+              </p>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">Modules <a style="padding-left: 1em; padding-left: 1em; margin-left: 3em;" href="/modules/server_index" class="btn btn-primary ">Add Module</a></h1>
+                    <h1 class="page-header">{{ _('webinterface_label', 'Modules') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -13,7 +46,8 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            Configured Modules
+                            <h4>Configured Modules</h4>
+                                <a href="/modules/server_index" class="btn btn-md btn-primary">Add New Module</a>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -28,15 +62,17 @@
                                          <tr>
                                              <td><a href="/modules/details/{{ moduleID }}">{{ module._Name }}</a></td>
                                              <td>{{ module._ModDescription }}</td>
+                                             <td>
                                              {% if module._Details.load_source == 'sql' -%}
-                                                {% if module._Details.status == '0' -%}
-                                             <td><a href="/modules/enable/{{ moduleID }}">Enable</a> &nbsp; <a href="/modules/remove/{{ moduleID }}">Remove</a></td>
+                                                {% if module._Details.status == 0 -%}
+                                             <a href="/modules/edit/{{ moduleID }}">Edit</a> &nbsp; <a class="alert-success" href="/modules/enable/{{ moduleID }}">Enable</a> &nbsp; <a class="alert-danger" href="/modules/remove/{{ moduleID }}">Remove</a>
                                                 {% elif module._Details.status == 1 -%}
-                                             <td><a href="/modules/edit/{{ moduleID }}">Edit</a> &nbsp; <a href="/modules/disable/{{ moduleID }}">Disble</a> &nbsp; <a href="/modules/remove/{{ moduleID }}">Remove</a></td>
-                                                 {% endif %}
-                                             {% else %}
-                                             <td><a href="/modules/details/{{ moduleID }}">Details</a></td>
+                                             <a href="/modules/edit/{{ moduleID }}">Edit</a> &nbsp; <a class="alert-warning" href="/modules/disable/{{ moduleID }}">Disable</a> &nbsp; <a class="alert-danger" href="/modules/remove/{{ moduleID }}">Remove</a>
+                                                {% elif module._Details.status == 2 -%}
+                                             <a class="alert-success" href="/modules/disable/{{ moduleID }}">Enable</a>
+                                                {% endif %}
                                              {% endif %}
+
                                          </tr>{% endfor %}
                                     </tbody>
                                 </table>

@@ -4,10 +4,20 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/modules/index" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i>
-</a> Module Information</h1>
+                    <h1 class="page-header">
+                        <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Module Information</h1>
+                    <label>Actions:</label>
+                    {% if module._Details.status == '0' -%}
+                      <a style="padding: .5em; margin: .2em;" href="/modules/enable/{{  module._Details.module_id }}" class="btn btn-primary ">Enabled</a>
+                      <a style="padding: .5em; margin: .2em;" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove</a>
+                    {% elif module._Details.status == 1 -%}
+                      <a style="padding: .5em; margin: .2em;" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit</a>
+                      <a style="padding: .5em; margin: .2em;" href="/modules/disable/{{  module._Details.module_id }}" class="btn btn-warning ">Disble</a>
+                      <a style="padding: .5em; margin: .2em;" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove</a>
+                    {% endif %}
                     <p></p>
+
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -17,7 +27,7 @@
                     <div class="col-lg-3 col-md-5">
                         <div class="panel panel-default">
                             <div class="panel-heading">
-                                <label>Configured Values</label> <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit</a>
+                                <label>Configured Values</label>
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">

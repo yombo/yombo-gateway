@@ -739,16 +739,16 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             if fields['subscribed'] is False:
                 (queue, consumer_tag,) = yield self.channel.basic_consume(queue=queue_name,
                                                                           no_ack=fields['queue_no_ack'])
-            self.factory.consumers[queue_name]['subscribed'] = True
-            d = queue.get()
-            d.addCallback(self.receive_item, queue, fields['queue_no_ack'], fields['incoming_callback'])
-            if fields['error_callback'] is not None:
-                d.addErrback(fields['error_callback'])
-            else:
-                d.addErrback(self.receive_item_err)
-            d.addCallback(self._register_consumer_success, queue_name)
-            if fields['register_persist'] is False:
-                del self.factory.consumers[queue_name]
+                self.factory.consumers[queue_name]['subscribed'] = True
+                d = queue.get()
+                d.addCallback(self.receive_item, queue, fields['queue_no_ack'], fields['incoming_callback'])
+                if fields['error_callback'] is not None:
+                    d.addErrback(fields['error_callback'])
+                else:
+                    d.addErrback(self.receive_item_err)
+                d.addCallback(self._register_consumer_success, queue_name)
+                if fields['register_persist'] is False:
+                    del self.factory.consumers[queue_name]
 
     @inlineCallbacks
     def do_publish(self):

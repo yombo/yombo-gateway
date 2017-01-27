@@ -2,6 +2,37 @@
 {% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
 
 {% block content %}
+<!-- Modal -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Device Types</h4>
+      </div>
+      <div class="modal-body">
+          <p>
+              Device types are defined by what modules are installed. If the device type you would like to use (such as
+              ZWave, Insteon, X10, etc) is not listed, try <a href="/modules/server_index">adding a module</a>
+              the supports the desired device type.
+          </p>
+          <p>
+          </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>Create new modules</h4>
+              <p>
+                  Modules can be <a href="https://yombo.net/docs/modules/building-your-first-module/" target="_blank">
+                  developed by anyone</a> to extend the capabilites of the system.
+              </p>
+          </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
                 <div class="login-panel panel panel-default">
@@ -19,7 +50,7 @@
                     <div class="panel-body">
                         <p></p>
                         <form action="/devices/add_details" method="POST" role="form">
-                        <h2>Select Device Type</h2>
+                        <h2>Select Device Type&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h2>
                         <p></p>
                         <select name="device_type_id" required class="selectpicker show-tick" title="Select...">
                             {% for id, devicetype in device_types.iteritems() -%}

@@ -34,7 +34,7 @@ class LogReader(YomboModule):
         """
         self._ModDescription = "Logread monitors a file for voice commands."
         self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "http://www.yombo.net"
+        self._ModUrl = "https://yombo.net"
 
         self.fileReader = None  # Used to test if file reader is running on stop.
 

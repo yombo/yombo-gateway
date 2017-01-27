@@ -9,7 +9,7 @@
     <meta name="author" content="">
     <meta http-equiv="refresh" content="1000;url={{ redirect }}" />
 
-    <title>Yombo - {{ data.gateway_label }}</title>
+    <title>Yombo - {{ misc_wi_data.gateway_label }}</title>
 
     <!-- Bootstrap Core CSS ad metisMenu -->
     <link href="/static/css/bootsrap.min.css" rel="stylesheet">
@@ -153,21 +153,32 @@
     <script src="/static/js/creative.min.js"></script>
     <script>
     $(document).ready(function() {
-        function checkServer() {
-            var pingUrl = "/ping";
+        function doRedirect() {
             var targetUrl = "/";
-            setInterval(ping, 200);
+            window.location.href = targetUrl;
+        }
+
+        function checkServer() {
+            var wentOffline = 0;
+            var pingUrl = "/ping";
+            setInterval(ping, 150);
 
             function ping() {
                 $.ajax({
                     url: pingUrl,
                     success: function (result) {
-                        window.location.href = targetUrl;
+                        if (wentOffline == 0) {
+                            console.log("Gateway went away.");
+                            wentOffline = 1;
+                        } else {
+                            console.log("Gateway is back.");
+                            setTimeout(doRedirect, 500);
+                        }
                     }
                 });
             }
         }
-        setTimeout(checkServer, 1000);
+        setTimeout(checkServer, 50);
     });
     </script>
 

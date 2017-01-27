@@ -317,9 +317,10 @@ class YomboAPI(YomboLibrary):
     @inlineCallbacks
     def request(self, method, path, data=None, session=None):
         # print "base_url: %s" % self.base_url
-        # print "path: %s" % path
+        print "path: %s" % path
+        print "data: %s" % data
         path = self.base_url + path
-        # print "method: %s" % method
+        print "method: %s" % method
         # print "path full: %s" % path
         # print "session: %s" % session
         # if session is False:
@@ -385,7 +386,7 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def __delete(self, path, headers, args={}):
-        response = yield treq.put(path, params=args, agent=self.custom_agent, headers=headers)
+        response = yield treq.delete(path, params=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         returnValue(final_response)

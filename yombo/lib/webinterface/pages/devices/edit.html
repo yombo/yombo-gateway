@@ -11,128 +11,158 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
+ {% if device.status == 0 %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default panel-red">
+                        <div class="panel-heading">
+                            <label>Device Disabled</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">This device has been disabled and is not accessible to the
+                            system for automation purposes.</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+ {% elif device.status == 2  %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default panel-red">
+                        <div class="panel-heading">
+                            <label>Device Deleted</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">This device has been deleted and is not accessible to the
+                            system for automation purposes.</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+ {% endif %}
             <!-- /.row -->
             <form method="post" id="deviceedit">
             <div class="row">
-                <div class="col-lg-12">
-                    <div class="col-lg-6 col-md-6">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <label>Basic Information</label>
-                            </div>
-                            <!-- /.panel-heading -->
-                            <div class="panel-body">
-                                <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description }}">
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalstatus", 'Device enabled / disabled/ deleted', '
-                                You can enable or disable the device as needed. When disabled, the device cannot receive commands
-                                or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
-                                <br>
-                                <div class="input-group">
-                                    <select class="form-control" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
-                                        <option value="enabled"{% if device.status == 1 %} selected{% endif %}>Enabled</option>
-                                        <option value="disabled"{% if device.status == 0 %} selected{% endif %}>Disabled</option>
-                                        <option value="deleted"{% if device.status == 2 %} selected{% endif %}>Deleted</option>
-                                    </select>
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
-                                <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
-                                a new device, but still maintain it's history. For example,
-                                if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
-                                the device name the same statistic label.</p>
-                                <p>The statistic label is free form!</p>
-                                <p>You will want to name the location from least specific to most specific using a dotted notation, such as
-                                'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
-                                <p>Some more examples:</p>
-                                <ul>
-                                    <li>myhouse.garage.workbench_light</li>
-                                    <li>myhouse.master_bedroom.ceiling_fan</li>
-                                    <li>shed.fan</li>
-                                    <li>myhouse.hvac</li>
-                                    <li>outside.front.landscape_lights</li>
-                                    <li>outside.front.landscape_sprinklers</li>
-                                    <li>outside.back.landscape_sprinklers</li>
-                                    <li>outside.backyard.music</li>
-                                </ul>
-                                <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
-                                you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
-                                with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Description of device." value="{{ device.location_label }}">
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalenergytype", 'Energy Type', "
-                                <p>Allows you to track energy various types of energy or consumables consumed or produced by by this device.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
-                                        <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
-                                        <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
-                                        <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
-                                        <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
-                                    </select>
-                                </div>
-                            </div>
+                <div class="col-lg-6 col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
                         </div>
-                        <!-- /.panel-body -->
-                    </div>
-                    <!-- /.col-lg-6 -->
-                    <div class="col-lg-6 col-md-6">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <label>Basic Information</label>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
                             </div>
-                            <!-- /.panel-heading -->
-                            <div class="panel-body">
-                                <label style="margin-top: 0px; margin-bottom: 0px">Pin Required: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalpinrequired", 'Pin required', '
-                                If a pin is required, the user must enter a device pin to send a command. This is useful for devices that are alarm systems.
-                                ') }}
-                                <br>
-                                <div class="input-group">
-                                    <select class="form-control" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
-                                        <option value="enabled"{% if func.yes_no(device.pin_required) == "Yes" %} selected{% endif %}>Enabled</option>
-                                        <option value="disabled"{% if func.yes_no(device.pin_required) == "No" %} selected{% endif %}>Disabled</option>
-                                    </select>
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalpincode"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalpincode", 'Pin Code', '
-                                If a pin is required, this is the value that must be entered. Use any alpha-numeric value you wish.
-                                ') }}
-                                <br>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code }}">
-                                </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalpintimeout", 'Pin Timeout', "
-                                Time pin code is remembered. Once you've entered a pin, you will be authorized to perform another function on the device unless
-                                the timeout has elapsed.
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout }}">
-                                </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description }}">
+                            </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalstatus", 'Device enabled / disabled/ deleted', '
+                            You can enable or disable the device as needed. When disabled, the device cannot receive commands
+                            or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
+                            <br>
+                            <div class="input-group">
+                                <select class="form-control" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
+                                    <option value="enabled"{% if device.status == 1 %} selected{% endif %}>Enabled</option>
+                                    <option value="disabled"{% if device.status == 0 %} selected{% endif %}>Disabled</option>
+                                    <option value="deleted"{% if device.status == 2 %} selected{% endif %}>Deleted</option>
+                                </select>
+                            </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
+                            <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
+                            a new device, but still maintain it's history. For example,
+                            if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
+                            the device name the same statistic label.</p>
+                            <p>The statistic label is free form!</p>
+                            <p>You will want to name the location from least specific to most specific using a dotted notation, such as
+                            'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
+                            <p>Some more examples:</p>
+                            <ul>
+                                <li>myhouse.garage.workbench_light</li>
+                                <li>myhouse.master_bedroom.ceiling_fan</li>
+                                <li>shed.fan</li>
+                                <li>myhouse.hvac</li>
+                                <li>outside.front.landscape_lights</li>
+                                <li>outside.front.landscape_sprinklers</li>
+                                <li>outside.back.landscape_sprinklers</li>
+                                <li>outside.backyard.music</li>
+                            </ul>
+                            <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
+                            you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
+                            with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
+                            ") }}
+                            <br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Description of device." value="{{ device.location_label }}">
+                            </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalenergytype", 'Energy Type', "
+                            <p>Allows you to track energy various types of energy or consumables consumed or produced by by this device.</p>
+                            ") }}
+                            <br>
+                            <div class="input-group">
+                                <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                                    <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
+                                    <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
+                                    <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
+                                    <option value="noise"{% if device.energy_type == "noise" %} selected{% endif %}>Noise</option>
+                                </select>
                             </div>
                         </div>
                     </div>
-                    <!-- /.col-lg-6 -->
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.col-lg-6 -->
+                <div class="col-lg-6 col-md-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Pin Required: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalpinrequired", 'Pin required', '
+                            If a pin is required, the user must enter a device pin to send a command. This is useful for devices that are alarm systems.
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <select class="form-control" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
+                                    <option value="enabled"{% if func.yes_no(device.pin_required) == "Yes" %} selected{% endif %}>Enabled</option>
+                                    <option value="disabled"{% if func.yes_no(device.pin_required) == "No" %} selected{% endif %}>Disabled</option>
+                                </select>
+                            </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalpincode"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalpincode", 'Pin Code', '
+                            If a pin is required, this is the value that must be entered. Use any alpha-numeric value you wish.
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code }}">
+                            </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalpintimeout", 'Pin Timeout', "
+                            Time pin code is remembered. Once you've entered a pin, you will be authorized to perform another function on the device unless
+                            the timeout has elapsed.
+                            ") }}
+                            <br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout }}">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>

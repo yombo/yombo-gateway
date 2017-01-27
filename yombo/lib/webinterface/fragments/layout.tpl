@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Yombo - {{ data.gateway_label }}</title>
+    <title>Yombo - {{ misc_wi_data.gateway_label }}</title>
 	{% block head_top %}{% endblock %}
 
     <!-- Bootstrap Core CSS ad metisMenu -->
@@ -24,7 +24,7 @@
 	<div id="pageLoading"></div>
 	<header>
 		<!-- Top Navigation -->
-		{% if data.gateway_configured %}{% include 'lib/webinterface/fragments/full_top_nav.tpl' %}
+		{% if misc_wi_data.gateway_configured %}{% include 'lib/webinterface/fragments/full_top_nav.tpl' %}
 		{% else %}{% include 'lib/webinterface/fragments/config_top_nav.tpl' %}
         {% endif %}
 	</header>

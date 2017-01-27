@@ -1,0 +1,63 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Confirm Module Removal</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form method="post" id="devcedelete">
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Confirm removing module: <em>{{ module._Details.label }}</em></label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <p>Removing a module will render automation devices that use this module unusable. All
+                                 module configurations will be deleted locally and from the server.
+                            </p>
+                            <p>
+                                If the module was downloaded from the Yombo cloud servers, the files will eventually
+                                be removed. You are welcome to remove them manually if desired.
+                            </p>
+                                Type "remove" to confirm.<br>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="remove" value="" required>
+                                </div>
+                            <br>
+                            <a class="btn btn-md btn-success" href="/modules/details/{{module.module_id}}">Cancel (Do not remove)</a>
+                            <button type="submit" class="btn btn-danger">Remove Module</button>
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+            </div>
+            </form>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+$('.deviceCmd').click(function (event){
+     event.preventDefault();
+     $.ajax({
+        url: $(this).attr('href'),
+        dataType: 'json',
+        success: function(resp){
+            $("#cmdresult").html(resp.message);
+            $("#cmdresultmodal").modal('show');
+            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
+     })
+     return false; //for good measure
+});
+    </script>
+{% endblock %}

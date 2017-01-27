@@ -301,8 +301,8 @@ def route_setup_wizard(webapp):
                                    )
             session = webinterface.sessions.load(request)
 
-            session['setup_wizard_gateway_machine_label'] = submitted_gateway_label
-            session['setup_wizard_gateway_label'] = submitted_gateway_machine_label
+            session['setup_wizard_gateway_machine_label'] = submitted_gateway_machine_label
+            session['setup_wizard_gateway_label'] = submitted_gateway_label
             session['setup_wizard_gateway_description'] = submitted_gateway_description
             session['setup_wizard_gateway_latitude'] = submitted_gateway_latitude
             session['setup_wizard_gateway_longitude'] = submitted_gateway_longitude

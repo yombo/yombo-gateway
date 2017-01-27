@@ -61,8 +61,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
-                return page.render(alerts=webinterface.get_alerts(),
-                               data=webinterface.data)
+                return page.render(alerts=webinterface.get_alerts())
+                               # data=webinterface.data)
 
 
             if session is not False:
@@ -80,8 +80,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session
-            return page.render(alerts=webinterface.get_alerts(),
-                               data=webinterface.data)
+            return page.render(alerts=webinterface.get_alerts())
+                               # data=webinterface.data)
         return wrapped_f
 
     return deco

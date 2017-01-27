@@ -271,7 +271,6 @@ class Localize(YomboLibrary):
         :param language:
         :return:
         """
-
         output_folder = 'usr/locale/' + language + '/LC_MESSAGES'
         # print "files in lang (%s): %s" % (lang, files)
 

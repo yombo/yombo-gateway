@@ -592,6 +592,11 @@ msgctxt "state"
 msgid "next.moonset"
 msgstr "When the next moon set is."
 
+#: defined in web interface library
+msgctxt "webinterface_label"
+msgid "Devices"
+msgstr "Devices"
+
 #: defined in yomboapi library
 msgctxt "config_section"
 msgid "yomboapi"

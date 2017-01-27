@@ -4,7 +4,7 @@
 {% endblock %}
 
 {% block content %}
-{% if data.operation_mode == 'config' %}
+{% if misc_wi_data.operation_mode == 'config' %}
             <div class="row">
                 <div class="col-md-6 col-md-offset-3">
                     <h1 class="page-header">Setup Mode</h1>
@@ -54,7 +54,7 @@
                                   </div>
                                 </div>
                             </div>
-                            <h3 class="panel-title"><center><strong>{{ data.gateway_label }}</strong>
+                            <h3 class="panel-title"><center><strong>{{ misc_wi_data.gateway_label }}</strong>
                                 <p> Sign into your account
                                 <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
                         </div>
