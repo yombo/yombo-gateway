@@ -9,7 +9,7 @@ attention by the user, this includes alerts for devices, or system settings that
 
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
 from collections import OrderedDict
@@ -107,6 +107,7 @@ class Notifications(YomboLibrary):
         """
         # self.init_deferred = Deferred()  # Prevents loader from moving on past _load_ until we are done.
         self.notifications = SlicableOrderedDict()
+        self.always_show_count = 0
         # return self.init_deferred
 
     def _load_(self):
@@ -114,7 +115,6 @@ class Notifications(YomboLibrary):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False))
         self.load_notifications()
-
 
     def _stop_(self):
         if self.init_deferred is not None and self.init_deferred.called is False:
@@ -141,6 +141,12 @@ class Notifications(YomboLibrary):
             if cur_time > notice.expire:
                 del self.notifications[id]
         self._LocalDB.delete_expired_notifications()
+
+    def check_always_show_count(self):
+        self.always_show_count = 0
+        for id, notif in self.notifications.iteritems():
+            if notif.always_show:
+                self.always_show_count += 1
 
     def get(self, notification_requested):
         """
@@ -174,6 +180,7 @@ class Notifications(YomboLibrary):
         except:
             pass
         self._LocalDB.delete_notification(notification_requested)
+        self.check_always_show_count()
 
     @inlineCallbacks
     def load_notifications(self):
@@ -187,10 +194,11 @@ class Notifications(YomboLibrary):
                 continue
             notice['meta'] = json.loads(notice['meta'])
             self.add(notice, from_db=True)
+        self.check_always_show_count()
         logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
         # self.init_deferred.callback(10)
 
-    def add(self, notice, from_db=False, persist=True, create_event=False):
+    def add(self, notice, from_db=False, create_event=False):
         """
         Add a new notice.
 
@@ -198,14 +206,35 @@ class Notifications(YomboLibrary):
         :type record: dict
         :returns: Pointer to new notice. Only used during unittest
         """
+        if 'title' not in notice:
+            raise YomboWarning("New notification requires a title.")
+        if 'message' not in notice:
+            raise YomboWarning("New notification requires a message.")
+
         if 'id' not in notice:
             notice['id'] = random_string(length=16)
+        else:
+            if notice['id'] in self.notifications:
+                self.notifications[notice['id']].update(notice)
+                return notice['id']
+
         if 'type' not in notice:
             notice['type'] = 'system'
         if 'priority' not in notice:
             notice['priority'] = 'normal'
         if 'source' not in notice:
             notice['source'] = ''
+        if 'always_show' not in notice:
+            notice['always_show'] = False
+        if 'always_show_allow_clear' not in notice:
+            notice['always_show_allow_clear'] = True
+        if 'persist' not in notice:
+            notice['persist'] = False
+        if 'meta' not in notice:
+            notice['meta'] = {}
+
+        if notice['persist'] is True and 'always_show_allow_clear' is True:
+            YomboWarning("New notification cannot have both 'persist' and 'always_show_allow_clear' set to true.")
 
         if 'expire' not in notice:
             if 'timeout' in notice:
@@ -224,21 +253,16 @@ class Notifications(YomboLibrary):
             if notice['acknowledged'] not in (True, False):
                 YomboWarning("New notification 'acknowledged' must be either True or False.")
 
-        if 'title' not in notice:
-            raise YomboWarning("New notification requires a title.")
-        if 'message' not in notice:
-            raise YomboWarning("New notification requires a message.")
-        if 'meta' not in notice:
-            notice['meta'] = {}
-
         logger.debug("notice: {notice}", notice=notice)
-        if from_db is False:
+        if from_db is False and notice['persist'] is True:
             self._LocalDB.add_notification(notice)
             self.notifications.prepend(notice['id'], Notification(notice))
         else:
             self.notifications[notice['id']] = Notification(notice)
             # self.notifications = OrderedDict(sorted(self.notifications.iteritems(), key=lambda x: x[1]['created']))
             pass
+        if from_db is False:
+            self.check_always_show_count()
         return notice['id']
 
 
@@ -267,6 +291,9 @@ class Notification:
         self.title = notice['title']
         self.message = notice['message']
         self.meta = notice['meta']
+        self.always_show = notice['always_show']
+        self.always_show_allow_clear = notice['always_show_allow_clear']
+        self.persist = notice['persist']
         self.created = notice['created']
 
     def __str__(self):
@@ -275,6 +302,18 @@ class Notification:
         the command can be identified and referenced easily.
         """
         return "%s: %s" % (self.notification_id, self.message)
+
+    def update(self, notice):
+        """
+        Uodates a notice values.
+
+        :param notice:
+        :return:
+        """
+        for key, value in notice.iteritems():
+            if key == 'id':
+                continue
+            setattr(self, key, value)
 
     def dump(self):
         """
@@ -290,5 +329,8 @@ class Notification:
             'title': str(self.title),
             'message': str(self.message),
             'meta': str(self.meta),
+            'always_show': str(self.always_show),
+            'always_show_allow_clear': str(self.always_show_allow_clear),
+            'persist': str(self.persist),
             'created': str(self.created),
         }
