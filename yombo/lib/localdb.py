@@ -465,6 +465,11 @@ class LocalDB(YomboLibrary):
         ).save()
         returnValue(results)
 
+    @inlineCallbacks
+    def set_ack(self, id, new_ack):
+        records = yield self.dbconfig.update('notifications', {'acknowledged': new_ack}, where=['id = ?', id])
+        returnValue(records)
+
 #########################
 ###    Sessions     #####
 #########################

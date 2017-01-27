@@ -8,8 +8,9 @@ from time import time
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
+from yombo.core.exceptions import YomboHookStopProcessing
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
-from yombo.utils import random_string
+from yombo.utils import random_string, global_invoke_all
 
 def route_devices(webapp):
     with webapp.subroute("/devices") as webapp:
@@ -291,7 +292,7 @@ def route_devices(webapp):
                     status = 2
                 else:
                     webinterface.add_alert('Device status was set to an illegal value.', 'warning')
-                    returnValue(webinterface.redirect(request, '/devices/edit/%s' % device_id))
+                    returnValue(webinterface.redirect(request, '/devices'))
 
                 pin_required = request.args.get('pin_required')[0]
                 if pin_required == 'disabled':
@@ -300,10 +301,10 @@ def route_devices(webapp):
                     pin_required = 1
                     if request.args.get('pin_code')[0] == "":
                         webinterface.add_alert('Device requires a pin code, but none was set.', 'warning')
-                        returnValue(webinterface.redirect(request, '/devices/edit/%s' % device_id))
+                        returnValue(webinterface.redirect(request, '/devices'))
                 else:
                     webinterface.add_alert('Device pin required was set to an illegal value.', 'warning')
-                    returnValue(webinterface.redirect(request, '/devices/edit/%s' % device_id))
+                    returnValue(webinterface.redirect(request, '/devices'))
 
                 energy_usage = request.args.get('energy_usage')
                 energy_map = {}
@@ -346,9 +347,13 @@ def route_devices(webapp):
                 }
 
             if json_output is not None:
-                print "aaa2"
+                try:
+                    global_invoke_all('_device_before_add_',  **{'called_by': webinterface, 'device': device})
+                except YomboHookStopProcessing as e:
+                    webinterface.add_alert("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
+                    returnValue(webinterface.redirect(request, '/devices'))
+
                 results = yield webinterface._Devices.add_device(device)
-                print "aaa4"
 
                 if results['status'] == 'success':
                     msg = {

@@ -236,7 +236,10 @@ class Loader(YomboLibrary, object):
 
         yield self._moduleLibrary.load_modules()
         self.loadedLibraries['notifications'].add({'title': 'System started',
-            'message': 'System successfully started.', 'timeout': 300, 'source': 'Yombo Gateway System'})
+            'message': 'System successfully started.', 'timeout': 300, 'source': 'Yombo Gateway System',
+            'persist': False,
+            'always_show': False,
+        })
 
     @inlineCallbacks
     def unload(self):

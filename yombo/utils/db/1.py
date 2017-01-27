@@ -262,7 +262,9 @@ def upgrade(Registry, **kwargs):
      `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
      `source`       TEXT NOT NULL, /* where this message was created */
      `expire`       INTEGER NOT NULL, /* timestamp when msg should expire */
-     `acknowledged` INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user */
+     `always_show`  INTEGER NOT NULL, /* If notification should always show until user clears it. */
+     `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
+     `acknowledged` INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
      `title`        TEXT, /* Message data */
      `message`      TEXT, /* Message data */
      `meta`         TEXT, /* Any extra meta data. JSON format */

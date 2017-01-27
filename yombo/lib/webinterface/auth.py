@@ -46,7 +46,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             # session = "mysession"
 
             # print "request:url: %s" % request.path
-
             session = webinterface.sessions.load(request)
             if login_redirect is not None:
                 if session is False:

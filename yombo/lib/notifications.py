@@ -148,40 +148,6 @@ class Notifications(YomboLibrary):
             if notif.always_show:
                 self.always_show_count += 1
 
-    def get(self, notification_requested):
-        """
-        Performs the actual search.
-
-        .. note::
-
-           Modules shouldn't use this function. Use the built in reference to
-           find notification: `self._Notifications['8w3h4sa']`
-
-        :raises YomboWarning: Raised when notifcation cannot be found.
-        :param notification_requested: The input type ID or input type label to search for.
-        :type notification_requested: string
-        :return: A dict containing details about the notification
-        :rtype: dict
-        """
-        if notification_requested in self.notifications:
-            return self.notifications[notification_requested]
-        else:
-            raise YomboWarning('Notification not found: %s' % notification_requested)
-
-    def delete(self, notification_requested):
-        """
-        Deletes a provided notification.
-
-        :param notification_requested:
-        :return:
-        """
-        try:
-            del self.notifications[notification_requested]
-        except:
-            pass
-        self._LocalDB.delete_notification(notification_requested)
-        self.check_always_show_count()
-
     @inlineCallbacks
     def load_notifications(self):
         """
@@ -198,7 +164,23 @@ class Notifications(YomboLibrary):
         logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
         # self.init_deferred.callback(10)
 
-    def add(self, notice, from_db=False, create_event=False):
+    def ack(self, notice_id, new_ack=None):
+        """
+        Acknowledge a notice id.
+
+        :param notice_id:
+        :return:
+        """
+        if notice_id not in self.notifications:
+            raise YomboWarning('Notification not found: %s' % notice_id)
+
+        if new_ack is None:
+            new_ack = 1
+        self.notifications[notice_id].set_ack(new_ack)
+
+        pass #TODO
+
+    def add(self, notice, from_db=None, create_event=None):
         """
         Add a new notice.
 
@@ -248,22 +230,56 @@ class Notifications(YomboLibrary):
             notice['created'] = time()
 
         if 'acknowledged' not in notice:
-            notice['acknowledged'] = False
+            notice['acknowledged'] = 0
         else:
             if notice['acknowledged'] not in (True, False):
                 YomboWarning("New notification 'acknowledged' must be either True or False.")
 
         logger.debug("notice: {notice}", notice=notice)
-        if from_db is False and notice['persist'] is True:
+        if from_db is None and notice['persist'] is True:
             self._LocalDB.add_notification(notice)
-            self.notifications.prepend(notice['id'], Notification(notice))
+            self.notifications.prepend(notice['id'], Notification(self, notice))
         else:
-            self.notifications[notice['id']] = Notification(notice)
+            self.notifications[notice['id']] = Notification(self, notice)
             # self.notifications = OrderedDict(sorted(self.notifications.iteritems(), key=lambda x: x[1]['created']))
             pass
-        if from_db is False:
+        if from_db is None:
             self.check_always_show_count()
         return notice['id']
+
+    def delete(self, notice_id):
+        """
+        Deletes a provided notification.
+
+        :param notice_id:
+        :return:
+        """
+        try:
+            del self.notifications[notice_id]
+        except:
+            pass
+        self._LocalDB.delete_notification(notice_id)
+        self.check_always_show_count()
+
+    def get(self, notice_id, get_all=None):
+        """
+        Performs the actual search.
+
+        .. note::
+
+           Modules shouldn't use this function. Use the built in reference to
+           find notification: `self._Notifications['8w3h4sa']`
+
+        :raises YomboWarning: Raised when notifcation cannot be found.
+        :param notice_id: The input type ID or input type label to search for.
+        :type notice_id: string
+        :return: A dict containing details about the notification
+        :rtype: dict
+        """
+        if notice_id in self.notifications:
+            return self.notifications[notice_id]
+        else:
+            raise YomboWarning('Notification not found: %s' % notice_id)
 
 
 class Notification:
@@ -276,12 +292,13 @@ class Notification:
     :ivar voice_cmd: The voice command of the command.
     """
 
-    def __init__(self, notice):
+    def __init__(self, notification_library, notice):
         """
         Setup the notification object using information passed in.
         """
         logger.debug("notice info: {notice}", notice=notice)
 
+        self.notification_library = notification_library
         self.notification_id = notice['id']
         self.type = notice['type']
         self.priority = notice['priority']
@@ -302,6 +319,11 @@ class Notification:
         the command can be identified and referenced easily.
         """
         return "%s: %s" % (self.notification_id, self.message)
+
+    def set_ack(self, new_ack):
+        self.acknowledged = new_ack
+        #todo: update database!
+        self.notification_library._LocalDB.set_ack(self.notification_id, new_ack)
 
     def update(self, notice):
         """

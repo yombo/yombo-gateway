@@ -281,6 +281,13 @@ nav_side_menu = [
     },
 ]
 
+notification_priority_map_css = {
+    'low': 'info',
+    'normal': 'info',
+    'high': 'warning',
+    'urent': 'danger'
+}
+
 class NotFound(Exception):
     pass
 
@@ -301,7 +308,8 @@ class WebInterface(YomboLibrary):
 
         self.gwid = self._Configs.get("core", "gwid")
         self._LocalDb = self._Loader.loadedLibraries['localdb']
-        self._current_dir = dirname(dirname(dirname(abspath(__file__))))
+        self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
+        print "web interface direct1: %s" % self._current_dir
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
 
@@ -382,6 +390,7 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
         self.misc_wi_data['operation_mode'] = self._op_mode
         self.misc_wi_data['notifications'] = self._Notifications
+        self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
 
         self.functions = {
             'yes_no': yombo.utils.is_yes_no,
@@ -580,6 +589,7 @@ class WebInterface(YomboLibrary):
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
         i18n = self.i18n(request)
+
         return page.render(alerts=self.get_alerts(),
                            delay_commands = self._Devices.delay_queue_active,
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),

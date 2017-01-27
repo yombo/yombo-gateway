@@ -64,8 +64,9 @@ def route_modules(webapp):
             data = {
                 'module_id': json_output['module_id'],
                 'install_branch': json_output['install_branch'],
-                'variable_data': json_output['vars'],
             }
+            if 'vars' in json_output:
+                json_output['variable_data'] = json_output['vars']
 
             results = yield webinterface._Modules.add_module(data)
             if results['status'] == 'failed':
@@ -84,6 +85,16 @@ def route_modules(webapp):
                 'label': 'Module configuration updated successfully',
                 'description': '',
             }
+
+            webinterface._Notifications.add({'title': 'Restart Required',
+                                             'message': 'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                             'source': 'Web Interface',
+                                             'persist': False,
+                                             'priority': 'high',
+                                             'always_show': True,
+                                             'always_show_allow_clear': False,
+                                             'id': 'reboot_required',
+                                             })
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
             returnValue(page.render(alerts=webinterface.get_alerts(),

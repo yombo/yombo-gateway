@@ -18,14 +18,14 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                            <div class="dataTable_wrapper">
-{% if data.notifications|length > 0 %}
+{% if misc_wi_data.notifications|length > 0 %}
     <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
         <thead>
             <tr>
                 <th>Title</th><th>Message</th><th>Created</th><th>Expires</th>
             </tr>
         </thead>
-        <tbody>    {% for id, notice in data.notifications.iteritems() %}
+        <tbody>    {% for id, notice in misc_wi_data.notifications.iteritems() %}
              <tr>
                  <td><a href="/notifications/details/{{ id }}">{{ notice.title }}</a></td>
                  <td>{{ notice.message }}</td>

@@ -557,7 +557,7 @@ class Modules(YomboLibrary):
         logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
         results = {}
         for ModuleID, module in self._modulesByUUID.iteritems():
-            if int(module._Details.status) != 1:
+            if int(self._moduleClasses[ModuleID].status) != 1:
                 continue
 
             label = module._FullName.lower() if fullName else module._Name.lower()
