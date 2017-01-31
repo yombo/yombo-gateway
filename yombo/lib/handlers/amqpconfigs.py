@@ -241,7 +241,6 @@ class AmqpConfigHandler(YomboLibrary):
                     'short_description': 'short_description',
                     'description': 'description',
                     'description_formatting': 'description_formatting',
-                    'install_notes': 'install_notes',
                     'see_also': 'see_also',
                     'repository_link': 'repository_link',
                     'issue_tracker_link': 'issue_tracker_link',

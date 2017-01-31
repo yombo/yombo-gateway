@@ -3,7 +3,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
-
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth
 from twisted.internet.defer import inlineCallbacks, returnValue
 

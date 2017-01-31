@@ -147,3 +147,9 @@
 .panel-success > .panel-footer + .panel-collapse > .panel-body {
   border-bottom-color: #d6e9c6;
 }
+
+
+.input-validation-error {
+.help-block;
+color:#dd3939;
+}

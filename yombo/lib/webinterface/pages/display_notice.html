@@ -1,0 +1,51 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete"></a>
+                        {{msg.header}}</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form method="post" id="devcedelete">
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>{{ _('webinterface', msg.label) }}</label><br>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <p>{{ msg.description }}</p>
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+            </div>
+            </form>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+$('.deviceCmd').click(function (event){
+     event.preventDefault();
+     $.ajax({
+        url: $(this).attr('href'),
+        dataType: 'json',
+        success: function(resp){
+            $("#cmdresult").html(resp.message);
+            $("#cmdresultmodal").modal('show');
+            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
+     })
+     return false; //for good measure
+});
+
+    </script>
+{% endblock %}

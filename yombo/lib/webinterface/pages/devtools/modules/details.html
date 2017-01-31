@@ -1,0 +1,78 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/devtools/modules/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Module - Details: {{ module.label}}</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-3 col-md-5">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                            {{ module.label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
+                            {{ module.machine_label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Module Type: </label><br>
+                            {{ module.module_type }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Description Formatting: </label><br>
+                            {{ module.description_formating }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Documentation Link: </label><br>
+                            {{ module.doc_link|make_link("Link", "_blank") }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Respository Link: </label><br>
+                            {{ module.repository_link|make_link("Link", "_blank") }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Issue Tracker Link: </label><br>
+                            {{ module.issue_tracker_link|make_link("Link", "_blank") }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Git Link: </label><br>
+                            {{ module.git_link|make_link("Link", "_blank") }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Production Branch: </label><br>
+                            {{ module.prod_branch }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Development Branch: </label><br>
+                            {{ module.dev_branch }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                            {{ module.status|status_to_string }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
+                            {{ module.public|public_to_string }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                            {{ module.created_at|epoch_to_human }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                            {{ module.updated_at|epoch_to_human }}<br>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-9 col-md-7">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Short Description / Excerpt</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            {{ module.short_description }}<br>
+                        </div>
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Description</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            {{ module.description|format_markdown(module.description_formatting) }}<br>
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+{% endblock %}
+

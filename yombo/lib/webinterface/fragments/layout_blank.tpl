@@ -26,28 +26,44 @@
 
         <!-- Page Content -->
             <div class="container-fluid">
-                {% if alerts|length != 0 %}
+                {%- if alerts|length != 0 %}
                 <div class="row">
                     <div class="col-lg-12">
-                        <div>&nbsp;</div>
-                        <div class="panel panel-default">
-                           <!-- /.panel-heading -->
-                           <div class="panel-body">{% for key, alert in alerts.iteritems() %}{% if alert.dismissable %}
-                              <div class="alert alert-{{ alert.level }} alert-dismissable">
-                                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                                {{ alert.message }}.
-                              </div>{% else %}
-                              <div class="alert alert-{{ alert.level }}">
-                                {{ alert.message }}.
-                              </div>{% endif %}{% endfor %}
-                           </div>
-                        </div>
-
+                        <div>&nbsp</div>
+                          {% for key, alert in alerts.iteritems() %}{% if alert.dismissable %}
+                          <div class="alert alert-{{ alert.level }} alert-dismissable" data-the_alert_id="{{ key }}">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            {{ alert.message }}
+                          </div>{% else %}
+                          <div class="alert alert-{{ alert.level }}">
+                            {{ alert.message }}.
+                          </div>{% endif %}{% endfor %}
                     </div>
                     <!-- /.col-lg-12 -->
                 </div>
                 <!-- /.row -->
-                {% endif %}
+                {%- endif -%}
+                {%- if misc_wi_data.notifications.always_show_count != 0 %}
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div>&nbsp</div>
+                          {% for key, notification in misc_wi_data.notifications.iteritems() if notification.always_show -%}
+                          {%- if notification.always_show_allow_clear -%}
+                          <div class="alert alert-{{ misc_wi_data.notification_priority_map_css[notification.priority] }} alert-dismissable" data-the_alert_id="{{ key }}">
+                            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                            <strong><a href="/notifications/details/{{notification.id}}" title="Show notification">{{ notification.title }}</a>:</strong> {{ notification.message }}
+                          </div>
+                          {%- else -%}
+                          <div class="alert alert-{{ misc_wi_data.notification_priority_map_css[notification.priority]}}">
+                              <strong><a href="/notifications/details/{{notification.id}}" title="Show notification">{{ notification.title }}</a>:</strong> {{ notification.message }}
+                          </div>
+                          {%- endif -%}
+                        {%- endfor -%}
+                    </div>
+                    <!-- /.col-lg-12 -->
+                </div>
+                <!-- /.row -->
+                {%- endif -%}
                 {% block content %}{% endblock %}
            </div>
             <!-- /.container-fluid -->

@@ -793,6 +793,132 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def dev_add_module(self, data, **kwargs):
+        """
+        Add a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
+        # print("module edit results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+                'module_id': "None",
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module added.",
+            'module_id': module_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_edit_module(self, module_id, data, **kwargs):
+        """
+        Edit a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
+        # print("module edit results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+                'module_id': module_id,
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module edited.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_edit_module_vars(self, module_id, data, **kwargs):
+        """
+        Edit a module variable groups and fields at the Yombo server level, not at the local gateway level.
+
+        THIS FUNCTION DOES NOT WORK.  Work in progress.
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+
+        if 'variable_data' in data:
+            variable_data = data['variable_data']
+            for field_id, data in variable_data.iteritems():
+                # print "data: %s" % data
+                for data_id, value in data.iteritems():
+                    if data_id.startswith('new_'):
+                        post_data = {
+                            'gateway_id': self.gwid,
+                            'field_id': field_id,
+                            'relation_id': module_id,
+                            'relation_type': 'module',
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        # print("post_data: %s" % post_data)
+                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        # print "var_data_results: %s"  % var_data_results
+                        if var_data_results['code'] != 200:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add module variables",
+                                'apimsg': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'module_id': module_results['data']['id']
+                            }
+                            returnValue(results)
+                    else:
+                        post_data = {
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        # print("posting to: /v1/variable/data/%s" % data_id)
+                        # print("post_data: %s" % post_data)
+                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
+                        if var_data_results['code'] != 200:
+                            # print("bad results module_results: %s" % module_results)
+                            # print("bad results var_data_results: %s" % var_data_results)
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add module variables",
+                                'apimsg': var_data_results['content']['message'],
+                                'apimsghtml': var_data_results['content']['html_message'],
+                                'module_id': module_results['data']['id']
+                            }
+                            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module edited.",
+            'module_id': module_results['data']['module_id']
+        }
+        returnValue(results)
+
+
+    @inlineCallbacks
     def enable_module(self, module_id, **kwargs):
         """
         Enable a module. Calls the API to perform this task. A restart is required to complete.
@@ -952,85 +1078,3 @@ class Module:
             'updated'       : int(self.updated),
             'load_source'   : int(self.load_source),
         }
-
-    @inlineCallbacks
-    def edit_module(self, module_id, data, **kwargs):
-        """
-        Edit the module installation information. A reboot is required for this to take effect.
-
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        api_data = {
-            'install_branch': data['install_branch'],
-            'status': 1,
-        }
-
-        # print("api_data: %s" % api_data)
-
-        module_results = yield self._ModuleLibrary._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self._ModuleLibrary.gwid, module_id), api_data)
-        # print("module edit results: %s" % module_results)
-
-        if module_results['code'] != 200:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't edit module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
-            }
-            returnValue(results)
-
-        if 'variable_data' in data:
-            variable_data = data['variable_data']
-            for field_id, data in variable_data.iteritems():
-                # print "data: %s" % data
-                for data_id, value in data.iteritems():
-                    if data_id.startswith('new_'):
-                        post_data = {
-                            'gateway_id': self._ModuleLibrary.gwid,
-                            'field_id': field_id,
-                            'relation_id': module_id,
-                            'relation_type': 'module',
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        # print("post_data: %s" % post_data)
-                        var_data_results = yield self._ModuleLibrary._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        # print "var_data_results: %s"  % var_data_results
-                        if var_data_results['code'] != 200:
-                            results = {
-                                'status': 'failed',
-                                'msg': "Couldn't add module variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'module_id': module_results['data']['id']
-                            }
-                            returnValue(results)
-                    else:
-                        post_data = {
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        # print("posting to: /v1/variable/data/%s" % data_id)
-                        # print("post_data: %s" % post_data)
-                        var_data_results = yield self._ModuleLibrary._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
-                        if var_data_results['code'] != 200:
-                            # print("bad results module_results: %s" % module_results)
-                            # print("bad results var_data_results: %s" % var_data_results)
-                            results = {
-                                'status': 'failed',
-                                'msg': "Couldn't add module variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'module_id': module_results['data']['id']
-                            }
-                            returnValue(results)
-
-        results = {
-            'status': 'success',
-            'msg': "Module edited.",
-            'module_id': module_results['data']['module_id']
-        }
-        returnValue(results)

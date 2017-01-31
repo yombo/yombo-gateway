@@ -87,6 +87,26 @@ def pattern_search(look_for, items):
                 out_list.append(item)
     return out_list
 
+def status_to_string(status):
+    if status == 0:
+        return 'Disabled'
+    elif status == 1:
+        return 'Enabled'
+    elif status == 2:
+        return 'Deleted'
+    else:
+        return 'Unknown'
+
+def public_to_string(pubic_value):
+    if pubic_value == 0:
+        return 'Private'
+    elif pubic_value == 1:
+        return 'Public Pending'
+    elif pubic_value == 2:
+        return 'Private'
+    else:
+        return 'Unknown'
+
 def epoch_to_string(the_time, format=None):
     if format is None:
         format = '%b %d %Y %H:%M:%S %Z'

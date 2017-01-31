@@ -217,7 +217,6 @@ def upgrade(Registry, **kwargs):
      `short_description`       TEXT,
      `description`             TEXT,
      `description_formatting`  TEXT,
-     `install_notes`      TEXT,
      `see_also`           TEXT,
      `repository_link`    TEXT,
      `issue_tracker_link` TEXT,

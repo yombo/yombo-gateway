@@ -320,7 +320,7 @@ $('form').validate({
         $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
     },
     errorElement: 'span',
-        errorClass: 'help-block',
+        errorClass: 'input-validation-error',
         errorPlacement: function(error, element) {
             if(element.length) {
                 error.insertAfter(element);

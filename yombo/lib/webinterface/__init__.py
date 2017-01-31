@@ -825,8 +825,9 @@ class WebInterface(YomboLibrary):
 
     def setup_basic_filters(self):
         self.webapp.templates.filters['make_link'] = self.make_link
-        self.webapp.templates.filters['epoch_to_human'] = self.epoch_to_human
-        self.webapp.templates.filters['states_to_human'] = self.epoch_to_human
+        self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
+        self.webapp.templates.filters['public_to_string'] = yombo.utils.public_to_string
+        self.webapp.templates.filters['epoch_to_human'] = yombo.utils.epoch_to_string
         self.webapp.templates.filters['epoch_to_pretty_date'] = yombo.utils.pretty_date # yesterday, 5 minutes ago, etc.
         self.webapp.templates.filters['format_markdown'] = self.format_markdown
 
