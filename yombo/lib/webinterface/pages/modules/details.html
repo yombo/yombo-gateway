@@ -6,16 +6,17 @@
                 <div class="col-lg-12">
                     <h1 class="page-header">
                         <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Module Information</h1>
-                    <label>Actions:</label>
+                        Module Information<br>
                     {% if module._Details.status == '0' -%}
-                      <a style="padding: .5em; margin: .2em;" href="/modules/enable/{{  module._Details.module_id }}" class="btn btn-primary ">Enabled</a>
-                      <a style="padding: .5em; margin: .2em;" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove</a>
+                      <a class="btn btn-md btn-primary" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit Module</a>
+                      <a class="btn btn-md btn-success" href="/modules/enable/{{  module._Details.module_id }}" class="btn btn-primary ">Enabled Module</a>
+                      <a class="btn btn-md btn-danger" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove Module</a>
                     {% elif module._Details.status == 1 -%}
-                      <a style="padding: .5em; margin: .2em;" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit</a>
-                      <a style="padding: .5em; margin: .2em;" href="/modules/disable/{{  module._Details.module_id }}" class="btn btn-warning ">Disble</a>
-                      <a style="padding: .5em; margin: .2em;" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove</a>
+                      <a class="btn btn-md btn-primary" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit Module</a>
+                      <a class="btn btn-md btn-warning" href="/modules/disable/{{  module._Details.module_id }}" class="btn btn-warning ">Disble Module</a>
+                      <a class="btn btn-md btn-danger" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove Module</a>
                     {% endif %}
+                    </h1>
                     <p></p>
 
                 </div>
@@ -31,8 +32,6 @@
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body">
-                                <label style="margin-top: 0px; margin-bottom: 0px">Install Notes: </label><br>
-                                {{ module._Details.install_notes }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Install Branch: </label><br>
                                 {% if module._Details.install_branch == 'prodbranch' -%}
                                 Production
@@ -40,7 +39,7 @@
                                 Development
                                 {% endif %} <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
-                                {{ func.yes_no(module._Details.status) }}<br>
+                                {{ module._Details.status|yes_no }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->

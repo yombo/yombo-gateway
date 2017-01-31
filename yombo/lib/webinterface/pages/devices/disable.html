@@ -4,33 +4,32 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Confirm Device Deletion</h1>
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Confirm Device Disable</h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="devcedelete">
+            <form method="post" id="confirmation">
 
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <h4>Confirm deleting device: <strong>{{ device.label }}</strong></h4>
+                            <h4>Confirm deleting device:</h4> <strong>{{ device.label }}</strong></h4>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Deleting a device will delete all it's settings and state history, however, any statitics such as those assigned
-                                with the "Statistic Label" will be preserved.</p>
-                                Type "delete" to confirm.<br>
-						    <div class="form-group">
+                            <p>Disabling a device will make the device unavailable for control through the gateway, however eveything about the device will be saved.</p>
+                                Type "disable" to confirm.<br>
+    						<div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">
                                 </div>
                             </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/devices/details/{{device.device_id}}">Cancel (Do not delete)</a>
-                            <button type="submit" class="btn btn-danger">Delete Device</button>
+                            <a class="btn btn-md btn-success" href="/devices/details/{{device.device_id}}">Cancel (Do not disable)</a>
+                            <button type="submit" class="btn btn-danger">Disable Device</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -52,7 +51,7 @@
     $('form').validate({
         rules: {
             confirm: {
-                customrule: 'delete',
+                customrule: 'disable',
                 required: true,
             },
         },

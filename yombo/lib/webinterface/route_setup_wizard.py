@@ -65,10 +65,8 @@ def route_setup_wizard(webapp):
                 if session.get('setup_wizard_done') is True:
                     return webinterface.redirect(request, '/setup_wizard/6')
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
+            return page.render(
                                alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
                                )
 
         @webapp.route('/2')
@@ -108,10 +106,8 @@ def route_setup_wizard(webapp):
 
             session['setup_wizard_last_step'] = 2
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/2.html')
-            output = page.render(func=webinterface.functions,
-                               _=_,  # translations
+            output = page.render(
                                alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
                                available_gateways=available_gateways,
                                selected_gateway=webinterface.sessions.get(request, 'setup_wizard_gateway_id'),
                                )
@@ -223,10 +219,8 @@ def route_setup_wizard(webapp):
 
             session['setup_wizard_last_step'] = 3
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/3.html')
-            output = page.render(func=webinterface.functions,
-                               _=_,  # translations
+            output = page.render(
                                alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
                                gw_fields=fields,
                                settings=settings,
                                )
@@ -297,7 +291,6 @@ def route_setup_wizard(webapp):
                 return page_setup_wizard_3_get(webinterface, request)
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/3.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                                   data=webinterface.data,
                                    )
             session = webinterface.sessions.load(request)
 
@@ -320,10 +313,8 @@ def route_setup_wizard(webapp):
 
             session['setup_wizard_last_step'] = 4
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/4.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
+            return page.render(
                                alerts={},
-                               data=webinterface.data,
                                security_items=security_items,
                                )
 
@@ -374,10 +365,7 @@ def route_setup_wizard(webapp):
 
             session.set('setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
-                               alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
+            return page.render(
                                gpg_selected=gpg_selected
                                )
 
@@ -402,24 +390,18 @@ def route_setup_wizard(webapp):
 
             if submitted_gpg_action == "new":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_new.html')
-                return page.render(func=webinterface.functions,
-                                   _=_,  # translations
+                return page.render(
                                    alerts=webinterface.get_alerts(),
-                                   data=webinterface.data,
                                    )
             elif submitted_gpg_action == "import":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_import.html')
-                return page.render(func=webinterface.functions,
-                                   _=_,  # translations
+                return page.render(
                                    alerts=webinterface.get_alerts(),
-                                   data=webinterface.data,
                                    )
             elif submitted_gpg_action in available_keys:
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_existing.html')
-                return page.render(func=webinterface.functions,
-                                   _=_,  # translations
+                return page.render(
                                    alerts=webinterface.get_alerts(),
-                                   data=webinterface.data,
                                    )
             else:
                 return "Invalid GPG selection."
@@ -435,8 +417,7 @@ def route_setup_wizard(webapp):
                 webinterface.redirect(request, '/setup_wizard/5')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
+            return page.render(
                                alerts=webinterface.get_alerts(),
                                data=webinterface.data,
                                )
@@ -553,10 +534,8 @@ def route_setup_wizard(webapp):
             session['setup_wizard_last_step'] = 6
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
-            returnValue(page.render(func=webinterface.functions,
-                               _=_,  # translations
+            returnValue(page.render(
                                alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
                                ) )
 
 

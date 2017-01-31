@@ -34,7 +34,7 @@
                                 {{ devicetype.description }}<br>
 
                                 <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
-                                {{ func.yes_no(devicetype.status) }}<br>
+                                {{ devicetype.status|yes_no }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->

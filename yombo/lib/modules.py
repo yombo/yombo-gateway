@@ -50,7 +50,6 @@ SYSTEM_MODULES['automationhelpers'] = {
     'description': "Adds basic platforms to the automation rules.",
     'description_formatting': 'text',
     'install_branch': '',
-    'install_notes': '',
     'install_count': '',
     'see_also': '',
     'prod_branch': '',
@@ -270,12 +269,6 @@ class Modules(YomboLibrary):
                 else:
                     mod_module_type = ""
 
-                if 'mod_install_notes' in options:
-                    mod_install_notes = ini.get(section, 'mod_install_notes')
-                    options.remove('mod_install_notes')
-                else:
-                    mod_install_notes = ""
-
                 if 'mod_see_also' in options:
                     mod_see_also = ini.get(section, 'mod_see_also')
                     options.remove('mod_see_also')
@@ -304,7 +297,6 @@ class Modules(YomboLibrary):
                   'short_description': mod_short_description,
                   'description': mod_description,
                   'description_formatting': mod_description_formatting,
-                  'install_notes': mod_install_notes,
                   'see_also': mod_see_also,
                   'install_count': 1,
                   'install_branch': '',
@@ -756,6 +748,43 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def enable_module(self, module_id, **kwargs):
+        """
+        Enable a module. Calls the API to perform this task. A restart is required to complete.
+
+        :param module_id: The module ID to enable.
+        :param kwargs:
+        :return:
+        """
+        print "enabling module: %s" % module_id
+        api_data = {
+            'status': 1,
+        }
+
+        if module_id not in self._modulesByUUID:
+            raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
+
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
+        print("enable module results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+                'module_id': module_id,
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module enabled.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
     def disable_module(self, module_id, **kwargs):
         """
         Disable a module. Calls the API to perform this task. A restart is required to complete.
@@ -917,44 +946,6 @@ class Modules(YomboLibrary):
         }
         returnValue(results)
 
-
-    @inlineCallbacks
-    def enable_module(self, module_id, **kwargs):
-        """
-        Enable a module. Calls the API to perform this task. A restart is required to complete.
-
-        :param module_id: The module ID to enable.
-        :param kwargs:
-        :return:
-        """
-        print "enabling module: %s" % module_id
-        api_data = {
-            'status': 1,
-        }
-
-        if module_id not in self._modulesByUUID:
-            raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
-
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
-        print("enable module results: %s" % module_results)
-
-        if module_results['code'] != 200:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't enable module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
-            }
-            returnValue(results)
-
-        results = {
-            'status': 'success',
-            'msg': "Module enabled.",
-            'module_id': module_id,
-        }
-        returnValue(results)
-
     @inlineCallbacks
     def _api_change_status(self, module_id, new_status, **kwargs):
         """
@@ -1016,7 +1007,6 @@ class Module:
         self.short_description = module['short_description']
         self.description = module['description']
         self.description_formatting = module['description_formatting']
-        self.install_notes = module['install_notes']
         self.install_count = module['install_count']
         self.see_also = module['see_also']
         self.repository_link = module['repository_link']
@@ -1063,7 +1053,6 @@ class Module:
             'gateway_id'    : str(self.gateway_id),
             'label'         : str(self.label),
             'description'   : str(self.description),
-            'install_notes' : int(self.install_note),
             'doc_link'      : int(self.doc_link),
             'git_link'      : int(self.git_link),
             'install_branch': int(self.install_branch),

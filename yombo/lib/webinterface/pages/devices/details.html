@@ -7,12 +7,12 @@
                     <h1 class="page-header"><a class="success" href="/devices/index" aria-label="Delete">
   <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Device Information<br>
  {% if device.status == 0 %}
-                    <a class="btn btn-md btn-success" href="/devices/edit/{{device.device_id}}">Edit Device</a>
+                    <a class="btn btn-md btn-primary" href="/devices/edit/{{device.device_id}}">Edit Device</a>
                     <a class="btn btn-md btn-success" href="/devices/enable/{{device.device_id}}">Enable Device</a>
                     <a class="btn btn-md btn-danger" href="/devices/delete/{{device.device_id}}">Delete Device</a>
  {% elif device.status == 1  %}
-                    <a class="btn btn-md btn-success" href="/devices/edit/{{device.device_id}}">Edit Device</a>
-                    <a class="btn btn-md btn-success" href="/devices/disable/{{device.device_id}}">Disable Device</a>
+                    <a class="btn btn-md btn-primary" href="/devices/edit/{{device.device_id}}">Edit Device</a>
+                    <a class="btn btn-md btn-warning" href="/devices/disable/{{device.device_id}}">Disable Device</a>
                     <a class="btn btn-md btn-danger" href="/devices/delete/{{device.device_id}}">Delete Device</a>
  {% elif device.status == 2  %}
                     <a class="btn btn-md btn-danger" href="/devices/enable/{{device.device_id}}">Enable Device</a>
@@ -94,9 +94,9 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             {{ device.description }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
-                            {{ func.yes_no(device.enabled) }}<br>
+                            {{ device.enabled|yes_no }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
-                            {{ func.yes_no(device.pin_required) }} // {{ device.pin_code }} <br>
+                            {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
                             <a href="/devtools/devicetypes/details/{{ device.device_type_id }}">{{ devicetypes.get(device.device_type_id).label }}</a><br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Statistic Label: </label><br>

@@ -560,7 +560,7 @@ class Devices(YomboLibrary):
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
         device_results = yield self._DevicesLibrary._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
-        print("deleted device: %s" % device_results)
+        # print("deleted device: %s" % device_results)
         if device_results['code'] != 200:
             results = {
                 'status': 'failed',
@@ -597,14 +597,14 @@ class Devices(YomboLibrary):
         for key, value in data.iteritems():
             if hasattr(self, key):
                 setattr(self, key, value)
-                print("key (%s) is in this class... = %s" % (key, value))
+                # print("key (%s) is in this class... = %s" % (key, value))
                 if key == 'energy_map':
                     api_data['energy_map'] = json.dumps(value, separators=(',',':'))
-                    print("energy map json: %s" % json.dumps(value, separators=(',',':')))
+                    # print("energy map json: %s" % json.dumps(value, separators=(',',':')))
                 else:
                     api_data[key] = value
 
-        print("send this data to api: %s" % api_data)
+        # print("send this data to api: %s" % api_data)
         device_results = yield self._DevicesLibrary._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
         if device_results['code'] != 200:
             results = {
@@ -629,7 +629,7 @@ class Devices(YomboLibrary):
                             'data_weight': 0,
                             'data': value,
                         }
-                        print("post_data: %s" % post_data)
+                        # print("post_data: %s" % post_data)
                         var_data_results = yield self._DevicesLibrary._YomboAPI.request('POST', '/v1/variable/data', post_data)
                         if var_data_results['code'] != 200:
                             results = {
@@ -645,7 +645,7 @@ class Devices(YomboLibrary):
                             'data_weight': 0,
                             'data': value,
                         }
-                        print("post_data: %s" % post_data)
+                        # print("post_data: %s" % post_data)
                         var_data_results = yield self._DevicesLibrary._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
                         if var_data_results['code'] != 200:
                             results = {
@@ -657,7 +657,6 @@ class Devices(YomboLibrary):
                             }
                             returnValue(results)
 
-        print("device edit results: %s" % device_results)
         results = {
             'status': 'success',
             'msg': "Device edited.",
@@ -666,6 +665,7 @@ class Devices(YomboLibrary):
         global_invoke_all('devices_edit', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
         returnValue(results)
 
+    @inlineCallbacks
     def enable_device(self, device_id):
         """
         Enables a given device id.
@@ -674,9 +674,32 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self._devicesByUUID:
-            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'enable_device', 'Devices')
-            # self._devicesByUUID[device_id].enable()
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
+        api_data = {
+            'status': 1,
+        }
+
+        device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+        if device_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable device",
+                'apimsg': device_results['content']['message'],
+                'apimsghtml': device_results['content']['html_message'],
+                'device_id': device_id,
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device disabled.",
+            'device_id': device_results['data']['id']
+        }
+        global_invoke_all('devices_disabled', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        returnValue(results)
+
+    @inlineCallbacks
     def disable_device(self, device_id):
         """
         Disables a given device id.
@@ -685,8 +708,30 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self._devicesByUUID:
-            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'disable_device', 'Devices')
-            # self._devicesByUUID[device_id].disable()
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
+
+        api_data = {
+            'status': 0,
+        }
+
+        device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+        if device_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable device",
+                'apimsg': device_results['content']['message'],
+                'apimsghtml': device_results['content']['html_message'],
+                'device_id': device_id,
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device disabled.",
+            'device_id': device_results['data']['id']
+        }
+        global_invoke_all('devices_disabled', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        returnValue(results)
 
     def update_device(self, record, test_device=False):
         """

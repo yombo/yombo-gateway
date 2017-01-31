@@ -160,7 +160,7 @@
     });
     $('#logoutBtnYes').click(function() {
         $('#logoutModal').modal('hide');
-        window.location.href = "/logout1";
+        window.location.href = "/logout";
     });
 
     $('.confirm-restart').on('click', function(e) {

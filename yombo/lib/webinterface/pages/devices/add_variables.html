@@ -114,8 +114,8 @@
                                 <br>
                                 <div class="input-group">
                                     <select class="form-control" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
-                                        <option value="enabled"{% if func.yes_no(device.pin_required) == "Yes" %} selected{% endif %}>Enabled</option>
-                                        <option value="disabled"{% if func.yes_no(device.pin_required) == "No" %} selected{% endif %}>Disabled</option>
+                                        <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %}>Enabled</option>
+                                        <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %}>Disabled</option>
                                     </select>
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>

@@ -360,14 +360,6 @@ class WebInterface(YomboLibrary):
 
 
     def _start_(self):
-        def status_to_human(input):
-            if int(input) == 0:
-                return "Disabled"
-            elif int(input) == 1:
-                return "Enabled"
-            elif int(input) == 2:
-                return "Deleted"
-
         if not self.enabled:
             return
         self._op_mode = self._Atoms['loader.operation_mode']
@@ -392,13 +384,12 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['notifications'] = self._Notifications
         self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
 
-        self.functions = {
-            'yes_no': yombo.utils.is_yes_no,
-            'status_to_human': status_to_human,
-        }
+        # self.functions = {
+        #     'yes_no': yombo.utils.is_yes_no,
+        # }
 
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
-        self.webapp.templates.globals['func'] = self.functions
+        # self.webapp.templates.globals['func'] = self.functions
 
     def _module_started_(self, **kwargs):
         """
@@ -824,6 +815,8 @@ class WebInterface(YomboLibrary):
         return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
 
     def setup_basic_filters(self):
+
+        self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no
         self.webapp.templates.filters['make_link'] = self.make_link
         self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
         self.webapp.templates.filters['public_to_string'] = yombo.utils.public_to_string

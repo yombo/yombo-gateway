@@ -23,8 +23,7 @@ def route_devices(webapp):
         @require_auth()
         def page_devices_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
-            return page.render(func=webinterface.functions,
-                               _=_,  # translations
+            return page.render(
                                alerts=webinterface.get_alerts(),
                                devices=webinterface._Libraries['devices']._devicesByUUID,
                                devicetypes=webinterface._DeviceTypes.device_types_by_id,
@@ -99,6 +98,103 @@ def route_devices(webapp):
                                     msg=msg,
                                     ))
 
+        @webapp.route('/disable/<string:device_id>', methods=['GET'])
+        @require_auth()
+        def page_device_disable_get(webinterface, request, session, device_id):
+            try:
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
+                return webinterface.redirect(request, '/devices/index')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/disable.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               device=device,
+                               devicetypes=webinterface._DeviceTypes,
+                               )
+
+        @webapp.route('/disable/<string:device_id>', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_device_disable_post(webinterface, request, session, device_id):
+            try:
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
+                returnValue(webinterface.redirect(request, '/devices/index'))
+            confirm = request.args.get('confirm')[0]
+            if confirm != "disable":
+                page = webinterface.get_template(request, webinterface._dir + 'pages/devices/disable.html')
+                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the device.', 'warning')
+                returnValue(page.render(alerts=webinterface.get_alerts(),
+                                   device=device,
+                                   devicetypes=webinterface._DeviceTypes,
+                                   ))
+
+            device_results = yield webinterface._Devices.disable_device(device.device_id)
+            if device_results['status'] == 'failed':
+                webinterface.add_alert(device_results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devices/index'))
+
+            msg = {
+                'header': 'Device Disabled',
+                'label': 'Device disabled successfully',
+                'description': '',
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        @webapp.route('/enable/<string:device_id>', methods=['GET'])
+        @require_auth()
+        def page_device_enable_get(webinterface, request, session, device_id):
+            try:
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
+                return webinterface.redirect(request, '/devices/index')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/enable.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               device=device,
+                               devicetypes=webinterface._DeviceTypes,
+                               )
+
+        @webapp.route('/enable/<string:device_id>', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_device_enable_post(webinterface, request, session, device_id):
+            try:
+                device = webinterface._Devices[device_id]
+            except Exception, e:
+                webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
+                returnValue(webinterface.redirect(request, '/devices/index'))
+            confirm = request.args.get('confirm')[0]
+            if confirm != "enable":
+                page = webinterface.get_template(request, webinterface._dir + 'pages/devices/enable.html')
+                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the device.', 'warning')
+                returnValue(page.render(alerts=webinterface.get_alerts(),
+                                   device=device,
+                                   devicetypes=webinterface._DeviceTypes,
+                                   ))
+
+            device_results = yield webinterface._Devices.enable_device(device.device_id)
+            if device_results['status'] == 'failed':
+                webinterface.add_alert(device_results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devices/index'))
+
+            msg = {
+                'header': 'Device Enabled',
+                'label': 'Device enabled successfully',
+                'description': '',
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+
         @webapp.route('/edit/<string:device_id>', methods=['GET'])
         @require_auth()
         @inlineCallbacks
@@ -106,7 +202,6 @@ def route_devices(webapp):
             try:
                 device = webinterface._Devices.get(device_id)
             except Exception, e:
-                print "device find errr: %s" % e
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
 
@@ -133,7 +228,7 @@ def route_devices(webapp):
                         else:
                             var_data_field = []
 
-                    print "device var_data_field: %s" % var_data_field
+                    # print "device var_data_field: %s" % var_data_field
 
                     var_data_final = []
                     for data in var_data_field:
@@ -313,10 +408,8 @@ def route_devices(webapp):
                         energy_map[float(float(percent) / 100)] = energy_usage[idx]
                     except:
                         pass
-                print "aaa"
 
                 energy_map = OrderedDict(sorted(energy_map.items(), key=lambda (x, y): float(x)))
-                print "aaa1"
                 device = {
                     'device_id': json_output['device_id'],
                     'label': json_output['label'],
