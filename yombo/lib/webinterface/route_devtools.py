@@ -107,6 +107,96 @@ def route_devtools(webapp):
                                     )
                         )
 
+        @webapp.route('/commands/<string:command_id>/disable', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_commands_disable_get(webinterface, request, session, command_id):
+            results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if results['code'] != 200:
+                webinterface.add_alert(results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/commands/index'))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/commands/disable.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    command=results['data'],
+                                    )
+                        )
+
+        @webapp.route('/commands/<string:command_id>/disable', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_commands_disable_post(webinterface, request, session, command_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/commands/%s/command_id' % command_id))
+
+            if confirm != "disable":
+                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the command.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/commands/%s/command_id' % command_id))
+
+            results = yield webinterface._Commands.dev_disable_command(command_id)
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/commands/%s/details' % command_id))
+
+            msg = {
+                'header': 'Command Disabled',
+                'label': 'Command disabled successfully',
+                'description': '<p>The command has been disabled.</p><p>Continue to <a href="/devtools/commands/index">commands index</a> or <a href="/devtools/commands/%s/details">view the command</a>.</p>' % command_id,
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        @webapp.route('/commands/<string:command_id>/enable', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_commands_enable_get(webinterface, request, session, command_id):
+            results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if results['code'] != 200:
+                webinterface.add_alert(results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/commands/index'))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/commands/enable.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    command=results['data'],
+                                    )
+                        )
+
+        @webapp.route('/commands/<string:command_id>/enable', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_commands_enable_post(webinterface, request, session, command_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/commands/%s/command_id' % command_id))
+
+            if confirm != "enable":
+                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the command.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/commands/%s/command_id' % command_id))
+
+            results = yield webinterface._Commands.dev_enable_command(command_id)
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/commands/%s/details' % command_id))
+
+            msg = {
+                'header': 'Command Enabled',
+                'label': 'Command enabled successfully',
+                'description': '<p>The command has been enabled.</p><p>Continue to <a href="/devtools/commands/index">commands index</a> or <a href="/devtools/commands/%s/details">view the command</a>.</p>' % command_id,
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
         @webapp.route('/commands/add', methods=['GET'])
         @require_auth()
         def page_devtools_commands_add_get(webinterface, request, session):
@@ -144,7 +234,7 @@ def route_devtools(webapp):
             msg = {
                 'header': 'Command Added',
                 'label': 'Command added successfully',
-                'description': '<p>The command has been added. If you have requested this command to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/commands/index">command index</a></p>',
+                'description': '<p>The command has been added. If you have requested this command to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/commands/index">command index</a> or <a href="/devtools/commands/%s/details">view the command</a>.</p>' % command_results['command_id'],
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -192,7 +282,7 @@ def route_devtools(webapp):
             msg = {
                 'header': 'Command Updated',
                 'label': 'Command updated successfully',
-                'description': '<p>The command has been updated. If you have requested this command to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/commands/index">command index</a></p>',
+                'description': '<p>The command has been updated. If you have requested this command to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/commands/index">command index</a> or <a href="/devtools/commands/%s/details">view the command</a>.</p>' % command_id,
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -209,31 +299,97 @@ def route_devtools(webapp):
                                action_type=action_type,
                                )
 
-        @webapp.route('/commands/<string:command_id>/variables', methods=['GET'])
-        @require_auth()
-        @inlineCallbacks
-        def page_devtools_commands_variables_get(webinterface, request, session, command_id):
-            results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if results['code'] != 200:
-                webinterface.add_alert(results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/commands/index'))
-
-            page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/modules/variable_details.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    module=results['data'],
-                                    )
-                        )
 
 ####################################
 # Device Types
 ####################################
         @webapp.route('/device_types/index')
         @require_auth()
-        def page_devtools_device_types_index(webinterface, request, session):
+        def page_devtools_device_types_index_get(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/index.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
+
+        @webapp.route('/device_types/<string:device_type_id>/add_command', methods=['GET'])
+        @require_auth()
+        def page_devtools_device_types_add_command_get(webinterface, request, session, device_type_id):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/add_command.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               device_type_id=device_type_id,
+                               )
+
+        @webapp.route('/device_types/<string:device_type_id>/add_command/<string:command_id>', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_add_command_do_get(webinterface, request, session, device_type_id, command_id):
+            print "111"
+            results = yield webinterface._DeviceTypes.dev_add_command(device_type_id, command_id)
+            print "222"
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            msg = {
+                'header': 'Command Associated',
+                'label': 'Command has been associated successfully',
+                'description': '<p>The command has been associated to the device type.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a> or <a href="/devtools/device_types/%s/details">view the device type</a>.</p>' % device_type_id,
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+
+        @webapp.route('/device_types/<string:device_type_id>/remove_command/<string:command_id>', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_remove_command_get(webinterface, request, session, device_type_id, command_id):
+            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if device_type_results['code'] != 200:
+                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if command_results['code'] != 200:
+                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/remove_command.html')
+            returnValue( page.render(alerts=webinterface.get_alerts(),
+                               device_type=device_type_results['data'],
+                               command=command_results['data'],
+                               )
+                         )
+
+        @webapp.route('/device_types/<string:device_type_id>/remove_command/<string:command_id>', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_remove_command_post(webinterface, request, session, device_type_id, command_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
+
+            if confirm != "remove":
+                webinterface.add_alert('Must enter "remove" in the confirmation box to remove the command from the device type.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
+
+            device_type_results = yield webinterface._DeviceTypes.dev_remove_command(device_type_id, command_id)
+            if device_type_results['status'] == 'failed':
+                webinterface.add_alert(device_type_results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            msg = {
+                'header': 'Command Removed',
+                'label': 'Command has been removed successfully',
+                'description': '<p>The command has been remove from the device type.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a> or <a href="/devtools/device_types/%s/details">view the device type</a>.</p>' % device_type_id,
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
 
         @webapp.route('/device_types/<string:device_type_id>/details', methods=['GET'])
         @require_auth()
@@ -249,12 +405,108 @@ def route_devtools(webapp):
                 webinterface.add_alert(category_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
 
+            device_type_commands_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type_command/%s' % device_type_id)
+            if device_type_commands_results['code'] != 200:
+                webinterface.add_alert(device_type_commands_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/details.html')
             returnValue( page.render(alerts=webinterface.get_alerts(),
                                device_type=device_type_results['data'],
                                category=category_results['data'],
+                               device_type_commands=device_type_commands_results['data']
                                )
                          )
+
+        @webapp.route('/device_types/<string:device_type_id>/disable', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_disable_get(webinterface, request, session, device_type_id):
+            results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if results['code'] != 200:
+                webinterface.add_alert(results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/disable.html')
+            returnValue( page.render(alerts=webinterface.get_alerts(),
+                               device_type=results['data'],
+                               )
+                         )
+
+        @webapp.route('/device_types/<string:device_type_id>/disable', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_disable_post(webinterface, request, session, device_type_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
+
+            if confirm != "disable":
+                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the device type.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
+
+            results = yield webinterface._DeviceTypes.dev_disable_device_type(device_type_id)
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            msg = {
+                'header': 'Device Type Disabled',
+                'label': 'Device Type disabled successfully',
+                'description': '<p>The device type has been disabled.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a> or <a href="/devtools/device_types/%s/details">view the device type</a>.</p>' % device_type_id,
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        @webapp.route('/device_types/<string:device_type_id>/enable', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_enable_get(webinterface, request, session, device_type_id):
+            results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if results['code'] != 200:
+                webinterface.add_alert(results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/enable.html')
+            returnValue( page.render(alerts=webinterface.get_alerts(),
+                               device_type=results['data'],
+                               )
+                         )
+
+        @webapp.route('/device_types/<string:device_type_id>/enable', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_enable_post(webinterface, request, session, device_type_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
+
+            if confirm != "enable":
+                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the device type.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
+
+            results = yield webinterface._DeviceTypes.dev_enable_device_type(device_type_id)
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            msg = {
+                'header': 'Device Type Enabled',
+                'label': 'Device Type enabled successfully',
+                'description': '<p>The device type has been enabled.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a> or <a href="/devtools/device_types/%s/details">view the device type</a>.</p>' % device_type_id,
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
 
         @webapp.route('/device_types/add', methods=['GET'])
         @require_auth()
@@ -303,7 +555,8 @@ def route_devtools(webapp):
             msg = {
                 'header': 'Device Type Added',
                 'label': 'Device typ added successfully',
-                'description': '<p>The device type has been added. If you have requested this device type to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a></p>',
+                'description': '<p>The device type has been added. If you have requested this device type to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a> or <a href="/devtools/device_types/%s/details">view the new device type</a>.</p>' %
+                               device_type_results['device_type_id'],
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -359,7 +612,8 @@ def route_devtools(webapp):
             msg = {
                 'header': 'Device Type Updated',
                 'label': 'Device typ updated successfully',
-                'description': '<p>The device type has been updated. If you have requested this device type to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a></p>',
+                'description': '<p>The device type has been updated. If you have requested this device type to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/device_types/index">device types index</a> or <a href="/devtools/device_types/%s/details">view the new device type</a>.</p>' %
+                               device_type_results['device_type_id'],
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -385,9 +639,9 @@ def route_devtools(webapp):
                 webinterface.add_alert(results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/modules/variable_details.html')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/variable_details.html')
             returnValue(page.render(alerts=webinterface.get_alerts(),
-                               module=results['data'],
+                               device_type=results['data'],
                                )
                         )
 
@@ -453,15 +707,13 @@ def route_devtools(webapp):
             msg = {
                 'header': 'Module Disabled',
                 'label': 'Module disabled successfully',
-                'description': '<p>The module has been disabled.</p><p>Continue to <a href="/devtools/modules/index">modules index</a> or <a href="/devtools/modules/%s/details" % module_id>view the module</a>.</p>',
+                'description': '<p>The module has been disabled.</p><p>Continue to <a href="/devtools/modules/index">modules index</a> or <a href="/devtools/modules/%s/details">view the module</a>.</p>' % module_id,
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     ))
-
-            # ---
 
         @webapp.route('/modules/<string:module_id>/enable', methods=['GET'])
         @require_auth()
@@ -483,51 +735,30 @@ def route_devtools(webapp):
         @inlineCallbacks
         def page_devtools_modules_enable_post(webinterface, request, session, module_id):
             try:
-                module = webinterface._Modules[module_id]
-            except Exception, e:
-                print "Module find errr: %s" % e
-                webinterface.add_alert('Module ID was not found.', 'warning')
-                returnValue(webinterface.redirect(request, '/modules/index'))
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/module_id' % module_id))
 
-            confirm = request.args.get('confirm')[0]
             if confirm != "enable":
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the module.', 'warning')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        ))
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/module_id' % module_id))
 
-            results = yield webinterface._Modules.dev_enable_module(module._Details.module_id)
+            results = yield webinterface._Modules.dev_enable_module(module_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
-
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        ))
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
 
             msg = {
-                'header': 'Module enabled',
-                'label': 'Module configuration updated successfully',
-                'description': '',
+                'header': 'Module Enabled',
+                'label': 'Module enabled successfully',
+                'description': '<p>The module has been enabled.</p><p>Continue to <a href="/devtools/modules/index">modules index</a> or <a href="/devtools/modules/%s/details">view the module</a>.</p>' % module_id,
             }
 
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Module enabled. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             })
-
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     ))
-
 
         @webapp.route('/modules/add', methods=['GET'])
         @require_auth()

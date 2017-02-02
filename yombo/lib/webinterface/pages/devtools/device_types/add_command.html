@@ -11,11 +11,11 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">{{ _('webinterface_label', 'Available Commands') }}</h4>
+        <h4 class="modal-title" id="myModalLabel">{{ _('webinterface_label', 'Remove command from device type') }}</h4>
       </div>
       <div class="modal-body">
           <p>
-              Commands are used by devices (mapped through device types) as a way to contol them.
+              Removes a command from a device type.
           </p>
       </div>
       <div class="modal-footer">
@@ -27,7 +27,7 @@
 
             <div class="row">
                 <div class="col-lg-12">
-<h1 class="page-header">{{ _('webinterface_label', 'Available Commands') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
+<h1 class="page-header">{{ _('webinterface_label', 'Remove a command from device type') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
                     <p>
                         A list of available commands.
                     </p>
@@ -43,9 +43,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <h4>Available Commands
-                                <a href="/devtools/commands/add" class="btn btn-md btn-primary">Add Command</a>
-                                </h4>
+                            <h4>Available Commands</h4>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -60,7 +58,6 @@
        data-search="true">
     <thead>
     <tr>
-        <th data-width="15%" data-field="action" data-formatter="actionFormatter">Actions</th>
         <th data-width="15%" data-field="label" data-formatter="labelFormatter">Label</th>
         <th data-width="85%" data-field="description">Description</th>
     </tr>
@@ -86,7 +83,7 @@
 {% block body_bottom %}
 <script>
     function actionFormatter(value, row) {
-        return '<a href="/devtools/commands/' + row.id + '/details">Details</a>, <a href="/devtools/commands/' + row.id + '/edit">Edit</a>, <a href="/devtools/commands/' + row.id + '/delete">Delete</a>';
+        return '<a href="/devtools/device_types/{{ device_type_id }}/add_command/' + row.id + '">Add command to device type</a>';
     }
 
     function labelFormatter(value, row) {
@@ -98,7 +95,7 @@
         } else {
             public_state = 'Public';
         }
-        return value + ' (' + public_state + ') ';
+        return value + ' (' + public_state + ') <a class="btn btn-sm btn-primary" href="/devtools/device_types/{{ device_type_id }}/add_command/' + row.id + '">Add command to device type</a>';
     }
 
 

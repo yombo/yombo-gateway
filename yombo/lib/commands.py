@@ -262,7 +262,7 @@ class Commands(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "enabling command: %s" % command_id
+#        print "enabling command: %s" % command_id
         api_data = {
             'status': 1,
         }
@@ -294,13 +294,13 @@ class Commands(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "disabling command: %s" % command_id
+#        print "disabling command: %s" % command_id
         api_data = {
             'status': 0,
         }
 
         command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
-        print("disable command results: %s" % command_results)
+ #       print("disable command results: %s" % command_results)
 
         if command_results['code'] != 200:
             results = {

@@ -4,8 +4,9 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/device_types/index" aria-label="Delete">
-                        <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Device Type: {{ device_type.label}}
+                    <h1 class="page-header has-buttons-under">
+                        <a class="success" href="/devtools/device_types/{{device_type.id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Device Type: {{ device_type.label}}
                     </h1>
  {% if device_type.status == 0 %}
                     <a class="btn btn-md btn-primary" href="/devtools/device_types/{{device_type.id}}/edit" title="Edit device_type details such as description and links.">Edit Device Type</a>
@@ -24,10 +25,10 @@
             </div>
             <!-- /.row -->
             <div class="row">
-                <div class="col-lg-12">
+                <div class="col-lg-5">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Basic Information</label>
+                            <h4>Basic Information</h4>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -47,6 +48,34 @@
                             {{ device_type.updated_at|epoch_to_human }} ({{ device_type.updated_at|epoch_to_pretty_date }}) <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
                             {{ device_type.created_at|epoch_to_human }}<br>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Device Type Commands</h4>
+                            Commands associated with this device type. A list of commands the device type can do.
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                           <div class="dataTable_wrapper">
+                                <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
+                                    <thead>
+                                        <tr>
+                                            <th>Label</th><th>Machine<br>Label</th><th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>{% for command in device_type_commands %}
+                                         <tr>
+                                             <td><a href="/devtools/commands/{{ command.command_id }}/details">{{ command.command_label }}</a></td>
+                                             <td>{{ command.command_machine_label }}</td>
+                                             <td><a class="btn btn-sm btn-danger" href="/devtools/device_types/{{ device_type.id }}/remove_command/{{ command.command_id }}">Remove</a></td>
+                                         </tr>{% endfor -%}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <a class="btn btn-md btn-primary" href="/devtools/device_types/{{device_type.id}}/add_command" title="Add a command to device type">Add command to device type</a>
                         </div>
                     </div>
                 </div>

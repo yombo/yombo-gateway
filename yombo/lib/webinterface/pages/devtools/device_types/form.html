@@ -129,6 +129,9 @@
 {% block body_bottom_js %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
     <!-- Make the tables pretty -->
     <script>
     $('#short_description').keyup(updateCountShortDescription);
