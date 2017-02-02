@@ -148,6 +148,18 @@
   border-bottom-color: #d6e9c6;
 }
 
+.has-buttons-under {
+    margin-bottom: 10px;
+    border-bottom-color:rgb(67, 91, 196);
+}
+
+.under-buttons {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    border-top-width: 1px;
+    border-top-style: solid;
+    border-top-color: rgb(67, 91, 196);
+}
 
 .input-validation-error {
 .help-block;

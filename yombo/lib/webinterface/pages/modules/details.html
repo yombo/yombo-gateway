@@ -7,9 +7,9 @@
                     <h1 class="page-header">
                         <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         Module Information<br>
-                    {% if module._Details.status == '0' -%}
+                    {% if module._Details.status == 0 -%}
                       <a class="btn btn-md btn-primary" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit Module</a>
-                      <a class="btn btn-md btn-success" href="/modules/enable/{{  module._Details.module_id }}" class="btn btn-primary ">Enabled Module</a>
+                      <a class="btn btn-md btn-success" href="/modules/enable/{{  module._Details.module_id }}" class="btn btn-primary ">Enable Module</a>
                       <a class="btn btn-md btn-danger" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove Module</a>
                     {% elif module._Details.status == 1 -%}
                       <a class="btn btn-md btn-primary" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit Module</a>
@@ -23,6 +23,42 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
+ {% if module._Details.status == 0 %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default panel-red">
+                        <div class="panel-heading">
+                            <label>Module Disabled</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">This module has been disabled and is not accessible to the
+                            system for automation purposes. Any devices that depend on this module will be unable
+                            to process commands or provide acurate commands.</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+ {% elif module._Details.status == 2  %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default panel-red">
+                        <div class="panel-heading">
+                            <label>Device Deleted</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">This module has been deleted and is not accessible to the
+                            system for automation purposes. Any devices that depend on this module will be unable
+                            to process commands or provide acurate commands.</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+ {% endif %}
+
 
             <div class="row">
                     <div class="col-lg-3 col-md-5">
@@ -33,7 +69,7 @@
                             <!-- /.panel-heading -->
                             <div class="panel-body">
                                 <label style="margin-top: 15px; margin-bottom: 0px">Install Branch: </label><br>
-                                {% if module._Details.install_branch == 'prodbranch' -%}
+                                {% if module._Details.install_branch == 'production' -%}
                                 Production
                                 {% else %}
                                 Development

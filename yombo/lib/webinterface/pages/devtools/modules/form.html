@@ -1,10 +1,13 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
 
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devtools/modules/index" aria-label="Delete">
+                    <h1 class="page-header"><a class="success" href="/devtools/modules/{{ module.id }}/details" aria-label="Delete">
   <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label}}</h1>
                     <p></p>
                 </div>
@@ -21,11 +24,12 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
 						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
                             <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modallabel", 'Label', '
-                            <p>A label for the new module. A short but helpful title to describe what the module do. For example: X10API, Z-Wave, Garage Door.</p>
+                            <p>A label for the module. A short but helpful title to describe what the module does. For example: X10API, Z-Wave, Garage Door.</p>
                             ') }}
+                            <br>
                             <div class="input-group">
                                 <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Module Name" value="{{ module.label }}" autofocus required>
                             </div>
@@ -58,7 +62,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="3" class="form-control" name="module_type" id="module_type">
+                                <select tabindex="3" class="selectpicker show-tick form-control" name="module_type" id="module_type">
                                     <option value="command"{% if module.status == "command" %} selected{% endif %}>Command</option>
                                     <option value="interface"{% if module.status == "interface" %} selected{% endif %}>Interface</option>
                                     <option value="logic"{% if module.status == "logic" %} selected{% endif %}>Logic</option>
@@ -109,7 +113,7 @@
                             </p>
                             ') }}
                             <div class="input-group">
-                                <select tabindex="6" class="form-control" name="description_formatting" id="description_formatting">
+                                <select tabindex="6" class="selectpicker show-tick form-control" name="description_formatting" id="description_formatting">
                                     <option value="markdown"{% if module.status == "markdown" %} selected{% endif %}>Markdown</option>
                                     <option value="restructured"{% if module.status == "restructured" %} selected{% endif %}>Restructured</option>
                                     <option value="text"{% if module.status == "text" %} selected{% endif %}>Text</option>
@@ -192,10 +196,10 @@
                             delete module to fully propogate through the entire Yombo eco system.</p>') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="13" class="form-control" name="status" id="status">
-                                    <option value="0"{% if module.status == 0 %} selected{% endif %}>Disabled</option>
-                                    <option value="1"{% if module.status == 1 %} selected{% endif %}>Enabled</option>
-                                    <option value="2"{% if module.status == 2 %} selected{% endif %}>Deleted</option>
+                                <select tabindex="13" class="selectpicker show-tick form-control" name="status" id="status">
+                                    <option value="0"{% if module.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
+                                    <option value="1"{% if module.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
+                                    <option value="2"{% if module.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
                                 </select>
                             </div>
 						</div>
@@ -210,14 +214,13 @@
                                 <li>public pending - Access like private, but a request is pending with Yombo support to convert it to public.</li>
                                 <li>public - Available to any Yombo user. Once it\'s public, it\'s can no longer be controlled by the creator.</li>
                             </ul>
-                            <p>Items will be marked deleted a while before they are actually purged from the system. This allows the
-                            delete module to fully propogate through the entire Yombo eco system.</p>') }}
+                            ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="14" class="form-control" name="public" id="public">
-                                    <option value="0"{% if module.public == 0 %} selected{% endif %}>Private</option>
-                                    <option value="1"{% if module.public == 1 %} selected{% endif %}>Public Pending</option>
-                                    <option value="2"{% if module.public == 2 %} selected{% endif %}>Public</option>
+                                <select tabindex="14" class="selectpicker show-tick form-control" name="public" id="public">
+                                    <option value="0"{% if module.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
+                                    <option value="1"{% if module.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
+                                    <option value="2"{% if module.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>
                                 </select>
                             </div>
 						</div>
@@ -234,10 +237,9 @@
 <br>
 {% endblock %}
 
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
-
-{% block body_bottom %}
-    <!-- Make the tables pretty -->
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
     <script>
     $('#short_description').keyup(updateCountShortDescription);
     $('#short_description').keydown(updateCountShortDescription);

@@ -36,13 +36,29 @@
                                 <br>
                             <div class="input-group">
                                 <select required class="selectpicker show-tick form-control" name="install_branch" id="install_branch" placeholder="">
-                                    <option value="master"{% if module._Details.install_branch == server_module.prod_branch %} selected{% endif %}>Production</option>
+                                    <option value="production"{% if module._Details.install_branch == server_module.prod_branch %} selected{% endif %}>Production</option>
                                     {%- if server_module.dev_branch != "" %}
                                         <option data-divider="true"></option>
-                                        <option value="develop"{% if module._Details.install_branch == server_module.dev_branch %} selected{% endif %}>Development (High risk)</option>
+                                        <option value="development"{% if module._Details.install_branch == server_module.dev_branch %} selected{% endif %}>Development (Higher risk)</option>
                                     {%- endif %}
                                 </select>
                             </div>
+
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalstatus", 'Status', "
+                                <p>Enable or disable the module from running. Or, optionally, remove the module from the gateway.</p>
+                                </p>
+                                ") }}
+                                <br>
+                            <div class="input-group">
+                                <select required class="selectpicker show-tick form-control" name="status" id="status" placeholder="">
+                                    <option value="0"{% if module._Details.status == 0 %} selected{% endif %}>Disabled</option>
+                                    <option value="1"{% if module._Details.status == 1 %} selected{% endif %}>Enabled</option>
+                                    <option value="2"{% if module._Details.status == 2 %} selected{% endif %}>Remove</option>
+                                </select>
+                            </div>
+
                         </div>
                     </div>
                     <!-- /.panel-body -->

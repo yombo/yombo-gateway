@@ -33,6 +33,14 @@ def return_good(message, payload=None):
 def route_api_v1(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
+        @webapp.route('/ping')
+        def api_v1_ping(webinterface, request):
+            return "pong"
+
+        @webapp.route('/uptime')
+        def api_v1_uptime(webinterface, request):
+            return str(webinterface._Atoms['running_since'])
+
         @webapp.route('/devices', methods=['GET'])
         @require_auth()
         def ajax_devices_get(webinterface, request, session):
@@ -52,6 +60,64 @@ def route_api_v1(webapp):
                 device.do_command(cmd=commandid)
                 a = return_good('Command executed.')
                 return json.dumps(a)
+
+        @webapp.route('/commands/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_commands_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/command?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            returnValue(json.dumps(data))
+
+
+        @webapp.route('/devicetypes/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_devicetypes_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/device_type?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            returnValue(json.dumps(data))
+
 
         @webapp.route('/modules/index', methods=['GET'])
         @require_auth()

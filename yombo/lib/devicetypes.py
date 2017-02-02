@@ -13,7 +13,7 @@ This library keeps track of what modules can access what device types, and what 
 :license: LICENSE for details.
 """
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
@@ -258,7 +258,6 @@ class DeviceTypes(YomboLibrary):
             return True
         return False
 
-
     def update_registered_module(self, old, new):
         self.del_registered_module(old)
         self.add_registered_module(new)
@@ -288,6 +287,64 @@ class DeviceTypes(YomboLibrary):
         if results is None:
             return False
         return results
+
+    @inlineCallbacks
+    def dev_add_device_type(self, data, **kwargs):
+        """
+        Add a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        dt_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
+        print("dt_results: %s" % dt_results)
+
+        if dt_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add device type",
+                'apimsg': dt_results['content']['message'],
+                'apimsghtml': dt_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device type added.",
+            'device_type_id': dt_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_edit_device_type(self, device_type_id, data, **kwargs):
+        """
+        Edit a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        dt_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
+        # print("module edit results: %s" % module_results)
+
+        if dt_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit device type",
+                'apimsg': dt_results['content']['message'],
+                'apimsghtml': dt_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device type edited.",
+            'device_type_id': dt_results['data']['id'],
+        }
+        returnValue(results)
 
 class DeviceType:
     """

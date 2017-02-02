@@ -25,9 +25,11 @@
                                  module configurations will be deleted locally and from the server.
                             </p>
                                 Type "disable" to confirm.<br>
+    						<div class="form-group">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="disable" value="" required>
+                                    <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">
                                 </div>
+                            </div>
                             <br>
                             <a class="btn btn-md btn-success" href="/modules/details/{{module.module_id}}">Cancel (Do not disable)</a>
                             <button type="submit" class="btn btn-danger">Disable Module</button>
@@ -40,21 +42,39 @@
             <!-- /.row -->
 {% endblock %}
 
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
+
 {% block body_bottom %}
     <!-- Make the tables pretty -->
     <script>
-$('.deviceCmd').click(function (event){
-     event.preventDefault();
-     $.ajax({
-        url: $(this).attr('href'),
-        dataType: 'json',
-        success: function(resp){
-            $("#cmdresult").html(resp.message);
-            $("#cmdresultmodal").modal('show');
-            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
-     })
-     return false; //for good measure
-});
+    $.validator.addMethod("customrule", function(value, element, param) {
+  return this.optional(element) || value === param;
+}, "You must enter '{0}'.");
 
+    $('form').validate({
+        rules: {
+            confirm: {
+                customrule: 'disable',
+                required: true,
+            },
+        },
+        highlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+        },
+        unhighlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+        },
+        errorElement: 'span',
+            errorClass: 'input-validation-error',
+            errorPlacement: function(error, element) {
+                if(element.length) {
+                    error.insertAfter(element);
+                } else {
+                error.insertAfter(element);
+                }
+            }
+     });
     </script>
 {% endblock %}

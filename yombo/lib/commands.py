@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `Commands @ Module Development <https://yombo.net/docs/modules/commands/>`_
+  For more information see: `Commands @ command Development <https://yombo.net/docs/modules/commands/>`_
 
 This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
@@ -16,7 +16,7 @@ The command (singular) class represents one command.
 :license: LICENSE for details.
 """
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
@@ -195,6 +195,128 @@ class Commands(YomboLibrary):
             self.__yombocommandsByVoice[record.voice_cmd] = self.__yombocommands[cmd_id]
 #        if testCommand:
 #            return self.__yombocommands[command_id]
+
+    @inlineCallbacks
+    def dev_add_command(self, data, **kwargs):
+        """
+        Add a command at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
+        # print("command edit results: %s" % command_results)
+
+        if command_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add command",
+                'apimsg': command_results['content']['message'],
+                'apimsghtml': command_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command added.",
+            'command_id': command_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_edit_command(self, command_id, data, **kwargs):
+        """
+        Edit a command at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
+        # print("command edit results: %s" % command_results)
+
+        if command_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit command",
+                'apimsg': command_results['content']['message'],
+                'apimsghtml': command_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command edited.",
+            'command_id': command_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_enable_command(self, command_id, **kwargs):
+        """
+        Enable a command at the Yombo server level, not at the local gateway level.
+
+        :param command_id: The command ID to enable.
+        :param kwargs:
+        :return:
+        """
+        print "enabling command: %s" % command_id
+        api_data = {
+            'status': 1,
+        }
+
+        command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
+
+        if command_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable command",
+                'apimsg': command_results['content']['message'],
+                'apimsghtml': command_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command enabled.",
+            'command_id': command_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_disable_command(self, command_id, **kwargs):
+        """
+        Enable a command at the Yombo server level, not at the local gateway level.
+
+        :param command_id: The command ID to disable.
+        :param kwargs:
+        :return:
+        """
+        print "disabling command: %s" % command_id
+        api_data = {
+            'status': 0,
+        }
+
+        command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
+        print("disable command results: %s" % command_results)
+
+        if command_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable command",
+                'apimsg': command_results['content']['message'],
+                'apimsghtml': command_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command disabled.",
+            'command_id': command_id,
+        }
+        returnValue(results)
 
 
 class Command:

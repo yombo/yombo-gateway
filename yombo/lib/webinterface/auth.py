@@ -82,7 +82,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             return page.render(alerts=webinterface.get_alerts())
                                # data=webinterface.data)
         return wrapped_f
-
     return deco
 
 def require_auth_pin(*args, **kwargs):

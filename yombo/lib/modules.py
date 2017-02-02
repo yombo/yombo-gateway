@@ -26,7 +26,6 @@ from time import time
 import hashlib
 
 # Import twisted libraries
-#from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 # Import Yombo libraries
@@ -41,7 +40,7 @@ logger = get_logger('library.modules')
 
 SYSTEM_MODULES = {}
 SYSTEM_MODULES['automationhelpers'] = {
-    'id': 'load1', # module_id
+    'id': 'automationhelpers', # module_id
     'gateway_id': 'local',
     'module_type': 'logic',
     'machine_label': 'AutomationHelpers',
@@ -392,8 +391,17 @@ class Modules(YomboLibrary):
             self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
 
             module._Details = self._moduleClasses[module_id]
-            if int(module._Details.status) != 1:
-                continue
+
+
+            # Get variables, and merge with any local variable settings
+            # print "getting vars for module: %s" % module_id
+            module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
+            # print "getting vars: %s "% module_variables
+            module._ModuleVariables = module_variables
+
+            if module._Name in self._localModuleVars:
+                module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
+                del self._localModuleVars[module._Name]
 
             # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
             module._ModuleType = self._rawModulesList[module_id]['module_type']
@@ -421,21 +429,14 @@ class Modules(YomboLibrary):
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
 
+            if int(module._Details.status) != 1:
+                continue
+
             if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
                 temp_device_types = module._module_devicetypes_()
                 for dt in temp_device_types:
                     if dt in module._DeviceTypes:
                         self._moduleClasses[module_id].device_types.append(module._DeviceTypes[dt].device_type_id)
-
-            # Get variables, and merge with any local variable settings
-            print "getting vars for module: %s" % module_id
-            module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
-            print "getting vars: %s "% module_variables
-            module._ModuleVariables = module_variables
-
-            if module._Name in self._localModuleVars:
-                module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
-                del self._localModuleVars[module._Name]
 
             module._DeviceTypes.add_registered_module(self._moduleClasses[module_id])
 #                module_init_deferred.append(maybeDeferred(module._init_))
@@ -713,6 +714,39 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def edit_module(self, module_id, data, **kwargs):
+        """
+        Edit the module installation information. A reboot is required for this to take effect.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'install_branch': data['install_branch'],
+            'status': data['status'],
+        }
+
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
+        print("module edit results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module edited.",
+            'module_id': module_id
+        }
+        returnValue(results)
+
+    @inlineCallbacks
     def remove_module(self, module_id, **kwargs):
         """
         Delete a module. Calls the API to perform this task. A restart is required to complete.
@@ -734,7 +768,6 @@ class Modules(YomboLibrary):
                 'msg': "Couldn't delete module",
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
             }
             returnValue(results)
 
@@ -773,7 +806,6 @@ class Modules(YomboLibrary):
                 'msg': "Couldn't enable module",
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
             }
             returnValue(results)
 
@@ -810,7 +842,6 @@ class Modules(YomboLibrary):
                 'msg': "Couldn't disable module",
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
             }
             returnValue(results)
 
@@ -830,7 +861,6 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-
         module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
         # print("module edit results: %s" % module_results)
 
@@ -840,7 +870,6 @@ class Modules(YomboLibrary):
                 'msg': "Couldn't add module",
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
-                'module_id': "None",
             }
             returnValue(results)
 
@@ -860,7 +889,6 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-
         module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
         # print("module edit results: %s" % module_results)
 
@@ -870,13 +898,75 @@ class Modules(YomboLibrary):
                 'msg': "Couldn't edit module",
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
             }
             returnValue(results)
 
         results = {
             'status': 'success',
             'msg': "Module edited.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_enable_module(self, module_id, **kwargs):
+        """
+        Enable a module at the Yombo server level, not at the local gateway level.
+
+        :param module_id: The module ID to enable.
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'status': 1,
+        }
+
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module enabled.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_disable_module(self, module_id, **kwargs):
+        """
+        Enable a module at the Yombo server level, not at the local gateway level.
+
+        :param module_id: The module ID to disable.
+        :param kwargs:
+        :return:
+        """
+        print "disabling module: %s" % module_id
+        api_data = {
+            'status': 0,
+        }
+
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module disabled.",
             'module_id': module_id,
         }
         returnValue(results)
@@ -891,8 +981,6 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-
-
         if 'variable_data' in data:
             variable_data = data['variable_data']
             for field_id, data in variable_data.iteritems():
@@ -916,7 +1004,6 @@ class Modules(YomboLibrary):
                                 'msg': "Couldn't add module variables",
                                 'apimsg': var_data_results['content']['message'],
                                 'apimsghtml': var_data_results['content']['html_message'],
-                                'module_id': module_results['data']['id']
                             }
                             returnValue(results)
                     else:
@@ -935,14 +1022,13 @@ class Modules(YomboLibrary):
                                 'msg': "Couldn't add module variables",
                                 'apimsg': var_data_results['content']['message'],
                                 'apimsghtml': var_data_results['content']['html_message'],
-                                'module_id': module_results['data']['id']
                             }
                             returnValue(results)
 
         results = {
             'status': 'success',
             'msg': "Module edited.",
-            'module_id': module_results['data']['module_id']
+            'module_id': module_id
         }
         returnValue(results)
 
@@ -957,7 +1043,7 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "disabling module: %s" % module_id
+        # print "disabling module: %s" % module_id
         api_data = {
             'module_id': data['module_id'],
             'install_branch': data['install_branch'],
@@ -968,7 +1054,7 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
-        print("disable module results: %s" % module_results)
+        # print("disable module results: %s" % module_results)
 
         if module_results['code'] != 200:
             results = {

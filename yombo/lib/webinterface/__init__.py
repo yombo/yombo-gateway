@@ -540,10 +540,13 @@ class WebInterface(YomboLibrary):
             'dismissable': dismissable,
         }
 
-    def get_alerts(self, type='session'):
+    def get_alerts(self, type=None, session=None):
         """
         Retrieve a list of alerts for display.
         """
+        if type is None:
+            type = 'session'
+
         show_alerts = OrderedDict()
         for keyid in self.alerts.keys():
             if self.alerts[keyid]['type'] == type:
@@ -712,10 +715,6 @@ class WebInterface(YomboLibrary):
     def page_login_pin_get(self, request):
         return self.redirect(request, '/')
 
-    @webapp.route('/ping')
-    def page_ping(self, request):
-        return "pong"
-
     def restart(self, request, message=None, redirect=None):
         if message is None:
             message = "Web interface requested restart."
@@ -725,7 +724,8 @@ class WebInterface(YomboLibrary):
         page = self.get_template(request, self._dir + 'pages/restart.html')
         reactor.callLater(0.3, self.do_restart)
         return page.render(message=message,
-                           redirect=redirect
+                           redirect=redirect,
+                           uptime=str(self._Atoms['running_since'])
                            )
 
     def do_restart(self):
@@ -807,15 +807,23 @@ class WebInterface(YomboLibrary):
             return markdown.markdown(description, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
         return description
 
-    def make_link(webinterface, link, link_text, target = None):
+    def make_link(self, link, link_text, target = None):
         if link == '' or link is None or link.lower() == "None":
             return "None"
         if target is None:
             target = "_self"
         return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
 
-    def setup_basic_filters(self):
+    def reqest_get_default(self, request, name, default, offset=None):
+        if offset == None:
+            offset = 0
+        try:
+            return request.args.get(name)[offset]
+        except:
+            return default
 
+
+    def setup_basic_filters(self):
         self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no
         self.webapp.templates.filters['make_link'] = self.make_link
         self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
@@ -871,7 +879,6 @@ class WebInterface(YomboLibrary):
             # print ""
 
         def copytree(src, dst, symlinks=False, ignore=None):
-            return
             src = 'yombo/lib/webinterface/static/' + src
             dst = 'yombo/lib/webinterface/static/' + dst
             if path.isdir(src):

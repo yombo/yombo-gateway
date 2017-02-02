@@ -160,25 +160,32 @@
 
         function checkServer() {
             var wentOffline = 0;
-            var pingUrl = "/ping";
-            setInterval(ping, 150);
+            var uptime = {{ uptime }};
+            var response_uptime = 0;
+            var pingUrl = "/api/v1/uptime";
+            var refreshIntervalId = setInterval(ping, 150);
 
             function ping() {
                 $.ajax({
                     url: pingUrl,
-                    success: function (result) {
+                    success: function(data, textStatus, request){
                         if (wentOffline == 0) {
                             console.log("Gateway went away.");
                             wentOffline = 1;
                         } else {
                             console.log("Gateway is back.");
-                            setTimeout(doRedirect, 500);
+                            response_uptime = Number($.trim(data));
+                            if (wentOffline == 1 && response_uptime > uptime) {
+                                console.log("Going to redirect....");
+                                clearInterval(refreshIntervalId);
+                                setTimeout(doRedirect, 1000);
+                            }
                         }
                     }
                 });
             }
         }
-        setTimeout(checkServer, 50);
+        setTimeout(checkServer, 200);
     });
     </script>
 
