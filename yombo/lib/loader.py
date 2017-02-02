@@ -73,6 +73,7 @@ HARD_LOAD["Commands"] = {'operation_mode':'all'}
 HARD_LOAD["DeviceTypes"] = {'operation_mode':'all'}
 HARD_LOAD["InputTypes"] = {'operation_mode':'all'}
 HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
+HARD_LOAD["Variables"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
 # HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
@@ -107,6 +108,7 @@ HARD_UNLOAD["MQTT"] = {'operation_mode':'run'}
 HARD_UNLOAD["SQLDict"] = {'operation_mode':'all'}
 HARD_UNLOAD["AMQP"] = {'operation_mode':'run'}
 HARD_UNLOAD["Modules"] = {'operation_mode':'all'}
+HARD_LOAD["Variables"] = {'operation_mode':'all'}
 # HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_UNLOAD["LocalDB"] = {'operation_mode':'all'}
 
@@ -324,6 +326,7 @@ class Loader(YomboLibrary, object):
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
             library._YomboAPI = self.loadedLibraries['yomboapi']
+            library._Variables = self.loadedLibraries['variables']
             if hasattr(library, '_init_') and callable(library._init_) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = yield maybeDeferred(library._init_)

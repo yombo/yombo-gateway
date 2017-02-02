@@ -24,6 +24,7 @@ Perhaps disconnect and reconnect to another server? -Mitch
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqpyombo.py>`_
 """
+
 # Import python libraries
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json  
@@ -44,7 +45,7 @@ import yombo.ext.six as six
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string, dict_has_key
+from yombo.utils import percentage, random_string
 import yombo.ext.umsgpack as msgpack
 
 # Handlers for processing various messages.

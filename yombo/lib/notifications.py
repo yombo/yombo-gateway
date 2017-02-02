@@ -240,7 +240,7 @@ class Notifications(YomboLibrary):
             self._LocalDB.add_notification(notice)
             self.notifications.prepend(notice['id'], Notification(self, notice))
         else:
-            self.notifications[notice['id']] = Notification(self, notice)
+            self.notifications.prepend(notice['id'], Notification(self, notice))
             # self.notifications = OrderedDict(sorted(self.notifications.iteritems(), key=lambda x: x[1]['created']))
             pass
         if from_db is None:

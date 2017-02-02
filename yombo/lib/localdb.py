@@ -867,7 +867,6 @@ ORDER BY id desc"""
         :return:
         """
         records = yield VariableDataView.find(where=['relation_type = ? AND relation_id =?', relation_type, relation_id], orderby='field_weight ASC, data_weight ASC')
-        # records = yield VariableDataView.all()
         variables = {}
         for record in records:
 

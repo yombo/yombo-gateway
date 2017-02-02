@@ -605,7 +605,7 @@ class Devices(YomboLibrary):
                     api_data[key] = value
 
         # print("send this data to api: %s" % api_data)
-        device_results = yield self._DevicesLibrary._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+        device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
         if device_results['code'] != 200:
             results = {
                 'status': 'failed',
@@ -622,7 +622,7 @@ class Devices(YomboLibrary):
                 for data_id, value in data.iteritems():
                     if data_id.startswith('new_'):
                         post_data = {
-                            'gateway_id': self._DevicesLibrary.gwid,
+                            'gateway_id': self.gwid,
                             'field_id': field_id,
                             'relation_id': device_id,
                             'relation_type': 'device',
@@ -630,7 +630,7 @@ class Devices(YomboLibrary):
                             'data': value,
                         }
                         # print("post_data: %s" % post_data)
-                        var_data_results = yield self._DevicesLibrary._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                         if var_data_results['code'] != 200:
                             results = {
                                 'status': 'failed',
@@ -646,7 +646,7 @@ class Devices(YomboLibrary):
                             'data': value,
                         }
                         # print("post_data: %s" % post_data)
-                        var_data_results = yield self._DevicesLibrary._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
+                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
                         if var_data_results['code'] != 200:
                             results = {
                                 'status': 'failed',

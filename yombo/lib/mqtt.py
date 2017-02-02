@@ -191,6 +191,8 @@ class MQTT(YomboLibrary):
                 client.factory.protocol.disconnect()
             except:
                 pass
+
+    def _unload_(self):
         self.mqtt_server.shutdown()
 
     #def _unload_(self):

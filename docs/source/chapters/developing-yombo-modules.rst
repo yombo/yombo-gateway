@@ -10,8 +10,7 @@ The example modules will guide you through the key concepts:
 * :ref:`Empty <emptymodule>` - This module is the bare minimum needed to function. Copy
   this module as a base for your own.
 * :ref:`LogReader <logreader>` - Demonstrates using the Yombo filereader to
-  monitor a file for reading. It also demonstrates sending device command
-  :ref:`messages <message>` when valid voice command is found in a file.
+  monitor a file for reading.
 * :ref:`LogWriter <logwriter>` - Demonstrates subscribing to all messages in a gateway. This
   module logs everything it receives to a file.
 * :ref:`AutomationExample <automationexample>` - Demonstrates adding rules to the automation system.
