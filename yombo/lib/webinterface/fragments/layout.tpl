@@ -133,6 +133,25 @@
                 </div>
                 <!-- /.row -->
                 {%- endif -%}
+                {%- if misc_wi_data.breadcrumb|length > 0 -%}
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="breadcrumbs">
+                        {%- for breadcrumb in misc_wi_data.breadcrumb -%}
+                            {% if loop.last and breadcrumb.show == false %}
+                                {{ breadcrumb.text }}
+                            {% else %}
+                                <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
+                            {% endif %}
+
+                        {{ ' <i class="fa fa-angle-double-right" aria-hidden="true"></i> ' if not loop.last }}
+                        {%- endfor -%}
+                        </div>
+                    <!-- /.col-lg-12 -->
+                    </div>
+                <!-- /.row -->
+                </div>
+                {%- endif -%}
                 {% block content %}{% endblock %}
             <!-- /.container-fluid -->
         </div>

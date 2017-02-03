@@ -165,3 +165,13 @@
 .help-block;
 color:#dd3939;
 }
+
+.page-header{
+    padding-bottom:9px;
+    margin:10px 0 20px !important;
+}
+
+.breadcrumbs{
+    font-size: larger;
+    margin: 15px 0 5px;
+}

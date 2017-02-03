@@ -54,6 +54,7 @@ class Variables(YomboLibrary):
         self._LocalDB = self._Libraries['localdb']
         self.gwid = self._Configs.get("core", "gwid")
 
+
     @inlineCallbacks
     def dev_add_group(self, data, **kwargs):
         """
@@ -65,7 +66,7 @@ class Variables(YomboLibrary):
         """
 
         var_results = yield self._YomboAPI.request('POST', '/v1/variable/group', data)
-        # print("module edit results: %s" % module_results)
+        # print("group edit results: %s" % group_results)
         print("var_results: %s" % var_results)
         if var_results['code'] != 200:
 
@@ -81,5 +82,123 @@ class Variables(YomboLibrary):
             'status': 'success',
             'msg': "Variable group added.",
             'group_id': var_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_edit_group(self, group_id, data, **kwargs):
+        """
+        Edit a group at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        group_results = yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % (group_id), data)
+        # print("group edit results: %s" % group_results)
+
+        if group_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit variable group",
+                'apimsg': group_results['content']['message'],
+                'apimsghtml': group_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable group edited.",
+            'group_id': group_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_delete_group(self, group_id, **kwargs):
+        """
+        Delete a variable group at the Yombo server level, not at the local gateway level.
+
+        :param group_id:
+        :param kwargs:
+        :return:
+        """
+        group_results = yield self._YomboAPI.request('DELETE', '/v1/variable/group/%s' % group_id)
+
+        if group_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete variable group",
+                'apimsg': group_results['content']['message'],
+                'apimsghtml': group_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable group deleted.",
+            'group_id': group_id,
+        }
+        returnValue(results)
+
+
+    @inlineCallbacks
+    def dev_enable_group(self, group_id, **kwargs):
+        """
+        Enable a group at the Yombo server level, not at the local gateway level.
+
+        :param group_id: The group ID to enable.
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'status': 1,
+        }
+
+        group_results = yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id, api_data)
+
+        if group_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable variable group",
+                'apimsg': group_results['content']['message'],
+                'apimsghtml': group_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable group enabled.",
+            'group_id': group_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_disable_group(self, group_id, **kwargs):
+        """
+        Enable a group at the Yombo server level, not at the local gateway level.
+
+        :param group_id: The group ID to disable.
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'status': 0,
+        }
+
+        group_results = yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id, api_data)
+
+        if group_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable variable group",
+                'apimsg': group_results['content']['message'],
+                'apimsghtml': group_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable group disabled.",
+            'group_id': group_id,
         }
         returnValue(results)

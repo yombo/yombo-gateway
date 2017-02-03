@@ -42,7 +42,7 @@ from yombo.core.log import get_logger
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 
 from yombo.lib.webinterface.route_atoms import route_atoms
 from yombo.lib.webinterface.route_automation import route_automation
@@ -348,6 +348,7 @@ class WebInterface(YomboLibrary):
         return 'Not found, I say'
 
     @webapp.route('/<path:catchall>')
+    @run_first()
     @require_auth()
     def page_404(self, request, session, catchall):
         request.setResponseCode(404)
@@ -383,6 +384,7 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['operation_mode'] = self._op_mode
         self.misc_wi_data['notifications'] = self._Notifications
         self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
+        self.misc_wi_data['breadcrumb'] = []
 
         # self.functions = {
         #     'yes_no': yombo.utils.is_yes_no,
@@ -576,6 +578,7 @@ class WebInterface(YomboLibrary):
         return method(request, **kwargs)
 
     @webapp.route('/')
+    @run_first()
     def home(self, request):
         return self.check_op_mode(request, 'home')
 
@@ -606,6 +609,7 @@ class WebInterface(YomboLibrary):
         return self.redirect(request, '/setup_wizard/1')
 
     @webapp.route('/logout', methods=['GET'])
+    @run_first()
     def page_logout_get(self, request):
         # print "logout"
         self.sessions.close_session(request)
@@ -679,6 +683,7 @@ class WebInterface(YomboLibrary):
         returnValue(self.redirect(request, login_redirect))
 
     @webapp.route('/login/pin', methods=['POST'])
+    @run_first()
     def page_login_pin_post(self, request):
         submitted_pin = request.args.get('authpin')[0]
         valid_pin = False
@@ -746,6 +751,7 @@ class WebInterface(YomboLibrary):
             pass
 
     @webapp.route('/static/', branch=True)
+    @run_first()
     def static(self, request):
         return File(self._current_dir + "/lib/webinterface/static/dist")
 
@@ -821,6 +827,12 @@ class WebInterface(YomboLibrary):
             return request.args.get(name)[offset]
         except:
             return default
+
+    def add_breadcrumb(self, request, url, text, show = False):
+        if hasattr(request, 'breadcrumb') is False:
+            request.breadcrumb = []
+            self.misc_wi_data['breadcrumb'] = request.breadcrumb
+        request.breadcrumb.append({'url': url, 'text': text, 'show': show})
 
 
     def setup_basic_filters(self):

@@ -6,7 +6,7 @@
                 <div class="col-lg-12">
                     <h1 class="page-header">
                         <a class="success" href="/devtools/device_types/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Confirm Device Type Disable
+                        Confirm Device Type Disable: {{ device_type.label }}
                     </h1>
                     <p></p>
                 </div>
@@ -23,10 +23,8 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Disabling a device type will render automation devices that use this device type unusable. All
-                                 device type configurations will be deleted locally and from the server.
-                            </p>
-                                Type "disable" to confirm.<br>
+                            <p>Disabling a device type will render automation devices that use this device type unusable.</p>
+                            <p>Type "<strong>disable</strong>" to confirm:</p>
     						<div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">

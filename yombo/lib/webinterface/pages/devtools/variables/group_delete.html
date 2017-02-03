@@ -4,9 +4,11 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devtools/device_types/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Confirm Device Type Enable: {{ device_type.label }}
+                    <h1 class="page-header">
+                        <a class="success" href="/devtools/variables/group/{{var_group.id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Confirm Variable Group Delete: <em>{{ var_group.group_label }}</em>
                     </h1>
+                    <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -17,20 +19,20 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Confirm enabling device type: <em>{{ device_type.label }}</em></label>
+                            <label>Confirm delete variable group: <em>{{ var_group.group_label }}</em></label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Disabling a device type will render automation devices that use this device type unusable.</p>
-                            <p>Type "<strong>enable</strong>" to confirm:</p>
+                            <p> Delete a command will render automation devices that use this command unusable.</p>
+                            <p>Type "<strong>delete</strong>" to confirm:</p>
     						<div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">
                                 </div>
                             </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/devtools/device_types/{{device_type.id}}/details">Cancel (Do not enable)</a>
-                            <button type="submit" class="btn btn-warning">Enable Module</button>
+                            <a class="btn btn-md btn-success" href="/devtools/variables/group/{{var_group.id}}/details">Cancel (Do not delete)</a>
+                            <button type="submit" class="btn btn-danger">Delete Command</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -52,7 +54,7 @@
     $('form').validate({
         rules: {
             confirm: {
-                customrule: 'enable',
+                customrule: 'delete',
                 required: true,
             },
         },

@@ -7,8 +7,14 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devtools/modules/{{ module.id }}/details" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label}}</h1>
+                    <h1 class="page-header">
+                        <a class="success" href="{%
+                        if display_type == "edit"
+                        %}/devtools/modules/{{ module.id }}/details{%
+                        else
+                        %}/devtools/modules/index{% endif %}" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        {{ header_label}}
+                    </h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->

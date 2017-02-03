@@ -6,7 +6,7 @@
                 <div class="col-lg-12">
                     <h1 class="page-header">
                         <a class="success" href="/devtools/commands/{{command.id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Confirm Command Enable
+                        Confirm Command Enable: {{ command.label }}
                     </h1>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -22,10 +22,8 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Disabling a command will render automation devices that use this command unusable. All
-                                 command configurations will be deleted locally and from the server.
-                            </p>
-                                Type "enable" to confirm.<br>
+                            <p>Disabling a command will render automation devices that use this command unusable.</p>
+                            <p>Type "<strong>enable</strong>" to confirm:</p>
     						<div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">

@@ -254,6 +254,33 @@ class Commands(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def dev_delete_command(self, command_id, **kwargs):
+        """
+        Delete a command at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
+
+        if command_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete command",
+                'apimsg': command_results['content']['message'],
+                'apimsghtml': command_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command deleted.",
+            'command_id': command_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
     def dev_enable_command(self, command_id, **kwargs):
         """
         Enable a command at the Yombo server level, not at the local gateway level.

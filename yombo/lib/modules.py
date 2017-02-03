@@ -909,6 +909,33 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def dev_delete_module(self, module_id, **kwargs):
+        """
+        Delete a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        module_results = yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Module deleted.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
     def dev_enable_module(self, module_id, **kwargs):
         """
         Enable a module at the Yombo server level, not at the local gateway level.

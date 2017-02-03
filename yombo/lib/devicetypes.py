@@ -347,6 +347,99 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def dev_enable_device_type(self, device_type_id, **kwargs):
+        """
+        Enable a device_type at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to enable.
+        :param kwargs:
+        :return:
+        """
+        #        print "enabling device_type: %s" % device_type_id
+        api_data = {
+            'status': 1,
+        }
+
+        device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
+
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable device type",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command enabled.",
+            'device_type_id': device_type_id,
+        }
+        returnValue(results)
+
+
+    @inlineCallbacks
+    def dev_delete_device_type(self, device_type_id, **kwargs):
+        """
+        Delete a device_type at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to delete.
+        :param kwargs:
+        :return:
+        """
+        device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id)
+
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete device type",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command deleted.",
+            'device_type_id': device_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_disable_device_type(self, device_type_id, **kwargs):
+        """
+        Enable a device_type at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to disable.
+        :param kwargs:
+        :return:
+        """
+#        print "disabling device_type: %s" % device_type_id
+        api_data = {
+            'status': 0,
+        }
+
+        device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
+ #       print("disable device_type results: %s" % device_type_results)
+
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable device_type",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command disabled.",
+            'device_type_id': device_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
     def dev_add_command(self, device_type_id, command_id, **kwargs):
         """
         Add a command to device type at the Yombo server level, not at the local gateway level.
@@ -409,72 +502,6 @@ class DeviceTypes(YomboLibrary):
             'device_type_id': device_type_id,
         }
         returnValue(results)
-
-    @inlineCallbacks
-    def dev_enable_device_type(self, device_type_id, **kwargs):
-        """
-        Enable a device_type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to enable.
-        :param kwargs:
-        :return:
-        """
-#        print "enabling device_type: %s" % device_type_id
-        api_data = {
-            'status': 1,
-        }
-
-        device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
-
-        if device_type_results['code'] != 200:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't enable device type",
-                'apimsg': device_type_results['content']['message'],
-                'apimsghtml': device_type_results['content']['html_message'],
-            }
-            returnValue(results)
-
-        results = {
-            'status': 'success',
-            'msg': "Command enabled.",
-            'device_type_id': device_type_id,
-        }
-        returnValue(results)
-
-    @inlineCallbacks
-    def dev_disable_device_type(self, device_type_id, **kwargs):
-        """
-        Enable a device_type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to disable.
-        :param kwargs:
-        :return:
-        """
-#        print "disabling device_type: %s" % device_type_id
-        api_data = {
-            'status': 0,
-        }
-
-        device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
- #       print("disable device_type results: %s" % device_type_results)
-
-        if device_type_results['code'] != 200:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't disable device_type",
-                'apimsg': device_type_results['content']['message'],
-                'apimsghtml': device_type_results['content']['html_message'],
-            }
-            returnValue(results)
-
-        results = {
-            'status': 'success',
-            'msg': "Command disabled.",
-            'device_type_id': device_type_id,
-        }
-        returnValue(results)
-
 
 class DeviceType:
     """

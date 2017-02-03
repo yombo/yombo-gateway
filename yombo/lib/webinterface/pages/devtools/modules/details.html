@@ -79,7 +79,7 @@
                             <label>Description</label>
                         </div>
                         <!-- /.panel-heading -->
-                        <div class="panel-body">
+                        <div class="panel-body" style="max-height: 40em;overflow-y: scroll;">
                             {{ module.description|format_markdown(module.description_formatting) }}<br>
                         </div>
                     </div>
@@ -93,6 +93,10 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <label>Module Variables</label>
+                             {% if module.status <= 1 %}
+                            <a class="btn btn-md btn-primary" href="/devtools/modules/{{module.id}}/variables" title="Edit what variables are available for a module">Edit Module Variables</a>
+                             {% endif %}
+
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -117,6 +121,7 @@
                                          </tr>{% endfor -%}
                                     </tbody>
                                 </table>
+<a class="btn btn-md btn-primary" href="/devtools/variables/group/add/{{module.id}}/module">New Variable Group</a>
                             </div>
                         </div>
                     </div>

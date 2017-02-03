@@ -45,7 +45,7 @@
                             <p>Usually a short version of the group name. Examples: connection, device_settings, user_data</p>') }}
                             <br>
                             <div class="input-group">
-                                <input tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'groupname', 'group_name'" value="{{ group.group_machine_label }}">
+                                <input tabindex="2" type="text" class="form-control" name="group_machine_label" id="group_machine_label" size="30" placeholder="'groupname', 'group_name'" value="{{ group.group_machine_label }}">
                             </div>
 						</div>
 
@@ -57,7 +57,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <textarea tabindex="5" class="form-control" rows="15" cols="60" name="group_description" id="group_description" placeholder="Description">{{ group.description }}</textarea>
+                                <textarea tabindex="5" class="form-control" rows="15" cols="60" name="group_description" id="group_description" placeholder="Description">{{ group.group_description }}</textarea>
                             </div>
 						</div>
 
@@ -69,7 +69,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input tabindex="4" type="text" class="form-control" name="group_weight" id="group_weight" size="5" placeholder="Description of group." value="{{ group.short_description }}">
+                                <input tabindex="4" type="text" class="form-control" name="group_weight" id="group_weight" size="5" placeholder="Description of group." value="{{ group.group_weight }}">
                             </div>
 						</div>
 

@@ -11,11 +11,15 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">{{ _('webinterface_label', 'Remove command from device type') }}</h4>
+        <h4 class="modal-title" id="myModalLabel">{{ _('webinterface_label', 'Add command from device type') }}</h4>
       </div>
       <div class="modal-body">
           <p>
-              Removes a command from a device type.
+              Adds a command to a device type. This allows any devices that are registered as this device type to
+              accept a new command.
+              </p>
+          <p>
+              <strong>Note</strong>: Just because it can accept accept a command, doest not mean it must process it.
           </p>
       </div>
       <div class="modal-footer">
@@ -27,7 +31,7 @@
 
             <div class="row">
                 <div class="col-lg-12">
-<h1 class="page-header">{{ _('webinterface_label', 'Remove a command from device type') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
+                    <h1 class="page-header">{{ _('webinterface_label', 'Add command to device type') }}: {{ device_type.label }} <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
                     <p>
                         A list of available commands.
                     </p>
@@ -83,7 +87,7 @@
 {% block body_bottom %}
 <script>
     function actionFormatter(value, row) {
-        return '<a href="/devtools/device_types/{{ device_type_id }}/add_command/' + row.id + '">Add command to device type</a>';
+        return '<a href="/devtools/device_types/{{ device_type.id }}/add_command/' + row.id + '">Add command to device type</a>';
     }
 
     function labelFormatter(value, row) {
@@ -95,7 +99,7 @@
         } else {
             public_state = 'Public';
         }
-        return value + ' (' + public_state + ') <a class="btn btn-sm btn-primary" href="/devtools/device_types/{{ device_type_id }}/add_command/' + row.id + '">Add command to device type</a>';
+        return value + ' (' + public_state + ') <a class="btn btn-sm btn-primary" href="/devtools/device_types/{{ device_type.id }}/add_command/' + row.id + '">Add command to device type</a>';
     }
 
 

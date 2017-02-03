@@ -8,15 +8,15 @@
                     <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/modules/{{var_group.relation_id}}/variables" aria-label="Delete">
   <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Variable Group Details: {{ var_group.group_label}} </h1>
  {% if var_group.status == 0 %}
-                    <a class="btn btn-md btn-primary" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/edit" title="Edit module details such as description and links.">Edit Variable Group</a>
-                    <a class="btn btn-md btn-success" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/enable" title="Edit module details such as description and links.">Enable Variable Group</a>
-                    <a class="btn btn-md btn-danger" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/delete" title="Edit module details such as description and links.">Delete Variable Group</a>
+                    <a class="btn btn-md btn-primary" href="/devtools/variables/group/{{var_group.id}}/edit" title="Edit module details such as description and links.">Edit Variable Group</a>
+                    <a class="btn btn-md btn-success" href="/devtools/variables/group/{{var_group.id}}/enable" title="Edit module details such as description and links.">Enable Variable Group</a>
+                    <a class="btn btn-md btn-danger" href="/devtools/variables/group/{{var_group.id}}/delete" title="Edit module details such as description and links.">Delete Variable Group</a>
  {% elif var_group.status == 1  %}
-                    <a class="btn btn-md btn-primary" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/edit" title="Edit module details such as description and links.">Edit Variable Group</a>
-                    <a class="btn btn-md btn-warning" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/disable" title="Edit module details such as description and links.">Disable Variable Group</a>
-                    <a class="btn btn-md btn-danger" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/delete" title="Edit module details such as description and links.">Delete Variable Group</a>
+                    <a class="btn btn-md btn-primary" href="/devtools/variables/group/{{var_group.id}}/edit" title="Edit module details such as description and links.">Edit Variable Group</a>
+                    <a class="btn btn-md btn-warning" href="/devtools/variables/group/{{var_group.id}}/disable" title="Edit module details such as description and links.">Disable Variable Group</a>
+                    <a class="btn btn-md btn-danger" href="/devtools/variables/group/{{var_group.id}}/delete" title="Edit module details such as description and links.">Delete Variable Group</a>
  {% elif var_group.status == 2  %}
-                    <a class="btn btn-md btn-success" href="/devtools/modules/{{var_group.relation_id}}/variables/group/{{var_group.id}}/enable" title="Edit module details such as description and links.">Enable Variable Group</a>
+                    <a class="btn btn-md btn-success" href="/devtools/variables/group/{{var_group.id}}/enable" title="Edit module details such as description and links.">Enable Variable Group</a>
  {% endif %}
                         <hr class="under-buttons">
                 </div>
@@ -24,7 +24,7 @@
             </div>
             <!-- /.row -->
             <div class="row">
-                <div class="col-lg-6 col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <label>Basic Information</label>
@@ -48,7 +48,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-6 col-md-6">
+                <div class="col-lg-8 col-md-6">
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <label>Associated Fields</label>

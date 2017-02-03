@@ -46,6 +46,10 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             # session = "mysession"
 
             # print "request:url: %s" % request.path
+            if hasattr(request, 'breadcrumb') is False:
+                request.breadcrumb = []
+                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+
             session = webinterface.sessions.load(request)
             if login_redirect is not None:
                 if session is False:
@@ -107,12 +111,29 @@ def require_auth_pin(*args, **kwargs):
             # webinterface = a[0]
             # request = a[1]
             # session = "mysession"
+            if hasattr(request, 'breadcrumb') is False:
+                request.breadcrumb = []
+                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
                 return page.render(alerts=webinterface.get_alerts(),
                                data=webinterface.data)
 
+            return call(f, webinterface, request, *a, **kw)
+        return wrapped_f
+    return deco
+
+def run_first(*args, **kwargs):
+    def call(f, *args, **kwargs):
+        return f(*args, **kwargs)
+
+    def deco(f):
+        @wraps(f)
+        def wrapped_f(webinterface, request, *a, **kw):
+            if hasattr(request, 'breadcrumb') is False:
+                request.breadcrumb = []
+                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
             return call(f, webinterface, request, *a, **kw)
         return wrapped_f
     return deco

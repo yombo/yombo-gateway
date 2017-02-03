@@ -31,6 +31,7 @@
                                          <tr>
                                              <td>
                                                  <label>Label:</label> {{ variable_group.group_label }}<br>
+                                                 <label>Status:</label> <span class="{% if variable_group.status == 2 %}label-warning{% endif %}">{{ variable_group.status|status_to_string }}</span><br>
                                                  <label>Description:</label> {{ variable_group.group_description }}
                                                  <br>
                                                  <a class="btn btn-sm btn-primary" href="/devtools/variables/group/{{ variable_group.id }}/details">Details</a>
