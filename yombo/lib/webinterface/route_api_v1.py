@@ -118,6 +118,33 @@ def route_api_v1(webapp):
             }
             returnValue(json.dumps(data))
 
+        @webapp.route('/inputtypes/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_inputtypes_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/input_type?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            returnValue(json.dumps(data))
 
         @webapp.route('/modules/index', methods=['GET'])
         @require_auth()

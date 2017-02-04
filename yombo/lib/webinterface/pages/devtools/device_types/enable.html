@@ -4,7 +4,7 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devtools/device_types/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                    <h1 class="page-header"><a class="success" href="/devtools/device_types/{{device_type.id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         Confirm Device Type Enable: {{ device_type.label }}
                     </h1>
                 </div>
@@ -21,7 +21,7 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Disabling a device type will render automation devices that use this device type unusable.</p>
+                            <p>Are you sure you want enable this device type?</p>
                             <p>Type "<strong>enable</strong>" to confirm:</p>
     						<div class="form-group">
                                 <div class="input-group">

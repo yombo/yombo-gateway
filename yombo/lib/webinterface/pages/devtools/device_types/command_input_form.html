@@ -1,0 +1,175 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/devtools/device_types/{{ device_type.id }}/details" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label}}</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form method="post" id="devicetypeedit">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+						<div class="form-group">
+                            <label style="margin-top: 10px; margin-bottom: 0px">Live Update: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalliveupdate"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalliveupdate", 'Live Update', '
+                            <p>When set, any application or device should send the command as the user is typing data. This allows for things like sliders to control light dimming.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <select tabindex="5" class="selectpicker show-tick form-control" name="live_update" id="live_update">
+                                    <option value="0"{% if command_input.live_update == 0 %} selected{% endif %} data-subtext="No live udpates.">Disabled</option>
+                                    <option value="1"{% if command_input.live_update == 1 %} selected{% endif %} data-subtext="Send live udpates.">Enabled</option>
+                                </select>
+                            </div>
+						</div>
+
+						<div class="form-group">
+                            <label style="margin-top: 10px; margin-bottom: 0px">Label: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalrequired"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalrequired", 'Required', '
+                            <p>If enabled, this input field cannot be blank when sending a command to a device.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <select tabindex="5" class="selectpicker show-tick form-control" name="required" id="required">
+                                    <option value="0"{% if command_input.required == 0 %} selected{% endif %} data-subtext="Input field can be empty">No</option>
+                                    <option value="1"{% if command_input.required == 1 %} selected{% endif %} data-subtext="Input field must contain a value">Yes</option>
+                                </select>
+                            </div>
+						</div>
+
+						<div class="form-group">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Notes: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalnotes"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalnotes", 'Notes', '
+                            <p>Any specific notes about the device type - command - input relationship.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="notes" id="notes" size="30" value="{{ command_input.notes }}">
+                            </div>
+						</div>
+
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <input type="submit" />
+            </form>
+<br>
+{% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+     $(document).ready(function(){
+        var i=1;
+
+        (function($) {
+            $.extend({
+                toDictionary: function(query) {
+                    var parms = {};
+                    var items = query.split("&"); // split
+                    for (var i = 0; i < items.length; i++) {
+                        var values = items[i].split("=");
+                        var key = decodeURIComponent(values.shift());
+                        var value = values.join("=")
+                        parms[key] = decodeURIComponent(value);
+                    }
+                    return (parms);
+                }
+            })
+        })(jQuery);
+
+        (function($) {
+            $.fn.serializeFormJSON = function() {
+                var o = [];
+                $(this).find('tr').each(function() {
+                    var elements = $(this).find('input, textarea, select')
+                    if (elements.size() > 0) {
+                        var serialized = $(this).find('input, textarea, select').serialize();
+                        var item = $.toDictionary(serialized );
+                        o.push(item);
+                    }
+                });
+                return o;
+            };
+        })(jQuery);
+
+        $("#devicetypeedit").submit(function(event) {
+//            event.preventDefault();
+
+            var rawData = $('#devicetypeedit').serializeFormJSON();
+            var formData = JSON.stringify(rawData);
+            console.log(formData);
+        });
+
+
+    });
+
+    $('.ls-modal').on('click', function(e){
+      e.preventDefault();
+      $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
+    });
+
+    $('form').validate({
+        rules: {
+            live_update: {
+                required: true,
+            },
+            required: {
+                required: true,
+            },
+            notes: {
+                maxlength: 1024,
+                required: false,
+            },
+
+        },
+        messages: {
+        },
+        highlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+            $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+        },
+        unhighlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+            $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+        },
+        errorElement: 'span',
+            errorClass: 'input-validation-error',
+            errorPlacement: function(error, element) {
+                if(element.length) {
+                    error.insertAfter(element);
+                } else {
+                error.insertAfter(element);
+                }
+            }
+     });
+    </script>
+{% endblock %}

@@ -9,7 +9,7 @@ This library keeps track of what modules can access what device types, and what 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import twisted libraries
@@ -297,23 +297,22 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
+        print("dt_results: %s" % device_type_results)
 
-        dt_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
-        print("dt_results: %s" % dt_results)
-
-        if dt_results['code'] != 200:
+        if device_type_results['code'] != 200:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add device type",
-                'apimsg': dt_results['content']['message'],
-                'apimsghtml': dt_results['content']['html_message'],
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
             }
             returnValue(results)
 
         results = {
             'status': 'success',
             'msg': "Device type added.",
-            'device_type_id': dt_results['data']['id'],
+            'device_type_id': device_type_results['data']['id'],
         }
         returnValue(results)
 
@@ -326,23 +325,49 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-
-        dt_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
+        device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
         # print("module edit results: %s" % module_results)
 
-        if dt_results['code'] != 200:
+        if device_type_results['code'] != 200:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit device type",
-                'apimsg': dt_results['content']['message'],
-                'apimsghtml': dt_results['content']['html_message'],
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
             }
             returnValue(results)
 
         results = {
             'status': 'success',
             'msg': "Device type edited.",
-            'device_type_id': dt_results['data']['id'],
+            'device_type_id': device_type_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_delete_device_type(self, device_type_id, **kwargs):
+        """
+        Delete a device_type at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to delete.
+        :param kwargs:
+        :return:
+        """
+        device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id)
+
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete device type",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command deleted.",
+            'device_type_id': device_type_id,
         }
         returnValue(results)
 
@@ -374,34 +399,6 @@ class DeviceTypes(YomboLibrary):
         results = {
             'status': 'success',
             'msg': "Command enabled.",
-            'device_type_id': device_type_id,
-        }
-        returnValue(results)
-
-
-    @inlineCallbacks
-    def dev_delete_device_type(self, device_type_id, **kwargs):
-        """
-        Delete a device_type at the Yombo server level, not at the local gateway level.
-
-        :param device_type_id: The device_type ID to delete.
-        :param kwargs:
-        :return:
-        """
-        device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id)
-
-        if device_type_results['code'] != 200:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't delete device type",
-                'apimsg': device_type_results['content']['message'],
-                'apimsghtml': device_type_results['content']['html_message'],
-            }
-            returnValue(results)
-
-        results = {
-            'status': 'success',
-            'msg': "Command deleted.",
             'device_type_id': device_type_id,
         }
         returnValue(results)
@@ -440,7 +437,7 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_add_command(self, device_type_id, command_id, **kwargs):
+    def dev_command_add(self, device_type_id, command_id, **kwargs):
         """
         Add a command to device type at the Yombo server level, not at the local gateway level.
 
@@ -455,9 +452,7 @@ class DeviceTypes(YomboLibrary):
             'command_id': command_id,
         }
 
-        print "about to add command....."
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type_command', api_data)
-        print "add results: %s" % device_type_results
         if device_type_results['code'] != 200:
             results = {
                 'status': 'failed',
@@ -475,7 +470,71 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_remove_command(self, device_type_id, command_id, **kwargs):
+    def dev_command_input_add(self, device_type_id, command_id, input_type_id, data, **kwargs):
+        """
+        Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to enable.
+        :param command_id: The command_id ID to add/associate.
+        :param kwargs:
+        :return:
+        """
+        #        print "enabling device_type: %s" % device_type_id
+        api_data = {
+            'device_type_id': device_type_id,
+            'command_id': command_id,
+            'input_type_id': input_type_id,
+            'live_update': data['live_update'],
+            'required':  data['required'],
+            'notes': data['notes'],
+        }
+
+        device_type_results = yield self._YomboAPI.request('POST', '/v1/device_command_input', api_data)
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't associate input to device type command",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Associated input to device type command",
+            'device_type_id': device_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_command_input_remove(self, device_type_id, command_id, input_type_id, **kwargs):
+        """
+        Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to enable.
+        :param command_id: The command_id ID to add/associate.
+        :param kwargs:
+        :return:
+        """
+        device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_command_input/%s/%s/%s' % (device_type_id, command_id, input_type_id))
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't remove input from device type command",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Removed input from device type command",
+            'device_type_id': device_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_command_remove(self, device_type_id, command_id, **kwargs):
         """
         Remove a command from device type at the Yombo server level, not at the local gateway level.
 

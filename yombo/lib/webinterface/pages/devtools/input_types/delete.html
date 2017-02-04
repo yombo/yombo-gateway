@@ -5,8 +5,8 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">
-                        <a class="success" href="/devtools/device_types/{{device_type.id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Confirm Device Type Disable: {{ device_type.label }}
+                        <a class="success" href="/devtools/input_types/{{input_type.id}}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Confirm Input Type Delete: {{ input_type.label }}
                     </h1>
                     <p></p>
                 </div>
@@ -19,20 +19,20 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Confirm disabling device type: <em>{{ device_type.label }}</em></label>
+                            <label>Confirm delete input type: <em>{{ input_type.label }}</em></label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <p>Disabling a device type will render automation devices that use this device type unusable.</p>
-                            <p>Type "<strong>disable</strong>" to confirm:</p>
+                            <p> Delete a input type will render automation devices that use this input type unusable.</p>
+                            <p>Type "<strong>delete</strong>" to confirm:</p>
     						<div class="form-group">
                                 <div class="input-group">
                                     <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">
                                 </div>
                             </div>
                             <br>
-                            <a class="btn btn-md btn-success" href="/devtools/device_types/{{device_type.id}}/details">Cancel (Do not disable)</a>
-                            <button type="submit" class="btn btn-danger">Disable Device Type</button>
+                            <a class="btn btn-md btn-success" href="/devtools/input_types/{{input_type.id}}/details">Cancel (Do not delete)</a>
+                            <button type="submit" class="btn btn-danger">Delete Input Type</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -54,7 +54,7 @@
     $('form').validate({
         rules: {
             confirm: {
-                customrule: 'disable',
+                customrule: 'delete',
                 required: true,
             },
         },

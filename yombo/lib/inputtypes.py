@@ -15,11 +15,11 @@ The input type (singular) class represents one input type.
 
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
@@ -41,7 +41,7 @@ class InputTypes(YomboLibrary):
         Return an input type, searching first by input type ID and then by input type machine label.
         Modules should use `self._InputTypes` to search with:
 
-            >>> self._InputTypes['137ab129da9318]  #by uuid
+            >>> self._InputTypes['137ab129da9318']  #by uuid
         or::
             >>> self._InputTypes['living room light']  #by name
 
@@ -155,6 +155,155 @@ class InputTypes(YomboLibrary):
 #        if testCommand:
 #            return self.__yombocommands[command_id]
 
+    @inlineCallbacks
+    def dev_add_input_type(self, data, **kwargs):
+        """
+        Add a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
+        # print("dt_results: %s" % input_type_results)
+
+        if input_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add input type",
+                'apimsg': input_type_results['content']['message'],
+                'apimsghtml': input_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device type added.",
+            'input_type_id': input_type_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_edit_input_type(self, input_type_id, data, **kwargs):
+        """
+        Edit a module at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
+        # print("module edit results: %s" % module_results)
+
+        if input_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit input type",
+                'apimsg': input_type_results['content']['message'],
+                'apimsghtml': input_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device type edited.",
+            'input_type_id': input_type_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_delete_input_type(self, input_type_id, **kwargs):
+        """
+        Delete a input_type at the Yombo server level, not at the local gateway level.
+
+        :param input_type_id: The input_type ID to delete.
+        :param kwargs:
+        :return:
+        """
+        input_type_results = yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id)
+
+        if input_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete input type",
+                'apimsg': input_type_results['content']['message'],
+                'apimsghtml': input_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command deleted.",
+            'input_type_id': input_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_enable_input_type(self, input_type_id, **kwargs):
+        """
+        Enable a input_type at the Yombo server level, not at the local gateway level.
+
+        :param input_type_id: The input_type ID to enable.
+        :param kwargs:
+        :return:
+        """
+        #        print "enabling input_type: %s" % input_type_id
+        api_data = {
+            'status': 1,
+        }
+
+        input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
+
+        if input_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable input type",
+                'apimsg': input_type_results['content']['message'],
+                'apimsghtml': input_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command enabled.",
+            'input_type_id': input_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_disable_input_type(self, input_type_id, **kwargs):
+        """
+        Enable a input_type at the Yombo server level, not at the local gateway level.
+
+        :param input_type_id: The input_type ID to disable.
+        :param kwargs:
+        :return:
+        """
+#        print "disabling input_type: %s" % input_type_id
+        api_data = {
+            'status': 0,
+        }
+
+        input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
+ #       print("disable input_type results: %s" % input_type_results)
+
+        if input_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable input_type",
+                'apimsg': input_type_results['content']['message'],
+                'apimsghtml': input_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Command disabled.",
+            'input_type_id': input_type_id,
+        }
+        returnValue(results)
+
 
 class InputType:
     """
@@ -183,10 +332,9 @@ class InputType:
         self.machine_label = input_type.machine_label
         self.label = input_type.label
         self.description = input_type.description
-        self.encrypted = input_type.encrypted
-        self.address_casing = input_type.address_casing
-        self.address_regex = input_type.address_regex
-        self.admin_notes = input_type.admin_notes
+        self.encryption = input_type.encryption
+        self.input_casing = input_type.input_casing
+        self.input_regex = input_type.input_regex
         self.always_load = input_type.always_load
         self.status = input_type.status
         self.public = input_type.public
@@ -210,11 +358,10 @@ class InputType:
             'category_id'          : str(self.category_id),
             'machine_label': str(self.machine_label),
             'label'        : str(self.label),
-            'description'  : str(self.description),
-            'encrypted'    : str(self.encrypted),
-            'address_casing': str(self.address_casing),
-            'address_regex': str(self.address_regex),
-            'admin_notes'  : str(self.admin_notes),
+            'description'  : str(self.encryption),
+            'encryption'    : str(self.encrypted),
+            'input_casing': str(self.input_casing),
+            'input_regex': str(self.input_regex),
             'always_load'  : str(self.always_load),
             'always_load'  : str(self.always_load),
             'public'       : int(self.public),

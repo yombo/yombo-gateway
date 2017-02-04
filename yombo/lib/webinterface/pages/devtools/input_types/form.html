@@ -7,14 +7,19 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devtools/device_types/{{ device_type.id }}/details" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label}}</h1>
-                    <p></p>
+                    <h1 class="page-header">
+                        <a class="success" href="{%
+                        if display_type == "edit"
+                        %}/devtools/input_types/{{ module.id }}/details{%
+                        else
+                        %}/devtools/input_types/index{% endif %}" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        {{ header_label}}
+                    </h1>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="devicetypeedit">
+            <form method="post" id="inputtypeedit">
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
@@ -27,11 +32,11 @@
                             <label style="margin-top: 10px; margin-bottom: 0px">Label: </label>
                             <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modallabel", 'Label', '
-                            <p>A label for the device type. A short but helpful title to describe what the device type does. For example: Insteon Appliance, Z-Wave Door Lock.</p>
+                            <p>A label for the input type. A short but helpful title to describe what the input type does. For example: IP V4 Address</p>
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Device Type Name" value="{{ device_type.label }}" autofocus required>
+                                <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Input Type Name" value="{{ input_type.label }}" autofocus required>
                             </div>
 						</div>
 
@@ -40,22 +45,22 @@
                             <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalmachinelabel", 'Machine Label', '
                             <p>The machine label is used by developers and the gateway to determine uniqueness. <strong>Once set, this cannot be changed!</strong></p>
-                            <p>Usually a short version of the device name. Example: x10_api, zwave_door_lock, inteon_lamp</p>') }}
+                            <p>Usually a short version of the input type label. Example: ip_v4_address</p>') }}
                             <br>
                             <div class="input-group">
-                                <input {% if action_type == 'edit' %}disabled {% endif %}tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'device_type_name', 'devicetypename'" value="{{ device_type.machine_label }}">
-                                <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ device_type.machine_label }}">                            </div>
+                                <input {% if action_type == 'edit' %}disabled {% endif %}tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'ip_v4_address', 'ip_v6_address'" value="{{ input_type.machine_label }}">
+                                <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ input_type.machine_label }}">                            </div>
 						</div>
 
 						<div class="form-group">
                             <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
                             <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modaldescription", 'Description', '
-                            <p>A description of the device type.</p>
+                            <p>A description of the input type.</p>
                             ') }}
                             <br>
                             <div class="input-group">
-                                <textarea tabindex="3" class="form-control" rows="15" cols="60" name="description" id="description" placeholder="Description">{{ device_type.description }}</textarea>
+                                <textarea tabindex="3" class="form-control" rows="15" cols="60" name="description" id="description" placeholder="Description">{{ input_type.description }}</textarea>
                             </div>
 						</div>
 
@@ -63,15 +68,60 @@
                             <label style="margin-top: 0px; margin-bottom: 0px">Category: </label>
                             <a href="#" data-toggle="modal" data-target="#modalcategory"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalcategory", 'Category', '
-                            <p>A category the device type belongs to.</p>
+                            <p>A category the input type belongs to.</p>
                             ') }}
                             <br>
                             <div class="input-group">
                                 <select tabindex="4" data-header="Select a category" data-live-search="true" data-size="10" class="selectpicker show-tick form-control" name="category_id" id="category_id">
                                     {% for category in categories if not category.id == category.parent_id -%}
 
-                                    <option value="{{ category.id }}"{% if device_type.category_id == category.id %} selected{% endif %}>{{category.label}}</option>
+                                    <option value="{{ category.id }}"{% if input_type.category_id == category.id %} selected{% endif %}>{{category.label}}</option>
                                     {% endfor %}
+                                </select>
+                            </div>
+						</div>
+
+                        <div class="form-group">
+                            <label style="margin-top: 10px; margin-bottom: 0px">Input Casing: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalinputcasing"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalinputcasing", 'Input Casing', '
+                            <p>If the input casing should be change. For example, make everything lower case, upper case, camelcasing, etc.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <select tabindex="5" class="selectpicker show-tick form-control" name="input_casing" id="input_casing">
+                                    <option value="lower"{% if input_type.input_casing == "none" %} selected{% endif %}>None</option>
+                                    <option value="lower"{% if input_type.input_casing == "lower" %} selected{% endif %}>Lower Case</option>
+                                    <option value="upper"{% if input_type.input_casing == "upper" %} selected{% endif %}>Ppper Case</option>
+                                </select>
+                            </div>
+						</div>
+
+						<div class="form-group">
+                            <label style="margin-top: 10px; margin-bottom: 0px">Input Regex: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalinputregex"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalinputregex", 'Input Regex', '
+                            <p>A regex filter to validate if the input is valid.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <input tabindex="1" type="text" class="form-control" name="input_regex" id="input_regex" size="35" placeholder="Input Type Name" value="{{ input_type.label }}">
+                            </div>
+						</div>
+
+                        <div class="form-group">
+                            <label style="margin-top: 10px; margin-bottom: 0px">Encryption: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalinputcasing"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalinputcasing", 'Encryption', '
+                            <p>Defines if the input should be encrypted or not. Useful for passwords or other sensitive data.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <select tabindex="5" class="selectpicker show-tick form-control" name="input_casing" id="input_casing">
+                                    <option value="nosuggestion"{% if input_type.input_casing == "nosuggestion" %} selected{% endif %}>No Suggestion</option>
+                                    <option value="never"{% if input_type.input_casing == "never" %} selected{% endif %}>Never</option>
+                                    <option value="suggested"{% if input_type.input_casing == "suggested" %} selected{% endif %}>Suggested</option>
+                                    <option value="always"{% if input_type.input_casing == "always" %} selected{% endif %}>Always</option>
                                 </select>
                             </div>
 						</div>
@@ -80,15 +130,15 @@
                             <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
                             <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
-                            <p>You can enable or disable the device type as needed. When disabled, the device type cannot be used by gateways.</p>
+                            <p>You can enable or disable the input type as needed. When disabled, the input type cannot be used by gateways.</p>
                             <p>Items will be marked deleted a while before they are actually purged from the system. This allows the
-                            delete device type to fully propogate through the entire Yombo eco system.</p>') }}
+                            delete input type to fully propogate through the entire Yombo eco system.</p>') }}
                             <br>
                             <div class="input-group">
                                 <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
-                                    <option value="0"{% if device_type.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
-                                    <option value="1"{% if device_type.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
-                                    <option value="2"{% if device_type.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
+                                    <option value="0"{% if input_type.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
+                                    <option value="1"{% if input_type.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
+                                    <option value="2"{% if input_type.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
                                 </select>
                             </div>
 						</div>
@@ -96,10 +146,10 @@
 						<div class="form-group">
                             <label style="margin-top: 0px; margin-bottom: 0px">Public Status: </label>
                             <a href="#" data-toggle="modal" data-target="#modalpublicstatus"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalpublicstatus", 'Device type public status', '
+                            {{ macros.modal("modalpublicstatus", 'Input type public status', '
                             <p>There are three public status levels:</p>
                             <ul>
-                                <li>private - Only the user that created the device type can manage or use the device type.</li>
+                                <li>private - Only the user that created the input type can manage or use the input type.</li>
                                 <li>public pending - Access like private, but a request is pending with Yombo support to convert it to public.</li>
                                 <li>public - Available to any Yombo user. Once it\'s public, it\'s can no longer be controlled by the creator.</li>
                             </ul>
@@ -107,9 +157,9 @@
                             <br>
                             <div class="input-group">
                                 <select tabindex="5" class="selectpicker show-tick form-control" name="public" id="public">
-                                    <option value="0"{% if device_type.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
-                                    <option value="1"{% if device_type.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
-                                    <option value="2"{% if device_type.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>
+                                    <option value="0"{% if input_type.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
+                                    <option value="1"{% if input_type.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
+                                    <option value="2"{% if input_type.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>
                                 </select>
                             </div>
 						</div>
@@ -168,10 +218,10 @@
             };
         })(jQuery);
 
-        $("#devicetypeedit").submit(function(event) {
+        $("#inputtypeedit").submit(function(event) {
 //            event.preventDefault();
 
-            var rawData = $('#devicetypeedit').serializeFormJSON();
+            var rawData = $('#inputtypeedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
             console.log(formData);
         });
