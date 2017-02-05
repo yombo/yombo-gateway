@@ -54,7 +54,17 @@
                 <div class="col-lg-7">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <h4>Device Type Commands</h4>
+                            <h4>
+                                Device Type Commands
+                                <a style="float: right;" href="#" data-toggle=modal data-target=#modaldtc><i class="fa fa-question fa-lg"></i></a>
+                            </h4>
+                            {{ macros.modal("modaldtc", 'Device Type Commands', '
+                            <p>
+                                Device type commands maps a list of possible commands that a specific device type can perform. For example,
+                                appliances be On or Off, while lights can be On, Off, Dimmed, or set to a specific level.
+                                This helps the gateway and other modules know more about specific device types.
+                            </p>
+                            ') }}
                             Commands associated with this device type. A list of commands the device type can do.
                         </div>
                         <!-- /.panel-heading -->
@@ -89,10 +99,22 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Module Variables</label>
+                            <h4>
+                                Module Variables
+                               <a style="float: right;" href="#" data-toggle=modal data-target=#modalmodvariables><i class="fa fa-question fa-lg"></i></a>
                              {% if device_type.status <= 1 %}
                             <a class="btn btn-md btn-primary" href="/devtools/device_types/{{device_type.id}}/variables" title="Edit what variables are available for a device type">Edit Device Type Variables</a>
                              {% endif %}
+                            </h4>
+                            {{ macros.modal("modalmodvariables", 'Module Variables', '
+                            <p>
+                                Module variables allow end-users to configure the module when being installed and/or setup. Some examples include
+                                connection information such as USB port to use. Any variables defined here will be made available to the module as
+                                "self._ModuleVariables". If a variable field named "port" is defined, it\'s value can be retrieved with
+                                "self._ModuleVariables[\'port\'][\'data\'][0][\'value\']" from the module. For more details see
+                                <a href="https://yombo.net/docs/modules" target="_blank">Module Development</a> at Yombo.net.
+                            </p>
+                            ') }}
 
                         </div>
                         <!-- /.panel-heading -->
@@ -118,7 +140,6 @@
                                          </tr>{% endfor -%}
                                     </tbody>
                                 </table>
-<a class="btn btn-md btn-primary" href="/devtools/variables/group/add/{{device_type.id}}/device_type">New Variable Group</a>
                             </div>
                         </div>
                     </div>

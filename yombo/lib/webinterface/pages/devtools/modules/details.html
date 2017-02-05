@@ -40,7 +40,7 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Module Type: </label><br>
                             {{ module.module_type }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description Formatting: </label><br>
-                            {{ module.description_formating }}<br>
+                            {{ module.description_formatting }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Documentation Link: </label><br>
                             {{ module.doc_link|make_link("Link", "_blank") }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Respository Link: </label><br>
@@ -54,7 +54,13 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Development Branch: </label><br>
                             {{ module.dev_branch }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                            {{ module.status|status_to_string }}<br>
+                            {% if module.status|status_to_string == "Disabled"
+                            %}<span class="alert-warning">Disabled</span>{%
+                            elif module.status|status_to_string == "Deleted"
+                            %}<span class="alert-warning">Deleted</span>{%
+                            else
+                            %}{{module.status|status_to_string}}{% endif %}
+                            <br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
                             {{ module.public|public_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
@@ -121,7 +127,6 @@
                                          </tr>{% endfor -%}
                                     </tbody>
                                 </table>
-<a class="btn btn-md btn-primary" href="/devtools/variables/group/add/{{module.id}}/module">New Variable Group</a>
                             </div>
                         </div>
                     </div>

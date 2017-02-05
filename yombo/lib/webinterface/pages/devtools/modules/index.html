@@ -2,6 +2,7 @@
 {% block head_css %}
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css">
+{% include 'lib/webinterface/fragments/datacard_no_label_css.tpl' %}
 {% endblock %}
 
 {% block content %}
@@ -11,11 +12,25 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">{{ _('webinterface_label', 'Available Device Types') }}</h4>
+        <h4 class="modal-title" id="myModalLabel">{{ _('webinterface_label', 'Manage Modules') }}</h4>
       </div>
       <div class="modal-body">
           <p>
-              Available modules. You can also <a href="https://yombo.net/docs/modules/building-your-first-module/" target="_blank">try creating a module yourself!</a>
+              Manage module device types and variables. To get started, learn how to <a href="https://yombo.net/docs/modules/building-your-first-module/" target="_blank">build your first module</a>.
+          </p>
+          <p>
+              Outline of steps to create a module:
+              <ul>
+          <li> Create any <a href="/devtools/commands/index">commands</a> that are needed by the module.</li>
+          <li> Create any <a href="/devtools/input_types/index">input types</a> that are needed by any commands.</li>
+          <li> Create any <a href="/devtools/device_types/index">device types</a> that the module can manage. While creating the device type,
+               be sure to map any commands the device can do and any inputs that the commands need. Don't forget to any device
+               configuration variables such as device addressing information.</li>
+          <li> Finally, create <a href="/devtools/modules/add">new module</a>. When creating the module, be sure to add
+               device types that the module can process. Also, add any module variables that are needed for things like USB connection,
+               IP address to contact the device controller, etc.</li>
+
+              </ul>
           </p>
       </div>
       <div class="modal-footer">
@@ -31,9 +46,6 @@
                     <p>
                         This lists all available modules available.
                     </p>
-                    <p>
-                        <em>Note:</em>The search function only searches on the module label.
-                    </p>
                     <br>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -45,7 +57,10 @@
                         <div class="panel-heading">
                             <h4>Available Modules
                                 <a href="/devtools/modules/add" class="btn btn-md btn-primary">Add Module</a>
-                                </h4>
+                            </h4>
+                            <p>
+                                <em>Note:</em> The search function only searches on the module label. <i class="fa fa-circle" aria-hidden="true"></i> <i class="fa fa-dot-circle"></i>
+                            </p>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -60,9 +75,7 @@
        data-search="true">
     <thead>
     <tr>
-        <th data-width="15%" data-field="action" data-formatter="actionFormatter">Actions</th>
-        <th data-width="15%" data-field="label" data-formatter="labelFormatter">Label</th>
-        <th data-width="85%" data-field="short_description">Description</th>
+        <th data-width="15%" data-field="label" data-formatter="labelFormatter"></th>
     </tr>
     </thead>
 </table>
@@ -89,16 +102,64 @@
         return '<a href="/devtools/modules/' + row.id + '/details">Details</a>, <a href="/devtools/modules/' + row.id + '/edit">Edit</a>, <a href="/devtools/modules/' + row.id + '/delete">Delete</a>';
     }
 
+    function addToString(theString, newPart) {
+        if ( theString ) {
+            console.log("asdfasdf");
+            theString = theString + ' <i style=" margin: 0px 3px 0px; vertical-align:middle; font-size: 6px;" class="fa fa-circle fa-sm"></i> ' + newPart;
+            return theString;
+        }
+        return newPart;
+    }
+
+    function ValidURL(str) { // source: http://stackoverflow.com/questions/5717093/check-if-a-javascript-string-is-a-url
+      var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+      '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.?)+[a-z]{2,}|'+ // domain name
+      '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+      '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+      '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+      '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+      return pattern.test(str);
+    }
+
     function labelFormatter(value, row) {
         var public_state;
         if (row.public == 0) {
             public_state = 'Private';
         } else if (row.public == 1) {
             public_state = 'Public Pending';
-        } else {
+        } else if (row.public == 2) {
             public_state = 'Public';
+        } else {
+            public_state = 'Unknown';
         }
-        return value + ' (' + public_state + ') ';
+
+        var status;
+        if (row.status == 0) {
+            status = '<span class="alert-warning">Disabled</span>';
+        } else if (row.status == 1) {
+            status = 'Enabled';
+        } else if (row.status == 2) {
+            status = '<span class="alert-warning">Deleted</span>';
+        } else {
+            status = 'Unknown';
+        }
+
+        var links = "";
+        if (row.doc_link && ValidURL(row.doc_link)) {
+            links += "<a href=" + row.doc_link + ">Documentation</a>"
+        }
+        if (row.repository_link && ValidURL(row.repository_link)) {
+            links = addToString(links, "<a href=" + row.repository_link + ">Software Respository</a>")
+        }
+        if (row.issue_tracker_link && ValidURL(row.issue_tracker_link)) {
+            links = addToString(links, "<a href=" + row.issue_tracker_link + ">Issure Tracker</a>")
+        }
+
+
+
+
+        return '<h4 style="margin: 5px 0 5px;"><a href="/devtools/modules/' + row.id + '/details">' + row.label + '</a></h4> <p><label>Status:</label> ' + status + ' - ' + public_state + '<br> ' + row.short_description +
+            '</p><p><label>Links</label>: ' + links + '</p>';
     }
 
 </script>{% endblock %}

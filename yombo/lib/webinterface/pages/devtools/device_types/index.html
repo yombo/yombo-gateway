@@ -2,6 +2,7 @@
 {% block head_css %}
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css">
+{% include 'lib/webinterface/fragments/datacard_no_label_css.tpl' %}
 {% endblock %}
 
 {% block content %}
@@ -61,9 +62,7 @@
        data-search="true">
     <thead>
     <tr>
-        <th data-width="15%" data-field="action" data-formatter="actionFormatter">Actions</th>
-        <th data-width="15%" data-field="label" data-formatter="labelFormatter">Label</th>
-        <th data-width="85%" data-field="description">Description</th>
+        <th data-width="15%" data-field="label" data-formatter="labelFormatter"></th>
     </tr>
     </thead>
 </table>
@@ -99,8 +98,19 @@
         } else {
             public_state = 'Public';
         }
-        return value + ' (' + public_state + ') ';
+
+        var status;
+        if (row.status == 0) {
+            status = 'Disabled';
+        } else if (row.public == 1) {
+            status = 'Enabled';
+        } else {
+            status = 'Deleted';
+        }
+
+        return '<h4 style="margin: 5px 0 5px;"><a href="/devtools/device_types/' + row.id + '/details">' + row.label + '</a></h4> <p><label>Status:</label> ' + status + ' - ' + public_state + '<br> ' + row.description + '</p>';
     }
+
 
 
 </script>{% endblock %}

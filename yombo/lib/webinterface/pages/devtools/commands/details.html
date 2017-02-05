@@ -41,7 +41,7 @@
                             {{ command.voice_cmd }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
                             {{ command.status|status_to_string }}<br>
-                            <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Public State: </label><br>
                             {{ command.public|public_to_string }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
                             {{ command.updated_at|epoch_to_human }} ({{ command.updated_at|epoch_to_pretty_date }}) <br>
