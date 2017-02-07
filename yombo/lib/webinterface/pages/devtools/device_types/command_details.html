@@ -17,7 +17,7 @@
                 <div class="col-lg-4">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Command Basic Information</label>
+                            <h4>Command Information</h4>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -44,7 +44,18 @@
                 <div class="col-lg-8">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Associated Inputs</label>
+                            <h4>
+                                Associated Command Inputs
+                                <a style="float: right;" href="#" data-toggle=modal data-target=#modalassociatedinputs><i class="fa fa-question fa-lg"></i></a>
+                            </h4>
+                            {{ macros.modal("modalassociatedinputs", 'Command Inputs', '
+                            <p>
+                                Associating an input to a command tells the Yombo framework that it should recieve input from the user for a command. For example,
+                                a lamp module can set a brightness to a certain level. An input can be associated with the set brightness on what the
+                                brightness level should be.
+                            </p>
+                            ') }}
+                            A list of inputs associated with the current command.
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -52,14 +63,17 @@
                                 <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
                                     <thead>
                                         <tr>
-                                            <th>Label</th><th>Machine<br>Label</th><th>Action</th>
+                                            <th>Input Type Label</th><th>Machine<br>Label</th><th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>{% for input in inputs %}
                                          <tr>
-                                             <td><a href="/devtools/input_types/{{ input.id }}/details">{{ input.input_type_label }}</a></td>
+                                             <td><a href="/devtools/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/details">{{ input.input_type_label }}</a></td>
                                              <td>{{ input.input_type_machine_label }}</td>
-                                             <td><a class="btn btn-sm btn-danger" href="/devtools/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/remove_input">Remove</a></td>
+                                             <td>
+                                                 <a class="btn btn-sm btn-success" href="/devtools/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/edit_input">Edit</a>
+                                                 <a class="btn btn-sm btn-danger" href="/devtools/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/remove_input">Remove</a>
+                                             </td>
                                          </tr>{% endfor -%}
                                     </tbody>
                                 </table>

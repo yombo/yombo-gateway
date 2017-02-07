@@ -485,7 +485,9 @@ class DeviceTypes(YomboLibrary):
             'command_id': command_id,
             'input_type_id': input_type_id,
             'live_update': data['live_update'],
-            'required':  data['required'],
+            'value_required':  data['value_required'],
+            'value_max':  data['value_max'],
+            'value_min':  data['value_min'],
             'notes': data['notes'],
         }
 
@@ -502,6 +504,47 @@ class DeviceTypes(YomboLibrary):
         results = {
             'status': 'success',
             'msg': "Associated input to device type command",
+            'device_type_id': device_type_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_command_input_edit(self, device_type_id, command_id, input_type_id, data, **kwargs):
+        """
+        Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
+
+        :param device_type_id: The device_type ID to enable.
+        :param command_id: The command_id ID to add/associate.
+        :param kwargs:
+        :return:
+        """
+        #        print "enabling device_type: %s" % device_type_id
+        api_data = {
+            # 'device_type_id': device_type_id,
+            # 'command_id': command_id,
+            # 'input_type_id': input_type_id,
+            'live_update': data['live_update'],
+            'value_required':  data['value_required'],
+            'value_max':  data['value_max'],
+            'value_min':  data['value_min'],
+            'value_casing':  data['value_casing'],
+            'encryption':  data['encryption'],
+            'notes': data['notes'],
+        }
+
+        device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_command_input/%s/%s/%s' % (device_type_id, command_id, input_type_id), api_data)
+        if device_type_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't update device type command input.",
+                'apimsg': device_type_results['content']['message'],
+                'apimsghtml': device_type_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Updated associated input to device type command",
             'device_type_id': device_type_id,
         }
         returnValue(results)

@@ -30,15 +30,17 @@
                                     <tbody>{% for variable_group in module.variable_groups %}
                                          <tr>
                                              <td>
-                                                 <label>Label:</label> {{ variable_group.group_label }}<br>
-                                                 <label>Status:</label> <span class="{% if variable_group.status == 2 %}label-warning{% endif %}">{{ variable_group.status|status_to_string }}</span><br>
-                                                 <label>Description:</label> {{ variable_group.group_description }}
-                                                 <br>
                                                  <a class="btn btn-sm btn-primary" href="/devtools/variables/group/{{ variable_group.id }}/details">Details</a>
                                                  <a class="btn btn-sm btn-primary" href="/devtools/variables/group/{{ variable_group.id }}/edit">Edit</a>
                                                  <a class="btn btn-sm btn-danger" href="/devtools/variables/group/{{ variable_group.id}}/delete">Delete</a>
+                                                 <br>
+                                                 <label>Label:</label> {{ variable_group.group_label }}<br>
+                                                 <label>Status:</label> <span class="{% if variable_group.status != 1 %}label-warning{% endif %}">{{ variable_group.status|status_to_string }}</span><br>
+                                                 <label>Description:</label> {{ variable_group.group_description }}
                                              </td>
-                                             <td>{% for variable_field in module.variable_fields %}
+                                             <td>
+                                                 <a class="btn btn-sm btn-primary" href="/devtools/variables/field/add/{{variable_group.id}}">Add Field</a>
+                                                 {% for variable_field in module.variable_fields %}
                                                  <ul>
                                                  {% if variable_field.group_id == variable_group.id %}
                                                      <li>
@@ -47,7 +49,6 @@
                                                  {% endif %}
                                                  </ul>
                                                  {% endfor -%}
-                                                 <a class="btn btn-sm btn-primary" href="/devtools/group/{{ variable_group.id }}/new_field">Add Field</a>
                                              </td>
                                          </tr>{% endfor -%}
                                     </tbody>

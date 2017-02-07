@@ -56,7 +56,7 @@ class Variables(YomboLibrary):
 
 
     @inlineCallbacks
-    def dev_add_group(self, data, **kwargs):
+    def dev_group_add(self, data, **kwargs):
         """
         Add a new variable group.
 
@@ -86,7 +86,7 @@ class Variables(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_edit_group(self, group_id, data, **kwargs):
+    def dev_group_edit(self, group_id, data, **kwargs):
         """
         Edit a group at the Yombo server level, not at the local gateway level.
 
@@ -114,7 +114,7 @@ class Variables(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_delete_group(self, group_id, **kwargs):
+    def dev_group_delete(self, group_id, **kwargs):
         """
         Delete a variable group at the Yombo server level, not at the local gateway level.
 
@@ -142,7 +142,7 @@ class Variables(YomboLibrary):
 
 
     @inlineCallbacks
-    def dev_enable_group(self, group_id, **kwargs):
+    def dev_group_enable(self, group_id, **kwargs):
         """
         Enable a group at the Yombo server level, not at the local gateway level.
 
@@ -173,7 +173,7 @@ class Variables(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_disable_group(self, group_id, **kwargs):
+    def dev_group_disable(self, group_id, **kwargs):
         """
         Enable a group at the Yombo server level, not at the local gateway level.
 
@@ -200,5 +200,152 @@ class Variables(YomboLibrary):
             'status': 'success',
             'msg': "Variable group disabled.",
             'group_id': group_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_field_add(self, data, **kwargs):
+        """
+        Add a new variable field.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        var_results = yield self._YomboAPI.request('POST', '/v1/variable/field', data)
+        # print("field edit results: %s" % field_results)
+        print("var_results: %s" % var_results)
+        if var_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add variable field",
+                'apimsg': var_results['content']['message'],
+                'apimsghtml': var_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable field added.",
+            'field_id': var_results['data']['id'],
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_field_edit(self, field_id, data, **kwargs):
+        """
+        Edit a field at the Yombo server level, not at the local gateway level.
+
+        :param data:
+        :param kwargs:
+        :return:
+        """
+        field_results = yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % (field_id), data)
+        # print("field edit results: %s" % field_results)
+
+        if field_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit variable field",
+                'apimsg': field_results['content']['message'],
+                'apimsghtml': field_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable field edited.",
+            'field_id': field_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_field_delete(self, field_id, **kwargs):
+        """
+        Delete a variable field at the Yombo server level, not at the local gateway level.
+
+        :param field_id:
+        :param kwargs:
+        :return:
+        """
+        field_results = yield self._YomboAPI.request('DELETE', '/v1/variable/field/%s' % field_id)
+
+        if field_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete variable field",
+                'apimsg': field_results['content']['message'],
+                'apimsghtml': field_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable field deleted.",
+            'field_id': field_id,
+        }
+        returnValue(results)
+
+
+    @inlineCallbacks
+    def dev_field_enable(self, field_id, **kwargs):
+        """
+        Enable a field at the Yombo server level, not at the local gateway level.
+
+        :param field_id: The field ID to enable.
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'status': 1,
+        }
+
+        field_results = yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id, api_data)
+
+        if field_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't enable variable field",
+                'apimsg': field_results['content']['message'],
+                'apimsghtml': field_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable field enabled.",
+            'field_id': field_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_field_disable(self, field_id, **kwargs):
+        """
+        Enable a field at the Yombo server level, not at the local gateway level.
+
+        :param field_id: The field ID to disable.
+        :param kwargs:
+        :return:
+        """
+        api_data = {
+            'status': 0,
+        }
+
+        field_results = yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id, api_data)
+
+        if field_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't disable variable field",
+                'apimsg': field_results['content']['message'],
+                'apimsghtml': field_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Variable field disabled.",
+            'field_id': field_id,
         }
         returnValue(results)

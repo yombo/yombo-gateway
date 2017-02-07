@@ -674,6 +674,7 @@ def pretty_date(time=False):
     elif isinstance(time,datetime):
         diff = now - time
     elif not time:
+        print "using current time..."
         diff = now - now
     second_diff = diff.seconds
     day_diff = diff.days
@@ -685,11 +686,17 @@ def pretty_date(time=False):
         if second_diff < 10:
             return "just now"
         if second_diff < 60:
-            return str(second_diff) + " seconds ago"
+            time_count = second_diff
+            time_ago = "seconds ago"
+            return "%s %s" % (time_count, time_ago)
         if second_diff < 120:
             return "a minute ago"
         if second_diff < 3600:
-            return str(second_diff / 60) + " minutes ago"
+            time_count = second_diff / 60
+            time_ago = "minutes ago"
+            if time_count == 1:
+                time_ago = "minute ago"
+            return "%s %s" % (time_count, time_ago)
         if second_diff < 7200:
             return "an hour ago"
         if second_diff < 86400:
@@ -697,11 +704,23 @@ def pretty_date(time=False):
     if day_diff == 1:
         return "Yesterday"
     if day_diff < 7:
-        return str(day_diff) + " days ago"
-    if day_diff < 31:
-        return str(day_diff / 7) + " weeks ago"
+        time_count = day_diff
+        time_ago = "days ago"
+        if time_count == 1 :
+            time_ago = "day ago"
+        return "%s %s" % (time_count, time_ago)
+    if day_diff < 60:
+        time_count = day_diff / 7
+        time_ago = "weeks ago"
+        if time_count == 1 :
+            time_ago = "week ago"
+        return "%s %s" % (time_count, time_ago)
     if day_diff < 365:
-        return str(day_diff / 30) + " months ago"
+        time_count = day_diff / 30
+        time_ago = "months ago"
+        if time_count == 1 :
+            time_ago = "month ago"
+        return "%s %s" % (time_count, time_ago)
     return str(day_diff / 365) + " years ago"
 
 def generate_uuid(**kwargs):

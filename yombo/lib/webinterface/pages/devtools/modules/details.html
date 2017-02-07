@@ -115,7 +115,12 @@
                                     </thead>
                                     <tbody>{% for variable_group in module.variable_groups %}
                                          <tr>
-                                             <td><a href="/devtools/variables/group/{{ variable_group.id }}/details">{{ variable_group.group_label }}</a></td>
+                                             <td><a href="/devtools/variables/group/{{ variable_group.id }}/details">{{ variable_group.group_label }}</a> ( {% if variable_group.status|status_to_string == "Disabled"
+                            %}<span class="alert-warning">Disabled</span>{%
+                            elif variable_group.status|status_to_string == "Deleted"
+                            %}<span class="alert-warning">Deleted</span>{%
+                            else
+                            %}{{variable_group.status|status_to_string}}{% endif %})</td>
                                              <td>{% for variable_field in module.variable_fields %}
                                                  <ul>
                                                  {% if variable_field.group_id == variable_group.id %}

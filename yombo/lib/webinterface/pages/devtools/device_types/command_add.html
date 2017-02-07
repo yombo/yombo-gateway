@@ -2,6 +2,7 @@
 {% block head_css %}
 <!-- Latest compiled and minified CSS -->
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.0/bootstrap-table.min.css">
+{% include 'lib/webinterface/fragments/datacard_no_label_css.tpl' %}
 {% endblock %}
 
 {% block content %}
@@ -15,11 +16,12 @@
       </div>
       <div class="modal-body">
           <p>
-              Adds a command to a device type. This allows any devices that are registered as this device type to
-              accept a new command.
+              Adds a command to a device type. Any devices that are marked with this device type will be able to use the
+              command that is added here.
               </p>
           <p>
-              <strong>Note</strong>: Just because it can accept accept a command, doest not mean it must process it.
+              <strong>Note</strong>: Just because a device type has a command associated with it, doesn't mean it can process it. The
+              module must be programmed to handle the command.
           </p>
       </div>
       <div class="modal-footer">
@@ -31,7 +33,10 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">{{ _('webinterface_label', 'Add command to device type') }}: {{ device_type.label }} <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
+                    <h2 class="page-header">
+                        <a class="success" href="/devtools/device_types/{{ device_type.id }}/details" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        {{ _('webinterface_label', 'Add command to device type') }}: {{ device_type.label }} <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a>
+                    </h2>
                     <p>
                         A list of available commands.
                     </p>
@@ -48,6 +53,7 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h4>Available Commands</h4>
+                            Click on command name to add to device type "{{ device_type.label }}".
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -62,8 +68,7 @@
        data-search="true">
     <thead>
     <tr>
-        <th data-width="15%" data-field="label" data-formatter="labelFormatter">Label</th>
-        <th data-width="85%" data-field="description">Description</th>
+        <th data-width="15%" data-field="label" data-formatter="labelFormatter"></th>
     </tr>
     </thead>
 </table>
@@ -86,10 +91,6 @@
 
 {% block body_bottom %}
 <script>
-    function actionFormatter(value, row) {
-        return '<a href="/devtools/device_types/{{ device_type.id }}/add_command/' + row.id + '">Add command to device type</a>';
-    }
-
     function labelFormatter(value, row) {
         var public_state;
         if (row.public == 0) {
@@ -99,8 +100,18 @@
         } else {
             public_state = 'Public';
         }
-        return value + ' (' + public_state + ') <a class="btn btn-sm btn-primary" href="/devtools/device_types/{{ device_type.id }}/command/' + row.id + '/add_command">Add command to device type</a>';
+
+        var status;
+        if (row.status == 0) {
+            status = 'Disabled';
+        } else if (row.status == '1') {
+            status = 'Enabled';
+        } else {
+            status = 'Deleted';
+        }
+
+        return '<h4 style="margin: 5px 0 5px;">' +
+            '<a href="/devtools/device_types/{{ device_type.id }}/command/' + row.id + '/add_command">' + row.label + '</a></h4> ' +
+            '<p><label>Status:</label> ' + status + ' - ' + public_state + '<br> ' + row.description + '</p>';
     }
-
-
 </script>{% endblock %}

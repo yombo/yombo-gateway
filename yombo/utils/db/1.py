@@ -91,11 +91,15 @@ def upgrade(Registry, **kwargs):
          `command_id`     TEXT NOT NULL,
          `input_type_id`  TEXT NOT NULL,
          `live_update`    INTEGER NOT NULL,
-         `required`       INTEGER NOT NULL,
+         `value_required` INTEGER NOT NULL,
+         `value_max`      INTEGER NOT NULL,
+         `value_min`      INTEGER NOT NULL,
+         `value_casing`   TEXT NOT NULL,
+         `encryption`     TEXT NOT NULL,
          `notes`          TEXT,
-         `always_load`   INTEGER DEFAULT 0,
-         `updated`         INTEGER NOT NULL,
-         `created`         INTEGER NOT NULL,
+         `always_load`    INTEGER DEFAULT 0,
+         `updated`        INTEGER NOT NULL,
+         `created`        INTEGER NOT NULL,
          UNIQUE (device_type_id, command_id, input_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_command_inputs', 'device_type_id'))
@@ -171,8 +175,6 @@ def upgrade(Registry, **kwargs):
      `machine_label` TEXT NOT NULL,
      `label`         TEXT NOT NULL,
      `description`   TEXT,
-     `encryption`    INTEGER,
-     `input_casing`  TEXT,
      `input_regex`   TEXT,
      `public`        INTEGER,
      `always_load`   INTEGER DEFAULT 0,
@@ -376,11 +378,14 @@ def upgrade(Registry, **kwargs):
      `field_label`         TEXT NOT NULL,
      `field_description`   TEXT NOT NULL,
      `field_weight`        INTEGER DEFAULT 0,
-     `encryption_required` INTEGER NOT NULL,
+     `value_required`      INTEGER NOT NULL,
+     `value_max`           INTEGER NOT NULL,
+     `value_min`           INTEGER NOT NULL,
+     `value_casing`        TEXT NOT NULL,
+     `encryption`          TEXT NOT NULL,
      `input_type_id`       TEXT NOT NULL,
      `default_value`       TEXT NOT NULL,
      `help_text`           TEXT NOT NULL,
-     `required`            INTEGER NOT NULL,
      `multiple`            INTEGER NOT NULL,
      `updated_srv`         INTEGER DEFAULT 0,
      `updated`             INTEGER NOT NULL,
@@ -442,8 +447,9 @@ def upgrade(Registry, **kwargs):
     SELECT variable_data.id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id, variable_data.relation_type,
     variable_data.data, variable_data.data_weight, variable_data.updated as data_updated, variable_data.created as data_created,
     variable_fields.field_machine_label,variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
-    variable_fields.encryption_required, variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text,
-    variable_fields.required, variable_fields.multiple, variable_fields.created as field_created, variable_fields.updated as field_updated
+    variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text,
+    variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
+    variable_fields.multiple, variable_fields.created as field_created, variable_fields.updated as field_updated
     FROM variable_data
     JOIN variable_fields ON variable_data.field_id = variable_fields.id"""
     yield Registry.DBPOOL.runQuery(view)

@@ -1,0 +1,80 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        <a class="success" href="/devtools/variables/group/{{var_group.id}}/details" aria-label="Disable"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Confirm Variable Group Disable: <em>{{ var_group.group_label }}</em>
+                    </h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form method="post" id="variabledisable">
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Confirm disable variable group: <em>{{ var_group.group_label }}</em></label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <p> Disable a command will render automation devices that use this command unusable.</p>
+                            <p>Type "<strong>disable</strong>" to confirm:</p>
+    						<div class="form-group">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="confirm" id="confirm" size="10" placeholder="" value="">
+                                </div>
+                            </div>
+                            <br>
+                            <a class="btn btn-md btn-success" href="/devtools/variables/group/{{var_group.id}}/details">Cancel (Do not disable)</a>
+                            <button type="submit" class="btn btn-danger">Disable Command</button>
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+            </div>
+            </form>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+    $.validator.addMethod("customrule", function(value, element, param) {
+  return this.optional(element) || value === param;
+}, "You must enter '{0}'.");
+
+    $('form').validate({
+        rules: {
+            confirm: {
+                customrule: 'disable',
+                required: true,
+            },
+        },
+        highlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+        },
+        unhighlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+        },
+        errorElement: 'span',
+            errorClass: 'input-validation-error',
+            errorPlacement: function(error, element) {
+                if(element.length) {
+                    error.insertAfter(element);
+                } else {
+                error.insertAfter(element);
+                }
+            }
+     });
+    </script>
+{% endblock %}

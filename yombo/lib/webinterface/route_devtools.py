@@ -71,7 +71,7 @@ def route_devtools(webapp):
         def page_devtools_commands_details_get(webinterface, request, session, command_id):
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
             if command_results['code'] != 200:
-                webinterface.add_alert(command_results['apimsghtml'], 'warning')
+                webinterface.add_alert(command_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/commands/index'))
 
             page = webinterface.get_template(request,
@@ -585,6 +585,11 @@ def route_devtools(webapp):
                 webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
 
+            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if command_results['code'] != 200:
+                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/device_types/command_input_add.html')
             root_breadcrumb(webinterface, request)
@@ -596,13 +601,13 @@ def route_devtools(webapp):
 
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     device_type=device_type_results['data'],
-                                    command_id=command_id
+                                    command=command_results['data']
                                     ))
 
         @webapp.route('/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/add_input', methods=['GET'])
         @require_auth()
         @inlineCallbacks
-        def page_devtools_device_types_command_add_input_form_get(webinterface, request, session, device_type_id, command_id, input_type_id):
+        def page_devtools_device_types_command_input_add_get(webinterface, request, session, device_type_id, command_id, input_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
             root_breadcrumb(webinterface, request)
             if device_type_results['code'] == 200:
@@ -628,25 +633,33 @@ def route_devtools(webapp):
 
             data = {
                 'live_update': webinterface.reqest_get_default(request, 'live_update', ""),
-                'required': webinterface.reqest_get_default(request, 'required', ""),
                 'notes': webinterface.reqest_get_default(request, 'notes', ""),
+                'value_required': webinterface.reqest_get_default(request, 'value_required', ""),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', "none"),
+                'encryption': webinterface.reqest_get_default(request, 'encryption', "nosuggestion"),
             }
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/device_types/add", "Add")
-            returnValue(page_devtools_device_types_command_add_input_form(webinterface, request, session, 'add', data, device_type_results['data'], command_results['data'], input_type_results['data'], "Associate input type to command"))
+            returnValue(page_devtools_device_types_command_input_form(webinterface, request, session, 'add', data, device_type_results['data'], command_results['data'], input_type_results['data'], "Associate input type to command"))
 
         @webapp.route('/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/add_input', methods=['POST'])
         @require_auth()
         @inlineCallbacks
-        def page_devtools_device_types_command_add_input_form_post(webinterface, request, session, device_type_id, command_id, input_type_id):
+        def page_devtools_device_types_command_input_add_post(webinterface, request, session, device_type_id, command_id, input_type_id):
             data = {
                 'live_update': webinterface.reqest_get_default(request, 'live_update', ""),
-                'required': webinterface.reqest_get_default(request, 'required', ""),
                 'notes': webinterface.reqest_get_default(request, 'notes', ""),
+                'value_required': webinterface.reqest_get_default(request, 'value_required', ""),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', "none"),
+                'encryption': webinterface.reqest_get_default(request, 'encryption', "nosuggestion"),
             }
 
-            results = yield webinterface._DeviceTypes.dev_command_input_add(device_type_id, command_id, input_type_id, data)
+            results = yield webinterface._DeviceTypes.dev_command_input_edit(device_type_id, command_id, input_type_id, data)
 
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
             if command_results['code'] != 200:
@@ -675,7 +688,7 @@ def route_devtools(webapp):
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
                 returnValue(
-                    page_devtools_device_types_command_add_input_form(webinterface, request, session, 'add',
+                    page_devtools_device_types_command_input_form(webinterface, request, session, 'add',
                                                                               data, device_type_results['data'],
                                                                               command_results['data'],
                                                                               input_type_results['data'],
@@ -697,7 +710,154 @@ def route_devtools(webapp):
                                     msg=msg,
                                     ))
 
-        def page_devtools_device_types_command_add_input_form(webinterface, request, session, action_type, command_input, device_type, command, input_type, header_label):
+        @webapp.route('/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/details', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_command_input_details_get(webinterface, request, session, device_type_id, command_id, input_type_id):
+            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if device_type_results['code'] != 200:
+                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if command_results['code'] != 200:
+                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            if input_type_results['code'] != 200:
+                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            device_command_input_results = yield webinterface._YomboAPI.request('GET', '/v1/device_command_input?device_type_id=%s&command_id=%s&input_type_id=%s' % (device_type_id, command_id, input_type_id))
+            if device_command_input_results['code'] != 200:
+                webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/command_input_details.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/device_types/index", "Device Types")
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/command/%s/details" % (device_type_id, command_id),
+                                        "Command - %s" % command_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/command/%s/edit_input" % (device_type_id, command_id),
+                                        "Input Command Details")
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                               device_type=device_type_results['data'],
+                               command=command_results['data'],
+                               command_input=device_command_input_results['data'][0],
+                               input_type=input_type_results['data'],
+                               ))
+
+        @webapp.route('/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/edit_input', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_command_input_edit_get(webinterface, request, session, device_type_id, command_id, input_type_id):
+            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if device_type_results['code'] != 200:
+                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if command_results['code'] != 200:
+                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            if input_type_results['code'] != 200:
+                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            device_command_input_results = yield webinterface._YomboAPI.request('GET', '/v1/device_command_input?device_type_id=%s&command_id=%s&input_type_id=%s' % (device_type_id, command_id, input_type_id))
+            if device_command_input_results['code'] != 200:
+                webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/index'))
+
+            data = {
+                'live_update': webinterface.reqest_get_default(request, 'live_update', ""),
+                'notes': webinterface.reqest_get_default(request, 'notes', ""),
+                'value_required': webinterface.reqest_get_default(request, 'value_required', ""),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', "none"),
+                'encryption': webinterface.reqest_get_default(request, 'encryption', "nosuggestion"),
+            }
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/device_types/index", "Device Types")
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/command/%s/details" % (device_type_id, command_id),
+                                        "Command - %s" % command_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/command/%s/edit_input" % (device_type_id, command_id),
+                                        "Edit input")
+            returnValue(page_devtools_device_types_command_input_form(webinterface, request, session, 'add', device_command_input_results['data'][0], device_type_results['data'], command_results['data'], input_type_results['data'], "Associate input type to command"))
+
+        @webapp.route('/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/edit_input', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_device_types_command_input_edit_post(webinterface, request, session, device_type_id, command_id, input_type_id):
+            data = {
+                'live_update': webinterface.reqest_get_default(request, 'live_update', ""),
+                'notes': webinterface.reqest_get_default(request, 'notes', ""),
+                'value_required': webinterface.reqest_get_default(request, 'value_required', ""),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', "none"),
+                'encryption': webinterface.reqest_get_default(request, 'encryption', "nosuggestion"),
+            }
+
+            results = yield webinterface._DeviceTypes.dev_command_input_edit(device_type_id, command_id, input_type_id, data)
+
+            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            if command_results['code'] != 200:
+                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            if input_type_results['code'] != 200:
+                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if device_type_results['code'] != 200:
+                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(
+                    page_devtools_device_types_command_input_form(webinterface, request, session, 'add',
+                                                                              data, device_type_results['data'][0],
+                                                                              command_results['data'],
+                                                                              input_type_results['data'],
+                                                                              "Associate input type to command"))
+
+            msg = {
+                'header': 'Input Associated',
+                'label': 'Input has been associated to the command successfully',
+                'description': '<p>The input has been associated to the device type command.</p>'
+                               '<p>Continue to <ul>'
+                               '<li><a href="/devtools/device_types/index">Device types index</a></li>'
+                               '<li><a href="/devtools/device_types/%s/details">View the device type</a></li>'
+                               '<li><strong><a href="/devtools/device_types/%s/command/%s/details">View device type command</a></strong></li>'
+                               '</p>' % (device_type_id, device_type_id, command_id)
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/device_types/index", "Device Types")
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/command/%s/details" % (device_type_id, command_id),
+                                        "Command - %s" % command_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/command/%s/edit_input" % (device_type_id, command_id),
+                                        "Edit input")
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        def page_devtools_device_types_command_input_form(webinterface, request, session, action_type, command_input, device_type, command, input_type, header_label):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/device_types/command_input_form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
@@ -1173,7 +1333,7 @@ def route_devtools(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/device_types/%s/details" % device_type_id, device_type_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/variables" % device_type_id, "Variables")
+            webinterface.add_breadcrumb(request, "/devtools/device_types/%s/variables" % device_type_id, "Variable Groups")
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                device_type=device_type_results['data'],
                                )
@@ -1436,7 +1596,7 @@ def route_devtools(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/input_types/index", "Input Types")
             webinterface.add_breadcrumb(request, "/devtools/input_types/add", "Add")
-            returnValue(page_devtools_inputstypes_form(webinterface, request, session, 'add', data,
+            returnValue(page_devtools_input_types_form(webinterface, request, session, 'add', data,
                                                         category_results['data'], "Add Input Type"))
 
         @webapp.route('/input_types/add', methods=['POST'])
@@ -1465,7 +1625,7 @@ def route_devtools(webapp):
                     webinterface.add_alert(category_results['content']['html_message'], 'warning')
                     returnValue(webinterface.redirect(request, '/devtools/input_types/index'))
                 returnValue(
-                    page_devtools_inputstypes_form(webinterface, request, session, 'add', data,
+                    page_devtools_input_types_form(webinterface, request, session, 'add', data,
                                                     category_results['data'],
                                                     "Add Input Type"))
 
@@ -1504,7 +1664,7 @@ def route_devtools(webapp):
             webinterface.add_breadcrumb(request, "/devtools/input_types/%s/edit" % input_type_id, "Edit")
 
             returnValue(
-                page_devtools_inputstypes_form(webinterface, request, session, 'edit', input_type_results['data'],
+                page_devtools_input_types_form(webinterface, request, session, 'edit', input_type_results['data'],
                                                 category_results['data'],
                                                 "Edit Input Type: %s" % input_type_results['data']['label']))
 
@@ -1535,7 +1695,7 @@ def route_devtools(webapp):
                     returnValue(webinterface.redirect(request, '/devtools/input_types/index'))
 
                 webinterface.add_alert(input_type_results['apimsghtml'], 'warning')
-                returnValue(page_devtools_inputstypes_form(webinterface, request, session, 'edit', data,
+                returnValue(page_devtools_input_types_form(webinterface, request, session, 'edit', data,
                                                             category_results['data'],
                                                             "Edit Input Type: %s" % data['label']))
 
@@ -1544,7 +1704,7 @@ def route_devtools(webapp):
             msg = {
                 'header': 'Input Type Updated',
                 'label': 'Input typ updated successfully',
-                'description': '<p>The input type has been updated. If you have requested this input type to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/input_types/index">input types index</a> or <a href="/devtools/input_types/%s/details">view the new input type</a>.</p>' %
+                'description': '<p>The input type has been updated. If you have requested this input type to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/input_types/index">input types index</a> or <a href="/devtools/input_types/%s/details">view the updated input type</a>.</p>' %
                                input_type_results['input_type_id'],
             }
 
@@ -1564,7 +1724,7 @@ def route_devtools(webapp):
                                     msg=msg,
                                     ))
 
-        def page_devtools_inputstypes_form(webinterface, request, session, action_type, input_type, categories,
+        def page_devtools_input_types_form(webinterface, request, session, action_type, input_type, categories,
                                             header_label):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/input_types/form.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -1572,6 +1732,7 @@ def route_devtools(webapp):
                                input_type=input_type,
                                categories=categories,
                                action_type=action_type,
+                               display_type=action_type
                                )
 
 
@@ -1964,8 +2125,16 @@ def route_devtools(webapp):
                 returnValue(webinterface.redirect(request, '/devtools/index'))
                 # returnValue(webinterface.redirect(request, '/modules/%s/variables' % module_id))
 
+            parent = yield variable_group_breadcrumbs(webinterface, request,  group_results['data']['relation_id'],  group_results['data']['relation_type'])
+            webinterface.add_breadcrumb(request, "/", "Details")
+            if parent['code'] != 200:
+                webinterface.add_alert(['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/variables/group_details.html')
+            # root_breadcrumb(webinterface, request)
             returnValue(page.render(alerts=webinterface.get_alerts(),
+                               parent=parent['data'],
                                var_group=group_results['data'],
                                var_fields=field_results['data']
                                )
@@ -2052,14 +2221,6 @@ def route_devtools(webapp):
 
             returnValue(page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'], group_results['data'], "Edit Group Variable: %s" % group_results['data']['group_label']))
 
-        def page_devtools_variables_group_form(webinterface, request, session, parent_type, parent, group, header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/variables/group_form.html')
-            return page.render(alerts=webinterface.get_alerts(),
-                               header_label=header_label,
-                               parent_type=parent_type,
-                               parent=parent,
-                               group=group,
-                               )
 
         @webapp.route('/variables/group/<string:group_id>/edit', methods=['POST'])
         @require_auth()
@@ -2085,7 +2246,7 @@ def route_devtools(webapp):
                 webinterface.add_alert(['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/index'))
 
-            results = yield webinterface._Variables.dev_edit_group(group_id, data)
+            results = yield webinterface._Variables.dev_group_edit(group_id, data)
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
                 returnValue(page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'], data, "Add Group Variable to: %s" % parent['data']['label']))
@@ -2101,6 +2262,142 @@ def route_devtools(webapp):
                 msg['description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/modules/index">modules index</a></li><li><a href="/devtools/modules/%s/details">view the module</a></li><li><a href="/devtools/modules/%s/variables"> view module variables</a></li></ul></p>' % (parent['data']['id'], parent['data']['id'])
             elif parent_type == 'device_type':
                 msg['description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/device_types/index">device types index</a></li><li><a href="/devtools/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (parent['data']['id'], parent['data']['label'], parent['data']['id'])
+
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        def page_devtools_variables_group_form(webinterface, request, session, parent_type, parent, group,
+                                               header_label):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/variables/group_form.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               header_label=header_label,
+                               parent_type=parent_type,
+                               parent=parent,
+                               group=group,
+                               )
+
+        @webapp.route('/variables/group/<string:group_id>/enable', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_group_enable_get(webinterface, request, session, group_id):
+            var_group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if var_group_results['code'] != 200:
+                webinterface.add_alert(var_group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            data = var_group_results['data']
+            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            webinterface.add_breadcrumb(request, "/", "Enable Variable")
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/variables/group_enable.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    var_group=data,
+                                    parent=parent,
+                                    )
+                        )
+
+        @webapp.route('/variables/group/<string:group_id>/enable', methods=['post'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_group_enable_post(webinterface, request, session, group_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            if confirm != "enable":
+                webinterface.add_alert('Must enter "enable" in the confirmation box to enable the variable group.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/variables/group/%s/enable' % group_id))
+
+            var_group_results = yield webinterface._Variables.dev_group_enable(group_id)
+            if var_group_results['status'] == 'failed':
+                webinterface.add_alert(var_group_results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/variables/group/%s/enable' % group_id))
+
+            var_group_api_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if var_group_api_results['code'] != 200:
+                webinterface.add_alert(var_group_api_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            data = var_group_api_results['data']
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            webinterface.add_breadcrumb(request, "/", "Enable Variable")
+
+            msg = {
+                'header': 'Variable Group Enabled',
+                'label': 'Variable Group enabled successfully',
+                'description': '',
+            }
+
+            if data['relation_type'] == 'module':
+                msg['description'] = '<p>Variable group has beed enabled.</p><p>Continue to:<ul><li><a href="/devtools/modules/index">modules index</a></li><li><a href="/devtools/modules/%s/details">view the module</a></li><li><a href="/devtools/modules/%s/variables"> view module variables</a></li></ul></p>' % (data['relation_id'], data['relation_id'])
+            elif data['relation_type'] == 'device_type':
+                msg['description'] = '<p>Variable group has beed enabled.</p><p>Continue to:<ul><li><a href="/devtools/device_types/index">device types index</a></li><li><a href="/devtools/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (data['relation_id'], parent['data']['label'], data['relation_id'])
+
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        @webapp.route('/variables/group/<string:group_id>/disable', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_group_disable_get(webinterface, request, session, group_id):
+            var_group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if var_group_results['code'] != 200:
+                webinterface.add_alert(var_group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            data = var_group_results['data']
+            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            webinterface.add_breadcrumb(request, "/", "Disable Variable")
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/variables/group_disable.html')
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    var_group=data,
+                                    parent=parent,
+                                    )
+                        )
+
+        @webapp.route('/variables/group/<string:group_id>/disable', methods=['post'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_group_disable_post(webinterface, request, session, group_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            if confirm != "disable":
+                webinterface.add_alert('Must enter "disable" in the confirmation box to disable the variable group.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/variables/group/%s/disable' % group_id))
+
+            var_group_results = yield webinterface._Variables.dev_group_disable(group_id)
+            if var_group_results['status'] == 'failed':
+                webinterface.add_alert(var_group_results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/variables/group/%s/disable' % group_id))
+
+            var_group_api_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if var_group_api_results['code'] != 200:
+                webinterface.add_alert(var_group_api_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            data = var_group_api_results['data']
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            webinterface.add_breadcrumb(request, "/", "Disable Variable")
+
+            msg = {
+                'header': 'Variable Group Disabled',
+                'label': 'Variable Group deleted successfully',
+                'description': 'disable'
+            }
+
+            if data['relation_type'] == 'module':
+                msg['description'] = '<p>Variable group has beed disabled.</p><p>Continue to:<ul><li><a href="/devtools/modules/index">modules index</a></li><li><a href="/devtools/modules/%s/details">view the module</a></li><li><a href="/devtools/modules/%s/variables"> view module variables</a></li></ul></p>' % (data['relation_id'], data['relation_id'])
+            elif data['relation_type'] == 'device_type':
+                msg['description'] = '<p>Variable group has beed disabled.</p><p>Continue to:<ul><li><a href="/devtools/device_types/index">device types index</a></li><li><a href="/devtools/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (data['relation_id'], parent['data']['label'], data['relation_id'])
 
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -2139,8 +2436,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the variable group.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/variables/group/%s/delete' % group_id))
 
-            var_group_results = yield webinterface._Variables.dev_delete_group(group_id)
-
+            var_group_results = yield webinterface._Variables.dev_group_delete(group_id)
             if var_group_results['status'] == 'failed':
                 webinterface.add_alert(var_group_results['apimsghtml'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/variables/group/%s/delete' % group_id))
@@ -2190,3 +2486,182 @@ def route_devtools(webapp):
                                var_field=field_results['data']
                                )
                         )
+
+        @webapp.route('/variables/group/<string:group_id>/new_field', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_field_add_get(webinterface, request, session, group_id):
+            data = {
+                'group_id': group_id,
+                'field_machine_label': webinterface.reqest_get_default(request, 'field_machine_label', ""),
+                'field_label': webinterface.reqest_get_default(request, 'field_label', ""),
+                'field_description': webinterface.reqest_get_default(request, 'field_description', ""),
+                'field_weight': int(webinterface.reqest_get_default(request, 'field_weight', 0)),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', ""),
+                'value_required': webinterface.reqest_get_default(request, 'encryption', ""),
+                'encryption': webinterface.reqest_get_default(request, 'value_required', ""),
+                'input_type_id': webinterface.reqest_get_default(request, 'input_type_id', ""),
+                'default_value': webinterface.reqest_get_default(request, 'default_value', ""),
+                'help_text': webinterface.reqest_get_default(request, 'input_type_id', ""),
+                'multiple': int(webinterface.reqest_get_default(request, 'multiple', 0)),
+                'status': int(webinterface.reqest_get_default(request, 'status', 1)),
+            }
+
+            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if group_results['code'] != 200:
+                webinterface.add_alert(group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            parent_type = group_results['data']['relation_type']
+            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'], parent_type)
+            if parent['code'] != 200:
+                webinterface.add_alert(['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            webinterface.add_breadcrumb(request, "/", "Add Variable")
+            returnValue(page_devtools_variables_field_form(webinterface, request, session, parent, group_results['data'], data, "Add Field Variable to: %s" % group_results['data']['group_label']))
+
+        @webapp.route('/variables/group/<string:group_id>/new_field', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_field_add_post(webinterface, request, session, group_id):
+            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if group_results['code'] != 200:
+                webinterface.add_alert(group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            data = {
+                'group_id': group_id,
+                'field_machine_label': webinterface.reqest_get_default(request, 'field_machine_label', ""),
+                'field_label': webinterface.reqest_get_default(request, 'field_label', ""),
+                'field_description': webinterface.reqest_get_default(request, 'field_description', ""),
+                'field_weight': int(webinterface.reqest_get_default(request, 'field_weight', 0)),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', ""),
+                'value_required': webinterface.reqest_get_default(request, 'encryption', ""),
+                'encryption': webinterface.reqest_get_default(request, 'value_required', ""),
+                'input_type_id': webinterface.reqest_get_default(request, 'input_type_id', ""),
+                'default_value': webinterface.reqest_get_default(request, 'default_value', ""),
+                'help_text': webinterface.reqest_get_default(request, 'input_type_id', ""),
+                'multiple': int(webinterface.reqest_get_default(request, 'multiple', 0)),
+                'status': int(webinterface.reqest_get_default(request, 'status', 1)),
+            }
+
+            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if group_results['code'] != 200:
+                webinterface.add_alert(group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'], group_results['data']['relation_type'])
+            webinterface.add_breadcrumb(request, "/", "Add Variable")
+            if parent['code'] != 200:
+                webinterface.add_alert(['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            results = yield webinterface._Variables.dev_field_add(data)
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(page_devtools_variables_field_form(webinterface, request, session, group_results['data']['relation_type'], parent['data'], data, "Add Group Variable to: %s" % parent['data']['label']))
+
+            msg = {
+                'header': 'Variable Group Added',
+                'label': 'Variable group added successfully',
+                'description': ''
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            if group_results['data']['relation_type'] == 'module':
+                msg['description'] = '<p>Variable group has beed added.</p><p>Continue to:<ul><li><a href="/devtools/modules/index">modules index</a></li><li><a href="/devtools/modules/%s/details">view the module</a></li><li><a href="/devtools/modules/%s/variables"> view module variables</a></li></ul></p>' % (group_results['data']['relation_id'], group_results['data']['relation_id'])
+            elif group_results['data']['relation_type'] == 'device_type':
+                msg['description'] = '<p>Variable group has beed added.</p><p>Continue to:<ul><li><a href="/devtools/device_types/index">device types index</a></li><li><a href="/devtools/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (group_results['data']['relation_id'], parent['data']['label'], group_results['data']['relation_id'])
+
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        @webapp.route('/variables/field/<string:field_id>/edit', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_field_edit_get(webinterface, request, session, group_id):
+            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if group_results['code'] != 200:
+                webinterface.add_alert(group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            parent_type = group_results['data']['relation_type']
+            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'], parent_type)
+            webinterface.add_breadcrumb(request, "/", "Edit Variable")
+            if parent['code'] != 200:
+                webinterface.add_alert(['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            returnValue(page_devtools_variables_field_form(webinterface, request, session, parent_type, parent['data'], group_results['data'], "Edit Group Variable: %s" % group_results['data']['group_label']))
+
+
+        @webapp.route('/variables/field/<string:group_id>/edit', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_variables_field_edit_post(webinterface, request, session, group_id):
+            data = {
+                'group_id': group_id,
+                'field_machine_label': webinterface.reqest_get_default(request, 'field_machine_label', ""),
+                'field_label': webinterface.reqest_get_default(request, 'field_label', ""),
+                'field_description': webinterface.reqest_get_default(request, 'field_description', ""),
+                'field_weight': int(webinterface.reqest_get_default(request, 'field_weight', 0)),
+                'value_min': webinterface.reqest_get_default(request, 'value_min', ""),
+                'value_max': webinterface.reqest_get_default(request, 'value_max', ""),
+                'value_casing': webinterface.reqest_get_default(request, 'value_casing', ""),
+                'value_required': webinterface.reqest_get_default(request, 'encryption', ""),
+                'encryption': webinterface.reqest_get_default(request, 'value_required', ""),
+                'input_type_id': webinterface.reqest_get_default(request, 'input_type_id', ""),
+                'default_value': webinterface.reqest_get_default(request, 'default_value', ""),
+                'help_text': webinterface.reqest_get_default(request, 'input_type_id', ""),
+                'multiple': int(webinterface.reqest_get_default(request, 'multiple', 0)),
+                'status': int(webinterface.reqest_get_default(request, 'status', 1)),
+            }
+
+            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            if group_results['code'] != 200:
+                webinterface.add_alert(group_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            parent_type = group_results['data']['relation_type']
+            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'], parent_type)
+            webinterface.add_breadcrumb(request, "/", "Edit Variable")
+            if parent['code'] != 200:
+                webinterface.add_alert(['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/index'))
+
+            results = yield webinterface._Variables.dev_field_edit(group_id, data)
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(page_devtools_variables_field_form(webinterface, request, session, parent_type, parent['data'], data, "Add Group Variable to: %s" % parent['data']['label']))
+
+            msg = {
+                'header': 'Variable Group Edited',
+                'label': 'Variable group edited successfully',
+                'description': ''
+            }
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            if parent_type == 'module':
+                msg['description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/modules/index">modules index</a></li><li><a href="/devtools/modules/%s/details">view the module</a></li><li><a href="/devtools/modules/%s/variables"> view module variables</a></li></ul></p>' % (parent['data']['id'], parent['data']['id'])
+            elif parent_type == 'device_type':
+                msg['description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/device_types/index">device types index</a></li><li><a href="/devtools/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (parent['data']['id'], parent['data']['label'], parent['data']['id'])
+
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    msg=msg,
+                                    ))
+
+        def page_devtools_variables_field_form(webinterface, request, session, parent, group, field,
+                                               header_label):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/variables/field_form.html')
+            return page.render(alerts=webinterface.get_alerts(),
+                               header_label=header_label,
+                               parent=parent,
+                               group=group,
+                               field=field,
+                               )

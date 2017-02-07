@@ -10,7 +10,7 @@
                     <h1 class="page-header">
                         <a class="success" href="{%
                         if display_type == "edit"
-                        %}/devtools/input_types/{{ module.id }}/details{%
+                        %}/devtools/input_types/{{ input_type.id }}/details{%
                         else
                         %}/devtools/input_types/index{% endif %}" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         {{ header_label}}
@@ -109,23 +109,6 @@
                             </div>
 						</div>
 
-                        <div class="form-group">
-                            <label style="margin-top: 10px; margin-bottom: 0px">Encryption: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalinputcasing"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalinputcasing", 'Encryption', '
-                            <p>Defines if the input should be encrypted or not. Useful for passwords or other sensitive data.</p>
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="input_casing" id="input_casing">
-                                    <option value="nosuggestion"{% if input_type.input_casing == "nosuggestion" %} selected{% endif %}>No Suggestion</option>
-                                    <option value="never"{% if input_type.input_casing == "never" %} selected{% endif %}>Never</option>
-                                    <option value="suggested"{% if input_type.input_casing == "suggested" %} selected{% endif %}>Suggested</option>
-                                    <option value="always"{% if input_type.input_casing == "always" %} selected{% endif %}>Always</option>
-                                </select>
-                            </div>
-						</div>
-
 						<div class="form-group">
                             <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
                             <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
@@ -164,6 +147,17 @@
                             </div>
 						</div>
 
+                        {%-
+                        if display_type == "edit"
+                        %}
+                        <a class="btn btn-md btn-danger" href="/devtools/input_types/{{ input_type.id }}/details">Cancel</a>
+                        <button type="submit" class="btn btn-success">Save Input Type</button>
+                        {%
+                        else
+                        %}
+                        <a class="btn btn-md btn-danger" href="/devtools/input_types/index">Cancel</a>
+                        <button type="submit" class="btn btn-success">Add Input Type</button>
+                        {% endif %}
                         </div>
                     </div>
                     <!-- /.panel-body -->

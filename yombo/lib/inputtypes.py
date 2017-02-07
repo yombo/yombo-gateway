@@ -332,8 +332,6 @@ class InputType:
         self.machine_label = input_type.machine_label
         self.label = input_type.label
         self.description = input_type.description
-        self.encryption = input_type.encryption
-        self.input_casing = input_type.input_casing
         self.input_regex = input_type.input_regex
         self.always_load = input_type.always_load
         self.status = input_type.status
@@ -359,10 +357,7 @@ class InputType:
             'machine_label': str(self.machine_label),
             'label'        : str(self.label),
             'description'  : str(self.encryption),
-            'encryption'    : str(self.encrypted),
-            'input_casing': str(self.input_casing),
             'input_regex': str(self.input_regex),
-            'always_load'  : str(self.always_load),
             'always_load'  : str(self.always_load),
             'public'       : int(self.public),
             'status'       : int(self.status),

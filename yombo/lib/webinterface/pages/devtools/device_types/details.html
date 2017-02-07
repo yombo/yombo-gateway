@@ -81,8 +81,7 @@
                                              <td><a href="/devtools/device_types/{{device_type.id}}/command/{{ command.command_id }}/details">{{ command.command_label }}</a></td>
                                              <td>{{ command.command_machine_label }}</td>
                                              <td>
-                                                 <a class="btn btn-sm btn-primary" href="/devtools/device_types/{{ device_type.id }}/command/{{ command.command_id }}/details">Command Inputs</a>
-                                                 <a class="btn btn-sm btn-danger" href="/devtools/device_types/{{ device_type.id }}/command/{{ command.command_id }}/remove_command">Remove</a>
+                                                 <a class="btn btn-sm btn-primary" href="/devtools/device_types/{{ device_type.id }}/command/{{ command.command_id }}/details">Details</a>
                                              </td>
                                          </tr>{% endfor -%}
                                     </tbody>
@@ -102,10 +101,10 @@
                             <h4>
                                 Module Variables
                                <a style="float: right;" href="#" data-toggle=modal data-target=#modalmodvariables><i class="fa fa-question fa-lg"></i></a>
+                            </h4>
                              {% if device_type.status <= 1 %}
                             <a class="btn btn-md btn-primary" href="/devtools/device_types/{{device_type.id}}/variables" title="Edit what variables are available for a device type">Edit Device Type Variables</a>
                              {% endif %}
-                            </h4>
                             {{ macros.modal("modalmodvariables", 'Module Variables', '
                             <p>
                                 Module variables allow end-users to configure the module when being installed and/or setup. Some examples include

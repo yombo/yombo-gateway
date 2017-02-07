@@ -1,67 +1,64 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
-{% block head_css %}
-{% include 'lib/webinterface/fragments/select_css.tpl' %}
-{% endblock %}
 
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header"><a class="success" href="/devtools/device_types/{{ device_type.id }}/command/{{command_input.command_id}}/details" aria-label="Delete">
-  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label}}</h1>
+                    <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/{%
+                    if group.relation_type == 'module'
+                       %}modules/{{ group.relation_id }}/details{%
+                    elif parent_type == 'device_type'
+                       %}/device_type/{{group.relation_id}}/details{%
+                    endif %}" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label }} </h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <form method="post" id="devicetypeedit">
+            <form method="post" id="groupedit">
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Basic Information</label>
+                            <h3 style="margin-top: 5px;">Variable Field Configuration</h3>
+                            This field is under variable group: {{ group.group_label }}
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
 						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Notes: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalnotes"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalnotes", 'Notes', '
-                            <p>Any specific notes about the device type - command - input relationship.</p>
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
+                            <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modallabel", 'Label', '
+                            <p>A label for the variable field. A short but helpful title to describe what the variable field is for. For examples: Username, Device Address, Email Address</p>
                             ') }}
                             <br>
                             <div class="input-group">
-                                <textarea tabindex="3" class="form-control" rows="6" cols="60" name="notes" id="notes" placeholder="Description">{{ command_input.notes }}</textarea>
+                                <input tabindex="1" type="text" class="form-control" name="field_label" id="field_label" size="30" placeholder="Field Name" value="{{ field.field_label }}" autofocus required>
                             </div>
 						</div>
 
 						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Live Update: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalliveupdate"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalliveupdate", 'Live Update', '
-                            <p>When set, any application or device should send the command as the user is typing data. This allows for things like sliders to control light dimming.</p>
-                            ') }}
+                            <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalmachinelabel", 'Machine Label', '
+                            <p>The machine label is used by developers and the gateway to determine uniqueness. <strong>Once set, this cannot be changed!</strong></p>
+                            <p>Usually a short version of the field label. Examples: username, device_address, email_address</p>') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="live_update" id="live_update">
-                                    <option value="0"{% if command_input.live_update == 0 %} selected{% endif %} data-subtext="No live udpates.">Disabled</option>
-                                    <option value="1"{% if command_input.live_update == 1 %} selected{% endif %} data-subtext="Send live udpates.">Enabled</option>
-                                </select>
+                                <input tabindex="2" type="text" class="form-control" name="field_machine_label" id="field_machine_label" size="30" placeholder="'field_label', 'field_name'" value="{{ field.field_machine_label }}">
                             </div>
 						</div>
 
 						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Value Required: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalrequired"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalrequired", 'Required', '
-                            <p>If enabled, this input field cannot be blank when sending a command to a device.</p>
+                            <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
+                            <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modaldescription", 'Description', '
+                            <p>A description of the variable field.</p>
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="value_required" id="value_required">
-                                    <option value="0"{% if command_input.value_required == 0 %} selected{% endif %} data-subtext="Input field can be empty">No</option>
-                                    <option value="1"{% if command_input.value_required == 1 %} selected{% endif %} data-subtext="Input field must contain a value">Yes</option>
-                                </select>
+                                <textarea tabindex="5" class="form-control" rows="15" cols="60" name="field_description" id="field_description" placeholder="Description">{{ field.field_description }}</textarea>
                             </div>
 						</div>
 
@@ -69,17 +66,15 @@
                             <label style="margin-top: 10px; margin-bottom: 0px">Encryption: </label>
                             <a href="#" data-toggle="modal" data-target="#modalencryption"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalencryption", 'Encryption', '
-                            <p>Defines if the value should be stored encrypted or not. If encryption marked \'suggested\' or \'always\',
-                                when possbile, the value should be encrypted as early as possible. Any device or
-                            system capable of perform GPG/PGP encryption using the destination gateway public key, should.</p>
+                            <p>Defines if the value should be store encrypted or not.</p>
                             ') }}
                             <br>
                             <div class="input-group">
                                 <select tabindex="5" class="selectpicker show-tick form-control" name="encryption" id="encryption">
-                                    <option value="nosuggestion"{% if command_input.encryption == "nosuggestion" %} selected{% endif %} data-subtext="Up to user, device, or module">No Suggestion</option>
-                                    <option value="never"{% if command_input.encryption == "never" %} selected{% endif %} data-subtext="This data should never be encrypted">Never</option>
-                                    <option value="suggested"{% if command_input.encryption == "suggested" %} selected{% endif %} data-subtext="When possible, this data should be encrypted">Suggested</option>
-                                    <option value="always"{% if command_input.encryption == "always" %} selected{% endif %} data-subtext="This data should always be encrypted">Always</option>
+                                    <option value="nosuggestion"{% if field.encryption == "nosuggestion" %} selected{% endif %}>No Suggestion</option>
+                                    <option value="never"{% if field.encryption == "never" %} selected{% endif %}>Never</option>
+                                    <option value="suggested"{% if field.encryption == "suggested" %} selected{% endif %}>Suggested</option>
+                                    <option value="always"{% if field.encryption == "always" %} selected{% endif %}>Always</option>
                                 </select>
                             </div>
 						</div>
@@ -101,10 +96,10 @@
                             <br>
                             <div class="input-group">
                                 <select tabindex="5" class="selectpicker show-tick form-control" name="input_casing" id="input_casing">
-                                    <option value="none"{% if command_input.input_casing == "none" %} selected{% endif %} data-subtext="No changes.">None</option>
-                                    <option value="upper"{% if command_input.input_casing == "upper" %} selected{% endif %} data-subtext="Uppercase filtering applied">Never</option>
-                                    <option value="lower"{% if command_input.input_casing == "lower" %} selected{% endif %} data-subtext="Lowercase filtering applied">Suggested</option>
-                                    <option value="upperfirst"{% if command_input.encryption == "upperfirst" %} selected{% endif %} data-subtext="First letter will made uppercase">Upper First</option>
+                                    <option value="none"{% if field.input_casing == "none" %} selected{% endif %} data-subtext="No changes.">None</option>
+                                    <option value="upper"{% if field.input_casing == "upper" %} selected{% endif %} data-subtext="Uppercase filtering applied">Never</option>
+                                    <option value="lower"{% if field.input_casing == "lower" %} selected{% endif %} data-subtext="Lowercase filtering applied">Suggested</option>
+                                    <option value="upperfirst"{% if field.input_casing == "upperfirst" %} selected{% endif %} data-subtext="First letter will made uppercase">Upper First</option>
                                 </select>
                             </div>
 						</div>
@@ -118,7 +113,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="value_min" id="value_min" size="30" value="{{ command_input.value_min }}">
+                                <input type="text" class="form-control" name="value_min" id="value_min" size="30" value="{{ field.value_min }}">
                             </div>
 						</div>
 
@@ -131,15 +126,41 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="value_max" id="value_max" size="30" value="{{ command_input.value_max }}">
+                                <input type="text" class="form-control" name="value_max" id="value_max" size="30" value="{{ field.value_max }}">
                             </div>
 						</div>
-                        <a class="btn btn-md btn-danger" href="/devtools/device_types/{{ device_type.id }}/command/{{command_input.command_id}}/details">Cancel</a>
-                        <button type="submit" class="btn btn-success">Save Input for Command</button>
-                        </div>
+
+						<div class="form-group">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Weight: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalweight", 'Weight', '
+                            <p>Used for ordering groups. Lower number is high priority, or "floats to the top".</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <input tabindex="4" type="text" class="form-control" name="field_weight" id="field_weight" size="5" placeholder="Weight" value="{{ field.field_weight }}">
+                            </div>
+						</div>
+
+						<div class="form-group">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
+                            <p>You can enable or disable the group as needed. When disables, all associated fields and data values will become unusable.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <select tabindex="13" class="form-control" name="status" id="status">
+                                    <option value="0"{% if group.status == 0 %} selected{% endif %}>Disabled</option>
+                                    <option value="1"{% if group.status == 1 %} selected{% endif %}>Enabled</option>
+                                    <option value="2"{% if group.status == 2 %} selected{% endif %}>Deleted</option>
+                                </select>
+                            </div>
+						</div>
                     </div>
                     <!-- /.panel-body -->
                 </div>
+            <input type="submit" />
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
@@ -148,12 +169,7 @@
 {% endblock %}
 
 {% block body_bottom_js %}
-{% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
-{% endblock %}
-
-{% block body_bottom %}
-    <!-- Make the tables pretty -->
     <script>
      $(document).ready(function(){
         var i=1;
@@ -189,14 +205,13 @@
             };
         })(jQuery);
 
-        $("#devicetypeedit").submit(function(event) {
+        $("#groupedit").submit(function(event) {
 //            event.preventDefault();
 
-            var rawData = $('#devicetypeedit').serializeFormJSON();
+            var rawData = $('#groupedit').serializeFormJSON();
             var formData = JSON.stringify(rawData);
             console.log(formData);
         });
-
 
     });
 
@@ -205,70 +220,46 @@
       $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
     });
 
-    $.validator.addMethod('le', function(value, element, param) {
-          return this.optional(element) || value <= $(param).val();
-    }, 'Invalid value');
-    $.validator.addMethod('ge', function(value, element, param) {
-          return this.optional(element) || value >= $(param).val();
-    }, 'Invalid value');
-
-//    $.validator.addMethod("greaterThan",
-//    function (value, element, param) {
-//      var $min = $(param);
-//      if (this.settings.onfocusout) {
-//        $min.off(".validate-greaterThan").on("blur.validate-greaterThan", function () {
-//          $(element).valid();
-//        });
-//      }
-//      return parseInt(value) > parseInt($min.val());
-//    }, "Max must be greater than min");
-
-
     $('form').validate({
         rules: {
-            notes: {
+            field_label: {
+                minlength: 2,
+                maxlength: 255,
+                required: true,
+            },
+            field_machine_label: {
+                minlength: 2,
+                maxlength: 255,
+                required: true,
+            },
+            field_description: {
+                minlength: 5,
                 maxlength: 1024,
-                required: false,
-            },
-            live_update: {
                 required: true,
             },
-            value_required: {
+            field_weight: {
+                number: true,
+                min:-32760,
+                max:32760,
                 required: true,
             },
-            value_min: {
-                le: "#value_max",
-                min: -8388600,
-                max: 8388600,
-                integer: true,
-                required: false,
+            status: {
+                number: true,
+                min:0,
+                max:2,
+                required: true,
             },
-            value_max: {
-                ge: "#value_min",
-                min: -8388600,
-                max: 8388600,
-                integer: true,
-                required: false,
-            },
-
         },
         messages: {
-            value_min: {
-                le: 'Must be less than Maximum Value'
-            },
-            value_max: {
-                ge: 'Must be greater than Minimum Value'
-            },
+            field_weight: "Weight must be between -32768 and 32766.",
         },
         highlight: function(element) {
             var id_attr = "#" + $( element ).attr("id") + "1";
             $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
-            $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
         },
         unhighlight: function(element) {
             var id_attr = "#" + $( element ).attr("id") + "1";
             $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
-            $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
         },
         errorElement: 'span',
             errorClass: 'input-validation-error',
