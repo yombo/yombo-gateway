@@ -46,7 +46,13 @@
                                                  {% endif %}
                                                  </ul>
                                                  {% endfor -%}
+                                                 {% if variable_group.status <= 1 %}
                                                  <a class="btn btn-sm btn-primary" href="/devtools/variables/group/{{ variable_group.id }}/new_field">Add Field</a>
+                                                 {% elif variable_group.status == 0 %}
+                                                 <a class="btn btn-sm btn-warning" href="/devtools/variables/group/{{ variable_group.id }}/new_field">Add Field</a>
+                                                 {% elif variable_group.status == 2 %}
+                                                 <a class="btn btn-sm btn-primary" href="javascript:void(0);" disabled>Add Field</a>
+                                                 {% endif %}
                                              </td>
                                          </tr>{% endfor -%}
                                     </tbody>

@@ -820,7 +820,7 @@ class WebInterface(YomboLibrary):
             target = "_self"
         return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
 
-    def reqest_get_default(self, request, name, default, offset=None):
+    def request_get_default(self, request, name, default, offset=None):
         if offset == None:
             offset = 0
         try:

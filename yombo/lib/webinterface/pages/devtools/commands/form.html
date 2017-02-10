@@ -22,95 +22,116 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
+                            <div class="row">
 
-						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
-                            <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modallabel", 'Label', '
-                            <p>A label for the command. A short but helpful title to describe what the command does. For example: On, Off, Open, Set Value</p>
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Command Name" value="{{ command.label }}" autofocus required>
-                            </div>
-						</div>
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="form-group">
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modallabel", 'Label', '
+                                        <p>A label for the command. A short but helpful title to describe what the command does. For example: On, Off, Open, Set Value</p>
+                                        ') }}
+                                        <br>
+                                        <div class="input-group">
+                                            <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Command Name" value="{{ command.label }}" autofocus required>
+                                        </div>
+                                    </div>
+                                </div>
 
-						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalmachinelabel", 'Machine Label', '
-                            <p>The machine label is used by developers and the gateway to determine uniqueness. <strong>Once set, this cannot be changed!</strong></p>
-                            <p>Usually a short version of the command label. Example: set_value, on, off, open</p>') }}
-                            <br>
-                            <div class="input-group">
-                                <input tabindex="2" {% if action_type == 'edit' %}disabled {% endif %}tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'command_name', 'commandname'" value="{{ command.machine_label }}">
-                                <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ command.machine_label }}">                            </div>
-						</div>
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="form-group">
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modalmachinelabel", 'Machine Label', '
+                                        <p>The machine label is used by developers and the gateway to determine uniqueness. <strong>Once set, this cannot be changed!</strong></p>
+                                        <p>Usually a short version of the command label. Example: set_value, on, off, open</p>') }}
+                                        <br>
+                                        <div class="input-group">
+                                            <input tabindex="2" {% if action_type == 'edit' %}disabled {% endif %}tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'command_name', 'commandname'" value="{{ command.machine_label }}">
+                                            <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ command.machine_label }}">                            </div>
+                                    </div>
+                                </div>
 
-						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
-                            <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modaldescription", 'Description', '
-                            <p>A description of the command.</p>
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <textarea tabindex="3" class="form-control" rows="15" cols="60" name="description" id="description" placeholder="Description">{{ command.description }}</textarea>
-                            </div>
-						</div>
+                            </div> <!-- /.row -->
+                            <div class="row">
 
-						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">voice_cmd: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalcategory"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalcategory", 'Voice Command', '
-                            <p>A voice command associates something someone would say to this command. For example, if this command were for turning
-                            devices on, the voice command could be "on". This would allow someone to say or the system could recieve an API request of
-                            "turn bedroom light on".</p>
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <input tabindex="4" type="text" class="form-control" name="voice_cmd" id="voice_cmd" size="30" placeholder="'Command Name', 'devicetypename'" value="{{ command.voice_cmd }}">
-                            </div>
-						</div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="form-group">
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Description: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modaldescription", 'Description', '
+                                        <p>A description of the command.</p>
+                                        ') }}
+                                        <br>
+                                        <div class="input-group">
+                                            <textarea tabindex="3" class="form-control" rows="15" cols="60" name="description" id="description" placeholder="Description">{{ command.description }}</textarea>
+                                        </div>
+                                    </div>
 
-						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
-                            <p>You can enable or disable the command as needed. When disabled, the command cannot be used by gateways.</p>
-                            <p>Any items marked "delete" will be deleted after 30 days. This allows the
-                            delete command to fully propogate through the entire Yombo eco system.</p>') }}
-                            <br>
-                            <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
-                                    <option value="0"{% if command.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
-                                    <option value="1"{% if command.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
-                                    <option value="2"{% if command.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
-                                </select>
-                            </div>
-						</div>
+                                    <div class="form-group">
+                                        <label style="margin-top: 0px; margin-bottom: 0px">voice_cmd: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modalcategory"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modalcategory", 'Voice Command', '
+                                        <p>A voice command associates something someone would say to this command. For example, if this command were for turning
+                                        devices on, the voice command could be "on". This would allow someone to say or the system could recieve an API request of
+                                        "turn bedroom light on".</p>
+                                        ') }}
+                                        <br>
+                                        <div class="input-group">
+                                            <input tabindex="4" type="text" class="form-control" name="voice_cmd" id="voice_cmd" size="30" placeholder="'Command Name', 'devicetypename'" value="{{ command.voice_cmd }}">
+                                        </div>
+                                    </div>
+                                </div>
 
-						<div class="form-group">
-                            <label style="margin-top: 0px; margin-bottom: 0px">Public Status: </label>
-                            <a href="#" data-toggle="modal" data-target="#modalpublicstatus"><i class="fa fa-question fa-lg"></i></a>
-                            {{ macros.modal("modalpublicstatus", 'Device type public status', '
-                            <p>There are three public status levels:</p>
-                            <ul>
-                                <li>private - Only the user that created the command can manage or use the command.</li>
-                                <li>public pending - Access like private, but a request is pending with Yombo support to convert it to public.</li>
-                                <li>public - Available to any Yombo user. Once it\'s public, it\'s can no longer be controlled by the creator.</li>
-                            </ul>
-                            ') }}
-                            <br>
-                            <div class="input-group">
-                                <select tabindex="6" class="selectpicker show-tick form-control" name="public" id="public">
-                                    <option value="0"{% if command.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
-                                    <option value="1"{% if command.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
-                                    <option value="2"{% if command.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>
-                                </select>
-                            </div>
-						</div>
+                            </div> <!-- /.row -->
+                            <div class="row">
 
+                                <div class="col-lg-4 col-md-6">
+
+                                    <div class="form-group">
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
+                                        <p>You can enable or disable the command as needed. When disabled, the command cannot be used by gateways.</p>
+                                        <p>Any items marked "delete" will be deleted after 30 days. This allows the
+                                        delete command to fully propogate through the entire Yombo eco system.</p>') }}
+                                        <br>
+                                        <div class="input-group">
+                                            <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
+                                                <option value="0"{% if command.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
+                                                <option value="1"{% if command.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
+                                                <option value="2"{% if command.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="form-group">
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Public Status: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modalpublicstatus"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modalpublicstatus", 'Device type public status', '
+                                        <p>There are three public status levels:</p>
+                                        <ul>
+                                            <li>private - Only the user that created the command can manage or use the command.</li>
+                                            <li>public pending - Access like private, but a request is pending with Yombo support to convert it to public.</li>
+                                            <li>public - Available to any Yombo user. Once it\'s public, it\'s can no longer be controlled by the creator.</li>
+                                        </ul>
+                                        ') }}
+                                        <br>
+                                        <div class="input-group">
+                                            <select tabindex="6" class="selectpicker show-tick form-control" name="public" id="public">
+                                                <option value="0"{% if command.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
+                                                <option value="1"{% if command.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
+                                                <option value="2"{% if command.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div> <!-- /.row -->
+                            <a class="btn btn-md btn-danger" href="/devtools/commands/{{command.id}}/details">Cancel</a>
+                            <button type="submit" class="btn btn-success">Save Command</button>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -118,8 +139,6 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <a class="btn btn-md btn-danger" href="/devtools/commands/{{command.id}}/details">Cancel</a>
-            <button type="submit" class="btn btn-success">Save Command</button>
             </form>
 <br>
 {% endblock %}

@@ -16,7 +16,8 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Module Variables Groups</label>
+                            <h4>Module Variables Groups</h4>
+                            The table below shows all variable groups and their input fields.
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -39,16 +40,22 @@
                                                  <label>Description:</label> {{ variable_group.group_description }}
                                              </td>
                                              <td>
-                                                 <a class="btn btn-sm btn-primary" href="/devtools/variables/field/add/{{variable_group.id}}">Add Field</a>
-                                                 {% for variable_field in module.variable_fields %}
-                                                 <ul>
-                                                 {% if variable_field.group_id == variable_group.id %}
-                                                     <li>
-                                                         <a href="/devtools/variables/field/{{ variable_field.id }}/details">{{ variable_field.field_label }}</a>
-                                                     </li>
+                                                 <p>
+                                                 {% if variable_group.status == 1 %}
+                                                 <a class="btn btn-sm btn-primary" href="/devtools/variables/group/{{variable_group.id}}/new_field">Add Field</a>
+                                                 {% elif variable_group.status == 0 %}
+                                                 <a class="btn btn-sm btn-warning pull" href="/devtools/variables/group/{{variable_group.id}}/new_field">Add Field</a>
+                                                 {% elif variable_group.status == 2 %}
+                                                 <a class="btn btn-sm btn-primary" href="javascript:void(0);" disabled>Add Field</a>
                                                  {% endif %}
-                                                 </ul>
+                                                 </p>
+                                                 <p>
+                                                 {% for variable_field in module.variable_fields %}
+                                                 {% if variable_field.group_id == variable_group.id %}
+                                                     <a href="/devtools/variables/field/{{ variable_field.id }}/details">{{ variable_field.field_label }}</a><br>
+                                                 {% endif %}
                                                  {% endfor -%}
+                                                 </p>
                                              </td>
                                          </tr>{% endfor -%}
                                     </tbody>
