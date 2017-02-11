@@ -71,8 +71,12 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Install Branch: </label><br>
                                 {% if module._Details.install_branch == 'production' -%}
                                 Production
-                                {% else %}
+                                {% elif module._Details.install_branch == 'development' -%}
                                 Development
+                                {% elif module._Details.install_branch == 'system' -%}
+                                System
+                                {% else %}
+                                module._Details.install_branch
                                 {% endif %} <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
                                 {{ module._Details.status|yes_no }}<br>

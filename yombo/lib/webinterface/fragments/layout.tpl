@@ -138,7 +138,7 @@
                     <div class="col-lg-12">
                         <div class="breadcrumbs">
                         {%- for breadcrumb in misc_wi_data.breadcrumb -%}
-                            {% if loop.last and breadcrumb.show == false %}
+                            {% if loop.last or breadcrumb.show == false %}
                                 {{ breadcrumb.text }}
                             {% else %}
                                 <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>

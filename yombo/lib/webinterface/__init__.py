@@ -302,6 +302,7 @@ class WebInterface(YomboLibrary):
     alerts = OrderedDict()
 
     def _init_(self):
+        self.starting = True
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:
             return
@@ -511,6 +512,7 @@ class WebInterface(YomboLibrary):
                 self.misc_wi_data['nav_side'][level1] = []
             self.misc_wi_data['nav_side'][level1].append(item)
         # print self.misc_wi_data['nav_side']
+        self.starting = False
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):
         """
@@ -828,7 +830,7 @@ class WebInterface(YomboLibrary):
         except:
             return default
 
-    def add_breadcrumb(self, request, url, text, show = False):
+    def add_breadcrumb(self, request, url, text, show = True):
         if hasattr(request, 'breadcrumb') is False:
             request.breadcrumb = []
             self.misc_wi_data['breadcrumb'] = request.breadcrumb

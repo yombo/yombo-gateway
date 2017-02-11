@@ -72,7 +72,7 @@
                                             <th>Variable Group</th><th>Fields</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for variable_group in server_module.variable_groups %}
+                                    <tbody>{% for variable_group in server_module.variable_groups if variable_group.status == 1 %}
                                          <tr>
                                              <td>{{ variable_group.group_label }}</a></td>
                                              <td>{% for variable_field in server_module.variable_fields %}

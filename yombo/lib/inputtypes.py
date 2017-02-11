@@ -156,7 +156,7 @@ class InputTypes(YomboLibrary):
 #            return self.__yombocommands[command_id]
 
     @inlineCallbacks
-    def dev_add_input_type(self, data, **kwargs):
+    def dev_input_type_add(self, data, **kwargs):
         """
         Add a module at the Yombo server level, not at the local gateway level.
 
@@ -184,7 +184,7 @@ class InputTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_edit_input_type(self, input_type_id, data, **kwargs):
+    def dev_input_type_edit(self, input_type_id, data, **kwargs):
         """
         Edit a module at the Yombo server level, not at the local gateway level.
 
@@ -213,7 +213,7 @@ class InputTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_delete_input_type(self, input_type_id, **kwargs):
+    def dev_input_type_delete(self, input_type_id, **kwargs):
         """
         Delete a input_type at the Yombo server level, not at the local gateway level.
 
@@ -240,7 +240,7 @@ class InputTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_enable_input_type(self, input_type_id, **kwargs):
+    def dev_input_type_enable(self, input_type_id, **kwargs):
         """
         Enable a input_type at the Yombo server level, not at the local gateway level.
 
@@ -272,7 +272,7 @@ class InputTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_disable_input_type(self, input_type_id, **kwargs):
+    def dev_input_type_disable(self, input_type_id, **kwargs):
         """
         Enable a input_type at the Yombo server level, not at the local gateway level.
 

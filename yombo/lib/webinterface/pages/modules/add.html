@@ -54,8 +54,8 @@
                                 <br>
                             <div class="input-group">
                                 <select required class="selectpicker show-tick form-control" name="status" id="status" placeholder="">
-                                    <option value="0"{% if module._Details.status == 0 %} selected{% endif %}>Disabled</option>
-                                    <option value="1"{% if module._Details.status == 1 %} selected{% endif %}>Enabled</option>
+                                    <option value="0" >Disabled</option>
+                                    <option value="1" selected>Enabled</option>
                                 </select>
                             </div>
 
@@ -75,7 +75,7 @@
                         <div class="panel-body">
                             <div class="input-group">
                             {%- if server_module.variable_groups|length > 0 -%}
-                                {% for group in server_module.variable_groups %}
+                                {% for group in server_module.variable_groups if group.status == 1 %}
                                 <div class="panel panel-default">
                                     <div class="panel-heading">
                                         <h4>{{ group.group_label }}</h4>

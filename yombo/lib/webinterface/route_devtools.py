@@ -116,7 +116,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the command.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/commands/%s/details' % command_id))
 
-            command_results = yield webinterface._Commands.dev_delete_command(command_id)
+            command_results = yield webinterface._Commands.dev_command_delete(command_id)
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -175,7 +175,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the command.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/commands/%s/details' % command_id))
 
-            command_results = yield webinterface._Commands.dev_disable_command(command_id)
+            command_results = yield webinterface._Commands.dev_command_disable(command_id)
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -233,7 +233,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the command.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/commands/%s/details' % command_id))
 
-            command_results = yield webinterface._Commands.dev_enable_command(command_id)
+            command_results = yield webinterface._Commands.dev_command_enable(command_id)
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -290,7 +290,7 @@ def route_devtools(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            command_results = yield webinterface._Commands.dev_add_command(data)
+            command_results = yield webinterface._Commands.dev_command_add(data)
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -343,7 +343,7 @@ def route_devtools(webapp):
                 'id': command_id,
             }
 
-            command_results = yield webinterface._Commands.dev_edit_command(command_id, data)
+            command_results = yield webinterface._Commands.dev_command_edit(command_id, data)
 
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 
@@ -1025,7 +1025,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the device type.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/device_types/%s/details' % device_type_id))
 
-            results = yield webinterface._DeviceTypes.dev_delete_device_type(device_type_id)
+            results = yield webinterface._DeviceTypes.dev_device_type_delete(device_type_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1091,7 +1091,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the device type.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
 
-            results = yield webinterface._DeviceTypes.dev_disable_device_type(device_type_id)
+            results = yield webinterface._DeviceTypes.dev_device_type_disable(device_type_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1150,7 +1150,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the device type.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/device_types/%s/device_type_id' % device_type_id))
 
-            results = yield webinterface._DeviceTypes.dev_enable_device_type(device_type_id)
+            results = yield webinterface._DeviceTypes.dev_device_type_enable(device_type_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1212,7 +1212,7 @@ def route_devtools(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            device_type_results = yield webinterface._DeviceTypes.dev_add_device_type(data)
+            device_type_results = yield webinterface._DeviceTypes.dev_device_type_add(data)
 
             if device_type_results['status'] == 'failed':
                 webinterface.add_alert(device_type_results['apimsghtml'], 'warning')
@@ -1272,7 +1272,7 @@ def route_devtools(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            device_type_results = yield webinterface._DeviceTypes.dev_edit_device_type(device_type_id, data)
+            device_type_results = yield webinterface._DeviceTypes.dev_device_type_edit(device_type_id, data)
 
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 
@@ -1415,7 +1415,7 @@ def route_devtools(webapp):
                                        'warning')
                 returnValue(webinterface.redirect(request, '/devtools/input_types/%s/details' % input_type_id))
 
-            results = yield webinterface._InputTypes.dev_delete_input_type(input_type_id)
+            results = yield webinterface._InputTypes.dev_input_type_delete(input_type_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1481,7 +1481,7 @@ def route_devtools(webapp):
                 returnValue(
                     webinterface.redirect(request, '/devtools/input_types/%s/input_type_id' % input_type_id))
 
-            results = yield webinterface._InputTypes.dev_disable_input_type(input_type_id)
+            results = yield webinterface._InputTypes.dev_input_type_disable(input_type_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1545,7 +1545,7 @@ def route_devtools(webapp):
                 returnValue(
                     webinterface.redirect(request, '/devtools/input_types/%s/input_type_id' % input_type_id))
 
-            results = yield webinterface._InputTypes.dev_enable_input_type(input_type_id)
+            results = yield webinterface._InputTypes.dev_input_type_enable(input_type_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1611,7 +1611,7 @@ def route_devtools(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            input_type_results = yield webinterface._InputTypes.dev_add_input_type(data)
+            input_type_results = yield webinterface._InputTypes.dev_input_type_add(data)
 
             if input_type_results['status'] == 'failed':
                 webinterface.add_alert(input_type_results['apimsghtml'], 'warning')
@@ -1679,7 +1679,7 @@ def route_devtools(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            dev_input_type_results = yield webinterface._InputTypes.dev_edit_input_type(input_type_id, data)
+            dev_input_type_results = yield webinterface._InputTypes.dev_input_type_edit(input_type_id, data)
 
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 
@@ -1806,7 +1806,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the module.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
 
-            module_results = yield webinterface._Modules.dev_delete_module(module_id)
+            module_results = yield webinterface._Modules.dev_module_delete(module_id)
 
             if module_results['status'] == 'failed':
                 webinterface.add_alert(module_results['apimsghtml'], 'warning')
@@ -1861,7 +1861,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the module.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
 
-            results = yield webinterface._Modules.dev_disable_module(module_id)
+            results = yield webinterface._Modules.dev_module_disable(module_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1916,7 +1916,7 @@ def route_devtools(webapp):
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the module.', 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
 
-            results = yield webinterface._Modules.dev_enable_module(module_id)
+            results = yield webinterface._Modules.dev_module_enable(module_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -1978,7 +1978,7 @@ def route_devtools(webapp):
                 'status': int(request.args.get('status')[0]),
             }
 
-            results = yield webinterface._Modules.dev_add_module(data)
+            results = yield webinterface._Modules.dev_module_add(data)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -2040,7 +2040,7 @@ def route_devtools(webapp):
                 'status': int(request.args.get('status')[0]),
             }
 
-            results = yield webinterface._Modules.dev_edit_module(module_id, data)
+            results = yield webinterface._Modules.dev_module_edit(module_id, data)
 
             data['module_type'] = request.args.get('module_type')[0]
             data['machine_label'] = request.args.get('machine_label')[0]
@@ -2190,7 +2190,7 @@ def route_devtools(webapp):
                 webinterface.add_alert(['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/index'))
 
-            dev_group_results = yield webinterface._Variables.dev_add_group(data)
+            dev_group_results = yield webinterface._Variables.dev_group_add(data)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 returnValue(page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'], data, "Add Group Variable to: %s" % parent['data']['label']))
@@ -2488,8 +2488,8 @@ def route_devtools(webapp):
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
-            webinterface.add_breadcrumb(request, "/devtools/variables/group/%s/details" % group_results['data']['id'], group_results['data']['group_label'])
-            webinterface.add_breadcrumb(request, "/", "Delete")
+            webinterface.add_breadcrumb(request, "/devtools/variables/group/%s/details" % group_results['data']['id'], group_results['data']['group_label'], False)
+            webinterface.add_breadcrumb(request, "/", "Deleted")
 
             msg = {
                 'header': 'Variable Group Deleted',
@@ -2497,19 +2497,22 @@ def route_devtools(webapp):
                 'description': '',
             }
 
+
             if data['relation_type'] == 'module':
                 msg['description'] = '<p>Variable group has beed deleted.</p>' \
                                      '<p>Continue to:' \
                                      '<ul>' \
                                      '<li><a href="/devtools/modules/index">Modules index</a></li>' \
-                                     '<li><strong><a href="/devtools/modules/%s/details">View the module</a></strong></li>' \
+                                     '<li><a href="/devtools/modules/%s/details">View the module</a></li>' \
+                                     '<li><strong><a href="/devtools/modules/%s/variables">View module variables</a></strong></li>' \
                                      '</ul>' \
                                      '</p>' % (data['relation_id'], data['relation_id'])
             elif data['relation_type'] == 'device_type':
-                msg['description'] = '<p>Variable group has beed deleted.</p>' \
+                msg['description'] = '<p>Variable group has beed disabled.</p>' \
                                      '<p>Continue to:<ul>' \
                                      '<li><a href="/devtools/device_types/index">Device types index</a></li>' \
-                                     '<li><strong><a href="/devtools/device_types/%s/details">View the device type: %s</a></strong></li>' \
+                                     '<li><a href="/devtools/device_types/%s/details">View the device type: %s</a></li>' \
+                                     '<li><strong><a href="/devtools/device_types/%s/variables">View device type variables</a></strong></li>' \
                                      '</ul>' \
                                      '</p>' % (data['relation_id'], parent['data']['label'], data['relation_id'])
 
@@ -2591,7 +2594,7 @@ def route_devtools(webapp):
 
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'], group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request, "/devtools/variables/group/%s/details" % group_results['data']['id'], group_results['data']['group_label'])
-            webinterface.add_breadcrumb(request, "/", "Delete")
+            webinterface.add_breadcrumb(request, "/", "New Field")
             if parent['code'] != 200:
                 webinterface.add_alert(parent['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/index'))
@@ -2684,7 +2687,7 @@ def route_devtools(webapp):
 
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % field_results['data']['group_id'])
             if group_results['code'] != 200:
-                webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
+                webinterface.add_alert(group_results['apimsghtml'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/index'))
 
             dev_group_results = yield webinterface._Variables.dev_field_delete(field_id)

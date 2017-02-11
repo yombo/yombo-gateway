@@ -48,7 +48,7 @@ SYSTEM_MODULES['automationhelpers'] = {
     'short_description': "Adds basic platforms to the automation rules.",
     'description': "Adds basic platforms to the automation rules.",
     'description_formatting': 'text',
-    'install_branch': '',
+    'install_branch': 'system',
     'install_count': '',
     'see_also': '',
     'prod_branch': '',
@@ -857,7 +857,7 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_add_module(self, data, **kwargs):
+    def dev_module_add(self, data, **kwargs):
         """
         Add a module at the Yombo server level, not at the local gateway level.
 
@@ -885,7 +885,7 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_edit_module(self, module_id, data, **kwargs):
+    def dev_module_edit(self, module_id, data, **kwargs):
         """
         Edit a module at the Yombo server level, not at the local gateway level.
 
@@ -913,7 +913,7 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_delete_module(self, module_id, **kwargs):
+    def dev_module_delete(self, module_id, **kwargs):
         """
         Delete a module at the Yombo server level, not at the local gateway level.
 
@@ -940,7 +940,7 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_enable_module(self, module_id, **kwargs):
+    def dev_module_enable(self, module_id, **kwargs):
         """
         Enable a module at the Yombo server level, not at the local gateway level.
 
@@ -971,7 +971,7 @@ class Modules(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_disable_module(self, module_id, **kwargs):
+    def dev_module_disable(self, module_id, **kwargs):
         """
         Enable a module at the Yombo server level, not at the local gateway level.
 
@@ -999,67 +999,6 @@ class Modules(YomboLibrary):
             'status': 'success',
             'msg': "Module disabled.",
             'module_id': module_id,
-        }
-        returnValue(results)
-
-    @inlineCallbacks
-    def dev_edit_module_vars(self, module_id, data, **kwargs):
-        """
-        Edit a module variable groups and fields at the Yombo server level, not at the local gateway level.
-
-        THIS FUNCTION DOES NOT WORK.  Work in progress.
-        :param data:
-        :param kwargs:
-        :return:
-        """
-        if 'variable_data' in data:
-            variable_data = data['variable_data']
-            for field_id, data in variable_data.iteritems():
-                # print "data: %s" % data
-                for data_id, value in data.iteritems():
-                    if data_id.startswith('new_'):
-                        post_data = {
-                            'gateway_id': self.gwid,
-                            'field_id': field_id,
-                            'relation_id': module_id,
-                            'relation_type': 'module',
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        # print("post_data: %s" % post_data)
-                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        # print "var_data_results: %s"  % var_data_results
-                        if var_data_results['code'] != 200:
-                            results = {
-                                'status': 'failed',
-                                'msg': "Couldn't add module variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                            }
-                            returnValue(results)
-                    else:
-                        post_data = {
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        # print("posting to: /v1/variable/data/%s" % data_id)
-                        # print("post_data: %s" % post_data)
-                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
-                        if var_data_results['code'] != 200:
-                            # print("bad results module_results: %s" % module_results)
-                            # print("bad results var_data_results: %s" % var_data_results)
-                            results = {
-                                'status': 'failed',
-                                'msg': "Couldn't add module variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                            }
-                            returnValue(results)
-
-        results = {
-            'status': 'success',
-            'msg': "Module edited.",
-            'module_id': module_id
         }
         returnValue(results)
 

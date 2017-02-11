@@ -163,7 +163,7 @@
             var uptime = {{ uptime }};
             var response_uptime = 0;
             var pingUrl = "/api/v1/uptime";
-            var refreshIntervalId = setInterval(ping, 150);
+            var refreshIntervalId = setInterval(ping, 250);
 
             function ping() {
                 $.ajax({

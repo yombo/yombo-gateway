@@ -289,7 +289,7 @@ class DeviceTypes(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def dev_add_device_type(self, data, **kwargs):
+    def dev_device_type_add(self, data, **kwargs):
         """
         Add a module at the Yombo server level, not at the local gateway level.
 
@@ -317,7 +317,7 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_edit_device_type(self, device_type_id, data, **kwargs):
+    def dev_device_type_edit(self, device_type_id, data, **kwargs):
         """
         Edit a module at the Yombo server level, not at the local gateway level.
 
@@ -345,7 +345,7 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_delete_device_type(self, device_type_id, **kwargs):
+    def dev_device_type_delete(self, device_type_id, **kwargs):
         """
         Delete a device_type at the Yombo server level, not at the local gateway level.
 
@@ -372,7 +372,7 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_enable_device_type(self, device_type_id, **kwargs):
+    def dev_device_type_enable(self, device_type_id, **kwargs):
         """
         Enable a device_type at the Yombo server level, not at the local gateway level.
 
@@ -404,7 +404,7 @@ class DeviceTypes(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_disable_device_type(self, device_type_id, **kwargs):
+    def dev_device_type_disable(self, device_type_id, **kwargs):
         """
         Enable a device_type at the Yombo server level, not at the local gateway level.
 

@@ -35,10 +35,14 @@ def route_api_v1(webapp):
 
         @webapp.route('/ping')
         def api_v1_ping(webinterface, request):
+            if webinterface.starting == True:
+                return;
             return "pong"
 
         @webapp.route('/uptime')
         def api_v1_uptime(webinterface, request):
+            if webinterface.starting == True:
+                return;
             return str(webinterface._Atoms['running_since'])
 
         @webapp.route('/devices', methods=['GET'])

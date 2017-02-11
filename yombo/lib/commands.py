@@ -197,7 +197,7 @@ class Commands(YomboLibrary):
 #            return self.__yombocommands[command_id]
 
     @inlineCallbacks
-    def dev_add_command(self, data, **kwargs):
+    def dev_command_add(self, data, **kwargs):
         """
         Add a command at the Yombo server level, not at the local gateway level.
 
@@ -225,7 +225,7 @@ class Commands(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_edit_command(self, command_id, data, **kwargs):
+    def dev_command_edit(self, command_id, data, **kwargs):
         """
         Edit a command at the Yombo server level, not at the local gateway level.
 
@@ -254,7 +254,7 @@ class Commands(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_delete_command(self, command_id, **kwargs):
+    def dev__commanddelete(self, command_id, **kwargs):
         """
         Delete a command at the Yombo server level, not at the local gateway level.
 
@@ -281,7 +281,7 @@ class Commands(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_enable_command(self, command_id, **kwargs):
+    def dev_command_enable(self, command_id, **kwargs):
         """
         Enable a command at the Yombo server level, not at the local gateway level.
 
@@ -313,7 +313,7 @@ class Commands(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev_disable_command(self, command_id, **kwargs):
+    def dev_command_disable(self, command_id, **kwargs):
         """
         Enable a command at the Yombo server level, not at the local gateway level.
 
