@@ -25,7 +25,7 @@ import sys
 import traceback
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import defer, reactor
 from twisted.internet.task import LoopingCall
 
@@ -37,7 +37,7 @@ import yombo.ext.six as six
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string, dict_has_key
+from yombo.utils import random_string, dict_has_key
 import yombo.ext.umsgpack as msgpack
 
 logger = get_logger('library.handler.amqpconfigs')
@@ -357,7 +357,11 @@ class AmqpConfigHandler(YomboLibrary):
         self.init_startup_count = 0
         self.init_defer = defer.Deferred()  # Prevents loader from moving on until we are done.
         self.__doing_full_configs = False  # will be set to True later when download configurations
-        self.__pending_updates = []  # Holds a list of configuration items we've asked for, but not response yet.
+        self.__pending_updates = {}  # Holds a dict of configuration items we've asked for, but not response yet.
+        self.__process_queue = {}  # Holds a list of configuration items we've asked for, but not response yet.
+        self.processing = False
+        self._checkProcessQueueLoop = LoopingCall(self.process_config_queue)
+        self.check_download_done_loop = None
 
         self._LocalDBLibrary = self.parent._Libraries['localdb']
 
@@ -370,7 +374,7 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         self.get_system_configs()
-        reactor.callLater(30, self.check_download_done)
+        self.check_download_done_loop = reactor.callLater(30, self.check_download_done)
         return self.init_defer
 
     def disconnected(self):
@@ -378,9 +382,10 @@ class AmqpConfigHandler(YomboLibrary):
         Called by amqpyombo when the system is disconnected.
         :return:
         """
-        self.__pending_updates = []
+        self.__pending_updates.clear()
         if self._getAllConfigsLoggerLoop is not None and self._getAllConfigsLoggerLoop.running:
             self._getAllConfigsLoggerLoop.stop()
+            self._checkProcessQueueLoop.stop()
 
     def _stop_(self):
         """
@@ -422,7 +427,7 @@ class AmqpConfigHandler(YomboLibrary):
                     return
 
             self.init_startup_count = self.init_startup_count + 1
-            reactor.callLater(30, self.check_download_done) #
+            self.check_download_done_loop = reactor.callLater(30, self.check_download_done) #
 
     def generate_config_request(self, headers, request_data=""):
         """
@@ -458,7 +463,31 @@ class AmqpConfigHandler(YomboLibrary):
         if properties.headers['config_item'] not in self.config_items:
             raise YomboWarning("Configuration item '%s' not configured." % properties.headers['config_item'])
             #                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
-        self.process_config(msg, properties.headers['config_item'], properties.headers['config_type'])
+        self.__process_queue[random_string(length=10)] = {
+            'msg': msg,
+            'headers': properties.headers,
+            }
+        self.__pending_updates['get_%s' % properties.headers['config_item']]['status'] = 'received'
+
+        self.process_config_queue();
+
+    @inlineCallbacks
+    def process_config_queue(self):
+        """
+        We queue incoming responses for processing. This helps to prevent race conditions as well as
+        killing sqlite3 database with a bunch of concurrent requests.
+
+        This is called to feed the process_config function configuration items to process and is called whenever
+        we receive a configuration response item as well as a looping call to ensure everything gets processed.
+        :return:
+        """
+        if self.processing:
+            returnValue(None)
+        for key in list(self.__process_queue):
+            queue = self.__process_queue[key]
+            self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
+            yield self.process_config(queue['msg'], queue['headers']['config_item'], queue['headers']['config_type'])
+            del self.__process_queue[key]
 
     @inlineCallbacks
     def process_config(self, msg, config_item, config_type=None):
@@ -473,7 +502,7 @@ class AmqpConfigHandler(YomboLibrary):
         :param properties: msg properties, so additional information can be retrieved.
         :return:
         """
-
+        self.processing = True
         # print "processing config.... %s" % config_item
         # print "processing msg.... %s" % msg
         if config_item == "gateway_configs":
@@ -507,8 +536,8 @@ class AmqpConfigHandler(YomboLibrary):
                     yield self.add_update_delete(msg, data, config_item, True)
         else:
             logger.warn("ConfigurationUpdate::process_config - '{config_item}' is not a valid configuration item. Skipping.", config_item=config_item)
-            return
         self._remove_full_download_dueue("get_" + config_item)
+        self.processing = False
 
     def field_remap(self, data, config_data):
         # print "field remap"
@@ -704,6 +733,7 @@ class AmqpConfigHandler(YomboLibrary):
         self._full_download_start_time = time()
         self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
         self._getAllConfigsLoggerLoop.start(5, False)  # Display a log line for pending downloaded, false - Dont' show now
+        self._checkProcessQueueLoop.start(0.5, False)
 
         logger.info("Requesting system configurations from server. This can take a few seconds.")
 
@@ -770,18 +800,22 @@ class AmqpConfigHandler(YomboLibrary):
         """
         if table not in self.__pending_updates:
             logger.debug("Adding table to request queue: {table}", table=table)
-            self.__pending_updates.append(table)
+            self.__pending_updates[table] = {
+                'status': 'requested',
+                'request_time': time(),
+            }
 
     def _remove_full_download_dueue(self, table):
         # logger.info("Removing table from request queue: {table}", table=table)
         # logger.info("Configs pending: {pendingUpdates}", pendingUpdates=self.__pending_updates)
         if table in self.__pending_updates:
-            self.__pending_updates.remove(table)
+            del self.__pending_updates[table]
         logger.debug("Configs pending: {pendingUpdates}", pendingUpdates=self.__pending_updates)
 
         if len(self.__pending_updates) == 0 and self.__doing_full_configs is True:
             self.__doing_full_configs = False
             self._getAllConfigsLoggerLoop.stop()
+            self._checkProcessQueueLoop.stop()
             reactor.callLater(0.1, self.done_with_startup_downloads) # give DB some breathing room
 
     def done_with_startup_downloads(self):
@@ -799,7 +833,11 @@ class AmqpConfigHandler(YomboLibrary):
 
     def _show_pending_configs(self):
         waitingTime = time() - self._full_download_start_time
-        logger.info("Waited %s for startup; pending these configurations: %s" % (waitingTime, self.__pending_updates))
+        logger.info("Waited {waitingTime} for startup; pending these configurations:", waitingTime=waitingTime)
+        for key in list(self.__pending_updates):
+            logger.info("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]['status'])
+            if self.__pending_updates[key]['status'] == 'processing':
+                self.check_download_done_loop.reset(30)
 
     def is_json(self, myjson):
         """
