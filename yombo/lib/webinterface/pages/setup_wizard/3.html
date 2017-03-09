@@ -118,7 +118,7 @@
 										<label >Search for location</label>
                                 <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
 										<div class="input-group">
-											<input id="search_txt" type="text" size="30" value="San Francisco, CA, USA" maxlength="1000"><br>
+											<input id="search_txt" type="text" size="30" value="{{ settings.location.location_search.data }}" maxlength="100"><br>
 											<input id="search_btn" type="button" value="    Search    ">
 											<input id="detect_btn" type="button" value="Detect" disabled>
 										</div>
@@ -126,6 +126,7 @@
 									<div class="form-group">
 										<label for="location_latitude">Latitude</label>
 										<div class="input-group">
+											<input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100"><br>
 											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ settings.location.latitude.data }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
@@ -154,7 +155,7 @@
                             <div class="col-md-12">
                             <div>&nbsp;</div>
                                 <a class="btn btn-md btn-warning" href="/setup_wizard/2"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
-                                <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">Next</button>
+                                <button type="submit" id="submit_login" class="btn btn-lg btn-success pull-right">Next</button>
                             </div>
                         </div>
                     </div>
@@ -166,7 +167,8 @@
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
 
     <script>
 
@@ -211,6 +213,14 @@ $('form').validate({
             }
         }
  });
+
+$(document).ready(function()
+{
+    $('#submit_login').click(function()
+    {
+         $('#location_search').val($('#search_txt').val());
+    });
+});
 
 	$(document).ready(function(){
 		$('[data-toggle="tooltip"]').tooltip();

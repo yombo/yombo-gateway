@@ -4,45 +4,6 @@ from yombo.core.exceptions import YomboWarningCredentails
 
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session, needs_web_pin
 
-simulate_gw = {
-              'new':{
-                  'label': '',
-                  'description': '',
-                  'variables': {
-                      'elevation': '75',
-                      'latitude': '37.758',
-                      'longitude': '-122.438'
-                      }
-                  },
-              'xyz1':{
-                  'label': 'Home',
-                  'description': 'Main house gateway',
-                  'variables': {
-                      'latitude': 38.576,
-                      'longitude': -121.276,
-                      'elevation': 100,
-                      }
-                  },
-              'abc2':{
-                  'label': 'Garage',
-                  'description': 'The garage',
-                  'variables': {
-                      'latitude': 37.791,
-                      'longitude': -121.858,
-                      'elevation': 50,
-                      }
-                  },
-              'mno3':{
-                  'label': 'Shed',
-                  'description': 'In the shed!',
-                  'variables': {
-                      'latitude': 37.259,
-                      'longitude': -122.177,
-                      'elevation': 25,
-                      }
-                  },
-              }
-
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
         @webapp.route('/1')
@@ -59,7 +20,7 @@ def route_setup_wizard(webapp):
             # print "webinterface = %s" % webinterface
             # print "request = %s" % request
             # print "session = %s" % session
-            print "session : %s" % session
+            # print "session : %s" % session
             webinterface.sessions.set(request, 'setup_wizard_last_step', 1)
             if session is not False:
                 if session.get('setup_wizard_done') is True:
@@ -178,12 +139,37 @@ def route_setup_wizard(webapp):
 
             if 'location' not in settings:
                 settings['location'] = {}
-            if 'latitude' not in settings['location']:
-                settings['location']['latitude'] = { 'data' : '37.757'}
-            if 'longitude' not in settings['location']:
-                settings['location']['longitude'] = { 'data' : '-122.437'}
-            if 'elevation' not in settings['location']:
-                settings['location']['elevation'] = { 'data' : '90'}
+
+            if 'setup_wizard_gateway_location_search' in session:
+                settings['location']['location_search'] = {'data': session['setup_wizard_gateway_location_search']}
+            else:
+                if 'latitude' not in settings['location']:
+                    settings['location']['location_search'] = {'data': 'San Francisco, CA, USA'}
+
+            if 'setup_wizard_gateway_latitude' in session:
+                settings['location']['latitude'] = {'data': session['setup_wizard_gateway_latitude']}
+            else:
+                if 'latitude' not in settings['location']:
+                    settings['location']['latitude'] = {'data': '37.757'}
+
+            if 'setup_wizard_gateway_longitude' in session:
+                settings['location']['longitude'] = {'data': session['setup_wizard_gateway_longitude']}
+            else:
+                if 'longitude' not in settings['location']:
+                    settings['location']['longitude'] = {'data': '-122.437'}
+
+            if 'setup_wizard_gateway_elevation' in session:
+                settings['location']['elevation'] = {'data': session['setup_wizard_gateway_elevation']}
+            else:
+                if 'elevation' not in settings['location']:
+                    settings['location']['elevation'] = {'data': '90'}
+            #
+            # if 'latitude' not in settings['location']:
+            #     settings['location']['latitude'] = { 'data' : '37.757'}
+            # if 'longitude' not in settings['location']:
+            #     settings['location']['longitude'] = { 'data' : '-122.437'}
+            # if 'elevation' not in settings['location']:
+            #     settings['location']['elevation'] = { 'data' : '90'}
 
             if 'times' not in settings:
                 settings['times'] = {}
@@ -235,11 +221,7 @@ def route_setup_wizard(webapp):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                 return webinterface.redirect(request, '/setup_wizard/1')
 
-            auth = webinterface.require_auth(request)  # Notice difference. Now we want to log the user in.
-            if auth is not None:
-                return auth
-
-            return webinterface.page_setup_wizard_4_show_form(request, session)
+            return page_setup_wizard_4_show_form(webinterface, request, session)
 
         @webapp.route('/4', methods=['POST'])
         @require_auth()
@@ -251,6 +233,12 @@ def route_setup_wizard(webapp):
                 return webinterface.redirect(request, '/setup_wizard/1')
 
             valid_submit = True
+            try:
+                submitted_gateway_location_search = request.args.get('location_search')[0]
+            except:
+                valid_submit = False
+                webinterface.add_alert("Invalid Gateway Location Search.")
+
             try:
                 submitted_gateway_label = request.args.get('gateway_label')[0]
             except:
@@ -297,6 +285,7 @@ def route_setup_wizard(webapp):
             session['setup_wizard_gateway_machine_label'] = submitted_gateway_machine_label
             session['setup_wizard_gateway_label'] = submitted_gateway_label
             session['setup_wizard_gateway_description'] = submitted_gateway_description
+            session['setup_wizard_gateway_location_search'] = submitted_gateway_location_search
             session['setup_wizard_gateway_latitude'] = submitted_gateway_latitude
             session['setup_wizard_gateway_longitude'] = submitted_gateway_longitude
             session['setup_wizard_gateway_elevation'] = submitted_gateway_elevation
@@ -320,23 +309,26 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/5', methods=['GET'])
         @require_auth()
+        @inlineCallbacks
         def page_setup_wizard_5_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                return webinterface.redirect(request, '/setup_wizard/6')
+                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
             if session.get('setup_wizard_last_step') not in (4, 5, 6):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-                return webinterface.redirect(request, '/setup_wizard/1')
+                returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
-            return page_setup_wizard_5_show_form(webinterface, request, session)
+            page = yield page_setup_wizard_5_show_form(webinterface, request, session)
+            returnValue(page)
 
         @webapp.route('/5', methods=['POST'])
         @require_auth()
+        @inlineCallbacks
         def page_setup_wizard_5_post(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                return webinterface.redirect(request, '/setup_wizard/6')
+                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
             if session.get('setup_wizard_last_step') not in (4, 5, 6):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
-                return webinterface.redirect(request, '/setup_wizard/1')
+                returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
             valid_submit = True
             try:
@@ -345,7 +337,6 @@ def route_setup_wizard(webapp):
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Device Send Status.")
 
-
             try:
                 submitted_security_gps_status = request.args.get('security-gps-status')[0]
             except:
@@ -353,80 +344,91 @@ def route_setup_wizard(webapp):
                 webinterface.add_alert("Invalid Gateway GPS Locations Send Status.")
 
             if valid_submit is False:
-                return webinterface.redirect(request, '/setup_wizard/4')
+                returnValue(webinterface.redirect(request, '/setup_wizard/4'))
 
             session['setup_wizard_security_status'] = submitted_security_status
             session['setup_wizard_security_gps_status'] = submitted_security_gps_status
 
-            return page_setup_wizard_5_show_form(webinterface, request, session)
+            page = yield page_setup_wizard_5_show_form(webinterface, request, session)
+            returnValue(page)
 
+        @inlineCallbacks
         def page_setup_wizard_5_show_form(webinterface, request, session):
             gpg_selected = "new"
 
             session.set('setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
-            return page.render(
-                               gpg_selected=gpg_selected
-                               )
+            gpg_existing = yield webinterface._LocalDb.get_gpg_key()
+            print "existing gpg keys: %s" % gpg_existing
+            returnValue(page.render(
+                               gpg_selected=gpg_selected,
+                               gpg_existing=gpg_existing,
+                               ))
 
         @webapp.route('/5_gpg_section')
         @require_auth()
+        @inlineCallbacks
         def page_setup_wizard_5_gpg_section(webinterface, request, session):
 
             if webinterface.sessions.get(request, 'setup_wizard_last_step') != 5:
-                return "Invalid wizard state. No content found."
+                returnValue("Invalid wizard state. No content found.")
 
-            available_keys = {} # simulate getting available keys from GPG library.
+            gpg_existing = yield webinterface._LocalDb.get_gpg_key()
 
             valid_submit = True
             try:
                 submitted_gpg_action = request.args.get('gpg_action')[0]
             except:
                 valid_submit = False
-                webinterface.add_alert("Invalid Gateway Label.")
+                webinterface.add_alert("Invalid GPG action.")
 
             if valid_submit is False:
-                return "invalid submit"
+                returnValue("invalid submit")
 
             if submitted_gpg_action == "new":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_new.html')
-                return page.render(
+                returnValue(page.render(
                                    alerts=webinterface.get_alerts(),
-                                   )
+                                   ))
+
             elif submitted_gpg_action == "import":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_import.html')
-                return page.render(
+                returnValue(page.render(
                                    alerts=webinterface.get_alerts(),
-                                   )
-            elif submitted_gpg_action in available_keys:
+                                   ))
+            elif submitted_gpg_action in gpg_existing:
                 page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5_gpg_existing.html')
-                return page.render(
+                returnValue(page.render(
                                    alerts=webinterface.get_alerts(),
-                                   )
+                                   key=gpg_existing[submitted_gpg_action]
+                                   ))
             else:
-                return "Invalid GPG selection."
+                returnValue("Invalid GPG selection.")
 
         @webapp.route('/6', methods=['GET'])
         @require_auth()
         def page_setup_wizard_6_get(webinterface, request, session):
-            auth = webinterface.require_auth(request)  # Notice difference. Now we want to log the user in.
-            if auth is not None:
-                return auth
-
             if webinterface.sessions.get(request, 'setup_wizard_done') is not True:
                 webinterface.redirect(request, '/setup_wizard/5')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
-                               data=webinterface.data,
                                )
 
         @webapp.route('/6', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_setup_wizard_6_post(webinterface, request, session):
-            print "111"
+            """
+            Last step is to handle the GPG key. One of: create a new one, import one, or select an existing one.
+
+            :param webinterface:
+            :param request:
+            :param session:
+            :return:
+            """
+            result_output = ""
             if webinterface.sessions.get(request, 'setup_wizard_done') is True:
                 print "aaa"
                 returnValue(webinterface.redirect(request, '/setup_wizard/6'))
@@ -437,59 +439,12 @@ def route_setup_wizard(webapp):
             except:
                 valid_submit = False
                 webinterface.add_alert("Please select an appropriate GPG/PGP Key action.")
-
-            if submitted_gpg_actions == 'import':  # make GPG keys!
-                try:
-                    submitted_gpg_private = request.args.get('gpg-private-key')[0]
-                except:
-                    valid_submit = False
-                    webinterface.add_alert("When importing, must have a valid private GPG/PGP key.")
-
-                try:
-                    submitted_gpg_public = request.args.get('gpg-public-key')[0]
-                except:
-                    valid_submit = False
-                    webinterface.add_alert("When importing, must have a valid public GPG/PGP key.")
-
-            if valid_submit is False:
                 returnValue(webinterface.redirect('/setup_wizard/5'))
-
-
-            if submitted_gpg_actions == 'new':  # make GPG keys!
-    #            gpg-make-new key here...
-                pass
-            elif submitted_gpg_actions == 'import':  # make GPG keys!
-    #            gpg-import-new-key-here...
-                pass
-            elif submitted_gpg_actions == 'existing':  # make GPG keys!
-    #            gpg-import-new-key-here...
-                pass
-
-            gpg_info = {  # will be returned from the GPG import/create/select existing funciton
-                'keyid': '63EE4EA472E49634',
-                'keypublicascii': """-----BEGIN PGP PUBLIC KEY BLOCK-----
-    Version: GnuPG v1.4.12 (GNU/Linux)
-    mI0ETyeLqwEEANsXSCvR9H5eSqRDusnqZpaxIj9uKanS+/R8yj23Yo2fl0r1BCwv
-    EnYF8h2tnowFQb59fuv821ZH7LoT4HZeDpNL8WGjaBSYpnxfGK3GBahM65a2WISb
-    nA+lkCuh7C6MA1zrNuKp5splsi/fg7hm7kaax5H2NJAUSuT3xsmLpZUTABEBAAG0
-    P0dlbmVyYXRlZCBieSBBSFggKGdwZ19nZW5lcmF0ZWtleXMucHkpIDxTRldFenA0
-    M1l6TEpmUERAYWh4Lm1lPoi4BBMBAgAiBQJPJ4urAhsvBgsJCAcDAgYVCAIJCgsE
-    FgIDAQIeAQIXgAAKCRBj7k6kcuSWNOs8A/4qTI+gw4SLwarGEVt0APFhKHQncXim
-    XRIV0dpHp6fX4JBN2yGFfAFP9dl+/xBJnOklRlnEvIb7D0cjwtRHSbNntKQb3pWT
-    v2WF64dX9flI/lICvwfTsaE7FPaFHiG6flXfizYYyQttNB9RFF6AZqV0t6+1/FHC
-    46JXipvbzmtNJQ==
-    =NXHA
-    -----END PGP PUBLIC KEY BLOCK-----""",
-            }
-    #        if gpg_ok is False:
-    #            return webinterface.redirect('/setup_wizard/5')
-
-
 
             # Call Yombo API to save Gateway. Will get back all the goodies we need!
             # Everything is done! Lets save all the configs!
 
-            session = webinterface.sessions.load(request)
+            # session = webinterface.sessions.load(request)
             if session['setup_wizard_gateway_id'] == 'new':
                 data = {
                     'machine_label': session['setup_wizard_gateway_machine_label'],
@@ -517,8 +472,6 @@ def route_setup_wizard(webapp):
             webinterface._Configs.set('core', 'label', session['setup_wizard_gateway_label'])
             webinterface._Configs.set('core', 'description', session['setup_wizard_gateway_description'])
             webinterface._Configs.set('core', 'gwhash', results['data']['hash'])
-            webinterface._Configs.set('gpg', 'keyid', gpg_info['keyid'])
-            webinterface._Configs.set('gpg', 'keypublicascii', gpg_info['keypublicascii'])
             webinterface._Configs.set('security', 'amqpsendstatus', session['setup_wizard_security_status'])
             webinterface._Configs.set('security', 'amqpsendgpsstatus', session['setup_wizard_security_gps_status'])
             webinterface._Configs.set('location', 'latitude', session['setup_wizard_gateway_latitude'])
@@ -532,6 +485,32 @@ def route_setup_wizard(webapp):
                     session.pop(k)
             session['setup_wizard_done'] = True
             session['setup_wizard_last_step'] = 6
+
+            if submitted_gpg_actions == 'new':  # make GPG keys!
+                gpg_info = yield webinterface._GPG.generate_key()
+                webinterface._Configs.set('gpg', 'keyid', gpg_info['keyid'])
+                webinterface._Configs.set('gpg', 'keyascii', gpg_info['keypublicascii'])
+            elif submitted_gpg_actions == 'import':  # make GPG keys!
+                try:
+                    submitted_gpg_private = request.args.get('gpg-private-key')[0]
+                except:
+                    webinterface.add_alert("When importing, must have a valid private GPG/PGP key.")
+                    returnValue(webinterface.redirect('/setup_wizard/5'))
+                try:
+                    submitted_gpg_public = request.args.get('gpg-public-key')[0]
+                except:
+                    webinterface.add_alert("When importing, must have a valid public GPG/PGP key.")
+                    returnValue(webinterface.redirect('/setup_wizard/5'))
+            else:
+                gpg_existing = yield webinterface._LocalDb.get_gpg_key()
+                if submitted_gpg_actions in gpg_existing:
+                    key_ascii = webinterface._GPG.get_key(submitted_gpg_actions)
+                    webinterface._Configs.set('gpg', 'keyid', submitted_gpg_actions)
+                    webinterface._Configs.set('gpg', 'keyascii', key_ascii)
+
+                else:
+                    webinterface.add_alert("Existing GPG/PGP key not fount.")
+                    returnValue(webinterface.redirect('/setup_wizard/5'))
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
             returnValue(page.render(

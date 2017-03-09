@@ -136,11 +136,11 @@ nav_side_menu = [
     },
     {
         'label1': 'Settings',
-        'label2': 'GPG Keys',
+        'label2': 'Encryption Keys',
         'priority1': 500,
         'priority2': 2500,
         'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/gpg_keys',
+        'url': '/configs/gpg/index',
         'tooltip': '',
         'opmode': 'run',
     },

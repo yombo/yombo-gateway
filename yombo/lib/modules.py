@@ -356,8 +356,11 @@ class Modules(YomboLibrary):
             self._rawModulesList[data['id']] = data
 
         modulesDB = yield self._LocalDBLibrary.get_modules()
-#        print "modulesdb: %s" % modulesDB
+        # print "modulesdb: %s" % modulesDB
+        # print " "
+        # print " "
         for module in modulesDB:
+            # print "module: %s" % module
             self._rawModulesList[module.id] = module.__dict__
             self._rawModulesList[module.id]['load_source'] = 'sql'
 
@@ -396,7 +399,6 @@ class Modules(YomboLibrary):
 
             module._Details = self._moduleClasses[module_id]
 
-
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
             module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
@@ -417,6 +419,7 @@ class Modules(YomboLibrary):
             module._Commands = self._Loader.loadedLibraries['commands']
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
+            module._GPG = self._Loader.loadedLibraries['gpg']
             module._Libraries = self._Loader.loadedLibraries
             module._Libraries = self._Loader.loadedLibraries
             module._Localize = self._Loader.loadedLibraries['localize']
@@ -426,6 +429,7 @@ class Modules(YomboLibrary):
             module._SQLDict = self._Loader.loadedLibraries['sqldict']
             module._States = self._Loader.loadedLibraries['states']
             module._Statistics = self._Loader.loadedLibraries['statistics']
+            module._Tasks = self._Loader.loadedLibraries['tasks']
             module._Times = self._Loader.loadedLibraries['times']
             module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
 
@@ -436,6 +440,8 @@ class Modules(YomboLibrary):
             if int(module._Details.status) != 1:
                 continue
 
+            module_device_types = yield self._LocalDBLibrary.get_module_device_types(module_id)
+            print "module_device_types = %s" % module_device_types
             if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
                 temp_device_types = module._module_devicetypes_()
                 for dt in temp_device_types:
@@ -663,13 +669,17 @@ class Modules(YomboLibrary):
             }
             returnValue(results)
 
+        print("checking if var data... %s" % data)
         if 'variable_data' in data:
+            print("adding variable data...")
             variable_data = data['variable_data']
             for field_id, var_data in variable_data.iteritems():
-                # print "data: %s" % data
-                for data_id, value in data.iteritems():
+                print("field_id: %s" % field_id)
+                print("var_data: %s" % var_data)
+                for data_id, value in var_data.iteritems():
+                    print("data_id: %s" % data_id)
                     if data_id.startswith('new_'):
-                        print "data1: %s" % data
+                        print("data_id starts with new...")
                         post_data = {
                             'gateway_id': self.gwid,
                             'field_id': field_id,
@@ -680,7 +690,7 @@ class Modules(YomboLibrary):
                         }
                         # print("post_data: %s" % post_data)
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        # print "var_data_results: %s"  % var_data_results
+                        print "var_data_results: %s"  % var_data_results
                         if var_data_results['code'] != 200:
                             results = {
                                 'status': 'failed',
@@ -759,7 +769,6 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "remove module: %s" % module_id
         if module_id not in self._modulesByUUID:
             raise YomboWarning("module_id doesn't exist. Nothing to remove.", 300, 'disable_module', 'Modules')
 
@@ -774,6 +783,9 @@ class Modules(YomboLibrary):
                 'apimsghtml': module_results['content']['html_message'],
             }
             returnValue(results)
+
+        self._LocalDBLibrary.set_module_status(module_id, 2)
+        self._LocalDBLibrary.del_variables('module', module_id)
 
         results = {
             'status': 'success',
@@ -813,6 +825,8 @@ class Modules(YomboLibrary):
             }
             returnValue(results)
 
+        self._LocalDBLibrary.set_module_status(module_id, 1)
+
         results = {
             'status': 'success',
             'msg': "Module enabled.",
@@ -848,6 +862,8 @@ class Modules(YomboLibrary):
                 'apimsghtml': module_results['content']['html_message'],
             }
             returnValue(results)
+
+        self._LocalDBLibrary.set_module_status(module_id, 0)
 
         results = {
             'status': 'success',
@@ -998,6 +1014,68 @@ class Modules(YomboLibrary):
         results = {
             'status': 'success',
             'msg': "Module disabled.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_module_device_type_add(self, module_id, device_type_id):
+        """
+        Associate a device type to a module
+
+        :param module_id: The module
+        :param device_type_id: The device type to associate
+        :return:
+        """
+        data = {
+            'module_id': module_id,
+            'device_type_id': device_type_id,
+        }
+
+        module_results = yield self._YomboAPI.request('POST', '/v1/module_device_type', data)
+        # print("module edit results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't associate device type to module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device type associated to module.",
+            'module_id': module_id,
+        }
+        returnValue(results)
+
+    @inlineCallbacks
+    def dev_module_device_type_remove(self, module_id, device_type_id):
+        """
+        Removes an association of a device type from a module
+
+        :param module_id: The module
+        :param device_type_id: The device type to  remove association
+        :return:
+        """
+
+        module_results = yield self._YomboAPI.request('DELETE', '/v1/module_device_type/%s/%s' % (module_id, device_type_id))
+        # print("module edit results: %s" % module_results)
+
+        if module_results['code'] != 200:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't remove association device type from module",
+                'apimsg': module_results['content']['message'],
+                'apimsghtml': module_results['content']['html_message'],
+            }
+            returnValue(results)
+
+        results = {
+            'status': 'success',
+            'msg': "Device type removed from module.",
             'module_id': module_id,
         }
         returnValue(results)

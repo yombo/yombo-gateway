@@ -259,11 +259,18 @@ class Localize(YomboLibrary):
             else:
                 return translation
         else:
-            translation = translator.ugettext(msgkey1)
-            if translation == msgctxt + self.MSGCTXT_GLUE + msgid1:
-                return msgid1
+            if msgctxt is None:
+                translation = translator.ugettext(msgkey1)
+                if translation == msgid1:
+                    return msgid1
+                else:
+                    return translation
             else:
-                return translation
+                translation = translator.ugettext(msgkey1)
+                if translation == msgctxt + self.MSGCTXT_GLUE + msgid1:
+                    return msgid1
+                else:
+                    return translation
 
     def do_update(self, language):
         """

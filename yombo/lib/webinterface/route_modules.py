@@ -97,8 +97,9 @@ def route_modules(webapp):
                 'module_id': json_output['module_id'],
                 'install_branch': json_output['install_branch'],
             }
+            print "jsonoutput = %s" % json_output
             if 'vars' in json_output:
-                json_output['variable_data'] = json_output['vars']
+                data['variable_data'] = json_output['vars']
 
             results = yield webinterface._Modules.add_module(data)
             if results['status'] == 'failed':
@@ -138,14 +139,18 @@ def route_modules(webapp):
 
         @webapp.route('/details/<string:module_id>')
         @require_auth()
+        @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
             print "webinterface._Modules[module_id]._Details: %s" % webinterface._Modules[module_id]._Details
             print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
-            return page.render(alerts=webinterface.get_alerts(),
+            device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
+            returnValue(page.render(alerts=webinterface.get_alerts(),
                                module=webinterface._Modules[module_id],
                                variables=webinterface._Modules[module_id]._ModuleVariables,
+                               device_types=device_types,
                                )
+                        )
 
         @webapp.route('/disable/<string:module_id>', methods=['GET'])
         @require_auth()
@@ -411,7 +416,7 @@ def route_modules(webapp):
                                         ))
 
             msg = {
-                'header': 'Module Enabled',
+                'header': 'Module Removed',
                 'label': 'Module configuration updated successfully',
                 'description': '',
             }

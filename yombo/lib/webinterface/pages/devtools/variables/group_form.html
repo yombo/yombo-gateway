@@ -57,7 +57,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <textarea tabindex="5" class="form-control" rows="15" cols="60" name="group_description" id="group_description" placeholder="Description">{{ group.group_description }}</textarea>
+                                <textarea tabindex="4" class="form-control" rows="15" cols="60" name="group_description" id="group_description" placeholder="Description">{{ group.group_description }}</textarea>
                             </div>
 						</div>
 
@@ -69,7 +69,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input tabindex="4" type="text" class="form-control" name="group_weight" id="group_weight" size="5" placeholder="Description of group." value="{{ group.group_weight }}">
+                                <input tabindex="5" type="text" class="form-control" name="group_weight" id="group_weight" size="5" placeholder="Description of group." value="{{ group.group_weight }}">
                             </div>
 						</div>
 
@@ -81,7 +81,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="13" class="form-control" name="status" id="status">
+                                <select tabindex="6" class="form-control" name="status" id="status">
                                     <option value="0"{% if group.status == 0 %} selected{% endif %}>Disabled</option>
                                     <option value="1"{% if group.status == 1 %} selected{% endif %}>Enabled</option>
                                     <option value="2"{% if group.status == 2 %} selected{% endif %}>Deleted</option>

@@ -26,10 +26,11 @@
                         <p>GPG allows encrypted data to be sent to this gateway. Available options:</p>
                         <ul>
                             <li><strong>New</strong> - Create new GPG keys. <em>Suggested</em></li>
-                            <li><strong>Use Existing</strong> - Shows availablgpge GPG keys already created for Yombo Gateway.</li>
                             <li><strong>Import</strong> (Advanced) - Submit existing private and public keys from a previous installation.
                                 This shold only be used if you are importing an existing Yombo Gateway GPG key pair.
                                 You should <strong>not</strong> use your personal/existing GPG key pair.</li>
+                            <li><strong>Use Existing</strong> - Shows availablgpge GPG keys already created for Yombo Gateway.</li>
+                            <ul><li>This option is not available if not previous GPG keys were found.</li></ul>
                         </ul>
                     </div>
                     <div class="panel-body">
@@ -42,20 +43,15 @@
                                 <option disabled>Select Existing:</option>
                                 <option data-divider="true"></option>
                                 {% for id in gpg_existing %}
-                                <option value="{{ id }}"{% if gpg_selected == id %} selected{% endif %}>{{ gpg_existing[id] }}</option>
+                                <option value="{{ id }}"{% if gpg_selected == id %} selected{% endif %}>Size: {{ gpg_existing[id]['length'] }} Created: {{ gpg_existing[id]['created']|epoch_to_human }} - ID: {{ id }}</option>
                                 {% endfor %}
                                 <option data-divider="true"></option>
                                 {% endif %}
-                                <option value="import"{% if gpg_selected == "import" %} selected{% endif %}>Import</option>
-                            </select> selected: {{ gpg_selected }}
+                                <option disabled value="import"{% if gpg_selected == "import" %} selected{% endif %}>Import</option>
+                            </select>
                         </div>
                     </div>
-
                     <form action="/setup_wizard/6" method="POST" role="form" id="myForm">
-                    <div class="row">
-                        <div class="col-md-12">
-                        </div>
-                    </div>
 
                     <div class="panel-body">
                             <span id="GPG-Input-Area">{% if gpg_selected == 'new' or gpg_selected == "" %} {% include 'lib/webinterface/pages/setup_wizard/5_gpg_new.html' %}{% endif %}</span>
@@ -88,19 +84,13 @@
         });
 
 $(document).ready(function() {
-    $("body").prepend('<div id="loadingform" class="ui-widget-overlay" style="z-index: 1001; display: none; top: 0; left: 0; height: 100%; width: 100%; background: rgba( 255, 255, 255, .8 )
-     url('http://i.stack.imgur.com/FhHRx.gif')50% 50% no-repeat;"></div>');
+    $("body").prepend('<div id="overlay" class="ui-widget-overlay" style="z-index: 1001; display: none;"></div>');
     $("body").prepend("<div id='PleaseWait' style='display: none;'><img src='http://i.stack.imgur.com/FhHRx.gif'/></div>");
 });
 
 $('#myForm').submit(function() {
-    var pass = true;
-    //some validations
 
-    if(pass == false){
-        return false;
-    }
-    $("#loadingform, #PleaseWait").show();
+    $("#overlay, #PleaseWait").show();
 
     return true;
 });

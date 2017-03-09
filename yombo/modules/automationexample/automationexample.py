@@ -26,6 +26,12 @@ class AutomationExample(YomboModule):
         self._ModUrl = "https://yombo.net"
 #        self._States['automationexample'] = 0
 
+        data = self._GPG.encrypt_asymmetric('/dev/homevision')
+        print "Encrypted: %s"  % data
+        data = self._GPG.decrypt_asymmetric(data)
+        print "Decrupted: %s" % data
+
+
     def _load_(self):
         # in 3 seconds from now, change the state - test the trigger
 #        reactor.callLater(3, self.set_low)

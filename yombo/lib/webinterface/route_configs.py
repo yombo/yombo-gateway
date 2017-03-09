@@ -1,3 +1,4 @@
+from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.lib.webinterface.auth import require_auth
 
 def route_configs(webapp):
@@ -18,7 +19,7 @@ def route_configs(webapp):
                                )
 
         @webapp.route('/basic', methods=['POST'])
-        @require_auth()
+        @require_auth(login_redirect="/configs/basic")
         def page_configs_basic_post(webinterface, request, session):
 
             valid_submit = True
@@ -105,27 +106,37 @@ def route_configs(webapp):
                                )
 
         @webapp.route('/yombo_ini')
-        @require_auth()
+        @require_auth(login_redirect="/configs/yombo_ini")
         def page_configs_yombo_ini(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/yombo_ini.html')
             return page.render(alerts=webinterface.get_alerts(),
                                configs=webinterface._Libraries['configuration'].configs
                                )
 
-        @webapp.route('/gpg_keys')
-        def page_gpg_keys_index(webinterface, request):
+        @webapp.route('/gpg/index')
+        @require_auth(login_redirect="/configs/gpg/index")
+        @inlineCallbacks
+        def page_gpg_keys_index(webinterface, request, session):
+            db_keys = yield webinterface._LocalDb.get_gpg_key()
+            gw_keyid = webinterface._Configs.get('gpg', 'keyid')
             print "################## gogogogogogogpgpgpgppgpg "
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
-            return page.render()
+            returnValue(page.render(
+                alerts=webinterface.get_alerts(),
+                gpg_keys=db_keys,
+                gw_keyid=gw_keyid,
+            ))
 
-        @webapp.route('/gpg_keys/generate_key')
-        def page_gpg_keys_generate_key(webinterface, request):
+        @webapp.route('/gpg/generate_key')
+        @require_auth(login_redirect="/configs/gpg/generate_key")
+        def page_gpg_keys_generate_key(webinterface, request, session):
             request_id = yombo.utils.random_string(length=16)
     #        self._Libraries['gpg'].generate_key(request_id)
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_started.html')
             return page.render(request_id=request_id, getattr=getattr, type=type)
 
-        @webapp.route('/gpg_keys/genrate_key_status')
-        def page_gpg_keys_generate_key_status(webinterface, request):
+        @webapp.route('/gpg/genrate_key_status')
+        @require_auth(login_redirect="/configs/genrate_key_status")
+        def page_gpg_keys_generate_key_status(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_status.html')
             return page.render(atoms=self._Libraries['atoms'].get_atoms(), getattr=getattr, type=type)

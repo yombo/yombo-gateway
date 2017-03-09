@@ -196,7 +196,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'id': 'id',
                     'device_type_id': 'device_type_id',
                     'command_id': 'command_id',
-                    'updated_at': 'updated',
+                    'created_at': 'created',
                 }
             },
 
@@ -276,6 +276,23 @@ class AmqpConfigHandler(YomboLibrary):
                     'email': 'email',
                     'created_at': 'created',
                     'updated_at': 'updated',
+                }
+            },
+
+            'module_device_type': {
+                'dbclass': "ModuleDeviceTypes",
+                'table': "module_device_types",
+                'library': None,
+                'functions': {
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'map': {
+                    'id': 'id',
+                    'module_id': 'module_id',
+                    'device_type_id': 'device_type_id',
+                    'created_at': 'created',
                 }
             },
 
@@ -360,6 +377,7 @@ class AmqpConfigHandler(YomboLibrary):
         self.__pending_updates = {}  # Holds a dict of configuration items we've asked for, but not response yet.
         self.__process_queue = {}  # Holds a list of configuration items we've asked for, but not response yet.
         self.processing = False
+        self.processing_queue = False
         self._checkProcessQueueLoop = LoopingCall(self.process_config_queue)
         self.check_download_done_loop = None
 
@@ -483,11 +501,16 @@ class AmqpConfigHandler(YomboLibrary):
         """
         if self.processing:
             returnValue(None)
-        for key in list(self.__process_queue):
-            queue = self.__process_queue[key]
-            self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
-            yield self.process_config(queue['msg'], queue['headers']['config_item'], queue['headers']['config_type'])
-            del self.__process_queue[key]
+
+        if self.processing_queue == False:
+            self.processing_queue = True
+            for key in list(self.__process_queue):
+                queue = self.__process_queue[key]
+                self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
+                yield self.process_config(queue['msg'], queue['headers']['config_item'], queue['headers']['config_type'])
+                del self.__process_queue[key]
+            self.processing_queue = False
+
 
     @inlineCallbacks
     def process_config(self, msg, config_item, config_type=None):
@@ -621,24 +644,20 @@ class AmqpConfigHandler(YomboLibrary):
         #         local_data.append(temp_data['UUID'])
         #     db_data['commands'] = ','.join(local_data)
 
-        # handle any nested items here.
-        if 'variable_groups' in data:
-            if len(data['variable_groups']):
-                newMsg = msg.copy()
-                newMsg['data'] = data['variable_groups']
-                self.process_config(newMsg, 'variable_groups')
+        if config_item == 'gateway_modules':
+            yield self._LocalDBLibrary.delete('module_device_types', where=['module_id = ?', data['id']])
 
-        if 'variable_fields' in data:
-            if len(data['variable_fields']):
-                newMsg = msg.copy()
-                newMsg['data'] = data['variable_fields']
-                self.process_config(newMsg, 'variable_fields')
+        if config_item == 'variable_groups':
+            yield self._LocalDBLibrary.delete('variable_groups', where=['relation_id = ?', data['relation_id']])
 
-        if 'variable_data' in data:
-            if len(data['variable_data']):
-                newMsg = msg.copy()
-                newMsg['data'] = data['variable_data']
-                self.process_config(newMsg, 'variable_data')
+        if config_item == 'gateway_users':
+            yield self._LocalDBLibrary.delete('users')
+
+        if 'status' in data:
+            if data['status'] == 2:  # delete any nested items...
+                if config_item == 'gateway_modules':
+                    yield self._LocalDBLibrary.delete('module_installed', where=['module_id = ?', data['id']])
+                    yield self._LocalDBLibrary.delete('module_device_types', where=['module_id = ?', data['id']])
 
         # print "config_data: %s"%config_data
         # print "db_data: %s"%db_data
@@ -665,6 +684,9 @@ class AmqpConfigHandler(YomboLibrary):
             #     print "config_item: %s" % config_item
             # print "records: %s" % records
             # print "inserting into: %s   data: %s" % (config_data['table'], db_data)
+            if 'status' in data:
+                if data['status'] == 2: # we don't add deleted items...
+                    returnValue(None)
             yield self._LocalDBLibrary.insert(config_data['table'], db_data)
             if 'added' in config_data['functions']:
                 klass = getattr(library, config_data['functions']['updated'])
@@ -695,7 +717,11 @@ class AmqpConfigHandler(YomboLibrary):
             #             raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
 
             if 'updated' in data and 'updated' in record:
-                if data['updated'] > record['updated']:  # lets update!
+                if 'status' in record: # if the record has been marked deleted, lets delete it.
+                    if record['status'] == 2:
+                        self._LocalDBLibrary.dbconfig.delete(config_data['table'], where=['id = ?', data['id']])
+
+                elif data['updated'] > record['updated']:  # lets update!
                     action = 'update'
                     if from_amqp_incoming:
                         if 'updated_srv' in table_cols:
@@ -709,7 +735,37 @@ class AmqpConfigHandler(YomboLibrary):
         else:
             raise YomboWarning("There are too many %s records. Don't know what to do." % config_data['table'], 300, 'add_update_delete', 'Devices')
 
-        # print "device add-update-delete action: %s, status_change_action: %s" %( action, status_change_actions)
+        # handle any nested items here.
+        if 'device_types' in data:
+            print "device types: %s" % data['device_types']
+            if len(data['device_types']):
+                newMsg = msg.copy()
+                newMsg['data'] = data['device_types']
+                self.process_config(newMsg, 'module_device_type')
+
+        if 'variable_groups' in data:
+            if len(data['variable_groups']):
+                newMsg = msg.copy()
+                newMsg['data'] = data['variable_groups']
+                self.process_config(newMsg, 'variable_groups')
+
+        if 'variable_fields' in data:
+            if len(data['variable_fields']):
+                newMsg = msg.copy()
+                newMsg['data'] = data['variable_fields']
+                self.process_config(newMsg, 'variable_fields')
+
+        if 'variable_data' in data:
+            if len(data['variable_data']):
+                # print "var data: %s"  % data['variable_data']
+                yield self._LocalDBLibrary.delete('variable_data', where=['relation_type = ? and relation_id = ?',
+                                                                          data['variable_data'][0]['relation_type'],
+                                                                          data['variable_data'][0]['relation_id']])
+                newMsg = msg.copy()
+                newMsg['data'] = data['variable_data']
+                self.process_config(newMsg, 'variable_data')
+
+                    # print "device add-update-delete action: %s, status_change_action: %s" %( action, status_change_actions)
 
     def get_config_item(self, library):
         """

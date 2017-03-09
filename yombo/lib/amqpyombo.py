@@ -309,6 +309,14 @@ class AMQPYombo(YomboLibrary):
 
         return request_msg
 
+    def publish(self, message):
+        """
+        Publishes a message. Use generate_message(), generate_message_request, or generate_message_response to
+        create the message.
+        :param message:
+        :return:
+        """
+        self.amqp.publish(**message)
 
     def amqp_incoming(self, deliver, properties, msg, queue):
         """

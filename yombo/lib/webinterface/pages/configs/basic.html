@@ -267,15 +267,16 @@
 			</form>
 {% endblock %}
 
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}{% endblock %}
-
 {% block body_bottom %}
-sele include 'lib/webinterface/fragments/mappicker_js.tpl' %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+
 <script src="/static/js/jquery.are-you-sure.js"></script>
 
 <script>
   $(function() {
-    $('#basicconfig).areYouSure(
+    $('#basicconfig').areYouSure(
       {
         message: 'It looks like you have been editing something. '
                + 'If you leave before saving, your changes will be lost.'

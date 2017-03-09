@@ -143,12 +143,12 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('device_types', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('device_types', 'machine_label', unique=True))
 
-
     # All possible commands for a given device type. For examples, appliances are on and off.
     table = """CREATE TABLE `device_type_commands` (
          `id`             TEXT NOT NULL,
          `device_type_id` TEXT NOT NULL,
          `command_id`     TEXT NOT NULL,
+         `created`        INTEGER NOT NULL,
          UNIQUE (device_type_id, command_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_type_commands', 'device_type_id'))
@@ -158,10 +158,14 @@ def upgrade(Registry, **kwargs):
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
      `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `notes`       TEXT,
      `endpoint`    TEXT NOT NULL,
+     `keyid` TEXT NOT NULL,
      `fingerprint` TEXT NOT NULL,
      `length`      INTEGER NOT NULL,
      `expires`     INTEGER NOT NULL,
+     `publickey`   TEXT NOT NULL,
+     `have_private` INTEGER NOT NULL,
      `created`     INTEGER NOT NULL
      );"""
     yield Registry.DBPOOL.runQuery(table)
@@ -239,6 +243,18 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('modules', 'machine_label'))
 
+    # All possible device types for a module
+    table = """CREATE TABLE `module_device_types` (
+         `id`             TEXT NOT NULL,
+         `module_id`      TEXT NOT NULL,
+         `device_type_id` TEXT NOT NULL,
+         `created`        INTEGER NOT NULL,
+         UNIQUE (module_id, device_type_id) ON CONFLICT IGNORE);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS module_device_types_module_dt_id_idx ON module_device_types (module_id, device_type_id)")
+    # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
+    #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
+
     # Tracks what versions of a module is installed, when it was installed, and last checked for new version.
     table = """CREATE TABLE `module_installed` (
      `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -311,6 +327,22 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('statistics', 'bucket'))
     yield Registry.DBPOOL.runQuery(create_index('statistics', 'name'))
     yield Registry.DBPOOL.runQuery(create_index('statistics', 'type'))
+
+    # Used by the tasks library to start various tasks.
+    table = """CREATE TABLE `tasks` (
+     `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `run_section`    INTEGER NOT NULL,
+     `run_once`       INTEGER,
+     `run_interval`   INTEGER,
+     `task_component` TEXT NOT NULL,
+     `task_name`      TEXT NOT NULL,
+     `task_arguments` BLOB,
+     `source`         TEXT NOT NULL,
+     `created`        INTEGER NOT NULL
+     );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('device_status', 'device_id'))
+    yield Registry.DBPOOL.runQuery(create_index('device_status', 'uploaded'))
 
     table = """CREATE TABLE `users` (
      `id`         TEXT NOT NULL,
@@ -442,6 +474,15 @@ def upgrade(Registry, **kwargs):
     JOIN categories ON device_types.category_id = categories.id
     """
     yield Registry.DBPOOL.runQuery(view)
+
+    ## Create views ##
+    view = """CREATE VIEW module_device_types_view AS
+    SELECT device_types.*, module_device_types.module_id
+    FROM module_device_types
+    JOIN device_types ON module_device_types.device_type_id = device_types.id
+    """
+    yield Registry.DBPOOL.runQuery(view)
+
 
     view = """CREATE VIEW variable_data_view AS
     SELECT variable_data.id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id, variable_data.relation_type,

@@ -1760,7 +1760,7 @@ def route_devtools(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_modules_details_get(webinterface, request, session, module_id):
-            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s?_expand=device_types' % module_id)
             if module_results['code'] != 200:
                 webinterface.add_alert(module_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/modules/index'))
@@ -2068,6 +2068,119 @@ def route_devtools(webapp):
                                display_type=display_type
                                )
 
+        @webapp.route('/modules/<string:module_id>/device_types/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_modules_device_types_index_get(webinterface, request, session, module_id):
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            if module_results['code'] != 200:
+                webinterface.add_alert(module_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/index'))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/modules/devicetype_index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, module_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, "Associate Device Type")
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    module=module_results['content']['response']['module'],
+                               )
+                        )
+
+        @webapp.route('/modules/<string:module_id>/device_types/<string:device_type_id>/add', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_modules_device_types_add_get(webinterface, request, session, module_id, device_type_id):
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            if module_results['code'] != 200:
+                webinterface.add_alert(module_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/index'))
+
+            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if device_type_results['code'] != 200:
+                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/modules/devicetype_add.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, module_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, "Associate Device Type")
+            returnValue( page.render(alerts=webinterface.get_alerts(),
+                               module=module_results['data'],
+                               device_type=device_type_results['data'],
+                               )
+                         )
+
+        @webapp.route('/modules/<string:module_id>/device_types/<string:device_type_id>/add', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_modules_device_types_add_post(webinterface, request, session, module_id, device_type_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/device_types/%s/add' % (module_id, device_type_id)))
+
+            if confirm != "add":
+                webinterface.add_alert('Must enter "add" in the confirmation box to add device type to module.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+            results = yield webinterface._Modules.dev_module_device_type_add(module_id, device_type_id)
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+            webinterface.add_alert("Device Type added to module.", 'warning')
+            returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+        @webapp.route('/modules/<string:module_id>/device_types/<string:device_type_id>/remove', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_modules_device_types_remove_get(webinterface, request, session, module_id, device_type_id):
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            if module_results['code'] != 200:
+                webinterface.add_alert(module_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/index'))
+
+            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            if device_type_results['code'] != 200:
+                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/modules/devicetype_remove.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, module_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, "Remove Device Type")
+            returnValue( page.render(alerts=webinterface.get_alerts(),
+                               module=module_results['data'],
+                               device_type=device_type_results['data'],
+                               )
+                         )
+
+        @webapp.route('/modules/<string:module_id>/device_types/<string:device_type_id>/remove', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_devtools_modules_device_types_remove_post(webinterface, request, session, module_id, device_type_id):
+            try:
+                confirm = request.args.get('confirm')[0]
+            except:
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/device_types/%s/add' % (module_id, device_type_id)))
+
+            if confirm != "remove":
+                webinterface.add_alert('Must enter "remove" in the confirmation box to remove device type from module.', 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+            results = yield webinterface._Modules.dev_module_device_type_remove(module_id, device_type_id)
+
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
+            webinterface.add_alert("Device Type removed from module.", 'warning')
+            returnValue(webinterface.redirect(request, '/devtools/modules/%s/details' % module_id))
+
         @webapp.route('/modules/<string:module_id>/variables', methods=['GET'])
         @require_auth()
         @inlineCallbacks
@@ -2079,7 +2192,7 @@ def route_devtools(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/modules/variable_details.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/modules/index", "Device Types")
+            webinterface.add_breadcrumb(request, "/devtools/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/devtools/modules/%s/details" % module_id, module_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/modules/%s/variables" % module_id, "Variables")
             returnValue(page.render(alerts=webinterface.get_alerts(),

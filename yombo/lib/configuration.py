@@ -107,6 +107,7 @@ class Configuration(YomboLibrary):
             self._Loader.operation_mode = 'firstrun'
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
             self._Atoms.set('configuration.yombo_ini.found', False)
+            self.loading_yombo_ini = False
             return
         except ConfigParser.NoSectionError, e:
             self._Atoms.set('configuration.yombo_ini.found', False)

@@ -109,7 +109,15 @@ class ModuleInstalled(DBObject):
 
 class Modules(DBObject):
     HASONE = [{'name':'module_installed', 'class_name':'ModuleInstalled', 'foreign_key':'module_id'}]
+    HASMANY = [{'name':'module_device_types', 'class_name':'ModuleDeviceTypes', 'foreign_key':'module_id'}]
     TABLENAME='modules'
+
+class ModuleDeviceTypes(DBObject):
+    BELONGSTO = ['devices']
+    TABLENAME = 'module_device_types'
+
+class ModuleDeviceTypesView(DBObject):
+    TABLENAME = 'module_device_types_view'
 
 class ModulesView(DBObject):
     TABLENAME='modules_view'
@@ -128,6 +136,9 @@ class States(DBObject):
 
 class Statistics(DBObject):
     TABLENAME='statistics'
+
+class Tasks(DBObject):
+    TABLENAME='tasks'
 
 class Users(DBObject):
     TABLENAME = 'users'
@@ -160,7 +171,7 @@ class ModuleRoutingView(DBObject):
 #Registry.register(Config)
 Registry.SCHEMAS['PRAGMA_table_info'] = ['cid', 'name', 'type', 'notnull', 'dft_value', 'pk']
 Registry.register(Device, DeviceStatus, VariableData, DeviceType, Command)
-Registry.register(Modules, ModuleInstalled)
+Registry.register(Modules, ModuleInstalled, ModuleDeviceTypes)
 Registry.register(VariableGroups, VariableData)
 Registry.register(Category)
 Registry.register(DeviceTypeCommand)
@@ -372,10 +383,61 @@ class LocalDB(YomboLibrary):
         returnValue(records)
 
     @inlineCallbacks
+    def get_module_device_types(self, module_id):
+        records = yield ModuleDeviceTypesView.find(where=['module_id = ?', module_id])
+        returnValue(records)
+
+    @inlineCallbacks
     def get_device_type(self, id):
         records = yield DeviceType.find(where=['id = ?', id])
         returnValue(records)
 
+#################
+### GPG     #####
+#################
+    @inlineCallbacks
+    def get_gpg_key(self, **kwargs):
+        records = None
+        if 'gwuuid' in kwargs:
+            records = yield self.dbconfig.select("gpg_keys", where=['gwuuid = ?', kwargs['gwuuid']])
+        elif 'keyid' in kwargs:
+            records = yield self.dbconfig.select("gpg_keys", where=['key_id = ?', kwargs['keyid']])
+        elif 'fingerprint' in kwargs:
+            records = yield self.dbconfig.select("gpg_keys", where=['fingerprint = ?', kwargs['fingerprint']])
+        else:
+            records = yield self.dbconfig.select("gpg_keys")
+
+        keys = {}
+        for record in records:
+            key = {
+                'notes': record['notes'],
+                'endpoint': record['endpoint'],
+                'fingerprint': record['fingerprint'],
+                'keyid': record['keyid'],
+                'publickey': record['publickey'],
+                'length': record['length'],
+                'have_private': record['have_private'],
+                'expires': record['expires'],
+                'created': record['created'],
+            }
+            keys[record['fingerprint']] = key
+        returnValue(keys)
+
+    @inlineCallbacks
+    def insert_gpg_key(self, gwkey, **kwargs):
+        key = GpgKey()
+        key.endpoint = gwkey['endpoint']
+        key.fingerprint = gwkey['fingerprint']
+        key.keyid = gwkey['keyid']
+        key.publickey = gwkey['publickey']
+        key.length = gwkey['length']
+        key.expires = gwkey['expires']
+        key.created = gwkey['created']
+        key.have_private = gwkey['have_private']
+        if 'notes' in gwkey:
+            key.notes = gwkey['notes']
+        yield key.save()
+        #        yield self.dbconfig.insert('gpg_keys', args, None, 'OR IGNORE' )
 #############################
 ###    Input Types      #####
 #############################
@@ -429,6 +491,27 @@ class LocalDB(YomboLibrary):
         """
         records = yield ModuleRoutingView.all()
         returnValue(records)
+
+    @inlineCallbacks
+    def set_module_status(self, module_id, status):
+        """
+        Used to set the status of a module. Shouldn't be used by developers.
+        Used to load a list of deviceType routing information.
+
+        Called by: lib.Modules::enable, disable, and delete
+
+        :param module_id: Id of the module to updates
+        :type module_id: string
+        :param status: Value to set the status field.
+        :type status: int
+        """
+
+        module = yield Modules.find(where=['module_id = ?', module_id])
+        if module is None:
+            returnValue(None)
+        module.status = status
+        results = yield module.save()
+        returnValue(results)
 
 #############################
 ###    Notifications    #####
@@ -562,7 +645,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
         :param name:
         :return:
         """
-        count = yield States.count(where=['name = ?', name])
+        count = yield self.dbconfig.delete('states', where=['name = ?', name])
         returnValue(count)
 
 
@@ -620,45 +703,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60*60*24*60))
                ORDER BY created DESC
                LIMIT -1 OFFSET 100)"""
         yield Registry.DBPOOL.runQuery(sql)
-
-    #################
-    ### GPG     #####
-    #################
-    @inlineCallbacks
-    def get_gpg_key(self, **kwargs):
-        records = None
-        if 'gwuuid' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['gwuuid = ?', kwargs['gwuuid']])
-        elif 'keyid' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['key_id = ?', kwargs['keyid']])
-        elif 'fingerprint' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['fingerprint = ?', kwargs['fingerprint']])
-        else:
-            records = yield self.dbconfig.select("gpg_keys")
-
-        variables = {}
-        for record in records:
-            key = {
-                'endpoint': record['endpoint'],
-                'fingerprint': record['fingerprint'],
-                'length': record['length'],
-                'expires': record['expires'],
-                'created': record['created'],
-            }
-            variables[record['fingerprint']] = key
-        returnValue(variables)
-
-    @inlineCallbacks
-    def insert_gpg_key(self, gwkey, **kwargs):
-        key = GpgKey()
-        key.endpoint = gwkey['endpoint']
-        key.fingerprint = gwkey['fingerprint']
-        key.length = gwkey['length']
-        key.expires = gwkey['expires']
-        key.created = gwkey['created']
-        yield key.save()
-#        yield self.dbconfig.insert('gpg_keys', args, None, 'OR IGNORE' )
-
 
     #################
     ### SQLDict #####
@@ -844,6 +888,61 @@ ORDER BY id desc"""
                     group='bucket')
         returnValue(records)
 
+#########################
+###    Tasks        #####
+#########################
+    @inlineCallbacks
+    def get_tasks(self, section):
+        """
+        Get all tasks for a given section.
+
+        :return:
+        """
+        records = yield Tasks.find(where=['run_section = ?', section])
+
+        results = []
+        for record in records:
+            data = record.__dict__
+            data['task_arguments'] = zlib.decompress(base64.decodestring(data['task_arguments']))
+            results.append(data)  # we need a dictionary, not an object
+        returnValue(results)
+
+    @inlineCallbacks
+    def del_task(self, id):
+        """
+        Delete a task id.
+
+        :return:
+        """
+        records = yield self.dbconfig.delete('taskes', where=['id = ?', id])
+        returnValue(records)
+
+    @inlineCallbacks
+    def add_task(self, data):
+        """
+        Get all tasks for a given section.
+
+        :return:
+        """
+        data['task_arguments'] = sqlite3Binary(cPickle.dumps(data['task_arguments'], cPickle.HIGHEST_PROTOCOL))
+        if len(data['task_arguments']) > 3000:
+            data['task_arguments'] = base64.encodestring(zlib.compress(data['task_arguments'], 5))
+
+        results = yield self.dbconfig.insert('sqldict', data, None, 'OR IGNORE')
+        returnValue(results)
+    #
+    # table = """CREATE TABLE `tasks` (
+    #  `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    #  `run_section`    INTEGER NOT NULL,
+    #  `run_once`       INTEGER NOT NULL,
+    #  `run_interval`   INTEGER NOT NULL,
+    #  `task_component` TEXT NOT NULL,
+    #  `task_name`      TEXT NOT NULL,
+    #  `task_arguments` BLOB,
+    #  `source`         TEXT NOT NULL,
+    #  `created`        INTEGER NOT NULL,
+    #  );"""
+
 ###########################
 ###  Users              ###
 ###########################
@@ -895,7 +994,7 @@ ORDER BY id desc"""
 
             variables[record.field_machine_label]['data'].append({
                 'id': record.id,
-                'value': record.data,
+                'value': self._GPG.decrypt_asymmetric(record.data),
                 'weight': record.data_weight,
                 'created': record.data_created,
                 'updated': record.data_updated,
@@ -904,6 +1003,16 @@ ORDER BY id desc"""
 #                print record.__dict__
 #         print "variables %s:%s = %s" % (relation_type, relation_id, variables)
         returnValue(variables)
+
+    @inlineCallbacks
+    def del_variables(self, relation_type, relation_id):
+        """
+        Deletes variables for a given relation type and relation id.
+
+        :return:
+        """
+        results = yield self.dbconfig.delete('variable_data', where=['relation_type = ? and relation_id = ?', relation_type, relation_id])
+        returnValue(results)
 
     @inlineCallbacks
     def get_variable_groups(self, relation_type, relation_id):
@@ -998,6 +1107,7 @@ ORDER BY id desc"""
         :param val:
         :return:
         """
+        # print "insert: (%s) %s" % (table, val)
         yield self.dbconfig.insert(table, val)
 
     @inlineCallbacks

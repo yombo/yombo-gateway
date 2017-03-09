@@ -81,8 +81,10 @@ HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
+HARD_LOAD["Tasks"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD["Tasks"] = {'operation_mode':'all'}
 HARD_UNLOAD["Localize"] = {'operation_mode':'all'}
 HARD_UNLOAD["Startup"] = {'operation_mode':'all'}
 HARD_UNLOAD["YomboAPI"] = {'operation_mode':'all'}
@@ -315,6 +317,7 @@ class Loader(YomboLibrary, object):
             library._Configs = self.loadedLibraries['configuration']
             library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
+            library._GPG = self.loadedLibraries['gpg']
             library._InputTypes = self.loadedLibraries['inputtypes']
             library._Libraries = self.loadedLibraries
             library._Loader = self
@@ -325,6 +328,7 @@ class Loader(YomboLibrary, object):
             library._SQLDict = self.loadedLibraries['sqldict']
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
+            library._Tasks = self.loadedLibraries['tasks']
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']
             if hasattr(library, '_init_') and callable(library._init_) \
