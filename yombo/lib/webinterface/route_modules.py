@@ -116,7 +116,7 @@ def route_modules(webapp):
                 'module_id': json_output['module_id'],
                 'install_branch': json_output['install_branch'],
             }
-            print "jsonoutput = %s" % json_output
+            # print "jsonoutput = %s" % json_output
             if 'vars' in json_output:
                 data['variable_data'] = json_output['vars']
 
@@ -160,12 +160,24 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
+            try:
+                module = webinterface._Modules.get(module_id)
+                # module = webinterface._Modules[module_id]
+            except Exception, e:
+                print "Module find errr: %s" % e
+                webinterface.add_alert('Module ID was not found.', 'warning')
+                returnValue( webinterface.redirect(request, '/modules/index'))
+
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
-            print "webinterface._Modules[module_id]._dump: %s" % webinterface._Modules[module_id]._dump()
-            print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
+            # print "webinterface._Modules[module_id]._dump: %s" % webinterface._Modules[module_id]._dump()
+            # print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
             device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
             returnValue(page.render(alerts=webinterface.get_alerts(),
-                               module=webinterface._Modules[module_id],
+                               module=module,
                                variables=webinterface._Modules[module_id]._ModuleVariables,
                                device_types=device_types,
                                )
@@ -184,6 +196,10 @@ def route_modules(webapp):
 
             # print "module: %s " % module._ModuleVariables
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
+            webinterface.add_breadcrumb(request, "/modules/%s/disable" % module._module_id, "Disable")
             return page.render(alerts=webinterface.get_alerts(),
                                     module=module,
                                     )
@@ -250,11 +266,19 @@ def route_modules(webapp):
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))
 
-            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s?_expand=device_types' % module_id)
+            if module_results['code'] != 200:
+                webinterface.add_alert(module_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/config/modules/index'))
+
             # print "results: %s " % results
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
+            webinterface.add_breadcrumb(request, "/modules/%s/edit" % module._module_id, "Edit")
             returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    server_module=results['data'],
+                                    server_module=module_results['data'],
                                     module=module,
                                     ))
 
@@ -311,14 +335,6 @@ def route_modules(webapp):
                                     msg=msg,
                                     ))
 
-        @webapp.route('/<string:module_id>/edit')
-        @require_auth()
-        def page_modules_edit(webinterface, request, session, module_id):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
-            return page.render(alerts=webinterface.get_alerts(),
-                               module=webinterface._Modules[module_id],
-                               variables=webinterface._Modules[module_id]._ModuleVariables,
-                               )
 
         @webapp.route('/<string:module_id>/enable', methods=['GET'])
         @require_auth()
@@ -333,6 +349,10 @@ def route_modules(webapp):
 
             # print "module: %s " % module._ModuleVariables
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
+            webinterface.add_breadcrumb(request, "/modules/%s/enable" % module._module_id, "Enable")
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                )
@@ -400,6 +420,10 @@ def route_modules(webapp):
 
             # print "module: %s " % module._ModuleVariables
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
+            webinterface.add_breadcrumb(request, "/modules/%s/remove" % module._module_id, "Remove")
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                )

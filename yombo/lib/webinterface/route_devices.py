@@ -59,7 +59,9 @@ def route_devices(webapp):
             # webinterface.temp_data[session['add_device']['id']] = {}
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_select_device_type.html')
-
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
             return page.render(alerts=webinterface.get_alerts(),
                                     device_types = webinterface._DeviceTypes.device_types_by_id,
                                     )
@@ -68,7 +70,6 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_add_post(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_details.html')
             device_type_id = request.args.get('device_type_id')[0]
             try:
                 device_type = webinterface._DeviceTypes[device_type_id]
@@ -188,6 +189,10 @@ def route_devices(webapp):
                 var_groups_final.append(group)
 
             # print "final groups: %s" % var_groups_final
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_details.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Details")
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     device=device,
                                     dev_variables=var_groups_final,
@@ -198,7 +203,10 @@ def route_devices(webapp):
         @require_auth()
         def page_devices_delayed_commands(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delayed_commands.html')
-            print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
+            # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/delayed_commands", "Delayed Commands")
             return page.render(alerts=webinterface.get_alerts(),
                                delayed_commands=webinterface._Devices.delay_queue_active,
                                )
@@ -212,6 +220,9 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/details.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
@@ -227,6 +238,10 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delete.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+            webinterface.add_breadcrumb(request, "/devices/%s/delete" % device_id, "Delete")
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
@@ -272,6 +287,10 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/disable.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+            webinterface.add_breadcrumb(request, "/devices/%s/disable" % device_id, "Disable")
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
@@ -320,6 +339,10 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/enable.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+            webinterface.add_breadcrumb(request, "/devices/%s/enable" % device_id, "Enable")
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
@@ -370,6 +393,10 @@ def route_devices(webapp):
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
 
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+            webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
             page = yield page_devices_edit_form(webinterface, request, session, device, None)
             returnValue(page)
 

@@ -15,10 +15,12 @@ def route_states(webapp):
         @require_auth()
         def page_states_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/states/index.html')
-            i18n = webinterface.i18n(request)
+            # i18n = webinterface.i18n(request)
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/states/index", "States")
             return page.render(alerts=webinterface.get_alerts(),
                                states=webinterface._Libraries['states'].get_states(),
-                               _=i18n,
+                               # _=i18n,
                                )
 
         @webapp.route('/<string:state_name>/details')
@@ -35,11 +37,14 @@ def route_states(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/states/details.html')
             if state_history is None:
                 state_history = []
-            i18n = webinterface.i18n(request)
+            # i18n = webinterface.i18n(request)
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/states/index", "States")
+            webinterface.add_breadcrumb(request, "/states/%s/details" % state_name, state_name)
             page = page.render(alerts=webinterface.get_alerts(),
                                state=state,
                                state_history=state_history,
                                state_to_human=webinterface._States.convert_to_human,
-                               _=i18n,
+                               # _=i18n,
                                )
             returnValue(page)

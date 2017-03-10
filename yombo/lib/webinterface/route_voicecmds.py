@@ -11,6 +11,8 @@ def route_voicecmds(webapp):
         @require_auth()
         def page_voicecmds_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/voicecmds/index.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/voicecmds", "Voice Commands")
             return page.render(alerts=webinterface.get_alerts(),
                                voicecmds=webinterface._VoiceCmds.get_all(),
                                )
@@ -19,6 +21,9 @@ def route_voicecmds(webapp):
         @require_auth()
         def page_voicecmds_details(webinterface, request, session, voicecmd_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/voicecmds/details.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/voicecmds", "Voice Commands")
+            webinterface.add_breadcrumb(request, "/voicecmds/%s/details" % voicecmd_id, "Details")
             return page.render(alerts=webinterface.get_alerts(),
                                commands=webinterface._Commands.get_public_commands(),
                                page_label='Public Commands',

@@ -14,6 +14,8 @@ def route_configs(webapp):
             configs = webinterface._Configs.get("*", "*")
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/configs/basic", "Basic Configs")
             return page.render(alerts=webinterface.get_alerts(),
                                config=configs,
                                )
@@ -109,6 +111,8 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/yombo_ini")
         def page_configs_yombo_ini(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/yombo_ini.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/configs/basic", "Yombo.ini")
             return page.render(alerts=webinterface.get_alerts(),
                                configs=webinterface._Libraries['configuration'].configs
                                )
@@ -119,8 +123,10 @@ def route_configs(webapp):
         def page_gpg_keys_index(webinterface, request, session):
             db_keys = yield webinterface._LocalDb.get_gpg_key()
             gw_keyid = webinterface._Configs.get('gpg', 'keyid')
-            print "################## gogogogogogogpgpgpgppgpg "
+            # print "################## gogogogogogogpgpgpgppgpg "
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
             returnValue(page.render(
                 alerts=webinterface.get_alerts(),
                 gpg_keys=db_keys,
@@ -133,6 +139,9 @@ def route_configs(webapp):
             request_id = yombo.utils.random_string(length=16)
     #        self._Libraries['gpg'].generate_key(request_id)
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_started.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
+            webinterface.add_breadcrumb(request, "/gpg/generate_key", "Generate Key")
             return page.render(request_id=request_id, getattr=getattr, type=type)
 
         @webapp.route('/gpg/genrate_key_status')
