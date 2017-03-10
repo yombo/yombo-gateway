@@ -59,9 +59,7 @@ See :ref:`Hooks <hooks>` for details on usage and examples.
    from yombo.core.module import YomboModule
    class ExampleModule(YomboModule):
        def _init_(self):
-           self._ModDescription = "Insteon API command interface"
-           self._ModAuthor = "Mitch Schwenk @ Yombo"
-           self._ModUrl = "https://yombo.net/SomeUrlForDetailsAboutThisModule"
+           pass    #do stuff when first being loaded
        def _load_(self):
            pass    #do stuff on loading of the module.
                    #modules can't send messages at this point, but after load completes
@@ -108,7 +106,6 @@ class YomboModule:
 
     Variables that can be set:
 
-    :ivar _ModDescription: (string) Description, needs to be set in the module's init() function.
     :ivar _ModAuthor: (string) Module author, needs to be set in the module's init() function.
     :ivar _ModUrl: (string) URL for additional information about this
       module, needs to be set in the module's init() function.
@@ -127,7 +124,6 @@ class YomboModule:
     :ivar _Libraries: (dict) A dictionary of all modules. Returns pointers.
     :ivar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
     :ivar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
-    :ivar _ModuleID: (string) The UUID of the module.
     :ivar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
       and set as per the user.
     :ivar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
@@ -139,23 +135,12 @@ class YomboModule:
         """
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
-        self._ModDescription = "NA"
-        self._ModAuthor = "NA"
-        self._ModUrl = "NA"
-        self._ModuleType = None
-        self._ModuleID = None
-
-        self._Devices = None
-        self._DeviceTypes = None
-
-        self._ModuleVariables = None
-        self._ModulesLibrary = None
 
     def _GetDeviceTypes(self):
-        return self._Modules.module_device_types(self._ModuleID)
+        return self._Modules.module_device_types(self._module_id)
 
     def _GetDevices(self):
-        return self._DeviceTypes.module_devices(self._ModuleID)
+        return self._DeviceTypes.module_devices(self._module_id)
 
     def __str__(self):
         """
@@ -164,7 +149,7 @@ class YomboModule:
         :return: A dictionary of core attributes.
         :rtype: dict
         """
-        return self._ModuleID
+        return self._module_id
 
     def _init_(self):
         """
@@ -212,17 +197,51 @@ class YomboModule:
         return {
             '_Name': self._Name,
             '_FullName': self._FullName,
-            '_ModDescription': self._ModDescription,
-            '_ModAuthor': self._ModAuthor,
             '_ModuleType': self._ModuleType,
-            '_ModuleID': self._ModuleID,
-            '_ModUrl': self._ModUrl,
             '_Devices': self._Devices,
-            '_DevicesByType': self._DevicesByType,
             '_DeviceTypes': self._DeviceTypes,
             '_ModuleVariables': self._ModuleVariables,
-            '_ModulesLibrary': self._ModulesLibrary,
+            '_module_id': str(self._module_id),
+            '_label': str(self._label),
+            '_description': str(self._description),
+            '_doc_link': str(self._doc_link),
+            '_git_link': str(self._git_link),
+            '_install_branch': str(self._install_branch),
+            '_prod_branch': str(self._prod_branch),
+            '_dev_branch': str(self._dev_branch),
+            '_prod_version': str(self._prod_version),
+            '_dev_version': str(self._dev_version),
+            '_always_load': int(self._always_load),
+            '_public': int(self._public),
+            '_status': int(self._status),
+            '_created': int(self._created),
+            '_updated': int(self._updated),
+            '_load_source': str(self._load_source),
         }
+
+    def __str__(self):
+        """
+        Print a string when printing the class.  This will return the cmdUUID so that
+        the command can be identified and referenced easily.
+        """
+        return "%s:%s" % (self._label, self._module_id)
+
+    def __repr__(self):
+        """
+        Print a string when printing the class.  This will return the cmdUUID so that
+        the command can be identified and referenced easily.
+        """
+        return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
+
+    # def update_registered_device(self, device):
+    #     self.registered_devices[device.device_id] = device
+    #
+    # def add_registered_device(self, device):
+    #     self.registered_devices[device.device_id] = device
+    #
+    # def del_registered_device(self, device):
+    #     if device.device_id in self.registered_devices[device.device_id]:
+    #         del self.registered_devices[device.device_id]
 
     def amqp_incoming(self, deliver, properties, message):
         """

@@ -7,14 +7,14 @@
                     <h1 class="page-header">
                         <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         Module Information<br>
-                    {% if module._Details.status == 0 -%}
-                      <a class="btn btn-md btn-primary" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit Module</a>
-                      <a class="btn btn-md btn-success" href="/modules/enable/{{  module._Details.module_id }}" class="btn btn-primary ">Enable Module</a>
-                      <a class="btn btn-md btn-danger" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove Module</a>
-                    {% elif module._Details.status == 1 -%}
-                      <a class="btn btn-md btn-primary" href="/modules/edit/{{  module._Details.module_id }}" class="btn btn-primary ">Edit Module</a>
-                      <a class="btn btn-md btn-warning" href="/modules/disable/{{  module._Details.module_id }}" class="btn btn-warning ">Disble Module</a>
-                      <a class="btn btn-md btn-danger" href="/modules/remove/{{  module._Details.module_id }}" class="btn btn-warning ">Remove Module</a>
+                    {% if module._status == 0 -%}
+                      <a class="btn btn-md btn-primary" href="/modules/{{  module._module_id }}/edit" class="btn btn-primary ">Edit Module</a>
+                      <a class="btn btn-md btn-success" href="/modules/{{  module._module_id }}/enable" class="btn btn-primary ">Enable Module</a>
+                      <a class="btn btn-md btn-danger" href="/modules/{{  module._module_id }}/remove" class="btn btn-warning ">Remove Module</a>
+                    {% elif module._status == 1 -%}
+                      <a class="btn btn-md btn-primary" href="/modules/{{  module._module_id }}/edit" class="btn btn-primary ">Edit Module</a>
+                      <a class="btn btn-md btn-warning" href="/modules/{{  module._module_id }}/disable" class="btn btn-warning ">Disble Module</a>
+                      <a class="btn btn-md btn-danger" href="/modules/{{  module._module_id }}/remove" class="btn btn-warning ">Remove Module</a>
                     {% endif %}
                     </h1>
                     <p></p>
@@ -23,7 +23,7 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
- {% if module._Details.status == 0 %}
+ {% if module._status == 0 %}
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-red">
@@ -40,7 +40,7 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
- {% elif module._Details.status == 2  %}
+ {% elif module._status == 2  %}
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-red">
@@ -68,17 +68,17 @@
                             <!-- /.panel-heading -->
                             <div class="panel-body">
                                 <label style="margin-top: 15px; margin-bottom: 0px">Install Branch: </label><br>
-                                {% if module._Details.install_branch == 'production' -%}
+                                {% if module._install_branch == 'production' -%}
                                 Production
-                                {% elif module._Details.install_branch == 'development' -%}
+                                {% elif module._install_branch == 'development' -%}
                                 Development
-                                {% elif module._Details.install_branch == 'system' -%}
+                                {% elif module._install_branch == 'system' -%}
                                 System
                                 {% else %}
-                                module._Details.install_branch
+                                module._install_branch
                                 {% endif %} <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Enabled: </label><br>
-                                {{ module._Details.status|yes_no }}<br>
+                                {{ module._status|yes_no }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->
@@ -89,17 +89,17 @@
                             <!-- /.panel-heading -->
                             <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
-                                {{ module._Details.label }}<br>
+                                {{ module._label }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Documentation Link: </label><br>
-                                {{ module._Details.doc_link|make_link("Link", "_blank") }}<br>
+                                {{ module._doc_link|make_link("Link", "_blank") }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Source Code Link: </label><br>
-                                {{ module._Details.repository_link|make_link("Link", "_blank") }}<br>
+                                {{ module._repository_link|make_link("Link", "_blank") }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Issue Tracker Link: </label><br>
-                                {{ module._Details.issue_tracker_link|make_link("Link", "_blank") }}<br>
+                                {{ module._issue_tracker_link|make_link("Link", "_blank") }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ module._Details.created|epoch_to_human }}<br>
+                                {{ module._created|epoch_to_human }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                                {{ module._Details.updated|epoch_to_human }}<br>
+                                {{ module._updated|epoch_to_human }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->
@@ -111,7 +111,7 @@
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body" style="max-height: 40em;overflow-y: scroll;">
-                                {{ module._Details.description|format_markdown(module._Details.description_formatting) }}<br>
+                                {{ module._description|format_markdown(module._description_formatting) }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->

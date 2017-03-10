@@ -1,0 +1,60 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header has-buttons-under">
+                        <a class="success" href="/devtools/config/input_types/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Input Type: {{ input_type.label}}
+                    </h1>
+ {% if input_type.status == 0 %}
+                    <a class="btn btn-md btn-primary" href="/devtools/config/input_types/{{input_type.id}}/edit" title="Edit input_type details such as description and links.">Edit Input Type</a>
+                    <a class="btn btn-md btn-success" href="/devtools/config/input_types/{{input_type.id}}/enable">Enable Input Type</a>
+                    <a class="btn btn-md btn-danger" href="/devtools/config/input_types/{{input_type.id}}/delete">Delete Input Type</a>
+ {% elif input_type.status == 1  %}
+                    <a class="btn btn-md btn-primary" href="/devtools/config/input_types/{{input_type.id}}/edit" title="Edit input_type details such as description and links.">Edit Input Type</a>
+                    <a class="btn btn-md btn-warning" href="/devtools/config/input_types/{{input_type.id}}/disable">Disable Input Type </a>
+                    <a class="btn btn-md btn-danger" href="/devtools/config/input_types/{{input_type.id}}/delete">Delete Input Type</a>
+ {% elif input_type.status == 2  %}
+                    <a class="btn btn-md btn-success" href="/devtools/config/input_types/{{input_type.id}}/enable">Enable Input Type</a>
+ {% endif %}
+                    <hr class="under-buttons">
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4>Basic Information</h4>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                            {{ input_type.label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
+                            {{ input_type.machine_label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                            {{ input_type.description }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Category: </label><br>
+                            {{ category.label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Input Regex: </label><br>
+                            {{ input_type.input_regex }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                            {{ input_type.status|status_to_string }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Public: </label><br>
+                            {{ input_type.public|public_to_string }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                            {{ input_type.updated_at|epoch_to_human }} ({{ input_type.updated_at|epoch_to_pretty_date }}) <br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                            {{ input_type.created_at|epoch_to_human }}<br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.row -->
+
+{% endblock %}
+

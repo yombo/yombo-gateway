@@ -47,10 +47,10 @@ from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_firs
 from yombo.lib.webinterface.route_atoms import route_atoms
 from yombo.lib.webinterface.route_automation import route_automation
 from yombo.lib.webinterface.route_api_v1 import route_api_v1
-from yombo.lib.webinterface.route_commands import route_commands
 from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
-from yombo.lib.webinterface.route_devtools import route_devtools
+from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
+from yombo.lib.webinterface.route_devtools_config import route_devtools_config
 from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_notices import route_notices
 from yombo.lib.webinterface.route_statistics import route_statistics
@@ -241,11 +241,11 @@ nav_side_menu = [
 
     {
         'label1': 'Developer Tools',
-        'label2': 'General',
+        'label2': 'Config Tools',
         'priority1': 5000,
         'priority2': 500,
         'icon': 'fa fa-code fa-fw',
-        'url': '/devtools/index',
+        'url': '/devtools/config/index',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -255,7 +255,7 @@ nav_side_menu = [
         'priority1': 5000,
         'priority2': 1000,
         'icon': 'fa fa-code fa-fw',
-        'url': '/devtools/debug',
+        'url': '/devtools/debug/index',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -328,10 +328,10 @@ class WebInterface(YomboLibrary):
         route_atoms(self.webapp)
         route_automation(self.webapp)
         route_api_v1(self.webapp)
-        route_commands(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
-        route_devtools(self.webapp)
+        route_devtools_debug(self.webapp)
+        route_devtools_config(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
         route_setup_wizard(self.webapp)
@@ -829,6 +829,9 @@ class WebInterface(YomboLibrary):
             return request.args.get(name)[offset]
         except:
             return default
+
+    def home_breadcrumb(self, request):
+        self.add_breadcrumb(request, "/", "Home")
 
     def add_breadcrumb(self, request, url, text, show = True):
         if hasattr(request, 'breadcrumb') is False:

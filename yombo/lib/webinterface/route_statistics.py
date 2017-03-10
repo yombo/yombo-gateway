@@ -16,7 +16,7 @@ def route_statistics(webapp):
                                )
 
         
-        @webapp.route('/details/<string:device_id>')
+        @webapp.route('/<string:device_id>/details')
         @require_auth()
         def page_statistics_details(webinterface, request, session, device_id):
             try:
@@ -32,7 +32,7 @@ def route_statistics(webapp):
                                commands=webinterface._Commands,
                                )
     
-        @webapp.route('/edit/<string:device_id>')
+        @webapp.route('/<string:device_id>/edit')
         @require_auth()
         def page_statistics_edit(webinterface, request, session, device_id):
             try:

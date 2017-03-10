@@ -14,7 +14,7 @@ def route_notices(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
-        @webapp.route('/details/<string:notification_id>')
+        @webapp.route('/<string:notification_id>/details')
         @require_auth()
         def page_notifications_details(webinterface, request, session, notification_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/details.html')
@@ -27,7 +27,7 @@ def route_notices(webapp):
                                notice=notice,
                                )
 
-        @webapp.route('/delete/<string:notification_id>')
+        @webapp.route('/<string:notification_id>/delete')
         @require_auth()
         def page_notifications_edit(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/delete.html')

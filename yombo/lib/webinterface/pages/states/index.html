@@ -30,7 +30,7 @@
                                     </thead>
                                     <tbody>{% for state_name, state in states.iteritems() %}
                                          <tr>
-                                            <td><a href="/states/details/{{ state_name }}">{{ state_name }}</a></td>
+                                            <td><a href="/states/{{ state_name }}/details">{{ state_name }}</a></td>
                                              <td>{{ state['value_human'] }}</td>
                                              <td>{{ state['created']|epoch_to_human }}</td>
                                              <td>{% if _('states:::' + state_name) != 'states:::' + state_name %}{{ _('states:::' + state_name) }} {% endif %}</td>

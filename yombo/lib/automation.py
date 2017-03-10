@@ -78,10 +78,6 @@ class Automation(YomboLibrary):
     capabilites of the automation system.
     """
     def _init_(self):
-        self._ModDescription = "Easy Automation for everyone"
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
-
         self._rulesRaw = {}  # Used to store raw input from reading file.
         self._rulesParse = {}  # Used to store raw input from reading file.
         self.rules = {}   # Store processed / active rules

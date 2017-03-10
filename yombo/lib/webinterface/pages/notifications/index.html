@@ -27,7 +27,7 @@
         </thead>
         <tbody>    {% for id, notice in misc_wi_data.notifications.iteritems() %}
              <tr>
-                 <td><a href="/notifications/details/{{ id }}">{{ notice.title }}</a></td>
+                 <td><a href="/notifications/{{ id }}/details">{{ notice.title }}</a></td>
                  <td>{{ notice.message }}</td>
                  <td>{{ notice.created|epoch_to_human }}</td>
                  <td>{{ notice.expire|epoch_to_human }}</td>

@@ -203,7 +203,7 @@ def route_devices(webapp):
                                delayed_commands=webinterface._Devices.delay_queue_active,
                                )
 
-        @webapp.route('/details/<string:device_id>')
+        @webapp.route('/<string:device_id>/details')
         @require_auth()
         def page_devices_details(webinterface, request, session, device_id):
             try:
@@ -218,7 +218,7 @@ def route_devices(webapp):
                                commands=webinterface._Commands,
                                )
     
-        @webapp.route('/delete/<string:device_id>', methods=['GET'])
+        @webapp.route('/<string:device_id>/delete', methods=['GET'])
         @require_auth()
         def page_device_delete_get(webinterface, request, session, device_id):
             try:
@@ -232,7 +232,7 @@ def route_devices(webapp):
                                devicetypes=webinterface._DeviceTypes,
                                )
 
-        @webapp.route('/delete/<string:device_id>', methods=['POST'])
+        @webapp.route('/<string:device_id>/delete', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_device_delete_post(webinterface, request, session, device_id):
@@ -263,7 +263,7 @@ def route_devices(webapp):
                                     msg=msg,
                                     ))
 
-        @webapp.route('/disable/<string:device_id>', methods=['GET'])
+        @webapp.route('/<string:device_id>/disable', methods=['GET'])
         @require_auth()
         def page_device_disable_get(webinterface, request, session, device_id):
             try:
@@ -277,7 +277,7 @@ def route_devices(webapp):
                                devicetypes=webinterface._DeviceTypes,
                                )
 
-        @webapp.route('/disable/<string:device_id>', methods=['POST'])
+        @webapp.route('/<string:device_id>/disable', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_device_disable_post(webinterface, request, session, device_id):
@@ -311,7 +311,7 @@ def route_devices(webapp):
                                     msg=msg,
                                     ))
 
-        @webapp.route('/enable/<string:device_id>', methods=['GET'])
+        @webapp.route('/<string:device_id>/enable', methods=['GET'])
         @require_auth()
         def page_device_enable_get(webinterface, request, session, device_id):
             try:
@@ -325,7 +325,7 @@ def route_devices(webapp):
                                devicetypes=webinterface._DeviceTypes,
                                )
 
-        @webapp.route('/enable/<string:device_id>', methods=['POST'])
+        @webapp.route('/<string:device_id>/enable', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_device_enable_post(webinterface, request, session, device_id):
@@ -360,7 +360,7 @@ def route_devices(webapp):
                                     ))
 
 
-        @webapp.route('/edit/<string:device_id>', methods=['GET'])
+        @webapp.route('/<string:device_id>/edit', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_get(webinterface, request, session, device_id):
@@ -411,7 +411,7 @@ def route_devices(webapp):
                                commands=webinterface._Commands,
                                ))
 
-        @webapp.route('/edit/<string:device_id>', methods=['POST'])
+        @webapp.route('/<string:device_id>/edit', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_post(webinterface, request, session, device_id):
@@ -429,7 +429,7 @@ def route_devices(webapp):
                 status = 2
             else:
                 webinterface.add_alert('Device status was set to an illegal value.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/edit/%s' % device_id))
+                returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
 
             pin_required = request.args.get('pin_required')[0]
             if pin_required == 'disabled':
@@ -438,10 +438,10 @@ def route_devices(webapp):
                 pin_required = 1
                 if request.args.get('pin_code')[0] == "":
                     webinterface.add_alert('Device requires a pin code, but none was set.', 'warning')
-                    returnValue(webinterface.redirect(request, '/devices/edit/%s' % device_id))
+                    returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
             else:
                 webinterface.add_alert('Device pin required was set to an illegal value.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/edit/%s' % device_id))
+                returnValue(webinterface.redirect(request, '/devices/%/edits' % device_id))
 
             start_percent = request.args.get('start_percent')
             energy_usage = request.args.get('energy_usage')

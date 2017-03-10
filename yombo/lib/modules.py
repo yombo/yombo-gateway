@@ -74,7 +74,6 @@ class Modules(YomboLibrary):
 
     _rawModulesList = {}
 
-    _moduleClasses = {}
     _modulesByUUID = {}
     _modulesByName = FuzzySearch({}, .92)
 
@@ -207,9 +206,9 @@ class Modules(YomboLibrary):
 
         keys = self._modulesByUUID.keys()
         self._Loader.library_invoke_all("_module_unload_", called_by=self)
-        for ModuleID in keys:
-            module = self._modulesByUUID[ModuleID]
-            if int(module._Details.status) != 1:
+        for module_id in keys:
+            module = self._modulesByUUID[module_id]
+            if int(module._status) != 1:
                 continue
 
             try:
@@ -219,7 +218,7 @@ class Modules(YomboLibrary):
             finally:
                 yield self._Loader.library_invoke_all("_module_unloaded_", called_by=self)
                 delete_component = module._FullName
-                self.del_imported_module(ModuleID, module._Name.lower())
+                self.del_imported_module(module_id, module._Name.lower())
                 if delete_component.lower() in self._Loader.loadedComponents:
                     del self._Loader.loadedComponents[delete_component.lower()]
 
@@ -368,9 +367,35 @@ class Modules(YomboLibrary):
 
     def import_modules(self):
         for module_id, module in self._rawModulesList.iteritems():
-            self._moduleClasses[module_id] = Module(self, module)
             pathName = "yombo.modules.%s" % module['machine_label']
             self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
+
+            self._modulesByUUID[module_id]._hooks_called = {}
+            self._modulesByUUID[module_id]._module_id = module['id']
+            self._modulesByUUID[module_id]._module_type = module['module_type']
+            self._modulesByUUID[module_id]._machine_label = module['machine_label']
+            self._modulesByUUID[module_id]._label = module['label']
+            self._modulesByUUID[module_id]._short_description = module['short_description']
+            self._modulesByUUID[module_id]._description = module['description']
+            self._modulesByUUID[module_id]._description_formatting = module['description_formatting']
+            self._modulesByUUID[module_id]._install_count = module['install_count']
+            self._modulesByUUID[module_id]._see_also = module['see_also']
+            self._modulesByUUID[module_id]._repository_link = module['repository_link']
+            self._modulesByUUID[module_id]._issue_tracker_link = module['issue_tracker_link']
+            self._modulesByUUID[module_id]._doc_link = module['doc_link']
+            self._modulesByUUID[module_id]._git_link = module['git_link']
+            self._modulesByUUID[module_id]._install_branch = module['install_branch']
+            self._modulesByUUID[module_id]._prod_branch = module['prod_branch']
+            self._modulesByUUID[module_id]._dev_branch = module['prod_branch']
+            self._modulesByUUID[module_id]._prod_version = module['prod_version']
+            self._modulesByUUID[module_id]._dev_version = module['dev_version']
+            self._modulesByUUID[module_id]._always_load = module['always_load']
+            self._modulesByUUID[module_id]._public = module['public']
+            self._modulesByUUID[module_id]._status = module['status']
+            self._modulesByUUID[module_id]._created = module['created']
+            self._modulesByUUID[module_id]._updated = module['updated']
+            self._modulesByUUID[module_id]._load_source = module['load_source']
+            self._modulesByUUID[module_id]._device_types = []  # populated by Modules::module_init_invoke
 
     @inlineCallbacks
     def module_init_invoke(self):
@@ -395,9 +420,7 @@ class Modules(YomboLibrary):
         """
         module_init_deferred = []
         for module_id, module in self._modulesByUUID.iteritems():
-            self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
-
-            module._Details = self._moduleClasses[module_id]
+            self.modules_invoke_log('info', module._FullName, 'module', 'init', 'About to call _init_.')
 
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
@@ -411,7 +434,6 @@ class Modules(YomboLibrary):
 
             # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
             module._ModuleType = self._rawModulesList[module_id]['module_type']
-            module._ModuleID = module_id
 
             module._Atoms = self._Loader.loadedLibraries['atoms']
             module._Automation = self._Loader.loadedLibraries['automation']
@@ -437,23 +459,23 @@ class Modules(YomboLibrary):
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
 
-            if int(module._Details.status) != 1:
+            module._hooks_called['_init_'] = 0
+            if int(module._status) != 1:
                 continue
 
             module_device_types = yield self._LocalDBLibrary.get_module_device_types(module_id)
-            print "module_device_types = %s" % module_device_types
-            if hasattr(module, '_module_devicetypes_') and callable(module._module_devicetypes_):
-                temp_device_types = module._module_devicetypes_()
-                for dt in temp_device_types:
-                    if dt in module._DeviceTypes:
-                        self._moduleClasses[module_id].device_types.append(module._DeviceTypes[dt].device_type_id)
+            # print "module_device_types = %s" % module_device_types
+            for module_device_type in module_device_types:
+                if module_device_type.id in module._DeviceTypes:
+                    self._modulesByUUID[module_id]._device_types.append(module_device_type.id)
 
-            module._DeviceTypes.add_registered_module(self._moduleClasses[module_id])
+            module._DeviceTypes.add_registered_module(module)
 #                module_init_deferred.append(maybeDeferred(module._init_))
 #                continue
             try:
 #                module_init_deferred.append(maybeDeferred(module._init_))
                 d = yield maybeDeferred(module._init_)
+                module._hooks_called['_init_'] = 1
 #                    d.errback(self.SomeError)
 #                    yield d
             except YomboCritical, e:
@@ -531,6 +553,10 @@ class Modules(YomboLibrary):
                 try:
 #                    results = yield maybeDeferred(method, **kwargs)
                     self._invoke_list_cache[cache_key] = True
+                    if hook not in module._hooks_called:
+                        module._hooks_called[hook] = 1
+                    else:
+                        module._hooks_called[hook] += 1
                     return method(**kwargs)
                 # except Exception, e:
                 #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
@@ -559,8 +585,8 @@ class Modules(YomboLibrary):
         """
         logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
         results = {}
-        for ModuleID, module in self._modulesByUUID.iteritems():
-            if int(self._moduleClasses[ModuleID].status) != 1:
+        for module_id, module in self._modulesByUUID.iteritems():
+            if int(module._status) != 1:
                 continue
 
             label = module._FullName.lower() if fullName else module._Name.lower()
@@ -638,8 +664,8 @@ class Modules(YomboLibrary):
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
     def module_device_types(self, module_id):
-        if module_id in self._moduleClasses:
-            return self._moduleClasses[module_id].device_types
+        if module_id in self._modulesByUUID:
+            return self._modulesByUUID[module_id]._device_types
 
     @inlineCallbacks
     def add_module(self, data, **kwargs):
@@ -1121,83 +1147,3 @@ class Modules(YomboLibrary):
         }
         returnValue(results)
 
-
-class Module:
-    """
-    A class to manage a single module.
-    """
-    def __init__(self, _ModuleLibrary, module):
-        """
-        This module class can make updates to the database as needed. Any changes to this class and it will
-        automatically update any required components.
-        """
-        logger.debug("New instance of Module: {module}", module=module)
-
-        self.module_id = module['id']
-        self.gateway_id = module['gateway_id']
-        self.module_type = module['module_type']
-        self.machine_label = module['machine_label']
-        self.label = module['label']
-        self.short_description = module['short_description']
-        self.description = module['description']
-        self.description_formatting = module['description_formatting']
-        self.install_count = module['install_count']
-        self.see_also = module['see_also']
-        self.repository_link = module['repository_link']
-        self.issue_tracker_link = module['issue_tracker_link']
-        self.doc_link = module['doc_link']
-        self.git_link = module['git_link']
-        self.install_branch = module['install_branch']
-        self.prod_branch = module['prod_branch']
-        self.dev_branch = module['prod_branch']
-        self.prod_version = module['prod_version']
-        self.dev_version = module['dev_version']
-        self.always_load = module['always_load']
-        self.public = module['public']
-        self.status = module['status']
-        self.created = module['created']
-        self.updated = module['updated']
-        self.load_source = module['load_source']
-        self.device_types = [] # populated by Modules::module_init_invoke
-        self._ModuleLibrary = _ModuleLibrary
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the cmdUUID so that
-        the command can be identified and referenced easily.
-        """
-        return self.module_id
-
-    # def update_registered_device(self, device):
-    #     self.registered_devices[device.device_id] = device
-    #
-    # def add_registered_device(self, device):
-    #     self.registered_devices[device.device_id] = device
-    #
-    # def del_registered_device(self, device):
-    #     if device.device_id in self.registered_devices[device.device_id]:
-    #         del self.registered_devices[device.device_id]
-
-    def dump(self):
-        """
-        Export command variables as a dictionary.
-        """
-        return {
-            'module_id'     : str(self.module_id),
-            'gateway_id'    : str(self.gateway_id),
-            'label'         : str(self.label),
-            'description'   : str(self.description),
-            'doc_link'      : int(self.doc_link),
-            'git_link'      : int(self.git_link),
-            'install_branch': int(self.install_branch),
-            'prod_branch'   : int(self.prod_branch),
-            'dev_branch'    : int(self.dev_branch),
-            'prod_version'  : int(self.prod_version),
-            'dev_version'   : int(self.dev_version),
-            'always_load'   : str(self.always_load),
-            'public'        : int(self.public),
-            'status'        : int(self.status),
-            'created'       : int(self.created),
-            'updated'       : int(self.updated),
-            'load_source'   : int(self.load_source),
-        }

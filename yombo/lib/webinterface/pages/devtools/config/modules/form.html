@@ -1,0 +1,410 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        <a class="success" href="{%
+                        if display_type == "edit"
+                        %}/devtools/config/modules/{{ module.id }}/details{%
+                        else
+                        %}/devtools/config/modules/index{% endif %}" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        {{ header_label}}
+                    </h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <form method="post" id="moduleedit">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Label: </label>
+                                <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modallabel", 'Label', '
+                                <p>A label for the module. A short but helpful title to describe what the module does. For example: X10API, Z-Wave, Garage Door.</p>
+                                ') }}
+                                <br>
+                                <div class="input-group">
+                                    <input tabindex="1" type="text" class="form-control" name="label" id="label" size="30" placeholder="Module Name" value="{{ module.label }}" autofocus required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Machine Label: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalmachinelabel", 'Machine Label', '
+                                <p>The machine label is used by developers and the gateway to determine uniqueness. <strong>Once set, this cannot be changed!</strong></p>
+                                <p>Usually a short version of the module name. Example: x10_api, zwave, yombobot</p>') }}
+                                <br>
+                                <div class="input-group">
+                                    <input tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'modulename', 'module_name'" value="{{ module.machine_label }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Module Type: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalmoduletype"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalmoduletype", 'Module Type', '
+                                <p>The type of module.</p>
+                                <p>
+                                    <ol>
+                                        <li><strong>Command</strong> modules are responsible for receiving commands for a specific device type (example: X10 Lamp module), and formatting the command into a usable form for an interface module.</li>
+                                        <li><strong>Interface</strong> modules are responsible for interacting with devices on the outside world. For example, they interact with USB devices, serial port, IO ports, network devices, file system, or anything that can be imagined. They receive commands from command modules and send device status updates to command modules. Think of interface modules as the glue between a command and the end device.</li>
+                                        <li><strong>Logic</strong> modules don’t manage any specific device, however, they can send commands to be processed by command modules. In the demo module below, this is considered a logic module.</li>
+                                    </ol>
+                                </p>
+                                ') }}
+                                <br>
+                                <div class="input-group">
+                                    <select tabindex="3" class="selectpicker show-tick form-control" name="module_type" id="module_type">
+                                        <option value="command"{% if module.status == "command" %} selected{% endif %}>Command</option>
+                                        <option value="interface"{% if module.status == "interface" %} selected{% endif %}>Interface</option>
+                                        <option value="logic"{% if module.status == "logic" %} selected{% endif %}>Logic</option>
+                                        <option value="other"{% if module.status == "other" %} selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Short Description: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalshortdescription"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalshortdescription", 'Short Description', '
+                                <p>An excerpt of the description. Between 140 and 160 characters long.</p>
+                                ') }}
+                                <br>
+                                <div class="input-group">
+                                    <input tabindex="4" type="text" class="form-control" name="short_description" id="short_description" size="60" placeholder="Description of module." value="{{ module.short_description }}">
+                                    <br>
+                                    <span id="short_description_characters"></span>
+                                    <br>
+                                    <span id="short_description_characters_text"></span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Description: </label>
+                                <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modaldescription", 'Short Description', '
+                                <p>A detailed description of the module. Usually a copy of the readme.rst or readme.md file.</p>
+                                ') }}
+                                <br>
+                                <div class="input-group">
+                                    <textarea tabindex="5" class="form-control" rows="30" cols="80" name="description" id="description" placeholder="Detailed description">{{ module.description }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Description Formatting: </label>
+                                <a href="#" data-toggle="modal" data-target="#modaldescriptionformatting"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modaldescriptionformatting", 'Description Formatting', '
+                                <p>Descriptions can be formatted in markdown or restructured formatting. Most modules uses markdown due to it\'s simplicitiy.</p>
+                                <p>
+                                    <ol>
+                                        <li><strong>markdown</strong> - <a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank">Documentation</a></li>
+                                        <li><strong>restructured</strong> - <a href="http://docutils.sourceforge.net/docs/user/rst/quickref.html" target="_blank">Documentation</a><li>
+                                        <li><strong>text</strong> - No formatting applied.</li>
+                                    </ol>
+                                </p>
+                                ') }}
+                                <div class="input-group">
+                                    <select tabindex="6" class="selectpicker show-tick form-control" name="description_formatting" id="description_formatting">
+                                        <option value="markdown"{% if module.status == "markdown" %} selected{% endif %}>Markdown</option>
+                                        <option value="restructured"{% if module.status == "restructured" %} selected{% endif %}>Restructured</option>
+                                        <option value="text"{% if module.status == "text" %} selected{% endif %}>Text</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Repository Link: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalrepositorylink"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalrepositorylink", 'Repository Link', '
+                                <p>A link to the repository for more information, can find details and review the source code. Looks like: https://github.com/yombo/yombo-gateway</p>
+                                ') }}
+                                <div class="input-group">
+                                    <input tabindex="7" type="text" class="form-control" name="repository_link" id="repository_link" size="60" placeholder="https://" value="{{ module.repository_link }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Git Link: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalgitlink"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalgitlink", 'Git Link', '
+                                <p>This is the git link that Yombo servers can use to download the module from a git repository. Looks like: https://github.com/yombo/yombo-gateway.git</p>
+                                ') }}
+                                <div class="input-group">
+                                    <input tabindex="8" type="text" class="form-control" name="git_link" id="git_link" size="60" placeholder="https://" value="{{ module.git_link }}" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Documentation Link: </label>
+                                <a href="#" data-toggle="modal" data-target="#modaldoclink"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modaldoclink", 'Documentation Link', '
+                                <p>A link to end-user documentation. Looks like: https://github.com/yombo/yombo-gateway</p>
+                                ') }}
+                                <div class="input-group">
+                                    <input tabindex="9" type="text" class="form-control" name="doc_link" id="doc_link" size="60" placeholder="https://" value="{{ module.doc_link }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Issue Tracker Link: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalissuetrackerlink"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalissuetrackerlink", 'Issue Tracker Link', '
+                                <p>A link for users to review and submit issues for this module. Looks like: https://github.com/yombo/yombo-gateway</p>
+                                ') }}
+                                <div class="input-group">
+                                    <input tabindex="10" type="text" class="form-control" name="issue_tracker_link" id="issue_tracker_link" size="60" placeholder="https://" value="{{ module.issue_tracker_link }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Production Branch </label>
+                                <a href="#" data-toggle="modal" data-target="#modalproductionbranch"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalproductionbranch", 'Production Branch', '
+                                <p>Each git repository can have multiple branches. List the name of the branch that Yombo should treat as the \'stable\' or \'production\' branch. This is usually "master".</p>
+                                ') }}
+                                <div class="input-group">
+                                    <input tabindex="11" type="text" class="form-control" name="prod_branch" id="prod_branch" size="60" placeholder="master" value="{{ module.prod_branch }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Development Branch </label>
+                                <a href="#" data-toggle="modal" data-target="#modaldevelopmentbranch"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modaldevelopmentbranch", 'Development Branch', '
+                                <p>Each git repository can have multiple branches. List the name of the branch that Yombo should treat as the \'testing\' or \'development\' branch. This is usually "develop".</p>
+                                ') }}
+                                <div class="input-group">
+                                    <input tabindex="12" type="text" class="form-control" name="dev_branch" id="dev_branch" size="60" placeholder="develop" value="{{ module.dev_branch }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
+                                <p>You can enable or disable the module as needed. When disabled, the module cannot be used by gateways.</p>
+                                <p>Items will be marked deleted a while before they are actually purged from the system. This allows the
+                                delete module to fully propogate through the entire Yombo eco system.</p>') }}
+                                <br>
+                                <div class="input-group">
+                                    <select tabindex="13" class="selectpicker show-tick form-control" name="status" id="status">
+                                        <option value="0"{% if module.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
+                                        <option value="1"{% if module.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
+                                        <option value="2"{% if module.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label style="margin-top: 20px; margin-bottom: 0px">Public Status: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalpublicstatus"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalpublicstatus", 'Module public status', '
+                                <p>There are three public status levels:</p>
+                                <ul>
+                                    <li>private - Only the user that created the module can manage or use the module.</li>
+                                    <li>public pending - Access like private, but a request is pending with Yombo support to convert it to public.</li>
+                                    <li>public - Available to any Yombo user. Once it\'s public, it\'s can no longer be controlled by the creator.</li>
+                                </ul>
+                                ') }}
+                                <br>
+                                <div class="input-group">
+                                    <select tabindex="14" class="selectpicker show-tick form-control" name="public" id="public">
+                                        <option value="0"{% if module.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
+                                        <option value="1"{% if module.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
+                                        <option value="2"{% if module.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {%-
+                            if display_type == "edit"
+                            %}
+                            <a class="btn btn-md btn-danger" href="/devtools/config/modules/{{ module.id }}">Cancel</a>
+                            <button type="submit" class="btn btn-success">Save Module</button>
+                            {%
+                            else
+                            %}
+                            <a class="btn btn-md btn-danger" href="/devtools/config/modules/index">Cancel</a>
+                            <button type="submit" class="btn btn-success">Add Module</button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <input type="submit" />
+            </form>
+<br>
+{% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
+    <script>
+    $('#short_description').keyup(updateCountShortDescription);
+    $('#short_description').keydown(updateCountShortDescription);
+    $('#short_description').focusin(updateCountShortDescription);
+    $('#short_description').focusout(updateCountShortDescription_remove);
+
+    function updateCountShortDescription() {
+        var cs = $(this).val().length;
+        $('#short_description_characters').text(cs + ' characters');
+        $('#short_description_characters_text').text('Should be 100 to 156 characters long.');
+    }
+
+    function updateCountShortDescription_remove() {
+        var cs = $(this).val().length;
+        $('#short_description_characters').text('');
+        $('#short_description_characters_text').text('');
+    }
+
+     $(document).ready(function(){
+        var i=1;
+
+        (function($) {
+            $.extend({
+                toDictionary: function(query) {
+                    var parms = {};
+                    var items = query.split("&"); // split
+                    for (var i = 0; i < items.length; i++) {
+                        var values = items[i].split("=");
+                        var key = decodeURIComponent(values.shift());
+                        var value = values.join("=")
+                        parms[key] = decodeURIComponent(value);
+                    }
+                    return (parms);
+                }
+            })
+        })(jQuery);
+
+        (function($) {
+            $.fn.serializeFormJSON = function() {
+                var o = [];
+                $(this).find('tr').each(function() {
+                    var elements = $(this).find('input, textarea, select')
+                    if (elements.size() > 0) {
+                        var serialized = $(this).find('input, textarea, select').serialize();
+                        var item = $.toDictionary(serialized );
+                        o.push(item);
+                    }
+                });
+                return o;
+            };
+        })(jQuery);
+
+        $("#moduleedit").submit(function(event) {
+//            event.preventDefault();
+
+            var rawData = $('#moduleedit').serializeFormJSON();
+            var formData = JSON.stringify(rawData);
+            console.log(formData);
+        });
+
+
+    });
+
+    $('.ls-modal').on('click', function(e){
+      e.preventDefault();
+      $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
+    });
+
+    $('form').validate({
+        rules: {
+            label: {
+                minlength: 3,
+                maxlength: 80,
+                required: true,
+            },
+            machine_label: {
+                minlength: 3,
+                maxlength: 60,
+                required: true,
+            },
+            short_description: {
+                minlength: 100,
+                maxlength: 156,
+                required: true,
+            },
+            description: {
+                minlength: 5,
+                required: true,
+            },
+            repository_link: {
+                minlength: 8,
+                maxlength: 255,
+                url: true,
+                required: true,
+            },
+            doc_link: {
+                minlength: 8,
+                maxlength: 255,
+                url: true
+            },
+            git_link: {
+                minlength: 8,
+                maxlength: 255,
+                url: true,
+                required: true,
+            },
+            issue_tracker_link: {
+                minlength: 8,
+                maxlength: 255,
+                url: true,
+            },
+            prod_branch: {
+                minlength: 2,
+                maxlength: 255,
+                required: true,
+            },
+            dev_branch: {
+                minlength: 2,
+                maxlength: 255,
+                required: false,
+            },
+
+        },
+        messages: {
+            short_description: "Must be between 100 and 156 characters long.",
+        },
+        highlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+            $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+        },
+        unhighlight: function(element) {
+            var id_attr = "#" + $( element ).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+            $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+        },
+        errorElement: 'span',
+            errorClass: 'input-validation-error',
+            errorPlacement: function(error, element) {
+                if(element.length) {
+                    error.insertAfter(element);
+                } else {
+                error.insertAfter(element);
+                }
+            }
+     });
+    </script>
+{% endblock %}

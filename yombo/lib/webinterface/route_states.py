@@ -21,7 +21,7 @@ def route_states(webapp):
                                _=i18n,
                                )
 
-        @webapp.route('/details/<string:state_name>')
+        @webapp.route('/<string:state_name>/details')
         @require_auth()
         @inlineCallbacks
         def page_states_details(webinterface, request, session, state_name):

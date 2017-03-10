@@ -16,7 +16,7 @@ def route_automation(webapp):
                                )
 
         
-        @webapp.route('/details/<string:automation_id>')
+        @webapp.route('/<string:automation_id>/details')
         @require_auth()
         def page_automation_details(webinterface, request, session, automation_id):
             try:
@@ -25,21 +25,6 @@ def route_automation(webapp):
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/automation/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/device.html')
-            return page.render(alerts=webinterface.get_alerts(),
-                               device=device,
-                               commands=webinterface._Commands,
-                               )
-    
-        @webapp.route('/edit/<string:device_id>')
-        @require_auth()
-        def page_devices_edit(webinterface, request, session, device_id):
-
-            try:
-                device = webinterface._DevicesLibrary[device_id]
-            except:
-                webinterface.add_alert('Device ID was not found.', 'warning')
-                return webinterface.redirect(request, '/devices/index')
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                commands=webinterface._Commands,

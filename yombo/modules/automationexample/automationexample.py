@@ -20,10 +20,6 @@ class AutomationExample(YomboModule):
     """
     def _init_(self):
         logger.info("Output from translation: {out}", out=_('automationexample','demo.automationexample')) # demo of using i18n...
-
-        self._ModDescription = "Demonstrates adding automation rules using a module."
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
 #        self._States['automationexample'] = 0
 
         data = self._GPG.encrypt_asymmetric('/dev/homevision')

@@ -65,7 +65,7 @@
                                              elif device.status == 2
                                              %} style="background-color: #f4c6c6" {%
                                              endif %}>
-                                                <a href="/devices/details/{{ device.device_id }}">{{ device.label }}</a>
+                                                <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
                                              {% if device.status == 0
                                               %} ({{ _('webinterface', 'Disabled') }}) {%
                                              elif device.status == 2
@@ -77,11 +77,11 @@
                                             <td>{{ device.status_history[0]['human_status'] }}</td>
                                             <td>
                                                 {% if device.status == 0 -%}
-                                             <a href="/devices/edit/{{ device.device_id }}">Edit</a> &nbsp; <a class="alert-success" href="/devices/enable/{{ device.device_id }}">Enable</a> &nbsp; <a class="alert-danger" href="/devices/delete/{{ device.device_id }}">Delete</a>
+                                             <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
                                                 {% elif device.status == 1 -%}
-                                             <a href="/devices/edit/{{ device.device_id }}">Edit</a> &nbsp; <a class="alert-warning" href="/devices/disable/{{ device.device_id }}">Disable</a> &nbsp; <a class="alert-danger" href="/devices/delete/{{ device.device_id }}">Delete</a>
+                                             <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
                                                 {% elif device.status == 2 -%}
-                                             <a class="alert-success"  href="/devices/disable/{{ device.device_id }}">Enable</a>
+                                             <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
                                                 {% endif %}
 
                                             </td>

@@ -7,9 +7,9 @@
                     <h1 class="page-header"> Module: {{ server_module.label }}</h1>
                     <h3>Data Source: Yombo Server
                                 {% if server_module.id in modules %}
-                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/edit/{{ server_module.id }}" class="btn btn-primary ">Manage Module</a>
+                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/{{ server_module.id }}/edit" class="btn btn-primary ">Manage Module</a>
                                 {% else %}
-                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/add/{{ server_module.id }}" class="btn btn-primary ">Add module to gateway</a>
+                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/{{ server_module.id }}/add" class="btn btn-primary ">Add module to gateway</a>
                         {% endif %}</h3>
 
                     <p></p>
@@ -48,7 +48,7 @@
                                 <label>Description</label>
                             </div>
                             <!-- /.panel-heading -->
-                            <div class="panel-body">
+                            <div class="panel-body" style="max-height: 40em;overflow-y: scroll;">
                                     {{ server_module.description|format_markdown(server_module.description_formatting) }}<br>
                             </div>
                         </div>

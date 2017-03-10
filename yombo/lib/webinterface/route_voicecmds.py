@@ -15,7 +15,7 @@ def route_voicecmds(webapp):
                                voicecmds=webinterface._VoiceCmds.get_all(),
                                )
 
-        @webapp.route('/details/<string:voicecmd_id>')
+        @webapp.route('/<string:voicecmd_id>/details')
         @require_auth()
         def page_voicecmds_details(webinterface, request, session, voicecmd_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/voicecmds/details.html')

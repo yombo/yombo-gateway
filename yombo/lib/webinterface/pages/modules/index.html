@@ -60,16 +60,16 @@
                                     </thead>
                                     <tbody>{% for moduleID, module in modules.iteritems() %}
                                          <tr>
-                                             <td><a href="/modules/details/{{ moduleID }}">{{ module._Name }}</a></td>
-                                             <td>{{ module._ModDescription }}</td>
+                                             <td><a href="/modules/{{ moduleID }}/details">{{ module._Name }}</a></td>
+                                             <td>{{ module._short_description }}</td>
                                              <td>
-                                             {% if module._Details.load_source == 'sql' -%}
-                                                {% if module._Details.status == 0 -%}
-                                             <a href="/modules/edit/{{ moduleID }}">Edit</a> &nbsp; <a class="alert-success" href="/modules/enable/{{ moduleID }}">Enable</a> &nbsp; <a class="alert-danger" href="/modules/remove/{{ moduleID }}">Remove</a>
-                                                {% elif module._Details.status == 1 -%}
-                                             <a href="/modules/edit/{{ moduleID }}">Edit</a> &nbsp; <a class="alert-warning" href="/modules/disable/{{ moduleID }}">Disable</a> &nbsp; <a class="alert-danger" href="/modules/remove/{{ moduleID }}">Remove</a>
-                                                {% elif module._Details.status == 2 -%}
-                                             <a class="alert-success" href="/modules/disable/{{ moduleID }}">Enable</a>
+                                             {% if module._load_source == 'sql' -%}
+                                                {% if module._status == 0 -%}
+                                             <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/modules/{{ moduleID }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/modules//{{ moduleID }}remove">Remove</a>
+                                                {% elif module._status == 1 -%}
+                                             <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/modules/{{ moduleID }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/modules/{{ moduleID }}/remove">Remove</a>
+                                                {% elif module._status == 2 -%}
+                                             <a class="alert-success" href="/modules/{{ moduleID }}/disable">Enable</a>
                                                 {% endif %}
                                              {% endif %}
 

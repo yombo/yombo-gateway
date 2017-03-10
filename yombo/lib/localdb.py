@@ -197,9 +197,6 @@ class LocalDB(YomboLibrary):
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
         """
-        self._ModDescription = "Manages the local database"
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
         self.db_model = {}  #store generated database model here.
         # Connect to the DB
         Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread=False,

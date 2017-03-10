@@ -3,7 +3,7 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">Debug Tools
+                    <h1 class="page-header">Debug and inspection tools
                         <a style="float: right;" href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-lg"></i></a>
                     </h1>
                     <!-- Modal -->
@@ -28,6 +28,7 @@
 
                     <p>
                         <ul>
+                            <li><b><a href="/devtools/debug/device_types">Device Types</b></a> - Device types used.</li>
                             <li><b>Hooks</b> - View what hooks have been called and how many times.</li>
                             <ul>
                                 <li>
@@ -37,6 +38,7 @@
                                     <a href="/devtools/debug/hooks_called_modules">Module hooks called.</a>
                                 </li>
                             </ul>
+                            <li><b><a href="/devtools/debug/modules">Modules</b></a> - Inspect various module attributes.</li>
                             <li><b>Statistics</b> - Various information abou the statistics library.</li>
                             <ul>
                                 <li>

@@ -57,6 +57,9 @@ class DeviceTypes(YomboLibrary):
         except:
             return False
 
+    def __iter__(self):
+        return self.device_types_by_id.iteritems()
+
     def _init_(self):
         """
         Setups up the basic framework. Nothing is loaded in here until the
@@ -85,8 +88,6 @@ class DeviceTypes(YomboLibrary):
         Loads all device types from DB to various arrays for quick lookup.
         """
         self.run_state = 3
-
-        # print "zzz 111"
 
     def _started_(self):
         # print "device types info:"
@@ -129,8 +130,9 @@ class DeviceTypes(YomboLibrary):
         :param device_type_id:
         :return:
         """
-        dt = yield self._LocalDB.get_device_type(device_type_id)
-        self.add_device_type(dt[0])
+        if device_type_id not in self.device_types_by_id:
+            dt = yield self._LocalDB.get_device_type(device_type_id)
+            self.add_device_type(dt[0])
 
     def module_devices(self, module_id):
         """
@@ -142,13 +144,13 @@ class DeviceTypes(YomboLibrary):
         :rtype: list
         """
         temp = []
-        if module_id in self._Modules._moduleClasses:
+        if module_id in self._Modules._modulesByUUID:
             # print "dt..module_id: %s" % module_id
-            # print "dt..self._Modules._moduleClasses[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
-            for dt in self._Modules._moduleClasses[module_id].device_types:
+            # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
+            for dt in self._Modules._modulesByUUID[module_id]._device_types:
                 temp.extend(self.device_types_by_id[dt].get_devices())
-
-        return temp
+        tempset = set(temp)
+        return list(temp)
 
     def devices_by_device_type(self, requested_device_type, return_value='id'):
         """
@@ -246,13 +248,16 @@ class DeviceTypes(YomboLibrary):
         return self.add_registered_device(new)
 
     def add_registered_device(self, device):
+        # print "Regiering device with device type (%s): %s" % (device.device_type_id, device.label)
         if device.device_type_id in self.device_types_by_id:
-            self.device_types_by_id[device.device_type_id].registered_devices[device.device_id] = device.label
+            self.device_types_by_id[device.device_type_id].registered_devices[device.device_id] = device
+            # print "device registered.... to register: %s" % self.device_types_by_id[device.device_type_id].dump()
             return True
         else:
             return False
 
     def del_registered_device(self, device):
+        # print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!! deleting registered devices!!!!"
         if device.device_type_id in self.device_types_by_id:
             del self.device_types_by_id[device.device_type_id].registered_devices[device.device_id]
             return True
@@ -264,9 +269,9 @@ class DeviceTypes(YomboLibrary):
 
     def add_registered_module(self, module):
         results = None
-        for device_type_id in module.device_types:
+        for device_type_id in module._device_types:
             if device_type_id in self.device_types_by_id:
-                self.device_types_by_id[device_type_id].registered_modules[module.module_id] = module.label
+                self.device_types_by_id[device_type_id].registered_modules[module._module_id] = module
                 if results is not False:
                     results = True
             else:
@@ -298,7 +303,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
-        print("dt_results: %s" % device_type_results)
+        # print("dt_results: %s" % device_type_results)
 
         if device_type_results['code'] != 200:
             results = {
@@ -589,7 +594,7 @@ class DeviceTypes(YomboLibrary):
         device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (device_type_id, command_id))
 
         if device_type_results['code'] != 200:
-            print "device_type_results: %s" % device_type_results
+            # print "device_type_results: %s" % device_type_results
             results = {
                 'status': 'failed',
                 'msg': "Couldn't remove command from device type",
@@ -624,7 +629,7 @@ class DeviceType:
             dictionary with various device type attributes.
         :type command: dict
         """
-        logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
+        logger.info("DeviceType::__init__: {device_type}", device_type=device_type)
 
         self._DTLibrary = device_type_library
         self.device_type_id = device_type['id']
@@ -640,7 +645,7 @@ class DeviceType:
         #     self.commands = device_type['commands'].split(',')
         # else:
         #     self.commands = []
-        self.commands = []
+        self.commands = {}
 
         self.registered_devices = {}
         self.registered_modules = {}
@@ -653,9 +658,11 @@ class DeviceType:
         :return:
         """
 
-        def set_commands(vars):
-            # print("GOT DEVICE VARS!!!!! %s" % vars)
-            self.commands = vars
+        def set_commands(command_ids):
+            print("GOT DEVICE VARS!!!!! %s" % vars)
+            for command_id in command_ids:
+                self.commands[command_id] = self._DTLibrary._Commands[command_id]
+            # self.commands = vars
 
         def gotException(failure):
            print("Exception 1: %r" % failure)
@@ -709,13 +716,12 @@ class DeviceType:
         """
         return {
             'device_type_id': str(self.device_type_id),
-            'uri'           : str(self.uri),
             'machine_label' : str(self.machine_label),
             'label'         : str(self.label),
             'description'   : str(self.description),
-            'live_update'   : int(self.live_update),
             'public'        : int(self.public),
             'status'        : int(self.status),
             'created'       : int(self.created),
             'updated'       : int(self.updated),
+            'registered_devices': self.registered_devices,
         }

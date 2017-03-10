@@ -76,9 +76,6 @@ class States(YomboLibrary, object):
     MAX_HISTORY = 100
 
     def _init_(self):
-        self._ModDescription = "Yombo States API"
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
         self.automation = self._Libraries['automation']
 
         self.__States = {}

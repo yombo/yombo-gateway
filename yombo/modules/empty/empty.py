@@ -28,11 +28,9 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 20,33-35
+           :lines: 20,33
         """
-        self._ModDescription = "Empty module, copy to get started building a new module."
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
+        pass
 
     def _load_(self):
         """
@@ -46,7 +44,7 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 37,51-60
+           :lines: 35,49-62
         """
         logger.debug("Empty module is loading.")
         if self._ModuleVariables != {}:
@@ -75,7 +73,7 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 66,80
+           :lines: 64,78
         """
         logger.debug("yombo.modules.empty.loaded() has been called.")
     
@@ -90,7 +88,7 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 83,95-99
+           :lines: 81,93-97
         """
         logger.info("Is Light: {light}", light=self._States['is.light'])
         logger.info("Is Dark: {dark}", dark=self._States['is.dark'])
@@ -105,7 +103,7 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 101,110
+           :lines: 99,108
         """
         pass
     
@@ -116,6 +114,6 @@ class Empty(YomboModule):
 
         .. literalinclude:: ../../../yombo/modules/empty/empty.py
            :language: python
-           :lines: 112,121
+           :lines: 110,119
         """
         pass

@@ -57,11 +57,6 @@ class AutomationHelpers(YomboModule):
        1) *call_function* - A very powerful platform that allwos nearly any Yombo Gateway function to be called. It
           can call functions by name or by reference if defined within a module.
     """
-    def _init_(self):
-        self._ModDescription = "Automation Helper - System Module"
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
-
     def _automation_action_list_(self, **kwargs):
         """
         Adds 'call_function' to the available action platforms. Allows functions to be called as an action defined

@@ -48,6 +48,8 @@ def route_modules(webapp):
             :return:
             """
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/index.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
                                modules=webinterface._Libraries['modules']._modulesByUUID,
                                )
@@ -56,37 +58,54 @@ def route_modules(webapp):
         @require_auth()
         def page_modules_server_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/server_index.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Server Modules")
             return page.render(alerts=webinterface.get_alerts(),
                                )
-        @webapp.route('/server_details/<string:module_id>')
+        @webapp.route('/<string:module_id>/server_details')
         @require_auth()
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
-            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            if module_results['code'] != 200:
+                webinterface.add_alert(module_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/modules/index'))
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details_server.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/server_index", "Server Modules")
+            webinterface.add_breadcrumb(request, "/modules/%s/server_details" % module_results['data']['id'], module_results['data']['label'])
             returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    server_module=results['data'],
+                                    server_module=module_results['data'],
                                     modules=webinterface._Modules._modulesByUUID,
                                     ))
 
-        @webapp.route('/add/<string:module_id>', methods=['GET'])
+        @webapp.route('/<string:module_id>/add', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
-            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            if module_results['code'] != 200:
+                webinterface.add_alert(module_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/modules/index'))
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
             data = {
                 'status': 1,
-                'module_id': results['data']['id'],
-                'install_branch': results['data']['prod_branch'],
+                'module_id': module_results['data']['id'],
+                'install_branch': module_results['data']['prod_branch'],
                 'variable_data': {},
             }
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/modules/index", "Modules")
+            webinterface.add_breadcrumb(request, "/modules/index", "Add Module")
             returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    server_module=results['data'],
+                                    server_module=module_results['data'],
                                     module_data={},
                                     ))
 
-        @webapp.route('/add/<string:module_id>', methods=['POST'])
+        @webapp.route('/<string:module_id>/add', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_modules_add_post(webinterface, request, session, module_id):
@@ -137,12 +156,12 @@ def route_modules(webapp):
             webinterface.add_alert("Module configuratiuon updated. A restart is required to take affect.", 'warning')
             returnValue(webinterface.redirect(request, '/modules/index'))
 
-        @webapp.route('/details/<string:module_id>')
+        @webapp.route('/<string:module_id>/details')
         @require_auth()
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
-            print "webinterface._Modules[module_id]._Details: %s" % webinterface._Modules[module_id]._Details
+            print "webinterface._Modules[module_id]._dump: %s" % webinterface._Modules[module_id]._dump()
             print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
             device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
             returnValue(page.render(alerts=webinterface.get_alerts(),
@@ -152,7 +171,7 @@ def route_modules(webapp):
                                )
                         )
 
-        @webapp.route('/disable/<string:module_id>', methods=['GET'])
+        @webapp.route('/<string:module_id>/disable', methods=['GET'])
         @require_auth()
         def page_modules_disable_get(webinterface, request, session, module_id):
             try:
@@ -169,7 +188,7 @@ def route_modules(webapp):
                                     module=module,
                                     )
 
-        @webapp.route('/disable/<string:module_id>', methods=['POST'])
+        @webapp.route('/<string:module_id>/disable', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_modules_disable_post(webinterface, request, session, module_id):
@@ -188,7 +207,7 @@ def route_modules(webapp):
                                         module=module,
                                         ))
 
-            results = yield webinterface._Modules.disable_module(module._Details.module_id)
+            results = yield webinterface._Modules.disable_module(module._module_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -219,7 +238,7 @@ def route_modules(webapp):
                                     msg=msg,
                                     ))
 
-        @webapp.route('/edit/<string:module_id>', methods=['GET'])
+        @webapp.route('/<string:module_id>/edit', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_get(webinterface, request, session, module_id):
@@ -239,7 +258,7 @@ def route_modules(webapp):
                                     module=module,
                                     ))
 
-        @webapp.route('/edit/<string:module_id>', methods=['POST'])
+        @webapp.route('/<string:module_id>/edit', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_post(webinterface, request, session, module_id):
@@ -292,7 +311,7 @@ def route_modules(webapp):
                                     msg=msg,
                                     ))
 
-        @webapp.route('/edit/<string:module_id>')
+        @webapp.route('/<string:module_id>/edit')
         @require_auth()
         def page_modules_edit(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
@@ -301,7 +320,7 @@ def route_modules(webapp):
                                variables=webinterface._Modules[module_id]._ModuleVariables,
                                )
 
-        @webapp.route('/enable/<string:module_id>', methods=['GET'])
+        @webapp.route('/<string:module_id>/enable', methods=['GET'])
         @require_auth()
         def page_modules_enable_get(webinterface, request, session, module_id):
             try:
@@ -318,7 +337,7 @@ def route_modules(webapp):
                                module=module,
                                )
 
-        @webapp.route('/enable/<string:module_id>', methods=['POST'])
+        @webapp.route('/<string:module_id>/enable', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_modules_enable_post(webinterface, request, session, module_id):
@@ -337,7 +356,7 @@ def route_modules(webapp):
                                         module=module,
                                         ))
 
-            results = yield webinterface._Modules.enable_module(module._Details.module_id)
+            results = yield webinterface._Modules.enable_module(module._module_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -368,7 +387,7 @@ def route_modules(webapp):
                                     msg=msg,
                                     ))
 
-        @webapp.route('/remove/<string:module_id>', methods=['GET'])
+        @webapp.route('/<string:module_id>/remove', methods=['GET'])
         @require_auth()
         def page_modules_remove_get(webinterface, request, session, module_id):
             try:
@@ -386,7 +405,7 @@ def route_modules(webapp):
                                )
 
 
-        @webapp.route('/remove/<string:module_id>', methods=['POST'])
+        @webapp.route('/<string:module_id>/remove', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_modules_remove_post(webinterface, request, session, module_id):
@@ -405,7 +424,7 @@ def route_modules(webapp):
                                         module=module,
                                         ))
 
-            results = yield webinterface._Modules.remove_module(module._Details.module_id)
+            results = yield webinterface._Modules.remove_module(module._module_id)
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')

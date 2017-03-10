@@ -1,0 +1,56 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/config/variables/group/{{var_group.id}}/details" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i></a> Variable Field Details: {{ var_field.field_label}}</h1>
+                    <a class="btn btn-md btn-primary" href="/devtools/config/variables/field/{{var_field.id}}/edit" title="Edit module details such as description and links.">Edit Variable Field</a>
+                    <a class="btn btn-md btn-danger" href="/devtools/config/variables/field/{{var_field.id}}/delete" title="Edit module details such as description and links.">Delete Variable Field</a>
+                    <hr class="under-buttons">
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12 col-md-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                            {{ var_field.field_label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
+                            {{ var_field.field_machine_label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                            {{ var_field.field_description }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
+                            {{ var_field.field_weight }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Encryption: </label><br>
+                            {{ var_field.encryption }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Required: </label><br>
+                            {{ var_field.value_required }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Casing: </label><br>
+                            {{ var_field.value_casing }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
+                            {{ var_field.field_weight }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
+                            {{ var_field.field_weight }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                            {{ var_field.status|status_to_string }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                            {{ var_field.updated_at|epoch_to_human }} ({{ var_field.created_at|epoch_to_pretty_date }}) <br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                            {{ var_field.created_at|epoch_to_human }}<br>
+                        </div>
+                    </div>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+{% endblock %}
+
