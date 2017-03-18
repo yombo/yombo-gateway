@@ -20,7 +20,7 @@ Perhaps disconnect and reconnect to another server? -Mitch
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2015-2016 by Yombo.
+:copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqpyombo.py>`_
 """
@@ -87,13 +87,15 @@ class AMQPYombo(YomboLibrary):
         self.configHandler = AmqpConfigHandler(self)
         return self.connect()
 
-    def _stop_(self):
+    def _unload_(self):
         """
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
         :return:
         """
-        self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
+        print "i should be called on exit..."
         self.configHandler._stop_()
+        self.controlHandler._stop_()
+        self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
 
     def connect(self):
         """
@@ -190,8 +192,12 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         body = {
-            "local_ip_address": self._Configs.get("core", "localipaddress"),
-            "external_ip_address": self._Configs.get("core", "externalipaddress"),
+            "internal_ipv4": self._Configs.get("core", "localipaddress_v4"),
+            "external_ipv4": self._Configs.get("core", "externalipaddress_v4"),
+            "internal_port": self._Configs.get("webinterface", "nonsecure_port"),
+            "external_port": self._Configs.get("webinterface", "nonsecure_port"),
+            "internal_secure_port": self._Configs.get("webinterface", "secure_port"),
+            "external_secure_port": self._Configs.get("webinterface", "secure_port"),
         }
 
         requestmsg = self.generate_message_request(
@@ -199,12 +205,17 @@ class AMQPYombo(YomboLibrary):
             source='yombo.gateway.lib.amqpyombo',
             destination='yombo.server.configs',
             body=body,
+            callback=self.receive_local_information,
             headers={
                 "request_type": "gatewayInfo",
             }
         )
         requestmsg['properties']['headers']['response_type']='system'
         self.amqp.publish(**requestmsg)
+
+    def receive_local_information(self, deliver, props, msg, queue):
+        # print "########################################################### receive_local_information"
+        pass
 
     def generate_message_response(self, properties, exchange_name, source, destination, headers, body ):
         response_msg = self.generate_message(exchange_name, source, destination, "response", headers, body)
@@ -213,7 +224,7 @@ class AMQPYombo(YomboLibrary):
 #        response_msg['properties']['headers']['response_type']=response_type
         correlation_id = random_string(length=12)
 
-        print "properties: %s" % properties
+        # print "properties: %s" % properties
         if 'route' in properties.headers:
             route = str(properties.headers['route']) + ",yombo.gw.amqpyombo:" + self.user_id
             response_msg['properties']['headers']['route'] = route

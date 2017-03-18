@@ -107,6 +107,65 @@ def route_configs(webapp):
                                config=configs,
                                )
 
+        @webapp.route('/dns', methods=['GET'])
+        @require_auth()
+        def page_configs_dns_get(webinterface, request, session):
+            configs = webinterface._Configs.get("*", "*")
+
+            dns_configs = webinterface._Configs.get("dns", "*")
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/dns.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/configs/dns", "DNS")
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               dns_configs=dns_configs,
+                               )
+
+        @webapp.route('/dns', methods=['POST'])
+        @require_auth(login_redirect="/configs/basic")
+        @inlineCallbacks
+        def page_configs_dns_post(webinterface, request, session):
+
+            try:
+                submitted_dns_name = request.args.get('dns_name')[0]  # underscore here due to jquery
+            except:
+                webinterface.add_alert("Select a valid dns name.")
+                returnValue(webinterface.redirect(request, '/configs/dns'))
+
+            try:
+                submitted_dns_domain = request.args.get('dns_domain_id')[0]  # underscore here due to jquery
+            except:
+                webinterface.add_alert("Select a valid dns domain.")
+                returnValue(webinterface.redirect(request, '/configs/dns'))
+
+            data = {
+                'dns_name': submitted_dns_name,
+                'dns_domain_id': submitted_dns_domain,
+            }
+
+            dns_results = yield webinterface._YomboAPI.request('POST', '/v1/gateway/%s/dns_name' % webinterface._Configs.get('core', 'gwid'), data)
+            if dns_results['code'] != 200:
+                # print "dns_results: %s" % dns_results
+                webinterface.add_alert(dns_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/configs/dns'))
+
+            webinterface._Configs.set('dns', 'dns_name', dns_results['data']['dns_name'])
+            webinterface._Configs.set('dns', 'dns_domain', dns_results['data']['dns_domain'])
+            webinterface._Configs.set('dns', 'dns_domain_id', dns_results['data']['dns_domain_id'])
+            webinterface._Configs.set('dns', 'allow_change_at', dns_results['data']['allow_change_at'])
+            webinterface._Configs.set('dns', 'fqdn', dns_results['data']['fqdn'])
+
+            dns_configs = webinterface._Configs.get("dns", "*")
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/configs/dns.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/configs/dns", "DNS")
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                               dns_configs=dns_configs,
+                               )
+                        )
+
         @webapp.route('/yombo_ini')
         @require_auth(login_redirect="/configs/yombo_ini")
         def page_configs_yombo_ini(webinterface, request, session):

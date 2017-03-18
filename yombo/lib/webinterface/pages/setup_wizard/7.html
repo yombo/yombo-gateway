@@ -1,8 +1,9 @@
 {% extends "lib/webinterface/fragments/layout_blank.tpl" %}
 {% block head_css %}
 {% include 'lib/webinterface/fragments/select_css.tpl' %}
-
 {% endblock %}
+
+{% set progressbar = 100 %}
 
 {% block content %}
         <div class="row">
@@ -14,8 +15,8 @@
                             <p></p>
                             <div class="col-md-8 col-md-offset-2">
                                 <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ (6/6)*100|round }}" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
-                                   100%
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progressbar }}%">
+                                   {{ progressbar }}%
                                   </div>
                                 </div>
                             </div>
@@ -24,7 +25,7 @@
                         <p></p>
                         <h2>Setup Complete</h2>
                         <p>Setup is complete. Simply restart the gateway and begin automating!</p>
-                        <a class="btn btn-md btn-warning" href="/setup_wizard/6_restart"><i class="fa fa-chevron-left fa-remove pull-center"> &nbsp; </i>Reboot</a>
+                        <a class="btn btn-md btn-success align-center" href="/setup_wizard/7_restart">Reboot</a>
                     </div>
                 </div>
             </div>

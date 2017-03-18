@@ -24,7 +24,7 @@
 						{% if misc_wi_data.notifications|length > 0 %}
 							{% for id, notice in misc_wi_data.notifications.notifications[:6].iteritems() %}
 								<li>
-									<a href="/notifications/details/{{ id }}">
+									<a href="/notifications/{{ id }}/details">
 										<div>
 											{% if notice.priority == 'bug' %}
 											<i class="fa fa-bug fa-fw" style="color:black;"></i>

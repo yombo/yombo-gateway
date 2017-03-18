@@ -3,6 +3,12 @@
 <script src='https://www.google.com/recaptcha/api.js'></script>
 {% endblock %}
 
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
+{% endblock %}
+
+
 {% block content %}
 {% if misc_wi_data.operation_mode == 'config' %}
             <div class="row">
@@ -16,6 +22,11 @@
                         Use the Yombo credentials below to setup this gateway. If you do not have one, you
                         will need to <a href="https://yombo.net">create a Yombo account</a>.
                     </p>
+                      <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+                          <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
+                          in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
+                          </p>
+                      </div>
                     <p>&nbsp;</p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -36,14 +47,11 @@
                                         <h4 class="modal-title" id="myModalLabel">Login Required</h4>
                                       </div>
                                       <div class="modal-body">
-                                          <p>Logging into your Yombo account allows this gateway to download
-                                          configuration information from a previously installed gateway or to create a
-                                          new gateway. This also allows your to manage your gateway, it's devices, and
-                                          configured modules.
+                                          <p>Logging into your Yombo account allows the gateway to validate you.
                                           </p>
                                           <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
                                               <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
-                                              in plantext on the gateway. A new login key stored that represents your account.
+                                              in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
                                               </p>
                                           </div>
                                       </div>
@@ -59,13 +67,16 @@
                                 <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
                         </div>
                         <div class="panel-body">
-                            <form action="/login/user" method="POST" role="form">
+                            <form action="/login/user" method="POST" role="form" id="login">
                                 <fieldset>
-                                    <div class="form-group">
-                                        <input class="form-control" placeholder="E-mail" id="email" name="email" type="text" autofocus>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="email" id="email" placeholder="E-mail"  required>
+                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                                     </div>
-                                    <div class="form-group">
-                                        <input class="form-control" placeholder="Password" id="password" name="password" type="password" value="">
+                                    <br>
+                                    <div class="input-group">
+                                        <input type="password" class="form-control" name="password" id="password" placeholder="Password"  required>
+                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                                     </div>
                                     <!-- Change this to a button or input when using this as a form -->
                                     <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
@@ -84,3 +95,50 @@
             <!-- /.row -->
 {% endblock %}
 
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
+
+{% block body_bottom %}
+<script>
+$().ready(function() {
+    $('#login').validate({
+        rules: {
+            email: {
+                minlength: 5,
+                maxlength: 200,
+                required: true,
+            },
+            password: {
+                minlength: 4,
+                maxlength: 200,
+                required: true
+            }
+        },
+        messages: {
+            email: {
+                required: "Email is required.",
+                minlength: "Must be at least 4 characters long.",
+            },
+            password: {
+                required: "Password is required",
+                minlength: "Must be at least 4 characters long.",
+            }
+        },
+        highlight: function (element) {
+            var id_attr = "#" + $(element).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+            $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+        },
+        unhighlight: function (element) {
+            var id_attr = "#" + $(element).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+            $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+        },
+      errorPlacement: function (error, element) {
+        element.before(error);
+      }
+    });
+});
+</script>
+{% endblock %}

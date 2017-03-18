@@ -83,6 +83,7 @@ class YomboAPI(YomboLibrary):
         elif results['code'] == 404:
             raise YomboWarning("Server cannot get gateways")
         else:
+            print "results: %s" % results
             if results['content']['message'] == "Invalid Token.":
                 raise YomboWarningCredentails("URI: '%s' requires credentials." % results['content']['response']['uri'])
             raise YomboWarning("Unknown error: %s" % results['content'])
@@ -195,7 +196,7 @@ class YomboAPI(YomboLibrary):
         if self.system_session is not None:
             results = yield self.do_validate_session(self.system_session)
             if (results is True):
-                print "has a system session!"
+                logger.debug("Yombo API has a system session!")
                 self._States.set('yomboapi.valid_system_session', True)
                 self.valid_system_session = True
                 self.init_defer.callback(10)
@@ -275,18 +276,12 @@ class YomboAPI(YomboLibrary):
             returnValue(False)
 
     @inlineCallbacks
-    def user_login_with_credentials(self, username, password):
+    def user_login_with_credentials(self, username, password, g_recaptcha_response):
         credentials = { 'username':username, 'password':password}
-        results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password}, False)
+        results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
         logger.debug("$$$3 REsults from API login creds: {results}", results=results)
 
-        # print "results:::::::::::::::::  %s" % results
-        if (results['content']['code'] != 200):
-            returnValue(False)
-        elif (results['content']['message'] == 'Logged in'):
-            returnValue(results['content']['response']['login'])
-        else:
-            returnValue(False)
+        returnValue(results)
 
     @inlineCallbacks
     def gateways(self, session_info=None):

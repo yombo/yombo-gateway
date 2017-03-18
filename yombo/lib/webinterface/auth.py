@@ -27,6 +27,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
         @wraps(f)
         # @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
+            request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+            request.setHeader('Expires', '0')
             # print "auth wrapped_f roles: %s" % roles
             # print "auth wrapped_f request: %s" % request.received_cookies
             # print "auth wrapped_f request: %s" % type(request)
@@ -78,7 +80,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         # except:
                         #     pass
                         return call(f, webinterface, request, session, *a, **kw)
-            print "session : %s" % session
+            # print "session : %s" % session
 
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
@@ -95,6 +97,8 @@ def require_auth_pin(*args, **kwargs):
     def deco(f):
         @wraps(f)
         def wrapped_f(webinterface, request, *a, **kw):
+            request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+            request.setHeader('Expires', '0')
             # print "auth wrapped_f request: %s" % request.received_cookies
             # print "auth wrapped_f request: %s" % type(request)
 
@@ -153,8 +157,8 @@ def needs_web_pin(webinterface, request):
         return False
 
     network_info = get_local_network_info()
-    if ip_address_in_network(client_ip, network_info['cidr']):
-        if client_ip != network_info['gateway']:
+    if ip_address_in_network(client_ip, network_info['ipv4']['cidr']):
+        if client_ip != network_info['ipv4']['gateway']:
             return False
 
     if webinterface.auth_pin_required:

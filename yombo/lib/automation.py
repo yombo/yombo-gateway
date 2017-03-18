@@ -39,7 +39,7 @@ Developers should review the following modules for examples of implementation:
 
 ..versionadded:: 0.10.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries

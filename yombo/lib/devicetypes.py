@@ -629,7 +629,7 @@ class DeviceType:
             dictionary with various device type attributes.
         :type command: dict
         """
-        logger.info("DeviceType::__init__: {device_type}", device_type=device_type)
+        logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
 
         self._DTLibrary = device_type_library
         self.device_type_id = device_type['id']
@@ -659,13 +659,13 @@ class DeviceType:
         """
 
         def set_commands(command_ids):
-            print("GOT DEVICE VARS!!!!! %s" % vars)
+            logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
             for command_id in command_ids:
                 self.commands[command_id] = self._DTLibrary._Commands[command_id]
             # self.commands = vars
 
         def gotException(failure):
-           print("Exception 1: %r" % failure)
+           logger.warn("Exception 1: {failure}", failure=failure)
            return 100  # squash exception, use 0 as value for next stage
 
         # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)

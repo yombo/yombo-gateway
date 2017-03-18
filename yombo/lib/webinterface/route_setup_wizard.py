@@ -1,7 +1,7 @@
+from time import time
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from yombo.core.exceptions import YomboWarningCredentails
-
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session, needs_web_pin
 
 def route_setup_wizard(webapp):
@@ -21,10 +21,14 @@ def route_setup_wizard(webapp):
             # print "request = %s" % request
             # print "session = %s" % session
             # print "session : %s" % session
+            if session is not None and session is not False:
+                if session.get('setup_wizard_done') is True:
+                    returnValue(webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step']))
+
             webinterface.sessions.set(request, 'setup_wizard_last_step', 1)
             if session is not False:
                 if session.get('setup_wizard_done') is True:
-                    return webinterface.redirect(request, '/setup_wizard/6')
+                    return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
             return page.render(
                                alerts=webinterface.get_alerts(),
@@ -34,23 +38,15 @@ def route_setup_wizard(webapp):
         @require_auth(login_redirect="/setup_wizard/2")
         @inlineCallbacks
         def page_setup_wizard_2(webinterface, request, session):
-            print "session = %s" % session
-            print "wiz step: %s" % webinterface.sessions.get(request, 'setup_wizard_ last_step')
-            if session is not None:
+            # print "session = %s" % session
+            # print "wiz step: %s" % webinterface.sessions.get(request, 'setup_wizard_ last_step')
+            if session is not None and session is not False:
                 if session.get('setup_wizard_done') is True:
-                    returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+                    returnValue(webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step']))
                 if session.get('setup_wizard_last_step') not in (None, 1, 2, 3):
                     webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                     returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
-            # auth = webinterface.require_auth(request)  # Notice difference. Now we want to log the user in.
-            # if auth is not None:
-            #     return auth
-
-    #        print "selected gateawy: %s" % webinterface.sessions.get(request, 'setup_wizard_gateway_id')
-
-            # simulate fetching possible gateways:
-#            webinterface.gateway()
             try:
                 results = yield webinterface.api.gateway_index()
             except YomboWarningCredentails:
@@ -79,7 +75,7 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def page_setup_wizard_3_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+                returnValue(webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step']))
             if session.get('setup_wizard_last_step') not in (2, 3, 4):
                 # print "wiz step: %s" % webinterface.sessions.get(request, 'setup_wizard_last_step')
                 returnValue(webinterface.redirect(request, '/setup_wizard/1'))
@@ -103,7 +99,7 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def page_setup_wizard_3_post(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+                returnValue(webinterface.redirect(request, '/setup_wizard/7'))
             if session.get('setup_wizard_last_step') not in (2, 3, 4):
                 # print "wiz step: %s" % webinterface.sessions.get(request, 'setup_wizard_last_step')
                 returnValue(webinterface.redirect(request, '/setup_wizard/1'))
@@ -176,7 +172,7 @@ def route_setup_wizard(webapp):
             if 'twilighthorizon' not in settings['times']:
                 settings['times']['twilighthorizon'] = { 'data' : '-6'}
 
-            print "settings: %s" % settings
+            # print "settings: %s" % settings
 
             # session['setup_wizard_gateway_latitude'] = available_gateways[wizard_gateway_id]['variables']['latitude']
             # session['setup_wizard_gateway_longitude'] = available_gateways[wizard_gateway_id]['variables']['longitude']
@@ -192,8 +188,8 @@ def route_setup_wizard(webapp):
                     session['setup_wizard_gateway_machine_label'] = available_gateways[wizard_gateway_id]['machine_label']
                     session['setup_wizard_gateway_label'] = available_gateways[wizard_gateway_id]['label']
                     session['setup_wizard_gateway_description'] = available_gateways[wizard_gateway_id]['description']
-            print "session: %s" % session
-            print "gateway_id: %s" % wizard_gateway_id
+            # print "session: %s" % session
+            # print "gateway_id: %s" % wizard_gateway_id
             fields = {
                   'id' : session['setup_wizard_gateway_id'],
                   'machine_label': session['setup_wizard_gateway_machine_label'],
@@ -201,7 +197,7 @@ def route_setup_wizard(webapp):
                   'description': session['setup_wizard_gateway_description'],
             }
 
-            print "gw_fields: %s" % fields
+            # print "gw_fields: %s" % fields
 
             session['setup_wizard_last_step'] = 3
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/3.html')
@@ -216,7 +212,7 @@ def route_setup_wizard(webapp):
         @require_auth()
         def page_setup_wizard_4_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                return webinterface.redirect(request, '/setup_wizard/6')
+                return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             if session.get('setup_wizard_last_step') not in (3, 4, 5):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                 return webinterface.redirect(request, '/setup_wizard/1')
@@ -226,9 +222,9 @@ def route_setup_wizard(webapp):
         @webapp.route('/4', methods=['POST'])
         @require_auth()
         def page_setup_wizard_4_post(webinterface, request, session):
-            if webinterface.sessions.get(request, 'setup_wizard_done') is True:
-                return webinterface.redirect(request, '/setup_wizard/6')
-            if webinterface.sessions.get(request, 'setup_wizard_last_step') not in (3, 4, 5):
+            if session.get('setup_wizard_done') is True:
+                return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
+            if session.get('setup_wizard_last_step') not in (3, 4, 5):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                 return webinterface.redirect(request, '/setup_wizard/1')
 
@@ -298,7 +294,7 @@ def route_setup_wizard(webapp):
                 'gps_status': session.get('setup_wizard_security_gps_status', '1'),
             }
 
-            print "security_items: %s" % security_items
+            # print "security_items: %s" % security_items
 
             session['setup_wizard_last_step'] = 4
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/4.html')
@@ -312,8 +308,8 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def page_setup_wizard_5_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
-            if session.get('setup_wizard_last_step') not in (4, 5, 6):
+                returnValue(webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step']))
+            if session.get('setup_wizard_last_step') not in (4, 5):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                 returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
@@ -325,8 +321,8 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def page_setup_wizard_5_post(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
-                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
-            if session.get('setup_wizard_last_step') not in (4, 5, 6):
+                returnValue(webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step']))
+            if session.get('setup_wizard_last_step') not in (4, 5):
                 webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
                 returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
@@ -354,16 +350,17 @@ def route_setup_wizard(webapp):
 
         @inlineCallbacks
         def page_setup_wizard_5_show_form(webinterface, request, session):
-            gpg_selected = "new"
-
+            gpg_selected = session.get("gpg_selected", "new")
+            i18n = webinterface.i18n(request)
             session.set('setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
             gpg_existing = yield webinterface._LocalDb.get_gpg_key()
-            print "existing gpg keys: %s" % gpg_existing
+            # print "existing gpg keys: %s" % gpg_existing
             returnValue(page.render(
-                               gpg_selected=gpg_selected,
-                               gpg_existing=gpg_existing,
-                               ))
+                gpg_selected=gpg_selected,
+                gpg_existing=gpg_existing,
+                _=i18n,
+            ))
 
         @webapp.route('/5_gpg_section')
         @require_auth()
@@ -407,14 +404,15 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/6', methods=['GET'])
         @require_auth()
+        @inlineCallbacks
         def page_setup_wizard_6_get(webinterface, request, session):
-            if webinterface.sessions.get(request, 'setup_wizard_done') is not True:
-                webinterface.redirect(request, '/setup_wizard/5')
+            if session.get('setup_wizard_last_step') not in (5, 6, 7):
+                webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
+                returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
-            return page.render(
-                               alerts=webinterface.get_alerts(),
-                               )
+            session['setup_wizard_last_step'] = 6
+            results = yield form_setup_wizard_6(webinterface, request, session)
+            returnValue(results)
 
         @webapp.route('/6', methods=['POST'])
         @require_auth()
@@ -429,20 +427,17 @@ def route_setup_wizard(webapp):
             :return:
             """
             result_output = ""
-            if webinterface.sessions.get(request, 'setup_wizard_done') is True:
-                print "aaa"
-                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+            if session.get('setup_wizard_last_step') not in (5, 6):
+                webinterface.add_alert("Invalid wizard state. Please don't use the forward or back buttons.")
+                returnValue(webinterface.redirect(request, '/setup_wizard/1'))
 
-            valid_submit = True
+            session.set('setup_wizard_6_post', 1)
             try:
-                submitted_gpg_actions = request.args.get('gpg_action')[0]  # underscore here due to jquery
+                submitted_gpg_action = request.args.get('gpg_action')[0]  # underscore here due to jquery
             except:
                 valid_submit = False
                 webinterface.add_alert("Please select an appropriate GPG/PGP Key action.")
-                returnValue(webinterface.redirect('/setup_wizard/5'))
-
-            # Call Yombo API to save Gateway. Will get back all the goodies we need!
-            # Everything is done! Lets save all the configs!
+                returnValue(webinterface.redirect(request, '/setup_wizard/5'))
 
             # session = webinterface.sessions.load(request)
             if session['setup_wizard_gateway_id'] == 'new':
@@ -452,6 +447,10 @@ def route_setup_wizard(webapp):
                     'description': session['setup_wizard_gateway_description'],
                 }
                 results = yield webinterface.api.request('POST', '/v1/gateway', data)
+                if results['code'] != 200:
+                    webinterface.add_alert(results['content']['html_message'], 'warning')
+                    returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+                session['setup_wizard_gateway_id'] = results['data']['id']
 
             else:
                 data = {
@@ -459,11 +458,18 @@ def route_setup_wizard(webapp):
                     'description': session['setup_wizard_gateway_description'],
                 }
                 results = yield webinterface.api.request('PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'])
-                results = yield webinterface.api.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'])
+                if results['code'] != 200:
+                    webinterface.add_alert(results['content']['html_message'], 'warning')
+                    returnValue(webinterface.redirect(request, '/setup_wizard/5'))
 
-            print "id: %s" % session['setup_wizard_gateway_id']
-            print "data: %s" % data
-            print results
+                results = yield webinterface.api.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'])
+                if results['code'] != 200:
+                    webinterface.add_alert(results['content']['html_message'], 'warning')
+                    returnValue(webinterface.redirect(request, '/setup_wizard/5'))
+
+                # print "id: %s" % session['setup_wizard_gateway_id']
+            # print "data: %s" % data
+            # print results
             webinterface._Configs.set('core', 'updated', results['data']['updated_at'])
             webinterface._Configs.set('core', 'created', results['data']['created_at'])
             webinterface._Configs.set('core', 'gwid', results['data']['id'])
@@ -484,41 +490,135 @@ def route_setup_wizard(webapp):
                 if k.startswith('setup_wizard_'):
                     session.pop(k)
             session['setup_wizard_done'] = True
-            session['setup_wizard_last_step'] = 6
+            session['setup_wizard_last_step'] = 7
 
-            if submitted_gpg_actions == 'new':  # make GPG keys!
+            if submitted_gpg_action == 'new':  # make GPG keys!
                 gpg_info = yield webinterface._GPG.generate_key()
                 webinterface._Configs.set('gpg', 'keyid', gpg_info['keyid'])
                 webinterface._Configs.set('gpg', 'keyascii', gpg_info['keypublicascii'])
-            elif submitted_gpg_actions == 'import':  # make GPG keys!
+            elif submitted_gpg_action == 'import':  # make GPG keys!
                 try:
                     submitted_gpg_private = request.args.get('gpg-private-key')[0]
                 except:
                     webinterface.add_alert("When importing, must have a valid private GPG/PGP key.")
-                    returnValue(webinterface.redirect('/setup_wizard/5'))
+                    returnValue(webinterface.redirect(request, '/setup_wizard/5'))
                 try:
                     submitted_gpg_public = request.args.get('gpg-public-key')[0]
                 except:
                     webinterface.add_alert("When importing, must have a valid public GPG/PGP key.")
-                    returnValue(webinterface.redirect('/setup_wizard/5'))
+                    returnValue(webinterface.redirect(request, '/setup_wizard/5'))
             else:
                 gpg_existing = yield webinterface._LocalDb.get_gpg_key()
-                if submitted_gpg_actions in gpg_existing:
-                    key_ascii = webinterface._GPG.get_key(submitted_gpg_actions)
-                    webinterface._Configs.set('gpg', 'keyid', submitted_gpg_actions)
+                if submitted_gpg_action in gpg_existing:
+                    key_ascii = webinterface._GPG.get_key(submitted_gpg_action)
+                    webinterface._Configs.set('gpg', 'keyid', submitted_gpg_action)
                     webinterface._Configs.set('gpg', 'keyascii', key_ascii)
 
                 else:
                     webinterface.add_alert("Existing GPG/PGP key not fount.")
-                    returnValue(webinterface.redirect('/setup_wizard/5'))
+                    returnValue(webinterface.redirect(request, '/setup_wizard/5'))
+            session['gpg_selected'] = submitted_gpg_action
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
+            session['setup_wizard_last_step'] = 6
+
+            results = yield form_setup_wizard_6(webinterface, request, session)
+            returnValue(results)
+
+        @inlineCallbacks
+        def form_setup_wizard_6(webinterface, request, session):
+            dns_results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/dns_name' % webinterface._Configs.get('core', 'gwid'))
+            if dns_results['code'] != 200:
+                webinterface.add_alert(dns_results['content']['html_message'], 'warning')
+                webinterface._Configs.set('dns', 'dns_name', None)
+                webinterface._Configs.set('dns', 'dns_domain', None)
+                webinterface._Configs.set('dns', 'dns_domain_id', None)
+                webinterface._Configs.set('dns', 'allow_change_at', 0)
+                webinterface._Configs.set('dns', 'fqdn', None)
+            else:
+                webinterface._Configs.set('dns', 'dns_name', dns_results['data']['dns_name'])
+                webinterface._Configs.set('dns', 'dns_domain', dns_results['data']['dns_domain'])
+                webinterface._Configs.set('dns', 'dns_domain_id', dns_results['data']['dns_domain_id'])
+                webinterface._Configs.set('dns', 'allow_change_at', dns_results['data']['allow_change_at'])
+                webinterface._Configs.set('dns', 'fqdn', dns_results['data']['fqdn'])
+
+            dns_name = webinterface._Configs.get('dns', 'dns_name', None)
+            dns_domain = webinterface._Configs.get('dns', 'dns_domain', None)
+            allow_change = webinterface._Configs.get('dns', 'allow_change_at', 0)
+            fqdn = webinterface._Configs.get('dns', 'fqdn', None, False)
+            if fqdn is not None:
+                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6-dnsexists.html')
+                returnValue(page.render(
+                    alerts=webinterface.get_alerts(),
+                    dns_name=dns_name,
+                    dns_domain=dns_domain,
+                    allow_change=allow_change,
+                    fqdn=fqdn,
+                ))
+            else:
+                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6-setdns.html')
+                returnValue(page.render(
+                    alerts=webinterface.get_alerts(),
+                    dns_name=dns_name,
+                    dns_domain=dns_domain,
+                    allow_change=allow_change,
+                    fqdn=fqdn,
+                ))
+
+        @webapp.route('/7', methods=['GET'])
+        @require_auth()
+        def page_setup_wizard_7_get(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/7.html')
+
+            session['setup_wizard_last_step'] = 7
+            return page.render(
+                alerts=webinterface.get_alerts(),
+            )
+
+        @webapp.route('/7', methods=['POST'])
+        @require_auth()
+        @inlineCallbacks
+        def page_setup_wizard_7_post(webinterface, request, session):
+            """
+            Last step is to handle the GPG key. One of: create a new one, import one, or select an existing one.
+
+            :param webinterface:
+            :param request:
+            :param session:
+            :return:
+            """
+            result_output = ""
+
+            try:
+                submitted_dns_name = request.args.get('dns_name')[0]  # underscore here due to jquery
+            except:
+                webinterface.add_alert("Select a valid dns name.")
+                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+
+            try:
+                submitted_dns_domain = request.args.get('dns_domain_id')[0]  # underscore here due to jquery
+            except:
+                webinterface.add_alert("Select a valid dns domain.")
+                returnValue(webinterface.redirect(request, '/setup_wizard/6'))
+
+            data = {
+                'dns_name': submitted_dns_name,
+                'dns_domain_id': submitted_dns_domain,
+            }
+
+            dns_results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/dns_name' % webinterface._Configs.get('core', 'gwid'), data)
+            if dns_results['code'] != 200:
+                webinterface.add_alert(dns_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, 'pages/setup_wizard/6.html'))
+
+            session['setup_wizard_last_step'] = 7
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/7.html')
             returnValue(page.render(
                                alerts=webinterface.get_alerts(),
                                ) )
 
 
-        @webapp.route('/6_restart', methods=['GET'])
+        @webapp.route('/7_restart', methods=['GET'])
         @require_auth()
         def page_setup_wizard_6_restart(webinterface, request, session):
             return webinterface.restart(request)
@@ -529,6 +629,6 @@ def route_setup_wizard(webapp):
     #        if webinterface.sessions.get(request, 'setup_wizard_done') is not True:
     #            return webinterface.redirect(request, '/setup_wizard/5')
 
-        @webapp.route('/setup_wizard/static/', branch=True)
-        def setup_wizard_static(self, request):
-            return File(self._current_dir + "/lib/webinterface/pages/setup_wizard/static")
+    #     @webapp.route('/setup_wizard/static/', branch=True)
+    #     def setup_wizard_static(self, request):
+    #         return File(self._current_dir + "/lib/webinterface/pages/setup_wizard/static")

@@ -21,7 +21,7 @@ If you wish to store persistent data for your module, use the
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -44,7 +44,7 @@ from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import get_external_ip_address, get_local_network_info
+from yombo.utils import get_external_ip_address_v4, get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import dict_merge, global_invoke_all, is_string_bool, fopen
@@ -100,7 +100,10 @@ class Configuration(YomboLibrary):
                             try:
                                 value = float(value)
                             except:
-                                value = str(value)
+                                if value == "None":
+                                    value = None
+                                else:
+                                    value = str(value)
                     self.set(section, option, value)
         except IOError:
             self._Atoms.set('configuration.yombo_ini.found', False)
@@ -108,10 +111,10 @@ class Configuration(YomboLibrary):
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
             self._Atoms.set('configuration.yombo_ini.found', False)
             self.loading_yombo_ini = False
-            return
+            # return
         except ConfigParser.NoSectionError, e:
             self._Atoms.set('configuration.yombo_ini.found', False)
-            print "CAUGHT ConfigParser.NoSectionError!!!!  In Loading. %s" % e
+            logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
         else:
             self._Atoms.set('configuration.yombo_ini.found', True)
             timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
@@ -132,9 +135,9 @@ class Configuration(YomboLibrary):
                     values = cPickle.loads(config_parser.get(section, option))
                     self.configs[section][option] = dict_merge(self.configs[section][option], values)
         except IOError, e:
-            print "CAUGHT IOError!!!!!!!!!!!!!!!!!!  In reading meta: %s" % e
+            logger.warn("CAUGHT IOError!!!!!!!!!!!!!!!!!!  In reading meta: {error}", error=e)
         except ConfigParser.NoSectionError:
-            print "CAUGHT ConfigParser.NoSectionError!!!!  IN saving. "
+            logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  IN saving. ")
         # print self.configs
 
         # Perform DB cleanup activites based on local section.
@@ -148,28 +151,35 @@ class Configuration(YomboLibrary):
 
         if self.get('core', 'externalipaddress') is not None and self.get('core', 'externalipaddresstime') is not None:
             if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 3600):
-                self.set("core", "externalipaddress", get_external_ip_address())
+                self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
                 self.set("core", "externalipaddresstime", int(time()))
         else:
-#            print "didn't find external ip address"
-            self.set("core", "externalipaddress", get_external_ip_address())
+            #            print "didn't find external ip address"
+            self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
             self.set("core", "externalipaddresstime", int(time()))
 
         if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
             if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
                 address_info = get_local_network_info()
-                self.set("core", "localipaddress", address_info['address'])
-                self.set("core", "localipaddress_netmask", address_info['netmask'])
-                self.set("core", "localipaddress_cidr", address_info['cidr'])
-                self.set("core", "localipaddress_network", address_info['network'])
+                self.set("core", "localipaddress_v4", address_info['ipv4']['address'])
+                self.set("core", "localipaddress_netmask_v4", address_info['ipv4']['netmask'])
+                self.set("core", "localipaddress_cidr_v4", address_info['ipv4']['cidr'])
+                self.set("core", "localipaddress_network_v4", address_info['ipv4']['network'])
+                self.set("core", "localipaddress_v6", address_info['ipv6']['address'])
+                self.set("core", "localipaddress_netmask_v6", address_info['ipv6']['netmask'])
+                # self.set("core", "localipaddress_cidr_v6", address_info['ipv6']['cidr'])
+                # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
                 self.set("core", "localipaddresstime", int(time()))
         else:
             address_info = get_local_network_info()
-            self.set("core", "localipaddress", address_info['address'])
-            self.set("core", "localipaddress_netmask", address_info['netmask'])
-            self.set("core", "localipaddress_cidr", address_info['cidr'])
-            self.set("core", "localipaddress_network", address_info['network'])
-            self.set("core", "localipaddresstime", int(time()))
+            self.set("core", "localipaddress_v4", address_info['ipv4']['address'])
+            self.set("core", "localipaddress_netmask_v4", address_info['ipv4']['netmask'])
+            self.set("core", "localipaddress_cidr_v4", address_info['ipv4']['cidr'])
+            self.set("core", "localipaddress_network_v4", address_info['ipv4']['network'])
+            self.set("core", "localipaddress_v6", address_info['ipv6']['address'])
+            self.set("core", "localipaddress_netmask_v6", address_info['ipv6']['netmask'])
+            # self.set("core", "localipaddress_cidr_v6", address_info['ipv6']['cidr'])
+            # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
             self.set("core", "localipaddresstime", int(time()))
 
         self.periodic_save_ini = LoopingCall(self.save)
@@ -474,7 +484,7 @@ class Configuration(YomboLibrary):
                 raise ValueError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
-#        print "section: %s, option: %s, value: %s" % (section, option, value)
+        # print "section: %s, option: %s, value: %s" % (section, option, value)
         section = section.lower()
         option = option.lower()
 

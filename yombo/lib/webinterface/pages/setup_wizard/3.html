@@ -4,6 +4,8 @@
 {% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
 {% endblock %}
 
+{% set progressbar = 25 %}
+
 {% block content %}
 <!-- Modal -->
 <div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
@@ -19,7 +21,7 @@
           <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
               <h4>We do not share this</h4>
               <p>
-              We won\'t share or sell this information, unless required by a court order. We do our best to
+              We won't share or sell this information, unless required by a court order. We do our best to
               keep your information private.
               </p>
           </div>
@@ -61,7 +63,7 @@
 </div>
 
 
-    <form action="/setup_wizard/4" method="POST" role="form">
+    <form id="myForm" action="/setup_wizard/4" method="POST" role="form">
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
                 <div class="login-panel panel panel-default">
@@ -71,8 +73,8 @@
                             <p></p>
                             <div class="col-md-8 col-md-offset-2">
                                 <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ ((3/6)*100)|int }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ ((3/6)*100)|int }}%">
-                                    {{ ((3/6)*100)|int }}%
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                                    {{ progressbar }}%
                                   </div>
                                 </div>
                             </div>
@@ -89,7 +91,14 @@
                     </div>
                     <div class="panel-body">
                         <div class="form-group">
-                            <label for="gateway-machine-label">Gateway Machine Label</label>
+                            <label for="gateway_label">Gateway Label</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" required>
+                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="gateway_machine_label">Gateway Machine Label</label>
                             <br>Lower case, no spaces. Dashes and underscores are ok.
                             <div class="input-group">
                                 <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" autofocus required>
@@ -97,14 +106,7 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="gateway-label">Gateway Label</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" required>
-                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="gateway-description">Gateway Description</label>
+                            <label for="gateway_description">Gateway Description</label>
                             <div class="input-group">
                                 <textarea class="form-control" rows="5" name="gateway_description" id="gateway_description" placeholder="Detailed description">{{ gw_fields.description }}</textarea>
                                 <span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
@@ -123,10 +125,10 @@
 											<input id="detect_btn" type="button" value="Detect" disabled>
 										</div>
 									</div>
+											<input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100"><br>
 									<div class="form-group">
 										<label for="location_latitude">Latitude</label>
 										<div class="input-group">
-											<input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100"><br>
 											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ settings.location.latitude.data }}" required>
 											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 										</div>
@@ -155,7 +157,7 @@
                             <div class="col-md-12">
                             <div>&nbsp;</div>
                                 <a class="btn btn-md btn-warning" href="/setup_wizard/2"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
-                                <button type="submit" id="submit_login" class="btn btn-lg btn-success pull-right">Next</button>
+                                <button type="submit" id="submit_login" class="btn btn-lg btn-success pull-right" onclick="$( '#myform' ).validate.form();">Next</button>
                             </div>
                         </div>
                     </div>
@@ -164,11 +166,14 @@
         </div>
     </form>
 {% endblock %}
+
+{% block body_bottom_js %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% endblock %}
+
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
-{% endblock %}
 
     <script>
 
@@ -185,34 +190,63 @@ $('form').on('keyup keypress', function(e) {
   }
 });
 
-$('form').validate({
-    rules: {
-        core_label: {
-            minlength: 3,
-            maxlength: 20,
-            required: true
+$().ready(function() {
+    $.validator.addMethod("machine_label_check", function(value) {
+        var re = /^\w+$/;
+        if (!re.test(value)) {
+            return false;
         }
-    },
-    highlight: function(element) {
-        var id_attr = "#" + $( element ).attr("id") + "1";
-        $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
-        $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
-    },
-    unhighlight: function(element) {
-        var id_attr = "#" + $( element ).attr("id") + "1";
-        $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
-        $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
-    },
-    errorElement: 'span',
+        return true;
+    }, 'Only letters, numbers, underscores (-) and dashes (-) are allowed.');
+
+    $('#myForm').validate({
+        rules: {
+            gateway_machine_label: {
+                minlength: 4,
+                maxlength: 100,
+                required: true,
+                machine_label_check: true
+            },
+            gateway_label: {
+                minlength: 4,
+                maxlength: 100,
+                required: true
+            },
+            gateway_description: {
+                maxlength: 65000,
+            },
+        },
+        messages: {
+            gateway_machine_label: {
+                required: "Machine Label is required",
+                minlength: "Must be at least 3 characters long.",
+            },
+            gateway_label: {
+                required: "Label is required",
+                minlength: "Must be at least 3 characters long.",
+            }
+        },
+        highlight: function (element) {
+            var id_attr = "#" + $(element).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+            $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
+        },
+        unhighlight: function (element) {
+            var id_attr = "#" + $(element).attr("id") + "1";
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+            $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
+        },
+        errorElement: 'span',
         errorClass: 'help-block',
-        errorPlacement: function(error, element) {
-            if(element.length) {
+        errorPlacement: function (error, element) {
+            if (element.length) {
                 error.insertAfter(element);
             } else {
-            error.insertAfter(element);
+                error.insertAfter(element);
             }
         }
- });
+    });
+});
 
 $(document).ready(function()
 {

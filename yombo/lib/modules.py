@@ -13,7 +13,7 @@ Also calls module hooks as requested by other libraries and modules.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -366,7 +366,8 @@ class Modules(YomboLibrary):
 #        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
     def import_modules(self):
-        for module_id, module in self._rawModulesList.iteritems():
+        logger.debug("Import modules: self._modulesByUUID: {modulesByUUID}", modulesByUUID=self._modulesByUUID)
+        for module_id, module in self._modulesByUUID.iteritems():
             pathName = "yombo.modules.%s" % module['machine_label']
             self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
 
@@ -609,7 +610,7 @@ class Modules(YomboLibrary):
         self.startDefer.callback(10)
 
     def add_imported_module(self, module_id, module_label, modulePointer):
-        logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
+        logger.info("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
         self._modulesByUUID[module_id] = modulePointer
         self._modulesByName[module_label] = module_id
 
@@ -831,7 +832,7 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "enabling module: %s" % module_id
+        logger.debug("enabling module: {module_id}", module_id=module_id)
         api_data = {
             'status': 1,
         }
@@ -869,7 +870,7 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "disabling module: %s" % module_id
+        logger.debug("disabling module: {module_id}", module_id=module_id)
         api_data = {
             'status': 0,
         }

@@ -38,7 +38,7 @@ def route_statistics(webapp):
             try:
                 device = webinterface._Devices.get(device_id)
             except Exception, e:
-                print "device find errr: %s" % e
+                # print "device find errr: %s" % e
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device.html')

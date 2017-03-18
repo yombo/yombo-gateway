@@ -4,7 +4,7 @@
 Provides web interface for configuration of the Yombo system.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -19,6 +19,7 @@ import jinja2
 from klein import Klein
 import markdown
 from docutils.core import publish_parts
+from random import randint
 
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -35,7 +36,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboRestart, YomboCritical
+from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
 
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -131,6 +132,16 @@ nav_side_menu = [
         'priority2': 2000,
         'icon': 'fa fa-cogs fa-fw',
         'url': '/configs/basic',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Settings',
+        'label2': 'DNS',
+        'priority1': 500,
+        'priority2': 2250,
+        'icon': 'fa fa-cogs fa-fw',
+        'url': '/configs/dns',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -320,7 +331,7 @@ class WebInterface(YomboLibrary):
         self.gwid = self._Configs.get("core", "gwid")
         self._LocalDb = self._Loader.loadedLibraries['localdb']
         self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
-        print "web interface direct1: %s" % self._current_dir
+        # print "web interface direct1: %s" % self._current_dir
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
 
@@ -351,6 +362,10 @@ class WebInterface(YomboLibrary):
         route_voicecmds(self.webapp)
 
         self.temp_data = ExpiringDict(max_age_seconds=1800)
+
+    def _start_(self):
+        self.webapp.templates.globals['_'] = _  # i18n
+
 
     @webapp.handle_errors(NotFound)
     @require_auth()
@@ -410,7 +425,8 @@ class WebInterface(YomboLibrary):
         :param kwargs:
         :return:
         """
-        self.webapp.templates.globals['_'] = _  # i18n
+        # self.webapp.templates.globals['_'] = _  # i18n
+        pass
 
     def _started_(self):
         # if self._op_mode != 'run':
@@ -580,7 +596,7 @@ class WebInterface(YomboLibrary):
     def check_op_mode(self, request, router, **kwargs):
 #        print "op mode: %s" % self._op_mode
         if self._op_mode == 'config':
-            print "showing config home"
+            # print "showing config home"
             method = getattr(self, 'config_'+ router)
             return method(request, **kwargs)
         elif self._op_mode == 'firstrun':
@@ -597,7 +613,6 @@ class WebInterface(YomboLibrary):
     @require_auth()
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
-        i18n = self.i18n(request)
 
         return page.render(alerts=self.get_alerts(),
                            delay_commands = self._Devices.delay_queue_active,
@@ -605,7 +620,7 @@ class WebInterface(YomboLibrary):
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
                            states=self._Libraries['states'].get_states(),
-                           _=i18n,
+                           _=self.i18n(request),
                            )
 
     @require_auth()
@@ -637,6 +652,7 @@ class WebInterface(YomboLibrary):
     @require_auth_pin()
     @inlineCallbacks
     def page_login_user_post(self, request):
+        submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
         # if submitted_pin.isalnum() is False:
@@ -653,8 +669,10 @@ class WebInterface(YomboLibrary):
                                         )
                             )
 
-        results = yield self.api.user_login_with_credentials(submitted_email, submitted_password)
-        if results is not False:
+        results = yield self.api.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
+        # print "results:::::::::::::::::  %s" % results
+        if (results['content']['code'] == 200):
+            login = results['content']['response']['login']
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
             session = self.sessions.load(request)
             if session is False:
@@ -663,24 +681,25 @@ class WebInterface(YomboLibrary):
             session['auth'] = True
             session['auth_id'] = submitted_email
             session['auth_time'] = time()
-            session['yomboapi_session'] = results['session']
-            session['yomboapi_login_key'] = results['login_key']
+            session['yomboapi_session'] = login['session']
+            session['yomboapi_login_key'] = login['login_key']
             request.received_cookies[self.sessions.config.cookie_session] = session.session_id
 
             if self._op_mode == 'firstrun':
                 # print "###############33  saving system session stufff...."
-                self.api.save_system_login_key(results['login_key'])
+                self.api.save_system_login_key(login['login_key'])
                 # print "###############33  saving system session stufff....done"
-                self.api.save_system_session(results['session'])
+                self.api.save_system_session(login['session'])
         else:
-            self.add_alert('Invalid login credentails', 'warning')
+
+            self.add_alert(results['content']['message'], 'warning')
 #            self.sessions.load(request)
             page = self.get_template(request, self._dir + 'pages/login_user.html')
             returnValue(page.render(alerts=self.get_alerts(),
                                )
                        )
 
-        print "session: %s" % session
+        # print "session: %s" % session
         login_redirect = "/"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']
@@ -699,13 +718,13 @@ class WebInterface(YomboLibrary):
     def page_login_pin_post(self, request):
         submitted_pin = request.args.get('authpin')[0]
         valid_pin = False
-        print "pin submit: %s" % submitted_pin
+        # print "pin submit: %s" % submitted_pin
         if submitted_pin.isalnum() is False:
-            print "pin submit2: %s" % submitted_pin
+            # print "pin submit2: %s" % submitted_pin
             self.add_alert('Invalid authentication.', 'warning')
             return self.redirect(request, '/login/pin')
 
-        print "pin submit2: %s" % submitted_pin
+        # print "pin submit2: %s" % submitted_pin
         if self.auth_pin_type == 'pin':
             if submitted_pin == self.auth_pin:
                 # print "pin post444"
@@ -722,7 +741,7 @@ class WebInterface(YomboLibrary):
                 session['yomboapi_login_key'] = ''
                 request.received_cookies[self.sessions.config.cookie_session] = session.session_id
 
-#                print "session: %s" % session
+               # print "session: %s" % session
             else:
                 return self.redirect(request, '/login/pin')
         return self.home(request)
@@ -765,12 +784,23 @@ class WebInterface(YomboLibrary):
     @webapp.route('/static/', branch=True)
     @run_first()
     def static(self, request):
+        request.setHeader('Cache-Control', 'max-age=%s' % randint(300, 420))
         return File(self._current_dir + "/lib/webinterface/static/dist")
 
     def display_pin_console(self):
-        local = "http://localhost:%s" % self.wi_port_nonsecure
-        internal = "http://%s:%s" %(self._Configs.get('core', 'localipaddress'), self.wi_port_nonsecure)
-        external = "http://%s:%s" % (self._Configs.get('core', 'externalipaddress'), self.wi_port_nonsecure)
+        dns_fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        if dns_fqdn is None:
+            local_hostname = "127.0.0.1"
+            internal_hostname = self._Configs.get('core', 'localipaddress_v4')
+            external_hostname = self._Configs.get('core', 'externalipaddress_v4')
+        else:
+            local_hostname = "local.%s" % dns_fqdn
+            internal_hostname = "i.%s" % dns_fqdn
+            external_hostname = "e.%s" % dns_fqdn
+
+        local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure)
+        internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure)
+        external = "http://%s:%s" % (external_hostname, self.wi_port_nonsecure)
         print "###########################################################"
         print "#                                                         #"
         if self._op_mode != 'run':
@@ -793,6 +823,18 @@ class WebInterface(YomboLibrary):
         print "#  %-25s                              #" % self.auth_pin
         print "#                                                         #"
         print "###########################################################"
+
+    @inlineCallbacks
+    def get_api(webinterface, request, method, path, data=None):
+        results = yield webinterface._YomboAPI.request(method, path, data)
+        if results['code'] != 200:
+            request.setResponseCode(results['code'])
+            error = {
+                'message': results['content']['message'],
+                'html_message': results['content']['html_message'],
+            }
+            raise YomboWarning(json.dumps(error))
+        returnValue(results)
 
     def _tpl_home_gateway_configured(self):
         if not self._home_gateway_configured():
@@ -938,13 +980,13 @@ class WebInterface(YomboLibrary):
             'source/bootstrap/dist/css/bootstrap.min.css',
             'source/metisMenu/metisMenu.min.css',
         ]
-        CAT_SCRIPTS_OUT = 'dist/css/bootsrap-metisMenu.min.css'
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap-metisMenu.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             'source/bootstrap/dist/css/bootstrap.min.css',
         ]
-        CAT_SCRIPTS_OUT = 'dist/css/bootsrap.min.css'
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [

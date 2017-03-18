@@ -10,7 +10,7 @@ This handler library is responsible for handling configuration messages received
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/handler/amqpconfigs.py>`_
 """
@@ -71,6 +71,16 @@ class AmqpConfigHandler(YomboLibrary):
                     'created_at': 'created',
                     'updated_at': 'updated',
                     # '': '',
+                }
+            },
+
+            'gateway_dns_name': {
+                'dbclass': "none",
+                'table': "none",
+                'library': None,
+                'functions': {
+                },
+                'map': {
                 }
             },
 
@@ -400,10 +410,16 @@ class AmqpConfigHandler(YomboLibrary):
         Called by amqpyombo when the system is disconnected.
         :return:
         """
-        self.__pending_updates.clear()
         if self._getAllConfigsLoggerLoop is not None and self._getAllConfigsLoggerLoop.running:
             self._getAllConfigsLoggerLoop.stop()
+        if self._checkProcessQueueLoop is not None and self._checkProcessQueueLoop.running:
             self._checkProcessQueueLoop.stop()
+
+        self.__pending_updates.clear()
+        self.__doing_full_configs = False
+
+        if self.check_download_done_loop is not None and self.check_download_done_loop.running:
+            self.check_download_done_loop.stop()
 
     def _stop_(self):
         """
@@ -413,7 +429,14 @@ class AmqpConfigHandler(YomboLibrary):
         if self.init_defer.called is False:
             # reactor.callLater(0.1, self.init_defer.callback, 10) #
             self.init_defer.callback(1)  # if we don't check for this, we can't stop!
-            print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  amqpconfighandler _stop_"
+
+        if self._getAllConfigsLoggerLoop is not None and self._getAllConfigsLoggerLoop.running:
+            self._getAllConfigsLoggerLoop.stop()
+        if self._checkProcessQueueLoop is not None and self._checkProcessQueueLoop.running:
+            self._checkProcessQueueLoop.stop()
+        if self.check_download_done_loop is not None and self.check_download_done_loop.running:
+            self.check_download_done_loop.stop()
+
 
     def check_download_done(self):
         """
@@ -528,11 +551,25 @@ class AmqpConfigHandler(YomboLibrary):
         self.processing = True
         # print "processing config.... %s" % config_item
         # print "processing msg.... %s" % msg
+        if msg['code'] != 200:
+            logger.warn("Configuration for configuration '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
+            self._remove_full_download_dueue("get_" + config_item)
+            self.processing = False
+            return;
+
         if config_item == "gateway_configs":
             payload = msg['data']
             for section in payload:
                 for key in section['Values']:
                    self.parent._Configs.set(section['Section'], key['Key'], key['Value'])
+
+        elif config_item == "gateway_dns_name":
+            payload = msg['data']
+            self.parent._Configs.set('dns', 'dns_name', payload['dns_name'])
+            self.parent._Configs.set('dns', 'dns_domain', payload['dns_domain'])
+            self.parent._Configs.set('dns', 'dns_domain_id', payload['dns_domain_id'])
+            self.parent._Configs.set('dns', 'allow_change_at', payload['allow_change_at'])
+            self.parent._Configs.set('dns', 'fqdn', payload['fqdn'])
 
         elif config_item in self.config_items:
             config_data = self.config_items[config_item]
@@ -737,7 +774,7 @@ class AmqpConfigHandler(YomboLibrary):
 
         # handle any nested items here.
         if 'device_types' in data:
-            print "device types: %s" % data['device_types']
+            # print "device types: %s" % data['device_types']
             if len(data['device_types']):
                 newMsg = msg.copy()
                 newMsg['data'] = data['device_types']
@@ -804,6 +841,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_device_command_inputs",
             "get_gateway_input_types",
             "get_gateway_users",
+            "get_gateway_dns_name",
             # "get_gateway_input_types",
 
             # "get_gateway_configs",
@@ -839,7 +877,6 @@ class AmqpConfigHandler(YomboLibrary):
             "exchange_name": "ysrv.e.gw_config",
             "source"       : "yombo.gateway.lib.configurationupdate",
             "destination"  : "yombo.server.configs",
-            "callback"     : self.amqp_direct_incoming,
             "body": {
               "data_type": "object",
               "request"  : requestContent,

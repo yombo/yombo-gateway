@@ -20,7 +20,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
-:copyright: Copyright 2015-2016 by Yombo.
+:copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqp.py>`_
 """
@@ -67,7 +67,7 @@ class AMQP(YomboLibrary):
         self._local_log("debug", "AMQP::_unload_")
         # print "amqp - removing all clients.."
         for client_id, client in self.client_connections.iteritems():
-            print "amqp-clinet: %s" % client_id
+            # print "amqp-clinet: %s" % client_id
             try:
                 client.disconnect()  # this tells the factory to tell the protocol to close.
 #                client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
@@ -338,7 +338,7 @@ class AMQPClient(object):
 
         if error_callback is not None:
             if callable(error_callback) is False:
-                print "Error_callback - %s" % error_callback
+                # print "Error_callback - %s" % error_callback
                 raise YomboWarning(
                         "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
                         204, 'subscribe', 'AMQPClient')

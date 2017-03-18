@@ -1,0 +1,165 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+<!-- Bootstrap trigger to open modal -->
+<div class="modal fade" id="confirm-submit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="">Confirm Submit</h4>
+            </div>
+            <div class="modal-body">
+                <p>The DNS can only be changed once every 30 days.</p>
+                <p>New domain: <strong><span id="fqdn"></span></strong></p>
+                <p><strong>Are you sure?</strong></p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <a href="#" id="submit" class="btn btn-success success">Submit</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">Basic Systems Configurations</h1>
+        </div>
+        <!-- /.col-lg-12 -->
+    </div>
+    <!-- /.row -->
+    <form  action="/configs/dns" method="POST" role="form" id="myForm">
+        <div class="row">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>DNS Settings</h4>
+                    <p>
+                        <ul>
+                            <li>Current FQDN: {{ dns_configs.fqdn }}</li>
+                            <li>Current Sub-domain: {{ dns_configs.dns_name }}</li>
+                            <li>Current Domain: {{ dns_configs.dns_domain }}</li>
+                            <li>Allowed Next Change: {{ dns_configs.allow_change_at|epoch_to_human }}</li>
+
+                        </ul>
+                    </p>
+
+                </div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <p><strong>DNS can only be changed once every 30 days.</strong></p>
+                    <label for="dnsname">Domain Prefix</label>
+                    <a href="#" data-toggle="modal" data-target="#dns_name"><i class="fa fa-question fa-lg"></i></a>
+                        {{ macros.modal("dns_name", 'Domain Prefix', '
+                        The first part of the complete domain name is settable. To change this, update the
+                        preferred value and click on Search.
+                        <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
+                            <h4>30 day wait</h4>
+                            <p>
+                                You must wait 30 days between changing the domain. This is to prevent
+                                abuse of the domain name system.</p>
+                        </div>') }}
+                    <div class="input-group">
+                        <input type="hidden" name="dns_domain_id" />
+                        <input type="text" name="dns_name" id="dnsname" autofocus="autofocus" value="{{ dns_configs.dns_name }}">
+                        <a class="btn btn-success" id="fire" href="#">Search</a>
+
+                        <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
+                          <thead class="thead-default">
+                            <tr>
+                              <th>Domain</th>
+                              <th>Available</th>
+                            </tr>
+                          </thead>
+                          <tbody id="tBody"></tbody>
+                            <tr rowspan="2"><td><strong>Search for domains first.</strong></td> </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+    </form>
+
+{% endblock %}
+
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+
+<script>
+
+    var lastSearchSubmit = "";
+
+$('form').on('keyup keypress', function(e) {
+  var keyCode = e.keyCode || e.which;
+  if((keyCode== 13) && ($(e.target)[0]!=$("textarea")[0])) {
+    if ($(e.target)[0]==$("#search_txt")[0]) {
+        $("#dns_name").click();
+	    e.preventDefault();
+	    return false;
+	}
+    e.preventDefault();
+    return false;
+  }
+});
+
+function submitter(btn, fqdn) {
+    var param = btn.parentElement.parentElement.id;
+    var myForm = document.forms["myForm"];
+     $('#fqdn').text(btn.id);
+
+    myForm.elements["dns_domain_id"].value = param;
+    $('#confirm-submit').modal('show');
+//    myForm.submit();
+    return false;
+}
+
+/* when the submit button in the modal is clicked, submit the form */
+$('#submit').click(function(){
+    $('#myForm').submit();
+});
+
+
+function doSearch() {
+        var val = $('#dnsname').val();
+        if (val == lastSearchSubmit) {
+            return;
+        } else {
+            lastSearchSubmit = val;
+        }
+        $.ajax({
+            url: "/api/v1/server/dns/check_available/" + val,
+            dataType: 'json',
+            success: function (resp) {
+                $("#myTableId td").parent().remove();
+                var trHTML = '';
+                $.each(resp, function (i, userData) {
+                    var availField = "";
+                    if (userData.available == false) {
+                        availField = '<button type="submit" class="btn btn-sm btn-dangle disabled" onclick="submitter(this)">Not Available</button>';
+                    } else {
+                        availField = '<button type="button" class="btn btn-sm btn-primary btnSeccion" onclick="submitter(this); return false;" id="'+val+'.'+userData.domain+'">Available</button>';
+                    }
+
+                        trHTML +=
+                            '<tr id="' + userData.id + '"><td>'
+                            + "<strong>" + val + "</strong>." + userData.domain
+                            + '</td><td>'
+                            + availField
+                            + '</td></tr>';
+                });
+                $('#tBody').append(trHTML);
+            },
+            error: function (req, status, err) {
+                console.log('something went wrong', status, err);
+            }
+        });
+
+}
+
+$("#fire").on('click', doSearch);
+
+</script>
+{% endblock %}

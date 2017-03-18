@@ -1,6 +1,8 @@
 {% extends "lib/webinterface/fragments/layout_blank.tpl" %}
 {% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
 
+{% set progressbar = 12 %}
+
 {% block content %}
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
@@ -11,8 +13,8 @@
                             <p></p>
                             <div class="col-md-8 col-md-offset-2">
                                 <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ ((2/6)*100)|int }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ ((2/6)*100)|int }}%">
-                                    {{ ((2/6)*100)|int }}%
+                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                                    {{ progressbar }}%
                                   </div>
                                 </div>
                             </div>                    </div>
@@ -42,7 +44,7 @@
                                     </div>
                                 </fieldset>
                                 <a class="btn btn-md btn-warning" href="/setup_wizard/1"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
-                                <button type="submit" id="submit-login" class="btn btn-lg btn-success">Select Gateway</button>
+                                <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">Next</button>
                             </form>
 {%- endif %}
                     </div>

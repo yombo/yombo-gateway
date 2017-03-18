@@ -21,7 +21,7 @@ If a requested atom doesn't exist, a value of None will be returned instead of a
        logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom['os'])
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/atoms.py>`_
 """

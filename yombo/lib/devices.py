@@ -333,7 +333,7 @@ class Devices(YomboLibrary):
         try:
             self._VoiceCommandsLibrary.add_by_string(record["voice_cmd"], None, record["id"], record["voice_cmd_order"])
         except YomboWarning:
-            logger.info("Device {label} has an invalid voice_cmd {voice_cmd}", label=record["label"], voice_cmd=record["voice_cmd"])
+            logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=record["label"], voice_cmd=record["voice_cmd"])
         # try:
         #     # todo: refactor voicecommands. Need to be able to update/delete them later.
         # except Exception, e:
@@ -349,7 +349,7 @@ class Devices(YomboLibrary):
 
 
     def gotException(self, failure):
-       print("Exception: %r" % failure)
+       logger.warn("Exception: {failure}", failure=failure)
        return 100  # squash exception, use 0 as value for next stage
 
     def mqtt_incoming(self, topic, payload, qos, retain):
@@ -372,7 +372,7 @@ class Devices(YomboLibrary):
         #  0       1       2       3        4
         # yombo/devices/DEVICEID/get|cmd/option
         parts = topic.split('/', 10)
-        print("Yombo Devices got this: %s / %s" % (topic, parts))
+        logger.debug("Yombo Devices got this: {topic} / {parts}", topic=topic, parts=parts)
 
         try:
             device_label = self.get(parts[2].replace("_", " "))
@@ -477,15 +477,15 @@ class Devices(YomboLibrary):
         }
 
         if data['device_id'] == '':
-            print("POSTING device. api data: %s" % api_data)
+            logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
             device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
-            print("add new device results: %s" % device_results)
+            logger.debug("add new device results: {device_results}", device_results=device_results)
         else:
-            print("PATCHING device. api data: %s" % api_data)
+            logger.debug("PATCHING device. api data: {api_data}", api_data=api_data)
             del api_data['gateway_id']
             del api_data['device_type_id']
             device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % data['device_id'], api_data)
-            print("edit device results: %s" % device_results)
+            logger.debug("edit device results: {device_results}", device_results=device_results)
 
         if device_results['code'] != 200:
             results = {
@@ -510,7 +510,7 @@ class Devices(YomboLibrary):
                             'data_weight': 0,
                             'data': value,
                         }
-                        print("post_data: %s" % post_data)
+                        logger.debug("variable dataa post: {post_data}", post_data=post_data)
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                         if var_data_results['code'] != 200:
                             results = {
@@ -526,7 +526,7 @@ class Devices(YomboLibrary):
                             'data_weight': 0,
                             'data': value,
                         }
-                        print("post_data: %s" % post_data)
+                        logger.debug("post_data: {post_data}", post_data=post_data)
                         var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
                         if var_data_results['code'] != 200:
                             results = {
@@ -538,7 +538,7 @@ class Devices(YomboLibrary):
                             }
                             returnValue(results)
 
-        print("device edit results: %s" % device_results)
+        logger.debug("device edit results: {device_results}", device_results=device_results)
         results = {
             'status': 'success',
             'msg': "Device added.",

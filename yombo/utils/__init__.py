@@ -469,7 +469,7 @@ def get_local_network_info(ethernet_name = None):
         myiface = gws['default'][netifaces.AF_INET][1]
 
     gws = netifaces.gateways()
-    gateway_ip = gws['default'].values()[0][0]
+    gateway_v4 = gws['default'].values()[0][0]
 
     addrs = netifaces.ifaddresses(myiface)
     # {2: [{'addr': '192.168.1.150',
@@ -481,15 +481,30 @@ def get_local_network_info(ethernet_name = None):
 
     # Get ipv4 stuff
     ipinfo = addrs[socket.AF_INET][0]
-    address = ipinfo['addr']
-    netmask = ipinfo['netmask']
-
+    address_v4 = ipinfo['addr']
+    netmask_v4 = ipinfo['netmask']
     # Create ip object and get
-    cidr = netaddr.IPNetwork('%s/%s' % (address, netmask))
+    cidr_v4 = netaddr.IPNetwork('%s/%s' % (address_v4, netmask_v4))
     # => IPNetwork('192.168.1.150/24')
-    network = cidr.network
+    network_v4 = cidr_v4.network
+
+    ipinfo = addrs[socket.AF_INET6][0]
+    address_v6 = ipinfo['addr'].split('%')[0]
+    netmask_v6 = ipinfo['netmask']
+    # Create ip object and get
+    # cidr_v6 = netaddr.IPNetwork('%s/%s' % (address_v6, netmask_v6))
+    # => IPNetwork('192.168.1.150/24')
+    # network_v6 = cidr_v6.network
+
+
     # => IPAddress('192.168.1.0')
-    return {'address': str(address), 'netmask': str(netmask), 'cidr': str(cidr), 'network': str(network), 'gateway': str(gateway_ip)}
+    return {'ipv4':
+                {'address': str(address_v4), 'netmask': str(netmask_v4), 'cidr': str(cidr_v4),
+                 'network': str(network_v4), 'gateway': str(gateway_v4)},
+            'ipv6':
+                {'address': str(address_v6), 'netmask': str(netmask_v6), 'gateway': str("")},
+            }
+
 
 @memoize_ttl(600)
 def ip_address_in_network(ip_address, subnetwork):
@@ -504,8 +519,8 @@ def ip_address_in_network(ip_address, subnetwork):
     and "192.168.1.0/24") and IPv6 addresses/subnetworks (e.g.
     "2a02:a448:ddb0::" and "2a02:a448:ddb0::/44") are accepted.
     """
-    print "ip: %s" % ip_address
-    print "subnetwork: %s" % subnetwork
+    # print "ip: %s" % ip_address
+    # print "subnetwork: %s" % subnetwork
 
     (ip_integer, version1) = ip_to_integer(ip_address)
     (ip_lower, ip_upper, version2) = subnetwork_to_ip_range(subnetwork)
@@ -513,7 +528,7 @@ def ip_address_in_network(ip_address, subnetwork):
     if version1 != version2:
         raise ValueError("incompatible IP versions")
 
-    print "lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper)
+    # print "lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper)
     return (ip_lower <= ip_integer <= ip_upper)
 
 
@@ -584,7 +599,7 @@ def subnetwork_to_ip_range(subnetwork):
 
     raise ValueError("invalid subnetwork")
 
-def get_external_ip_address():
+def get_external_ip_address_v4():
     """
     Get the IP address of this machine as seen from the outside world.  THis
     function is primarily used during various internal testing of the Yombo
@@ -674,7 +689,7 @@ def pretty_date(time=False):
     elif isinstance(time,datetime):
         diff = now - time
     elif not time:
-        print "using current time..."
+        # print "using current time..."
         diff = now - now
     second_diff = diff.seconds
     day_diff = diff.days

@@ -54,7 +54,7 @@ class Sessions(object):
         self.config = DictObject({
             'cookie_session': 'yombo_' + self._Configs.get('webinterface', 'cookie_session', random_string(length=randint(60,80))),
             'cookie_pin': 'yombo_' + self._Configs.get('webinterface', 'cookie_pin', random_string(length=randint(60,80))),
-            'cookie_domain': None,
+            'cookie_domain': self._Configs.get("dns", 'fqdn', "", None),
             'cookie_path' : '/',
             'max_session': 15552000,  # How long session can be good for: 180 days
             'max_idle': 5184000,  # Max idle timeout: 60 days

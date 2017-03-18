@@ -46,14 +46,17 @@ class Tasks(YomboLibrary):
         return self.start_deferred
 
     def _unload_(self):
-        self.unload_deferred = Deferred()
-        self.check_tasks('load', self.unload_deferred)
-        return self.unload_deferred
+        if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
+            self.unload_deferred = Deferred()
+            self.check_tasks('load', self.unload_deferred)
+            return self.unload_deferred
+
 
     def _stop_(self):
-        self.stop_deferred = Deferred()
-        self.check_tasks('stop', self.stop_deferred)
-        return self.stop_deferred
+        if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
+            self.stop_deferred = Deferred()
+            self.check_tasks('stop', self.stop_deferred)
+            return self.stop_deferred
 
     @inlineCallbacks
     def check_tasks(self, section, deferred):
@@ -78,7 +81,6 @@ class Tasks(YomboLibrary):
 
             if task['run_once'] == 1:
                 self._LocalDB.del_task(task['id'])
-
         deferred.callback(1)
 
     # def call_task(self, task):

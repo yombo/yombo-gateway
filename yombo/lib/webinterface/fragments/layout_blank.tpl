@@ -12,7 +12,7 @@
 	{% block head_top %}{% endblock %}
 
     <!-- Bootstrap Core CSS ad metisMenu -->
-    <link href="/static/css/bootsrap-metisMenu.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap-metisMenu.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
     <!-- SB Admin 2 and Font Awesome CSS -->
     <link href="/static/css/admin2.min.css" rel="stylesheet">

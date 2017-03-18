@@ -319,7 +319,7 @@ class ConfigurationUpdate(YomboLibrary):
 
 #                logger.debug("Pre checking nested %s" % config_item)
                 # process any nested items here.
-                print "config_item: %s" % config_item
+                # print "config_item: %s" % config_item
                 if config_item == 'gateway_modules':
                     if '1' not in tempConfig:
                         tempConfig['1'] = {
@@ -393,7 +393,7 @@ class ConfigurationUpdate(YomboLibrary):
                 # end if config_item == 'gateway_modules'
 
                 elif config_item == 'gateway_devices':
-                    print "config record: %s"  % record
+                    # print "config record: %s"  % record
                     if '1' not in tempConfig:
                         tempConfig['1'] = {
                             'inputType' : inputType,

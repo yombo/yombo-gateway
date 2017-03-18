@@ -10,6 +10,8 @@ import yombo.ext.six as six
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
+
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 
 
@@ -37,10 +39,12 @@ def route_api_v1(webapp):
         def api_v1_ping(webinterface, request):
             if webinterface.starting == True:
                 return;
-            return "pong"
+            request.setHeader("Access-Control-Allow-Origin", '*');
+            return "y-pong-01"
 
         @webapp.route('/uptime')
-        def api_v1_uptime(webinterface, request):
+        @require_auth()
+        def api_v1_uptime(webinterface, request, session):
             if webinterface.starting == True:
                 return;
             return str(webinterface._Atoms['running_since'])
@@ -63,128 +67,8 @@ def route_api_v1(webapp):
                 device = webinterface._Devices.get(deviceid)
                 device.do_command(cmd=commandid)
                 a = return_good('Command executed.')
+                request.setHeader('Content-Type', 'application/json')
                 return json.dumps(a)
-
-        @webapp.route('/commands/index', methods=['GET'])
-        @require_auth()
-        @inlineCallbacks
-        def api_v1_commands_index(webinterface, request, session):
-            try:
-                offset = request.args.get('offset')[0]
-            except:
-                offset = 0
-            try:
-                limit = request.args.get('limit')[0]
-            except:
-                limit = 50
-            try:
-                search = request.args.get('search')[0]
-            except:
-                search = None
-
-            url = '/v1/command?offset=%s&limit=%s' % (offset, limit)
-            if search is not None:
-                url = url + "&label=%s" % search
-
-            results = yield webinterface._YomboAPI.request('GET', url)
-            data = {
-                'total': results['content']['total'],
-                'rows': results['data'],
-            }
-            returnValue(json.dumps(data))
-
-
-        @webapp.route('/devicetypes/index', methods=['GET'])
-        @require_auth()
-        @inlineCallbacks
-        def api_v1_devicetypes_index(webinterface, request, session):
-            try:
-                offset = request.args.get('offset')[0]
-            except:
-                offset = 0
-            try:
-                limit = request.args.get('limit')[0]
-            except:
-                limit = 50
-            try:
-                search = request.args.get('search')[0]
-            except:
-                search = None
-
-            url = '/v1/device_type?offset=%s&limit=%s' % (offset, limit)
-            if search is not None:
-                url = url + "&label=%s" % search
-
-            results = yield webinterface._YomboAPI.request('GET', url)
-            data = {
-                'total': results['content']['total'],
-                'rows': results['data'],
-            }
-            returnValue(json.dumps(data))
-
-        @webapp.route('/inputtypes/index', methods=['GET'])
-        @require_auth()
-        @inlineCallbacks
-        def api_v1_inputtypes_index(webinterface, request, session):
-            try:
-                offset = request.args.get('offset')[0]
-            except:
-                offset = 0
-            try:
-                limit = request.args.get('limit')[0]
-            except:
-                limit = 50
-            try:
-                search = request.args.get('search')[0]
-            except:
-                search = None
-
-            url = '/v1/input_type?offset=%s&limit=%s' % (offset, limit)
-            if search is not None:
-                url = url + "&label=%s" % search
-
-            results = yield webinterface._YomboAPI.request('GET', url)
-            data = {
-                'total': results['content']['total'],
-                'rows': results['data'],
-            }
-            returnValue(json.dumps(data))
-
-        @webapp.route('/modules/index', methods=['GET'])
-        @require_auth()
-        @inlineCallbacks
-        def api_v1_modules_index(webinterface, request, session):
-            try:
-                offset = request.args.get('offset')[0]
-            except:
-                offset = 0
-            try:
-                limit = request.args.get('limit')[0]
-            except:
-                limit = 50
-            try:
-                search = request.args.get('search')[0]
-            except:
-                search = None
-
-            url = '/v1/module?offset=%s&limit=%s' % (offset, limit)
-            if search is not None:
-                url = url + "&label=%s" % search
-
-            results = yield webinterface._YomboAPI.request('GET', url)
-            data = {
-                'total': results['content']['total'],
-                'rows': results['data'],
-            }
-            returnValue(json.dumps(data))
-
-        @webapp.route('/modules/show/<string:module_id>', methods=['GET'])
-        @require_auth()
-        @inlineCallbacks
-        def api_v1_modules_show_one(webinterface, request, session, module_id):
-            # action = request.args.get('action')[0]
-            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-            returnValue(json.dumps(results['data']))
 
         @webapp.route('/notifications', methods=['GET'])
         @require_auth()
@@ -193,30 +77,31 @@ def route_api_v1(webapp):
             results = {}
             if action == "closed":
                 id = request.args.get('id')[0]
-                print "alert - id: %s" % id
+                # print "alert - id: %s" % id
                 if id in webinterface.alerts:
                     del webinterface.alerts[id]
                     results = {"status": 200}
+            request.setHeader('Content-Type', 'application/json')
             return json.dumps(results)
-    
+
         @webapp.route('/statistics/names', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def api_v1_statistics_names(webinterface, request):
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
-            print records
+            request.setHeader('Content-Type', 'application/json')
             returnValue(json.dumps(records))
 
         @webapp.route('/statistics/echarts/buckets', methods=['GET', 'POST'])
         @require_auth()
         @inlineCallbacks
         def api_v1_statistics_echarts_buckets(webinterface, request, session):
-            time_last = request.args.get('last', [None,])[0]
-            time_start = request.args.get('start', [None,])[0]
-            time_end = request.args.get('end', [None,])[0]
-            stat_type = request.args.get('type', [None,])[0]
-            stat_name = request.args.get('name', [None,])[0]
-            bucket_size = int(request.args.get('bucket_size', [3600,])[0])
+            time_last = request.args.get('last', [None, ])[0]
+            time_start = request.args.get('start', [None, ])[0]
+            time_end = request.args.get('end', [None, ])[0]
+            stat_type = request.args.get('type', [None, ])[0]
+            stat_name = request.args.get('name', [None, ])[0]
+            bucket_size = int(request.args.get('bucket_size', [3600, ])[0])
 
             if stat_name is None:
                 returnValue(return_error("'name' is required."))
@@ -248,7 +133,8 @@ def route_api_v1(webapp):
                 time_start = int(time()) - time_last
 
             records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size,
-                                    type=stat_type, time_start=time_start, time_end=time_end)
+                                                                              type=stat_type, time_start=time_start,
+                                                                              time_end=time_end)
             # print "stat records: %s" % records
             labels = []
             data = []
@@ -295,11 +181,163 @@ def route_api_v1(webapp):
                     'show': 'true',
                 },
 
-                'tooltip': {'show' : 'true'},
-                'legend': {'data':['Legend here']},
+                'tooltip': {'show': 'true'},
+                'legend': {'data': ['Legend here']},
                 'xAxis': [{'type': 'category', 'data': labels}],
-                'yAxis': [{'type': 'value'}], 'series': [{'name':'Commands Sent','type' : 'bar','data':data}],
+                'yAxis': [{'type': 'value'}], 'series': [{'name': 'Commands Sent', 'type': 'bar', 'data': data}],
 
             }
 
+            request.setHeader('Content-Type', 'application/json')
             returnValue(json.dumps(results))
+
+        @webapp.route('/server/commands/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_commands_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/command?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            request.setHeader('Content-Type', 'application/json')
+            returnValue(json.dumps(data))
+
+        # @webapp.route('/server/dns/check_available/<string:dnsname>', methods=['GET'])
+        # @require_auth()
+        # @inlineCallbacks
+        # def api_v1_dns_check_available(webinterface, request, session, dnsname):
+        #     url = '/api/v1/dns/check_available/%s' % dnsname
+        #     url = '/v1/device_type'
+        #     results = yield webinterface._YomboAPI.request('GET', url)
+        #     returnValue(results['content'])
+
+        @webapp.route('/server/dns/check_available/<string:dnsname>', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_dns_check_available(webinterface, request, session, dnsname):
+
+            url = '/v1/dns/check_available/%s' % dnsname
+            # url = '/v1/dns/check_available/sam'
+
+            try:
+                results = yield webinterface.get_api(request, "GET", url)
+            except YomboWarning, e:
+                returnValue(e.message)
+
+            request.setHeader('Content-Type', 'application/json')
+            returnValue(json.dumps(results['data']))
+
+        @webapp.route('/server/devicetypes/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_devicetypes_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/device_type?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            request.setHeader('Content-Type', 'application/json')
+            returnValue(json.dumps(data))
+
+        @webapp.route('/server/inputtypes/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_inputtypes_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/input_type?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            request.setHeader('Content-Type', 'application/json')
+            returnValue(json.dumps(data))
+
+        @webapp.route('/server/modules/index', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_modules_index(webinterface, request, session):
+            try:
+                offset = request.args.get('offset')[0]
+            except:
+                offset = 0
+            try:
+                limit = request.args.get('limit')[0]
+            except:
+                limit = 50
+            try:
+                search = request.args.get('search')[0]
+            except:
+                search = None
+
+            url = '/v1/module?offset=%s&limit=%s' % (offset, limit)
+            if search is not None:
+                url = url + "&label=%s" % search
+
+            results = yield webinterface._YomboAPI.request('GET', url)
+            data = {
+                'total': results['content']['total'],
+                'rows': results['data'],
+            }
+            request.setHeader('Content-Type', 'application/json')
+            returnValue(json.dumps(data))
+
+        @webapp.route('/server/modules/show/<string:module_id>', methods=['GET'])
+        @require_auth()
+        @inlineCallbacks
+        def api_v1_modules_show_one(webinterface, request, session, module_id):
+            # action = request.args.get('action')[0]
+            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            request.setHeader('Content-Type', 'application/json')
+            returnValue(json.dumps(results['data']))
+
