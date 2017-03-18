@@ -2,13 +2,14 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from yombo.core.exceptions import YomboWarningCredentails
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session,run_first
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session, run_first
 
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
         @webapp.route('/1')
         @require_auth_pin(login_redirect="/setup_wizard/1")
         @get_session()
+        @run_first()
         def page_setup_wizard_1(webinterface, request, session):
             """
             Displays the welcome page. Doesn't do much.
@@ -36,6 +37,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/2')
         @require_auth(login_redirect="/setup_wizard/2")
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_2(webinterface, request, session):
             # print "session = %s" % session

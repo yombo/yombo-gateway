@@ -12,6 +12,7 @@ MANIFEST
 *.DS_Store
 *profile.out
 twistd.pid
+yombogateway.pid
 /*.zip
 _trial_temp
 /ENV

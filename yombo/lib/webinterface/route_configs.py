@@ -1,3 +1,5 @@
+from time import time
+
 from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.lib.webinterface.auth import require_auth, run_first
 
@@ -117,6 +119,14 @@ def route_configs(webapp):
             configs = webinterface._Configs.get("*", "*")
 
             dns_configs = webinterface._Configs.get("dns", "*")
+            if dns_configs is None:
+                dns_configs = {
+                    'dns_name': 'None',
+                    'dns_domain': 'None',
+                    'dns_domain_id': 'None',
+                    'allow_change_at': int(time()),
+                    'fqdn': 'None',
+                }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/dns.html')
             webinterface.home_breadcrumb(request)
