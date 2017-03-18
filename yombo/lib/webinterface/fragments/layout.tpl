@@ -120,11 +120,11 @@
                           {%- if notification.always_show_allow_clear -%}
                           <div class="alert alert-{{ misc_wi_data.notification_priority_map_css[notification.priority] }} alert-dismissable" data-the_alert_id="{{ key }}">
                             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                            <strong><a href="/notifications/details/{{notification.notification_id}}" title="Show notification">{{ notification.title }}</a>:</strong> {{ notification.message }}
+                            <strong><a href="/notifications/{{notification.notification_id}}/details" title="Show notification">{{ notification.title }}</a>:</strong> {{ notification.message }}
                           </div>
                           {%- else -%}
                           <div class="alert alert-{{ misc_wi_data.notification_priority_map_css[notification.priority]}}">
-                              <strong><a href="/notifications/details/{{notification.notification_id}}" title="Show notification">{{ notification.title }}</a>:</strong> {{ notification.message }}
+                              <strong><a href="/notifications/{{notification.notification_id}}/details" title="Show notification">{{ notification.title }}</a>:</strong> {{ notification.message }}
                           </div>
                           {%- endif -%}
                         {%- endfor -%}

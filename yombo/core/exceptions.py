@@ -10,6 +10,7 @@ gateway.
 :license: LICENSE for details.
 """
 
+from twisted.internet.error import ReactorNotRunning
 
 class YomboException(Exception):
     """
@@ -166,9 +167,12 @@ class YomboCritical(RuntimeWarning):
         """
         from twisted.internet import reactor
         import os
-        print "caught ctrl-c"
+        # print "caught ctrl-c"
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 1)
-        reactor.stop()
+        try:
+            reactor.stop()
+        except ReactorNotRunning, e:
+            pass
 
 
 class YomboRestart(RuntimeWarning):

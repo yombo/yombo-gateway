@@ -673,8 +673,9 @@ class WebInterface(YomboLibrary):
 
         results = yield self.api.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
         # print "results:::::::::::::::::  %s" % results
-        if (results['content']['code'] == 200):
+        if (results['code'] == 200):
             login = results['content']['response']['login']
+
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
             session = self.sessions.load(request)
             if session is False:
@@ -701,7 +702,6 @@ class WebInterface(YomboLibrary):
                                )
                        )
 
-        # print "session: %s" % session
         login_redirect = "/"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']

@@ -59,7 +59,6 @@ SYSTEM_MODULES['automationhelpers'] = {
     'issue_tracker_link': '',
     'doc_link': 'https://yombo.net/docs/features/automation-rules/',
     'git_link': '',
-    'always_load': '1',
     'public': '2',
     'status': '1',
     'created': int(time()),
@@ -304,7 +303,6 @@ class Modules(YomboLibrary):
                   'issue_tracker_link': '',
                   'doc_link': mod_doc_link,
                   'git_link': '',
-                  'always_load': '1',
                   'prod_version': '',
                   'dev_version': '',
                   'public': '0',
@@ -357,20 +355,26 @@ class Modules(YomboLibrary):
         modulesDB = yield self._LocalDBLibrary.get_modules()
         # print "modulesdb: %s" % modulesDB
         # print " "
-        # print " "
         for module in modulesDB:
             # print "module: %s" % module
             self._rawModulesList[module.id] = module.__dict__
             self._rawModulesList[module.id]['load_source'] = 'sql'
+        # print "_rawModulesList: %s" % self._rawModulesList
 
 #        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
     def import_modules(self):
-        logger.debug("Import modules: self._modulesByUUID: {modulesByUUID}", modulesByUUID=self._modulesByUUID)
-        for module_id, module in self._modulesByUUID.iteritems():
+        logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
+        for module_id, module in self._rawModulesList.iteritems():
             pathName = "yombo.modules.%s" % module['machine_label']
-            self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
+            print "loading: %s" % pathName
+            try:
+                module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
+            except:
+                logger.error("Not loading module: %s" % module['machine_label'])
+                continue
 
+            self.add_imported_module(module['id'], module_name, module_instance)
             self._modulesByUUID[module_id]._hooks_called = {}
             self._modulesByUUID[module_id]._module_id = module['id']
             self._modulesByUUID[module_id]._module_type = module['module_type']
@@ -390,7 +394,6 @@ class Modules(YomboLibrary):
             self._modulesByUUID[module_id]._dev_branch = module['prod_branch']
             self._modulesByUUID[module_id]._prod_version = module['prod_version']
             self._modulesByUUID[module_id]._dev_version = module['dev_version']
-            self._modulesByUUID[module_id]._always_load = module['always_load']
             self._modulesByUUID[module_id]._public = module['public']
             self._modulesByUUID[module_id]._status = module['status']
             self._modulesByUUID[module_id]._created = module['created']
@@ -609,9 +612,9 @@ class Modules(YomboLibrary):
 
         self.startDefer.callback(10)
 
-    def add_imported_module(self, module_id, module_label, modulePointer):
+    def add_imported_module(self, module_id, module_label, module_instance):
         logger.info("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
-        self._modulesByUUID[module_id] = modulePointer
+        self._modulesByUUID[module_id] = module_instance
         self._modulesByName[module_label] = module_id
 
     def del_imported_module(self, module_id, module_label):

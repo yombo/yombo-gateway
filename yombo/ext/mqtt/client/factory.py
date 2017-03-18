@@ -101,7 +101,8 @@ class MQTTFactory(ReconnectingClientFactory):
 
 
     def clientConnectionLost(self, connector, reason):
-        log.warn('Lost connection. Reason {reason!r}:', reason=reason)
+        if reason.type.__doc__ != "Connection was closed cleanly":
+            log.warn('Lost connection. Reason {reason!r}:', reason=reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
 

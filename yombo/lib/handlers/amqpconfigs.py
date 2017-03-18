@@ -396,6 +396,15 @@ class AmqpConfigHandler(YomboLibrary):
         self.amqp = None  # holds our pointer for out amqp connection.
         self._getAllConfigsLoggerLoop = None
 
+    def connect_setup(self):
+        """
+
+        :return:
+        """
+        # self.get_system_configs()
+        # self.check_download_done_loop = reactor.callLater(30, self.check_download_done)
+        return self.init_defer
+
     def connected(self):
         """
 
@@ -403,7 +412,7 @@ class AmqpConfigHandler(YomboLibrary):
         """
         self.get_system_configs()
         self.check_download_done_loop = reactor.callLater(30, self.check_download_done)
-        return self.init_defer
+        # return self.init_defer
 
     def disconnected(self):
         """
@@ -418,8 +427,10 @@ class AmqpConfigHandler(YomboLibrary):
         self.__pending_updates.clear()
         self.__doing_full_configs = False
 
-        if self.check_download_done_loop is not None and self.check_download_done_loop.running:
-            self.check_download_done_loop.stop()
+        try:
+            self.check_download_done_loop.cancel()
+        except:
+            pass
 
     def _stop_(self):
         """
@@ -434,8 +445,10 @@ class AmqpConfigHandler(YomboLibrary):
             self._getAllConfigsLoggerLoop.stop()
         if self._checkProcessQueueLoop is not None and self._checkProcessQueueLoop.running:
             self._checkProcessQueueLoop.stop()
-        if self.check_download_done_loop is not None and self.check_download_done_loop.running:
-            self.check_download_done_loop.stop()
+        try:
+            self.check_download_done_loop.cancel()
+        except:
+            pass
 
 
     def check_download_done(self):

@@ -172,7 +172,6 @@ class Loader(YomboLibrary, object):
         This is called if SIGINT (ctrl-c) was caught. Very useful incase it was called during startup.
         :return:
         """
-        print "SIGINT received - twisted"
         self.sigint = True
 
     # def shutdown2(self, signum, frame):
@@ -244,6 +243,7 @@ class Loader(YomboLibrary, object):
             'persist': False,
             'always_show': False,
         })
+        logger.info("Yombo Gateway started.")
 
     @inlineCallbacks
     def unload(self):
@@ -478,10 +478,8 @@ class Loader(YomboLibrary, object):
             self._log_loader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("--------==(Error: Library or Module not found)==--------")
             logger.error("----Name: {pathName},  Details: {detail}", pathName=pathName, detail=detail)
-            logger.error("--------------------------------------------------------")
-            logger.error("{error}", error=sys.exc_info())
             logger.error("---------------==(Traceback)==--------------------------")
-            logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
+            logger.error("{trace}", trace=traceback.format_exc())
             logger.error("--------------------------------------------------------")
             return
 
@@ -509,7 +507,7 @@ class Loader(YomboLibrary, object):
                 self.libraryNames[temp[-1]] = moduleinst
             else:
                 self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
-                self._moduleLibrary.add_imported_module(componentUUID, str(componentName.lower()), moduleinst)
+                return moduleinst, componentName.lower()
 
         except YomboCritical, e:
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")

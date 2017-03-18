@@ -48,7 +48,7 @@ class Localize(YomboLibrary):
     def _init_(self):
         self.MSGCTXT_GLUE = "\004"
         temp = self._Configs.get('localize', 'hashes')
-        self.default_lang = self._Configs.get('localize', 'default_lang', None, False)
+        self.default_lang = self._Configs.get('localize', 'default_lang', 'en', False)
         if temp is None:
             self.hashes = {'en':None}
         else:
@@ -220,7 +220,6 @@ class Localize(YomboLibrary):
                     if 'en' not in languages:
                         languages.append('en')  # if all else fails, show english.
                 kwargs['languages'] = languages
-
                 return gettext.translation('yombo', self.locale_files, **kwargs)
                 # print _('', "Current locale: None")
                 # print _('webinterface', "There is {num} device turned on.", "There are {num} devices turned on.", 2)

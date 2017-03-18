@@ -69,19 +69,15 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 return page.render(alerts=webinterface.get_alerts())
                                # data=webinterface.data)
 
-
             if session is not False:
                 if 'auth' in session:
                     if session['auth'] is True:
-        #                    print "ddd:33"
                         session['last_access'] = int(time())
                         # try:
                         #     del session['login_redirect']
                         # except:
                         #     pass
                         return call(f, webinterface, request, session, *a, **kw)
-            # print "session : %s" % session
-
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session

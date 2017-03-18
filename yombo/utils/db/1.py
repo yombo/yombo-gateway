@@ -233,7 +233,6 @@ def upgrade(Registry, **kwargs):
      `dev_branch`     TEXT,
      `prod_version`   TEXT,
      `dev_version`    TEXT,
-     `always_load`    INTEGER DEFAULT 0,
      `public`         INTEGER NOT NULL,
      `status`         INTEGER NOT NULL, /* disabled, enabled, deleted */
      `created`        INTEGER NOT NULL,

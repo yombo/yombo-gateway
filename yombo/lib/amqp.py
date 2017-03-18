@@ -42,7 +42,7 @@ from twisted.internet import ssl, protocol, defer
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string
@@ -82,7 +82,7 @@ class AMQP(YomboLibrary):
 
     def new(self, hostname=None, port=5671, virtual_host=None, username=None, password=None, use_ssl=True,
             connected_callback=None, disconnected_callback=None, error_callback=None, client_id=None, keepalive=1800,
-            prefetch_count=10):
+            prefetch_count=10, critical=False):
         """
         Creates a new :py:class:AMQPClient instance. It will not auto-connect, just simply call the connect method
         when you're ready for the instance to start connecting. It will continue to attempt to connect if connection
@@ -143,13 +143,14 @@ class AMQP(YomboLibrary):
                 raise YomboWarning("If error_callback is set, it must be be callable.")
 
         self.client_connections[client_id] = AMQPClient(self, client_id, hostname, port, virtual_host, username,
-                password, use_ssl, connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count)
+                password, use_ssl, connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count,
+                critical)
         return self.client_connections[client_id]
 
 
 class AMQPClient(object):
     def __init__(self, amqp_library, client_id, hostname, port, virtual_host, username, password, use_ssl,
-                 connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count):
+                 connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count, critical_connection):
         """
         Abstracts much of the tasks for AMQP handling. Yombo Gateway libraries and modules should primarily interact
         with these methods.
@@ -185,6 +186,7 @@ class AMQPClient(object):
         self.use_ssl = use_ssl
         self.keepalive = keepalive
         self.prefetch_count = prefetch_count
+        self.critical_connection = critical_connection
 
         self.connected_callback = connected_callback
         self.disconnected_callback = disconnected_callback
@@ -253,14 +255,15 @@ class AMQPClient(object):
         """
         Disconnect from the AMQP service, and tell the connector to not reconnect.
         """
-        logger.info("AMQPClient going to disconnect for client id: {client_id}", client_id=self.client_id)
+        logger.error("AMQPClient going to disconnect for client id: {client_id}", client_id=self.client_id)
         self.pika_factory.stopTrying()
         self.pika_factory.close()
 
-    def disconnected(self):
+    def disconnected(self, reason):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
+        logger.debug("ampq client disconnected...")
         if self.disconnected_callback:
             self.disconnected_callback()
 
@@ -562,8 +565,8 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         Connection was lost.  What to do?
         :return:
         """
-        print "connection_lost in factory....what to call? I feel like i should have called someone or" \
-              "done something."
+        # print "connection_lost in factory....what to call? I feel like i should have called someone or" \
+        #       "done something."
         pass
 
     def connected(self):
@@ -609,15 +612,17 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             if item['subscribed']:
                 self.consumers[item_key]['subscribed'] = False
 
-        self.AMQPClient.disconnected()
+        self.AMQPClient.disconnected('unknown')
 
     def clientConnectionLost(self, connector, reason):
-        logger.debug("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
+        logger.info("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
+        self.AMQPClient.disconnected('lost')
         self.connection_lost()
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
         logger.debug("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
+        self.AMQPClient.disconnected('failed')
         self.connection_lost()
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
@@ -657,9 +662,11 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.channel = yield connection.channel()
 
         def close_connection(channel, replyCode, replyText):
-             logger.info("close_channel: %s : %s : %s" % (channel, replyCode, replyText))
-             connection.close()
-             self.factory.disconnected()
+            if replyCode == 403:
+                logger.warn("AMQP access denied to login. Usually this happens when there is more then one instance of the same gateway running.")
+            logger.info("close_channel: %s : %s" % (replyCode, replyText))
+            connection.close()
+            self.factory.disconnected()
         self.channel.add_on_close_callback(close_connection)
 
         yield self.channel.basic_qos(prefetch_count=self.factory.AMQPClient.prefetch_count)
@@ -676,7 +683,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self._local_log("debug", "PikaProtocol::close", "Trying to close!")
         self.connected = False
         try:
-            self.channel.close()
+            self.connection.close()
         except:
             pass
 

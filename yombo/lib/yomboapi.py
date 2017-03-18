@@ -298,6 +298,7 @@ class YomboAPI(YomboLibrary):
             'Content-Type': self.contentType,
             'Authorization': 'Yombo-Gateway-v1',
             'x-api-key': self.api_key,
+            'User-Agent': 'yombo-gateway-v0_12_0',
         }
         if session is not None:
             headers['Authorization'] = 'Bearer %s' % session

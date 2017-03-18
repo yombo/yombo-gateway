@@ -65,6 +65,7 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/index", "Server Modules")
             return page.render(alerts=webinterface.get_alerts(),
                                )
+
         @webapp.route('/<string:module_id>/server_details')
         @require_auth()
         @run_first()

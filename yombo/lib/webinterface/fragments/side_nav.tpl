@@ -21,23 +21,19 @@
                         </li>
         {%- for priority1, items in misc_wi_data.nav_side.iteritems() -%}
             {% set printed_nested_header = False -%}
-            {% for item in items -%}
-                {% if items|length > 1 -%}
-                {% endif -%}
-                {% if items|length > 1 -%}
-                    {% if printed_nested_header == False -%}
-                        {% set printed_nested_header = True %}
+            {% if items|length > 1 %}
 						<li>
-                            <a href="#" class="dropdown-collapse"><i class="{{ item.icon }}"></i> <span class="side-menu-title">{{ item.label1 }}</span><span class="fa arrow"></span></a>
+                            <a href="#" class="dropdown-collapse"><i class="{{ items[0].icon }}"></i> <span class="side-menu-title">{{ items[0].label1 }}</span><span class="fa arrow"></span></a>
                             <ul class="nav nav-second-level">
-                    {%- endif %}
-                                <li>
-                                    <a href="{{ item.url }}">{{ item.label2 }}</a>
-                                </li>
-                {%- else %}
-                        <li><a href="{{ item.url }}"><i class="{{ item.icon }}"></i> <span class="side-menu-title">{{ item.label1 }}</span></a></li>
-                {%- endif -%}
-            {% endfor -%}
+                {% for item in items -%}
+                                    <li>
+                                        <a href="{{ item.url }}">{{ item.label2 }}</a>
+                                    </li>
+                {% endfor -%}
+
+            {%- else %}
+                        <li><a href="{{ items[0].url }}"><i class="{{ items[0].icon }}"></i> <span class="side-menu-title">{{ items[0].label1 }}</span></a></li>
+            {%- endif -%}
             {% if items|length > 1 %}
                             </ul>
                             <!-- /.nav-second-level -->

@@ -54,7 +54,6 @@ class Sessions(object):
         self.config = DictObject({
             'cookie_session': 'yombo_' + self._Configs.get('webinterface', 'cookie_session', random_string(length=randint(60,80))),
             'cookie_pin': 'yombo_' + self._Configs.get('webinterface', 'cookie_pin', random_string(length=randint(60,80))),
-            'cookie_domain': self._Configs.get("dns", 'fqdn', "", None),
             'cookie_path' : '/',
             'max_session': 15552000,  # How long session can be good for: 180 days
             'max_idle': 5184000,  # Max idle timeout: 60 days
@@ -124,13 +123,25 @@ class Sessions(object):
             if session_id in self.active_sessions:
                 return self.active_sessions[session_id].check_valid()
 
+    def get_cookie_domain(self, request):
+        fqdn = self._Configs.get("dns", 'fqdn', "", None)
+        host = "%s" % request.getRequestHostname();
+
+        if fqdn is None:
+            return host
+
+        if host.endswith(fqdn):
+            return fqdn
+        else:
+            return host
+
     def close_session(self, request):
         if self.has_session(request):
             cookie_session = self.config.cookie_session
             session_id = request.received_cookies[cookie_session]
             self.active_sessions[session_id].expire_session()
 
-            request.addCookie(cookie_session, 'LOGOFF', domain=self.config.cookie_domain,
+            request.addCookie(cookie_session, 'LOGOFF', domain=self.get_cookie_domain(request),
                           path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
                           secure=self.config.secure, httpOnly=self.config.httponly)
 
@@ -164,7 +175,7 @@ class Sessions(object):
         self.active_sessions[session_id] = Session()
         self.active_sessions[session_id].init(self, session_id)
 
-        request.addCookie(self.config.cookie_session, session_id, domain=self.config.cookie_domain,
+        request.addCookie(self.config.cookie_session, session_id, domain=self.get_cookie_domain(request),
                           path=self.config.cookie_path, max_age=self.config.max_session,
                           secure=self.config.secure, httpOnly=self.config.httponly)
 

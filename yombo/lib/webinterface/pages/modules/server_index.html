@@ -51,7 +51,7 @@
                         <div class="panel-body">
                            <div class="dataTable_wrapper">
 <table data-toggle="table"
-       data-url="/api/v1/modules/index"
+       data-url="/api/v1/server/modules/index"
        data-card-view="true"
        data-side-pagination="server"
        data-pagination="true"
@@ -84,7 +84,7 @@
 {% block body_bottom %}
 <script>
     function labelFormatter(value, row) {
-        return '<a href="/modules/' + row.id + '/server_details/">' + value + '</a>';
+        return '<a href="/modules/' + row.id + '/server_details">' + value + '</a>';
     }
 
 
