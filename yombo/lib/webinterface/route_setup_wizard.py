@@ -2,7 +2,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from yombo.core.exceptions import YomboWarningCredentails
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session, needs_web_pin
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth, get_session,run_first
 
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
@@ -72,6 +72,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/3', methods=['GET'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_3_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
@@ -96,6 +97,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/3', methods=['POST'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_3_post(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
@@ -210,6 +212,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/4', methods=['GET'])
         @require_auth()
+        @run_first()
         def page_setup_wizard_4_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
                 return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
@@ -221,6 +224,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/4', methods=['POST'])
         @require_auth()
+        @run_first()
         def page_setup_wizard_4_post(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
                 return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
@@ -305,6 +309,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/5', methods=['GET'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_5_get(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
@@ -318,6 +323,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/5', methods=['POST'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_5_post(webinterface, request, session):
             if session.get('setup_wizard_done') is True:
@@ -364,6 +370,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/5_gpg_section')
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_5_gpg_section(webinterface, request, session):
 
@@ -404,6 +411,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/6', methods=['GET'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_6_get(webinterface, request, session):
             if session.get('setup_wizard_last_step') not in (5, 6, 7):
@@ -416,6 +424,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/6', methods=['POST'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_6_post(webinterface, request, session):
             """
@@ -566,6 +575,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/7', methods=['GET'])
         @require_auth()
+        @run_first()
         def page_setup_wizard_7_get(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/7.html')
 
@@ -576,6 +586,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/7', methods=['POST'])
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_setup_wizard_7_post(webinterface, request, session):
             """
@@ -620,6 +631,7 @@ def route_setup_wizard(webapp):
 
         @webapp.route('/7_restart', methods=['GET'])
         @require_auth()
+        @run_first()
         def page_setup_wizard_6_restart(webinterface, request, session):
             return webinterface.restart(request)
     #        auth = webinterface.require_auth(request)  # Notice difference. Now we want to log the user in.

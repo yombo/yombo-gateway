@@ -1,9 +1,10 @@
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.lib.webinterface.auth import require_auth, run_first
 
 def route_statistics(webapp):
     with webapp.subroute("/statistics") as webapp:
         @webapp.route('/')
         @require_auth()
+        @run_first()
         def page_statistics(webinterface, request, session):
             return webinterface.redirect(request, '/statistics/index')
 
@@ -18,6 +19,7 @@ def route_statistics(webapp):
         
         @webapp.route('/<string:device_id>/details')
         @require_auth()
+        @run_first()
         def page_statistics_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -34,6 +36,7 @@ def route_statistics(webapp):
     
         @webapp.route('/<string:device_id>/edit')
         @require_auth()
+        @run_first()
         def page_statistics_edit(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices.get(device_id)

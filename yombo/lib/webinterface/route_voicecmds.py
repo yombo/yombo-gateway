@@ -1,14 +1,16 @@
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.lib.webinterface.auth import require_auth, run_first
 
 def route_voicecmds(webapp):
     with webapp.subroute("/voicecmds") as webapp:
         @webapp.route('/')
-        @require_auth_pin()
-        def page_voicecmds(webinterface, request):
+        @require_auth()
+        @run_first()
+        def page_voicecmds(webinterface, request, session):
             return webinterface.redirect(request, '/voicecmds/index')
 
         @webapp.route('/index')
         @require_auth()
+        @run_first()
         def page_voicecmds_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/voicecmds/index.html')
             webinterface.home_breadcrumb(request)
@@ -19,6 +21,7 @@ def route_voicecmds(webapp):
 
         @webapp.route('/<string:voicecmd_id>/details')
         @require_auth()
+        @run_first()
         def page_voicecmds_details(webinterface, request, session, voicecmd_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/voicecmds/details.html')
             webinterface.home_breadcrumb(request)

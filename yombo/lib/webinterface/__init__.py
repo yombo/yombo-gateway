@@ -363,9 +363,8 @@ class WebInterface(YomboLibrary):
 
         self.temp_data = ExpiringDict(max_age_seconds=1800)
 
-    def _start_(self):
-        self.webapp.templates.globals['_'] = _  # i18n
-
+    # def _start_(self):
+    #     self.webapp.templates.globals['_'] = _  # i18n
 
     @webapp.handle_errors(NotFound)
     @require_auth()
@@ -374,8 +373,8 @@ class WebInterface(YomboLibrary):
         return 'Not found, I say'
 
     @webapp.route('/<path:catchall>')
-    @run_first()
     @require_auth()
+    @run_first()
     def page_404(self, request, session, catchall):
         request.setResponseCode(404)
         page = self.get_template(request, self._dir + 'pages/404.html')
@@ -473,7 +472,7 @@ class WebInterface(YomboLibrary):
         :param request: The browser request.
         :return:
         """
-        return self._Localize.get_ugettext(self._Localize.parse_accept_language(request.getHeader('accept-language')))
+        return web_translator(self, request)
 
     def _module_prestart_(self, **kwargs):
         """
@@ -611,6 +610,7 @@ class WebInterface(YomboLibrary):
         return self.check_op_mode(request, 'home')
 
     @require_auth()
+    @run_first()
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
 
@@ -620,10 +620,10 @@ class WebInterface(YomboLibrary):
                            devices=self._Libraries['devices']._devicesByUUID,
                            modules=self._Libraries['modules']._modulesByUUID,
                            states=self._Libraries['states'].get_states(),
-                           _=self.i18n(request),
                            )
 
     @require_auth()
+    @run_first()
     def config_home(self, request, session):
         # auth = self.require_auth(request)
         # if auth is not None:
@@ -645,11 +645,13 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/login/user', methods=['GET'])
     @require_auth_pin()
+    @run_first()
     def page_login_user_get(self, request):
         return self.redirect(request, '/')
 
     @webapp.route('/login/user', methods=['POST'])
     @require_auth_pin()
+    @run_first()
     @inlineCallbacks
     def page_login_user_post(self, request):
         submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
@@ -748,6 +750,7 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/login/pin', methods=['GET'])
     @require_auth()
+    @run_first()
     def page_login_pin_get(self, request):
         return self.redirect(request, '/')
 
@@ -1078,3 +1081,12 @@ class WebInterface(YomboLibrary):
         # Just copy files
         copytree('source/font-awesome/fonts/', 'dist/fonts/')
         copytree('source/bootstrap/dist/fonts/', 'dist/fonts/')
+
+class web_translator(object):
+    def __init__(self, webinterface, request):
+        self.webinterface = webinterface
+        self.translator = webinterface._Localize.get_translator(webinterface._Localize.parse_accept_language(request.getHeader('accept-language')))
+
+    def __call__(self, msgctxt, msgid1=None, msgid2=None, num=None, *args, **kwargs):
+        return self.webinterface._Localize.handle_translate(msgctxt, msgid1=msgid1, msgid2=msgid2, num=num,
+                                                     translator=self.translator)

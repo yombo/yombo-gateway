@@ -2,17 +2,19 @@
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
-from yombo.lib.webinterface.auth import  require_auth
+from yombo.lib.webinterface.auth import require_auth, run_first
 
 def route_states(webapp):
     with webapp.subroute("/states") as webapp:
         @webapp.route('/')
         @require_auth()
+        @run_first()
         def page_states(webinterface, request, session):
             return webinterface.redirect(request, '/states/index')
 
         @webapp.route('/index')
         @require_auth()
+        @run_first()
         def page_states_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/states/index.html')
             # i18n = webinterface.i18n(request)
@@ -25,6 +27,7 @@ def route_states(webapp):
 
         @webapp.route('/<string:state_name>/details')
         @require_auth()
+        @run_first()
         @inlineCallbacks
         def page_states_details(webinterface, request, session, state_name):
             try:

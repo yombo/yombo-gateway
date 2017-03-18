@@ -135,9 +135,11 @@ def run_first(*args, **kwargs):
     def deco(f):
         @wraps(f)
         def wrapped_f(webinterface, request, *a, **kw):
-            if hasattr(request, 'breadcrumb') is False:
-                request.breadcrumb = []
-                webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+            webinterface.webapp.templates.globals['_'] = webinterface.i18n(request)
+            # request._ = webinterface.i18n(request)
+            # if hasattr(request, 'breadcrumb') is False:
+            #     request.breadcrumb = []
+            #     webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
             return call(f, webinterface, request, *a, **kw)
         return wrapped_f
     return deco

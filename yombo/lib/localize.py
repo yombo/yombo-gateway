@@ -231,6 +231,7 @@ class Localize(YomboLibrary):
 
     def handle_translate(self, msgctxt, msgid1=None, msgid2=None, num=None, translator=None):
         # fix args...
+        # print "msgctxt: %s" % msgctxt
         if msgid1 is None:
             msgid1 = msgctxt
             msgctxt = None
@@ -381,6 +382,8 @@ class Localize(YomboLibrary):
         :param accept_language: The accept language header from a browser, or a string in the same format
         :return:
         """
+        if accept_language is None or accept_language == "":
+            accept_language = "en"
         languages = accept_language.split(",")
         locales = []
 
@@ -397,3 +400,4 @@ class Localize(YomboLibrary):
         if 'en' not in locales:
             locales.append('en')  # if all else fails, show english.
         return locales
+

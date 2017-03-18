@@ -1,7 +1,7 @@
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from yombo.core.exceptions import YomboWarning
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.lib.webinterface.auth import require_auth, run_first
 
 def route_devtools_debug(webapp):
     with webapp.subroute("/devtools/debug") as webapp:
@@ -11,13 +11,15 @@ def route_devtools_debug(webapp):
             webinterface.add_breadcrumb(request, "/devtools/debug", "Debug")
 
         @webapp.route('/')
-        @require_auth_pin()
-        def page_devtools2(webinterface, request):
+        @require_auth()
+        @run_first()
+        def page_devtools2(webinterface, request, session):
             return webinterface.redirect(request, '/devtools/debug/index')
 
 
         @webapp.route('/index')
         @require_auth()
+        @run_first()
         def page_devtools_debug(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/index.html')
             root_breadcrumb(webinterface, request)
@@ -26,6 +28,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/device_types')
         @require_auth()
+        @run_first()
         def page_devtools_debug_device_type(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/device_types/index.html')
             root_breadcrumb(webinterface, request)
@@ -36,6 +39,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/device_types/<string:device_type_id>/details')
         @require_auth()
+        @run_first()
         def page_devtools_debug_device_type_details(webinterface, request, session, device_type_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/device_types/details.html')
             device_type = webinterface._DeviceTypes.device_types_by_id[device_type_id]
@@ -49,6 +53,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/hooks_called_libraries')
         @require_auth()
+        @run_first()
         def page_devtools_debug_hooks_called_libraries(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/hooks_called_libraries.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -57,6 +62,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/hooks_called_modules')
         @require_auth()
+        @run_first()
         def page_devtools_debug_hooks_called_modules(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/hooks_called_modules.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -65,6 +71,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/modules')
         @require_auth()
+        @run_first()
         def page_devtools_debug_modules(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/modules/index.html')
             root_breadcrumb(webinterface, request)
@@ -75,6 +82,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/modules/<string:module_id>/details')
         @require_auth()
+        @run_first()
         def page_devtools_debug_modules_details(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/modules/details.html')
             root_breadcrumb(webinterface, request)
@@ -89,6 +97,7 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/statistic_bucket_lifetimes')
         @require_auth()
+        @run_first()
         def page_devtools_debug_statistic_bucket_lifetimes(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/statistic_bucket_lifetimes.html')
             return page.render(alerts=webinterface.get_alerts(),
