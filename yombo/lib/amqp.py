@@ -37,12 +37,12 @@ import sys
 import traceback
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import ssl, protocol, defer
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboCritical
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string
@@ -68,13 +68,13 @@ class AMQP(YomboLibrary):
         # print "amqp - removing all clients.."
         for client_id, client in self.client_connections.iteritems():
             # print "amqp-clinet: %s" % client_id
-            try:
-                client.disconnect()  # this tells the factory to tell the protocol to close.
-#                client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
-#                client.factory.protocol.disconnect()
-            except:
-                pass
-
+            if client.is_connected:
+                try:
+                    client.disconnect()  # this tells the factory to tell the protocol to close.
+    #                client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
+    #                client.factory.protocol.disconnect()
+                except:
+                    pass
 
     def _local_log(self, level, location="", msg=""):
         logit = getattr(logger, level)
@@ -189,10 +189,12 @@ class AMQPClient(object):
         self.critical_connection = critical_connection
 
         self.connected_callback = connected_callback
+        self.is_connected = False
         self.disconnected_callback = disconnected_callback
         self.error_callback = error_callback
 
         self._connecting = False
+        self._disconnecting = False
         self.pika_factory = PikaFactory(self)
         self.pika_factory.noisy = False  # turn off Starting/stopping message
         self.send_correlation_ids = MaxDict(150)  # correlate requests with responses
@@ -246,6 +248,7 @@ class AMQPClient(object):
         """
         self._local_log("debug", "AMQP Client: {client_id} - Connected")
         self._connecting = False
+        self.is_connected = True
         self.timeout_reconnect_task = False
 
         if self.connected_callback:
@@ -255,7 +258,11 @@ class AMQPClient(object):
         """
         Disconnect from the AMQP service, and tell the connector to not reconnect.
         """
-        logger.error("AMQPClient going to disconnect for client id: {client_id}", client_id=self.client_id)
+        if self._disconnecting is True or self.is_connected is False:
+            return
+        self._disconnecting = True
+
+        logger.debug("AMQPClient going to disconnect for client id: {client_id}", client_id=self.client_id)
         self.pika_factory.stopTrying()
         self.pika_factory.close()
 
@@ -263,7 +270,9 @@ class AMQPClient(object):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
-        logger.debug("ampq client disconnected...")
+        logger.info("AMQP Client {client_id} disconnected. Will usually auto-reconnected.", client_id=self.client_id)
+        self.is_connected = False
+        self._disconnecting = False
         if self.disconnected_callback:
             self.disconnected_callback()
 
@@ -560,15 +569,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         if self.AMQPProtocol:
             self.AMQPProtocol.do_publish()
 
-    def connection_lost(self):
-        """
-        Connection was lost.  What to do?
-        :return:
-        """
-        # print "connection_lost in factory....what to call? I feel like i should have called someone or" \
-        #       "done something."
-        pass
-
     def connected(self):
         """
         Called by PikaProtocol when connected.
@@ -615,17 +615,15 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.AMQPClient.disconnected('unknown')
 
     def clientConnectionLost(self, connector, reason):
-        logger.info("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason)
-        self.AMQPClient.disconnected('lost')
-        self.connection_lost()
+        if self.AMQPClient.is_connected and str(reason.value) != "Connection was closed cleanly.":
+            logger.warn("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason.value)
+        # self.AMQPClient.disconnected('lost')
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
         logger.debug("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
-        self.AMQPClient.disconnected('failed')
-        self.connection_lost()
+        # self.AMQPClient.disconnected('failed')
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-
 
 
 class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
@@ -664,8 +662,11 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         def close_connection(channel, replyCode, replyText):
             if replyCode == 403:
                 logger.warn("AMQP access denied to login. Usually this happens when there is more then one instance of the same gateway running.")
-            logger.info("close_channel: %s : %s" % (replyCode, replyText))
-            connection.close()
+            if replyCode == 404:
+                logger.debug("close_channel: %s : %s" % (replyCode, replyText))
+            if replyCode != 200:
+                logger.info("close_channel: %s : %s" % (replyCode, replyText))
+                connection.close()
             self.factory.disconnected()
         self.channel.add_on_close_callback(close_connection)
 
@@ -674,18 +675,18 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self._connected = True
         self.factory.connected()
 
-    def close(self):
-        """
-        Close the connection to Yombo.
-
-        :return:
-        """
-        self._local_log("debug", "PikaProtocol::close", "Trying to close!")
-        self.connected = False
-        try:
-            self.connection.close()
-        except:
-            pass
+    # def close(self):
+    #     """
+    #     Close the connection to Yombo.
+    #
+    #     :return:
+    #     """
+    #     self._local_log("debug", "PikaProtocol::close", "Trying to close!")
+    #     self.connected = False
+    #     try:
+    #         self.connection.close()
+    #     except:
+    #         pass
 
     @inlineCallbacks
     def do_register_exchanges(self):
@@ -766,6 +767,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 
 #        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
         logger.debug("In PikaProtocol do_publish...")
+        if self._connected is None:
+            returnValue(None)
 
         while True:
             try:
@@ -799,10 +802,10 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         This function is called with EVERY incoming message. We don't have logic here, just send to factory.
         """
+        (channel, deliver, props, msg,) = item
         # print "protocol1: receive_item"
 #        print "protocol: queue_no_ack %s" % queue_no_ack
 #        print "protocol: callback %s" % callback
-        (channel, deliver, props, msg,) = item
 #        print "channel: item %s" % channel
 #        print "deliver: item %s" % deliver
 #        print "props: item %s" % props
@@ -820,8 +823,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 #        print "send_correlation_ids: %s" % self.factory.AMQPClient.send_correlation_ids
         if props.correlation_id in self.factory.AMQPClient.send_correlation_ids:
             time_info = self.factory.AMQPClient.send_correlation_ids[props.correlation_id]
-            daate_time = time_info['time_received'] - time_info['time_sent']
-            milliseconds = (daate_time.days * 24 * 60 * 60 + daate_time.seconds) * 1000 + daate_time.microseconds / 1000.0
+            date_time = time_info['time_received'] - time_info['time_sent']
+            milliseconds = (date_time.days * 24 * 60 * 60 + date_time.seconds) * 1000 + date_time.microseconds / 1000.0
             logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
 
         d = defer.maybeDeferred(callback, deliver, props, msg, queue)
@@ -840,8 +843,11 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         :param error:
         :return:
         """
-        print "BIG FAT ERRR! %s" % error
-        self._local_log("debug", "PikaProtocol::receive_item_err", "Error: %s" % error)
+        # if error.value == ""
+        # if
+        if error.value[0] == 200:
+            return
+        self._local_log("debug", "PikaProtocol::receive_item_err", "Error: %s" % error.__dict__)
 
     def _basic_ack(self, tossaway, channel, tag):
         self._local_log("debug", "PikaProtocol::_basic_ack", "Tag: %s" % tag)

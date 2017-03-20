@@ -55,4 +55,3 @@ class GWService(Service):
         """
         logger.info("Yombo Gateway stopping.")
         yield self.loader.unload()
-        logger.info("Yombo Gateway stopped.")

@@ -367,7 +367,7 @@ class Modules(YomboLibrary):
         logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
         for module_id, module in self._rawModulesList.iteritems():
             pathName = "yombo.modules.%s" % module['machine_label']
-            print "loading: %s" % pathName
+            # print "loading: %s" % pathName
             try:
                 module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
             except:
@@ -613,7 +613,7 @@ class Modules(YomboLibrary):
         self.startDefer.callback(10)
 
     def add_imported_module(self, module_id, module_label, module_instance):
-        logger.info("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
+        logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
         self._modulesByUUID[module_id] = module_instance
         self._modulesByName[module_label] = module_id
 

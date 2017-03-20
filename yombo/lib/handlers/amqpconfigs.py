@@ -398,7 +398,7 @@ class AmqpConfigHandler(YomboLibrary):
 
     def connect_setup(self):
         """
-
+        The connection was setup, but not quite ready to ask for configs. Just return a defer for now.
         :return:
         """
         # self.get_system_configs()

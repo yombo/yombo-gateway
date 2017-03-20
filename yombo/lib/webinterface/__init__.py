@@ -318,7 +318,6 @@ class WebInterface(YomboLibrary):
     """
     webapp = Klein()  # Like Flask, but for twisted
 
-
     visits = 0
     alerts = OrderedDict()
 
@@ -382,10 +381,12 @@ class WebInterface(YomboLibrary):
 
     @inlineCallbacks
     def _load_(self):
-        yield self.sessions.init()
-
+        if hasattr(self, 'sessions'):
+            yield self.sessions.init()
 
     def _start_(self):
+        if hasattr(self, 'sessions') is False:
+            return
         if not self.enabled:
             return
         self._op_mode = self._Atoms['loader.operation_mode']

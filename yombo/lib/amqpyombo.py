@@ -37,12 +37,13 @@ import traceback
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
 
 # Import 3rd party extensions
 import yombo.ext.six as six
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboCritical
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string
@@ -75,12 +76,12 @@ class AMQPYombo(YomboLibrary):
         self.__pending_updates = []  # Holds a list of configuration items we've asked for, but not response yet.
         self._LocalDBLibrary = self._Libraries['localdb']
         self.init_startup_count = 0
+        self.request_configs = False
 
         self.amqp = None  # holds our pointer for out amqp connection.
         self._getAllConfigsLoggerLoop = None
 
         self._getAllConfigsLoggerLoop = None
-        self.reconnect = True  # If we get disconnected, we should reconnect to the server.
         self.sendLocalInformationLoop = None  # used to periodically send yombo servers updated information
 
         self.controlHandler = AmqpControlHandler(self)
@@ -97,6 +98,9 @@ class AMQPYombo(YomboLibrary):
         self.configHandler._stop_()
         self.controlHandler._stop_()
         self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
+
+    def _unload_(self):
+        self.amqp.disconnect()
 
     def connect(self):
         """
@@ -124,7 +128,7 @@ class AMQPYombo(YomboLibrary):
         if self.amqp is None:
             self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.login_user_id,
                 password=self._Configs.get("core", "gwhash"), client_id='amqpyombo',
-                connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected)
+                connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected, critical=True)
         self.amqp.connect()
 
         # The servers will have a dedicated queue for us. All pending messages will be held there for us. If we
@@ -136,7 +140,8 @@ class AMQPYombo(YomboLibrary):
 
     def disconnect(self):
         """
-        Called by the yombo system when it's
+        Called by the yombo system when it's time to shutdown.
+
         :return:
         """
         body = {
@@ -153,7 +158,6 @@ class AMQPYombo(YomboLibrary):
         )
         self.amqp.publish(**requestmsg)
 
-        self.reconnect = False
         logger.debug("Disconnected from Yombo message server.")
 
     def amqp_connected(self):
@@ -162,29 +166,36 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        return self.configHandler.connected()
-        logger.warn("amqp yombo connected")
-        self.sendLocalInformationLoop = LoopingCall(self.sendLocalInformation)
-        self.sendLocalInformationLoop.start(60*60*4)  # Sends various information, helps Yombo cloud know we are alive and where to find us.
-
         self._States.set('amqp.amqpyombo.state', True)
+
+        if self.sendLocalInformationLoop is None:
+            self.sendLocalInformationLoop = LoopingCall(self.sendLocalInformation)
+
+        if self.sendLocalInformationLoop.running is False:
+            self.sendLocalInformationLoop.start(60*60*4)  # Sends various information, helps Yombo cloud know we are alive and where to find us.
+
+        if self.request_configs is False:
+            self.request_configs = True
+            return self.configHandler.connected()
 
     def amqp_disconnected(self):
         """
         Called by AQMP when disconnected.
         :return:
         """
-        if self._States.get('amqp.amqpyombo.state') == 0:
-            logger.error("Unable to connect. This may be due to multiple connections or bad gateway hash. See: http://g2.yombo.net/noconnect")
-            raise YomboCritical('Yombo is unable to connect to server.', 500, "amqpyombo", "connect")
+        # logger.info("amqpyombo yombo disconnected: {state}", state=self._States.get('amqp.amqpyombo.state'))
+        # If we have at least connected once, then we don't toss errors.  We just wait for reconnection...
 
-        logger.warn("amqp yombo disconnected: {state}", state=self._States.get('amqp.amqpyombo.state'))
+        if self._States.get('amqp.amqpyombo.state') == False:
+            logger.error("Unable to connect. This may be due to multiple connections or bad gateway hash. See: http://g2.yombo.net/noconnect")
+            self._Loader.sigint = True
+            self.amqp.disconnect()
+            reactor.stop()
+            return
+
         self._States.set('amqp.amqpyombo.state', False)
         if self.sendLocalInformationLoop is not None and self.sendLocalInformationLoop.running:
             self.sendLocalInformationLoop.stop()
-
-        if self.reconnect is True:
-            self.connect()
 
     def sendLocalInformation(self):
         """

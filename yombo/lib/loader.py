@@ -164,6 +164,7 @@ class Loader(YomboLibrary, object):
         self._operation_mode = None  # One of: firstrun, config, run
         self.sigint = False  # will be set to true if SIGINT is received
         self.hook_counts = OrderedDict()  # keep track of hook names, and how many times it's called.
+        self.run_phase = None
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
         # signal(SIGINT, self.shutdown2)
 
@@ -193,16 +194,18 @@ class Loader(YomboLibrary, object):
         this function will load all the components and modules of the gateway.
         """
         logger.info("Importing libraries, this can take a few moments.")
+        self.run_phase = "libraries_import"
         yield self.import_libraries() # import and init all libraries
         # returnValue(None)
 
         # if self.sigint:
         #     return
         logger.debug("Calling load functions of libraries.")
+        self.run_phase = "libraries_load"
         for name, config in HARD_LOAD.iteritems():
-#            print "sigint: %s" % self.sigint
-#             if self.sigint:
-#                 return
+            # print "sigint: %s" % self.sigint
+            if self.sigint:
+                return
             self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
@@ -214,6 +217,8 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'load', 'Finished call to _load_.')
 
         self._moduleLibrary = self.loadedLibraries['modules']
+        self.run_phase = "libraries_start"
+
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
         for name, config in HARD_LOAD.iteritems():
             if self.sigint:
@@ -300,6 +305,7 @@ class Loader(YomboLibrary, object):
             HARD_LOAD[name]['__init__'] = True
 
         logger.debug("Calling init functions of libraries.")
+        self.run_phase = "libraries_init"
         for name, config in HARD_LOAD.iteritems():
             if self.sigint:
                 return
@@ -532,6 +538,8 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_UNLOAD[name]['_stop_'] = False
 
+
+        yield yombo.utils.sleep(.1)
         for name, config in HARD_UNLOAD.iteritems():
             if self.check_operation_mode(config['operation_mode']):
                 HARD_UNLOAD[name]['_unload_'] = 'Running'
@@ -541,6 +549,8 @@ class Loader(YomboLibrary, object):
                 HARD_UNLOAD[name]['_unload_'] = True
             else:
                 HARD_UNLOAD[name]['_unload_'] = False
+
+        yield yombo.utils.sleep(.2)
 
 
     def _handleError(self, err):
