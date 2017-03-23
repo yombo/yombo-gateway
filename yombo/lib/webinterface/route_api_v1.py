@@ -64,8 +64,16 @@ def route_api_v1(webapp):
                 except:
                     return return_error('deviceid and commandid must be specified for "runcommand".')
 
+                print "making request for command...."
                 device = webinterface._Devices.get(deviceid)
-                device.do_command(cmd=commandid)
+                device.do_command(
+                    cmd=commandid,
+                    requested_by={
+                        'user_id': session['auth_id'],
+                        'component': 'WebInterface',
+                        'gateway': webinterface.gwid
+                    }
+                    )
                 a = return_good('Command executed.')
                 request.setHeader('Content-Type', 'application/json')
                 return json.dumps(a)

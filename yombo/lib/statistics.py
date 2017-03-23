@@ -120,11 +120,8 @@ class Statistics(YomboLibrary):
         """
         self._LocalDB = self._Libraries['localdb']
         self.enabled = self._Configs.get('statistics', 'enabled', True)
-        self.enabled = self._Configs.get('statistics', 'upload', True)
+        self.upload = self._Configs.get('statistics', 'upload', True)
         self.enabled = self._Configs.get('statistics', 'anonymous', True)
-
-        if self.enabled is not True:
-            return
 
         self.gwuuid = self._Configs.get("core", "gwuuid")
 
@@ -149,6 +146,9 @@ class Statistics(YomboLibrary):
         self.datapoint_bucket_life_daily = self._Configs.get('statistics', 'datapoint_bucket_life_daily', 0, False)
 
         self.bucket_lifetimes = {}  # caches meta life duration. Might get set many times, no need to hammer database
+
+        if self.enabled is not True:
+            return
 
         self.time_between_saves = self._Configs.get('statistics', 'time_between_saves', 1800 )  # 30 mins
         self.sendDataLoop = LoopingCall(self._save_statistics)
@@ -189,6 +189,9 @@ class Statistics(YomboLibrary):
         This function calls a database method to collet a list of datapoints and their last value. It sets this
         into a variable to be used on lookup when a new datapoint is provided. See: :py:meth:`~datapoint`
         """
+        if self.enabled is not True:
+            return
+
         self._datapoint_last_value = yield self._LocalDB.get_stat_last_datapoints()
         self.init_deferred.callback(10)
 
@@ -221,6 +224,10 @@ class Statistics(YomboLibrary):
         """
         # first, set some generic defaults. The filter matcher when processing will always use the most specific.
         # full, 5m, 15m, 60m
+
+        if self.enabled is not True:
+            return
+
         self.bucket_lifetimes_default = {
             'full':60, '5m':90, '15m':90, '60m':365, '6hr':730, '24h':1825
         }

@@ -134,24 +134,6 @@ class DeviceTypes(YomboLibrary):
             dt = yield self._LocalDB.get_device_type(device_type_id)
             self.add_device_type(dt[0])
 
-    def module_devices(self, module_id):
-        """
-        A list of devices types for a given module id.
-
-        :raises YomboWarning: Raised when module_id is not found.
-        :param module_id: The Module ID to return device types for.
-        :return: A list of device type id's.
-        :rtype: list
-        """
-        temp = []
-        if module_id in self._Modules._modulesByUUID:
-            # print "dt..module_id: %s" % module_id
-            # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
-            for dt in self._Modules._modulesByUUID[module_id]._device_types:
-                temp.extend(self.device_types_by_id[dt].get_devices())
-        tempset = set(temp)
-        return list(temp)
-
     def devices_by_device_type(self, requested_device_type, return_value='id'):
         """
         A list of devices types for a given device type.
@@ -686,17 +668,20 @@ class DeviceType:
         """
         return self.device_type_id
 
-    def get_devices(self, return_value='id'):
+    def get_devices(self, return_value=None):
         """
         Return a list of devices for a given device_type
         :return:
         """
+        if return_value is None:
+            return_value = 'id'
+
         if return_value == 'id':
             return self.registered_devices.keys()
-        elif return_value == 'label':
-            return self.registered_devices.values()
+        elif return_value == 'dict':
+            return self.registered_devices
         else:
-            raise YomboWarning("get_devices requires either 'id' or 'label'")
+            raise YomboWarning("get_devices 'return_value' accepts: 'id' or 'dict'")
 
     def get_modules(self, return_value='id'):
         """

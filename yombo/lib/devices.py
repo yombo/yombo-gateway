@@ -214,7 +214,6 @@ class Devices(YomboLibrary):
 
     def _started_(self):
         self.run_state = 4
-        # print("devices: %s" % self._devicesByUUID)
 
     def _stop_(self):
         if self.load_deferred is not None and self.load_deferred.called is False:
@@ -329,7 +328,6 @@ class Devices(YomboLibrary):
         d = self._devicesByUUID[device_id]._init_()
         self._devicesByName[record["label"]] = device_id
 
-        # print("load_device: %s" % record)
         try:
             self._VoiceCommandsLibrary.add_by_string(record["voice_cmd"], None, record["id"], record["voice_cmd_order"])
         except YomboWarning:
@@ -510,7 +508,7 @@ class Devices(YomboLibrary):
                             'data_weight': 0,
                             'data': value,
                         }
-                        logger.debug("variable dataa post: {post_data}", post_data=post_data)
+                        logger.info("variable dataa post: {post_data}", post_data=post_data)
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                         if var_data_results['code'] != 200:
                             results = {
@@ -559,7 +557,7 @@ class Devices(YomboLibrary):
         if device_id not in self._devicesByUUID:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
-        device_results = yield self._DevicesLibrary._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
+        device_results = yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
         # print("deleted device: %s" % device_results)
         if device_results['code'] != 200:
             results = {
@@ -618,6 +616,7 @@ class Devices(YomboLibrary):
 
         if 'variable_data' in data:
             variable_data = data['variable_data']
+            print("edit device variable_data: %s" % variable_data)
             for field_id, data in variable_data.iteritems():
                 for data_id, value in data.iteritems():
                     if data_id.startswith('new_'):
@@ -629,7 +628,7 @@ class Devices(YomboLibrary):
                             'data_weight': 0,
                             'data': value,
                         }
-                        # print("post_data: %s" % post_data)
+                        print("post_data: %s" % post_data)
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                         if var_data_results['code'] != 200:
                             results = {
@@ -797,11 +796,8 @@ class Devices(YomboLibrary):
 
         if 'device' in portion['source']:
             try:
-#                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00011"
                 device = self.get(portion['source']['device'], .89)
-#                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00022"
                 portion['source']['device_pointers'] = device
-#                print "$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$  00033"
                 return portion
             except Exception, e:
                 raise YomboWarning("Error while searching for device, could not be found: %s" % portion['source']['device'],
@@ -856,7 +852,6 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-#        print "devices - kwargs: %s" % action
         if 'command' not in action:
             raise YomboWarning("For platform 'devices' as an 'action', must have 'comand' and can be either command uuid or command label.",
                                103, 'devices_validate_action_callback', 'lib.devices')
@@ -955,7 +950,7 @@ class Device:
         self._DevicesLibrary = _DevicesLibrary
         logger.debug("New device - info: {device}", device=device)
 
-        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
+        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")
 
         self.call_before_command = []
@@ -987,8 +982,6 @@ class Device:
         if 'energy_type' in device:
             self.energy_type = device['energy_type']
         self.energy_tracker_source = device['energy_tracker_source']
-        # if self.energy_tracker_source == 'calc':
-        # print("energ_map1 : %s" % device['energy_map'])
 
         # self.energy_map = {float(k):v for k,v in device['energy_map'].items()}  # fix for JSON
         self.energy_map = device['energy_map']
@@ -1075,7 +1068,7 @@ class Device:
                 'status_history': copy.copy(self.status_history),
                }
 
-    def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
+    def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, **kwargs):
         """
         Do a command. Will call _do_command_ hook so modules can process the request.
 
@@ -1098,6 +1091,14 @@ class Device:
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
+        logger.info("device::do_command kwargs: {kwargs}", kwargs=kwargs)
+        if requested_by is None:  # soon, this will cause an error!
+            requested_by = {
+                    'user_id': 'Unknown',
+                    'component': 'Unknown',
+                    'gateway': 'Unknown'
+            }
+
         if self.pin_required == 1:
                 if pin is None:
                     raise YomboPinCodeError("'pin' is required, but missing.")
@@ -1105,7 +1106,6 @@ class Device:
                     if self.pin_code != pin:
                         raise YomboPinCodeError("'pin' supplied is incorrect.")
 
-        logger.debug("device kwargs: {kwargs}", kwargs=kwargs)
 
         if isinstance(cmd, Command):
             cmdobj = cmd
@@ -1143,6 +1143,7 @@ class Device:
             'cmd_id': cmdobj.command_id,
             'status': 'new',  # new, delayed, sent, received, failed, pending, completed
             'message': '',  #contains any notes about the status. Errors, etc.
+            'requested_by': requested_by,
         }
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
@@ -1388,6 +1389,7 @@ class Device:
             - human_status *(int or string)* - The new status.
             - machine_status *(int or string)* - The new status.
             - machine_status_extra *(dict)* - Extra status as a dictionary.
+            - request_id *(string)* - Request ID that this should correspond to.
             - source *(string)* - The source module or library name creating the status.
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
@@ -1400,7 +1402,6 @@ class Device:
             self.send_status()
 
     def _set_status(self, **kwargs):
-        logger.debug("_set_status called...")
         machine_status = None
         if 'machine_status' not in kwargs:
             raise YomboDeviceError("set_status was called without a real machine_status!", errorno=120)
@@ -1409,12 +1410,22 @@ class Device:
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', '')
         energy_usage = self.energy_get_usage(machine_status)
-        source = kwargs.get('source', 'unknown')
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
 
-        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable)
+        if "request_id" in kwargs:
+            requested_by = self.do_command_requests[kwargs['request_id']]['requested_by']
+        else:
+            requested_by = {
+                'user_id': 'Unknown',
+                'component': 'Unknown',
+                'gateway': 'Unknown'
+            }
+
+        source = kwargs.get('source', 'Unknown')
+
+        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
             self._DevicesLibrary._LocalDB.save_device_status(**new_status.__dict__)
@@ -1430,7 +1441,13 @@ class Device:
         :param kwargs:
         :return:
         """
-        kwargs.update({"deviceobj" : self,
+        if len(self.status_history) == 1:
+            kwargs.update({"deviceobj" : self,
+                       "status" : None,
+                       "previous_status" : self.status_history[0],
+                      } )
+        else:
+            kwargs.update({"deviceobj" : self,
                        "status" : self.status_history[0],
                        "previous_status" : self.status_history[1],
                       } )
@@ -1467,10 +1484,15 @@ class Device:
 
     def _do_load_history(self, records):
         if len(records) == 0:
-            self.status_history.append(self.StatusTuple(self.device_id, 0, 0, 'NA', 'NA', {}, '', 0, 0))
+            requested_by = {
+                'user_id': 'Unknown',
+                'component': 'Unknown',
+                'gateway': 'Unknown'
+            }
+            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'unknown', {}, requested_by, '', 0, 0))
         else:
             for record in records:
-                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['source'], record['uploaded'], record['uploadable']))
+                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['source'], record['uploaded'], record['uploadable']))
 #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           machine_status,                             machine_status_extra,             source,           uploaded,           uploadable")
 
         #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)

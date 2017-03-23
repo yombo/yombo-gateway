@@ -118,13 +118,13 @@ class SQLDict(YomboLibrary):
         :return:
         """
         for name, di in self._dictionaries.iteritems():
-#            logger.warn("save_sql_dict 1")
+            logger.debug("save_sql_dict {di}", di=di)
             if di['dirty'] or save_all:
 #                logger.warn("save_sql_dict 3 {di}", di=di)
                 safe_data = {}  # Sometimes wierd datatype's happen...  Not good.
                 for key, item in di['dict'].iteritems():
                     safe_data[key] = item
- #               logger.warn("save_sql_dict 4 {di}", di=safe_data)
+                logger.debug("save_sql_dict 4 {di}", di=safe_data)
                 save_data = sqlite3Binary(cPickle.dumps(safe_data, cPickle.HIGHEST_PROTOCOL))
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
                         di['dict_name'], save_data)

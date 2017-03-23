@@ -357,7 +357,7 @@ class YomboAPI(YomboLibrary):
         # print "base_url: %s" % self.base_url
         path = self.base_url + path
 
-        print "%s: %s" % (method, path)
+        # print "%s: %s" % (method, path)
         # print "data: %s" % data
         # print "method: %s" % method
         # print "session: %s" % session
@@ -387,7 +387,7 @@ class YomboAPI(YomboLibrary):
         else:
             raise Exception("Bad request type?? %s: %s" % (method, path) )
 
-#        print "request api results: %s" % results
+        # print "request api results: %s" % results
         returnValue(results)
 
     @inlineCallbacks

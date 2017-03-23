@@ -169,21 +169,26 @@ class Modules(YomboLibrary):
         # Pre-Load
         logger.debug("starting modules::pre-load....")
         yield self._Loader.library_invoke_all("_module_preload_", called_by=self)
+        yield self.module_invoke_all("_preload1_", called_by=self)
         yield self.module_invoke_all("_preload_", called_by=self)
 
         # Load
         yield self._Loader.library_invoke_all("_module_load_", called_by=self)
+        yield self.module_invoke_all("_load1_", called_by=self)
         yield self.module_invoke_all("_load_", called_by=self)
 
         # Pre-Start
         yield self._Loader.library_invoke_all("_module_prestart_", called_by=self)
+        yield self.module_invoke_all("_prestart1_", called_by=self)
         yield self.module_invoke_all("_prestart_", called_by=self)
 
         # Start
         yield self._Loader.library_invoke_all("_module_start_", called_by=self)
+        yield self.module_invoke_all("_start1_", called_by=self)
         yield self.module_invoke_all("_start_", called_by=self)
 
         yield self._Loader.library_invoke_all("_module_started_", called_by=self)
+        yield self.module_invoke_all("_started1_", called_by=self)
         yield self.module_invoke_all("_started_", called_by=self)
 
     @inlineCallbacks
@@ -371,6 +376,11 @@ class Modules(YomboLibrary):
             try:
                 module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
             except:
+                logger.error("--------==(Error: Loading Module)==--------")
+                logger.error("----Name: {pathName}", pathName=pathName)
+                logger.error("---------------==(Traceback)==--------------------------")
+                logger.error("{trace}", trace=traceback.format_exc())
+                logger.error("--------------------------------------------------------")
                 logger.error("Not loading module: %s" % module['machine_label'])
                 continue
 
@@ -424,7 +434,7 @@ class Modules(YomboLibrary):
         """
         module_init_deferred = []
         for module_id, module in self._modulesByUUID.iteritems():
-            self.modules_invoke_log('info', module._FullName, 'module', 'init', 'About to call _init_.')
+            self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
 
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
@@ -667,9 +677,66 @@ class Modules(YomboLibrary):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
-    def module_device_types(self, module_id):
-        if module_id in self._modulesByUUID:
+    def module_devices(self, module_id, return_value='dict'):
+        """
+        A list of devices types for a given module id.
+
+        :raises YomboWarning: Raised when module_id is not found.
+        :param module_id: The Module ID to return device types for.
+        :return: A list of device type id's.
+        :rtype: list
+        """
+        if return_value is None:
+            return_value = 'dict'
+        elif return_value not in (['id', 'dict']):
+            raise YomboWarning("module_device_types 'return_value' accepts: 'id' or 'dict'")
+
+        if module_id not in self._modulesByUUID:
+            if return_value == 'id':
+                return []
+            elif return_value == 'dict':
+                return {}
+
+        if return_value == 'id':
+            temp = []
+            if module_id in self._modulesByUUID:
+                # print "dt..module_id: %s" % module_id
+                # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
+                for dt in self._modulesByUUID[module_id]._device_types:
+                    temp.extend(self._DeviceTypes[dt].get_devices(return_value=return_value))
+            tempset = set(temp)
+            return list(tempset)
+        elif return_value == 'dict':
+            temp = {}
+            if module_id in self._modulesByUUID:
+                # print "dt..module_id: %s" % module_id
+                # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
+                for dt in self._modulesByUUID[module_id]._device_types:
+                    temp.update(self._DeviceTypes[dt].get_devices(return_value=return_value))
+            # tempset = set(temp)
+            # return list(temp)
+            return temp
+
+    def module_device_types(self, module_id, return_value=None):
+        if return_value is None:
+            return_value = 'dict'
+        elif return_value not in (['id', 'dict']):
+            raise YomboWarning("module_device_types 'return_value' accepts: 'id' or 'dict'")
+
+        if module_id not in self._modulesByUUID:
+            if return_value == 'id':
+                return []
+            elif return_value == 'dict':
+                return {}
+
+        if return_value == 'id':
             return self._modulesByUUID[module_id]._device_types
+        elif return_value == 'dict':
+            results = {}
+            for device_type_id in self._modulesByUUID[module_id]._device_types:
+                results[device_type_id] = self._DeviceTypes[device_type_id]
+            return results
+
 
     @inlineCallbacks
     def add_module(self, data, **kwargs):

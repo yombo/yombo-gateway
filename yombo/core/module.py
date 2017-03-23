@@ -136,11 +136,18 @@ class YomboModule:
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 
-    def _GetDeviceTypes(self):
-        return self._Modules.module_device_types(self._module_id)
+    def _get_device_types(self):
+        return self._Modules.module_device_types(self._module_id, 'dict')
 
-    def _GetDevices(self):
-        return self._DeviceTypes.module_devices(self._module_id)
+    def _get_devices(self):
+        return self._Modules.module_devices(self._module_id, 'dict')
+
+    def _is_my_device(self, device):
+        if device.device_id in self._devices:
+            return True
+        else:
+            return False
+
 
     def __str__(self):
         """
@@ -157,13 +164,14 @@ class YomboModule:
         """
         pass
 
-    def _load_(self):
+    def _load1_(self):
         """
         Phase 2 of 3 for statup - Called when module should load anything else. After this
         function completes, it should be able to accept and process messages. Doesn't send
         messages at this stage.
         """
-        pass
+        self._device_types = self._get_device_types()
+        self._devices = self._get_devices()
 
     def _start_(self):
         """
@@ -226,12 +234,12 @@ class YomboModule:
         """
         return "%s:%s" % (self._label, self._module_id)
 
-    def __repr__(self):
-        """
-        Print a string when printing the class.  This will return the cmdUUID so that
-        the command can be identified and referenced easily.
-        """
-        return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
+    # def __repr__(self):
+    #     """
+    #     Print a string when printing the class.  This will return the cmdUUID so that
+    #     the command can be identified and referenced easily.
+    #     """
+    #     return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
 
     # def update_registered_device(self, device):
     #     self.registered_devices[device.device_id] = device

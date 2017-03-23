@@ -389,7 +389,7 @@ class AmqpConfigHandler(YomboLibrary):
         self.processing = False
         self.processing_queue = False
         self._checkProcessQueueLoop = LoopingCall(self.process_config_queue)
-        self.check_download_done_loop = None
+        self.check_download_done_calllater = None
 
         self._LocalDBLibrary = self.parent._Libraries['localdb']
 
@@ -398,11 +398,11 @@ class AmqpConfigHandler(YomboLibrary):
 
     def connect_setup(self):
         """
-        The connection was setup, but not quite ready to ask for configs. Just return a defer for now.
+        The connection was setup, but not quite ready to ask for configs. Just return a defer.
         :return:
         """
         # self.get_system_configs()
-        # self.check_download_done_loop = reactor.callLater(30, self.check_download_done)
+        # self.check_download_done_calllater = reactor.callLater(30, self.check_download_done)
         return self.init_defer
 
     def connected(self):
@@ -411,7 +411,7 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         self.get_system_configs()
-        self.check_download_done_loop = reactor.callLater(30, self.check_download_done)
+        self.check_download_done_calllater = reactor.callLater(30, self.check_download_done)
         # return self.init_defer
 
     def disconnected(self):
@@ -428,7 +428,7 @@ class AmqpConfigHandler(YomboLibrary):
         self.__doing_full_configs = False
 
         try:
-            self.check_download_done_loop.cancel()
+            self.check_download_done_calllater.cancel()
         except:
             pass
 
@@ -446,7 +446,7 @@ class AmqpConfigHandler(YomboLibrary):
         if self._checkProcessQueueLoop is not None and self._checkProcessQueueLoop.running:
             self._checkProcessQueueLoop.stop()
         try:
-            self.check_download_done_loop.cancel()
+            self.check_download_done_calllater.cancel()
         except:
             pass
 
@@ -481,7 +481,7 @@ class AmqpConfigHandler(YomboLibrary):
                     return
 
             self.init_startup_count = self.init_startup_count + 1
-            self.check_download_done_loop = reactor.callLater(30, self.check_download_done) #
+            self.check_download_done_calllater = reactor.callLater(30, self.check_download_done) #
 
     def generate_config_request(self, headers, request_data=""):
         """
@@ -838,23 +838,26 @@ class AmqpConfigHandler(YomboLibrary):
         self.__doing_full_configs = True
         self._full_download_start_time = time()
         self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
-        self._getAllConfigsLoggerLoop.start(5, False)  # Display a log line for pending downloaded, false - Dont' show now
+        self._getAllConfigsLoggerLoop.start(3, False)  # Display a log line for pending downloaded, false - Dont' show now
         self._checkProcessQueueLoop.start(0.5, False)
 
         logger.info("Requesting system configurations from server. This can take a few seconds.")
 
         allCommands = [
             "get_categories",
-            "get_gateway_commands",
-            "get_gateway_devices", # Includes device variable groups/fields/data
-            "get_gateway_device_types",
-            "get_gateway_modules", # Includes module variable groups/fields/data
+            # "get_gateway_commands",
+            # "get_gateway_devices", # Includes device variable groups/fields/data
+            # "get_gateway_device_types",
+            # "get_gateway_modules", # Includes module variable groups/fields/data
+            #
+            # "get_gateway_device_type_commands",
+            # "get_gateway_device_command_inputs",
+            # "get_gateway_input_types",
+            # "get_gateway_users",
+            # "get_gateway_dns_name",
 
-            "get_gateway_device_type_commands",
-            "get_gateway_device_command_inputs",
-            "get_gateway_input_types",
-            "get_gateway_users",
-            "get_gateway_dns_name",
+
+
             # "get_gateway_input_types",
 
             # "get_gateway_configs",
@@ -923,6 +926,10 @@ class AmqpConfigHandler(YomboLibrary):
             self._getAllConfigsLoggerLoop.stop()
             self._checkProcessQueueLoop.stop()
             reactor.callLater(0.1, self.done_with_startup_downloads) # give DB some breathing room
+        else:
+            if self._getAllConfigsLoggerLoop is not None and self._getAllConfigsLoggerLoop.running:
+                self._getAllConfigsLoggerLoop.reset()
+            self.check_download_done_calllater.reset(30)
 
     def done_with_startup_downloads(self):
         """
@@ -939,11 +946,17 @@ class AmqpConfigHandler(YomboLibrary):
 
     def _show_pending_configs(self):
         waitingTime = time() - self._full_download_start_time
-        logger.info("Waited {waitingTime} for startup; pending these configurations:", waitingTime=waitingTime)
+        logger.debug("Waited {waitingTime} for startup; pending these configurations:", waitingTime=waitingTime)
+        count_pending = 0
+        currently_processing = ''
         for key in list(self.__pending_updates):
-            logger.info("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]['status'])
+            count_pending += 1
+            logger.debug("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]['status'])
             if self.__pending_updates[key]['status'] == 'processing':
-                self.check_download_done_loop.reset(30)
+                currently_processing = key
+                self.check_download_done_calllater.reset(30)
+        logger.info("Processing configuration, {count_pending} of 10. Currently processing: {currently_processing}", currently_processing=currently_processing,  count_pending=count_pending)
+
 
     def is_json(self, myjson):
         """

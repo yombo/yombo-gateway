@@ -185,10 +185,16 @@ class MQTT(YomboLibrary):
         Stops the client connections and shuts down the MQTT server.
         :return:
         """
+        print("shutting down mqtt clients...")
         for client_id, client in self.client_connections.iteritems():
+            print("in loop to try to stop mqtt client: %s" % client_id)
             try:
-                client.factory.stopTrying()  # Tell reconnecting factory to don't attempt connecting after disconnect.
+                print("telling client to say goodbye... %s" % client_id)
+                client.factory.stopTrying(
+
+                )  # Tell reconnecting factory to don't attempt connecting after disconnect.
                 client.factory.protocol.disconnect()
+                client.factory.protocol.close()
             except:
                 pass
 

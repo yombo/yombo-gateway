@@ -341,10 +341,11 @@ class LocalDB(YomboLibrary):
     def get_device_status(self, **kwargs):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
-        records = yield self.dbconfig.select('device_status', select='device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, source, uploaded, uploadable',
+        records = yield self.dbconfig.select('device_status', select='device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable',
                                              where=['device_id = ?', id], orderby='set_time', limit=limit)
         for index in range(len(records)):
             records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
+            records[index]['requested_by'] = json.loads(str(records[index]['requested_by']))
         returnValue(records)
 
     @inlineCallbacks
@@ -354,6 +355,7 @@ class LocalDB(YomboLibrary):
         machine_status = kwargs['machine_status']
         human_status = kwargs.get('human_status', machine_status)
         machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',',':') )
+        requested_by = json.dumps(kwargs.get('requested_by', ''), separators=(',',':') )
         source = kwargs.get('source', '')
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
@@ -367,6 +369,7 @@ class LocalDB(YomboLibrary):
             machine_status_extra=machine_status_extra,
             source=source,
             uploaded=uploaded,
+            requested_by=requested_by,
             uploadable=uploadable,
         ).save()
 
