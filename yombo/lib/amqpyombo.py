@@ -242,8 +242,8 @@ class AMQPYombo(YomboLibrary):
         response_msg = self.generate_message(exchange_name, source, destination, "response", headers, body)
         if properties.correlation_id:
            response_msg['properties']['correlation_id'] = properties.correlation_id
-#        response_msg['properties']['headers']['response_type']=response_type
-        correlation_id = random_string(length=12)
+#         response_msg['properties']['headers']['response_type']=response_type
+#         correlation_id = random_string(length=12)
 
         # print "properties: %s" % properties
         if 'route' in properties.headers:
@@ -253,7 +253,8 @@ class AMQPYombo(YomboLibrary):
             response_msg['properties']['headers']['route'] = "yombo.gw.amqpyombo:" + self.user_id
         return response_msg
 
-    def generate_message_request(self, exchange_name, source, destination, headers, body, callback=None):
+    def generate_message_request(self, exchange_name=None, source=None, destination=None,
+                                 headers=None, body=None, callback=None, correlation_id=None):
         new_body = {
             "data_type": "object",
             "request"  : body,
@@ -263,8 +264,10 @@ class AMQPYombo(YomboLibrary):
 
         request_msg = self.generate_message(exchange_name, source, destination, "request",
                                             headers, new_body, callback=callback)
-        request_msg['properties']['correlation_id'] = random_string(length=16)
-        # request_msg['properties']['headers']['request_type']=request_type
+        if correlation_id is None:
+            request_msg['properties']['correlation_id'] = random_string(length=16)
+        else:
+            request_msg['properties']['correlation_id'] = correlation_id
         return request_msg
 
     def generate_message(self, exchange_name, source, destination, header_type, headers, body, callback=None):
@@ -341,16 +344,27 @@ class AMQPYombo(YomboLibrary):
 
         return request_msg
 
-    def publish(self, message):
+    def publish(self, **kwargs):
         """
         Publishes a message. Use generate_message(), generate_message_request, or generate_message_response to
         create the message.
         :param message:
         :return:
         """
-        self.amqp.publish(**message)
+        if 'callback' in kwargs:
+            callback = kwargs['callback']
+            del kwargs['callback']
+            if 'correlation_id' not in kwargs['properties']:
+                kwargs['properties']['correlation_id'] = random_string()
+        else:
+            callback = None
 
-    def amqp_incoming(self, deliver, properties, msg, queue):
+        # print "opublish kwargs: %s" % kwargs
+        correlation = self.amqp.publish(**kwargs)
+        if callback is not None:
+            correlation['amqpyombo_callback'] = callback
+
+    def amqp_incoming(self, properties, msg, correlation):
         """
         All incoming messages come here. It will be parsed and sorted as needed.  Routing:
 
@@ -367,8 +381,9 @@ class AMQPYombo(YomboLibrary):
         3) Route the message to the proper library for final handling.
         """
         # self._local_log("info", "AMQPLibrary::amqp_incoming")
-        # print " !!!!!!!!!!!!!!!!!!!!!!!!! "
         # print "properties: %s" % properties
+        # print "correlation: %s" % correlation
+
 #        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
         if properties.user_id is None:
@@ -445,6 +460,8 @@ class AMQPYombo(YomboLibrary):
         # self._local_log("debug", "PikaProtocol::receive_item4")
 
         # if we are here.. we have a valid message....
+        if correlation is not None and 'amqpyombo_callback' in correlation:
+            return correlation['amqpyombo_callback'](properties, msg, correlation)
 
         if properties.headers['type'] == 'request':
             try:
@@ -465,7 +482,9 @@ class AMQPYombo(YomboLibrary):
             try:
                 logger.debug("headers: {headers}", headers=properties.headers)
                 if properties.headers['response_type'] == 'config':
-                    self.configHandler.process_config_response(msg, properties)
+                    self.configHandler.process_config_response(properties, msg, correlation)
+                elif properties.headers['response_type'] == 'sslcert':
+                    self._SSLCerts.amqp_incoming(properties, msg, correlation)
 
             except Exception, e:
                 logger.error("--------==(Error: in response processing     )==--------")
