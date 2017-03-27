@@ -27,12 +27,10 @@ import parsedatetime.parsedatetime as pdt
 from struct import pack as struct_pack, unpack as struct_unpack
 from socket import inet_aton, inet_ntoa
 import math
-from time import strftime, localtime, time
-import decimal
+from time import strftime, localtime
 import netifaces
 import netaddr
 import socket
-import struct
 import binascii
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
@@ -40,7 +38,7 @@ from twisted.internet.task import deferLater
 from twisted.internet import reactor
 
 # Import 3rd-party libs
-from yombo.core.exceptions import YomboWarning
+#from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import memoize_, memoize_ttl
 import yombo.ext.six as six
 from yombo.ext.hashids import Hashids
@@ -395,6 +393,38 @@ def fopen(*args, **kwargs):
         old_flags = fcntl.fcntl(fhandle.fileno(), fcntl.F_GETFD)
         fcntl.fcntl(fhandle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
     return fhandle
+
+def save_file(filename, content, mode = None):
+    """
+    A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
+
+    Don't use this for saving large files.
+
+    :param filename: Full path to save to.
+    :param content: Content to save.
+    :param mode: File open mode, default to 'w'.
+    :return:
+    """
+    if mode is None:
+        mode = 'w'
+    f = fopen(filename, mode)
+    f.write(content)
+    f.close()
+
+def read_file(filename, mode = None):
+    """
+    A quick function to read data from a file. Defaults to read only 'r'.
+
+    Don't use this for saving large files.
+
+    :param filename: Full path to save to.
+    :param mode: File open mode, default to 'r'.
+    :return:
+    """
+    if mode is None:
+        mode = 'r'
+    f = fopen(filename, mode)
+    return f.read()
 
 def percentage(part, whole):
     """
