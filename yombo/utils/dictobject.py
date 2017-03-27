@@ -2,7 +2,6 @@
 #software.  Details can be found at https://yombo.net
 """
 A dictionary that can be access as either an object or dictionary.
-A dictionary that can search by either key or by value.
 
 **Usage**:
 
@@ -28,10 +27,7 @@ class DictObject(dict):
     A dictionary that can be treated as a dictionary or an object.
     """
     def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        return self[key]
 
     def __setattr__(self, key, value):
         self[key] = value
@@ -41,6 +37,12 @@ class DictObject(dict):
             del self[key]
         except KeyError, k:
             raise AttributeError, k
+
+    def get(self, key, default=None):
+        if key in self:
+            return dict.__getitem__(self, key)
+        else:
+            return default
 
     def __repr__(self):
         return '<DictObject ' + dict.__repr__(self) + '>'
