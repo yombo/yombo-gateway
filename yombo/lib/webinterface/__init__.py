@@ -20,6 +20,7 @@ from klein import Klein
 import markdown
 from docutils.core import publish_parts
 from random import randint
+import datetime
 
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -29,7 +30,7 @@ except ImportError:
 # Import twisted libraries
 from twisted.web.server import Site
 from twisted.web.static import File
-from twisted.internet import reactor
+from twisted.internet import reactor, ssl
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import 3rd party libraries
@@ -41,6 +42,7 @@ from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
+from yombo.utils.x509 import generate_csr
 
 from yombo.lib.webinterface.sessions import Sessions
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
@@ -361,23 +363,11 @@ class WebInterface(YomboLibrary):
         route_voicecmds(self.webapp)
 
         self.temp_data = ExpiringDict(max_age_seconds=1800)
+        self.web_server_started = False
+        self.web_server_ssl_started = False
 
     # def _start_(self):
     #     self.webapp.templates.globals['_'] = _  # i18n
-
-    @webapp.handle_errors(NotFound)
-    @require_auth()
-    def notfound(self, request, failure):
-        request.setResponseCode(404)
-        return 'Not found, I say'
-
-    @webapp.route('/<path:catchall>')
-    @require_auth()
-    @run_first()
-    def page_404(self, request, session, catchall):
-        request.setResponseCode(404)
-        page = self.get_template(request, self._dir + 'pages/404.html')
-        return page.render()
 
     @inlineCallbacks
     def _load_(self):
@@ -402,7 +392,6 @@ class WebInterface(YomboLibrary):
 #        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
 
-        self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
         self._display_pin_console_time = 0
 
         self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
@@ -418,6 +407,78 @@ class WebInterface(YomboLibrary):
 
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         # self.webapp.templates.globals['func'] = self.functions
+        self.start_web_servers()
+
+    def start_web_servers(self):
+        if self.web_server_started is False:
+            self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
+            self.web_server_started = True
+
+        if self.web_server_ssl_started is False:
+            cert = self._SSLCerts.get('lib_webinterface')
+
+            twisted_cert = "%s\n%s" % (cert['key'], cert['cert'])
+
+            certificate = ssl.PrivateCertificate.loadPEM(twisted_cert)
+            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, certificate.options())
+            self.web_server_ssl_started = True
+            return
+
+    def _sslcerts_(self, **kwargs):
+        """
+        Called to collect to ssl cert requirements.
+
+        :param kwargs:
+        :return:
+        """
+        cert = {}
+        cert['sslname'] = "lib_webinterface"
+        fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        if fqdn is None:
+            raise YomboWarning("Unable to create webinterface SSL cert: DNS not set properly.")
+        san_list = ['l', 'localhost', 'local', 'i', 'e', 'internal', 'external']
+        cert['sans'] = [str(s + "." + fqdn) for s in san_list]
+        return cert
+
+    def new_ssl_cert(self, **kwargs):
+        """
+        Called when a requested certificate has been signed or updated. If needed, this funciton
+        will function will restart the SSL service if the current certificate has expired or is
+        a self-signed cert.
+
+        :param kwargs:
+        :return:
+        """
+        pass
+
+    @inlineCallbacks
+    def request_new_certs(self):
+        """
+        Requests a new cert.  Steps:
+        Generate new key and CSR into temp files
+        Sent CSR to yombo servers for signing.
+        Collect CSR from yombo.
+        Backup old cert
+        Install new cert
+        Restart SSL server
+        :return:
+        """
+        print "in request_new_certs()"
+        fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        if fqdn is None:
+            raise YomboWarning("Unable to create webinterface SSL cert: DNS not set properly.")
+        san_list = ['l', 'localhost', 'local', 'i', 'e', 'internal', 'external']
+        sans = [s + "." + fqdn for s in san_list]
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
+
+        csr_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/archive/%s_webinterface.csr" % timestamp
+        key_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/archive/%s_webinterface.pem" % timestamp
+        results = yield generate_csr(sans=sans, csr_file=csr_file, key_file=key_file )
+        print results
+        yombo.utils.save_file(csr_file, results['csr_key'])
+        yombo.utils.save_file(key_file, results['key'])
+
 
     def _module_started_(self, **kwargs):
         """
@@ -465,6 +526,20 @@ class WebInterface(YomboLibrary):
         if section == 'core':
             if option == 'label':
                 self.misc_wi_data['gateway_label'] = value
+
+    @webapp.handle_errors(NotFound)
+    @require_auth()
+    def notfound(self, request, failure):
+        request.setResponseCode(404)
+        return 'Not found, I say'
+
+    @webapp.route('/<path:catchall>')
+    @require_auth()
+    @run_first()
+    def page_404(self, request, session, catchall):
+        request.setResponseCode(404)
+        page = self.get_template(request, self._dir + 'pages/404.html')
+        return page.render()
 
     def i18n(self, request):
         """
@@ -804,7 +879,7 @@ class WebInterface(YomboLibrary):
 
         local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure)
         internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure)
-        external = "http://%s:%s" % (external_hostname, self.wi_port_nonsecure)
+        external = "https://%s:%s" % (external_hostname, self.wi_port_secure)
         print "###########################################################"
         print "#                                                         #"
         if self._op_mode != 'run':

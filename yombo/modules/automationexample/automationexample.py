@@ -21,11 +21,11 @@ class AutomationExample(YomboModule):
     def _init_(self):
         logger.info("Output from translation: {out}", out=_('automationexample','demo.automationexample')) # demo of using i18n...
 #        self._States['automationexample'] = 0
-
-        data = self._GPG.encrypt_asymmetric('/dev/homevision')
-        print "Encrypted: %s"  % data
-        data = self._GPG.decrypt_asymmetric(data)
-        print "Decrupted: %s" % data
+#
+#         data = self._GPG.encrypt_asymmetric('/dev/homevision')
+#         print "Encrypted: %s"  % data
+#         data = self._GPG.decrypt_asymmetric(data)
+#         print "Decrupted: %s" % data
 
 
     def _load_(self):

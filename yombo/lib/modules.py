@@ -463,6 +463,7 @@ class Modules(YomboLibrary):
             module._MQTT = self._Loader.loadedLibraries['mqtt']
             module._Notifications = self._Loader.loadedLibraries['notifications']
             module._SQLDict = self._Loader.loadedLibraries['sqldict']
+            module._SSLCerts = self._Loader.loadedLibraries['sslcerts']
             module._States = self._Loader.loadedLibraries['states']
             module._Statistics = self._Loader.loadedLibraries['statistics']
             module._Tasks = self._Loader.loadedLibraries['tasks']

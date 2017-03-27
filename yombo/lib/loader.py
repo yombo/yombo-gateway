@@ -61,6 +61,7 @@ HARD_LOAD["States"] = {'operation_mode':'all'}
 HARD_LOAD["Configuration"] = {'operation_mode':'all'}
 HARD_LOAD["Statistics"] = {'operation_mode':'all'}
 HARD_LOAD["Startup"] = {'operation_mode':'all'}
+HARD_LOAD["SSLCerts"] = {'operation_mode':'all'}
 HARD_LOAD["AMQP"] = {'operation_mode':'run'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
@@ -84,6 +85,7 @@ HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["Tasks"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD["SSLCerts"] = {'operation_mode':'all'}
 HARD_UNLOAD["Tasks"] = {'operation_mode':'all'}
 HARD_UNLOAD["Localize"] = {'operation_mode':'all'}
 HARD_UNLOAD["Startup"] = {'operation_mode':'all'}
@@ -318,6 +320,7 @@ class Loader(YomboLibrary, object):
             component = name.lower()
             library = self.loadedLibraries[component]
             library._AMQP = self.loadedLibraries['amqp']
+            library._AMQPYombo = self.loadedLibraries['amqpyombo']
             library._Atoms = self.loadedLibraries['atoms']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
@@ -332,6 +335,7 @@ class Loader(YomboLibrary, object):
             library._Localize = self.loadedLibraries['localize']
             library._MQTT = self.loadedLibraries['mqtt']
             library._SQLDict = self.loadedLibraries['sqldict']
+            library._SSLCerts = self.loadedLibraries['sslcerts']
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
             library._Tasks = self.loadedLibraries['tasks']
@@ -572,6 +576,51 @@ class Loader(YomboLibrary, object):
         Returns loaded module object by name. Module must be loaded.
         """
         return self.loadedComponents
+
+
+    #@memoize_
+    def find_function(self, component_type, component_name, component_function):
+        """
+        Finds a function within the system by namme. This is useful for when you need to
+        save a pointer to a callback to sql or a dictionary, but cannot save pointers to
+        a function because the system may restart. This offers another method to reach
+        various functions within the system.
+
+        :param component_type: Either 'module' or 'library'.
+        :param component_name: Module or libary name.
+        :param component_function: Name of the function. A string for direct access to the function or a list
+            can be provided and it will search the a dictionary of items for a callback.
+        :return:
+        """
+
+        if component_type == 'library':
+            if component_name not in self.loadedLibraries:
+                logger.info("Library not found: {loadedLibraries}", loadedLibraries=loadedLibraries)
+                print(self.loadedLibraries)
+                return False
+            if hasattr(self.loadedLibraries[component_name], component_function):
+                method = getattr(self.loadedLibraries[component_name], component_function)
+                if not callable(method):
+                    logger.info(
+                        "Not callable by name: 'component_type, component_name, component_function'")
+                    return False
+                else:
+                    return method
+        elif component_type == 'module':
+            modules = self._moduleLibrary
+            if component_name not in modules._modulesByName:
+                return False
+            if hasattr(modules._modulesByName[component_name], component_function):
+                method = getattr(modules._modulesByName[component_name], component_function)
+                if not callable(method):
+                    logger.info(
+                        "Not callable by name: 'component_type, component_name, component_function'")
+                    return False
+                else:
+                    return method
+        else:
+            logger.warn("Not a valid component_type: {component_type}", component_type=component_type)
+            return False
 
 
 _loader = None
