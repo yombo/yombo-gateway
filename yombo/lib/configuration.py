@@ -29,7 +29,7 @@ import ConfigParser
 import hashlib
 from time import time, localtime, strftime
 import cPickle
-from shutil import copyfile
+from shutil import move, copy2 as copyfile
 import os
 from datetime import datetime
 import sys
@@ -41,6 +41,7 @@ except ImportError:
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -82,8 +83,30 @@ class Configuration(YomboLibrary):
         self._loaded = False
 
         self.loading_yombo_ini = True
+        config_parser = ConfigParser.SafeConfigParser()
+
+        ini_norestore = not os.path.exists('yombo.ini.norestore')
+
+        if os.path.exists('yombo.ini'):
+            if os.path.isfile('yombo.ini') is False:
+                try:
+                    os.remove('yombo.ini')
+                except Exception, e:
+                    logger.error("'yombo.ini' file exists, but it's not a file and it can't be deleted!")
+                    reactor.stop()
+                    return
+                if ini_norestore:
+                    self.restore_backup_yombi_ini()
+            else:
+                if os.path.getsize('yombo.ini') < 5:
+                    logger.warn('yombo.ini appears corrupt, attempting to restore from backup.')
+                    if ini_norestore:
+                        self.restore_backup_yombi_ini()
+        else:
+            if ini_norestore:
+                self.restore_backup_yombi_ini()
+
         try:
-            config_parser = ConfigParser.SafeConfigParser()
             fp = fopen('yombo.ini')
             config_parser.readfp(fp)
             fp.close()
@@ -118,7 +141,7 @@ class Configuration(YomboLibrary):
         else:
             self._Atoms.set('configuration.yombo_ini.found', True)
             timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-            copyfile('yombo.ini', 'usr/bak/yombo_ini/yombo.ini.' + timeString)
+            copyfile('yombo.ini', "usr/bak/yombo_ini/%s_yombo.ini" % timeString)
 
         try:
             config_parser = ConfigParser.SafeConfigParser()
@@ -216,6 +239,22 @@ class Configuration(YomboLibrary):
            },
        ]
 
+    def restore_backup_yombi_ini(self):
+        path = "usr/bak/yombo_ini/"
+
+        dated_files = [(os.path.getmtime("%s/%s" % (path, fn)), os.path.basename(fn))
+                       for fn in os.listdir(path)]
+        dated_files.sort()
+        dated_files.reverse()
+        if len(dated_files) > 0:
+            for i in range(0, len(dated_files)):
+                the_file = "%s/%s" % (path, dated_files[i][1])
+                if os.path.getsize(the_file) > 100:
+                    copyfile(the_file, 'yombo.ini')
+                    logger.warn("yombo.ini file restored from previous backup.")
+                    return True
+        return False
+
     def save(self, force_save=False):
         """
         Save the configuration configs to the INI file.
@@ -295,14 +334,17 @@ class Configuration(YomboLibrary):
 
             path = "usr/bak/yombo_ini/"
 
-            for file in os.listdir(os.path.dirname(path)):
-                fullpath   = os.path.join(path,file)    # turns 'file1.txt' into '/path/to/file1.txt'
-                timestamp  = os.stat(fullpath).st_ctime # get timestamp of file
-                createtime = datetime.fromtimestamp(timestamp)
-                now        = datetime.now()
-                delta      = now - createtime
-                if delta.days > 30:
-                    os.remove(fullpath)
+            backup_files = os.listdir(os.path.dirname(path))
+            if len(backup_files) > 5:
+                for file in backup_files: # remove old yombo.ini backup files.
+                    fullpath   = os.path.join(path,file)    # turns 'file1.txt' into '/path/to/file1.txt'
+                    timestamp  = os.stat(fullpath).st_ctime # get timestamp of file
+                    createtime = datetime.fromtimestamp(timestamp)
+                    now        = datetime.now()
+                    delta      = now - createtime
+                    if delta.days > 30:
+                        os.remove(fullpath)
+
         except Exception as E:
             logger.warn("Caught master error in saving ini file: {e}", e=E)
             logger.error("--------------------------------------------------------")
