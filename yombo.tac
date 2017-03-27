@@ -28,7 +28,8 @@ if not os.path.exists('usr/etc'):
     os.makedirs('usr/etc')
 if not os.path.exists('usr/etc/gpg'):
     os.makedirs('usr/etc/gpg')
-    os.chmod('usr/etc/gpg', 0700)
+if not os.path.exists('usr/etc/certs'):
+    os.makedirs('usr/etc/certs')
 if not os.path.exists('usr/locale'):
     os.makedirs('usr/locale')
 #logging directory
@@ -36,6 +37,13 @@ if not os.path.exists('usr/log'):
     os.makedirs('usr/log')
 if not os.path.exists('usr/opt'):
     os.makedirs('usr/opt')
+
+# ensure only our user can read these directories, along with out group. Allows a
+# backup group to be assigned for backup purposes.
+os.chmod('usr/etc', 0770)
+os.chmod('usr/etc/gpg', 0770)
+os.chmod('usr/etc/certs', 0770)
+os.chmod('usr/bak', 0770)
 
 try:
     from yombo.core.gwservice import GWService
