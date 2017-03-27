@@ -9,19 +9,33 @@ gets updated.
 For performance reasons, data is only saved to disk periodically or when
 the gateway exits.
 
+The SQLDict can also use a serializer when saving data to disk. Just include
+a callback to a serializer when requesting a SQLDict with the get() function,
+or set a serializer later, see example below.
+
+An unserialize function can be called to restore the data as well. This
+requires the serializer and unserializer to be set inside the get() request.
+
 *Usage**:
 
 .. code-block:: python
 
    resources  = yield self._SQLDict.get(self, "someVars") # 'self' is required for data isolation
-    
+   # set a serializer when requesting a SQLDict:
+   # resources  = yield self._SQLDict.get(self, "someVars", self.serialize_data) # Set a serializer on init.
+   # set a serializer and unserializer:
+   # resources  = yield self._SQLDict.get(self, "someVars", self.serialize_data, self.unserialize_data) # Set a serializer on init.
+
    resources['apple'] = 'ripe'
    resources['fruits'] = ['grape', 'orange', 'plum']
    resources['family'] = {'brother' : 'Jeff', 'mom' : 'Sara', 'dad' : 'Sam'}
 
+   # optional, set a serializer after init. Unserializer must be set within the get() function above.
+   resources.set_serializer(self.serialize_data)
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2015 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -31,10 +45,11 @@ from sqlite3 import Binary as sqlite3Binary
 from yombo.ext.six import string_types
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
@@ -67,20 +82,21 @@ class SQLDict(YomboLibrary):
         When gateway stops, we stop the save interval timer. Will be saved in _unload_.
         :return:
         """
-        if self._saveSQLDictLoop is not None:
+        if self._saveSQLDictLoop is not None and self._saveSQLDictLoop.running:
             self._saveSQLDictLoop.stop()
 
+    @inlineCallbacks
     def _unload_(self):
         """
         Save any data to disk (sql).
         :return: A deferred. Will be called once save is complete.
         """
-        self.save_sql_dict(True)
-        self.unload_defer = Deferred()
-        return self.unload_defer
+        yield self.save_sql_dict(True)
+        # self.unload_defer = Deferred()
+        # return self.unload_defer
 
     @inlineCallbacks
-    def get(self, owner_object, dict_name):
+    def get(self, owner_object, dict_name, serializer=None):
         """
         Used to get or create a new SQL backed dictionary. You method must be decorated with @inlineCallbacks and then
         yield the results of this call.
@@ -94,7 +110,7 @@ class SQLDict(YomboLibrary):
         if component_name+":"+dict_name in self._dictionaries:
             returnValue(self._dictionaries[component_name+":"+dict_name]['dict'])
 
-        dict = SQLDictionary(self, component_name, dict_name)
+        dict = SQLDictionary(self, component_name, dict_name, serializer)
 #        print "SQLDict: about to load: %s" % dict_name
         yield dict.load()
 
@@ -123,15 +139,25 @@ class SQLDict(YomboLibrary):
 #                logger.warn("save_sql_dict 3 {di}", di=di)
                 safe_data = {}  # Sometimes wierd datatype's happen...  Not good.
                 for key, item in di['dict'].iteritems():
-                    safe_data[key] = item
+                    if di['dict']._SQLDictionary__serializer is not None:
+                        try:
+                            result = di['dict']._SQLDictionary__serializer(item)
+                            safe_data[key] = di['dict']._SQLDictionary__serializer(item)
+                        except YomboWarning:
+                            continue
+
+                    else:
+                        safe_data[key] = item
+
                 logger.debug("save_sql_dict 4 {di}", di=safe_data)
                 save_data = sqlite3Binary(cPickle.dumps(safe_data, cPickle.HIGHEST_PROTOCOL))
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
                         di['dict_name'], save_data)
 #                print "in save_sql_dict - returned from saving data into sql"
-                self._dictionaries[name]['dirty'] = False
-        if self.unload_defer is not None:
-            self.unload_defer.callback(10)
+                di['dirty'] = False
+
+# if self.unload_defer is not None:
+        #     self.unload_defer.callback(10)
 
 
     # def _saveSQLDictDB(self):
@@ -159,15 +185,19 @@ class SQLDictionary(dict):
     If the dictionary for the given "dictname" exists, it will be populated
     from the database, otherwise it will be created.
     """
-    def __init__(self, parent, component_name, dict_name):
+    def __init__(self, parent, component_name, dict_name, serializer=None, unserializer=None):
         """
         On init, construct a new dictionary. If there is an existing 'dict_name' for
         the given 'moduleObj', then it will be loaded.
 
         Update SQL on any updates/deletes.
-        :param owner_object: The module object that is using this data.
-        :type owner_object: Module Object
+
+        :param parent: The SQLDict library.
+        :param component_name: The name of the component requesting storage.
         :param dict_name: Name of the dictionary to store in the database.
+        :param serializer: A callable function to use to serialize data when saving.
+        :param unserializer: A callable function to use to unserialize data when restoring
+
         :type dict_name: string
         """
         super(SQLDictionary, self).__init__()
@@ -177,6 +207,8 @@ class SQLDictionary(dict):
         self.__component_name = component_name
         self.__dict_name = dict_name
         self.__init = False
+        self.__serializer = serializer
+        self.__unserializer = unserializer
 
     @inlineCallbacks
     def load(self):
@@ -189,8 +221,27 @@ class SQLDictionary(dict):
         items = cPickle.loads(result_data)
 
         for key, value in items.iteritems():
-            self[key] = value
+            if self.__unserializer is not None:
+                try:
+                    value = self.__unserializer(value)
+                    self[key] = value
+                except YomboWarning:
+                    continue
+            else:
+                self[key] = value
+
         self.__load = False  # only true when loaded, don't save what was just loaded.
+
+    def set_serializer(self, serializer):
+        """
+        Set a serializer. This will be called on the data portion of a dictionary before saving.
+
+        The serializer can raise "YomboWarning" to skipping saving this data.
+
+        :param serializer: a pointer to a callable function
+        :return:
+        """
+        self.__serializer = serializer
 
     def __setitem__(self, key, value):
         """
