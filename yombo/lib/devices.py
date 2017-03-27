@@ -137,7 +137,7 @@ class Devices(YomboLibrary):
         return self._devicesByUUID.__iter__()
 
     def __len__(self):
-        return len(self.self._devicesByUUID)
+        return len(self._devicesByUUID)
 
     def __str__(self):
         return self._devicesByUUID
@@ -437,17 +437,18 @@ class Devices(YomboLibrary):
         :rtype: dict
         """
         if limiter_override is None:
-            limiter_override = .99
+            limiter_override = .89
 
         logger.debug("looking for: {device_id}", device_id=device_requested)
         if device_requested in self._devicesByUUID:
             logger.debug("found by device id! {device_id}", device_id=device_requested)
-            return self._devicesByUUID.search2(device_requested, limiter_override)
+            return self._devicesByUUID[device_requested]
         else:
             try:
-                requestedUUID = self._devicesByName[device_requested]
-                logger.debug("found by device name! {device_id}", device_id=device_requested)
-                return self._devicesByUUID[requestedUUID]
+                device_id = self._devicesByName.search2(device_requested, limiter_override)
+                # requestedUUID = self._devicesByName[device_requested]
+                logger.debug("found by device name! {device_id}", device_id=device_id)
+                return self._devicesByUUID[device_id]
             except YomboFuzzySearchError, e:
                 raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
 
