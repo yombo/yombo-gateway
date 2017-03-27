@@ -29,6 +29,7 @@ import cPickle
 from sqlite3 import Binary as sqlite3Binary
 import sys
 import inspect
+from os import chmod
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -217,6 +218,8 @@ class LocalDB(YomboLibrary):
 
                 self.dbconfig.update("schema_version", {'table_name': 'core', 'version':z})
                 results = yield Schema_Version.all()
+
+        chmod('usr/etc/yombo.db', 0600)
 
         yield self._load_db_model()
 
@@ -592,7 +595,7 @@ class LocalDB(YomboLibrary):
         yield self.dbconfig.delete('webinterface_sessions', where=['id = ?', session_id] )
 
 #########################
-###    States     #####
+###    States      #####
 #########################
     @inlineCallbacks
     def get_states(self, name=None):
