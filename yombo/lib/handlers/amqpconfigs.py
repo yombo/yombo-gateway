@@ -497,7 +497,7 @@ class AmqpConfigHandler(YomboLibrary):
         logger.debug("response: {request_msg}", request_msg=request_msg)
         return request_msg
 
-    def process_config_response(self, msg, properties):
+    def process_config_response(self, properties, msg, correlation):
         """
         Process configuration information coming from Yombo Servers. After message is validated, the payload is
         delivered here.
@@ -845,21 +845,20 @@ class AmqpConfigHandler(YomboLibrary):
 
         allCommands = [
             "get_categories",
-            # "get_gateway_commands",
-            # "get_gateway_devices", # Includes device variable groups/fields/data
-            # "get_gateway_device_types",
-            # "get_gateway_modules", # Includes module variable groups/fields/data
-            #
-            # "get_gateway_device_type_commands",
-            # "get_gateway_device_command_inputs",
-            # "get_gateway_input_types",
-            # "get_gateway_users",
-            # "get_gateway_dns_name",
+            "get_gateway_commands",
+            "get_gateway_devices", # Includes device variable groups/fields/data
+            "get_gateway_device_types",
+            "get_gateway_modules", # Includes module variable groups/fields/data
+
+            "get_gateway_device_type_commands",
+            "get_gateway_device_command_inputs",
+            "get_gateway_input_types",
+            "get_gateway_users",
+            "get_gateway_dns_name",
 
 
 
             # "get_gateway_input_types",
-
             # "get_gateway_configs",
 
 #            "GetModuleVariables",
@@ -884,22 +883,24 @@ class AmqpConfigHandler(YomboLibrary):
             request = self.generate_config_request(headers, body)
 
 #            print request
-            self.parent.amqp.publish(**request)
+            self.parent.publish(**request)
 
             self._append_full_download_queue(item)
 
-    def _generate_request_message(self, request_type, requestContent):
-        request = {
-            "exchange_name": "ysrv.e.gw_config",
-            "source"       : "yombo.gateway.lib.configurationupdate",
-            "destination"  : "yombo.server.configs",
-            "body": {
-              "data_type": "object",
-              "request"  : requestContent,
-            },
-            "request_type": request_type,
-        }
-        return self.AMQPYombo.generate_request_message(**request)
+
+
+    # def _generate_request_message(self, request_type, requestContent):
+    #     request = {
+    #         "exchange_name": "ysrv.e.gw_config",
+    #         "source"       : "yombo.gateway.lib.sslcerts",
+    #         "destination"  : "yombo.server.configs",
+    #         "body": {
+    #           "data_type": "object",
+    #           "request"  : requestContent,
+    #         },
+    #         "request_type": request_type,
+    #     }
+    #     return self.AMQPYombo.generate_request_message(**request)
 
     def _append_full_download_queue(self, table):
         """
