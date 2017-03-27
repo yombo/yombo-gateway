@@ -3,7 +3,7 @@ Various function decorators.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016 by Yombo.
+:copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
 from time import time
@@ -15,6 +15,30 @@ from yombo.core.log import get_logger
 import yombo.utils
 
 logger = get_logger('utils.utils')
+
+def static_var(varname, value):
+    """
+    Sets a static variable within a function. This is an easy way to set a default.
+
+    **Usage**:
+
+    .. code-block:: python
+
+        from yombo.utils.decorators import static_var
+
+        @static_var("my_variable", 0)
+        def some_function(x):
+            some_function.my_variable += 1
+            print "I've been called %s times." % some_function.my_variable
+
+    :param varname: variable name to create
+    :param value: initial value to set.
+    :return:
+    """
+    def decorate(func):
+        setattr(func, varname, value)
+        return func
+    return decorate
 
 def memoize_(func):
     """
