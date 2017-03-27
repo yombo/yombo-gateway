@@ -197,7 +197,7 @@ class AMQPClient(object):
         self._disconnecting = False
         self.pika_factory = PikaFactory(self)
         self.pika_factory.noisy = False  # turn off Starting/stopping message
-        self.send_correlation_ids = MaxDict(150)  # correlate requests with responses
+        self.send_correlation_ids = MaxDict(250)  # correlate requests with responses
 
         self._local_log("debug", "AMQP::connect")
 
@@ -397,7 +397,7 @@ class AMQPClient(object):
                     201, 'publish', 'AMQPClient')
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
 
-        self.pika_factory.publish(**kwargs)
+        return self.pika_factory.publish(**kwargs)
 
     def unsubscribe(self, queue_name):
         self.pika_factory.subscribe(queue_name)
@@ -530,6 +530,8 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 raise YomboWarning(
                         "AMQP Client:%s - If callback is set, it must be be callable." % self.client_id,
                         201, 'publish', 'AMQPClient')
+        else:
+            kwargs['callback'] = None
 
         exchange_name = kwargs.get('exchange_name', None)
         if exchange_name is None:
@@ -545,13 +547,14 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         kwargs["time_created"] = kwargs.get("time_created", datetime.now())
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
-        correlation_id = kwargs.get('correlation_id', None)
-
         properties = kwargs.get('properties', {})
         if 'correlation_id' in properties:
             correlation_id = properties['correlation_id']
         else:
-            correlation_id = None
+            if callback is not None:
+                correlation_id = random_string()
+            else:
+                correlation_id = None
         properties['user_id'] = self.AMQPClient.username
 
         kwargs['properties'] = properties
@@ -562,12 +565,20 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 'time_sent'         : None,
                 "time_received"     : None,
                 "callback"          : kwargs['callback'],
+                "callback_component_type"         : kwargs['callback'], # module or component
+                "callback_component_type_name"    : kwargs['callback'], # module of compentnt name
+                "callback_component_type_function": kwargs['callback'], # name of the function to call
                 "correlation_type"  : correlation_id,
             }
         self.send_queue.append(kwargs)
 
         if self.AMQPProtocol:
             self.AMQPProtocol.do_publish()
+
+        if correlation_id is None:
+            return None
+        else:
+            return self.AMQPClient.send_correlation_ids[correlation_id]
 
     def connected(self):
         """
@@ -804,15 +815,20 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         (channel, deliver, props, msg,) = item
         # print "protocol1: receive_item"
-#        print "protocol: queue_no_ack %s" % queue_no_ack
-#        print "protocol: callback %s" % callback
-#        print "channel: item %s" % channel
-#        print "deliver: item %s" % deliver
-#        print "props: item %s" % props
-#        print "msg: item %s" % msg
+        # print "protocol: item %s" % item
+        # print "protocol: queue %s" % queue
+        # print "channel: queue_no_ack %s" % queue_no_ack
+        # print "deliver: callback %s" % callback
+        # print "props: deliver %s" % deliver
+        # print "props: props %s" % props
+        # print "props: msg %s" % msg
+        # print "msg: item %s" % msg
 
         if props.correlation_id in self.factory.AMQPClient.send_correlation_ids:
-            self.factory.AMQPClient.send_correlation_ids[props.correlation_id]['time_received'] = datetime.now()
+            correlation = self.factory.AMQPClient.send_correlation_ids[props.correlation_id]
+            correlation['time_received'] = datetime.now()
+        else:
+            correlation = None
 
         d = queue.get()  # get the queue again, so we can add another callback to get the next message.
         d.addCallback(self.receive_item, queue, queue_no_ack, callback)
@@ -827,8 +843,20 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             milliseconds = (date_time.days * 24 * 60 * 60 + date_time.seconds) * 1000 + date_time.microseconds / 1000.0
             logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
 
-        d = defer.maybeDeferred(callback, deliver, props, msg, queue)
-        logger.debug('Called callback: {callback}', callback=callback)
+        # if message has a direct callbackk, call that instead of the queue callback
+        already_calledback = False
+        if correlation is not None:
+            if correlation['callback'] is not None:
+                if callable(correlation['callback']) is True:
+                    logger.warn("calling message callback, not incoming queue callback")
+                    already_calledback = True
+                    local_callback = correlation['callback']
+                    d = defer.maybeDeferred(local_callback, props, msg, correlation)
+
+        if already_calledback is False:
+            d = defer.maybeDeferred(callback, props, msg, correlation)
+            logger.debug('Called callback: {callback}', callback=callback)
+
         if not queue_no_ack:
             # if it gets here, it's passed basic checks.
             # logger.debug("AMQP Sending {status} due to valid request. Tag: {tag}",
@@ -855,5 +883,5 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 
     def _basic_nack(self, error, channel, tag):
         self._local_log("info", "PikaProtocol::_basic_nack for client: %s   Tag: %s" % (self.factory.AMQPClient.client_id, tag))
-        print "nack error: %s" % error
+        logger.error("AMQP nack'd on error: {error}", error=error)
         channel.basic_nack(tag, False, False)
