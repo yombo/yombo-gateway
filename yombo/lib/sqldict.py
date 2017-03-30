@@ -96,7 +96,7 @@ class SQLDict(YomboLibrary):
         # return self.unload_defer
 
     @inlineCallbacks
-    def get(self, owner_object, dict_name, serializer=None):
+    def get(self, owner_object, dict_name, serializer=None, unserializer=None, max_length=None):
         """
         Used to get or create a new SQL backed dictionary. You method must be decorated with @inlineCallbacks and then
         yield the results of this call.
@@ -110,7 +110,7 @@ class SQLDict(YomboLibrary):
         if component_name+":"+dict_name in self._dictionaries:
             returnValue(self._dictionaries[component_name+":"+dict_name]['dict'])
 
-        dict = SQLDictionary(self, component_name, dict_name, serializer)
+        dict = SQLDictionary(self, component_name, dict_name, serializer, unserializer, max_length)
 #        print "SQLDict: about to load: %s" % dict_name
         yield dict.load()
 
@@ -185,7 +185,7 @@ class SQLDictionary(dict):
     If the dictionary for the given "dictname" exists, it will be populated
     from the database, otherwise it will be created.
     """
-    def __init__(self, parent, component_name, dict_name, serializer=None, unserializer=None):
+    def __init__(self, parent, component_name, dict_name, serializer=None, unserializer=None, max_length=None):
         """
         On init, construct a new dictionary. If there is an existing 'dict_name' for
         the given 'moduleObj', then it will be loaded.
@@ -197,10 +197,14 @@ class SQLDictionary(dict):
         :param dict_name: Name of the dictionary to store in the database.
         :param serializer: A callable function to use to serialize data when saving.
         :param unserializer: A callable function to use to unserialize data when restoring
+        :param max_length: If set, the dictionary can only grow to this size.
 
         :type dict_name: string
         """
         super(SQLDictionary, self).__init__()
+
+
+
         self._SQLDict = parent
 
         self.__init = True  # only true when loaded, don't save what was just loaded.
@@ -209,6 +213,14 @@ class SQLDictionary(dict):
         self.__init = False
         self.__serializer = serializer
         self.__unserializer = unserializer
+        self.__max_length = max_length
+
+        if max_length is not None and isinstance(max_length, int) is False:
+            raise YomboWarning("SQLDict accepts either None or int for max_length. Recieved: %s" % max_length)
+
+        if max_length is not None:
+            while len(self) > max_length:
+               self.popitem()
 
     @inlineCallbacks
     def load(self):
@@ -249,6 +261,8 @@ class SQLDictionary(dict):
         """
 #        print "sqldictioary:__setitem__: %s:%s" % (key, value)
         super(SQLDictionary, self).__setitem__(key, value)
+        if key not in self and len(self) >= self.__max_length:
+            self.popitem()
         self._update_sql(key, value)
 
     def touch(self):

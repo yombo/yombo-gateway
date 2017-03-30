@@ -38,6 +38,7 @@ import traceback
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 
 # Import 3rd party extensions
 import yombo.ext.six as six
@@ -73,14 +74,10 @@ class AMQPYombo(YomboLibrary):
         """
         self.user_id = "gw_" + self._Configs.get("core", "gwid")
         self.login_user_id = self.user_id + "_" + self._Configs.get("core", "gwuuid")
-        self.__pending_updates = []  # Holds a list of configuration items we've asked for, but not response yet.
         self._LocalDBLibrary = self._Libraries['localdb']
-        self.init_startup_count = 0
         self.request_configs = False
 
         self.amqp = None  # holds our pointer for out amqp connection.
-        self._getAllConfigsLoggerLoop = None
-
         self._getAllConfigsLoggerLoop = None
         self.sendLocalInformationLoop = None  # used to periodically send yombo servers updated information
 
@@ -88,13 +85,19 @@ class AMQPYombo(YomboLibrary):
         self.configHandler = AmqpConfigHandler(self)
 
         self._States.set('amqp.amqpyombo.state', False)
-        return self.connect()
+        self.init_deferred = Deferred()
+        self.connect()
+        return self.init_deferred
 
     def _stop_(self):
         """
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
         :return:
         """
+        def _stop_(self):
+            if self.init_deferred is not None and self.init_deferred.called is False:
+                self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
+
         self.configHandler._stop_()
         self.controlHandler._stop_()
         self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
@@ -102,6 +105,7 @@ class AMQPYombo(YomboLibrary):
     def _unload_(self):
         self.amqp.disconnect()
 
+    @inlineCallbacks
     def connect(self):
         """
         Connect to Yombo AMQP server.
@@ -126,9 +130,16 @@ class AMQPYombo(YomboLibrary):
 
         # get a new AMPQ instance and connect.
         if self.amqp is None:
-            self.amqp = self._AMQP.new(hostname=amqp_host, port=amqp_port, virtual_host='yombo', username=self.login_user_id,
-                password=self._Configs.get("core", "gwhash"), client_id='amqpyombo',
-                connected_callback=self.amqp_connected, disconnected_callback=self.amqp_disconnected, critical=True)
+            self.amqp = yield self._AMQP.new(hostname=amqp_host,
+                                             port=amqp_port,
+                                             virtual_host='yombo',
+                                             username=self.login_user_id,
+                                             password=self._Configs.get("core", "gwhash"),
+                                             client_id='amqpyombo',
+                                             prefetch_count=PREFETCH_COUNT,
+                                             connected_callback=self.amqp_connected,
+                                             disconnected_callback=self.amqp_disconnected,
+                                             critical=True)
         self.amqp.connect()
 
         # The servers will have a dedicated queue for us. All pending messages will be held there for us. If we
@@ -136,7 +147,8 @@ class AMQPYombo(YomboLibrary):
         if already_have_amqp is None:
             self.amqp.subscribe("ygw.q." + self.user_id, incoming_callback=self.amqp_incoming, queue_no_ack=False, persistent=True)
 
-        return self.configHandler.connect_setup()
+        self.configHandler.connect_setup(self.init_deferred)
+        # self.init_deferred.callback(10)
 
     def disconnect(self):
         """
@@ -220,6 +232,8 @@ class AMQPYombo(YomboLibrary):
             "internal_secure_port": self._Configs.get("webinterface", "secure_port"),
             "external_secure_port": self._Configs.get("webinterface", "secure_port"),
         }
+
+        logger.error("sending local information.")
 
         requestmsg = self.generate_message_request(
             exchange_name='ysrv.e.gw_config',
@@ -398,7 +412,7 @@ class AMQPYombo(YomboLibrary):
         if properties.content_encoding != 'text' and properties.content_encoding != 'zlib':
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_encoding_invalid", bucket_time=15, anon=True)
             raise YomboWarning("Content Encoding must be either  'text' or 'zlib'. Got: " + properties.content_encoding)
-        if properties.content_type != 'text/plain' and properties.content_type != 'application/msgpack' and  properties.content_type != 'application/json':
+        if properties.content_type != 'text/plain' and properties.content_type != 'application/msgpack' and properties.content_type != 'application/json':
             self._Statistics.increment("lib.amqpyombo.received.discarded.content_type_invalid", bucket_time=15, anon=True)
             logger.warn('Error with contentType!')
             raise YomboWarning("Content type must be 'application/msgpack', 'application/json' or 'text/plain'. Got: " + properties.content_type)
@@ -419,12 +433,12 @@ class AMQPYombo(YomboLibrary):
             if self.is_json(msg):
                 msg = json.loads(msg)
             else:
-                raise YomboWarning("Receive msg reported json, but isn't.")
+                raise YomboWarning("Receive msg reported json, but isn't: %s" % msg)
         elif properties.content_type == 'application/msgpack':
             if self.is_msgpack(msg):
                 msg = msgpack.loads(msg)
             else:
-                raise YomboWarning("Received msg reported msgpack, but isn't.")
+                raise YomboWarning("Received msg reported msgpack, but isn't: %s" % msg)
 
         if properties.headers['type'] == 'request':
             self._Statistics.increment("lib.amqpyombo.received.request", bucket_time=15, anon=True)

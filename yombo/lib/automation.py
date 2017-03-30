@@ -105,7 +105,7 @@ class Automation(YomboLibrary):
                 for rule in self._rulesRaw['rules']:
                     rule['source'] = 'hsjon'
 
-    def _module_prestart_(self, **kwargs):
+    def _modules_prestarted_(self, **kwargs):
         """
         This function is called before the _start_ function of all modules is called.
 

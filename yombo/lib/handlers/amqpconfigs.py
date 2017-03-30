@@ -382,7 +382,7 @@ class AmqpConfigHandler(YomboLibrary):
         """
         self.parent = amqpyombo
         self.init_startup_count = 0
-        self.init_defer = defer.Deferred()  # Prevents loader from moving on until we are done.
+        self.init_defer = None  # Prevents loader from moving on until we are done.
         self.__doing_full_configs = False  # will be set to True later when download configurations
         self.__pending_updates = {}  # Holds a dict of configuration items we've asked for, but not response yet.
         self.__process_queue = {}  # Holds a list of configuration items we've asked for, but not response yet.
@@ -396,14 +396,12 @@ class AmqpConfigHandler(YomboLibrary):
         self.amqp = None  # holds our pointer for out amqp connection.
         self._getAllConfigsLoggerLoop = None
 
-    def connect_setup(self):
+    def connect_setup(self, init_defer):
         """
         The connection was setup, but not quite ready to ask for configs. Just return a defer.
         :return:
         """
-        # self.get_system_configs()
-        # self.check_download_done_calllater = reactor.callLater(30, self.check_download_done)
-        return self.init_defer
+        self.init_defer = init_defer
 
     def connected(self):
         """

@@ -142,18 +142,19 @@ class Modules(YomboLibrary):
 
         **Hooks implemented**:
 
-        * _module_init_ : Only called to libraries, is called before modules called for _init_.
+        * _modules_created_ : Only called to libraries, is called before modules called for _init_.
         * _init_ : Only called to modules, is called as part of the _init_ sequence.
-        * _module_preload_ : Only called to libraries, is called before modules called for _preload_.
+        * _modules_inited_ : Only called to libraries, is called after modules called for _init_.
         * _preload_ : Only called to modules, is called before _load_.
-        * _module_load_ : Only called to libraries, is called before modules called for _load_.
+        * _modules_preloaded_ : Only called to libraries, is called after modules called for _preload_.
         * _load_ : Only called to modules, is called as part of the _load_ sequence.
-        * _module_prestart_ : Only called to libraries, is called before modules called for _prestart_.
+        * _modules_loaded_ : Only called to libraries, is called after modules called for _load_.
         * _prestart_ : Only called to modules, is called as part of the _prestart_ sequence.
-        * _module_start_ : Only called to libraries, is called before modules called for _start_.
+        * _modules_prestarted_ : Only called to libraries, is called after modules called for _prestart_.
         * _start_ : Only called to modules, is called as part of the _start_ sequence.
-        * _module_started_ : Only called to libraries, is called before modules called for _load_.
+        * _modules_started_ : Only called to libraries, is called after modules called for _start_.
         * _started_ : Only called to modules, is called as part of the _started_ sequence.
+        * _modules_start_finished_ : Only called to libraries, is called after modules called for _started_.
 
         :return:
         """
@@ -163,33 +164,33 @@ class Modules(YomboLibrary):
 
         logger.debug("starting modules::init....")
         # Init
-        yield self._Loader.library_invoke_all("_module_init_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_created_", called_by=self)
         yield self.module_init_invoke()  # Call "_init_" of modules
+        yield self._Loader.library_invoke_all("_modules_inited_", called_by=self)
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
-        yield self._Loader.library_invoke_all("_module_preload_", called_by=self)
-        yield self.module_invoke_all("_preload1_", called_by=self)
+        yield self.module_invoke_all("_preload_yombo_internal_", called_by=self)
         yield self.module_invoke_all("_preload_", called_by=self)
-
+        yield self._Loader.library_invoke_all("_modules_preloaded_", called_by=self)
         # Load
-        yield self._Loader.library_invoke_all("_module_load_", called_by=self)
-        yield self.module_invoke_all("_load1_", called_by=self)
+        yield self.module_invoke_all("_load_yombo_internal_", called_by=self)
         yield self.module_invoke_all("_load_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_loaded_", called_by=self)
 
         # Pre-Start
-        yield self._Loader.library_invoke_all("_module_prestart_", called_by=self)
-        yield self.module_invoke_all("_prestart1_", called_by=self)
+        yield self.module_invoke_all("_prestart_yombo_internal_", called_by=self)
         yield self.module_invoke_all("_prestart_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_prestarted_", called_by=self)
 
         # Start
-        yield self._Loader.library_invoke_all("_module_start_", called_by=self)
-        yield self.module_invoke_all("_start1_", called_by=self)
+        yield self.module_invoke_all("_start_yombo_internal_", called_by=self)
         yield self.module_invoke_all("_start_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_started_", called_by=self)
 
-        yield self._Loader.library_invoke_all("_module_started_", called_by=self)
-        yield self.module_invoke_all("_started1_", called_by=self)
+        yield self.module_invoke_all("_started_yombo_internal_", called_by=self)
         yield self.module_invoke_all("_started_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_start_finished_", called_by=self)
 
     @inlineCallbacks
     def unload_modules(self):
@@ -414,23 +415,7 @@ class Modules(YomboLibrary):
     @inlineCallbacks
     def module_init_invoke(self):
         """
-        Calls the _init_ functions of modules. Can't use basic hook for this due to complex items.
-        **Hooks called**:
-
-        * _module_devicetypes_ :  Gets a list of device type ids or labels.
-
-        **Usage**:
-
-        .. code-block:: python
-
-           def _module_devicetypes_(self, **kwargs):
-               '''
-               Adds additional platforms to the source platform. Creates additional rule triggers.
-               '''
-               return [
-                 'x10_lamp', 'x10_applicance',
-               ]
-
+        Calls the _init_ functions of modules.
         """
         module_init_deferred = []
         for module_id, module in self._modulesByUUID.iteritems():
@@ -452,6 +437,7 @@ class Modules(YomboLibrary):
             module._Atoms = self._Loader.loadedLibraries['atoms']
             module._Automation = self._Loader.loadedLibraries['automation']
             module._AMQP = self._Loader.loadedLibraries['amqp']
+            module._AMQPYombo = self._Loader.loadedLibraries['amqpyombo']
             module._Commands = self._Loader.loadedLibraries['commands']
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
@@ -468,6 +454,7 @@ class Modules(YomboLibrary):
             module._Statistics = self._Loader.loadedLibraries['statistics']
             module._Tasks = self._Loader.loadedLibraries['tasks']
             module._Times = self._Loader.loadedLibraries['times']
+            module._YomboAPI = self._Loader.loadedLibraries['yomboapi']
             module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
 
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices

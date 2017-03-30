@@ -74,7 +74,7 @@ class Localize(YomboLibrary):
     def _unload_(self):
         pass
 
-    def _module_init_(self, **kwargs):
+    def _modules_created_(self, **kwargs):
         """
         Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
 

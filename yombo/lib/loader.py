@@ -61,7 +61,6 @@ HARD_LOAD["States"] = {'operation_mode':'all'}
 HARD_LOAD["Configuration"] = {'operation_mode':'all'}
 HARD_LOAD["Statistics"] = {'operation_mode':'all'}
 HARD_LOAD["Startup"] = {'operation_mode':'all'}
-HARD_LOAD["SSLCerts"] = {'operation_mode':'all'}
 HARD_LOAD["AMQP"] = {'operation_mode':'run'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
@@ -78,9 +77,10 @@ HARD_LOAD["Variables"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
 # HARD_LOAD["AutomationHelpers"] = {'operation_mode':'all'}
-HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
+HARD_LOAD["SSLCerts"] = {'operation_mode':'all'}
+HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["Tasks"] = {'operation_mode':'all'}
 
@@ -542,8 +542,6 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_UNLOAD[name]['_stop_'] = False
 
-
-        yield yombo.utils.sleep(.1)
         for name, config in HARD_UNLOAD.iteritems():
             if self.check_operation_mode(config['operation_mode']):
                 HARD_UNLOAD[name]['_unload_'] = 'Running'
@@ -553,9 +551,6 @@ class Loader(YomboLibrary, object):
                 HARD_UNLOAD[name]['_unload_'] = True
             else:
                 HARD_UNLOAD[name]['_unload_'] = False
-
-        yield yombo.utils.sleep(.2)
-
 
     def _handleError(self, err):
 #        logger.error("Error caught: %s", err.getErrorMessage())
@@ -577,8 +572,6 @@ class Loader(YomboLibrary, object):
         """
         return self.loadedComponents
 
-
-    #@memoize_
     def find_function(self, component_type, component_name, component_function):
         """
         Finds a function within the system by namme. This is useful for when you need to
@@ -597,30 +590,61 @@ class Loader(YomboLibrary, object):
             if component_name not in self.loadedLibraries:
                 logger.info("Library not found: {loadedLibraries}", loadedLibraries=loadedLibraries)
                 print(self.loadedLibraries)
-                return False
-            if hasattr(self.loadedLibraries[component_name], component_function):
-                method = getattr(self.loadedLibraries[component_name], component_function)
-                if not callable(method):
-                    logger.info(
-                        "Not callable by name: 'component_type, component_name, component_function'")
-                    return False
-                else:
-                    return method
+                raise YomboWarning("Cannot library name.")
+
+            if isinstance(component_function, list):
+                if hasattr(self.loadedLibraries[component_name], component_function[0]):
+                    remote_attribute = getattr(self.loadedLibraries[component_name], component_function[0]) # the dictionary
+                    if component_function[1] in remote_attribute:
+                        if not callable(remote_attribute[component_function[1]]): # the key should be callable.
+                            logger.info(
+                                "Could not find callable library function by name: '{component_type} :: {component_name} :: (list) {component_function}'",
+                                component_type=component_type, component_name=component_name, component_function=component_function)
+                            raise YomboWarning("Cannot find callable")
+                        else:
+                            logger.info("Look ma, I found a cool function here.")
+                            return remote_attribute[component_function[1]]
+            else:
+                if hasattr(self.loadedLibraries[component_name], component_function):
+                    method = getattr(self.loadedLibraries[component_name], component_function)
+                    if not callable(method):
+                        logger.info(
+                            "Could not find callable modoule function by name: '{component_type} :: {component_name} :: {component_function}'",
+                            component_type=component_type, component_name=component_name, component_function=component_function)
+                        raise YomboWarning("Cannot find callable")
+                    else:
+                        return method
         elif component_type == 'module':
             modules = self._moduleLibrary
             if component_name not in modules._modulesByName:
-                return False
-            if hasattr(modules._modulesByName[component_name], component_function):
-                method = getattr(modules._modulesByName[component_name], component_function)
-                if not callable(method):
-                    logger.info(
-                        "Not callable by name: 'component_type, component_name, component_function'")
-                    return False
-                else:
-                    return method
+                raise YomboWarning("Cannot module name.")
+
+            if hasattr(modules._modulesByName[component_name], component_function[0]):
+                remote_attribute = getattr(modules._modulesByName[component_name], component_function[0])
+                if component_function[1] in remote_attribute:
+                    if not callable(remote_attribute[component_function[1]]):  # the key should be callable.
+                        logger.info(
+                            "Could not find callable module function by name: '{component_type} :: {component_name} :: (list){component_function}'",
+                            component_type=component_type, component_name=component_name,
+                            component_function=component_function)
+                        raise YomboWarning("Cannot find callable")
+                    else:
+                        logger.info("Look ma, I found a cool function here.")
+                        return remote_attribute[component_function[1]]
+            else:
+                if hasattr(modules._modulesByName[component_name], component_function):
+                    method = getattr(modules._modulesByName[component_name], component_function)
+                    if not callable(method):
+                        logger.info(
+                            "Could not find callable module function by name: '{component_type} :: {component_name} :: {component_function}'",
+                            component_type=component_type, component_name=component_name,
+                            component_function=component_function)
+                        raise YomboWarning("Cannot find callable")
+                    else:
+                        return method
         else:
             logger.warn("Not a valid component_type: {component_type}", component_type=component_type)
-            return False
+            raise YomboWarning("Invalid component_type.")
 
 
 _loader = None

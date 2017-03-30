@@ -82,7 +82,7 @@ the fuzzysearch phase of voice command lookup.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 from inspect import isclass
@@ -146,9 +146,9 @@ class VoiceCmds(YomboLibrary):
 
         self.commandsByVoice = self._Libraries['commands'].get_commands_by_voice()
 
-    def _module_prestart_(self, **kwargs):
+    def _modules_loaded_(self, **kwargs):
         """
-        Implements the _module_prestart_ and is called after _load_ is called for all the modules.
+        Implements the _modules_loaded_ and is called after _load_ is called for all the modules.
 
         Expects a list of events to subscribe to.
 

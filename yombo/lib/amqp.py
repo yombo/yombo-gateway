@@ -80,6 +80,7 @@ class AMQP(YomboLibrary):
         logit = getattr(logger, level)
         logit("In {location} : {msg}", location=location, msg=msg)
 
+    @inlineCallbacks
     def new(self, hostname=None, port=5671, virtual_host=None, username=None, password=None, use_ssl=True,
             connected_callback=None, disconnected_callback=None, error_callback=None, client_id=None, keepalive=1800,
             prefetch_count=10, critical=False):
@@ -145,7 +146,8 @@ class AMQP(YomboLibrary):
         self.client_connections[client_id] = AMQPClient(self, client_id, hostname, port, virtual_host, username,
                 password, use_ssl, connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count,
                 critical)
-        return self.client_connections[client_id]
+        yield self.client_connections[client_id].init()
+        returnValue(self.client_connections[client_id])
 
 
 class AMQPClient(object):
@@ -176,6 +178,9 @@ class AMQPClient(object):
         :param prefetch_count: Int (default 10) - How many outstanding messages the client should have at any
           given time.
         """
+        self._FullName = 'yombo.gateway.lib.AMQP.AMQPClient'
+        self._Name = 'AMQP.AMQPClient'
+
         self.amqp_library = amqp_library
         self.client_id = client_id
         self.hostname = hostname
@@ -197,9 +202,6 @@ class AMQPClient(object):
         self._disconnecting = False
         self.pika_factory = PikaFactory(self)
         self.pika_factory.noisy = False  # turn off Starting/stopping message
-        self.send_correlation_ids = MaxDict(250)  # correlate requests with responses
-
-        self._local_log("debug", "AMQP::connect")
 
         pika_params = {
             'host': hostname,
@@ -214,6 +216,45 @@ class AMQPClient(object):
             pika_params['credentials'] = self.pika_credentials
 
         self.pika_parameters = pika.ConnectionParameters(**pika_params)
+
+    @inlineCallbacks
+    def init(self):
+        self.send_correlation_ids = yield self.amqp_library._SQLDict.get(
+            self,
+            "send_request_ids",
+            # serializer=self.correlation_ids_serializer,
+            # unserializer=self.correlation_ids_unserializer,
+            max_length=250
+        )
+
+        # print "correlation_ids: %s" % self.send_correlation_ids
+        # MaxDict(250)  # correlate requests with responses
+
+    def correlation_ids_serializer(self, correlation):
+        output = {}
+        for key, value in correlation:
+            if key == 'callback':
+                value = None
+            output[key] = value
+        return output
+
+    def correlation_ids_unserializer(self, correlation):
+        output = correlation.copy()
+
+        if output['callback_component_type'] is not None and \
+            output['callback_component_type_name'] is not None and \
+            output['callback_component_type_function'] is not None:
+            try:
+                output['callback'] = self.amqp_library._Loader.find_function(output['callback_component_type'],
+                                                        output['callback_component_type_name'],
+                                                        output['callback_component_type_function'] )
+            except:
+                pass
+        for key, value in correlation:
+            if key == 'callback':
+                value = None
+            output[key] = value
+        return output
 
     def _local_log(self, level, location="", msg=""):
         """
@@ -230,6 +271,8 @@ class AMQPClient(object):
         """
         Called when ready to connect.
         """
+        self._local_log("debug", "AMQP::connect")
+
         if self._connecting is True:
             logger.debug(
                     "AMQP Client: {client_id} - Already trying to connect, connect attempt aborted.",
@@ -524,14 +567,40 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         """
         logger.debug("factory:publish: {kwargs}", kwargs=kwargs)
         self._local_log("debug", "PikaFactory::send_amqp_message", "Message: %s" % kwargs)
+
+        c_type = None
+        c_name = None
+        c_function = None
         callback = kwargs.get('callback', None)
         if callback is not None:
             if callable(callback) is False:
                 raise YomboWarning(
                         "AMQP Client:%s - If callback is set, it must be be callable." % self.client_id,
                         201, 'publish', 'AMQPClient')
+            elif isinstance(callback, dict):
+                try:
+                    c_type = callback['callback_component_type']
+                    c_name = callback['callback_component_type_name']
+                    c_function = callback['callback_component_type_function']
+                except:
+                    c_type = None
+                    c_name = None
+                    c_function = None
+                    callback = None
+                else:
+                    try:
+                        callback = self.amqp_library._Loader.find_function(c_type, c_name, c_function)
+                    except:
+                        c_type = None
+                        c_name = None
+                        c_function = None
+                        callback = None
+
         else:
-            kwargs['callback'] = None
+            c_type = None
+            c_name = None
+            c_function = None
+            callback = None
 
         exchange_name = kwargs.get('exchange_name', None)
         if exchange_name is None:
@@ -564,11 +633,11 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 "time_created"      : kwargs.get("time_created", datetime.now()),
                 'time_sent'         : None,
                 "time_received"     : None,
-                "callback"          : kwargs['callback'],
-                "callback_component_type"         : kwargs['callback'], # module or component
-                "callback_component_type_name"    : kwargs['callback'], # module of compentnt name
-                "callback_component_type_function": kwargs['callback'], # name of the function to call
-                "correlation_type"  : correlation_id,
+                "callback"          : callback,
+                "callback_component_type"         : c_type, # module or component
+                "callback_component_type_name"    : c_name, # module of compentnt name
+                "callback_component_type_function": c_function, # name of the function to call
+                "correlation_id"  : correlation_id,
             }
         self.send_queue.append(kwargs)
 

@@ -164,7 +164,7 @@ class YomboModule:
         """
         pass
 
-    def _load1_(self):
+    def _load_yombo_internal_(self):
         """
         Phase 2 of 3 for statup - Called when module should load anything else. After this
         function completes, it should be able to accept and process messages. Doesn't send

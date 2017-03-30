@@ -76,7 +76,7 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 .. versionadded:: 0.11.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2015-2016 by Yombo.
+:copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -195,7 +195,7 @@ class Statistics(YomboLibrary):
         self._datapoint_last_value = yield self._LocalDB.get_stat_last_datapoints()
         self.init_deferred.callback(10)
 
-    def _module_prestart_(self, **kwargs):
+    def _modules_prestarted_(self, **kwargs):
         """
         This function is called before the _start_ function of all modules is called. This implements the hook:
         _statistics_lifetimes_.  The hook should return a dictionary with the following possible keys - not

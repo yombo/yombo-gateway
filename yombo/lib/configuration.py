@@ -353,9 +353,9 @@ class Configuration(YomboLibrary):
             logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
             logger.error("--------------------------------------------------------")
 
-    def _module_prestart_(self, **kwargs):
+    def _modules_loaded_(self, **kwargs):
         """
-        Called after _init_ is called for all the modules. Get's a list of configuration items all library
+        Called after _load_ is called for all the modules. Get's a list of configuration items all library
         or modules define or use.
 
         Note: This complies with i18n translations for future use.

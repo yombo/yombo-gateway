@@ -254,10 +254,9 @@ class Devices(YomboLibrary):
             else: # Still good, but still in the future. Set them up.
                 self.do_command(request['device_id'], request['command_id'], not_before=request['not_before'],
                                 max_delay=request['max_delay'], **request['kwargs'])
-        # self.init_deferred.callback(10)
         self.load_deferred.callback(10)
 
-    def _module_started_(self):
+    def _modules_prestarted_(self):
         """
         On start, sends all queued messages. Then, check delayed messages for any messages that were missed. Send
         old messages and prepare future messages to run.

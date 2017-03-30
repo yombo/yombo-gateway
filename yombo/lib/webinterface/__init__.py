@@ -42,7 +42,6 @@ from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
-from yombo.utils.x509 import generate_csr
 
 from yombo.lib.webinterface.sessions import Sessions
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
@@ -416,13 +415,27 @@ class WebInterface(YomboLibrary):
 
         if self.web_server_ssl_started is False:
             cert = self._SSLCerts.get('lib_webinterface')
-
             twisted_cert = "%s\n%s" % (cert['key'], cert['cert'])
 
             certificate = ssl.PrivateCertificate.loadPEM(twisted_cert)
             self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, certificate.options())
             self.web_server_ssl_started = True
             return
+
+    def _configuration_set_(self, **kwargs):
+        """
+        Receive configuruation updates and adjust as needed.
+
+        :param kwargs: section, option(key), value
+        :return:
+        """
+        section = kwargs['section']
+        option = kwargs['option']
+        value = kwargs['value']
+
+        if section == 'core':
+            if option == 'label':
+                self.misc_wi_data['gateway_label'] = value
 
     def _sslcerts_(self, **kwargs):
         """
@@ -436,11 +449,13 @@ class WebInterface(YomboLibrary):
         fqdn = self._Configs.get('dns', 'fqdn', None, False)
         if fqdn is None:
             raise YomboWarning("Unable to create webinterface SSL cert: DNS not set properly.")
-        san_list = ['l', 'localhost', 'local', 'i', 'e', 'internal', 'external']
+        san_list = ['localhost', 'l', 'local', 'i', 'e', 'internal', 'external']
         cert['sans'] = [str(s + "." + fqdn) for s in san_list]
+        cert['cn'] = cert['sans'][0]
+        cert['callback'] = self.new_ssl_cert
         return cert
 
-    def new_ssl_cert(self, **kwargs):
+    def new_ssl_cert(self, newcert, **kwargs):
         """
         Called when a requested certificate has been signed or updated. If needed, this funciton
         will function will restart the SSL service if the current certificate has expired or is
@@ -449,44 +464,7 @@ class WebInterface(YomboLibrary):
         :param kwargs:
         :return:
         """
-        pass
-
-    @inlineCallbacks
-    def request_new_certs(self):
-        """
-        Requests a new cert.  Steps:
-        Generate new key and CSR into temp files
-        Sent CSR to yombo servers for signing.
-        Collect CSR from yombo.
-        Backup old cert
-        Install new cert
-        Restart SSL server
-        :return:
-        """
-        print "in request_new_certs()"
-        fqdn = self._Configs.get('dns', 'fqdn', None, False)
-        if fqdn is None:
-            raise YomboWarning("Unable to create webinterface SSL cert: DNS not set properly.")
-        san_list = ['l', 'localhost', 'local', 'i', 'e', 'internal', 'external']
-        sans = [s + "." + fqdn for s in san_list]
-
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M")
-
-        csr_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/archive/%s_webinterface.csr" % timestamp
-        key_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/archive/%s_webinterface.pem" % timestamp
-        results = yield generate_csr(sans=sans, csr_file=csr_file, key_file=key_file )
-        print results
-        yombo.utils.save_file(csr_file, results['csr_key'])
-        yombo.utils.save_file(key_file, results['key'])
-
-
-    def _module_started_(self, **kwargs):
-        """
-        to be deprecated. use i18n below.
-        :param kwargs:
-        :return:
-        """
-        # self.webapp.templates.globals['_'] = _  # i18n
+        logger.warn("Got updated SSL Cert!  Thanks.")
         pass
 
     def _started_(self):
@@ -512,20 +490,7 @@ class WebInterface(YomboLibrary):
     #             },
     #     }]
 
-    def _configuration_set_(self, **kwargs):
-        """
-        Receive configuruation updates and adjust as needed.
 
-        :param kwargs: section, option(key), value
-        :return:
-        """
-        section = kwargs['section']
-        option = kwargs['option']
-        value = kwargs['value']
-
-        if section == 'core':
-            if option == 'label':
-                self.misc_wi_data['gateway_label'] = value
 
     @webapp.handle_errors(NotFound)
     @require_auth()
@@ -550,9 +515,9 @@ class WebInterface(YomboLibrary):
         """
         return web_translator(self, request)
 
-    def _module_prestart_(self, **kwargs):
+    def _modules_loaded_(self, **kwargs):
         """
-        Called before modules have their _prestart_ function called.
+        Called before modules have their _prestart_ function called (after _load_).
 
         This implements the hook "webinterface_add_routes" and calls all libraries and modules. It allows libs and
         modules to add menus to the web interface and provide additional funcationality.
