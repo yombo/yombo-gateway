@@ -8,6 +8,7 @@ Provides web interface for configuration of the Yombo system.
 :license: LICENSE for details.
 """
 # Import python libraries
+from OpenSSL import crypto
 import shutil
 from collections import OrderedDict
 from os import path, listdir, mkdir
@@ -310,8 +311,10 @@ notification_priority_map_css = {
     'urent': 'danger'
 }
 
+
 class NotFound(Exception):
     pass
+
 
 class WebInterface(YomboLibrary):
     """
@@ -415,10 +418,15 @@ class WebInterface(YomboLibrary):
 
         if self.web_server_ssl_started is False:
             cert = self._SSLCerts.get('lib_webinterface')
-            twisted_cert = "%s\n%s" % (cert['key'], cert['cert'])
 
-            certificate = ssl.PrivateCertificate.loadPEM(twisted_cert)
-            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, certificate.options())
+            privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
+            certifpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
+            chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+            contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
+                                                    certificate=certifpyssl,
+                                                    extraCertChain=chainpyssl)
+
+            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, contextFactory)
             self.web_server_ssl_started = True
             return
 

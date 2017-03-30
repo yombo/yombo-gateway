@@ -103,7 +103,7 @@ class SSLCerts(YomboLibrary):
         # self.managed_certs = {}
         self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
                                                      unserializer=self.sslcert_unserializer)
-        # print("startup: managed_certs: %s" % self.managed_certs)
+        print("startup: managed_certs: %s" % self.managed_certs)
 
         self.check_if_certs_need_update_loop = None
 
