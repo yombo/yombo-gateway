@@ -103,7 +103,7 @@ class SSLCerts(YomboLibrary):
         # self.managed_certs = {}
         self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
                                                      unserializer=self.sslcert_unserializer)
-        print("startup: managed_certs: %s" % self.managed_certs)
+        # print("startup: managed_certs: %s" % self.managed_certs)
 
         self.check_if_certs_need_update_loop = None
 
@@ -148,6 +148,9 @@ class SSLCerts(YomboLibrary):
         if section == 'dns':
             if option == 'fqdn':
                 self.fqdn = value
+                for sslname, cert in self.managed_certs.iteritems():
+                    cert.check_updated_fqdn()
+                    # Now all our signed certs are invalid. Time to update them.
 
     def _modules_inited_(self):
         """
@@ -237,9 +240,6 @@ class SSLCerts(YomboLibrary):
         if 'sans' not in csr_request:
             results['sans'] = None
         else:
-            for san in csr_request['sans']:
-                if san.endswith(self.fqdn) is False:
-                    raise YomboWarning("The SAN (subjectAltName) must end with our FQDN: %s" % self.fqdn)
             results['sans'] = csr_request['sans']
 
         # if 'key_type' in csr_request:  # allow changing default, might change in the future.
@@ -306,8 +306,12 @@ class SSLCerts(YomboLibrary):
 
         # Appends SAN to have 'DNS:'
         if kwargs['sans'] is not None:
+            sans_list = None
+            for san in kwargs['sans']:
+                sans_list = [str(s + "." + self.fqdn) for s in kwargs['sans']]  # dbl checked at server
+
             san_string = []
-            for i in kwargs['sans']:
+            for i in sans_list:
                 san_string.append("DNS: %s" % i)
             san_string = ", ".join(san_string)
 
@@ -495,6 +499,7 @@ class SSLCert(object):
         self.sslname = sslcert.sslname
         self.cn = sslcert.cn
         self.sans = sslcert.sans
+        self.cert_fqdn = self._ParentLibrary.fqdn
 
         self.update_callback = sslcert.get('update_callback', None)
         self.update_callback_type = sslcert.get('update_callback_type', None)
@@ -562,6 +567,7 @@ class SSLCert(object):
         :return:
         """
         # Look for any tasks to do.
+        self.check_updated_fqdn()
 
         # 1) See if we need to generate a new cert.
         if self.csr_next is None or self.next_is_valid is None:
@@ -870,6 +876,13 @@ class SSLCert(object):
                     save_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label), getattr(self, "csr_%s" % label))
 
             save_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label), json.dumps(meta, separators=(',',':')))
+
+    def check_updated_fqdn(self):
+        if self._ParentLibrary.fqdn != self.cert_fqdn:
+            logger.warn("FQDN changed for cert, will get new one: {sslname}", sslname=self.sslname)
+            self.next_is_valid = None
+            self.current_is_valid = None
+            self.generate_new_csr(submit=True)
 
     def generate_new_csr(self, submit=False):
         """
