@@ -32,6 +32,8 @@ import netifaces
 import netaddr
 import socket
 import binascii
+import os
+import platform
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -361,6 +363,32 @@ def dict_merge(original, changes):
             dict_merge(value, changes[key])
     return changes
 
+def dict_diff(dict2, dict1):
+    """
+    Returns the differences between two dictionarys.
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import dict_diff
+       aa = dict(a=1, b=2)
+       bb = dict(a=2, b=2)
+       added, removed, modified, same = dict_diff(aa, bb)
+
+    :param dict1:
+    :param dict2:
+    :return:
+    """
+    dict1_keys = set(dict1.keys())
+    dict2_keys = set(dict2.keys())
+    intersect_keys = dict1_keys.intersection(dict2_keys)
+    added = dict1_keys - dict2_keys
+    removed = dict2_keys - dict1_keys
+    modified = {o : (dict1[o], dict2[o]) for o in intersect_keys if dict1[o] != dict2[o]}
+    same = set(o for o in intersect_keys if dict1[o] == dict2[o])
+    return added, removed, modified, same
+
 def fopen(*args, **kwargs):
     """
     A help function that wraps around python open() function. Makes handling files a across platforms easier.
@@ -425,6 +453,9 @@ def read_file(filename, mode = None):
         mode = 'r'
     f = fopen(filename, mode)
     return f.read()
+
+def file_last_modified(path_to_file):
+    return os.path.getmtime(path_to_file)
 
 def percentage(part, whole):
     """
