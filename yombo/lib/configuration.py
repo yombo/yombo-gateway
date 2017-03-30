@@ -48,7 +48,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.utils import get_external_ip_address_v4, get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import dict_merge, global_invoke_all, is_string_bool, fopen
+from yombo.utils import dict_merge, global_invoke_all, is_string_bool, fopen, file_last_modified, dict_diff
 
 logger = get_logger('library.configuration')
 
@@ -81,9 +81,7 @@ class Configuration(YomboLibrary):
         self.cache_dirty = False
         self.automation_startup_check = []
         self._loaded = False
-
-        self.loading_yombo_ini = True
-        config_parser = ConfigParser.SafeConfigParser()
+        self.yombo_ini_last_modified = 0
 
         ini_norestore = not os.path.exists('yombo.ini.norestore')
 
@@ -106,42 +104,8 @@ class Configuration(YomboLibrary):
             if ini_norestore:
                 self.restore_backup_yombi_ini()
 
-        try:
-            fp = fopen('yombo.ini')
-            config_parser.readfp(fp)
-            fp.close()
-
-            for section in config_parser.sections():
-                for option in config_parser.options(section):
-                    value = config_parser.get(section, option)
-                    try:
-                        value = is_string_bool(value)
-                    except:
-                        try:
-                            value = int(value)
-                        except:
-                            try:
-                                value = float(value)
-                            except:
-                                if value == "None":
-                                    value = None
-                                else:
-                                    value = str(value)
-                    self.set(section, option, value)
-        except IOError:
-            self._Atoms.set('configuration.yombo_ini.found', False)
-            self._Loader.operation_mode = 'firstrun'
-            logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
-            self._Atoms.set('configuration.yombo_ini.found', False)
-            self.loading_yombo_ini = False
-            # return
-        except ConfigParser.NoSectionError, e:
-            self._Atoms.set('configuration.yombo_ini.found', False)
-            logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
-        else:
-            self._Atoms.set('configuration.yombo_ini.found', True)
-            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-            copyfile('yombo.ini', "usr/bak/yombo_ini/%s_yombo.ini" % timeString)
+        self.loading_yombo_ini = True
+        self.last_yombo_ini_read = self.read_yombo_ini()
 
         try:
             config_parser = ConfigParser.SafeConfigParser()
@@ -205,8 +169,10 @@ class Configuration(YomboLibrary):
             # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
             self.set("core", "localipaddresstime", int(time()))
 
-        self.periodic_save_ini = LoopingCall(self.save)
-        self.periodic_save_ini.start(14400, False)
+        self.periodic_save_yombo_ini = LoopingCall(self.save)
+        self.periodic_save_yombo_ini.start(14400, False)
+        # self.periodic_load_yombo_ini = LoopingCall(self.check_if_yombo_ini_modified)
+        # self.periodic_load_yombo_ini.start(5)
 
         if self.get('core', 'setup_stage') is None:
             self.set('core', 'setup_stage', 'first_run')
@@ -223,6 +189,12 @@ class Configuration(YomboLibrary):
         self.set('misc', 'tempurature_display', 'f')
         self.set('misc', 'length_display', 'imperial')  # will we ever get to metric?
 
+    def _stop_(self):
+        if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
+            self.periodic_save_yombo_ini.stop()
+
+        if self.periodic_load_yombo_ini is not None and self.periodic_load_yombo_ini.running:
+            self.periodic_load_yombo_ini.stop()
 
     def _unload_(self):
         """
@@ -230,6 +202,100 @@ class Configuration(YomboLibrary):
         the user to see the current configuration and make any changes.
         """
         self.save(True)
+
+    def read_yombo_ini(self, update_self=True):
+        config_parser = ConfigParser.SafeConfigParser()
+
+        temp = {}
+        try:
+            fp = fopen('yombo.ini')
+            config_parser.readfp(fp)
+            fp.close()
+
+            for section in config_parser.sections():
+                temp[section] = {}
+
+                for option in config_parser.options(section):
+                    value = config_parser.get(section, option)
+                    try:
+                        value = is_string_bool(value)
+                    except:
+                        try:
+                            value = int(value)
+                        except:
+                            try:
+                                value = float(value)
+                            except:
+                                if value == "None":
+                                    value = None
+                                else:
+                                    value = str(value)
+
+                    temp[section][option] = value
+                    if update_self:
+                        self.set(section, option, value)
+
+        except IOError:
+            self._Atoms.set('configuration.yombo_ini.found', False)
+            self._Loader.operation_mode = 'firstrun'
+            logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
+            self._Atoms.set('configuration.yombo_ini.found', False)
+            self.loading_yombo_ini = False
+            return False
+            # return
+        except ConfigParser.NoSectionError, e:
+            self._Atoms.set('configuration.yombo_ini.found', False)
+            logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
+            return False
+        else:
+            self._Atoms.set('configuration.yombo_ini.found', True)
+            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
+            copyfile('yombo.ini', "usr/bak/yombo_ini/%s_yombo.ini" % timeString)
+            return temp
+
+    # def check_if_yombo_ini_modified(self):
+    #     last_modified = file_last_modified('yombo.ini')
+    #
+    #     if self.yombo_ini_last_modified == 0:
+    #         self.yombo_ini_last_modified = last_modified
+    #         print "yombo.ini last modified: %s" % self.yombo_ini_last_modified
+    #         return
+    #
+    #     if self.yombo_ini_last_modified < last_modified:
+    #         self.yombo_ini_last_modified = last_modified
+    #         print "yombo file updated...  should read it?"
+    #         configs = self.read_yombo_ini(update_self=False)
+    #         added, removed, modified, same = dict_diff(self.last_yombo_ini_read, configs)
+    #
+    #         print "added: %s" % added
+    #         print "removed: %s" % removed
+    #         print "modified: %s" % modified
+    #         print "same: %s" % same
+    #
+    #         for section in added:
+    #             for option, value in configs[section].iteritems():
+    #                  print "adding: %s: %s: %s" % (section, option, value)
+    #                  # self.set(section, option, value)
+    #
+    #         for section, options in configs.iteritems():
+    #             for option, value in options.iteritems():
+
+            # for section in removed:
+            #     self.configs[section][option]
+            #     for option, value in configs[section].iteritems():
+            #         print "adding: %s: %s: %s" % (section, option, value)
+            #         # self.set(section, option, value)
+
+                    #     for value in options:
+            #
+            #
+            #
+            # for section, options in added.iteritems():
+            #     print "adding: %s: %s" % (section, option)
+            #     for value in options:
+            #         self.set(section, option, value)
+
+
 
     def Configuration_i18n_atoms(self, **kwargs):
        return [
@@ -550,7 +616,7 @@ class Configuration(YomboLibrary):
         self.configs_dirty = True
         if self.loading_yombo_ini is False:
             self.configs[section][option]['writes'] += 1
-            global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value})
+            global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value, 'action': 'set'})
 
 
     def get_meta(self, section, option, meta_type='time'):
@@ -570,7 +636,9 @@ class Configuration(YomboLibrary):
         """
         if section in self.configs:
             if option in self.configs[section]:
+                self.configs_dirty = True
                 del self.configs[section][option]
+                global_invoke_all('_configuration_set_', **{'section': section, 'option': option, 'value': None, 'action': 'delete'})
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #
