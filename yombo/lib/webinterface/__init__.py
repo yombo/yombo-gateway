@@ -411,23 +411,54 @@ class WebInterface(YomboLibrary):
         # self.webapp.templates.globals['func'] = self.functions
         self.start_web_servers()
 
+        self.tester_redo = reactor.callLater(15, self.change_port)
+
+    @inlineCallbacks
+    def change_ports(self, port_nonsecure=None, port_secure=None):
+        if port_nonsecure is None and port_secure is None:
+            logger.info("Asked to change ports, but nothing has changed.")
+            return
+
+        if port_nonsecure is not None:
+            self.wi_port_nonsecure = port_nonsecure
+            logger.info("Changing port for the non-secure web interface: {port}", port=port_nonsecure)
+            if self.web_server_started:
+                yield self.web_interface_listener.stopListening()
+                self.web_server_started = False
+
+        if port_secure is not None:
+            self.wi_port_secure = port_secure
+            logger.info("Changing port for the secure web interface: {port}", port=port_secure)
+            if self.web_server_ssl_started:
+                yield self.web_interface_ssl_listener.stopListening()
+                self.web_server_ssl_started = False
+
+        self.start_web_servers()
+
+
+        print "chaing to port 18888"
+        print "calling start..."
+
     def start_web_servers(self):
         if self.web_server_started is False:
-            self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
             self.web_server_started = True
+            self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
 
         if self.web_server_ssl_started is False:
             cert = self._SSLCerts.get('lib_webinterface')
 
             privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
             certifpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
-            chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+            if cert['chain'] is not None:
+                chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+            else:
+                chainpyssl = None
             contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
                                                     certificate=certifpyssl,
                                                     extraCertChain=chainpyssl)
 
-            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, contextFactory)
             self.web_server_ssl_started = True
+            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, contextFactory)
             return
 
     def _configuration_set_(self, **kwargs):
@@ -444,6 +475,12 @@ class WebInterface(YomboLibrary):
         if section == 'core':
             if option == 'label':
                 self.misc_wi_data['gateway_label'] = value
+
+        if section == 'webinterface':
+            if option == 'nonsecure_port':
+                self.change_ports(port_nonsecure=value)
+            elif option == 'secure_port':
+                self.change_ports(port_secure=value)
 
     def _sslcerts_(self, **kwargs):
         """
