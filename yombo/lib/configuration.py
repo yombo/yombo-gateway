@@ -193,8 +193,8 @@ class Configuration(YomboLibrary):
         if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
             self.periodic_save_yombo_ini.stop()
 
-        if self.periodic_load_yombo_ini is not None and self.periodic_load_yombo_ini.running:
-            self.periodic_load_yombo_ini.stop()
+        # if self.periodic_load_yombo_ini is not None and self.periodic_load_yombo_ini.running:
+        #     self.periodic_load_yombo_ini.stop()
 
     def _unload_(self):
         """
@@ -554,7 +554,7 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.get.nodefault", bucket_time=15, anon=True)
             return None
 
-    def set(self, section, option, value):
+    def set(self, section, option, value, **kwargs):
         """
         Set value of configuration option for a given section.  The option length
         **cannot exceed 1000 characters**.  The value cannot exceed 5000 bytes.
@@ -592,7 +592,7 @@ class Configuration(YomboLibrary):
                 raise ValueError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
-        # print "section: %s, option: %s, value: %s" % (section, option, value)
+        # print "setting section: %s, option: %s, value: %s" % (section, option, value)
         section = section.lower()
         option = option.lower()
 
@@ -606,6 +606,10 @@ class Configuration(YomboLibrary):
             }
             self._Statistics.increment("lib.configuration.set.new", bucket_time=15, anon=True)
         else:
+            # already have a value. If it's the same, we won't set it.
+            if self.configs[section][option]['value'] == value:
+                self._Statistics.increment("lib.configuration.set.skipped_same_value", bucket_time=15, anon=True)
+                return
             self._Statistics.increment("lib.configuration.set.update", bucket_time=15, anon=True)
 
         self.configs[section][option] = dict_merge(self.configs[section][option], {

@@ -38,7 +38,7 @@ from yombo.ext.expiringdict import ExpiringDict
 from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string
+from yombo.utils import random_string, sleep
 
 logger = get_logger("library.webconfig.session")
 
@@ -170,8 +170,7 @@ class Sessions(object):
         :param request:
         :return:
         """
-
-        session_id = random_string(length=20)
+        session_id = random_string(length=randint(19, 25))
         self.active_sessions[session_id] = Session()
         self.active_sessions[session_id].init(self, session_id)
 
@@ -267,16 +266,19 @@ class Sessions(object):
 
         for session_id, session in self.active_sessions.iteritems():
             db_session = yield self.localdb.get_session(session_id)
+            logger.debug("Have a session, deciding what to do: {id}", id=session_id)
             # print "db session ons aving: %s" % db_session
             if db_session is None:
-                # print "creating new db session record"
+                logger.debug("creating new db session record: {id}", id=session_id)
                 yield self.localdb.save_session(session_id, json.dumps(session), session.created, session.last_access,
                                       session.updated)
             else:
                 # print "updating old db record"
+                logger.debug("updating old db session record: {id}", id=session_id)
                 yield self.localdb.update_session(session_id, json.dumps(session), session.last_access, session.updated)
 
         if close_deferred:
+            yield sleep(0.1)
             self.unload_deferred.callback(1)
 
 class Session(dict):

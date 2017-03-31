@@ -65,6 +65,9 @@ class SSLCerts(YomboLibrary):
     """
     Responsible for managing various certificates for Yombo.
     """
+
+    managed_certs = {}
+
     @inlineCallbacks
     def _init_(self):
         """
@@ -100,7 +103,6 @@ class SSLCerts(YomboLibrary):
         self.self_signed_cert = read_file(self.self_signed_cert_file)
         self.self_signed_key = read_file(self.self_signed_key_file)
 
-        # self.managed_certs = {}
         self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
                                                      unserializer=self.sslcert_unserializer)
         # print("startup: managed_certs: %s" % self.managed_certs)

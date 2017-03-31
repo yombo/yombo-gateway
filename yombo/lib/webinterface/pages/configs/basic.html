@@ -158,48 +158,63 @@
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="webinterface_nonsecure_port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 80 is used by web servers, but must be root to do this or using a proper startup script.">Port, Non-Secure. Usually 8080 or 80. 0 = Disabled</label>
+									<label  for="webinterface_nonsecure_port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 8080 is used by web servers, but must be root to do this or using a proper startup script."><em>Takes affect on save!</em> Non-Secure web port. Usually 8080 or 80. 0 = Disabled</label>
 									<div class="input-group" data-validate="number">
 										<input type="text" class="form-control" name="webinterface_nonsecure_port" id="webinterface_nonsecure_port" placeholder="80" value="{{ config.webinterface.nonsecure_port }}" required>
 										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 									</div>
 								</div>
 								<div class="form-group">
-									<label  for="webinterface_secure_port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script.">Port, Secure (SSL). Usually 8443 or 443. 0 = Disabled</label>
+									<label  for="webinterface_secure_port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script."><em>Takes affect on save!</em> Secure (SSL) webport. Usually 8443 or 443. 0 = Disabled</label>
 									<div class="input-group" data-validate="number">
 										<input type="text" class="form-control" name="webinterface_secure_port" id="webinterface_secure_port" placeholder="443" value="{{ config.webinterface.secure_port }}" required>
 										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 									</div>
 								</div>
-                    <div class="col-lg-6 col-md-6">
-								<div class="form-group">
-									<label for="webinterface_pin_type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
-									<div class="input-group">
-										<select class="form-control" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
-											<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static PIN</option>
-											<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
-											<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>
-										</select>
+								<div class="col-lg-12 col-md-12" style="border: 1px solid #95B8C4; border-radius:10px; background-color: #DFECF0">
+									<div class="form-group">
+										<label for="webinterface_pin_type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
+										<div class="input-group">
+											<select class="form-control" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
+												<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static Access Code</option>
+												<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
+												<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>
+											</select>
+										</div>
+									</div>
+									<div class="form-group" id="webinterface_auth_pin_form">
+										<label  for="webinterface_auth_pin" data-toggle="tooltip" title="Web access code">Web access code</label>
+										<div class="input-group" data-validate="number">
+											<input type="text" class="form-control" name="webinterface_auth_pin" id="webinterface_auth_pin" placeholder="" value="{{ config.webinterface.auth_pin }}" required>
+										</div>
+									</div>
+									<div class="form-group" id="webinterface_auth_totp_form">
+										<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#totp_model">
+											Scan TOPT QR Code
+										</button>
 									</div>
 								</div>
-					</div>
+
                     <div class="col-lg-6 col-md-6">
-							<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
-  								Scan TOPT QR Code
-							</button>
-							<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+							<div class="modal fade" id="totp_model" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
 							  <div class="modal-dialog" role="document">
 								<div class="modal-content">
 								  <div class="modal-header">
 									<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-									<h4 class="modal-title" id="myModalLabel">Modal title</h4>
+									<h4 class="modal-title" id="myModalLabel">Scan QRCode below</h4>
 								  </div>
 								  <div class="modal-body">
-									...
+									<p>Use your TOTP app (such as Google Authenticator). This code will be required when accessing
+									this website from a new machine.
+									</p>
+									  <p><strong>If you don't scan this, you could be locked out of the web interface until you
+									  stop the gateway service, edit the yombo.ini file, and start the gateway again.</strong></p>
+
+								  </div>
+								  <div class="modal-body" id="qrcode_here" align="center">
 								  </div>
 								  <div class="modal-footer">
-									<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-									<button type="button" class="btn btn-primary">Save changes</button>
+									<button type="button" class="btn btn-primary" data-dismiss="modal">I've scanned this code</button>
 								  </div>
 								</div>
 							  </div>
@@ -264,6 +279,7 @@
 					<p>&nbsp;</p>
 				</div>
 	            <!-- /.row -->
+<img id="img-buffer" src="/static/img/logo-100px.png" hidden>
 			</form>
 {% endblock %}
 
@@ -271,6 +287,7 @@
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
 {% include 'lib/webinterface/fragments/jquery_validate_js.tpl' %}
+{% include 'lib/webinterface/fragments/qrcode_js.tpl' %}
 
 <script src="/static/js/jquery.are-you-sure.js"></script>
 
@@ -283,8 +300,9 @@
       }
     );
   });
-
 </script>
+
+
 
     <!-- Make the tables pretty -->
     <script>
@@ -330,16 +348,91 @@ $('form').validate({
         }
  });
 
+	function check_acces_code_form() {
+        if($('#webinterface_pin_type').val() == 'pin') {
+            $('#webinterface_auth_pin_form').show();
+        } else {
+            $('#webinterface_auth_pin_form').hide();
+        }
+        if($('#webinterface_pin_type').val() == 'totp') {
+            $('#webinterface_auth_totp_form').show();
+        } else {
+            $('#webinterface_auth_totp_form').hide();
+        }
+	}
 
 	$(document).ready(function(){
+		check_acces_code_form()
+		$('#webinterface_pin_type').change(function(){
+			check_acces_code_form()
+			if($('#webinterface_pin_type').val() == 'totp') {
+				$('#totp_model').modal('show')
+			}
+		});
+
 		$('[data-toggle="tooltip"]').tooltip();
 		$("#times-twilight").val("{{ config.times.twilighthorizon }}");
 
-$( "#basicconfig" ).submit(function( event ) {
+		$( "#basicconfig" ).submit(function( event ) {
+			$('#location_searchtext').val($('#search_txt').val());
+		});
+		var jq = window.jQuery;
+		jq('#qrcode_here').empty().qrcode(qroptions);
 
-$('#location_searchtext').val($('#search_txt').val());
-});
-
+//		$('#qrcode_here_mitch').html(qrcode(qroptions));
 	});
+	var qroptions = {
+		// render method: 'canvas', 'image' or 'div'
+		render: 'image',
+
+		// version range somewhere in 1 .. 40
+		minVersion: 1,
+		maxVersion: 40,
+
+		// error correction level: 'L', 'M', 'Q' or 'H'
+		ecLevel: 'Q',
+
+		// offset in pixel if drawn onto existing canvas
+		left: 0,
+		top: 0,
+
+		// size in pixel
+		size: 250,
+
+		// code color or image element
+		fill: '#3e7495',
+
+		// background color or image element, null for transparent background
+		background: null,
+
+		// content
+		text: 'otpauth://totp/{{ config.core.machine_label }}?secret={{ config.webinterface.auth_pin_totp }}&issuer=Yombo Gateway',
+
+		// corner radius relative to module width: 0.0 .. 0.5
+		radius: .4,
+
+		// quiet zone in modules
+		quiet: 1,
+
+		// modes
+		// 0: normal
+		// 1: label strip
+		// 2: label box
+		// 3: image strip
+		// 4: image box
+		mode: 4,
+
+		mSize: 0.29,
+		mPosX: 0.5,
+		mPosY: 0.5,
+
+//		label: 'Yombo',
+//		label: '',
+		fontname: 'sans',
+		fontcolor: '#0c4276',
+
+		image: $('#img-buffer')[0]
+	}
+//	$(selector).qrcode(options);
     </script>
 {% endblock %}

@@ -42,6 +42,7 @@ from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
 
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+import yombo.ext.totp
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
@@ -337,7 +338,8 @@ class WebInterface(YomboLibrary):
         # print "web interface direct1: %s" % self._current_dir
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
-
+        self.secret_pin_totp = self._Configs.get('webinterface', 'auth_pin_totp',
+                                     yombo.utils.random_string(length=16, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'))
         self.api = self._Loader.loadedLibraries['yomboapi']
         self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.misc_wi_data = {}
@@ -411,8 +413,6 @@ class WebInterface(YomboLibrary):
         # self.webapp.templates.globals['func'] = self.functions
         self.start_web_servers()
 
-        self.tester_redo = reactor.callLater(15, self.change_port)
-
     @inlineCallbacks
     def change_ports(self, port_nonsecure=None, port_secure=None):
         if port_nonsecure is None and port_secure is None:
@@ -435,31 +435,32 @@ class WebInterface(YomboLibrary):
 
         self.start_web_servers()
 
-
-        print "chaing to port 18888"
-        print "calling start..."
-
     def start_web_servers(self):
         if self.web_server_started is False:
-            self.web_server_started = True
-            self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
+            if self.wi_port_nonsecure == 0:
+                logger.warn("Non secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->nonsecure_port")
+            else:
+                self.web_server_started = True
+                self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
 
         if self.web_server_ssl_started is False:
-            cert = self._SSLCerts.get('lib_webinterface')
-
-            privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
-            certifpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
-            if cert['chain'] is not None:
-                chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+            if self.wi_port_secure == 0:
+                logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
             else:
-                chainpyssl = None
-            contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
-                                                    certificate=certifpyssl,
-                                                    extraCertChain=chainpyssl)
+                cert = self._SSLCerts.get('lib_webinterface')
 
-            self.web_server_ssl_started = True
-            self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, contextFactory)
-            return
+                privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
+                certifpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
+                if cert['chain'] is not None:
+                    chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+                else:
+                    chainpyssl = None
+                contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
+                                                        certificate=certifpyssl,
+                                                        extraCertChain=chainpyssl)
+
+                self.web_server_ssl_started = True
+                self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, contextFactory)
 
     def _configuration_set_(self, **kwargs):
         """
@@ -808,30 +809,42 @@ class WebInterface(YomboLibrary):
         valid_pin = False
         # print "pin submit: %s" % submitted_pin
         if submitted_pin.isalnum() is False:
-            # print "pin submit2: %s" % submitted_pin
             self.add_alert('Invalid authentication.', 'warning')
             return self.redirect(request, '/login/pin')
 
-        # print "pin submit2: %s" % submitted_pin
+        def create_pin_session(self, request):
+            expires = 10 * 365 * 24 * 60 * 60  # 10 years from now.
+            request.addCookie(self.sessions.config.cookie_pin, time(), domain=None, path='/',
+                              secure=self.sessions.config.secure, httpOnly=self.sessions.config.httponly,
+                              max_age=expires)
+            request.received_cookies[self.sessions.config.cookie_pin] = '1'
+            session = self.sessions.create(request)
+            session['auth'] = False
+            session['auth_id'] = ''
+            session['auth_time'] = 0
+            session['yomboapi_session'] = ''
+            session['yomboapi_login_key'] = ''
+            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
+
+
         if self.auth_pin_type == 'pin':
             if submitted_pin == self.auth_pin:
-                # print "pin post444"
-                expires = 10 * 365 * 24 * 60 * 60  # 10 years from now.
-                request.addCookie(self.sessions.config.cookie_pin, time(), domain=None, path='/',
-                          secure=self.sessions.config.secure, httpOnly=self.sessions.config.httponly,
-                          max_age=expires)
-                request.received_cookies[self.sessions.config.cookie_pin] = '1'
-                session = self.sessions.create(request)
-                session['auth'] = False
-                session['auth_id'] = ''
-                session['auth_time'] = 0
-                session['yomboapi_session'] = ''
-                session['yomboapi_login_key'] = ''
-                request.received_cookies[self.sessions.config.cookie_session] = session.session_id
-
-               # print "session: %s" % session
+                create_pin_session(self, request)
             else:
                 return self.redirect(request, '/login/pin')
+        elif self.auth_pin_type == 'totp':
+
+            totp_results = yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp, window=10)
+            print "should be: %s" % yombo.ext.totp.get_totp(b'MFRGGZDFMZTWQ2LK')
+            print "totp_results self.secret_pin_totp: %s" % self.secret_pin_totp
+            print "totp_results: %s" % totp_results
+            if yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp, window=10):
+                create_pin_session(self, request)
+            else:
+                return self.redirect(request, '/login/pin')
+        elif self.auth_pin_type == 'none':
+            create_pin_session(self, request)
+
         return self.home(request)
 
     @webapp.route('/login/pin', methods=['GET'])
@@ -1114,6 +1127,12 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
+            'source/jrcode/jquery-qrcode.min.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/jquery-qrcode.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
             'source/creative/js/jquery.easing.min.js',
             'source/creative/js/scrollreveal.min.js',
             'source/creative/js/creative.min.js',
@@ -1166,6 +1185,7 @@ class WebInterface(YomboLibrary):
 
         # Just copy files
         copytree('source/font-awesome/fonts/', 'dist/fonts/')
+
         copytree('source/bootstrap/dist/fonts/', 'dist/fonts/')
 
 class web_translator(object):
