@@ -38,8 +38,9 @@ docs/*.sh
 webroot/*
 yombo/lib/html5*
 yombo/lib/old*
-yombo/lib/webinterface/static/dist
-!yombo/lib/webinterface/static/dist/img
+yombo/lib/webinterface/static/dist/
+!yombo/lib/webinterface/static/dist/img/
+!yombo/lib/webinterface/static/dist/img/*
 *.jar
 *ombo.egg-info*
 
