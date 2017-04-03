@@ -8,7 +8,6 @@
 {% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
 {% endblock %}
 
-
 {% block content %}
 {% if misc_wi_data.operation_mode == 'config' %}
             <div class="row">
@@ -31,6 +30,11 @@
                 <!-- /.col-lg-12 -->
             </div>
 {% endif %}
+<style type="text/css">
+.bgimg {
+    background-image: url('/static/img/logo-100px.png');
+}
+</style>
             <div class="row">
                 <div class="col-md-6 col-md-offset-3">
                     <div class="login-panel panel panel-default">
@@ -66,6 +70,7 @@
                                 <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
                         </div>
                         <div class="panel-body">
+<div class="bgimg">
                             <form action="/login/user" method="POST" role="form" id="login">
                                 <fieldset>
                                     <div class="input-group">
@@ -83,6 +88,7 @@
                                     <button type="submit" id="submit-login" class="btn btn-lg btn-success btn-block">Login</button>
                                 </fieldset>
                             </form>
+            </div>
                         </div>
                     </div>
                     <div class="panel-heading">
@@ -90,8 +96,8 @@
                             <center>This site is running <a href="https://yombo.net">Yombo Gateway</a> automation software. For help, see <a href="https://yombo.net/documents/">documentation</a>.</center>
                     </div>
                 </div>
-            </div>
             <!-- /.row -->
+<div style="background-image: url('/static/img/logo-100px.png')">
 {% endblock %}
 
 {% block body_bottom_js %}
