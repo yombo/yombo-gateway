@@ -17,7 +17,37 @@ If you wish to store persistent data for your module, use the
 
    latitude = self._Configs.get("location", "latitude")  # also can accept default and if a default value should be saved.
    latitude = self._Configs.get("location", "latitude", "0", False)  # example of default and no save if default is used.
-   self._Configs.set("location", "latitude", "100")  # Save a new latitude location.
+   self._Configs.set("location", "latitude", 100)  # Save a new latitude location.
+
+A function can also be returned by calling get2(). This allows the a library or module to always access the
+latest version of a configuration value.  The function can also accept a named parameter of 'set' to set a
+new value:
+
+*Usage**:
+
+.. code-block:: python
+
+   latitude = self._Configs.get2("location", "latitude")  # also can accept default and if a default value should be saved.
+   latitude = self._Configs.get2("location", "latitude", "0", False)  # example of default and no save if default is used.
+   print("Latitude: %s" % latitude())  # print
+   latitude(set=100)  # Save a new latitude location.
+
+There are also times when you a module or library should be notified of a change. They
+can simply implement the hook: _configuration_set_:
+
+*Usage**:
+
+.. code-block:: python
+
+   def _configuration_set_(self, **kwargs):
+       section = kwargs['section']
+       option = kwargs['option']
+       value = kwargs['value']
+
+       if section == 'core':
+           if option == 'label':
+               logger.info("the system label was changed to: {label}", label=value)
+
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -38,6 +68,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from functools import partial
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
@@ -466,7 +497,50 @@ class Configuration(YomboLibrary):
                 except:
                     pass
 
-    def get(self, section, option=None, default=None, set_if_missing=True):
+    def get2(self, section, option=None, default=None, set_if_missing=True, set=None, **kwargs):
+        """
+        Read value of configuration option, return None if it don't exist or
+        default if defined.  Tries to type cast with int first before
+        returning a string.
+
+        Section and option will be converted to lowercase, rendering the set/get
+        function case insenstive.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           gatewayUUID = self._Config.get("core", "gwuuid", "Default Value")
+
+        :param section: The configuration section to use.
+        :type section: string
+        :param option: The option (key) to use. Use * to return all possible options as a dict.
+        :type option: string
+        :param default: What to return if no result is found, default = None.
+        :type default: int or string
+        :param set_if_missing: If value is missing, should it be set for future reference?
+        :type set_if_missing: bool
+        :return: The configuration value requested by section and option.
+        :rtype: int or string or None
+        """
+        if len(section) > self.MAX_SECTION_LENGTH:
+            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
+            raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+        if len(option) > self.MAX_OPTION_LENGTH:
+            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
+            raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+
+        if set is not None:
+            return self.set(section, option, set, **kwargs)
+        if option is None:
+            raise YomboWarning("get operation must have option.")
+
+        section = section.lower()
+        option = option.lower()
+
+        return partial(self.get, section, option, default, set_if_missing)
+
+    def get(self, section, option=None, default=None, set_if_missing=True, set=None, **kwargs):
         """
         Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
@@ -492,6 +566,9 @@ class Configuration(YomboLibrary):
         :return: The configuration value requested by section and option.
         :rtype: int or string or None
         """
+        if set is not None:
+            return self.set(section, option, set, **kwargs)
+
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
             raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)

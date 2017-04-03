@@ -338,15 +338,15 @@ class WebInterface(YomboLibrary):
         # print "web interface direct1: %s" % self._current_dir
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
-        self.secret_pin_totp = self._Configs.get('webinterface', 'auth_pin_totp',
+        self.secret_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp',
                                      yombo.utils.random_string(length=16, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'))
         self.api = self._Loader.loadedLibraries['yomboapi']
         self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.misc_wi_data = {}
         self.sessions = Sessions(self._Loader)
 
-        self.wi_port_nonsecure = self._Configs.get('webinterface', 'nonsecure_port', 8080)
-        self.wi_port_secure = self._Configs.get('webinterface', 'secure_port', 8443)
+        self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
+        self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
 
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
@@ -385,11 +385,11 @@ class WebInterface(YomboLibrary):
             return
         self._op_mode = self._Atoms['loader.operation_mode']
 
-        self.auth_pin = self._Configs.get('webinterface', 'auth_pin',
+        self.auth_pin = self._Configs.get2('webinterface', 'auth_pin',
               yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
-        self.auth_pin_totp = self._Configs.get('webinterface', 'auth_pin_totp', yombo.utils.random_string(length=16))
-        self.auth_pin_type = self._Configs.get('webinterface', 'auth_pin_type', 'pin')
-        self.auth_pin_required = self._Configs.get('webinterface', 'auth_pin_required', True)
+        self.auth_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp', yombo.utils.random_string(length=16))
+        self.auth_pin_type = self._Configs.get2('webinterface', 'auth_pin_type', 'pin')
+        self.auth_pin_required = self._Configs.get2('webinterface', 'auth_pin_required', True)
 
         self.web_factory = Site(self.webapp.resource(), None, logPath='/dev/null')
         self.web_factory.noisy = False  # turn off Starting/stopping message
@@ -399,7 +399,7 @@ class WebInterface(YomboLibrary):
         self._display_pin_console_time = 0
 
         self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
-        self.misc_wi_data['gateway_label'] = self._Configs.get('core', 'label', 'Yombo Gateway', False)
+        self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
         self.misc_wi_data['operation_mode'] = self._op_mode
         self.misc_wi_data['notifications'] = self._Notifications
         self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
@@ -420,14 +420,14 @@ class WebInterface(YomboLibrary):
             return
 
         if port_nonsecure is not None:
-            self.wi_port_nonsecure = port_nonsecure
+            self.wi_port_nonsecure(set=port_nonsecure)
             logger.info("Changing port for the non-secure web interface: {port}", port=port_nonsecure)
             if self.web_server_started:
                 yield self.web_interface_listener.stopListening()
                 self.web_server_started = False
 
         if port_secure is not None:
-            self.wi_port_secure = port_secure
+            self.wi_port_secure(set=port_secure)
             logger.info("Changing port for the secure web interface: {port}", port=port_secure)
             if self.web_server_ssl_started:
                 yield self.web_interface_ssl_listener.stopListening()
@@ -437,14 +437,14 @@ class WebInterface(YomboLibrary):
 
     def start_web_servers(self):
         if self.web_server_started is False:
-            if self.wi_port_nonsecure == 0:
+            if self.wi_port_nonsecure() == 0:
                 logger.warn("Non secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->nonsecure_port")
             else:
                 self.web_server_started = True
-                self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure, self.web_factory)
+                self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure(), self.web_factory)
 
         if self.web_server_ssl_started is False:
-            if self.wi_port_secure == 0:
+            if self.wi_port_secure() == 0:
                 logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
             else:
                 cert = self._SSLCerts.get('lib_webinterface')
@@ -460,7 +460,7 @@ class WebInterface(YomboLibrary):
                                                         extraCertChain=chainpyssl)
 
                 self.web_server_ssl_started = True
-                self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure, self.web_factory, contextFactory)
+                self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory, contextFactory)
 
     def _configuration_set_(self, **kwargs):
         """
@@ -827,22 +827,19 @@ class WebInterface(YomboLibrary):
             request.received_cookies[self.sessions.config.cookie_session] = session.session_id
 
 
-        if self.auth_pin_type == 'pin':
+        if self.auth_pin_type() == 'pin':
             if submitted_pin == self.auth_pin:
                 create_pin_session(self, request)
             else:
                 return self.redirect(request, '/login/pin')
-        elif self.auth_pin_type == 'totp':
+        elif self.auth_pin_type() == 'totp':
 
-            totp_results = yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp, window=10)
-            print "should be: %s" % yombo.ext.totp.get_totp(b'MFRGGZDFMZTWQ2LK')
-            print "totp_results self.secret_pin_totp: %s" % self.secret_pin_totp
-            print "totp_results: %s" % totp_results
-            if yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp, window=10):
+            totp_results = yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp(), window=10)
+            if yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp(), window=10):
                 create_pin_session(self, request)
             else:
                 return self.redirect(request, '/login/pin')
-        elif self.auth_pin_type == 'none':
+        elif self.auth_pin_type() == 'none':
             create_pin_session(self, request)
 
         return self.home(request)
@@ -890,19 +887,20 @@ class WebInterface(YomboLibrary):
         return File(self._current_dir + "/lib/webinterface/static/dist")
 
     def display_pin_console(self):
-        dns_fqdn = self._Configs.get('dns', 'fqdn', None, False)
-        if dns_fqdn is None:
+        dns_fqdn = self._Configs.get2('dns', 'fqdn', None, False)
+        dns_fqdn_value = dns_fqdn()
+        if dns_fqdn_value is None:
             local_hostname = "127.0.0.1"
             internal_hostname = self._Configs.get('core', 'localipaddress_v4')
             external_hostname = self._Configs.get('core', 'externalipaddress_v4')
         else:
-            local_hostname = "local.%s" % dns_fqdn
-            internal_hostname = "i.%s" % dns_fqdn
-            external_hostname = "e.%s" % dns_fqdn
+            local_hostname = "local.%s" % dns_fqdn_value
+            internal_hostname = "i.%s" % dns_fqdn_value
+            external_hostname = "e.%s" % dns_fqdn_value
 
-        local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure)
-        internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure)
-        external = "https://%s:%s" % (external_hostname, self.wi_port_secure)
+        local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure())
+        internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure())
+        external = "https://%s:%s" % (external_hostname, self.wi_port_secure())
         print "###########################################################"
         print "#                                                         #"
         if self._op_mode != 'run':
@@ -922,7 +920,7 @@ class WebInterface(YomboLibrary):
         print "#                                                         #"
         print "#                                                         #"
         print "# Web Interface access pin code:                          #"
-        print "#  %-25s                              #" % self.auth_pin
+        print "#  %-25s                              #" % self.auth_pin()
         print "#                                                         #"
         print "###########################################################"
 
@@ -945,11 +943,11 @@ class WebInterface(YomboLibrary):
             return ""
 
     def _home_gateway_configured(self):
-        gwuuid = self._Configs.get("core", "gwuuid", None)
-        gwhash = self._Configs.get("core", "gwhash", None)
-        gpgkeyid = self._Configs.get('gpg', 'keyid', None)
+        gwuuid = self._Configs.get2("core", "gwuuid", None)
+        gwhash = self._Configs.get2("core", "gwhash", None)
+        gpgkeyid = self._Configs.get2('gpg', 'keyid', None)
 
-        if gwuuid is None or gwhash is None or gpgkeyid is None:
+        if gwuuid() is None or gwhash() is None or gpgkeyid() is None:
             return False
         else:
             return True
@@ -1013,13 +1011,13 @@ class WebInterface(YomboLibrary):
         if kwargs['section'] == 'webinterface':
             option = kwargs['option']
             if option == 'auth_pin':
-                self.auth_pin = kwargs['value']
+                self.auth_pin(set=kwargs['value'])
             elif option == 'auth_pin_totp':
-                self.auth_pin_totp = kwargs['value']
+                self.auth_pin_totp(set=kwargs['value'])
             elif option == 'auth_pin_type':
-                self.auth_pin_type = kwargs['value']
+                self.auth_pin_type(set=kwargs['value'])
             elif option == 'auth_pin_required':
-                self.auth_pin_required = kwargs['value']
+                self.auth_pin_required(set=kwargs['value'])
 
     def _build_dist(self):
         """

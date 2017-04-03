@@ -42,8 +42,8 @@ class GPG(YomboLibrary):
         """
         self.gwid = self._Configs.get("core", "gwid")
         self.gwuuid = self._Configs.get("core", "gwuuid")
-        self.mykeyid = self._Configs.get('gpg', 'keyid')
-        self.mykeyascii = self._Configs.get('gpg', 'keyascii')
+        self.mykeyid = self._Configs.get2('gpg', 'keyid')
+        self.mykeyascii = self._Configs.get2('gpg', 'keyascii')
 
         self._key_generation_status = {}
 
@@ -100,7 +100,7 @@ class GPG(YomboLibrary):
             if option == 'gwuuid':
                 self.gwuuid = value
             if option == 'keyid':
-                self.mykeyid = value
+                self.mykeyid(set=value)
 
     ##########################
     #### Key management  #####
@@ -355,13 +355,9 @@ class GPG(YomboLibrary):
         data['have_private'] = 1
         yield self.local_db.insert_gpg_key(data)
 
-        print "new generated key: %s" % data
-
-        # self._Configs.get('gpg', 'keyid', keyid)
-        # self._Configs.get('gpg', 'keyascii', asciiArmoredPublicKey)
-#        sendKey(keyid, asciiArmoredPublicKey)
-#         self.sync_keyring_to_db()
-        print "New keys (public and private) have been saved to key ring."
+        # print "new generated key: %s" % data
+        #
+        # print "New keys (public and private) have been saved to key ring."
         returnValue({'keyid': keyid, 'keypublicascii': asciiArmoredPublicKey})
 
     def get_key(self, keyid):
@@ -385,10 +381,10 @@ class GPG(YomboLibrary):
         :raises: YomboException - If encryption failed.
         """
         if destination is None:
-            destination = self.mykeyid
+            destination = self.mykeyid()
 
         try:
-            # output = self.gpg.encrypt(in_text, destination, sign=self.mykeyid)
+            # output = self.gpg.encrypt(in_text, destination, sign=self.mykeyid())
             output = self.gpg.encrypt(in_text, destination)
             if output.status != "encryption ok":
                 raise YomboWarning("Unable to encrypt string. Error 1.")
@@ -426,7 +422,7 @@ class GPG(YomboLibrary):
         #cache the gpg/pgp key locally.
         if type(in_text) is unicode or type(in_text) is str:
             try:
-                signed = self.gpg.sign(in_text, keyid=self.mykeyid, clearsign=asciiarmor)
+                signed = self.gpg.sign(in_text, keyid=self.mykeyid(), clearsign=asciiarmor)
                 return signed.data
             except:
                 raise YomboWarning("Error with GPG system. Unable to sign your message. 101b")

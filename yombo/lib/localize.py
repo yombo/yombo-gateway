@@ -47,12 +47,12 @@ class Localize(YomboLibrary):
     """
     def _init_(self):
         self.MSGCTXT_GLUE = "\004"
-        temp = self._Configs.get('localize', 'hashes')
-        self.default_lang = self._Configs.get('localize', 'default_lang', 'en', False)
-        if temp is None:
+        hashes = self._Configs.get('localize', 'hashes')
+        self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
+        if hashes is None:
             self.hashes = {'en':None}
         else:
-            self.hashes = json.loads(temp)
+            self.hashes = json.loads(hashes)
 
         if 'en' not in self.hashes:
             self.hashes['en'] = ''
@@ -128,31 +128,31 @@ class Localize(YomboLibrary):
                 languages_to_update[lang] = 'aaa'
 
             # print "languages_to_update: %s" % languages_to_update
-            # print "self.default_lang 11: %s" % self.default_lang
+            # print "self.default_lang 11: %s" % self.default_lang()
             # If we have a default language, lets make sure we have language files for it.
-            if self.default_lang is not None:
-                if self.default_lang not in self.files:
-                    self.default_lang = None
-                    language = self.default_lang.split('_')[0]
+            if self.default_lang() is not None:
+                if self.default_lang() not in self.files:
+                    self.default_lang(set=None)
+                    language = self.default_lang().split('_')[0]
                     if language in self.files:
-                        self.default_lang = language
+                        self.default_lang(set=language)
             # If no default lang, try the system language.
-            if self.default_lang is None:
+            if self.default_lang() is None:
                 language = self.get_system_language()
                 if language in self.files:
-                    self.default_lang = language
+                    self.default_lang(set=language)
                 else:
                     language = language.split('_')[0]
                     if language in self.files:
-                        self.default_lang = language
+                        self.default_lang(set=language)
 
             # If still no language, we will use english.
-            if self.default_lang is None:
-                self.default_lang = 'en'
+            if self.default_lang() is None:
+                self.default_lang(set='en')
 
             # English is the base of all language files. If English needs updating, we update the default too.
-            if 'en' in languages_to_update and self.default_lang not in languages_to_update:
-                languages_to_update[self.default_lang] = 'a'
+            if 'en' in languages_to_update and self.default_lang() not in languages_to_update:
+                languages_to_update[self.default_lang()] = 'a'
 
             # print "localize . languages_to_update: %s" % languages_to_update
 
@@ -162,13 +162,12 @@ class Localize(YomboLibrary):
                 del languages_to_update['en']
 
             # Add the default language to the stack.
-            if self.default_lang in languages_to_update:
-                self.do_update(self.default_lang)
-                del languages_to_update[self.default_lang]
+            if self.default_lang() in languages_to_update:
+                self.do_update(self.default_lang())
+                del languages_to_update[self.default_lang()]
 
-            # self.default_lang = 'es' # some testing...
-            self._States['localize.default_language'] = self.default_lang
-            self._Configs.set('localize', 'default_lang', self.default_lang)
+            # self.default_lang() = 'es' # some testing...
+            self._States['localize.default_language'] = self.default_lang()
 
             for lang, files in languages_to_update.iteritems():
                 self.do_update(lang)
@@ -215,8 +214,8 @@ class Localize(YomboLibrary):
 
                 if languages is None:
                     languages = []
-                    if self.default_lang not in languages:
-                        languages.append(self.default_lang)  # toss in the gateway default language, which may be the system lang
+                    if self.default_lang() not in languages:
+                        languages.append(self.default_lang())  # toss in the gateway default language, which may be the system lang
                     if 'en' not in languages:
                         languages.append('en')  # if all else fails, show english.
                 kwargs['languages'] = languages
@@ -394,8 +393,8 @@ class Localize(YomboLibrary):
                 locales.append(lang.replace("-", "_"))
             if lang_parts[0] not in locales:
                 locales.append(lang_parts[0])
-        if self.default_lang not in locales:
-            locales.append(self.default_lang)  # toss in the gateway default language, which may be the system lang
+        if self.default_lang() not in locales:
+            locales.append(self.default_lang())  # toss in the gateway default language, which may be the system lang
         if 'en' not in locales:
             locales.append('en')  # if all else fails, show english.
         return locales

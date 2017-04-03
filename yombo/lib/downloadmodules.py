@@ -91,17 +91,14 @@ class DownloadModules(YomboLibrary):
         to see if any modules need to be downloaded.
         """
         environment = self._Configs.get("core", 'environment', "production", False)
-        if self._Configs.get("core", 'module_domain', "", False) != "":
-            self.cloudfront = "https://%s/" % self._Configs.get("core", 'module_domain')
+        if(environment == "production"):
+            self.cloudfront = "https://gwdl.yombo.net/"
+        elif (environment == "staging"):
+            self.cloudfront = "https://gwdlstg.yombo.net/"
+        elif (environment == "development"):
+            self.cloudfront = "https://gwdldev.yombo.net/"
         else:
-            if(environment == "production"):
-                self.cloudfront = "https://gwdl.yombo.net/"
-            elif (environment == "staging"):
-                self.cloudfront = "https://gwdlstg.yombo.net/"
-            elif (environment == "development"):
-                self.cloudfront = "https://gwdldev.yombo.net/"
-            else:
-                self.cloudfront = "https://gwdl.yombo.net/"
+            self.cloudfront = "https://gwdl.yombo.net/"
             
         return self.download_modules()
 

@@ -72,8 +72,8 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        self.user_id = "gw_" + self._Configs.get("core", "gwid")
-        self.login_user_id = self.user_id + "_" + self._Configs.get("core", "gwuuid")
+        self.gwid = "gw_" + self._Configs.get("core", "gwid")
+        self.login_gwuuid = self.gwid + "_" + self._Configs.get("core", "gwuuid")
         self._LocalDBLibrary = self._Libraries['localdb']
         self.request_configs = False
 
@@ -133,7 +133,7 @@ class AMQPYombo(YomboLibrary):
             self.amqp = yield self._AMQP.new(hostname=amqp_host,
                                              port=amqp_port,
                                              virtual_host='yombo',
-                                             username=self.login_user_id,
+                                             username=self.login_gwuuid,
                                              password=self._Configs.get("core", "gwhash"),
                                              client_id='amqpyombo',
                                              prefetch_count=PREFETCH_COUNT,
@@ -145,7 +145,7 @@ class AMQPYombo(YomboLibrary):
         # The servers will have a dedicated queue for us. All pending messages will be held there for us. If we
         # connect to a different server, they wil automagically be re-routed to our new queue.
         if already_have_amqp is None:
-            self.amqp.subscribe("ygw.q." + self.user_id, incoming_callback=self.amqp_incoming, queue_no_ack=False, persistent=True)
+            self.amqp.subscribe("ygw.q." + self.gwid, incoming_callback=self.amqp_incoming, queue_no_ack=False, persistent=True)
 
         self.configHandler.connect_setup(self.init_deferred)
         # self.init_deferred.callback(10)
@@ -261,10 +261,10 @@ class AMQPYombo(YomboLibrary):
 
         # print "properties: %s" % properties
         if 'route' in properties.headers:
-            route = str(properties.headers['route']) + ",yombo.gw.amqpyombo:" + self.user_id
+            route = str(properties.headers['route']) + ",yombo.gw.amqpyombo:" + self.gwid
             response_msg['properties']['headers']['route'] = route
         else:
-            response_msg['properties']['headers']['route'] = "yombo.gw.amqpyombo:" + self.user_id
+            response_msg['properties']['headers']['route'] = "yombo.gw.amqpyombo:" + self.gwid
         return response_msg
 
     def generate_message_request(self, exchange_name=None, source=None, destination=None,
@@ -329,10 +329,10 @@ class AMQPYombo(YomboLibrary):
             "body"             : msgpack.dumps(body),
             "properties" : {
                 # "correlation_id" : correlation_id,
-                "user_id"        : self.user_id,
+                "user_id"        : self.gwid,
                 "content_type"   : 'application/msgpack',
                 "headers"        : {
-                    "source"        : source + ":" + self.user_id,
+                    "source"        : source + ":" + self.gwid,
                     "destination"   : destination,
                     "type"          : header_type,
                     "protocol_verion": PROTOCOL_VERSION,
