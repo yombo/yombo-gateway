@@ -89,7 +89,6 @@ class DeviceTypes(YomboLibrary):
         # print "device types info:"
         # for dt, data in self.device_types_by_id.iteritems():
         #     print "dt: %s, commands: %s" % (data.label, data.commands)
-        #     print "dt: %s, registered_devices: %s" % (data.label, data.registered_devices)
         #     print "dt: %s, registered_modules: %s" % (data.label, data.registered_modules)
         pass
 
@@ -130,17 +129,17 @@ class DeviceTypes(YomboLibrary):
             dt = yield self._LocalDB.get_device_type(device_type_id)
             self.add_device_type(dt[0])
 
-    def devices_by_device_type(self, requested_device_type, return_value='id'):
+    def devices_by_device_type(self, requested_device_type):
         """
         A list of devices types for a given device type.
 
         :raises YomboWarning: Raised when module_id is not found.
         :param requested_device_type: A device type by either ID or Label.
-        :return: A list of device id's.
+        :return: A dictionary of devices for a given device type.
         :rtype: list
         """
         device_type = self.get(requested_device_type)
-        return device_type.get_devices(return_value)
+        return device_type.get_devices()
 
     def device_type_commands(self, device_type_id):
         """
@@ -220,26 +219,6 @@ class DeviceTypes(YomboLibrary):
 
 #        if test_device_type:
 #            return self.__yombocommands[cmdUUID]
-
-    def update_registered_device(self, old, new):
-        self.del_registered_device(old)
-        return self.add_registered_device(new)
-
-    def add_registered_device(self, device):
-        # print "Regiering device with device type (%s): %s" % (device.device_type_id, device.label)
-        if device.device_type_id in self.device_types_by_id:
-            self.device_types_by_id[device.device_type_id].registered_devices[device.device_id] = device
-            # print "device registered.... to register: %s" % self.device_types_by_id[device.device_type_id].dump()
-            return True
-        else:
-            return False
-
-    def del_registered_device(self, device):
-        # print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!! deleting registered devices!!!!"
-        if device.device_type_id in self.device_types_by_id:
-            del self.device_types_by_id[device.device_type_id].registered_devices[device.device_id]
-            return True
-        return False
 
     def update_registered_module(self, old, new):
         self.del_registered_module(old)
@@ -625,7 +604,6 @@ class DeviceType:
         #     self.commands = []
         self.commands = {}
 
-        self.registered_devices = {}
         self.registered_modules = {}
 #        self.updated_srv = device_type.updated_srv
 
@@ -670,20 +648,24 @@ class DeviceType:
         """
         return self.device_type_id
 
-    def get_devices(self, return_value=None):
+    def get_devices(self):
         """
-        Return a list of devices for a given device_type
+        Return a dictionary of devices for a given device_type
         :return:
         """
-        if return_value is None:
-            return_value = 'id'
 
-        if return_value == 'id':
-            return self.registered_devices.keys()
-        elif return_value == 'dict':
-            return self.registered_devices
-        else:
-            raise YomboWarning("get_devices 'return_value' accepts: 'id' or 'dict'")
+        attrs = [
+            {
+                'field': 'device_type_id',
+                'value': self.device_type_id,
+                'limiter': 1,
+            }
+        ]
+
+        try:
+            return self._DTLibrary._Devices.search(_limiter=1, device_type_id=self.device_type_id)
+        except YomboWarning, e:
+            raise KeyError('Get devices had problems: %s' % e)
 
     def get_modules(self, return_value='id'):
         """
@@ -710,5 +692,4 @@ class DeviceType:
             'status'        : int(self.status),
             'created'       : int(self.created),
             'updated'       : int(self.updated),
-            'registered_devices': self.registered_devices,
         }

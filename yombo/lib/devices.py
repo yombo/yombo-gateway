@@ -4,16 +4,20 @@
 
 .. note::
 
-  For more information see: `Devices @ Module Development <https://yombo.net/docs/modules/devices/>`_
+  For development guides see: `Devices @ Module Development <https://yombo.net/docs/modules/devices/>`_
 
-The devices library is primarily responsible for: maintaining device state and
-sending commands to devices.
+The devices library is primarily responsible for:
+ 
+* Keeping track of all devices.
+* Maintaining device state.
+* Routing commands to modules for processing.
+* Managing delay commands to send later.
 
-The device (singular) class represents one device.  This class has many functions
-that help with utilizing the device.  When possible, this class should be used to
-send Yombo Messages for controlling, and getting/setting/querying status. The
-device class maintains the current known device state.  Any changes to the device
-state are saved to the local database.
+The device (singular) class represents one device. This class has many functions
+that help with utilizing the device. When possible, this class should be used for
+controlling devices and getting/setting/querying status. The device class maintains
+the current known device state.  Any changes to the device state are periodically
+saved to the local database.
 
 To send a command to a device is simple.
 
@@ -25,21 +29,20 @@ To send a command to a device is simple.
    # to most assurance.
 
    # Lets turn on every device this module manages.
-   for item in self._Devices:
-       self.Devices[item].command(cmd='off')
+   for device in self._Devices:
+       self.Devices[device].command(cmd='off')
 
-   # Lets turn off every every device, using a very specific command uuid.
-   for item in self._Devices:
-       self.Devices[item].command(cmd='js83j9s913')  # Made up number, but can be same as off
-
+   # Lets turn off every every device, using a very specific command id.
+   for device in self._Devices:
+       self.Devices[device].command(cmd='js83j9s913')  # Made up number, but can be same as off
 
    # Turn off the christmas tree.
    self._Devices.command('christmas tree', 'off')
 
    # Get devices by device type:
-   deviceList = self._DeviceTypes.devices_by_device_type('137ab129da9318')  # This is a function.
+   deviceList = self._Devices.search(device_type='137ab129da9318')  # Can search on any device attribute
 
-   # A simple all x10 lights off (regardless of house / unit code)
+   # Turn on all x10 lights off (regardless of house / unit code)
    allX10Lamps = self._DeviceTypes.devices_by_device_type('137ab129da9318')
    # Turn off all x10 lamps
    for lamp in allX10Lamps:
@@ -56,6 +59,9 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from difflib import SequenceMatcher
+import operator
+from itertools import islice
 
 from hashlib import sha1
 import copy
@@ -136,7 +142,7 @@ class Devices(YomboLibrary):
 
     def __iter__(self):
         """ iter devices. """
-        return self._devicesByUUID.__iter__()
+        return self.devices.__iter__()
 
     def __len__(self):
         """
@@ -144,7 +150,7 @@ class Devices(YomboLibrary):
         :return: The number of devices configured.
         :rtype: int
         """
-        return len(self._devicesByUUID)
+        return len(self.devices)
 
     def __str__(self):
         """
@@ -153,21 +159,7 @@ class Devices(YomboLibrary):
         :return: Returns the devices dictionary. 
         :rtype: dict
         """
-        return self._devicesByUUID
-
-    def __contains__(self, device_requested):
-        """
-        Checks if a device is configured. Checks both by ID and by device label.
-        
-        :param device_requested: Either a device ID or device label. 
-        :return: True if configurd, else false.
-        :rtype: bool
-        """
-        try:
-            self.get(device_requested)
-            return True
-        except:
-            return False
+        return self.devices
 
     def keys(self):
         """
@@ -176,7 +168,7 @@ class Devices(YomboLibrary):
         :return: A list of device IDs. 
         :rtype: list
         """
-        return self._devicesByUUID.keys()
+        return self.devices.keys()
 
     def items(self):
         """
@@ -187,22 +179,19 @@ class Devices(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self._devicesByUUID.items()
+        return self.devices.items()
 
     def iteritems(self):
-        return self._devicesByUUID.iteritems()
+        return self.devices.iteritems()
 
     def iterkeys(self):
-        return self._devicesByUUID.iterkeys()
+        return self.devices.iterkeys()
 
     def itervalues(self):
-        return self._devicesByUUID.itervalues()
+        return self.devices.itervalues()
 
     def values(self):
-        return self._devicesByUUID.values()
-
-    def has_key(self, key):
-        return key in self._devicesByUUID
+        return self.devices.values()
 
     def _init_(self):
         """
@@ -216,10 +205,13 @@ class Devices(YomboLibrary):
         self._LocalDB = self._Libraries['localdb']
         self.gwid = self._Configs.get("core", "gwid")
 
-        self._devicesByUUID = FuzzySearch({}, .99)
-        self._devicesByName = FuzzySearch({}, .89)
-        self._saveStatusLoop = None
-        self.run_state = 1
+        self.devices = {}
+        # self._save_status_loop = None
+        self.library_state = 1
+
+        self.device_search_attributes = ['device_id', 'device_type_id', 'label', 'description', 'enabled',
+            'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
+            'created', 'updated', 'updated_srv']
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
@@ -229,17 +221,15 @@ class Devices(YomboLibrary):
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
         self.delay_deviceList = {}  # list of devices that have pending messages.
         self.processing_commands = False
-        # self.init_deferred = Deferred()
-        # return self.init_deferred
 
     def _load_(self):
-        self.run_state = 2
+        self.library_state = 2
         self.load_deferred = Deferred()
         self.__load_devices()
         return self.load_deferred
 
     def _start_(self):
-        self.run_state = 3
+        self.library_state = 3
 
         if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
@@ -247,7 +237,7 @@ class Devices(YomboLibrary):
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
     def _started_(self):
-        self.run_state = 4
+        self.library_state = 4
 
     def _stop_(self):
         if self.load_deferred is not None and self.load_deferred.called is False:
@@ -342,7 +332,7 @@ class Devices(YomboLibrary):
                 yield self.load_device(record)
         yield self._load_delay_queue()
 
-    def load_device(self, record, test_device=None):  # load ore re-load if there was an update.
+    def load_device(self, device, test_device=None):  # load ore re-load if there was an update.
         """
         Instantiate (load) a new device. Doesn't update database, must call add_update_delete isntead of this.
 
@@ -350,49 +340,44 @@ class Devices(YomboLibrary):
 
         * _device_loaded_ : Sends kwargs: *id* - The new device id.
 
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
+        :param device: Row of items from the SQLite3 database.
+        :type device: dict
         :returns: Pointer to new device. Only used during unittest
         """
         if test_device is None:
             test_device = False
-        device_id = record["id"]
-        self._devicesByUUID[device_id] = Device(record, self)
-        d = self._devicesByUUID[device_id]._init_()
-        self._devicesByName[record["label"]] = device_id
+        device_id = device["id"]
+        self.devices[device_id] = Device(device, self)
+        d = self.devices[device_id]._init_()
 
         try:
-            self._VoiceCommandsLibrary.add_by_string(record["voice_cmd"], None, record["id"], record["voice_cmd_order"])
+            self._VoiceCommandsLibrary.add_by_string(device["voice_cmd"], None, device["id"], device["voice_cmd_order"])
         except YomboWarning:
-            logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=record["label"], voice_cmd=record["voice_cmd"])
+            logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=device["label"], voice_cmd=device["voice_cmd"])
         # try:
         #     # todo: refactor voicecommands. Need to be able to update/delete them later.
         # except Exception, e:
         #     logger.warn("Error while adding voice command for device: {err}", err=e)
 
 
-        logger.debug("_add_device: {record}", record=record)
+        logger.debug("_add_device: {device}", device=device)
 
-        global_invoke_all('_device_loaded_', **{'id': record['id']})  # call hook "devices_add" when adding a new device.
+        global_invoke_all('_device_loaded_', **{'id': device['id']})  # call hook "devices_add" when adding a new device.
         return d
 #        if test_device:
-#            returnValue(self._devicesByUUID[device_id])
-
-
-    def gotException(self, failure):
-       logger.warn("Exception: {failure}", failure=failure)
-       return 100  # squash exception, use 0 as value for next stage
+#            returnValue(self.devices[device_id])
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
-        Processes incoming MQTT requests. It understands:
+        Processing any incoming MQTT messages we have subscribed to. This allows IoT type connections
+        from various external sources.
 
         * yombo/devices/DEVICEID|DEVICEMACHINELABEL/get Value - Get some attribute
           * Value = state, human, machine, extra
         * yombo/devices/DEVICEID|DEVICEMACHINELABEL/cmd/CMDID|CMDMACHINELABEL Options - Send a command
           * Options - Either a string for a single variable, or json for multiple variables
 
-        Examples: /yombo/devices/get/christmas_tree/cmd on
+        Examples: /yombo/devices/get/christmas_tree/cmd/on
 
         :param topic:
         :param payload:
@@ -446,13 +431,27 @@ class Devices(YomboLibrary):
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. **Do not call this function!**
         """
-        self._devicesByUUID.clear()
-        self._devicesByName.clear()
+        self.devices.clear()
 
-    def list_devices(self):
-        return list(self._devicesByName.keys())
+    def list_devices(self, field=None):
+        """
+        Return a list of devices, returning the value specified in field.
+        
+        :param field: A string referencing an attribute of a device.
+        :type field: string
+        :return: 
+        """
 
-    def get(self, device_requested, limiter_override=None):
+        if field is None:
+            field = 'label'
+
+        if field not in self.device_search_attributes:
+            raise YomboWarning('Invalid field for device attribute: %s' % field)
+
+        for device_id, device in self.devices.iteritems():
+            yield getattr(device, field)
+
+    def get(self, device_requested, limiter=None):
         """
         Performs the actual device search.
 
@@ -469,21 +468,146 @@ class Devices(YomboLibrary):
         :return: Pointer to array of all devices.
         :rtype: dict
         """
-        if limiter_override is None:
-            limiter_override = .89
+        if limiter is None:
+            limiter = .89
 
-        logger.debug("looking for: {device_id}", device_id=device_requested)
-        if device_requested in self._devicesByUUID:
-            logger.debug("found by device id! {device_id}", device_id=device_requested)
-            return self._devicesByUUID[device_requested]
+        if limiter > .99999999:
+            limiter = .998
+        elif limiter < .10:
+            limiter = .10
+
+        logger.debug("looking for2: {device_requested}", device_requested=device_requested)
+        if device_requested in self.devices:
+            logger.debug("found by device id! {device_requested}", device_id=device_requested)
+            return self.devices[device_requested]
         else:
+            attrs = [
+                {
+                    'field': 'device_id',
+                    'value': device_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'label',
+                    'value': device_requested,
+                    'limiter': limiter,
+                }
+            ]
             try:
-                device_id = self._devicesByName.search2(device_requested, limiter_override)
-                # requestedUUID = self._devicesByName[device_requested]
-                logger.debug("found by device name! {device_id}", device_id=device_id)
-                return self._devicesByUUID[device_id]
-            except YomboFuzzySearchError, e:
-                raise YomboDeviceError('Searched for %s, but no good matches found.' % e.searchFor, searchFor=e.searchFor, key=e.key, value=e.value, ratio=e.ratio, others=e.others)
+                logger.debug("Get is about to call search...: %s" % device_requested)
+                found, key, item, ratio, others = self._search(attrs, operation="highest")
+                logger.debug("found device by search: {device_id}", device_id=key)
+                if found:
+                    return self.devices[key]
+                else:
+                    raise KeyError("Device not found: %s" % device_requested)
+            except YomboWarning, e:
+                logger.debug("Search for device, but only found: %s" % others)
+                raise KeyError('Searched for %s, but found had problems: %s' % (device_requested, e))
+
+    def search(self, _limiter=None, _operation=None, **kwargs):
+        """
+        Search for various attributes in devices.
+        
+        :param _limiter: 
+        :param _operation: 
+        :param kwargs: 
+        :return: 
+        """
+        # logger.debug("in search... {kwargs}", kwargs=kwargs)
+        attrs = []
+        for attr, value in kwargs.iteritems():
+            if attr in self.device_search_attributes:
+                attrs.append(
+                    {
+                        'field': attr,
+                        'value': value,
+                        'limiter': _limiter,
+                    }
+                )
+        return self._search(attrs, _limiter, _operation)
+
+    def _search(self, attributes, limiter=None, operation=None):
+        """        
+        Does the actual search of the devices. It scans through each device, and searches for any
+        supplied attributes.
+        
+        Scan through the dictionary, and match keys. Returns the value of
+        the best matching key.
+        :param attributes: A list of dictionaries containing: field, value, limiter
+        :type oepration: list of dictionaries
+        :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
+        """
+        # logger.debug("in _search... {attributes}", attributes=attributes)
+
+        if limiter is None:
+            operation=.85
+        if operation is None:
+            operation="any"
+        if isinstance(attributes, list) is False:
+            raise YomboWarning("Attributes must be a list.")
+        for attr in attributes:
+            if isinstance(attr, dict) is False:
+                raise YomboWarning("Attribute items must be dictionaries")
+            if all(k in ("field", "value") for k in attr):
+                print("says dont' have all keys: %s" % attr)
+                raise YomboWarning("Attribute dictionary doesn't have required keys.")
+            if attr['field'] not in self.device_search_attributes:
+                raise YomboWarning("Field is not a valid searchable item: %s" % attr['field'])
+            if "limiter" not in attr:
+                attr["limiter"] = .90
+            else:
+                if attr["limiter"] > .99999999999:
+                    attr["limiter"] = .99
+                elif attr["limiter"] < .10:
+                    attr["limiter"] = .10
+
+        # Prepare the minion
+        stringDiff = SequenceMatcher()
+
+        # used when returning all
+        devices = {}
+        
+        # used when return highest
+        best_ratio = 0
+        best_match = None
+        best_key = None
+
+        key_list = {}
+        sorted_list = None
+
+        for device_id, device in self.devices.iteritems():
+            for attr in attributes:
+                stringDiff.set_seq1(attr['value'])
+                # try:
+                stringDiff.set_seq2(getattr(device, attr['field']))
+                # except TypeError:
+                #     continue  # might get here, even though it's not a string. Catch it!
+                ratio = stringDiff.ratio()
+                if operation == "any":
+                    if ratio > attr['limiter']:
+                        devices[device.device_id] = device
+                else:
+                    # if this is the best ratio so far - save it and the value
+                    if ratio > best_ratio:
+                        best_ratio = ratio
+                        best_limiter = attr['limiter']
+                        best_key = device_id
+                        best_match = device
+
+                    # return a list of the top 5 key matches on failure.
+                    key_list[ratio] = {'key': device_id, 'value': device, 'ratio': ratio}
+                    sorted_list = OrderedDict(sorted(key_list.iteritems(), key=lambda tup: tup[1]['ratio'], reverse=True))
+
+        if operation == "any":
+            return devices
+        else:
+            return (
+                best_ratio >= best_limiter,  # the part that does the actual check.
+                best_key,
+                best_match,
+                best_ratio,
+                sorted_list)
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):
@@ -530,45 +654,16 @@ class Devices(YomboLibrary):
             returnValue(results)
 
         if 'variable_data' in data:
-            variable_data = data['variable_data']
-            for field_id, data in variable_data.iteritems():
-                for data_id, value in data.iteritems():
-                    if data_id.startswith('new_'):
-                        post_data = {
-                            'gateway_id': self.gwid,
-                            'field_id': field_id,
-                            'relation_id': device_results['data']['id'],
-                            'relation_type': 'device',
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        logger.info("variable dataa post: {post_data}", post_data=post_data)
-                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        if var_data_results['code'] != 200:
-                            results = {
-                                'status': 'failed',
-                                'msg': "Device added, but couldn't save device configurations.",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'device_id': device_results['data']['id']
-                            }
-                            returnValue(results)
-                    else:
-                        post_data = {
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        logger.debug("post_data: {post_data}", post_data=post_data)
-                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
-                        if var_data_results['code'] != 200:
-                            results = {
-                                'status': 'failed',
-                                'msg': "Device added, but couldn't save device configurations.",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'device_id': device_results['data']['id']
-                            }
-                            returnValue(results)
+            variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
+            if variable_results['code'] != 200:
+                results = {
+                    'status': 'failed',
+                    'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
+                    'apimsg': variable_results['apimsg'],
+                    'apimsghtml': variable_results['apimsghtml'],
+                    'device_id': device_results['data']['id'],
+                }
+                returnValue(results)
 
         logger.debug("device edit results: {device_results}", device_results=device_results)
         results = {
@@ -577,6 +672,49 @@ class Devices(YomboLibrary):
             'device_id': device_results['data']['id']
         }
         returnValue(results)
+
+    @inlineCallbacks
+    def set_device_variables(self, device_id, variables):
+        # print("set variables: %s" % variables)
+        for field_id, data in variables.iteritems():
+            for data_id, value in data.iteritems():
+                if data_id.startswith('new_'):
+                    post_data = {
+                        'gateway_id': self.gwid,
+                        'field_id': field_id,
+                        'relation_id': device_id,
+                        'relation_type': 'device',
+                        'data_weight': 0,
+                        'data': value,
+                    }
+                    print("Posting new variable: %s" % post_data)
+                    var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                    if var_data_results['code'] != 200:
+                        results = {
+                            'status': 'failed',
+                            'msg': "Couldn't add device variables",
+                            'apimsg': var_data_results['content']['message'],
+                            'apimsghtml': var_data_results['content']['html_message'],
+                            'device_id': device_id
+                        }
+                        returnValue(results)
+                else:
+                    post_data = {
+                        'data_weight': 0,
+                        'data': value,
+                    }
+                    print("PATCHing variable: %s" % post_data)
+                    var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
+                                                                    post_data)
+                    if var_data_results['code'] != 200:
+                        results = {
+                            'status': 'failed',
+                            'msg': "Couldn't add device variables",
+                            'apimsg': var_data_results['content']['message'],
+                            'apimsghtml': var_data_results['content']['html_message'],
+                            'device_id': device_id
+                        }
+                        returnValue(results)
 
     @inlineCallbacks
     def delete_device(self, device_id):
@@ -588,7 +726,7 @@ class Devices(YomboLibrary):
         :type device_id: string
         :returns: Pointer to new device. Only used during unittest
         """
-        if device_id not in self._devicesByUUID:
+        if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
         device_results = yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
@@ -622,7 +760,7 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if device_id not in self._devicesByUUID:
+        if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
         api_data = {}
@@ -649,46 +787,16 @@ class Devices(YomboLibrary):
             returnValue(results)
 
         if 'variable_data' in data:
-            variable_data = data['variable_data']
-            print("edit device variable_data: %s" % variable_data)
-            for field_id, data in variable_data.iteritems():
-                for data_id, value in data.iteritems():
-                    if data_id.startswith('new_'):
-                        post_data = {
-                            'gateway_id': self.gwid,
-                            'field_id': field_id,
-                            'relation_id': device_id,
-                            'relation_type': 'device',
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        print("post_data: %s" % post_data)
-                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        if var_data_results['code'] != 200:
-                            results = {
-                                'status': 'failed',
-                                'msg': "Couldn't add device variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'device_id': device_results['data']['id']
-                            }
-                            returnValue(results)
-                    else:
-                        post_data = {
-                            'data_weight': 0,
-                            'data': value,
-                        }
-                        # print("post_data: %s" % post_data)
-                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
-                        if var_data_results['code'] != 200:
-                            results = {
-                                'status': 'failed',
-                                'msg': "Couldn't add device variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'device_id': device_results['data']['id']
-                            }
-                            returnValue(results)
+            variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
+            if variable_results['code'] != 200:
+                results = {
+                    'status': 'failed',
+                    'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
+                    'apimsg': variable_results['apimsg'],
+                    'apimsghtml': variable_results['apimsghtml'],
+                    'device_id': device_id,
+                }
+                returnValue(results)
 
         results = {
             'status': 'success',
@@ -706,7 +814,7 @@ class Devices(YomboLibrary):
         :param device_id:
         :return:
         """
-        if device_id not in self._devicesByUUID:
+        if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
         api_data = {
@@ -740,7 +848,7 @@ class Devices(YomboLibrary):
         :param device_id:
         :return:
         """
-        if device_id not in self._devicesByUUID:
+        if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
 
         api_data = {
@@ -778,10 +886,9 @@ class Devices(YomboLibrary):
         :returns: Pointer to new device. Only used during unittest
         """
         logger.debug("update_device: {record}", record=record)
-        if record['device_id'] not in self._devicesByUUID:
+        if record['device_id'] not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'delete_device', 'Devices')
-            # self._devicesByUUID[record['device_id']].update(record)
-
+            # self.devices[record['device_id']].update(record)
 
 
     ##############################################################################################################
@@ -898,8 +1005,8 @@ class Devices(YomboLibrary):
                     devices.append(self.get(action['device']))
                 action['device_pointers'] = devices
                 return action
-            except:
-                raise YomboWarning("Error while searching for device, could not be found: %s" % action['device'],
+            except Exception, e:
+                raise YomboWarning("Error while searching for device, could not be found: %s  Rason: %s" % (action['device'], e),
                                104, 'devices_validate_action_callback', 'lib.devices')
         else:
             raise YomboWarning("For platform 'devices' as an 'action', must have 'device' and can be either device ID or device label.",
@@ -1029,8 +1136,6 @@ class Device:
         self._CommandsLibrary = self._DevicesLibrary._Libraries['commands']
 
         # this registers the device's device type so others know what kind of device this is.
-        self._registered_device_type = self._DevicesLibrary._DeviceTypes.add_registered_device(self)
-        self._DevicesLibrary._DeviceTypes.ensure_loaded(device["device_type_id"])
 
         if device['status'] == 1:
             self.enabled = True
@@ -1062,6 +1167,10 @@ class Device:
            print("Exception : %r" % failure)
            return 100  # squash exception, use 0 as value for next stage
 
+        def ensure_device_type_loaded(data, device_type_id):
+            print("###############3 ensure loaded: device type id: %s" % device_type_id)
+            self._DevicesLibrary._DeviceTypes.ensure_loaded(device_type_id)
+
         # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
         # d.addCallback(set_commands)
         # d.addErrback(gotException)
@@ -1071,6 +1180,8 @@ class Device:
         d = self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id)
         d.addErrback(gotException)
         d.addCallback(set_variables)
+        d.addErrback(gotException)
+        d.addCallback(ensure_device_type_loaded, self.device_type_id)
         d.addErrback(gotException)
 
         if self.test_device is False:

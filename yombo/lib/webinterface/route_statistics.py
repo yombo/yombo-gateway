@@ -13,7 +13,7 @@ def route_statistics(webapp):
         def page_statistics_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/statistics/index.html')
             return page.render(alerts=webinterface.get_alerts(),
-                               devices=webinterface._Libraries['devices']._devicesByUUID,
+                               devices=webinterface._Libraries['devices'].devices,
                                )
 
         

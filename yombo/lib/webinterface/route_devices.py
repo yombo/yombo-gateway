@@ -44,7 +44,7 @@ def route_devices(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
-                devices=webinterface._Libraries['devices']._devicesByUUID,
+                devices=webinterface._Libraries['devices'].devices,
                 devicetypes=webinterface._DeviceTypes.device_types_by_id,
                 request=request,
                 )

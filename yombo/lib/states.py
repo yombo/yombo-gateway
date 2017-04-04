@@ -534,7 +534,7 @@ class States(YomboLibrary, object):
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
 
-        This implementation allows autoamtion rules set easily set Atom values.
+        This implementation allows automation rules set easily set Atom values.
 
         :param kwargs: None
         :return:

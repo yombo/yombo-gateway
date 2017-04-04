@@ -92,10 +92,10 @@ documentation.
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
+from functools import partial
+
 # Import Yombo libraries
-
 from yombo.core.log import get_logger
-
 logger = get_logger('core.module')
 
 
@@ -136,18 +136,11 @@ class YomboModule:
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 
-    def _get_device_types(self):
-        return self._Modules.module_device_types(self._module_id, 'dict')
-
-    def _get_devices(self):
-        return self._Modules.module_devices(self._module_id, 'dict')
-
     def _is_my_device(self, device):
-        if device.device_id in self._devices:
+        if device.device_id in self._devices():
             return True
         else:
             return False
-
 
     def __str__(self):
         """
@@ -170,8 +163,8 @@ class YomboModule:
         function completes, it should be able to accept and process messages. Doesn't send
         messages at this stage.
         """
-        self._device_types = self._get_device_types()
-        self._devices = self._get_devices()
+        # self._device_types = partial(self._Modules.module_device_types, self._module_id)
+        self._devices = partial(self._Modules.module_devices, self._module_id)
 
     def _start_(self):
         """

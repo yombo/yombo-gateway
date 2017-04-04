@@ -665,45 +665,27 @@ class Modules(YomboLibrary):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
-    def module_devices(self, module_id, return_value='dict'):
+    def module_devices(self, module_id):
         """
         A list of devices types for a given module id.
 
         :raises YomboWarning: Raised when module_id is not found.
         :param module_id: The Module ID to return device types for.
-        :return: A list of device type id's.
+        :return: A dictionary of devices for a given module id.
         :rtype: list
         """
-        if return_value is None:
-            return_value = 'dict'
-        elif return_value not in (['id', 'dict']):
-            raise YomboWarning("module_device_types 'return_value' accepts: 'id' or 'dict'")
-
         if module_id not in self._modulesByUUID:
-            if return_value == 'id':
-                return []
-            elif return_value == 'dict':
                 return {}
 
-        if return_value == 'id':
-            temp = []
-            if module_id in self._modulesByUUID:
-                # print "dt..module_id: %s" % module_id
-                # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
-                for dt in self._modulesByUUID[module_id]._device_types:
-                    temp.extend(self._DeviceTypes[dt].get_devices(return_value=return_value))
-            tempset = set(temp)
-            return list(tempset)
-        elif return_value == 'dict':
-            temp = {}
-            if module_id in self._modulesByUUID:
-                # print "dt..module_id: %s" % module_id
-                # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
-                for dt in self._modulesByUUID[module_id]._device_types:
-                    temp.update(self._DeviceTypes[dt].get_devices(return_value=return_value))
-            # tempset = set(temp)
-            # return list(temp)
-            return temp
+        temp = {}
+        if module_id in self._modulesByUUID:
+            # print "dt..module_id: %s" % module_id
+            # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
+            for dt in self.module_device_types(module_id):
+                temp.update(self._DeviceTypes[dt].get_devices())
+        # tempset = set(temp)
+        # return list(temp)
+        return temp
 
     def module_device_types(self, module_id, return_value=None):
         if return_value is None:

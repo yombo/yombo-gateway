@@ -175,21 +175,6 @@ class Atoms(YomboLibrary):
     def __str__(self):
         return self.__Atoms
 
-    def keys(self):
-        return self._devicesByUUID.keys()
-    def items(self):
-        return self._devicesByUUID.items()
-    def iteritems(self):
-        return self._devicesByUUID.iteritems()
-    def iterkeys(self):
-        return self._devicesByUUID.iterkeys()
-    def itervalues(self):
-        return self._devicesByUUID.itervalues()
-    def values(self):
-        return self._devicesByUUID.values()
-    def has_key(self):
-        return self._devicesByUUID.has_key()
-
     def _statistics_lifetimes_(self, **kwargs):
         """
         We keep 10 days of max data, 30 days of hourly data, 1 of daily data
@@ -420,7 +405,7 @@ class Atoms(YomboLibrary):
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
 
-        This implementation allows autoamtion rules set easily set Atom values.
+        This implementation allows automation rules set easily set Atom values.
 
         :param kwargs: None
         :return:

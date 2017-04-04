@@ -13,7 +13,7 @@ For more on developing modules, visit
 
 
 ===========================================================
-Autoamtion Example Module (yombo.modules.automationexample)
+Automation Example Module (yombo.modules.automationexample)
 ===========================================================
 .. automodule:: yombo.modules.automationexample
 
