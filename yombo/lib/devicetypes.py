@@ -63,7 +63,7 @@ class DeviceTypes(YomboLibrary):
 
     def _init_(self):
         """
-        Setups up the basic framework. Nothing is loaded in here until the :py:meth:`_load_ <_load_>` stage.
+        Setups up the basic framework. Nothing is loaded in here until the :poy:ref:_load_ stage.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.run_state = 1
@@ -656,6 +656,12 @@ class DeviceType:
         d.addCallback(set_commands)
         d.addErrback(gotException)
         return d
+
+    def __getitem__(self, key):
+        print 'devicetype __getitem__: ', key
+        print 'devicetype repsonse __getitem__: ', getattr(self, key)
+        print 'devicetype repsonse __getitem__: ', type(getattr(self, key))
+        return getattr(self, key)
 
     def __str__(self):
         """

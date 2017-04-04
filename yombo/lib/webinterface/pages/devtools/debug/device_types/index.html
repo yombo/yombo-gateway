@@ -26,7 +26,7 @@
                                     </thead>
                                     <tbody>{% for device_type_id, device_type in device_types.iteritems() %}
                                          <tr>
-                                             <td><a href="/devtools/debug/modules/{{ device_type_id }}/details">{{ device_type.label }}</a></td>
+                                             <td><a href="/devtools/debug/device_types/{{ device_type_id }}/details">{{ device_type.label }}</a></td>
                                              <td>{{ device_type.description }}</td>
                                          </tr>{% endfor %}
                                     </tbody>

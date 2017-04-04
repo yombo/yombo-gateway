@@ -23,7 +23,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from time import time
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -65,10 +64,15 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
+            device_types = webinterface._DeviceTypes.device_types_by_id
+            # device_types_sorted = sorted(device_types, key=lambda x: device_types[x].label)
+            device_types_sorted = sorted(device_types, key=lambda x: device_types[x].label)
+
             return page.render(
                 alerts=webinterface.get_alerts(),
-                device_types = webinterface._DeviceTypes.device_types_by_id,
-                )
+                device_types = device_types,
+            )
+
 
         @webapp.route('/add_details', methods=['POST'])
         @require_auth()

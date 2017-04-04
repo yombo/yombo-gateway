@@ -41,12 +41,12 @@
                     <div class="panel panel-info">
                         <div class="panel-heading">
                             <div class="row" onclick="location.href='/devices/index';">
-                                <div class="col-xs-3">
+                                <div class="col-xs-8">
                                     <i class="fa fa-wifi fa-3x"></i>
+                                    {{ _('Devices') }}
                                 </div>
-                                <div class="col-xs-9 text-right">
+                                <div class="col-xs-4 text-right">
                                     <div class="large">{{ devices|length }}</div>
-                                    <div class="medium">{{ _('Devices') }}<br>&nbsp;</div>
                                 </div>
                             </div>
                         </div>
@@ -56,12 +56,12 @@
                     <div class="panel panel-warning">
                         <div class="panel-heading">
                             <div class="row" onclick="location.href='/modules/index';">
-                                <div class="col-xs-3">
+                                <div class="col-xs-8">
                                     <i class="fa fa-puzzle-piece fa-3x"></i>
+                                    {{ _('Modules') }}
                                 </div>
-                                <div class="col-xs-9 text-right">
+                                <div class="col-xs-4 text-right">
                                     <div class="large">{{ modules|length }}</div>
-                                    <div class="medium">{{ _('Modules') }}<br> &nbsp;</div>
                                 </div>
                             </div>
                         </div>
@@ -71,12 +71,12 @@
                     <div class="panel panel-warning">
                         <div class="panel-heading">
                             <div class="row" onclick="location.href='/devices/delayed_commands';">
-                                <div class="col-xs-3">
+                                <div class="col-xs-8">
                                     <i class="fa fa-clock-o fa-3x"></i>
+                                    {{ _('Delayed Commands') }}
                                 </div>
-                                <div class="col-xs-9 text-right">
+                                <div class="col-xs-4 text-right">
                                     <div class="large">{{ delay_commands|length }}</div>
-                                    <div class="medium">{{ _('Delayed<br>Commands') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -86,12 +86,12 @@
                     <div class="panel panel-warning">
                         <div class="panel-heading">
                             <div class="row" onclick="location.href='/states/index';">
-                                <div class="col-xs-3">
+                                <div class="col-xs-8">
                                     <i class="fa fa-list fa-3x"></i>
+                                    {{ _('States') }}
                                 </div>
-                                <div class="col-xs-9 text-right">
+                                <div class="col-xs-4 text-right">
                                     <div class="large">{{ states|length }}</div>
-                                    <div class="medium">{{ _('States') }}<br>&nbsp;</div>
                                 </div>
                             </div>
                         </div>

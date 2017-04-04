@@ -26,15 +26,15 @@ To send a command to a device is simple.
 
    # Lets turn on every device this module manages.
    for item in self._Devices:
-       self.Devices[item].do_command(cmd='off')
+       self.Devices[item].command(cmd='off')
 
    # Lets turn off every every device, using a very specific command uuid.
    for item in self._Devices:
-       self.Devices[item].do_command(cmd='js83j9s913')  # Made up number, but can be same as off
+       self.Devices[item].command(cmd='js83j9s913')  # Made up number, but can be same as off
 
 
    # Turn off the christmas tree.
-   self._Devices.do_command('christmas tree', 'off')
+   self._Devices.command('christmas tree', 'off')
 
    # Get devices by device type:
    deviceList = self._DeviceTypes.devices_by_device_type('137ab129da9318')  # This is a function.
@@ -43,7 +43,7 @@ To send a command to a device is simple.
    allX10Lamps = self._DeviceTypes.devices_by_device_type('137ab129da9318')
    # Turn off all x10 lamps
    for lamp in allX10Lamps:
-       self._Devices.do_command(lamp, 'off')
+       self._Devices.command(lamp, 'off')
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -283,10 +283,10 @@ class Devices(YomboLibrary):
                     continue
                 else:
                     # we're good, lets hydrate the request and send it.
-                    self.do_command(request['device_id'], request['command_id'], request['kwargs'])
+                    self.command(request['device_id'], request['command_id'], request['kwargs'])
 
             else: # Still good, but still in the future. Set them up.
-                self.do_command(request['device_id'], request['command_id'], not_before=request['not_before'],
+                self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
                                 max_delay=request['max_delay'], **request['kwargs'])
         self.load_deferred.callback(10)
 
@@ -297,11 +297,11 @@ class Devices(YomboLibrary):
         """
         self.processing_commands = True
         for command, request in self.startup_queue.iteritems():
-            self.do_command(request['device_id'], request['command_id'], not_before=request['not_before'],
+            self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
                     max_delay=request['max_delay'], **request['kwargs'])
         self.startup_queue.clear()
 
-    def do_command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
+    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
         """
         Forwarder function to the actual device object for processing.
 
@@ -314,7 +314,7 @@ class Devices(YomboLibrary):
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
-        return self.get(device).do_command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
+        return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
 
     @inlineCallbacks
     def __load_devices(self):
@@ -427,7 +427,7 @@ class Devices(YomboLibrary):
             elif payload == 'source':
                 self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
         elif parts[3] == 'cmd':
-            device.do_command(self, cmd=parts[4])
+            device.command(self, cmd=parts[4])
             if len(parts) > 5:
                 status = device.status_history[0]
                 if parts[5] == 'human':
@@ -933,7 +933,7 @@ class Devices(YomboLibrary):
                 max_delay = None
 
             unique_hash = sha1('automation' + rule['name'] + action['command'] + device.label).hexdigest()
-            device.do_command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
+            device.command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
 
 
 class Device:
@@ -1100,9 +1100,10 @@ class Device:
                 'status_history': copy.copy(self.status_history),
                }
 
-    def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, **kwargs):
+    def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, **kwargs):
         """
-        Do a command. Will call _do_command_ hook so modules can process the request.
+        Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
+        if they are supposed to.
 
         If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
         hook call.
@@ -1123,7 +1124,7 @@ class Device:
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
-        logger.info("device::do_command kwargs: {kwargs}", kwargs=kwargs)
+        logger.info("device::command kwargs: {kwargs}", kwargs=kwargs)
         if requested_by is None:  # soon, this will cause an error!
             requested_by = {
                     'user_id': 'Unknown',
@@ -1137,7 +1138,6 @@ class Device:
                 else:
                     if self.pin_code != pin:
                         raise YomboPinCodeError("'pin' supplied is incorrect.")
-
 
         if isinstance(cmd, Command):
             cmdobj = cmd
@@ -1153,9 +1153,9 @@ class Device:
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
-        # print("in device do_command: request_id: %s" % request_id)
-        # print("in device do_command: kwargs: %s" % kwargs)
-        # print("in device do_command: self._DevicesLibrary.delay_queue_unique: %s" % self._DevicesLibrary.delay_queue_unique)
+        # print("in device command: request_id: %s" % request_id)
+        # print("in device command: kwargs: %s" % kwargs)
+        # print("in device command: self._DevicesLibrary.delay_queue_unique: %s" % self._DevicesLibrary.delay_queue_unique)
 
         if 'unique_hash' in kwargs:
             unique_hash = kwargs['unique_hash']
@@ -1165,18 +1165,18 @@ class Device:
         if unique_hash in self._DevicesLibrary.delay_queue_unique:
             request_id = self._DevicesLibrary.delay_queue_unique[unique_hash]
         elif request_id is None:
-            request_id = random_string(length=16)        # print("in device do_command: rquest_id 2: %s" % request_id)
+            request_id = random_string(length=16)        # print("in device command: rquest_id 2: %s" % request_id)
 
         kwargs['request_id'] = request_id
-        self.do_command_requests[request_id] = {
+        details = {
             'request_id': request_id,  # not as redundant as you may think!
             'sent_time': None,
             'device_id': self.device_id,
             'cmd_id': cmdobj.command_id,
-            'status': 'new',  # new, delayed, sent, received, failed, pending, completed
-            'message': '',  #contains any notes about the status. Errors, etc.
+            'history': [],  # contains any notes about the status. Errors, etc.
             'requested_by': requested_by,
         }
+        self.do_command_requests[request_id] = Device_Request(details, self)
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
             if max_delay is None:
@@ -1212,7 +1212,7 @@ class Device:
                     'reactor': None,
                 }
                 self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
-                self.do_command_requests[request_id]['status'] = 'delayed'
+                self.do_command_requests[request_id].set_status('delayed')
             else:
                 raise YomboDeviceError("not_before' must be a float or int.")
 
@@ -1244,7 +1244,7 @@ class Device:
                     'reactor': None,
                 }
                 self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
-                self.do_command_requests[request_id]['status'] = 'delayed'
+                self.do_command_requests[request_id].set_status('delayed')
             else:
                 raise YomboDeviceError("'not_before' must be a float or int.")
 
@@ -1253,7 +1253,7 @@ class Device:
         return request_id
 
     def do_command_delayed(self, request_id):
-        self.do_command_requests[request_id]['sent_time'] = time()
+        self.do_command_requests[request_id].set_sent_time()
         request = self._DevicesLibrary.delay_queue_active[request_id]
         # request['kwargs']['request_id'] = request_id
         self.do_command_hook(request['command'], request['kwargs'])
@@ -1280,7 +1280,7 @@ class Device:
         """
         kwargs['command'] = cmdobj
         kwargs['device'] = self
-        self.do_command_requests[kwargs['request_id']]['sent_time'] = time()
+        self.do_command_requests[kwargs['request_id']].set_sent_time()
         global_invoke_all('_device_command_', called_by=self, **kwargs)
         self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.device_id, kwargs['command'].machine_label), "", 1)
         self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
@@ -1292,9 +1292,9 @@ class Device:
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id]['status'] = 'received'
+        self.do_command_requests[request_id].set_status('received')
         if 'message' in kwargs:
-            self.do_command_requests[request_id]['message'] = kwargs['message']
+            self.do_command_requests[request_id].set_message(kwargs['message'])
         global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
 
     def device_command_pending(self, request_id, **kwargs):
@@ -1305,8 +1305,7 @@ class Device:
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id]['status'] = 'pending'
-        self.do_command_requests[request_id]['pending_time'] = time()
+        self.do_command_requests[request_id].set_pending_time()
         if 'message' in kwargs:
             self.do_command_requests[request_id]['message'] = kwargs['message']
         global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
@@ -1320,10 +1319,9 @@ class Device:
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id]['finished_time'] = time()
-        self.do_command_requests[request_id]['status'] = 'failed'
+        self.do_command_requests[request_id].set_failed_time()
         if 'message' in kwargs:
-            self.do_command_requests[request_id]['message'] = kwargs['message']
+            self.do_command_requests[request_id].set_message(kwargs['message'])
         global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
 
     def device_command_done(self, request_id, **kwargs):
@@ -1335,8 +1333,7 @@ class Device:
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id]['finished_time'] = time()
-        self.do_command_requests[request_id]['status'] = 'done'
+        self.do_command_requests[request_id].set_finished_time()
         if 'message' in kwargs:
             self.do_command_requests[request_id]['message'] = kwargs['message']
         global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
@@ -1447,7 +1444,7 @@ class Device:
         set_time = time()
 
         if "request_id" in kwargs:
-            requested_by = self.do_command_requests[kwargs['request_id']]['requested_by']
+            requested_by = self.do_command_requests[kwargs['request_id']].requested_by
         else:
             requested_by = {
                 'user_id': 'Unknown',
@@ -1553,3 +1550,67 @@ class Device:
                 self.device_type_id = record['device_type_id']
 
         # global_invoke_all('_devices_update_', **{'id': record['id']})  # call hook "device_update" when adding a new device.
+
+class Device_Request:
+    """
+    A class that manages requests for a given device. This class is instantiated by the
+    device class. Librarys and modules can use this instance to get the details of a given
+    request.
+    """
+    def __init__(self, request, device):
+        """
+        Get the instance setup.
+        
+        :param request: Basic details about the request to get started.
+        :param Device: A pointer to the device instance.
+        """
+        self.device = device
+        self.request_id = request['request_id']
+        self.sent_time = request['sent_time']
+        self.cmd_id = request['cmd_id']
+        self.history = request['history']
+        self.requested_by = request['requested_by']
+        self.status = None
+        self.sent_time = None
+        self.pending_time = None
+        self.finished_time = None
+        self.message = None
+        self.set_status('new')
+
+    def set_failed_time(self, finished_time=None):
+        if finished_time is None:
+            finished_time = time()
+        self.finished_time = finished_time
+        self.status = 'failed'
+        self.history.append((finished_time, 'failed'))
+
+    def set_finished_time(self, finished_time=None):
+        if finished_time is None:
+            finished_time = time()
+        self.finished_time = finished_time
+        self.status = 'done'
+        self.history.append((finished_time, 'done'))
+
+    def set_pending_time(self, pending_time=None):
+        if pending_time is None:
+            pending_time = time()
+        self.pending_time = pending_time
+        self.status = 'pending'
+        self.history.append((pending_time, 'pending'))
+
+    def set_sent_time(self, sent_time=None):
+        if sent_time is None:
+            sent_time = time()
+        self.sent_time = sent_time
+        self.status = 'sent'
+        self.history.append((sent_time, 'sent'))
+
+
+    def set_status(self, status):
+        self.status = status
+        self.history.append((time(), status))
+
+    def set_message(self, message):
+        self.message = message
+        self.history.append((time(), message))
+

@@ -69,62 +69,23 @@ from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
 logger = get_logger("library.webconfig")
 
-simulate_gw = {
-              'new':{
-                  'label': '',
-                  'description': '',
-                  'variables': {
-                      'elevation': '75',
-                      'latitude': '37.758',
-                      'longitude': '-122.438'
-                      }
-                  },
-              'xyz1':{
-                  'label': 'Home',
-                  'description': 'Main house gateway',
-                  'variables': {
-                      'latitude': 38.576,
-                      'longitude': -121.276,
-                      'elevation': 100,
-                      }
-                  },
-              'abc2':{
-                  'label': 'Garage',
-                  'description': 'The garage',
-                  'variables': {
-                      'latitude': 37.791,
-                      'longitude': -121.858,
-                      'elevation': 50,
-                      }
-                  },
-              'mno3':{
-                  'label': 'Shed',
-                  'description': 'In the shed!',
-                  'variables': {
-                      'latitude': 37.259,
-                      'longitude': -122.177,
-                      'elevation': 25,
-                      }
-                  },
-              }
-
 nav_side_menu = [
     {
-        'label1': 'Settings',
+        'label1': 'Devices',
         'label2': 'Devices',
-        'priority1': 500,
+        'priority1': 400,
         'priority2': 500,
-        'icon': 'fa fa-cogs fa-fw',
+        'icon': 'fa fa-wifi fa-fw',
         'url': '/devices/index',
         'tooltip': 'Show Devices',
         'opmode': 'run',
     },
     {
-        'label1': 'Settings',
+        'label1': 'Modules',
         'label2': 'Modules',
-        'priority1': 500,
-        'priority2': 1500,
-        'icon': 'fa fa-cogs fa-fw',
+        'priority1': 425,
+        'priority2': 500,
+        'icon': 'fa fa-puzzle-piece fa-fw',
         'url': '/modules/index',
         'tooltip': '',
         'opmode': 'run',

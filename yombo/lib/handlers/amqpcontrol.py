@@ -53,7 +53,7 @@ class AmqpControlHandler(YomboLibrary):
 
         if device_id in self._Devices:
             device = self._Devices[request['device']['id']]
-            device.do_command(request['command']['id'])
+            device.command(request['command']['id'])
 
     def _stop_(self):
         pass

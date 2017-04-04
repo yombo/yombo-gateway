@@ -66,7 +66,7 @@ def route_api_v1(webapp):
 
                 print "making request for command...."
                 device = webinterface._Devices.get(deviceid)
-                device.do_command(
+                device.command(
                     cmd=commandid,
                     requested_by={
                         'user_id': session['auth_id'],
