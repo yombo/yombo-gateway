@@ -92,7 +92,7 @@ class Localize(YomboLibrary):
             self.parse_directory("yombo/utils/locale", has_header=True)
 
             try:
-                for item, data in self._Modules._modulesByUUID.iteritems():
+                for item, data in self._Modules.modules.iteritems():
                     the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale"
                     if path.exists(the_directory):
                         self.parse_directory(the_directory)

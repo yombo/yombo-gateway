@@ -89,7 +89,6 @@ class DeviceTypes(YomboLibrary):
         # print "device types info:"
         # for dt, data in self.device_types_by_id.iteritems():
         #     print "dt: %s, commands: %s" % (data.label, data.commands)
-        #     print "dt: %s, registered_modules: %s" % (data.label, data.registered_modules)
         pass
 
     def get(self, device_type_requested):
@@ -219,36 +218,6 @@ class DeviceTypes(YomboLibrary):
 
 #        if test_device_type:
 #            return self.__yombocommands[cmdUUID]
-
-    def update_registered_module(self, old, new):
-        self.del_registered_module(old)
-        self.add_registered_module(new)
-
-    def add_registered_module(self, module):
-        results = None
-        for device_type_id in module._device_types:
-            if device_type_id in self.device_types_by_id:
-                self.device_types_by_id[device_type_id].registered_modules[module._module_id] = module
-                if results is not False:
-                    results = True
-            else:
-                results = False
-        if results is None:
-            return False
-        return results
-
-    def del_registered_module(self, module):
-        results = None
-        for device_type_id in module.device_types:
-            if device_type_id in self.device_types_by_id:
-                del self.device_types_by_id[device_type_id].registered_modules[module.module_id]
-                if results is not False:
-                    results = True
-            else:
-                results = False
-        if results is None:
-            return False
-        return results
 
     @inlineCallbacks
     def dev_device_type_add(self, data, **kwargs):
@@ -604,7 +573,6 @@ class DeviceType:
         #     self.commands = []
         self.commands = {}
 
-        self.registered_modules = {}
 #        self.updated_srv = device_type.updated_srv
 
     def _init_(self):

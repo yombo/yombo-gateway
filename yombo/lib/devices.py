@@ -59,9 +59,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from difflib import SequenceMatcher
-import operator
-from itertools import islice
 
 from hashlib import sha1
 import copy
@@ -77,11 +74,10 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
-from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, split, global_invoke_all, string_to_number
+from yombo.utils import random_string, split, global_invoke_all, string_to_number, search_dictionary, do_search_dictionary
 from yombo.utils.maxdict import MaxDict
 from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
@@ -463,20 +459,20 @@ class Devices(YomboLibrary):
         :raises YomboDeviceError: Raised when device cannot be found.
         :param device_requested: The device UUID or device label to search for.
         :type deviceRequested: string
-        :param limiter_override: A value between .5 and .99. Sets how close of a match it the search should be.
+        :param limiter_override: Default .89. A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :return: Pointer to array of all devices.
+        :return: Pointer to requested device.
         :rtype: dict
         """
         if limiter is None:
             limiter = .89
 
         if limiter > .99999999:
-            limiter = .998
+            limiter = .99
         elif limiter < .10:
             limiter = .10
 
-        logger.debug("looking for2: {device_requested}", device_requested=device_requested)
+        # logger.debug("looking for: {device_requested}", device_requested=device_requested)
         if device_requested in self.devices:
             logger.debug("found by device id! {device_requested}", device_id=device_requested)
             return self.devices[device_requested]
@@ -495,14 +491,17 @@ class Devices(YomboLibrary):
             ]
             try:
                 logger.debug("Get is about to call search...: %s" % device_requested)
-                found, key, item, ratio, others = self._search(attrs, operation="highest")
+                # found, key, item, ratio, others = self._search(attrs, operation="highest")
+                found, key, item, ratio, others = do_search_dictionary(attrs, self.devices,
+                                                                       self.device_search_attributes,
+                                                                       limiter=limiter,
+                                                                       operation="highest")
                 logger.debug("found device by search: {device_id}", device_id=key)
                 if found:
                     return self.devices[key]
                 else:
                     raise KeyError("Device not found: %s" % device_requested)
             except YomboWarning, e:
-                logger.debug("Search for device, but only found: %s" % others)
                 raise KeyError('Searched for %s, but found had problems: %s' % (device_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
@@ -514,100 +513,7 @@ class Devices(YomboLibrary):
         :param kwargs: 
         :return: 
         """
-        # logger.debug("in search... {kwargs}", kwargs=kwargs)
-        attrs = []
-        for attr, value in kwargs.iteritems():
-            if attr in self.device_search_attributes:
-                attrs.append(
-                    {
-                        'field': attr,
-                        'value': value,
-                        'limiter': _limiter,
-                    }
-                )
-        return self._search(attrs, _limiter, _operation)
-
-    def _search(self, attributes, limiter=None, operation=None):
-        """        
-        Does the actual search of the devices. It scans through each device, and searches for any
-        supplied attributes.
-        
-        Scan through the dictionary, and match keys. Returns the value of
-        the best matching key.
-        :param attributes: A list of dictionaries containing: field, value, limiter
-        :type oepration: list of dictionaries
-        :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
-        """
-        # logger.debug("in _search... {attributes}", attributes=attributes)
-
-        if limiter is None:
-            operation=.85
-        if operation is None:
-            operation="any"
-        if isinstance(attributes, list) is False:
-            raise YomboWarning("Attributes must be a list.")
-        for attr in attributes:
-            if isinstance(attr, dict) is False:
-                raise YomboWarning("Attribute items must be dictionaries")
-            if all(k in ("field", "value") for k in attr):
-                print("says dont' have all keys: %s" % attr)
-                raise YomboWarning("Attribute dictionary doesn't have required keys.")
-            if attr['field'] not in self.device_search_attributes:
-                raise YomboWarning("Field is not a valid searchable item: %s" % attr['field'])
-            if "limiter" not in attr:
-                attr["limiter"] = .90
-            else:
-                if attr["limiter"] > .99999999999:
-                    attr["limiter"] = .99
-                elif attr["limiter"] < .10:
-                    attr["limiter"] = .10
-
-        # Prepare the minion
-        stringDiff = SequenceMatcher()
-
-        # used when returning all
-        devices = {}
-        
-        # used when return highest
-        best_ratio = 0
-        best_match = None
-        best_key = None
-
-        key_list = {}
-        sorted_list = None
-
-        for device_id, device in self.devices.iteritems():
-            for attr in attributes:
-                stringDiff.set_seq1(attr['value'])
-                # try:
-                stringDiff.set_seq2(getattr(device, attr['field']))
-                # except TypeError:
-                #     continue  # might get here, even though it's not a string. Catch it!
-                ratio = stringDiff.ratio()
-                if operation == "any":
-                    if ratio > attr['limiter']:
-                        devices[device.device_id] = device
-                else:
-                    # if this is the best ratio so far - save it and the value
-                    if ratio > best_ratio:
-                        best_ratio = ratio
-                        best_limiter = attr['limiter']
-                        best_key = device_id
-                        best_match = device
-
-                    # return a list of the top 5 key matches on failure.
-                    key_list[ratio] = {'key': device_id, 'value': device, 'ratio': ratio}
-                    sorted_list = OrderedDict(sorted(key_list.iteritems(), key=lambda tup: tup[1]['ratio'], reverse=True))
-
-        if operation == "any":
-            return devices
-        else:
-            return (
-                best_ratio >= best_limiter,  # the part that does the actual check.
-                best_key,
-                best_match,
-                best_ratio,
-                sorted_list)
+        return search_dictionary(kwargs, self.devices, self.device_search_attributes, _limiter, _operation)
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):

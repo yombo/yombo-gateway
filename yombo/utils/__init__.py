@@ -33,7 +33,8 @@ import netaddr
 import socket
 import binascii
 import os
-import platform
+from difflib import SequenceMatcher
+from collections import OrderedDict
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -491,6 +492,102 @@ def percentile(data_list, percent, key=lambda x:x):
     d0 = key(data_list[int(f)]) * (c-k)
     d1 = key(data_list[int(c)]) * (k-f)
     return d0+d1
+
+def search_dictionary(arguments, haystack, allowed_keys, limiter, operation):
+    attrs = []
+    for attr, value in arguments.iteritems():
+        if attr in allowed_keys:
+            attrs.append(
+                {
+                    'field': attr,
+                    'value': value,
+                    'limiter': limiter,
+                }
+            )
+    return do_search_dictionary(attrs, haystack, allowed_keys, limiter, operation)
+
+def do_search_dictionary(attributes, haystack, allowed_keys, limiter=None, operation=None):
+    """        
+    Does the actual search of the devices. It scans through each device, and searches for any
+    supplied attributes.
+
+    Scan through the dictionary, and match keys. Returns the value of
+    the best matching key.
+    :param attributes: A list of dictionaries containing: field, value, limiter
+    :type oepration: list of dictionaries
+    :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
+    """
+    # logger.debug("in _search... {attributes}", attributes=attributes)
+
+    if limiter is None:
+        operation = .85
+    if operation is None:
+        operation = "any"
+    if isinstance(attributes, list) is False:
+        raise YomboWarning("Attributes must be a list.")
+    for attr in attributes:
+        if isinstance(attr, dict) is False:
+            raise YomboWarning("Attribute items must be dictionaries")
+        if all(k in ("field", "value") for k in attr):
+            print("says dont' have all keys: %s" % attr)
+            raise YomboWarning("Attribute dictionary doesn't have required keys.")
+        if attr['field'] not in allowed_keys:
+            raise YomboWarning("Field is not a valid searchable item: %s" % attr['field'])
+        if "limiter" not in attr:
+            attr["limiter"] = .90
+        else:
+            if attr["limiter"] > .99999999999:
+                attr["limiter"] = .99
+            elif attr["limiter"] < .10:
+                attr["limiter"] = .10
+
+    # Prepare the minion
+    stringDiff = SequenceMatcher()
+
+    # used when returning all
+    devices = {}
+
+    # used when return highest
+    best_ratio = 0
+    best_match = None
+    best_key = None
+
+    key_list = {}
+    sorted_list = None
+
+    for device_id, device in haystack.iteritems():
+        for attr in attributes:
+            stringDiff.set_seq1(attr['value'])
+            # try:
+            stringDiff.set_seq2(getattr(device, attr['field']))
+            # except TypeError:
+            #     continue  # might get here, even though it's not a string. Catch it!
+            ratio = stringDiff.ratio()
+            if operation == "any":
+                if ratio > attr['limiter']:
+                    devices[device.device_id] = device
+            else:
+                # if this is the best ratio so far - save it and the value
+                if ratio > best_ratio:
+                    best_ratio = ratio
+                    best_limiter = attr['limiter']
+                    best_key = device_id
+                    best_match = device
+
+                # return a list of the top 5 key matches on failure.
+                key_list[ratio] = {'key': device_id, 'value': device, 'ratio': ratio}
+                sorted_list = OrderedDict(
+                    sorted(key_list.iteritems(), key=lambda tup: tup[1]['ratio'], reverse=True))
+
+    if operation == "any":
+        return devices
+    else:
+        return (
+            best_ratio >= best_limiter,  # the part that does the actual check.
+            best_key,
+            best_match,
+            best_ratio,
+            sorted_list)
 
 def get_command(commandSearch):
     """

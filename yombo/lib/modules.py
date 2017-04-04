@@ -24,13 +24,13 @@ import sys
 import traceback
 from time import time
 import hashlib
+from yombo.utils import search_dictionary, do_search_dictionary
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFuzzySearchError, YomboHookStopProcessing, YomboWarning, YomboCritical
-from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
@@ -73,10 +73,7 @@ class Modules(YomboLibrary):
 
     _rawModulesList = {}
 
-    _modulesByUUID = {}
-    _modulesByName = FuzzySearch({}, .92)
-
-    _modules = {}  # Stores a list of modules. Populated by the loader module at startup.
+    modules = {}  # Stores a list of modules. Populated by the loader module at startup.
 
     _localModuleVars = {}  # Used to store modules variables from file import
 
@@ -89,6 +86,7 @@ class Modules(YomboLibrary):
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
         self.hooks_called = MaxDict(200, {})
+        self.module_search_attributes = ['_module_id', '_label', '_machine_label', '_description']
 
     def _load_(self):
         """
@@ -115,7 +113,7 @@ class Modules(YomboLibrary):
         pass
 
     def __len__(self):
-        return len(self._modulesByUUID)
+        return len(self.modules)
 
     def __getitem__(self, moduleRequested):
         """
@@ -124,9 +122,6 @@ class Modules(YomboLibrary):
         See get()
         """
         return self.get(moduleRequested)
-
-#    def __iter__(self):
-#        return self._modulesByUUID.__iter__()
 
     def __contains__(self, moduleRequested):
         try:
@@ -209,10 +204,10 @@ class Modules(YomboLibrary):
         self._Loader.library_invoke_all("_module_stop_", called_by=self)
         self.module_invoke_all("_stop_")
 
-        keys = self._modulesByUUID.keys()
+        keys = self.modules.keys()
         self._Loader.library_invoke_all("_module_unload_", called_by=self)
         for module_id in keys:
-            module = self._modulesByUUID[module_id]
+            module = self.modules[module_id]
             if int(module._status) != 1:
                 continue
 
@@ -386,31 +381,31 @@ class Modules(YomboLibrary):
                 continue
 
             self.add_imported_module(module['id'], module_name, module_instance)
-            self._modulesByUUID[module_id]._hooks_called = {}
-            self._modulesByUUID[module_id]._module_id = module['id']
-            self._modulesByUUID[module_id]._module_type = module['module_type']
-            self._modulesByUUID[module_id]._machine_label = module['machine_label']
-            self._modulesByUUID[module_id]._label = module['label']
-            self._modulesByUUID[module_id]._short_description = module['short_description']
-            self._modulesByUUID[module_id]._description = module['description']
-            self._modulesByUUID[module_id]._description_formatting = module['description_formatting']
-            self._modulesByUUID[module_id]._install_count = module['install_count']
-            self._modulesByUUID[module_id]._see_also = module['see_also']
-            self._modulesByUUID[module_id]._repository_link = module['repository_link']
-            self._modulesByUUID[module_id]._issue_tracker_link = module['issue_tracker_link']
-            self._modulesByUUID[module_id]._doc_link = module['doc_link']
-            self._modulesByUUID[module_id]._git_link = module['git_link']
-            self._modulesByUUID[module_id]._install_branch = module['install_branch']
-            self._modulesByUUID[module_id]._prod_branch = module['prod_branch']
-            self._modulesByUUID[module_id]._dev_branch = module['prod_branch']
-            self._modulesByUUID[module_id]._prod_version = module['prod_version']
-            self._modulesByUUID[module_id]._dev_version = module['dev_version']
-            self._modulesByUUID[module_id]._public = module['public']
-            self._modulesByUUID[module_id]._status = module['status']
-            self._modulesByUUID[module_id]._created = module['created']
-            self._modulesByUUID[module_id]._updated = module['updated']
-            self._modulesByUUID[module_id]._load_source = module['load_source']
-            self._modulesByUUID[module_id]._device_types = []  # populated by Modules::module_init_invoke
+            self.modules[module_id]._hooks_called = {}
+            self.modules[module_id]._module_id = module['id']
+            self.modules[module_id]._module_type = module['module_type']
+            self.modules[module_id]._machine_label = module['machine_label']
+            self.modules[module_id]._label = module['label']
+            self.modules[module_id]._short_description = module['short_description']
+            self.modules[module_id]._description = module['description']
+            self.modules[module_id]._description_formatting = module['description_formatting']
+            self.modules[module_id]._install_count = module['install_count']
+            self.modules[module_id]._see_also = module['see_also']
+            self.modules[module_id]._repository_link = module['repository_link']
+            self.modules[module_id]._issue_tracker_link = module['issue_tracker_link']
+            self.modules[module_id]._doc_link = module['doc_link']
+            self.modules[module_id]._git_link = module['git_link']
+            self.modules[module_id]._install_branch = module['install_branch']
+            self.modules[module_id]._prod_branch = module['prod_branch']
+            self.modules[module_id]._dev_branch = module['prod_branch']
+            self.modules[module_id]._prod_version = module['prod_version']
+            self.modules[module_id]._dev_version = module['dev_version']
+            self.modules[module_id]._public = module['public']
+            self.modules[module_id]._status = module['status']
+            self.modules[module_id]._created = module['created']
+            self.modules[module_id]._updated = module['updated']
+            self.modules[module_id]._load_source = module['load_source']
+            self.modules[module_id]._device_types = []  # populated by Modules::module_init_invoke
 
     @inlineCallbacks
     def module_init_invoke(self):
@@ -418,7 +413,7 @@ class Modules(YomboLibrary):
         Calls the _init_ functions of modules.
         """
         module_init_deferred = []
-        for module_id, module in self._modulesByUUID.iteritems():
+        for module_id, module in self.modules.iteritems():
             self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
 
             # Get variables, and merge with any local variable settings
@@ -469,9 +464,8 @@ class Modules(YomboLibrary):
             # print "module_device_types = %s" % module_device_types
             for module_device_type in module_device_types:
                 if module_device_type.id in module._DeviceTypes:
-                    self._modulesByUUID[module_id]._device_types.append(module_device_type.id)
+                    self.modules[module_id]._device_types.append(module_device_type.id)
 
-            module._DeviceTypes.add_registered_module(module)
 #                module_init_deferred.append(maybeDeferred(module._init_))
 #                continue
             try:
@@ -587,7 +581,7 @@ class Modules(YomboLibrary):
         """
         logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
         results = {}
-        for module_id, module in self._modulesByUUID.iteritems():
+        for module_id, module in self.modules.iteritems():
             if int(module._status) != 1:
                 continue
 
@@ -612,15 +606,13 @@ class Modules(YomboLibrary):
 
     def add_imported_module(self, module_id, module_label, module_instance):
         logger.debug("adding module: {module_id}:{module_label}", module_id=module_id, module_label=module_label)
-        self._modulesByUUID[module_id] = module_instance
-        self._modulesByName[module_label] = module_id
+        self.modules[module_id] = module_instance
 
     def del_imported_module(self, module_id, module_label):
-        logger.debug("deleting module_id: {module_id} from this list: {list}", module_id=module_id, list=self._modulesByUUID)
-        del self._modulesByName[module_label]
-        del self._modulesByUUID[module_id]
+        logger.debug("deleting module_id: {module_id} from this list: {list}", module_id=module_id, list=self.modules)
+        del self.modules[module_id]
 
-    def get(self, requestedItem):
+    def get(self, module_requested, limiter=None):
         """
         Attempts to find the module requested using a couple of methods. Use the already defined pointer within a
         module to find another other:
@@ -632,24 +624,70 @@ class Modules(YomboLibrary):
             >>> someModule = self._Modules['Homevision']  #by name
 
         :raises KeyError: Raised when module cannot be found.
-        :param requestedItem: The module UUID or module name to search for.
-        :type requestedItem: string
-        :return: Pointer to module.
-        :rtype: module
+        :param module_requested: The module ID or module label to search for.
+        :type module_requested: string
+        :param limiter_override: Default .89. A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :return: Pointer requested module.
+        :rtype: dict
         """
-        if requestedItem in self._modulesByUUID:
+        if limiter is None:
+            limiter = .89
+
+        if limiter > .99999999:
+            limiter = .99
+        elif limiter < .10:
+            limiter = .10
+
+        if module_requested in self.modules:
 #            logger.debug("Looking for {requestedItem} by UUID!", requestedItem=requestedItem)
-            return self._modulesByUUID[requestedItem]
+            return self.modules[module_requested]
         else:
+            attrs = [
+                {
+                    'field': '_module_id',
+                    'value': module_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': '_label',
+                    'value': module_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': '_machine_label',
+                    'value': module_requested,
+                    'limiter': limiter,
+                }
+            ]
             try:
-                requestedUUID = self._modulesByName[requestedItem.lower()]
-#                logger.debug("Looking for {requestedItem}, found: {modules}", requestedItem=requestedItem, modules=requestedUUID)
-                return self._modulesByUUID[requestedUUID]
-            except YomboFuzzySearchError, e:
-#                print self._modulesByUUID
-                logger.warn("Cannot find module: {requestedItem}", requestedItem=requestedItem)
-#                logger.info("Module search error message: {error}", error=e)
-                raise KeyError('Module not found.')
+                logger.debug("Get is about to call search...: %s" % module_requested)
+                found, key, item, ratio, others = do_search_dictionary(attrs, self.modules,
+                                                                       self.module_search_attributes,
+                                                                       limiter=limiter,
+                                                                       operation="highest")
+                logger.debug("found device by search: {device_id}", device_id=key)
+                if found:
+                    return self.modules[key]
+                else:
+                    raise KeyError("Module not found: %s" % module_requested)
+            except YomboWarning, e:
+                raise KeyError('Searched for %s, but found had problems: %s' % (module_requested, e))
+
+    def search(self, _limiter=None, _operation=None, **kwargs):
+        """
+        Search for various attributes in modules.
+
+        :param _limiter: 
+        :param _operation: 
+        :param kwargs: 
+        :return: 
+        """
+        for attr, value in kwargs.iteritems():
+            if "_%s" % attr in self.module_search_attributes:
+                kwargs[attr]['field'] = "_%s" % attr
+
+        return search_dictionary(kwargs, self.modules, self.module_search_attributes, _limiter, _operation)
 
     def modules_invoke_log(self, level, label, type, method, msg=""):
         """
@@ -667,20 +705,20 @@ class Modules(YomboLibrary):
 
     def module_devices(self, module_id):
         """
-        A list of devices types for a given module id.
+        A list of devices for a given module id.
 
         :raises YomboWarning: Raised when module_id is not found.
         :param module_id: The Module ID to return device types for.
         :return: A dictionary of devices for a given module id.
         :rtype: list
         """
-        if module_id not in self._modulesByUUID:
+        if module_id not in self.modules:
                 return {}
 
         temp = {}
-        if module_id in self._modulesByUUID:
+        if module_id in self.modules:
             # print "dt..module_id: %s" % module_id
-            # print "dt..self._Modules._modulesByUUID[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
+            # print "dt..self._Modules.modules[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
             for dt in self.module_device_types(module_id):
                 temp.update(self._DeviceTypes[dt].get_devices())
         # tempset = set(temp)
@@ -693,17 +731,17 @@ class Modules(YomboLibrary):
         elif return_value not in (['id', 'dict']):
             raise YomboWarning("module_device_types 'return_value' accepts: 'id' or 'dict'")
 
-        if module_id not in self._modulesByUUID:
+        if module_id not in self.modules:
             if return_value == 'id':
                 return []
             elif return_value == 'dict':
                 return {}
 
         if return_value == 'id':
-            return self._modulesByUUID[module_id]._device_types
+            return self.modules[module_id]._device_types
         elif return_value == 'dict':
             results = {}
-            for device_type_id in self._modulesByUUID[module_id]._device_types:
+            for device_type_id in self.modules[module_id]._device_types:
                 results[device_type_id] = self._DeviceTypes[device_type_id]
             return results
 
@@ -836,7 +874,7 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if module_id not in self._modulesByUUID:
+        if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to remove.", 300, 'disable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
@@ -877,7 +915,7 @@ class Modules(YomboLibrary):
             'status': 1,
         }
 
-        if module_id not in self._modulesByUUID:
+        if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
@@ -915,7 +953,7 @@ class Modules(YomboLibrary):
             'status': 0,
         }
 
-        if module_id not in self._modulesByUUID:
+        if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
@@ -1165,7 +1203,7 @@ class Modules(YomboLibrary):
             'status': 1,
         }
 
-        if module_id not in self._modulesByUUID:
+        if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))

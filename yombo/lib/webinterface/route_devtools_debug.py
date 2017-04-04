@@ -77,7 +77,7 @@ def route_devtools_debug(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/debug/modules", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
-                               modules=webinterface._Modules._modulesByUUID
+                               modules=webinterface._Modules.modules
                                )
 
         @webapp.route('/modules/<string:module_id>/details')
@@ -87,9 +87,9 @@ def route_devtools_debug(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/modules/details.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/debug/modules", "Modules")
-            webinterface.add_breadcrumb(request, "/devtools/debug/modules/%s/details" % webinterface._Modules._modulesByUUID[module_id]._module_id, webinterface._Modules._modulesByUUID[module_id]._label)
+            webinterface.add_breadcrumb(request, "/devtools/debug/modules/%s/details" % webinterface._Modules.modules[module_id]._module_id, webinterface._Modules.modules[module_id]._label)
             return page.render(alerts=webinterface.get_alerts(),
-                               module=webinterface._Modules._modulesByUUID[module_id],
+                               module=webinterface._Modules.modules[module_id],
                                module_devices=webinterface._DeviceTypes.module_devices(module_id),
                                device_types=webinterface._DeviceTypes,
                                devices=webinterface._Devices,

@@ -53,7 +53,7 @@ def route_modules(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
-                               modules=webinterface._Libraries['modules']._modulesByUUID,
+                               modules=webinterface._Libraries['modules'].modules,
                                )
 
         @webapp.route('/server_index')
@@ -83,7 +83,7 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/%s/server_details" % module_results['data']['id'], module_results['data']['label'])
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     server_module=module_results['data'],
-                                    modules=webinterface._Modules._modulesByUUID,
+                                    modules=webinterface._Modules.modules,
                                     ))
 
         @webapp.route('/<string:module_id>/add', methods=['GET'])

@@ -667,7 +667,7 @@ class WebInterface(YomboLibrary):
                            delay_commands = self._Devices.delay_queue_active,
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices'].devices,
-                           modules=self._Libraries['modules']._modulesByUUID,
+                           modules=self._Libraries['modules'].modules,
                            states=self._Libraries['states'].get_states(),
                            )
 
