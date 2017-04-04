@@ -13,7 +13,8 @@ AMQP class
 ===========================================
 .. autoclass:: AMQP
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

@@ -20,6 +20,7 @@ needs to return several things:
 * type (optional) - String - Either 'client' or 'server'. (not implemented)
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.13.0
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.

@@ -9,8 +9,10 @@ then modules startup in the same method.
 
 #. Import all components
 #. Call "init" for all components
-  * Get the component ready, but not do any actual work yet.
-  * Components can now see a full list of components there were imported.
+
+   * Get the component ready, but not do any actual work yet.
+   * Components can now see a full list of components there were imported.
+  
 #. Call "load" for all components
 #. Call "start" for all components
 

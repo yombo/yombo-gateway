@@ -12,7 +12,6 @@ the individual input type classes.
 The input type (singular) class represents one input type.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-
 .. versionadded:: 0.12.0
 
 :copyright: Copyright 2016-2017 by Yombo.
@@ -41,9 +40,11 @@ class InputTypes(YomboLibrary):
         Return an input type, searching first by input type ID and then by input type machine label.
         Modules should use `self._InputTypes` to search with:
 
-            >>> self._InputTypes['137ab129da9318']  #by uuid
-        or::
-            >>> self._InputTypes['living room light']  #by name
+            >>> input_type = self._InputTypes['137ab129da9318']  #by uuid
+            
+        or:
+        
+            >>> input_type = self._InputTypes['alpnum']  #by name
 
         :param input_type_requested: The input type ID or input type machine label to search for.
         :type input_type_requested: string

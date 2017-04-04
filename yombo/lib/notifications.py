@@ -6,7 +6,6 @@ Responsible for receiving and distributing notifications. Typically, they are sy
 attention by the user, this includes alerts for devices, or system settings that need updating.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-
 .. versionadded:: 0.12.0
 
 :copyright: Copyright 2016-2017 by Yombo.

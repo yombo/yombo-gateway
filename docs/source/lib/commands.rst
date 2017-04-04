@@ -13,14 +13,16 @@ Commands class
 =============================
 .. autoclass:: Commands
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Command class
 =============================
 .. autoclass:: Command
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

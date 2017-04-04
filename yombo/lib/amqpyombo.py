@@ -15,10 +15,10 @@ This library utilizes the amqp library to handle the low level handling.
 This connection should be maintained 100% of the time. This allows control messages to be recieved by your devices
 or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
-:TODO: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor.
-Perhaps disconnect and reconnect to another server? -Mitch
+.. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor. Perhaps disconnect and reconnect to another server? -Mitch
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.12.0
 
 :copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.

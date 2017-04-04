@@ -8,8 +8,6 @@
 Logging (yombo.core.log)
 ================================
 
-Log Module
-==============================
 .. automodule:: yombo.core.log
    :members:
    :private-members:

@@ -1,0 +1,19 @@
+{# Import the theme's layout. #}
+{% extends "!layout.html" %}
+
+{# Add some extra stuff before and use existing with 'super()' call. #}
+{% block footer %}
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a><br>
+        &copy; Copyright 2012-2017, Mitch Schwenk.<br/>
+    </p>
+    <p>
+      <strong>Other resources</strong>
+      <br>
+      <span class="glyphicon glyphicon-chevron-right"></span><a href="https://yombo.net/docs/modules">Developer Guides</a>
+    </p>
+  </div>
+</footer>
+{% endblock %}

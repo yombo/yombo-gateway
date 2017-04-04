@@ -11,7 +11,8 @@ Manages interactions with api.yombo.net
 """
 # Import python libraries
 
-import msgpack
+import yombo.ext.umsgpack as msgpack
+
 try: # python 2/3
     from urllib import quote as parse
 except ImportError:

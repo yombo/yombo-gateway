@@ -95,9 +95,3 @@ class LogReader(YomboModule):
         Nothing to do, move along.
         """
         pass
-
-    def message(self, message):
-        """
-        We don't do anything with messages, move along.
-        """
-        pass

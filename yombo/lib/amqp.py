@@ -6,6 +6,10 @@
 
   For developer documentation, see: `AMQP @ Module Development <https://yombo.net/docs/modules/amqp/>`_
 
+.. seealso::
+
+   The :doc:`mqtt library </lib/mqtt>` can connect to MQTT brokers, this a light weight message broker.
+
 AMQP messaging is implemented by this library. It's used by Yombo Gateway to commuicate with it's servers. This
 library also exposes and API that modules can use to connect to other servers.
 AMQP protocol can be used for sending messages to other systems for processing, status updates, or requests. For
@@ -13,9 +17,6 @@ for more informatin, see the `RabbitMQ Tutorials <https://www.rabbitmq.com/getst
 
 Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this library.
 
-.. seealso::
-
-   The :py:mod:`mqtt library <yombo.lib.mqtt>` can connect to MQTT brokers, this a light weight message broker.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0

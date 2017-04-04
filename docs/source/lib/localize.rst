@@ -4,16 +4,17 @@
 
 .. currentmodule:: yombo.lib.localize
 
-==========================
+==============================
 Localize (yombo.lib.localize)
-==========================
+==============================
 .. automodule:: yombo.lib.localize
 
 Localize Class
 ==============
 .. autoclass:: Localize
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

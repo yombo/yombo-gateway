@@ -13,14 +13,16 @@ Devices Class
 =================
 .. autoclass:: Devices
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Device Class
 ==================
 .. autoclass:: Device
    :members:
-
-   .. automethod:: __init__
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

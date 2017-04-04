@@ -4,10 +4,10 @@
 
 .. currentmodule:: yombo.lib.automations
 
-===========================================
-AutomationHelpers (yombo.lib.automations)
-===========================================
-.. automodule:: yombo.lib.automationhelpers
+===================================================
+AutomationHelpers (yombo.modules.automationhelpers)
+===================================================
+.. automodule:: yombo.modules.automationhelpers
 
 AutomationHelpers Class
 ===========================================

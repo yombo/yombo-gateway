@@ -9,7 +9,8 @@ Simply copy/paste this module into a new directory to get started.
 
 
 For more on developing modules, visit
-`Projects.Yombo.net <https://projects.yombo.net/projects/modules/wiki>`_ .
+`Yombo.Net - Building Modules <https://yombo.net/docs/modules>`_ .
+
 
 ===========================================================
 Autoamtion Example Module (yombo.modules.automationexample)

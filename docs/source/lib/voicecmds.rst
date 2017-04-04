@@ -13,7 +13,8 @@ VoiceCmds Class
 ================
 .. autoclass:: VoiceCmds
    :members:
-
-   .. automethod:: _module_prestart_
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

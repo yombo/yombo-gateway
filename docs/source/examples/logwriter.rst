@@ -4,11 +4,11 @@
 
 .. currentmodule:: yombo.modules.logwriter
 
-The logwriter module demonstrates subscribing to :ref:`messages <message>` and writes them
-out as a log file.
+The logwriter module demonstrates using various :ref:`hooks <hooks>` to capture various events and writes them
+to a log file.
 
 For more on developing modules, visit
-`Projects.Yombo.net <https://projects.yombo.net/projects/modules/wiki>`_ .
+`Yombo.Net - Building Modules <https://yombo.net/docs/modules>`_ .
 
 ==============================================
 Logwriter - Write various events to a log file

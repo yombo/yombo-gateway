@@ -37,8 +37,9 @@ Developers should review the following modules for examples of implementation:
 * :py:mod:`yombo.lib.atoms` - Look near the bottom for hooks into triggers, conditions, and actions.
 * :py:mod:`yombo.lib.states` - Look near the bottom for hooks into triggers, conditions, and actions.
 
-..versionadded:: 0.10.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.10.0
+
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
@@ -78,6 +79,10 @@ class Automation(YomboLibrary):
     capabilites of the automation system.
     """
     def _init_(self):
+        """
+        Get the Automation library started. Setups various dictionarys to be used.
+        :return: 
+        """
         self._rulesRaw = {}  # Used to store raw input from reading file.
         self._rulesParse = {}  # Used to store raw input from reading file.
         self.rules = {}   # Store processed / active rules
@@ -91,6 +96,11 @@ class Automation(YomboLibrary):
         # lets load the raw json and see if we can even parse anything.
 
     def _start_(self):
+        """
+        Loads the automation.txt file and processes any rules included.
+        
+        :return: 
+        """
         try:
             with yombo.utils.fopen('automation.txt', 'r') as fp_:
                 temp_rules = hjson.loads(fp_.read())

@@ -5,6 +5,7 @@ Performs various tasks as needed. Usually used to run various processes at start
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.13.0
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.

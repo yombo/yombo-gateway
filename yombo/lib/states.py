@@ -6,6 +6,10 @@
 
   For end-user documentation, see: `States @ Module Development <https://yombo.net/docs/modules/states/>`_
 
+.. seealso::
+
+   The :doc:`atoms library </lib/mqtt>` is used to store static data about the environment.
+   
 The states library is used to collect and provide information about various states that the automation system
 can be in or exist around it. For example, it can tell if it's light outside, dawn, dusk, or if it's connected
 to the Yombo server. It can provide a list of users connected and what module they are connected through.
@@ -40,7 +44,6 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
      self._States['weather_is_cloudy'] = True
    except:
      pass  # unable to set state?
-
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>

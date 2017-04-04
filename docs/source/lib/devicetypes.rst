@@ -1,6 +1,6 @@
 .. index:: devicetypes
 
-.. _devicetypes::
+.. _devicetypes:
 
 .. currentmodule:: yombo.lib.devicetypes
 
@@ -13,5 +13,8 @@ Device Types
 ================
 .. autoclass:: DeviceTypes
    :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

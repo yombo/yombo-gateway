@@ -43,6 +43,7 @@ from yombo.core.exceptions import YomboTimeError, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import is_one_zero, global_invoke_all
+import arrow
 
 logger = get_logger('library.times')
 
@@ -426,6 +427,66 @@ class Times(YomboLibrary, object):
         """
         self.isDusk = False
         self.send_event_hook('now_not_dusk')
+
+    def get_future(self, **kwargs):
+        """
+        Get a time in the future. Can specify years, weeks, months, hours, minutes, seconds
+        
+        .. code-block:: python
+
+            a_time = self._Times.get_future(weeks=+1, minutes=+3)  # 1 week, 3 minutes into the future
+        
+        :param kwargs: 
+        :return: 
+        """
+        utc = arrow.utcnow()
+        return utc.replace(hours=+2, minutes=+1).timestamp
+
+    def get_next(self, **kwargs):
+        """
+        Get a time when the next time occurs. For example, if you want when the next 10pm at night is:
+
+            >>> a_time = self._Times.get_next(hour=22)  # The next time it's 10pm
+         
+
+        :param kwargs: 
+        :return: 
+        """
+        return datetime.now().replace(**kwargs).strftime('%s')
+
+    def get_future_or_next(self, **kwargs):
+        """
+        Returns a time of whichever is less of :py:meth:`get_future <get_future>` and :py:meth:`get_next <get_next>`.
+        
+        This is useful for when you want to turn something on or off, but don't want to wait too long. For example,
+        if you request the next time it's 10pm, and it's 10:01pm, you probably don't want to wait 23 hours and 59
+        minutes.
+        
+        .. code-block:: python
+
+            a_time = self._Times.get_future_or_next(hours=5, hour=2200)
+            # Return least time of either 5 hour or 10pm.
+        
+
+        :param kwargs: 
+        :return: 
+        """
+        vars = {}
+        for key, value in kwargs.iteritems():
+            if key in ['year', 'month', 'day', 'hour', 'minute', 'second']:
+                vars[key] = value
+        next_time = self.get_next(**vars)
+
+        vars = {}
+        for key, value in kwargs.iteritems():
+            if key in ['years', 'months', 'days', 'hours', 'minutes', 'seconds']:
+                vars[key] = value
+        future_time = self.get_next(**vars)
+
+        if future_time < next_time:
+            return future_time
+        else:
+            return next_time
 
     def send_event_hook(self, event_msg):
         """

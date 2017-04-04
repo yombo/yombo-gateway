@@ -40,7 +40,9 @@ class Commands(YomboLibrary):
         `self._Commands` to search with:
 
             >>> self._Commands['137ab129da9318']  #by uuid
-        or::
+            
+        or:
+        
             >>> self._Commands['living room light']  #by name
 
         See: :func:`yombo.core.helpers.getCommands` for full usage example.

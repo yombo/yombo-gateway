@@ -460,7 +460,7 @@ class Configuration(YomboLibrary):
         **Hooks called**:
 
         * _configuration_details_ : Gets various details about a configuration item. Do not implement, not set
-        in stone. Might migrate to i18n library.
+          in stone. Might migrate to i18n library.
 
         **Usage**:
 
@@ -480,6 +480,7 @@ class Configuration(YomboLibrary):
                            }
                        },
                }]
+
         """
         config_details = global_invoke_all('_configuration_details_')
 
@@ -499,18 +500,20 @@ class Configuration(YomboLibrary):
 
     def get2(self, section, option=None, default=None, set_if_missing=True, set=None, **kwargs):
         """
-        Read value of configuration option, return None if it don't exist or
-        default if defined.  Tries to type cast with int first before
-        returning a string.
-
-        Section and option will be converted to lowercase, rendering the set/get
-        function case insenstive.
+        Like :py:meth:`get() <get>` below, however, returns a callable to retrieve the value instead of an actual
+        value. The callable can also be used to set the value of the configuration item too. See
+        example for usage details.
 
         **Usage**:
 
         .. code-block:: python
 
-           gatewayUUID = self._Config.get("core", "gwuuid", "Default Value")
+           gw_label = self._Config.get2("core", "label", "Default Value")
+           logger.info("The Gateway Label is: {labe}", label=gw_label)
+           # set a new label.  Don't really ever do this.
+           gw_label(set="New label")
+
+        .. versionadded:: 0.13.0
 
         :param section: The configuration section to use.
         :type section: string
@@ -545,6 +548,8 @@ class Configuration(YomboLibrary):
         Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
         returning a string.
+        
+        If you always want the current value of a configuration item, use :py:meth:`get2() <get2>`.
         
         Section and option will be converted to lowercase, rendering the set/get
         function case insenstive.

@@ -13,5 +13,8 @@ Modules Class
 ================
 .. autoclass:: Modules
    :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|

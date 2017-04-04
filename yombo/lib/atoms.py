@@ -6,6 +6,10 @@
 
   For developer documentation, see: `Atoms @ Module Development <https://yombo.net/docs/modules/atoms/>`_
 
+.. seealso::
+
+   The :doc:`states library </lib/states>` is used to store states that change.
+
 Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
 some exceptions such as IP address changes.
 
@@ -21,6 +25,7 @@ If a requested atom doesn't exist, a value of None will be returned instead of a
        logger.debug("Running on operating system: {operatingsystem}", operatingsystem=self._Atom['os'])
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/atoms.py>`_

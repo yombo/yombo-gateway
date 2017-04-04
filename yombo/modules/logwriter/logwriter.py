@@ -77,15 +77,54 @@ class LogWriter(YomboModule):
         """
         return ['status']
 
-    def message(self, message):
+    def _configuration_set_(self, **kwargs):
         """
-        Save incoming messages to log file out.
+        Receive configuruation updates and adjust as needed.
+
+        :param kwargs: section, option(key), value
+        :return:
         """
-        msg = message.dump() # Lets not mangle the original.
-        if 'cmdobj' in msg['payload']:
-          msg['payload']['cmdUUID'] = msg['payload']['cmdobj'].cmdUUID
-          del msg['payload']['cmdobj']
-        if 'deviceobj' in msg['payload']:
-          msg['payload']['device_id'] = msg['payload']['deviceobj'].device_id
-          del msg['payload']['deviceobj']
-        self.fp_out.write("%s\n" % json.dumps({'time':int(time.time()),'message':msg}) )
+        section = kwargs['section']
+        option = kwargs['option']
+        value = kwargs['value']
+
+        self.fp_out.write("%s\n" % json.dumps(
+            {'time':int(time.time()),
+             'type':'configuration_set',
+             'section': section,
+             'option': option,
+             'value': value,
+             }
+        ))
+
+    def _device_command_(self, **kwargs):
+        """
+        Received a device command.
+        :param kwags: Contains 'device' and 'command'.
+        :return: None
+        """
+        device = kwargs['device']
+        command = kwargs['command']
+
+        self.fp_out.write("%s\n" % json.dumps(
+            {'time':int(time.time()),
+             'type':'device_command',
+             'device_id': device.device_id,
+             'device_label': device.label,
+             'command_id': command.command_id,
+             'command_label': command.label,
+             }
+        ))
+
+    def _device_status_(self, **kwargs):
+        device = kwargs['device']
+        status = kwargs['status']
+
+        self.fp_out.write("%s\n" % json.dumps(
+            {'time': int(time.time()),
+             'type': 'device_command',
+             'device_id': device.device_id,
+             'status': status['human_status'],
+             }
+        ))
+

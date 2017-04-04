@@ -38,9 +38,10 @@ class DeviceTypes(YomboLibrary):
         `self._Commands` to search with:
 
             >>> self._DeviceTypes['137ab129da9318']  #by id
-        or::
+            
+        or:
+        
             >>> self._DeviceTypes['x10_appliance']  #by name
-
 
         :param commandRequested: The device type ID or device type label to search for.
         :type commandRequested: string
@@ -62,12 +63,7 @@ class DeviceTypes(YomboLibrary):
 
     def _init_(self):
         """
-        Setups up the basic framework. Nothing is loaded in here until the
-        Load() stage.
-
-        :param loader: A pointer to the L{Loader<yombo.lib.loader.Loader>}
-        library.
-        :type loader: Instance of Loader
+        Setups up the basic framework. Nothing is loaded in here until the :py:meth:`_load_ <_load_>` stage.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.run_state = 1

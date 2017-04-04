@@ -85,9 +85,10 @@ class Devices(YomboLibrary):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
-        - :func:`get_all` - Get a pointer to all devices.
-        - :func:`get_devices_by_device_type` - Get all device for a certain deviceType (UUID or MachineLabel)
-        - :func:`search` - Get a pointer to a device, using device_id or device label.
+        * :func:`get_all` - Get a pointer to all devices.
+        * :func:`get_devices_by_device_type` - Get all device for a certain deviceType (UUID or MachineLabel)
+        * :func:`search` - Get a pointer to a device, using device_id or device label.
+
     """
 
     def __contains__(self, device_requested):
@@ -119,11 +120,11 @@ class Devices(YomboLibrary):
 
         Simulate a dictionary when requested with:
 
-            >>> self._Devices['137ab129da9318']  #by uuid
+            >>> my_light = self._Devices['137ab129da9318']  #by uuid
 
         or:
 
-            >>> self._Devices['living room light']  #by name
+            >>> my_light = self._Devices['living room light']  #by name
 
         :raises YomboDeviceError: Raised when device cannot be found.
         :param device_requested: The device UUID or device label to search for.
@@ -134,15 +135,34 @@ class Devices(YomboLibrary):
         return self.get(device_requested)
 
     def __iter__(self):
+        """ iter devices. """
         return self._devicesByUUID.__iter__()
 
     def __len__(self):
+        """
+        
+        :return: The number of devices configured.
+        :rtype: int
+        """
         return len(self._devicesByUUID)
 
     def __str__(self):
+        """
+        .. warning:: The results of this should not be used by modules. Internal use only.
+        
+        :return: Returns the devices dictionary. 
+        :rtype: dict
+        """
         return self._devicesByUUID
 
     def __contains__(self, device_requested):
+        """
+        Checks if a device is configured. Checks both by ID and by device label.
+        
+        :param device_requested: Either a device ID or device label. 
+        :return: True if configurd, else false.
+        :rtype: bool
+        """
         try:
             self.get(device_requested)
             return True
@@ -150,9 +170,23 @@ class Devices(YomboLibrary):
             return False
 
     def keys(self):
+        """
+        Returns the keys (device ID's) that are configured.
+        
+        :return: A list of device IDs. 
+        :rtype: list
+        """
         return self._devicesByUUID.keys()
 
     def items(self):
+        """
+        .. warning:: The results of this should not be used by modules. Internal use only.
+        
+        Gets a list of tuples representing the device's configured.
+        
+        :return: A list of tuples.
+        :rtype: list
+        """
         return self._devicesByUUID.items()
 
     def iteritems(self):
@@ -898,8 +932,6 @@ class Devices(YomboLibrary):
                 delay = None
                 max_delay = None
 
-            # def do_command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
-
             unique_hash = sha1('automation' + rule['name'] + action['command'] + device.label).hexdigest()
             device.do_command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
 
@@ -1447,7 +1479,7 @@ class Device:
                        "previous_status" : self.status_history[0],
                       } )
         else:
-            kwargs.update({"deviceobj" : self,
+            kwargs.update({"device" : self,
                        "status" : self.status_history[0],
                        "previous_status" : self.status_history[1],
                       } )

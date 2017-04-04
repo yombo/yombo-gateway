@@ -73,8 +73,8 @@ or "house.upstairs.*.temperature"
 An idea to mitigrate data loss would be to save data points more often, but marked as temporary. This would allow
 the benefits of better averages, but mitigate loss of data. This is at a cost of higher CPU resources.
 
-.. versionadded:: 0.11.0
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+.. versionadded:: 0.11.0
 
 :copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.

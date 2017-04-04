@@ -13,8 +13,8 @@ Automation Class
 ===========================================
 .. autoclass:: Automation
    :members:
-
-   .. automethod:: __init__
-   .. automethod:: _module_prestart_
+   :special-members:
+   :private-members:
+   :undoc-members:
 
 Last updated: |today|
