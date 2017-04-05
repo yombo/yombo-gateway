@@ -144,12 +144,11 @@ class YomboModule:
 
     def __str__(self):
         """
-        Returns a string of this module's UUID.
-
-        :return: A dictionary of core attributes.
-        :rtype: dict
+        Print a string when printing the class.  This will return the cmdUUID so that
+        the command can be identified and referenced easily.
         """
-        return self._module_id
+        return "%s:%s" % (self._label, self._module_id)
+
 
     def _init_(self):
         """
@@ -159,11 +158,8 @@ class YomboModule:
 
     def _load_yombo_internal_(self):
         """
-        Phase 2 of 3 for statup - Called when module should load anything else. After this
-        function completes, it should be able to accept and process messages. Doesn't send
-        messages at this stage.
+        Load some internal items.
         """
-        # self._device_types = partial(self._Modules.module_device_types, self._module_id)
         self._devices = partial(self._Modules.module_devices, self._module_id)
 
     def _start_(self):
@@ -220,29 +216,12 @@ class YomboModule:
             '_load_source': str(self._load_source),
         }
 
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the cmdUUID so that
-        the command can be identified and referenced easily.
-        """
-        return "%s:%s" % (self._label, self._module_id)
-
     # def __repr__(self):
     #     """
     #     Print a string when printing the class.  This will return the cmdUUID so that
     #     the command can be identified and referenced easily.
     #     """
     #     return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
-
-    # def update_registered_device(self, device):
-    #     self.registered_devices[device.device_id] = device
-    #
-    # def add_registered_device(self, device):
-    #     self.registered_devices[device.device_id] = device
-    #
-    # def del_registered_device(self, device):
-    #     if device.device_id in self.registered_devices[device.device_id]:
-    #         del self.registered_devices[device.device_id]
 
     def amqp_incoming(self, deliver, properties, message):
         """

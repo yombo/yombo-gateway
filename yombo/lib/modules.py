@@ -24,7 +24,6 @@ import sys
 import traceback
 from time import time
 import hashlib
-from yombo.utils import search_dictionary, do_search_dictionary
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
@@ -33,7 +32,8 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-import yombo.utils
+from yombo.utils import search_instance, do_search_instance, dict_merge
+
 from yombo.utils.maxdict import MaxDict
 
 logger = get_logger('library.modules')
@@ -86,7 +86,7 @@ class Modules(YomboLibrary):
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
         self.hooks_called = MaxDict(200, {})
-        self.module_search_attributes = ['_module_id', '_label', '_machine_label', '_description']
+        self.module_search_attributes = ['_module_id', '_label', '_machine_label', '_description', '_status']
 
     def _load_(self):
         """
@@ -423,7 +423,7 @@ class Modules(YomboLibrary):
             module._ModuleVariables = module_variables
 
             if module._Name in self._localModuleVars:
-                module._ModuleVariables = yombo.utils.dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
+                module._ModuleVariables = dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
                 del self._localModuleVars[module._Name]
 
             # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
@@ -612,7 +612,7 @@ class Modules(YomboLibrary):
         logger.debug("deleting module_id: {module_id} from this list: {list}", module_id=module_id, list=self.modules)
         del self.modules[module_id]
 
-    def get(self, module_requested, limiter=None):
+    def get(self, module_requested, limiter=None, status=None):
         """
         Attempts to find the module requested using a couple of methods. Use the already defined pointer within a
         module to find another other:
@@ -626,18 +626,16 @@ class Modules(YomboLibrary):
         :raises KeyError: Raised when module cannot be found.
         :param module_requested: The module ID or module label to search for.
         :type module_requested: string
-        :param limiter_override: Default .89. A value between .5 and .99. Sets how close of a match it the search should be.
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device to check for.
+        :type status: int
         :return: Pointer requested module.
         :rtype: dict
         """
-        if limiter is None:
-            limiter = .89
 
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
+        if status is None:
+            status = 1
 
         if module_requested in self.modules:
 #            logger.debug("Looking for {requestedItem} by UUID!", requestedItem=requestedItem)
@@ -658,14 +656,20 @@ class Modules(YomboLibrary):
                     'field': '_machine_label',
                     'value': module_requested,
                     'limiter': limiter,
+                },
+                {
+                    'field': '_status',
+                    'value': status,
+                    'limiter': 1,
                 }
             ]
             try:
                 logger.debug("Get is about to call search...: %s" % module_requested)
-                found, key, item, ratio, others = do_search_dictionary(attrs, self.modules,
-                                                                       self.module_search_attributes,
-                                                                       limiter=limiter,
-                                                                       operation="highest")
+                found, key, item, ratio, others = do_search_instance(attrs, self.modules,
+                                                                     self.module_search_attributes,
+                                                                     limiter=limiter,
+                                                                     operation="highest",
+                                                                     status=status)
                 logger.debug("found device by search: {device_id}", device_id=key)
                 if found:
                     return self.modules[key]
@@ -674,7 +678,7 @@ class Modules(YomboLibrary):
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but found had problems: %s' % (module_requested, e))
 
-    def search(self, _limiter=None, _operation=None, **kwargs):
+    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
         """
         Search for various attributes in modules.
 
@@ -687,7 +691,7 @@ class Modules(YomboLibrary):
             if "_%s" % attr in self.module_search_attributes:
                 kwargs[attr]['field'] = "_%s" % attr
 
-        return search_dictionary(kwargs, self.modules, self.module_search_attributes, _limiter, _operation)
+        return search_instance(kwargs, self.modules, self.module_search_attributes, _limiter, _operation, _status)
 
     def modules_invoke_log(self, level, label, type, method, msg=""):
         """
@@ -1198,9 +1202,8 @@ class Modules(YomboLibrary):
         """
         # print "disabling module: %s" % module_id
         api_data = {
-            'module_id': data['module_id'],
-            'install_branch': data['install_branch'],
-            'status': 1,
+            'module_id': module_id,
+            'status': new_status,
         }
 
         if module_id not in self.modules:

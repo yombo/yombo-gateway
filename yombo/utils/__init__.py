@@ -45,14 +45,16 @@ from twisted.internet import reactor
 from yombo.utils.decorators import memoize_, memoize_ttl
 import yombo.ext.six as six
 from yombo.ext.hashids import Hashids
+import yombo.ext.umsgpack as msgpack
 
+# from yombo.lib.modules import Modules  # used only to determine class type
 from yombo.core.log import get_logger
 
 logger = get_logger('utils.__init__')
 
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboNoSuchLoadedComponentError, YomboWarning
+
 
 def pattern_search(look_for, items):
     """
@@ -88,6 +90,7 @@ def pattern_search(look_for, items):
                 out_list.append(item)
     return out_list
 
+
 def status_to_string(status):
     if status == 0:
         return 'Disabled'
@@ -97,6 +100,7 @@ def status_to_string(status):
         return 'Deleted'
     else:
         return 'Unknown'
+
 
 def public_to_string(pubic_value):
     if pubic_value == 0:
@@ -108,10 +112,12 @@ def public_to_string(pubic_value):
     else:
         return 'Unknown'
 
-def epoch_to_string(the_time, format=None):
-    if format is None:
-        format = '%b %d %Y %H:%M:%S %Z'
-    return strftime(format, localtime(the_time))
+
+def epoch_to_string(the_time, format_string=None):
+    if format_string is None:
+        format_string = '%b %d %Y %H:%M:%S %Z'
+    return strftime(format_string, localtime(the_time))
+
 
 def epoch_from_string( the_string ):
     """
@@ -149,9 +155,11 @@ def epoch_from_string( the_string ):
         raise YomboWarning("Cannot parse this string into a date: '"+the_string+"'", 101, "epoch_from_string", 'utils')
     return int(dt.strftime('%s'))
 
+
 def convert_to_seconds(s):
     seconds_per_unit = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
     return int(s[:-1]) * seconds_per_unit[s[-1]]
+
 
 def split(the_string, delimiter=','):
     """
@@ -163,11 +171,13 @@ def split(the_string, delimiter=','):
     """
     return [x.strip() for x in the_string.split(',')]
 
+
 def string_to_number(input):
     try:
         return int(input)
     except ValueError:
         return float(input)
+
 
 def clean_kwargs(**kwargs):
     """
@@ -180,6 +190,7 @@ def clean_kwargs(**kwargs):
             data[key] = val
     return data
 
+
 def clean_dict(dictionary, **kwargs):
     """
     Returns a dictionary without any keys starting with kwargs['start'] (default '_' underscore).
@@ -190,6 +201,7 @@ def clean_dict(dictionary, **kwargs):
         if not key.startswith(start):
             data[key] = val
     return data
+
 
 def dict_has_key(dictionary, keys):
     """
@@ -222,6 +234,7 @@ def dict_has_key(dictionary, keys):
     else:
         return True
 
+
 def dict_find_key(symbol_dic, val):
     """
     Find a key of a dictionary for a given key.
@@ -234,6 +247,7 @@ def dict_find_key(symbol_dic, val):
     :rtype: any valid dict key type
     """
     return [k for k, v in symbol_dic.iteritems() if v == val][0]
+
 
 def dict_has_value(dictionary, keys, value):
     """
@@ -270,6 +284,7 @@ def dict_has_value(dictionary, keys, value):
     else:
         return False
 
+
 def dict_set_value(dictionary, keys, value):
     """
     Set dictionary value based on a given list of keys
@@ -297,6 +312,7 @@ def dict_set_value(dictionary, keys, value):
          dictionary = dictionary.setdefault(key, {})
     dictionary[keys[-1]] = value
 
+
 def dict_get_value(dictionary, keys):
     """
     Get dictionary value based on a given list of keys
@@ -321,6 +337,7 @@ def dict_get_value(dictionary, keys):
     for key in keys[:-1]:
          dictionary = dictionary.setdefault(key, {})
     return dictionary[keys[-1]]
+
 
 def dict_merge(original, changes):
     """
@@ -364,6 +381,7 @@ def dict_merge(original, changes):
             dict_merge(value, changes[key])
     return changes
 
+
 def dict_diff(dict2, dict1):
     """
     Returns the differences between two dictionarys.
@@ -389,6 +407,7 @@ def dict_diff(dict2, dict1):
     modified = {o : (dict1[o], dict2[o]) for o in intersect_keys if dict1[o] != dict2[o]}
     same = set(o for o in intersect_keys if dict1[o] == dict2[o])
     return added, removed, modified, same
+
 
 def fopen(*args, **kwargs):
     """
@@ -423,6 +442,7 @@ def fopen(*args, **kwargs):
         fcntl.fcntl(fhandle.fileno(), fcntl.F_SETFD, old_flags | FD_CLOEXEC)
     return fhandle
 
+
 def save_file(filename, content, mode = None):
     """
     A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
@@ -439,6 +459,7 @@ def save_file(filename, content, mode = None):
     f = fopen(filename, mode)
     f.write(content)
     f.close()
+
 
 def read_file(filename, mode = None):
     """
@@ -458,6 +479,7 @@ def read_file(filename, mode = None):
 def file_last_modified(path_to_file):
     return os.path.getmtime(path_to_file)
 
+
 def percentage(part, whole):
     """
     Return a float representing a percentage of part against the whole.
@@ -469,6 +491,7 @@ def percentage(part, whole):
     :return:
     """
     return 100 * float(part)/float(whole)
+
 
 def percentile(data_list, percent, key=lambda x:x):
     """
@@ -493,7 +516,17 @@ def percentile(data_list, percent, key=lambda x:x):
     d1 = key(data_list[int(c)]) * (k-f)
     return d0+d1
 
-def search_dictionary(arguments, haystack, allowed_keys, limiter, operation):
+
+
+def search_instance(arguments, haystack, allowed_keys, limiter, operation, status):
+    if limiter is None:
+        limiter = .89
+
+    if limiter > .99999999:
+        limiter = .99
+    elif limiter < .10:
+        limiter = .10
+
     attrs = []
     for attr, value in arguments.iteritems():
         if attr in allowed_keys:
@@ -504,9 +537,16 @@ def search_dictionary(arguments, haystack, allowed_keys, limiter, operation):
                     'limiter': limiter,
                 }
             )
-    return do_search_dictionary(attrs, haystack, allowed_keys, limiter, operation)
 
-def do_search_dictionary(attributes, haystack, allowed_keys, limiter=None, operation=None):
+    return do_search_instance(attrs,
+                              haystack,
+                              allowed_keys,
+                              limiter=limiter,
+                              operation=operation,
+                              status=status)
+
+
+def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None, status=None):
     """        
     Does the actual search of the devices. It scans through each device, and searches for any
     supplied attributes.
@@ -520,9 +560,11 @@ def do_search_dictionary(attributes, haystack, allowed_keys, limiter=None, opera
     # logger.debug("in _search... {attributes}", attributes=attributes)
 
     if limiter is None:
-        operation = .85
+        operation = .89
     if operation is None:
         operation = "any"
+    if status is None:
+        status = 1
     if isinstance(attributes, list) is False:
         raise YomboWarning("Attributes must be a list.")
     for attr in attributes:
@@ -545,7 +587,7 @@ def do_search_dictionary(attributes, haystack, allowed_keys, limiter=None, opera
     stringDiff = SequenceMatcher()
 
     # used when returning all
-    devices = {}
+    items = {}
 
     # used when return highest
     best_ratio = 0
@@ -555,32 +597,37 @@ def do_search_dictionary(attributes, haystack, allowed_keys, limiter=None, opera
     key_list = {}
     sorted_list = None
 
-    for device_id, device in haystack.iteritems():
+    for item_id, item in haystack.iteritems():
+        # make sure instance is active..if it has a status.
+        if hasattr(item, 'status'):
+            if item.status != status:
+                continue
+
         for attr in attributes:
-            stringDiff.set_seq1(attr['value'])
+            stringDiff.set_seq1(str(attr['value']))
             # try:
-            stringDiff.set_seq2(getattr(device, attr['field']))
+            stringDiff.set_seq2(str(getattr(item, attr['field'])))
             # except TypeError:
             #     continue  # might get here, even though it's not a string. Catch it!
             ratio = stringDiff.ratio()
             if operation == "any":
                 if ratio > attr['limiter']:
-                    devices[device.device_id] = device
+                    item[item_id] = item
             else:
                 # if this is the best ratio so far - save it and the value
                 if ratio > best_ratio:
                     best_ratio = ratio
                     best_limiter = attr['limiter']
-                    best_key = device_id
-                    best_match = device
+                    best_key = item_id
+                    best_match = item
 
                 # return a list of the top 5 key matches on failure.
-                key_list[ratio] = {'key': device_id, 'value': device, 'ratio': ratio}
+                key_list[ratio] = {'key': item_id, 'value': item, 'ratio': ratio}
                 sorted_list = OrderedDict(
                     sorted(key_list.iteritems(), key=lambda tup: tup[1]['ratio'], reverse=True))
 
     if operation == "any":
-        return devices
+        return items
     else:
         return (
             best_ratio >= best_limiter,  # the part that does the actual check.
@@ -589,26 +636,29 @@ def do_search_dictionary(attributes, haystack, allowed_keys, limiter=None, opera
             best_ratio,
             sorted_list)
 
-def get_command(commandSearch):
-    """
-    Returns a pointer to a command.
+#
+# def get_command(commandSearch):
+#     """
+#     Returns a pointer to a command.
+#
+#     .. note::
+#
+#        This shouldn't be used by modules, instead, use the pre-defined pointer
+#        *self._Commands*, see: :py:func:`get_commands`.
+#
+#     :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
+#     :type commandSearch: string - Command UUID or Command Label.
+#     :return: The pointer to a single command.
+#     :rtype: object
+#     """
+#     return get_command('yombo.gateway.lib.commands')._search(commandSearch)
 
-    .. note::
-
-       This shouldn't be used by modules, instead, use the pre-defined pointer
-       *self._Commands*, see: :py:func:`get_commands`.
-
-    :param commandSearch: Search for a given command, by cmdUUID or label. cmdUUID is preferred.
-    :type commandSearch: string - Command UUID or Command Label.
-    :return: The pointer to a single command.
-    :rtype: object
-    """
-    return get_command('yombo.gateway.lib.commands')._search(commandSearch)
 
 def get_method_definition_level(meth):
     for cls in inspect.getmro(meth.im_class):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
+
 
 @memoize_ttl(3600)
 def get_local_network_info(ethernet_name = None):
@@ -757,6 +807,7 @@ def subnetwork_to_ip_range(subnetwork):
 
     raise ValueError("invalid subnetwork")
 
+
 def get_external_ip_address_v4():
     """
     Get the IP address of this machine as seen from the outside world.  THis
@@ -789,11 +840,14 @@ def get_external_ip_address_v4():
     r = http.request("GET", "https://yombo.net/tools/clientip.php")
     return r.data.strip()
 
+
 def ip_address_to_int(address):
     return struct_unpack("!I", inet_aton(address))[0]
 
+
 def int_to_ip_address(address):
     return inet_ntoa(struct_pack("!I", address))
+
 
 def random_string(**kwargs):
     """
@@ -827,8 +881,10 @@ def random_string(**kwargs):
         lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
         return "".join(lst)
 
+
 def human_alpabet():
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
+
 
 def pretty_date(time=False):
     """
@@ -896,6 +952,7 @@ def pretty_date(time=False):
         return "%s %s" % (time_count, time_ago)
     return str(day_diff / 365) + " years ago"
 
+
 def generate_uuid(**kwargs):
     """
     Create a 30 character UUID, where only 26 of the characters are random.
@@ -952,6 +1009,7 @@ def generate_uuid(**kwargs):
     tempit = uuid + subtype + maintype
     return tempit
 
+
 def global_invoke_all(hook, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
@@ -964,6 +1022,7 @@ def global_invoke_all(hook, **kwargs):
     lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
     modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     return dict_merge(modules_results, lib_results)
+
 
 def get_component(name):
     """
@@ -987,6 +1046,7 @@ def get_component(name):
     except KeyError:
         raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
 
+
 def is_string_bool(value=None):
     """
     Returns a True/False/None based on the string. If nothing is found, "YomboWarning" is raised.
@@ -1003,6 +1063,7 @@ def is_string_bool(value=None):
         elif str(value).lower() == 'none':
             return None
     raise YomboWarning("String is not true, false, or none.")
+
 
 def is_true_false(input, only_bool=False):
     """
@@ -1032,6 +1093,7 @@ def is_true_false(input, only_bool=False):
         else:
             return None
 
+
 def is_yes_no(input):
     """
     Tries to guess if input is a positive value (1, "1", True, "On", etc). If it is, returns "Yes", otherwise,
@@ -1043,6 +1105,7 @@ def is_yes_no(input):
         return "Yes"
     else:
         return "No"
+
 
 def is_one_zero(input):
     """
@@ -1058,6 +1121,7 @@ def is_one_zero(input):
     else:
         return 0
 
+
 def test_bit(int_type, offset):
     """
     Tests wether a specific bit is on or off for a given int.
@@ -1070,14 +1134,16 @@ def test_bit(int_type, offset):
     """
     mask = 1 << offset
     if (int_type & mask) > 0:
-      return 1
+        return 1
     else:
-      return 0
-    return(int_type & mask)
+        return 0
+    # return int_type & mask
+
 
 class ViewAsObject(object):
     def __init__(self, d):
         self.__dict__ = d
+
 
 def sleep(secs):
     """
@@ -1103,23 +1169,25 @@ def sleep(secs):
     """
     return deferLater(reactor, secs, lambda: None)
 
-def hashid_encode(input, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
+
+def hashid_encode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
     """
     Encodes an int and returns a string. This typically shortens the length and is great for
     showing users a better representation of a large int - if they don't care about the actual value.
 
-    :param input: Int - Input value to encode to a string.
+    :param input_value: Int - Input value to encode to a string.
     :param min_length: Int - Minimum length string should be. Will pad if required.
     :param salt: String - A salt to mangle the value. This isn't secure!
     :param alphabet: String -
     :return:
     """
     hashid = Hashids(salt, min_length, alphabet)
-    return hashid.encode(input)
+    return hashid.encode(input_value)
 
-def hashid_decode(input, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
+
+def hashid_decode(input_value, min_length=2, salt='', alphabet='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvxyz234'):
     hashid = Hashids(salt, min_length, alphabet)
-    return hashid.decode(input)
+    return hashid.decode(input_value)
 
 # basic conversions
 
@@ -1139,6 +1207,7 @@ unit_converters = {
     'btu_kwh': lambda x: x*0.00029307107017,  # kilowatt-hour
     'kwh_btu': lambda x: x*3412.14163312794,  # btu
 }
+
 
 def unit_convert(unit_type, unit_size):
     """
@@ -1182,6 +1251,7 @@ def is_json(myjson):
         return False
     return True
 
+
 def is_msgpack(mymsgpack):
     """
     Helper function to determine if data is msgpack or not.
@@ -1195,12 +1265,14 @@ def is_msgpack(mymsgpack):
         return False
     return True
 
+
 @memoize_
 def is_freebsd():
     """
     Returns if the host is freebsd or not
     """
     return sys.platform.startswith('freebsd')
+
 
 @memoize_
 def is_linux():
@@ -1209,6 +1281,7 @@ def is_linux():
     """
     return sys.platform.startswith('linux')
 
+
 @memoize_
 def is_windows():
     """
@@ -1216,12 +1289,14 @@ def is_windows():
     """
     return sys.platform.startswith('win')
 
+
 @memoize_
 def is_sunos():
     """
     Returns if the host is sunos or not
     """
     return sys.platform.startswith('sunos')
+
 
 @memoize_
 def is_fcntl_available(check_sunos=False):

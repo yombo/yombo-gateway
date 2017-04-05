@@ -329,6 +329,7 @@ class Loader(YomboLibrary, object):
             library._InputTypes = self.loadedLibraries['inputtypes']
             library._Libraries = self.loadedLibraries
             library._Loader = self
+            library._LocalDB = self.loadedLibraries['localdb']
             library._Modules = self._moduleLibrary
             library._Notifications = self.loadedLibraries['notifications']
             library._Localize = self.loadedLibraries['localize']

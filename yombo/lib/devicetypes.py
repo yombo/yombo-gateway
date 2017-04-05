@@ -199,7 +199,7 @@ class DeviceTypes(YomboLibrary):
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def add_device_type(self, record, test_device_type = False):
+    def add_device_type(self, record, test_device_type=False):
         """
         Add a device_type based on data from a row in the SQL database.
 
@@ -567,10 +567,6 @@ class DeviceType:
         self.status = device_type['status']
         self.created = device_type['created']
         self.updated = device_type['updated']
-        # if len(device_type['commands']) > 0:
-        #     self.commands = device_type['commands'].split(',')
-        # else:
-        #     self.commands = []
         self.commands = {}
 
 #        self.updated_srv = device_type.updated_srv
@@ -581,7 +577,15 @@ class DeviceType:
 
         :return:
         """
+        return self.load_commands()
 
+    def load_commands(self):
+        """
+        Loads available commands from the database. This should only be called when a device type is loaded,
+        notification that device type has been updated, or when device type commands have changed.
+         
+        :return: 
+        """
         def set_commands(command_ids):
             logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
             for command_id in command_ids:

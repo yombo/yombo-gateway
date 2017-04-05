@@ -128,7 +128,7 @@ class VoiceCmds(YomboLibrary):
 
     def __contains__(self, command_requested):
         try:
-            self.get_command(command_requested)
+            self.get(command_requested)
             return True
         except:
             return False
@@ -144,7 +144,7 @@ class VoiceCmds(YomboLibrary):
         self.voice_command_strings = FuzzySearch(None, .80)
         self.voice_command_data = {}
 
-        self.commandsByVoice = self._Libraries['commands'].get_commands_by_voice()
+        self.commandsByVoice = self._Commands.get_commands_by_voice()
 
     def _modules_loaded_(self, **kwargs):
         """

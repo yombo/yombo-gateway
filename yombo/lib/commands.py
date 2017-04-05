@@ -19,11 +19,10 @@ The command (singular) class represents one command.
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils.fuzzysearch import FuzzySearch
-
+from yombo.utils import search_instance, do_search_instance
 logger = get_logger('library.commands')
 
 class Commands(YomboLibrary):
@@ -50,14 +49,14 @@ class Commands(YomboLibrary):
         :param command_requested: The command UUID or command label to search for.
         :type command_requested: string
         """
-        return self.get_command(command_requested)
+        return self.get(command_requested)
 
     def __len__(self):
-        return len(self.__yombocommands)
+        return len(self.commands)
 
     def __contains__(self, command_requested):
         try:
-            self.get_command(command_requested)
+            self.get(command_requested)
             return True
         except:
             return False
@@ -70,19 +69,18 @@ class Commands(YomboLibrary):
         library.
         :type loader: Instance of Loader
         """
-        self.start_deferred = None  # Prevents loader from moving on past _start_ until we are done.
-        self.__yombocommands = {}
-        self.__yombocommandsByName = FuzzySearch(None, .92)
-        self.__yombocommandsByVoice = FuzzySearch(None, .92)
-        self.local_db = self._Libraries['localdb']
+        self.load_deferred = None  # Prevents loader from moving on past _start_ until we are done.
+        self.commands = {}
+        self.__yombocommandsByVoice = {}
+        self.command_search_attributes = ['command_id', 'label', 'machine_label', 'description', 'status']
 
     def _load_(self):
         """
         Loads all commands from DB to various arrays for quick lookup.
         """
         self.__loadCommands()
-        self.start_deferred = Deferred()
-        return self.start_deferred
+        self.load_deferred = Deferred()
+        return self.load_deferred
 
     def _start_(self):
         """
@@ -91,22 +89,21 @@ class Commands(YomboLibrary):
         pass
 
     def _stop_(self):
-        if self.start_deferred is not None and self.start_deferred.called is False:
-            self.start_deferred.callback(1)  # if we don't check for this, we can't stop!
+        if self.load_deferred is not None and self.load_deferred.called is False:
+            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def _clear_(self):
         """
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. B{Do not call this function!}
         """
-        self.__yombocommands.clear()
-        self.__yombocommandsByName.clear()
+        self.commands.clear()
         self.__yombocommandsByVoice.clear()
 
     def _reload_(self):
         self.__loadCommands()
 
-    def get_command(self, command_requested):
+    def get(self, command_requested, limiter=None, status=None):
         """
         Returns details about a command. If not loaded, will force load a command from the database.
 
@@ -118,16 +115,66 @@ class Commands(YomboLibrary):
         :raises YomboWarning: Raised when command cannot be found.
         :param command_requested: The command ID or command label to search for.
         :type command_requested: string
-        :return: Pointer to array of all command.
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device to check for.
+        :return: Pointer to requested device.
+        :type status: int
         :rtype: dict
         """
-        if command_requested in self.__yombocommands:
-            return self.__yombocommands[command_requested]
+        if command_requested in self.commands:
+            return self.commands[command_requested]
         else:
+            attrs = [
+                {
+                    'field': 'command_id',
+                    'value': command_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'label',
+                    'value': command_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'machine_label',
+                    'value': command_requested,
+                    'limiter': limiter,
+                }
+            ]
             try:
-                return self.__yombocommandsByName[command_requested]
-            except YomboFuzzySearchError, e:
-                raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
+                logger.debug("Get is about to call search...: %s" % command_requested)
+                # found, key, item, ratio, others = self._search(attrs, operation="highest")
+                found, key, item, ratio, others = do_search_instance(attrs, self.commands,
+                                                                     self.command_search_attributes,
+                                                                     limiter=limiter,
+                                                                     operation="highest",
+                                                                     status=status)
+                logger.debug("found device by search: {device_id}", device_id=key)
+                if found:
+                    return self.commands[key]
+                else:
+                    raise KeyError("Command not found: %s" % command_requested)
+            except YomboWarning, e:
+                raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
+
+    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
+        """
+        Search for commands based on attributes for all commands.
+
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device to check for.
+        :type status: int
+        :param kwargs: Named params specifiy attribute name = value keypairs. 
+        :return: 
+        """
+        return search_instance(kwargs,
+                               self.commands,
+                               self.command_search_attributes,
+                               _limiter,
+                               _operation,
+                               _status)
 
     def get_commands_by_voice(self):
         """
@@ -146,7 +193,7 @@ class Commands(YomboLibrary):
         :return:
         """
         results = {}
-        for command_id, command in self.__yombocommands.iteritems():
+        for command_id, command in self.commands.iteritems():
             if command.public <= 1:
                 results[command_id] = command
         return results
@@ -158,7 +205,7 @@ class Commands(YomboLibrary):
         :return:
         """
         results = {}
-        for command_id, command in self.__yombocommands.iteritems():
+        for command_id, command in self.commands.iteritems():
             if command.public == 2:
                 results[command_id] = command
         return results
@@ -172,12 +219,11 @@ class Commands(YomboLibrary):
 
         self._clear_()
 
-        commands = yield self.local_db.get_commands()
+        commands = yield self._LocalDB.get_commands()
         for command in commands:
             self._addCommand(command)
-        logger.debug("Done load_commands: {yombocommands}", yombocommands=self.__yombocommands)
-        self.start_deferred.callback(10)
-#        print self.__yombocommandsByName
+        logger.debug("Done load_commands: {commands}", commands=self.commands)
+        self.load_deferred.callback(10)
 
     def _addCommand(self, record, testCommand = False):
         """
@@ -191,12 +237,11 @@ class Commands(YomboLibrary):
         """
         logger.debug("record: {record}", record=record)
         cmd_id = record.id
-        self.__yombocommands[cmd_id] = Command(record)
-        self.__yombocommandsByName[record.label] = self.__yombocommands[cmd_id]
+        self.commands[cmd_id] = Command(record)
         if record.voice_cmd is not None:
-            self.__yombocommandsByVoice[record.voice_cmd] = self.__yombocommands[cmd_id]
+            self.__yombocommandsByVoice[record.voice_cmd] = self.commands[cmd_id]
 #        if testCommand:
-#            return self.__yombocommands[command_id]
+#            return self.commands[command_id]
 
     @inlineCallbacks
     def dev_command_add(self, data, **kwargs):
@@ -256,7 +301,7 @@ class Commands(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def dev__commanddelete(self, command_id, **kwargs):
+    def dev_command_delete(self, command_id, **kwargs):
         """
         Delete a command at the Yombo server level, not at the local gateway level.
 

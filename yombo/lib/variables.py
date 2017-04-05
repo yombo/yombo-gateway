@@ -31,12 +31,11 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
-from yombo.utils.fuzzysearch import FuzzySearch
+# from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, split, global_invoke_all, string_to_number
-from yombo.utils.maxdict import MaxDict
+# from yombo.utils import random_string, split, global_invoke_all, string_to_number
+# from yombo.utils.maxdict import MaxDict
 from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
 

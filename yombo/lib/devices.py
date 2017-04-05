@@ -77,7 +77,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, split, global_invoke_all, string_to_number, search_dictionary, do_search_dictionary
+from yombo.utils import random_string, split, global_invoke_all, string_to_number, search_instance, do_search_instance
 from yombo.utils.maxdict import MaxDict
 from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
@@ -447,7 +447,7 @@ class Devices(YomboLibrary):
         for device_id, device in self.devices.iteritems():
             yield getattr(device, field)
 
-    def get(self, device_requested, limiter=None):
+    def get(self, device_requested, limiter=None, status=None):
         """
         Performs the actual device search.
 
@@ -459,19 +459,13 @@ class Devices(YomboLibrary):
         :raises YomboDeviceError: Raised when device cannot be found.
         :param device_requested: The device UUID or device label to search for.
         :type deviceRequested: string
-        :param limiter_override: Default .89. A value between .5 and .99. Sets how close of a match it the search should be.
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device to check for.
+        :type status: int
         :return: Pointer to requested device.
         :rtype: dict
         """
-        if limiter is None:
-            limiter = .89
-
-        if limiter > .99999999:
-            limiter = .99
-        elif limiter < .10:
-            limiter = .10
-
         # logger.debug("looking for: {device_requested}", device_requested=device_requested)
         if device_requested in self.devices:
             logger.debug("found by device id! {device_requested}", device_id=device_requested)
@@ -492,28 +486,36 @@ class Devices(YomboLibrary):
             try:
                 logger.debug("Get is about to call search...: %s" % device_requested)
                 # found, key, item, ratio, others = self._search(attrs, operation="highest")
-                found, key, item, ratio, others = do_search_dictionary(attrs, self.devices,
-                                                                       self.device_search_attributes,
-                                                                       limiter=limiter,
-                                                                       operation="highest")
+                found, key, item, ratio, others = do_search_instance(attrs, self.devices,
+                                                                     self.device_search_attributes,
+                                                                     limiter=limiter,
+                                                                     operation="highest",
+                                                                     status=status)
                 logger.debug("found device by search: {device_id}", device_id=key)
                 if found:
                     return self.devices[key]
                 else:
                     raise KeyError("Device not found: %s" % device_requested)
             except YomboWarning, e:
-                raise KeyError('Searched for %s, but found had problems: %s' % (device_requested, e))
+                raise KeyError('Searched for %s, but had problems: %s' % (device_requested, e))
 
-    def search(self, _limiter=None, _operation=None, **kwargs):
+    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
         """
-        Search for various attributes in devices.
+        Search for commands based on attributes for all devices.
         
-        :param _limiter: 
-        :param _operation: 
-        :param kwargs: 
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device to check for.
+        :type status: int
+        :param kwargs: Named params specifiy attribute name = value keypairs. 
         :return: 
         """
-        return search_dictionary(kwargs, self.devices, self.device_search_attributes, _limiter, _operation)
+        return search_instance(kwargs,
+                               self.devices,
+                               self.device_search_attributes,
+                               _limiter,
+                               _operation,
+                               _status)
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):
@@ -524,6 +526,7 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
+        logger.debug("Add new device.  Data: {data}", data=data)
         api_data = {
             'gateway_id': self.gwid,
             'label': data['label'],
@@ -1039,7 +1042,6 @@ class Device:
         self.device_variables = {}
         self.device_route = {}  # Destination module to send commands to
         self._helpers = {}  # Helper class provided by route module that can provide additional features.
-        self._CommandsLibrary = self._DevicesLibrary._Libraries['commands']
 
         # this registers the device's device type so others know what kind of device this is.
 
@@ -1159,7 +1161,7 @@ class Device:
         if isinstance(cmd, Command):
             cmdobj = cmd
         else:
-            cmdobj = self._CommandsLibrary.get_command(cmd)
+            cmdobj = self._Commands.get(cmd)
 
         # print("cmdobj is: %s" % cmdobj)
 
