@@ -449,16 +449,23 @@ class Devices(YomboLibrary):
 
     def get(self, device_requested, limiter=None, status=None):
         """
-        Performs the actual device search.
+        Performs the actual search.
 
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
-           find commands: `self._Devices['8w3h4sa']`
+           find devices:
+           
+            >>> self._Devices['8w3h4sa']
+        
+        or:
+        
+            >>> self._Devices['porch light']
 
-        :raises YomboDeviceError: Raised when device cannot be found.
-        :param device_requested: The device UUID or device label to search for.
-        :type deviceRequested: string
+        :raises YomboWarning: For invalid requests.
+        :raises KeyError: When item requested cannot be found.
+        :param device_requested: The device ID or device label to search for.
+        :type device_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
         :param status: Deafult: 1 - The status of the device to check for.
@@ -467,9 +474,22 @@ class Devices(YomboLibrary):
         :rtype: dict
         """
         # logger.debug("looking for: {device_requested}", device_requested=device_requested)
+        if limiter is None:
+            limiter = .89
+
+        if limiter > .99999999:
+            limiter = .99
+        elif limiter < .10:
+            limiter = .10
+
+        if status is None:
+            status = 1
+
         if device_requested in self.devices:
-            logger.debug("found by device id! {device_requested}", device_id=device_requested)
-            return self.devices[device_requested]
+            item = self.devices[device_requested]
+            if item.status != status:
+                raise KeyError("Requested device found, but has invalid status: %s" % item.status)
+            return item
         else:
             attrs = [
                 {

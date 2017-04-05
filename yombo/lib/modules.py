@@ -86,7 +86,8 @@ class Modules(YomboLibrary):
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
         self.hooks_called = MaxDict(200, {})
-        self.module_search_attributes = ['_module_id', '_label', '_machine_label', '_description', '_status']
+        self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
+            'short_description', 'description_formatting', '_public', '_status']
 
     def _load_(self):
         """
@@ -623,23 +624,33 @@ class Modules(YomboLibrary):
 
             >>> someModule = self._Modules['Homevision']  #by name
 
-        :raises KeyError: Raised when module cannot be found.
-        :param module_requested: The module ID or module label to search for.
+        :raises YomboWarning: For invalid requests.
+        :raises KeyError: When item requested cannot be found.
+        :param module_requested: The module id or device label to search for.
         :type module_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
         :param status: Deafult: 1 - The status of the device to check for.
         :type status: int
-        :return: Pointer requested module.
+        :return: Pointer to requested device.
         :rtype: dict
         """
+        if limiter is None:
+            limiter = .89
+
+        if limiter > .99999999:
+            limiter = .99
+        elif limiter < .10:
+            limiter = .10
 
         if status is None:
             status = 1
 
         if module_requested in self.modules:
-#            logger.debug("Looking for {requestedItem} by UUID!", requestedItem=requestedItem)
-            return self.modules[module_requested]
+            item = self.modules[module_requested]
+            if item.status != status:
+                raise KeyError("Requested mdule found, but has invalid status: %s" % item.status)
+            return item
         else:
             attrs = [
                 {
@@ -670,9 +681,9 @@ class Modules(YomboLibrary):
                                                                      limiter=limiter,
                                                                      operation="highest",
                                                                      status=status)
-                logger.debug("found device by search: {device_id}", device_id=key)
+                logger.debug("found module by search: {device_id}", device_id=key)
                 if found:
-                    return self.modules[key]
+                    return item
                 else:
                     raise KeyError("Module not found: %s" % module_requested)
             except YomboWarning, e:

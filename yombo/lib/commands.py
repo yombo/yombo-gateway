@@ -72,7 +72,8 @@ class Commands(YomboLibrary):
         self.load_deferred = None  # Prevents loader from moving on past _start_ until we are done.
         self.commands = {}
         self.__yombocommandsByVoice = {}
-        self.command_search_attributes = ['command_id', 'label', 'machine_label', 'description', 'status']
+        self.command_search_attributes = ['command_id', 'label', 'machine_label', 'description', 'always_load',
+            'voice_cmd', 'cmd', 'status']
 
     def _load_(self):
         """
@@ -105,25 +106,46 @@ class Commands(YomboLibrary):
 
     def get(self, command_requested, limiter=None, status=None):
         """
-        Returns details about a command. If not loaded, will force load a command from the database.
+        Performs the actual search.
 
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
-           find commands: `self._Commands['8w3h4sa']`
+           find commands:
+           
+            >>> self._Commands['sz45q3423']
+        
+        or:
+        
+            >>> self._Commands['on']
 
-        :raises YomboWarning: Raised when command cannot be found.
+        :raises YomboWarning: For invalid requests.
+        :raises KeyError: When item requested cannot be found.
         :param command_requested: The command ID or command label to search for.
         :type command_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device to check for.
-        :return: Pointer to requested device.
+        :param status: Deafult: 1 - The status of the command to check for.
         :type status: int
+        :return: Pointer to requested command.
         :rtype: dict
         """
+        if limiter is None:
+            limiter = .89
+
+        if limiter > .99999999:
+            limiter = .99
+        elif limiter < .10:
+            limiter = .10
+
+        if status is None:
+            status = 1
+
         if command_requested in self.commands:
-            return self.commands[command_requested]
+            item = self.commands[command_requested]
+            if item.status != status:
+                raise KeyError("Requested command found, but has invalid status: %s" % item.status)
+            return item
         else:
             attrs = [
                 {
@@ -150,9 +172,9 @@ class Commands(YomboLibrary):
                                                                      limiter=limiter,
                                                                      operation="highest",
                                                                      status=status)
-                logger.debug("found device by search: {device_id}", device_id=key)
+                logger.debug("found command by search: {command_id}", command_id=key)
                 if found:
-                    return self.commands[key]
+                    return item
                 else:
                     raise KeyError("Command not found: %s" % command_requested)
             except YomboWarning, e:
@@ -164,7 +186,7 @@ class Commands(YomboLibrary):
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device to check for.
+        :param status: Deafult: 1 - The status of the command to check for.
         :type status: int
         :param kwargs: Named params specifiy attribute name = value keypairs. 
         :return: 
@@ -417,7 +439,7 @@ class Command:
 
         self.command_id = command.id
         self.cmd = command.machine_label
-        self.machine_label = command.machine_label
+        self.machine_label = self.cmd
         self.label = command.label
         self.description = command.description
         self.voice_cmd = command.voice_cmd

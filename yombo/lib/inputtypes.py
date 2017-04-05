@@ -25,6 +25,7 @@ from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
+from yombo.utils import search_instance, do_search_instance
 
 logger = get_logger('library.inputtypes')
 
@@ -67,10 +68,9 @@ class InputTypes(YomboLibrary):
         Load() stage.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
-
         self.input_types = {}
-        self.input_types_by_name = FuzzySearch(None, .92)
-        self._LocalDB = self._Libraries['localdb']
+        self.input_type_search_attributes = ['input_type_id', 'category_id', 'label', 'machine_label', 'description',
+            'status', 'always_load', 'public']
 
     def _load_(self):
         """
@@ -84,14 +84,6 @@ class InputTypes(YomboLibrary):
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _clear_(self):
-        """
-        Clear all devices. Should only be called by the loader module
-        during a reconfiguration event. B{Do not call this function!}
-        """
-        self.input_types.clear()
-        self.input_types_by_name.clear()
-
     def _reload_(self):
         self.__load_input_types()
 
@@ -103,35 +95,106 @@ class InputTypes(YomboLibrary):
         """
         return self.input_types.copy()
 
-    def get(self, input_type_requested):
+    def get(self, input_type_requested, limiter=None, status=None):
         """
         Performs the actual search.
 
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
-           find commands: `self._Commands['8w3h4sa']`
+           find devices:
 
-        :raises YomboWarning: Raised when command input type be found.
+            >>> self._InputTypes['13ase45']
+
+        or:
+
+            >>> self._InputTypes['numeric']
+
+        :raises YomboWarning: For invalid requests.
+        :raises KeyError: When item requested cannot be found.
         :param input_type_requested: The input type ID or input type label to search for.
         :type input_type_requested: string
-        :return: A dict containing details about the input type
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the input type to check for.
+        :type status: int
+        :return: Pointer to requested input type.
         :rtype: dict
         """
+        if limiter is None:
+            limiter = .89
+
+        if limiter > .99999999:
+            limiter = .99
+        elif limiter < .10:
+            limiter = .10
+
+        if status is None:
+            status = 1
+
         if input_type_requested in self.input_types:
-            return self.input_types[input_type_requested]
+            item = self.input_types[input_type_requested]
+            if item.status != status:
+                raise KeyError("Requested input type found, but has invalid status: %s" % item.status)
+            return item
         else:
+            attrs = [
+                {
+                    'field': 'input_type_id',
+                    'value': input_type_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'label',
+                    'value': input_type_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'machine_label',
+                    'value': input_type_requested,
+                    'limiter': limiter,
+                }
+            ]
             try:
-                return self.input_types_by_name[input_type_requested]
-            except YomboFuzzySearchError, e:
-                raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
+                logger.debug("Get is about to call search...: %s" % input_type_requested)
+                # found, key, item, ratio, others = self._search(attrs, operation="highest")
+                found, key, item, ratio, others = do_search_instance(attrs, self.input_types,
+                                                                     self.input_type_search_attributes,
+                                                                     limiter=limiter,
+                                                                     operation="highest",
+                                                                     status=status)
+                logger.debug("found input type by search: {input_type_id}", input_type_id=key)
+                if found:
+                    return item
+                else:
+                    raise KeyError("Command not found: %s" % input_type_requested)
+            except YomboWarning, e:
+                raise KeyError('Searched for %s, but had problems: %s' % (input_type_requested, e))
+
+    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
+        """
+        Search for input type based on attributes for all input types.
+
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the input type to check for.
+        :type status: int
+        :param kwargs: Named params specifiy attribute name = value keypairs. 
+        :return: 
+        """
+        return search_instance(kwargs,
+                               self.input_types,
+                               self.input_type_search_attributes,
+                               _limiter,
+                               _operation,
+                               _status)
 
     @inlineCallbacks
     def _load_input_types(self):
         """
         Load the input types into memory.
         """
-        self._clear_()
+        self.input_types.clear()
 
         input_types = yield self._LocalDB.get_input_types()
         for input in input_types:
@@ -152,7 +215,6 @@ class InputTypes(YomboLibrary):
         logger.debug("record: {record}", record=record)
         input_type_id = record.id
         self.input_types[input_type_id] = InputType(record)
-        self.input_types_by_name[record.label] = self.input_types[input_type_id]
 #        if testCommand:
 #            return self.__yombocommands[command_id]
 
