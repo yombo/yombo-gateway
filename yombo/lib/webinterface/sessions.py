@@ -78,7 +78,7 @@ class Sessions(object):
 
         # print "active:sessions: %s" % self.active_sessions
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(300)  # Every 5 mintes, save sessions to disk, remove stale ones from RAM.
+        self._periodic_clean_sessions.start(3600)  # Every 5 mintes, save sessions to disk, remove stale ones from RAM.
 
     def _unload_(self):
         logger.debug("sessions:_unload_")

@@ -21,10 +21,9 @@ The input type (singular) class represents one input type.
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.utils import search_instance, do_search_instance
 
 logger = get_logger('library.inputtypes')
@@ -161,8 +160,7 @@ class InputTypes(YomboLibrary):
                 found, key, item, ratio, others = do_search_instance(attrs, self.input_types,
                                                                      self.input_type_search_attributes,
                                                                      limiter=limiter,
-                                                                     operation="highest",
-                                                                     status=status)
+                                                                     operation="highest")
                 logger.debug("found input type by search: {input_type_id}", input_type_id=key)
                 if found:
                     return item
@@ -171,23 +169,20 @@ class InputTypes(YomboLibrary):
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but had problems: %s' % (input_type_requested, e))
 
-    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
+    def search(self, _limiter=None, _operation=None, **kwargs):
         """
         Search for input type based on attributes for all input types.
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
         :param status: Deafult: 1 - The status of the input type to check for.
-        :type status: int
-        :param kwargs: Named params specifiy attribute name = value keypairs. 
         :return: 
         """
         return search_instance(kwargs,
                                self.input_types,
                                self.input_type_search_attributes,
                                _limiter,
-                               _operation,
-                               _status)
+                               _operation)
 
     @inlineCallbacks
     def _load_input_types(self):

@@ -519,23 +519,20 @@ class Devices(YomboLibrary):
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but had problems: %s' % (device_requested, e))
 
-    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
+    def search(self, _limiter=None, _operation=None, **kwargs):
         """
         Search for commands based on attributes for all devices.
         
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
         :param status: Deafult: 1 - The status of the device to check for.
-        :type status: int
-        :param kwargs: Named params specifiy attribute name = value keypairs. 
         :return: 
         """
         return search_instance(kwargs,
                                self.devices,
                                self.device_search_attributes,
                                _limiter,
-                               _operation,
-                               _status)
+                               _operation)
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):
@@ -1181,7 +1178,7 @@ class Device:
         if isinstance(cmd, Command):
             cmdobj = cmd
         else:
-            cmdobj = self._Commands.get(cmd)
+            cmdobj = self._DevicesLibrary._Commands.get(cmd)
 
         # print("cmdobj is: %s" % cmdobj)
 

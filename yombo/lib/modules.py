@@ -626,11 +626,11 @@ class Modules(YomboLibrary):
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
-        :param module_requested: The module id or device label to search for.
+        :param module_requested: The module id or module label to search for.
         :type module_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device to check for.
+        :param status: Deafult: 1 - The status of the module to check for.
         :type status: int
         :return: Pointer to requested device.
         :rtype: dict
@@ -648,8 +648,8 @@ class Modules(YomboLibrary):
 
         if module_requested in self.modules:
             item = self.modules[module_requested]
-            if item.status != status:
-                raise KeyError("Requested mdule found, but has invalid status: %s" % item.status)
+            if item._status != status:
+                raise KeyError("Requested mdule found, but has invalid status: %s" % item._status)
             return item
         else:
             attrs = [
@@ -679,9 +679,8 @@ class Modules(YomboLibrary):
                 found, key, item, ratio, others = do_search_instance(attrs, self.modules,
                                                                      self.module_search_attributes,
                                                                      limiter=limiter,
-                                                                     operation="highest",
-                                                                     status=status)
-                logger.debug("found module by search: {device_id}", device_id=key)
+                                                                     operation="highest")
+                logger.debug("found module by search: {module_id}", module_id=key)
                 if found:
                     return item
                 else:
@@ -689,20 +688,20 @@ class Modules(YomboLibrary):
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but found had problems: %s' % (module_requested, e))
 
-    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
+    def search(self, _limiter=None, _operation=None, **kwargs):
         """
-        Search for various attributes in modules.
+        Search for modules based on attributes for all modules.
 
-        :param _limiter: 
-        :param _operation: 
-        :param kwargs: 
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the module to check for.
         :return: 
         """
         for attr, value in kwargs.iteritems():
             if "_%s" % attr in self.module_search_attributes:
                 kwargs[attr]['field'] = "_%s" % attr
 
-        return search_instance(kwargs, self.modules, self.module_search_attributes, _limiter, _operation, _status)
+        return search_instance(kwargs, self.modules, self.module_search_attributes, _limiter, _operation)
 
     def modules_invoke_log(self, level, label, type, method, msg=""):
         """

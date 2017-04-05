@@ -518,7 +518,7 @@ def percentile(data_list, percent, key=lambda x:x):
 
 
 
-def search_instance(arguments, haystack, allowed_keys, limiter, operation, status):
+def search_instance(arguments, haystack, allowed_keys, limiter, operation):
     if limiter is None:
         limiter = .89
 
@@ -542,11 +542,10 @@ def search_instance(arguments, haystack, allowed_keys, limiter, operation, statu
                               haystack,
                               allowed_keys,
                               limiter=limiter,
-                              operation=operation,
-                              status=status)
+                              operation=operation)
 
 
-def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None, status=None):
+def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None):
     """        
     Does the actual search of the devices. It scans through each device, and searches for any
     supplied attributes.
@@ -563,8 +562,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
         operation = .89
     if operation is None:
         operation = "any"
-    if status is None:
-        status = 1
     if isinstance(attributes, list) is False:
         raise YomboWarning("Attributes must be a list.")
     for attr in attributes:
@@ -598,11 +595,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     sorted_list = None
 
     for item_id, item in haystack.iteritems():
-        # make sure instance is active..if it has a status.
-        if hasattr(item, 'status'):
-            if item.status != status:
-                continue
-
         for attr in attributes:
             stringDiff.set_seq1(str(attr['value']))
             # try:

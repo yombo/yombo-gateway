@@ -20,7 +20,7 @@ from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
-from yombo.utils import global_invoke_all
+from yombo.utils import search_instance, do_search_instance
 
 logger = get_logger('library.devicetypes')
 
@@ -49,7 +49,7 @@ class DeviceTypes(YomboLibrary):
         return self.get(device_type_requested)
 
     def __len__(self):
-        return len(self.device_types_by_id)
+        return len(self.device_types)
 
     def __contains__(self, device_type_requested):
         try:
@@ -59,22 +59,23 @@ class DeviceTypes(YomboLibrary):
             return False
 
     def __iter__(self):
-        return self.device_types_by_id.iteritems()
+        return self.device_types.iteritems()
 
     def _init_(self):
         """
         Setups up the basic framework. Nothing is loaded in here until the :poy:ref:_load_ stage.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
-        self.run_state = 1
+        self.library_state = 1
+        self.device_type_search_attributes = ['input_type_id', 'category_id', 'label', 'machine_label', 'description',
+            'status', 'always_load', 'public']
 
-        self.device_types_by_id = FuzzySearch({}, .99)
-        self.device_types_by_name = FuzzySearch({}, .89)
+        self.device_types = {}
 
         self._LocalDB = self._Libraries['localdb']
 
     def _load_(self):
-        self.run_state = 2
+        self.library_state = 2
         self._load_device_types()
         self.load_deferred = Deferred()
         return self.load_deferred
@@ -83,37 +84,103 @@ class DeviceTypes(YomboLibrary):
         """
         Loads all device types from DB to various arrays for quick lookup.
         """
-        self.run_state = 3
+        self.library_state = 3
 
     def _started_(self):
         # print "device types info:"
-        # for dt, data in self.device_types_by_id.iteritems():
+        # for dt, data in self.device_types.iteritems():
         #     print "dt: %s, commands: %s" % (data.label, data.commands)
         pass
 
-    def get(self, device_type_requested):
+    def get(self, device_type_requested, limiter=None, status=None):
         """
-        Gets a device type be device type id or by device type label.
+        Performs the actual search.
 
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
-           find commands: `self._DeviceTypes['8w3h4sa']`
+           find devices:
 
-        :raises YomboWarning: Raised when device type cannot be found.
-        :param device_type_requested: The device type ID ID or device type label to search for.
+            >>> self._DeviceTypes['13ase45']
+
+        or:
+
+            >>> self._DeviceTypes['numeric']
+
+        :raises YomboWarning: For invalid requests.
+        :raises KeyError: When item requested cannot be found.
+        :param device_type_requested: The device type ID or device type label to search for.
         :type device_type_requested: string
-        :return: A DeviceType instance.
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device type to check for.
+        :type status: int
+        :return: Pointer to requested device type.
         :rtype: dict
         """
-        # print "device_types_by_name: %s" % self.device_types_by_name
-        if device_type_requested in self.device_types_by_id:
-            return self.device_types_by_id[device_type_requested]
+        if limiter is None:
+            limiter = .89
+
+        if limiter > .99999999:
+            limiter = .99
+        elif limiter < .10:
+            limiter = .10
+
+        if status is None:
+            status = 1
+
+        if device_type_requested in self.device_types:
+            item = self.device_types[device_type_requested]
+            if item.status != status:
+                raise KeyError("Requested device type found, but has invalid status: %s" % item.status)
+            return item
         else:
+            attrs = [
+                {
+                    'field': 'device_type_id',
+                    'value': device_type_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'label',
+                    'value': device_type_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'machine_label',
+                    'value': device_type_requested,
+                    'limiter': limiter,
+                }
+            ]
             try:
-                return self.device_types_by_name[device_type_requested]
-            except YomboFuzzySearchError, e:
-                raise YomboWarning('Searched for %s, but no good matches found.' % e.searchFor)
+                logger.debug("Get is about to call search...: %s" % device_type_requested)
+                # found, key, item, ratio, others = self._search(attrs, operation="highest")
+                found, key, item, ratio, others = do_search_instance(attrs, self.device_types,
+                                                                     self.device_type_search_attributes,
+                                                                     limiter=limiter,
+                                                                     operation="highest")
+                logger.debug("found device type by search: {device_type_id}", device_type_id=key)
+                if found:
+                    return item
+                else:
+                    raise KeyError("Command not found: %s" % device_type_requested)
+            except YomboWarning, e:
+                raise KeyError('Searched for %s, but had problems: %s' % (device_type_requested, e))
+
+    def search(self, _limiter=None, _operation=None, **kwargs):
+        """
+        Search for device type based on attributes for all device types.
+
+        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
+        :type limiter_override: float
+        :param status: Deafult: 1 - The status of the device type to check for.
+        :return: 
+        """
+        return search_instance(kwargs,
+                               self.device_types,
+                               self.device_type_search_attributes,
+                               _limiter,
+                               _operation)
 
     @inlineCallbacks
     def ensure_loaded(self, device_type_id):
@@ -124,7 +191,7 @@ class DeviceTypes(YomboLibrary):
         :param device_type_id:
         :return:
         """
-        if device_type_id not in self.device_types_by_id:
+        if device_type_id not in self.device_types:
             dt = yield self._LocalDB.get_device_type(device_type_id)
             self.add_device_type(dt[0])
 
@@ -149,8 +216,8 @@ class DeviceTypes(YomboLibrary):
         :return: A list of command id's.
         :rtype: list
         """
-        if device_type_id in self.device_types_by_id:
-            return self.device_types_by_id[device_type_id].commands
+        if device_type_id in self.device_types:
+            return self.device_types[device_type_id].commands
         else:
             raise YomboWarning("Device type id doesn't exist: %s" % device_type_id, 200,
                 'device_type_commands', 'DeviceTypes')
@@ -162,7 +229,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         results = {}
-        for item_id, item in self.device_types_by_id.iteritems():
+        for item_id, item in self.device_types.iteritems():
             if item.public <= 1:
                 results[item_id] = item
         return results
@@ -174,7 +241,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         results = {}
-        for item_id, item in self.device_types_by_id.iteritems():
+        for item_id, item in self.device_types.iteritems():
             if item.public == 2:
                 results[item_id] = item
         return results
@@ -212,9 +279,8 @@ class DeviceTypes(YomboLibrary):
         logger.debug("record: {record}", record=record)
         record = record.__dict__
         dt_id = record['id']
-        self.device_types_by_id[dt_id] = DeviceType(record, self)
-        d = self.device_types_by_id[dt_id]._init_()
-        self.device_types_by_name[record['machine_label']] = self.device_types_by_id[dt_id]
+        self.device_types[dt_id] = DeviceType(record, self)
+        d = self.device_types[dt_id]._init_()
 
 #        if test_device_type:
 #            return self.__yombocommands[cmdUUID]

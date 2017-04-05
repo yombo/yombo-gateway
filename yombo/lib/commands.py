@@ -170,8 +170,7 @@ class Commands(YomboLibrary):
                 found, key, item, ratio, others = do_search_instance(attrs, self.commands,
                                                                      self.command_search_attributes,
                                                                      limiter=limiter,
-                                                                     operation="highest",
-                                                                     status=status)
+                                                                     operation="highest")
                 logger.debug("found command by search: {command_id}", command_id=key)
                 if found:
                     return item
@@ -180,23 +179,20 @@ class Commands(YomboLibrary):
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
 
-    def search(self, _limiter=None, _operation=None, _status=None, **kwargs):
+    def search(self, _limiter=None, _operation=None, **kwargs):
         """
         Search for commands based on attributes for all commands.
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
         :param status: Deafult: 1 - The status of the command to check for.
-        :type status: int
-        :param kwargs: Named params specifiy attribute name = value keypairs. 
         :return: 
         """
         return search_instance(kwargs,
                                self.commands,
                                self.command_search_attributes,
                                _limiter,
-                               _operation,
-                               _status)
+                               _operation)
 
     def get_commands_by_voice(self):
         """

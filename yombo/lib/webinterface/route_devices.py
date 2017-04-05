@@ -45,7 +45,7 @@ def route_devices(webapp):
             return page.render(
                 alerts=webinterface.get_alerts(),
                 devices=webinterface._Libraries['devices'].devices,
-                devicetypes=webinterface._DeviceTypes.device_types_by_id,
+                devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
                 )
 
@@ -64,7 +64,7 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
-            device_types = webinterface._DeviceTypes.device_types_by_id
+            device_types = webinterface._DeviceTypes.device_types
             # device_types_sorted = sorted(device_types, key=lambda x: device_types[x].label)
             device_types_sorted = sorted(device_types, key=lambda x: device_types[x].label)
 

@@ -34,7 +34,7 @@ def route_devtools_debug(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/debug/device_types", "Device Types")
             return page.render(alerts=webinterface.get_alerts(),
-                               device_types=webinterface._DeviceTypes.device_types_by_id,
+                               device_types=webinterface._DeviceTypes.device_types,
                                )
 
         @webapp.route('/device_types/<string:device_type_id>/details')
@@ -42,7 +42,7 @@ def route_devtools_debug(webapp):
         @run_first()
         def page_devtools_debug_device_type_details(webinterface, request, session, device_type_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/device_types/details.html')
-            device_type = webinterface._DeviceTypes.device_types_by_id[device_type_id]
+            device_type = webinterface._DeviceTypes.device_types[device_type_id]
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/debug/device_types", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/debug/device_types/%s/details" % device_type.device_type_id, device_type.label)
