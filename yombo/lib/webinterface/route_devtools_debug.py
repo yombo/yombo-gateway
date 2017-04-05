@@ -26,6 +26,30 @@ def route_devtools_debug(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
+        @webapp.route('/commands')
+        @require_auth()
+        @run_first()
+        def page_devtools_debug_commands(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/commands/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/commands", "Commands")
+            return page.render(alerts=webinterface.get_alerts(),
+                               commands=webinterface._Commands.commands,
+                               )
+
+        @webapp.route('/commands/<string:command_id>/details')
+        @require_auth()
+        @run_first()
+        def page_devtools_debug_commands_details(webinterface, request, session, command_id):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/commands/details.html')
+            command = webinterface._Commands.commands[command_id]
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/commands", "Commands")
+            webinterface.add_breadcrumb(request, "/devtools/debug/commands/%s/details" % command_id, command.label)
+            return page.render(alerts=webinterface.get_alerts(),
+                               command=command,
+                               )
+
         @webapp.route('/device_types')
         @require_auth()
         @run_first()
@@ -45,7 +69,7 @@ def route_devtools_debug(webapp):
             device_type = webinterface._DeviceTypes.device_types[device_type_id]
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/devtools/debug/device_types", "Device Types")
-            webinterface.add_breadcrumb(request, "/devtools/debug/device_types/%s/details" % device_type.device_type_id, device_type.label)
+            webinterface.add_breadcrumb(request, "/devtools/debug/device_types/%s/details" % device_type_id, device_type.label)
             return page.render(alerts=webinterface.get_alerts(),
                                device_type=device_type,
                                devices=webinterface._Devices,

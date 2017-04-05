@@ -55,21 +55,3 @@
             <!-- /.row -->
 {% endblock %}
 
-{% block body_bottom %}
-    <!-- Make the tables pretty -->
-    <script>
-$('.deviceCmd').click(function (event){
-     event.preventDefault();
-     $.ajax({
-        url: $(this).attr('href'),
-        dataType: 'json',
-        success: function(resp){
-            $("#cmdresult").html(resp.message);
-            $("#cmdresultmodal").modal('show');
-            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
-     })
-     return false; //for good measure
-});
-
-    </script>
-{% endblock %}
