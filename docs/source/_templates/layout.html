@@ -1,6 +1,9 @@
 {# Import the theme's layout. #}
 {% extends "!layout.html" %}
 
+{# Custom CSS overrides #}
+{% set bootswatch_css_custom = ['_static/yombo-styles.css'] %}
+
 {# Add some extra stuff before and use existing with 'super()' call. #}
 {% block footer %}
 <footer class="footer">
@@ -16,4 +19,31 @@
     </p>
   </div>
 </footer>
+<script>
+  // The function actually applying the offset
+function offsetAnchor() {
+  if (location.hash.length !== 0) {
+  $('html, body').animate({
+      duration: 100,
+      scrollTop: $(window).scrollTop() - 125
+  });
+//          $(window).scrollTop() - 400;
+//      window.scrollTo(window.scrollX, window.scrollY - 400);
+//    alert("scrolled down 100...")
+  }
+}
+
+// Captures click events of all a elements with href starting with #
+$(document).on('click', 'a[href^="#"]', function(event) {
+  // Click events are captured before hashchanges. Timeout
+  // causes offsetAnchor to be called after the page jump.
+  window.setTimeout(function() {
+    offsetAnchor();
+  }, 5);
+});
+
+// Set the offset when entering page with hash present in the url
+window.setTimeout(offsetAnchor, 5);
+
+</script>
 {% endblock %}

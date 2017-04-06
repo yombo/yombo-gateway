@@ -80,7 +80,7 @@ release = '0.13.0'
 # directories to ignore when looking for source files.
 exclude_patterns = [
     # may revise/remove this
-    "lib/cloud_sptheme.make_helper.rst",
+    # "lib/cloud_sptheme.make_helper.rst",
 ]
 
 # The reST default role (used for this markup: `text`) to use for all documents.
