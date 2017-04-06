@@ -103,6 +103,108 @@ class Configuration(YomboLibrary):
     configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
     configs_details = {}  # Collected details from libs and modules about configurations
 
+
+    def __contains__(self, configuration_requested):
+        """
+        Checks to if a provided configuration exists.
+
+            >>> if 'cpu.count' in self._Configs:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param configuration_requested: The configuration key to search for.
+        :type configuration_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        if configuration_requested in self._Configs:
+            return True
+        else:
+            return False
+
+    def __getitem__(self, configuration_requested):
+        """
+        Attempts to find the device requested using a couple of methods. Use a double hashtag (##)
+        to seperate the configuration section from the option.
+
+            >>> gwid = self._Configs['core##gwid']
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param configuration_requested: The configuration key to search for.
+        :type configuration_requested: string
+        :return: dict containing: 'id', 'cmd', 'device'
+        :rtype: dict
+        """
+        requested = configuration_requested.split('##')
+        return self.get(requested[0], requested[1])
+
+    def __setitem__(self, configuration_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, configuration_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __iter__(self):
+        """ iter configurations. """
+        return self.__yombocommands.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of configurations defined.
+
+        :return: The number of configurations defined.
+        :rtype: int
+        """
+        return len(self.__yombocommands)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo configuration library"
+
+    def keys(self):
+        """
+        Returns the keys of the configurations that are defined.
+
+        :return: A list of configurations defined. 
+        :rtype: list
+        """
+        return self.__yombocommands.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the configurations defined.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.__yombocommands.items()
+
+    def iteritems(self):
+        return self.__yombocommands.iteritems()
+
+    def iterkeys(self):
+        return self.__yombocommands.iterkeys()
+
+    def itervalues(self):
+        return self.__yombocommands.itervalues()
+
+    def values(self):
+        return self.__yombocommands.values()
+
     def _init_(self):
         """
         Open the yombo.ini file for reading.
@@ -110,6 +212,7 @@ class Configuration(YomboLibrary):
         Import the configuration items into the database, also prime the configs for reading.
         """
         self.cache_dirty = False
+        self.configs = {}
         self.automation_startup_check = []
         self._loaded = False
         self.yombo_ini_last_modified = 0
@@ -158,25 +261,40 @@ class Configuration(YomboLibrary):
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  IN saving. ")
         # print self.configs
 
+        #setup some defaults if we are new....
+        self.get('core', 'gwid', None)
+        self.get('core', 'gwudid', None)
+
         # Perform DB cleanup activites based on local section.
-        if self.get('local', 'deletedelayedmessages') is True:
+        if self.get('local', 'deletedelayedmessages', False, False) is True:
             self._Libraries['localdb'].delete('sqldict', ['module = ?', 'yombo.gateway.lib.messages'])
             self.set('local', 'deletedelayedmessages', False)
 
-        if self.get('local', 'deletedevicehistory') is True:
+        if self.get('local', 'deletedevicehistory', False, False) is True:
             self._Libraries['localdb'].truncate('devicestatus')
             self.set('local', 'deletedevicehistory', False)
 
-        if self.get('core', 'externalipaddress') is not None and self.get('core', 'externalipaddresstime') is not None:
+        if self.get('core', 'externalipaddress_v4', False, False) is False or self.get('core', 'externalipaddresstime', False, False) is False:
+            self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
+            self.set("core", "externalipaddresstime", int(time()))
+        else:
             if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 3600):
                 self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
                 self.set("core", "externalipaddresstime", int(time()))
-        else:
             #            print "didn't find external ip address"
-            self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
-            self.set("core", "externalipaddresstime", int(time()))
 
-        if self.get('local', 'localipaddress') is not None and self.get('local', 'localipaddresstime') is not None:
+        if self.get('core', 'localipaddress_v4', False, False) is False or self.get('core', 'localipaddresstime', False, False) is False:
+            address_info = get_local_network_info()
+            self.set("core", "localipaddress_v4", address_info['ipv4']['address'])
+            self.set("core", "localipaddress_netmask_v4", address_info['ipv4']['netmask'])
+            self.set("core", "localipaddress_cidr_v4", address_info['ipv4']['cidr'])
+            self.set("core", "localipaddress_network_v4", address_info['ipv4']['network'])
+            self.set("core", "localipaddress_v6", address_info['ipv6']['address'])
+            self.set("core", "localipaddress_netmask_v6", address_info['ipv6']['netmask'])
+            # self.set("core", "localipaddress_cidr_v6", address_info['ipv6']['cidr'])
+            # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
+            self.set("core", "localipaddresstime", int(time()))
+        else:
             if int(self.configs['core']['localipaddresstime']['value']) < (int(time()) - 180):
                 address_info = get_local_network_info()
                 self.set("core", "localipaddress_v4", address_info['ipv4']['address'])
@@ -188,24 +306,13 @@ class Configuration(YomboLibrary):
                 # self.set("core", "localipaddress_cidr_v6", address_info['ipv6']['cidr'])
                 # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
                 self.set("core", "localipaddresstime", int(time()))
-        else:
-            address_info = get_local_network_info()
-            self.set("core", "localipaddress_v4", address_info['ipv4']['address'])
-            self.set("core", "localipaddress_netmask_v4", address_info['ipv4']['netmask'])
-            self.set("core", "localipaddress_cidr_v4", address_info['ipv4']['cidr'])
-            self.set("core", "localipaddress_network_v4", address_info['ipv4']['network'])
-            self.set("core", "localipaddress_v6", address_info['ipv6']['address'])
-            self.set("core", "localipaddress_netmask_v6", address_info['ipv6']['netmask'])
-            # self.set("core", "localipaddress_cidr_v6", address_info['ipv6']['cidr'])
-            # self.set("core", "localipaddress_network_v6", address_info['ipv6']['network'])
-            self.set("core", "localipaddresstime", int(time()))
 
         self.periodic_save_yombo_ini = LoopingCall(self.save)
         self.periodic_save_yombo_ini.start(14400, False)
         # self.periodic_load_yombo_ini = LoopingCall(self.check_if_yombo_ini_modified)
         # self.periodic_load_yombo_ini.start(5)
 
-        if self.get('core', 'setup_stage') is None:
+        if self.get('core', 'setup_stage', False, False) is False:
             self.set('core', 'setup_stage', 'first_run')
         self.loading_yombo_ini = False
 
@@ -498,7 +605,7 @@ class Configuration(YomboLibrary):
                 except:
                     pass
 
-    def get2(self, section, option=None, default=None, set_if_missing=True, set=None, **kwargs):
+    def get2(self, section, option, default="Jx^pG!+M3UByJc*MdJVz", set_if_missing=True, set=None, **kwargs):
         """
         Like :py:meth:`get() <get>` below, however, returns a callable to retrieve the value instead of an actual
         value. The callable can also be used to set the value of the configuration item too. See
@@ -535,15 +642,13 @@ class Configuration(YomboLibrary):
 
         if set is not None:
             return self.set(section, option, set, **kwargs)
-        if option is None:
-            raise YomboWarning("get operation must have option.")
 
         section = section.lower()
         option = option.lower()
 
         return partial(self.get, section, option, default, set_if_missing)
 
-    def get(self, section, option=None, default=None, set_if_missing=True, set=None, **kwargs):
+    def get(self, section, option, default="Jx^pG!+M3UByJc*MdJVz", set_if_missing=True, set=None, **kwargs):
         """
         Read value of configuration option, return None if it don't exist or
         default if defined.  Tries to type cast with int first before
@@ -560,11 +665,12 @@ class Configuration(YomboLibrary):
 
            gatewayUUID = self._Config.get("core", "gwuuid", "Default Value")
 
+        :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
         :param option: The option (key) to use. Use * to return all possible options as a dict.
         :type option: string
-        :param default: What to return if no result is found, default = None.
+        :param default: If set and nothing found, this will be returned. Otherwise, will raise KeyError.
         :type default: int or string
         :param set_if_missing: If value is missing, should it be set for future reference?
         :type set_if_missing: bool
@@ -581,9 +687,6 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_time=15, anon=True)
             raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
-        if option is None:
-            raise YomboWarning("get operation must have option.")
-
         section = section.lower()
         option = option.lower()
 
@@ -593,7 +696,7 @@ class Configuration(YomboLibrary):
                 return self.yombo_vars[option]
             else:
                 self._Statistics.increment("lib.configuration.get.none", bucket_time=15, anon=True)
-            return None
+            return KeyError("Requested configuration not found: %s : %s" % (section, option))
 
         if section == "*":  # we now allow to get all config items. Useful for the web.
             results = {}
@@ -613,9 +716,9 @@ class Configuration(YomboLibrary):
                             results[key] = data['value']
                             data['reads'] += 1
                     return results
-                return None
+                return KeyError("Requested configuration not found: %s : %s" % (section, option))
 
-            if option in self.configs[section]:
+            elif option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
 #                returnValue(self.configs[section][option])
                 self._Statistics.increment("lib.configuration.get.value", bucket_time=15, anon=True)
@@ -626,15 +729,19 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.get.empty_string", bucket_time=15, anon=True)
             return ""
 
-        if default is not None:
+        if default != "Jx^pG!+M3UByJc*MdJVz":
             if set_if_missing:
                 self.set(section, option, default)
                 self.configs[section][option]['reads'] += 1
             self._Statistics.increment("lib.configuration.get.default", bucket_time=15, anon=True)
+            # print "returning default: %s" % default
             return default
         else:
             self._Statistics.increment("lib.configuration.get.nodefault", bucket_time=15, anon=True)
-            return None
+            if section not in self.configs:
+                raise KeyError("Configuration section not found: %s" % section)
+            else:
+                raise KeyError("Configuration option doesn't exist in section: %s" % option)
 
     def set(self, section, option, value, **kwargs):
         """

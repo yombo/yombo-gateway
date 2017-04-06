@@ -29,7 +29,6 @@ class Tasks(YomboLibrary):
 
     """
     def _init_(self):
-        self._LocalDB = self._Libraries['localdb']
         self.loop_tasks = {}
 
         self.init_deffered = Deferred()

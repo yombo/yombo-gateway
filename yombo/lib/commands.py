@@ -19,10 +19,11 @@ The command (singular) class represents one command.
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboFuzzySearchError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance
+from yombo.utils import search_instance, do_search_instance, global_invoke_all
+from yombo.utils.fuzzysearch import FuzzySearch
 logger = get_logger('library.commands')
 
 class Commands(YomboLibrary):
@@ -32,64 +33,143 @@ class Commands(YomboLibrary):
     All modules already have a predefined reference to this library as
     `self._Commands`. All documentation will reference this use case.
     """
-    def __getitem__(self, command_requested):
-        """
-        Return a command, searching first by command UUID and then by command
-        function (on, off, bright, dim, open, close, etc).  Modules should use
-        `self._Commands` to search with:
-
-            >>> self._Commands['137ab129da9318']  #by uuid
-            
-        or:
-        
-            >>> self._Commands['living room light']  #by name
-
-        See: :func:`yombo.core.helpers.getCommands` for full usage example.
-
-        :param command_requested: The command UUID or command label to search for.
-        :type command_requested: string
-        """
-        return self.get(command_requested)
-
-    def __len__(self):
-        return len(self.commands)
-
     def __contains__(self, command_requested):
+        """
+        .. note:: The command must be enabled to be found using this method. Use :py:meth:`get <Commands.get>`
+           to set status allowed.
+
+        Checks to if a provided command id, label, or machine_label exists.
+
+            >>> if '137ab129da9318' in self._Commands:
+
+        or:
+
+            >>> if 'living room light' in self._Commands:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param command_requested: The command ID, label, or machine_label to search for.
+        :type command_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
         try:
             self.get(command_requested)
             return True
         except:
             return False
 
+    def __getitem__(self, command_requested):
+        """
+        .. note:: The command must be enabled to be found using this method. Use :py:meth:`get <Commands.get>`
+           to set status allowed.
+        
+        Attempts to find the device requested using a couple of methods.
+
+            >>> off_cmd = self._Commands['137ab129da9318']  #by id
+
+        or:
+
+            >>> off_cmd = self._Commands['Off']  #by label & machine_label
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param command_requested: The command ID, label, or machine_label to search for.
+        :type command_requested: string
+        :return: A pointer to the command instance.
+        :rtype: instance
+        """
+        return self.get(command_requested)
+
+    def __setitem__(self, command_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, command_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __iter__(self):
+        """ iter commands. """
+        return self.commands.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of commands configured.
+
+        :return: The number of commands configured.
+        :rtype: int
+        """
+        return len(self.commands)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo commands library"
+
+    def keys(self):
+        """
+        Returns the keys (command ID's) that are configured.
+
+        :return: A list of command IDs. 
+        :rtype: list
+        """
+        return self.commands.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the commands configured.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.commands.items()
+
+    def iteritems(self):
+        return self.commands.iteritems()
+
+    def iterkeys(self):
+        return self.commands.iterkeys()
+
+    def itervalues(self):
+        return self.commands.itervalues()
+
+    def values(self):
+        return self.commands.values()
+
     def _init_(self):
         """
-        Setups up the basic framework. Nothing is loaded in here until the
-        Load() stage.
-        :param loader: A pointer to the L{Loader<yombo.lib.loader.Loader>}
-        library.
-        :type loader: Instance of Loader
+        Setups up the basic framework.
+        
         """
         self.load_deferred = None  # Prevents loader from moving on past _start_ until we are done.
         self.commands = {}
-        self.__yombocommandsByVoice = {}
+        self.__yombocommandsByVoice = FuzzySearch(None, .92)
         self.command_search_attributes = ['command_id', 'label', 'machine_label', 'description', 'always_load',
             'voice_cmd', 'cmd', 'status']
 
     def _load_(self):
         """
-        Loads all commands from DB to various arrays for quick lookup.
+        Loads commands from the database and imports them.
         """
-        self.__loadCommands()
+        self._load_commands_from_database()
         self.load_deferred = Deferred()
         return self.load_deferred
 
-    def _start_(self):
-        """
-        We don't do anything, but 'pass' so we don't generate an exception.
-        """
-        pass
-
     def _stop_(self):
+        """
+        Cleans up any pending deferreds.
+        """
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
@@ -98,11 +178,65 @@ class Commands(YomboLibrary):
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. B{Do not call this function!}
         """
-        self.commands.clear()
         self.__yombocommandsByVoice.clear()
 
     def _reload_(self):
-        self.__loadCommands()
+        self._load_()
+
+    @inlineCallbacks
+    def _load_commands_from_database(self):
+        """
+        Loads commands from database and sends them to :py:meth:`import_command <Commands.import_device>`
+        
+        This can be triggered either on system startup or when new/updated commands have been saved to the
+        database and we need to refresh existing commands.
+        """
+        commands = yield self._LocalDB.get_commands()
+        logger.debug("commands: {commands}", commands=commands)
+        for command in commands:
+            self.import_command(command)
+        self.load_deferred.callback(10)
+
+    def import_command(self, command, test_command=False):
+        """
+        Add a new command to memory or update an existing command.
+
+        **Hooks called**:
+
+        * _command_before_load_ : If added, sends command dictionary as 'command'
+        * _command_before_update_ : If updated, sends command dictionary as 'command'
+        * _command_loaded_ : If added, send the command instance as 'command'
+        * _command_updated_ : If updated, send the command instance as 'command'
+
+        :param device: A dictionary of items required to either setup a new command or update an existing one.
+        :type device: dict
+        :param test_command: Used for unit testing.
+        :type test_command: bool
+        :returns: Pointer to new device. Only used during unittest
+        """
+        logger.debug("command: {command}", command=command)
+
+        global_invoke_all('_command_before_import_',
+                      **{'command': command})
+        command_id = command["id"]
+        if command_id not in self.commands:
+            global_invoke_all('_command_before_load_',
+                              **{'command': command})
+            self.commands[command_id] = Command(command)
+            global_invoke_all('_command_loaded_',
+                          **{'command': self.commands[command_id]})
+        elif command_id not in self.commands:
+            global_invoke_all('_command_before_update_',
+                              **{'command': command})
+            self.commands[command_id].update_attributes(command)
+            global_invoke_all('_command_updated_',
+                          **{'command': self.commands[command_id]})
+
+        if command['voice_cmd'] is not None:
+            self.__yombocommandsByVoice[command['voice_cmd']] = self.commands[command_id]
+
+        # if test_command:
+        #     return self.commands[command_id]
 
     def get(self, command_requested, limiter=None, status=None):
         """
@@ -166,7 +300,6 @@ class Commands(YomboLibrary):
             ]
             try:
                 logger.debug("Get is about to call search...: %s" % command_requested)
-                # found, key, item, ratio, others = self._search(attrs, operation="highest")
                 found, key, item, ratio, others = do_search_instance(attrs, self.commands,
                                                                      self.command_search_attributes,
                                                                      limiter=limiter,
@@ -228,38 +361,6 @@ class Commands(YomboLibrary):
                 results[command_id] = command
         return results
 
-    @inlineCallbacks
-    def __loadCommands(self):
-        """
-        Load the commands into memory. Set up various dictionaries support libraries to manage
-        devices.
-        """
-
-        self._clear_()
-
-        commands = yield self._LocalDB.get_commands()
-        for command in commands:
-            self._addCommand(command)
-        logger.debug("Done load_commands: {commands}", commands=self.commands)
-        self.load_deferred.callback(10)
-
-    def _addCommand(self, record, testCommand = False):
-        """
-        Add a command based on data from a row in the SQL database.
-
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
-        :param testCommand: If true, is a test command not from SQL, only used for unittest.
-        :type testCommand: bool
-        :returns: Pointer to new device. Only used during unittest
-        """
-        logger.debug("record: {record}", record=record)
-        cmd_id = record.id
-        self.commands[cmd_id] = Command(record)
-        if record.voice_cmd is not None:
-            self.__yombocommandsByVoice[record.voice_cmd] = self.commands[cmd_id]
-#        if testCommand:
-#            return self.commands[command_id]
 
     @inlineCallbacks
     def dev_command_add(self, data, **kwargs):
@@ -416,7 +517,6 @@ class Command:
     A class to manage a single command.
     :ivar label: Command label
     :ivar description: The description of the command.
-    :ivar inputTypeID: The type of input that is required as a variable.
     :ivar voice_cmd: The voice command of the command.
     """
 
@@ -424,27 +524,45 @@ class Command:
         """
         Setup the command object using information passed in.
 
-        :cvar command_id: (string) The UUID of the command.
-
-        :param command: A device as passed in from the devices class. This is a
-            dictionary with various device attributes.
+        :param command: A command containing required items to setup.
         :type command: dict
 
         """
         logger.debug("command info: {command}", command=command)
 
-        self.command_id = command.id
-        self.cmd = command.machine_label
+        self.command_id = command['id']
+        self.cmd = command['machine_label']
         self.machine_label = self.cmd
-        self.label = command.label
-        self.description = command.description
-        self.voice_cmd = command.voice_cmd
-        self.always_load = command.always_load
-        self.public = command.public
-        self.status = command.status
-        self.created = command.created
-        self.updated = command.updated
         self.updated_srv = None
+
+        # the below are setup during update_attributes()
+        self.label = None
+        self.description = None
+        self.voice_cmd = None
+        self.always_load = None
+        self.public = None
+        self.status = None
+        self.created = None
+        self.updated = None
+
+        self.update_attributes(command)
+
+    def update_attributes(self, command):
+        """
+        Sets various values from a command dictionary. This can be called when either new or
+        when updating.
+
+        :param command: 
+        :return: 
+        """
+        self.label = command['label']
+        self.description = command['description']
+        self.voice_cmd = command['voice_cmd']
+        self.always_load = command['always_load']
+        self.public = command['public']
+        self.status = command['status']
+        self.created = command['created']
+        self.updated = command['updated']
 
     def __str__(self):
         """
@@ -453,21 +571,20 @@ class Command:
         """
         return self.command_id
 
-    def dump(self):
+    def __repl__(self):
         """
         Export command variables as a dictionary.
         """
         return {
-            'command_id'   : str(self.command_id),
-            'always_load'          : str(self.always_load),
-            'voice_cmd'    : str(self.voice_cmd),
-            'cmd'          : str(self.cmd), # AKA machineLabel
-            'label'        : str(self.label),
+            'command_id': str(self.command_id),
+            'always_load': str(self.always_load),
+            'voice_cmd': str(self.voice_cmd),
+            'cmd': str(self.cmd),  # AKA machineLabel
+            'label': str(self.label),
             'machine_label': str(self.machine_label),
-            'description'  : str(self.description),
-            'input_type_id': int(self.input_type_id),
-            'public'       : int(self.public),
-            'status'       : int(self.status),
-            'created'      : int(self.created),
-            'updated'      : int(self.updated),
+            'description': str(self.description),
+            'public': int(self.public),
+            'status': int(self.status),
+            'created': int(self.created),
+            'updated': int(self.updated),
         }

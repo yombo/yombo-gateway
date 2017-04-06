@@ -48,12 +48,15 @@ class Localize(YomboLibrary):
     Provides internaltionalization and localization where possible.  Default language is 'en' (English). System and
     debug messages are never translated.
     """
+    MSGCTXT_GLUE = "\004"
+
     def _init_(self):
-        self.MSGCTXT_GLUE = "\004"
-        hashes = self._Configs.get('localize', 'hashes')
         self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
-        if hashes is None:
-            self.hashes = {'en':None}
+
+        try:
+            hashes = self._Configs.get('localize', 'hashes')
+        except:
+            self.hashes = {'en': None}
         else:
             self.hashes = json.loads(hashes)
 
@@ -64,18 +67,6 @@ class Localize(YomboLibrary):
         self.locale_files = abspath('.') + "/usr/locale/"
         self.translator = self.get_translator()
         __builtin__.__dict__['_'] = self.handle_translate
-
-    def _load_(self):
-        pass
-
-    def _start_(self):
-        pass
-
-    def _stop_(self):
-        pass
-
-    def _unload_(self):
-        pass
 
     def _modules_created_(self, **kwargs):
         """

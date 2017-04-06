@@ -175,3 +175,10 @@ color:#dd3939;
     font-size: larger;
     margin: 15px 0 5px;
 }
+
+.logo_background::after {
+    /*content: "";*/
+    background: url('/static/img/logo-100px.png');
+    opacity: 0.15;
+    background-repeat: no-repeat;
+}

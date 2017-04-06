@@ -108,31 +108,104 @@ class VoiceCmds(YomboLibrary):
 
     Also, provides searching for voice commands.
     """
+    def __contains__(self, voice_command_requested):
+        """
+        Checks to if a provided voice command exists.
+
+            >>> if 'cpu.count' in self._VoiceCmds:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param voice_command_requested: The voice command key to search for.
+        :type voice_command_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        if voice_command_requested in self._VoiceCmds:
+            return True
+        else:
+            return False
+
     def __getitem__(self, voice_command_requested):
         """
         Search for a voice command. this will return a dictionary: id, cmd object, device object.
 
-        You can use the device and command objects as desired.
+            >>> voice_command = self._VoiceCmds['living room light on']
 
-            >>> self._VoiceCmds['living room light on']  #by name
-
-        :param voicecmd_requested: Search all available voice commands for a phrase.
-        :type voicecmd_requested: string
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param voice_command_requested: The voice command key to search for.
+        :type voice_command_requested: string
         :return: dict containing: 'id', 'cmd', 'device'
         :rtype: dict
         """
         return self.get(voice_command_requested)
 
+    def __setitem__(self, voice_command_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, voice_command_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __iter__(self):
+        """ iter voice commands. """
+        return self.__yombocommands.__iter__()
+
     def __len__(self):
+        """
+        Returns an int of the number of voice commands defined.
+
+        :return: The number of voice commands defined.
+        :rtype: int
+        """
         return len(self.__yombocommands)
 
-    def __contains__(self, command_requested):
-        try:
-            self.get(command_requested)
-            return True
-        except:
-            return False
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo voice commands library"
 
+    def keys(self):
+        """
+        Returns the keys of the voice commands that are defined.
+
+        :return: A list of voice commands defined. 
+        :rtype: list
+        """
+        return self.__yombocommands.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the voice commands defined.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.__yombocommands.items()
+
+    def iteritems(self):
+        return self.__yombocommands.iteritems()
+
+    def iterkeys(self):
+        return self.__yombocommands.iterkeys()
+
+    def itervalues(self):
+        return self.__yombocommands.itervalues()
+
+    def values(self):
+        return self.__yombocommands.values()
 
     def _init_(self):
         """
@@ -202,7 +275,7 @@ class VoiceCmds(YomboLibrary):
             return self.voice_command_data[result]
         except:
             self._Statistics.increment("lib.voicecmds.search.not_found", bucket_time=30, anon=True)
-            return None
+            raise KeyError("Searched for voice command, none found: %s" % voice_command_requested)
 
     def add_by_string(self, voice_string, call_back = None, device = None, order = 'devicecmd'):
         """

@@ -42,8 +42,8 @@ class GPG(YomboLibrary):
         """
         self.gwid = self._Configs.get("core", "gwid")
         self.gwuuid = self._Configs.get("core", "gwuuid")
-        self.mykeyid = self._Configs.get2('gpg', 'keyid')
-        self.mykeyascii = self._Configs.get2('gpg', 'keyascii')
+        self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
+        self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
 
         self._key_generation_status = {}
 
@@ -99,8 +99,6 @@ class GPG(YomboLibrary):
                 self.gwid = value
             if option == 'gwuuid':
                 self.gwuuid = value
-            if option == 'keyid':
-                self.mykeyid(set=value)
 
     ##########################
     #### Key management  #####

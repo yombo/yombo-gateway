@@ -77,59 +77,130 @@ class Modules(YomboLibrary):
 
     _localModuleVars = {}  # Used to store modules variables from file import
 
+    def __contains__(self, module_requested):
+        """
+        .. note:: The command must be enabled to be found using this method. Use :py:meth:`get <Commands.get>`
+           to set status allowed.
+
+        Checks to if a provided command id, label, or machine_label exists.
+
+            >>> if '137ab129da9318' in self._Commands:
+
+        or:
+
+            >>> if 'living room light' in self._Commands:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param module_requested: The command ID, label, or machine_label to search for.
+        :type module_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        try:
+            self.get(module_requested)
+            return True
+        except:
+            return False
+
+    def __getitem__(self, module_requested):
+        """
+        .. note:: The module must be enabled to be found using this method. Use :py:meth:`get <Modules.get>`
+           to set status allowed.
+
+        Attempts to find the device requested using a couple of methods.
+
+            >>> off_cmd = self._Modules['Sjho381jSASD013ug']  #by id
+
+        or:
+
+            >>> off_cmd = self._Modules['homevision']  #by label & machine_label
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param module_requested: The module ID, label, or machine_label to search for.
+        :type module_requested: string
+        :return: A pointer to the module instance.
+        :rtype: instance
+        """
+        return self.get(module_requested)
+
+
+    def __setitem__(self, module_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, module_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+    def __iter__(self):
+        """ iter modules. """
+        return self.modules.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of modules configured.
+
+        :return: The number of modules configured.
+        :rtype: int
+        """
+        return len(self.modules)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo modules library"
+
+    def keys(self):
+        """
+        Returns the keys (module ID's) that are configured.
+
+        :return: A list of module IDs. 
+        :rtype: list
+        """
+        return self.modules.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the modules configured.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.modules.items()
+
+    def iteritems(self):
+        return self.modules.iteritems()
+
+    def iterkeys(self):
+        return self.modules.iterkeys()
+
+    def itervalues(self):
+        return self.modules.itervalues()
+
+    def values(self):
+        return self.modules.values()
+
     def _init_(self):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
         self.gwid = self._Configs.get("core", "gwid")
-        self._LocalDBLibrary = self._Libraries['localdb']
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
         self.hooks_called = MaxDict(200, {})
         self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
             'short_description', 'description_formatting', '_public', '_status']
-
-    def _load_(self):
-        """
-        Loads all the module information here.
-        """
-        pass
-
-    def _reload_(self):
-        pass
-
-    def _start_(self):
-        """
-        Nothing to do now...
-        """
-        pass
-
-    def _stop_(self):
-        """
-        Stop library - stop the looping call.
-        """
-        pass
-
-    def _unload_(self):
-        pass
-
-    def __len__(self):
-        return len(self.modules)
-
-    def __getitem__(self, moduleRequested):
-        """
-        Attempts to find the modules requested using a couple of methods.
-
-        See get()
-        """
-        return self.get(moduleRequested)
-
-    def __contains__(self, moduleRequested):
-        try:
-            self.get(moduleRequested)
-            return True
-        except:
-            return False
 
     @inlineCallbacks
     def load_modules(self):
@@ -354,7 +425,7 @@ class Modules(YomboLibrary):
                 continue
             self._rawModulesList[data['id']] = data
 
-        modulesDB = yield self._LocalDBLibrary.get_modules()
+        modulesDB = yield self._LocalDB.get_modules()
         # print "modulesdb: %s" % modulesDB
         # print " "
         for module in modulesDB:
@@ -419,7 +490,7 @@ class Modules(YomboLibrary):
 
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
-            module_variables = yield self._LocalDBLibrary.get_variables('module', module_id)
+            module_variables = yield self._LocalDB.get_variables('module', module_id)
             # print "getting vars: %s "% module_variables
             module._ModuleVariables = module_variables
 
@@ -461,7 +532,7 @@ class Modules(YomboLibrary):
             if int(module._status) != 1:
                 continue
 
-            module_device_types = yield self._LocalDBLibrary.get_module_device_types(module_id)
+            module_device_types = yield self._LocalDB.get_module_device_types(module_id)
             # print "module_device_types = %s" % module_device_types
             for module_device_type in module_device_types:
                 if module_device_type.id in module._DeviceTypes:
@@ -903,8 +974,8 @@ class Modules(YomboLibrary):
             }
             returnValue(results)
 
-        self._LocalDBLibrary.set_module_status(module_id, 2)
-        self._LocalDBLibrary.del_variables('module', module_id)
+        self._LocalDB.set_module_status(module_id, 2)
+        self._LocalDB.del_variables('module', module_id)
 
         results = {
             'status': 'success',
@@ -944,7 +1015,7 @@ class Modules(YomboLibrary):
             }
             returnValue(results)
 
-        self._LocalDBLibrary.set_module_status(module_id, 1)
+        self._LocalDB.set_module_status(module_id, 1)
 
         results = {
             'status': 'success',
@@ -982,7 +1053,7 @@ class Modules(YomboLibrary):
             }
             returnValue(results)
 
-        self._LocalDBLibrary.set_module_status(module_id, 0)
+        self._LocalDB.set_module_status(module_id, 0)
 
         results = {
             'status': 'success',

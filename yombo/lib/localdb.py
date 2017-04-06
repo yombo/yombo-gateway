@@ -303,18 +303,18 @@ class LocalDB(YomboLibrary):
 ###    Commands     #####
 #########################
     @inlineCallbacks
-    def get_commands(self, always_load=1):
-        """
-        Get all commands
-        :return:
-        """
-        records = yield Command.find(where=['always_load = ?', always_load])
-        returnValue(records)
+    def get_commands(self, always_load=None):
+        if always_load is None:
+            always_load = True
 
-    # @inlineCallbacks
-    # def get_commands_for_device_type(self, device_type_id):
-    #     records = yield CommandDeviceTypes.find(where=['device_type_id = ?', device_type_id])
-    #     returnValue(records)
+        if always_load == True:
+            records = yield self.dbconfig.select('commands', where=['always_load = ?', 1])
+            returnValue(records)
+        elif always_load is False:
+            records = yield self.dbconfig.select('commands', where=['always_load = ? OR always_load = ?', 1, 0])
+            returnValue(records)
+        else:
+            returnValue([])
 
 
 #########################
@@ -381,9 +381,18 @@ class LocalDB(YomboLibrary):
 ###    Device Types     #####
 #############################
     @inlineCallbacks
-    def get_device_types(self, always_load=1):
-        records = yield DeviceType.find(where=['always_load = ?', always_load])
-        returnValue(records)
+    def get_device_types(self, always_load=None):
+        if always_load is None:
+            always_load = True
+
+        if always_load == True:
+            records = yield self.dbconfig.select('device_types', where=['always_load = ?', 1])
+            returnValue(records)
+        elif always_load is False:
+            records = yield self.dbconfig.select('device_types', where=['always_load = ? OR always_load = ?', 1, 0])
+            returnValue(records)
+        else:
+            returnValue([])
 
     @inlineCallbacks
     def get_module_device_types(self, module_id):
@@ -445,10 +454,18 @@ class LocalDB(YomboLibrary):
 ###    Input Types      #####
 #############################
     @inlineCallbacks
-    def get_input_types(self, always_load=1):
-        # records = yield InputType.find(where=['status = 1 AND always_load = ?', always_load])
-        records = yield InputType.find(where=['status = 1'])
-        returnValue(records)
+    def get_input_types(self, always_load=None):
+        if always_load is None:
+            always_load = True
+
+        if always_load == True:
+            records = yield self.dbconfig.select('input_types', where=['always_load = ?', 1])
+            returnValue(records)
+        elif always_load is False:
+            records = yield self.dbconfig.select('input_types', where=['always_load = ? OR always_load = ?', 1, 0])
+            returnValue(records)
+        else:
+            returnValue([])
 
 #############################
 ###    Modules          #####

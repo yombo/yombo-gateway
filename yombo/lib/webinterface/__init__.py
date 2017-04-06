@@ -332,6 +332,10 @@ class WebInterface(YomboLibrary):
         self.web_server_started = False
         self.web_server_ssl_started = False
 
+        self.already_start_web_servers = False
+        self.has_started = False
+
+
     # def _start_(self):
     #     self.webapp.templates.globals['_'] = _  # i18n
 
@@ -373,6 +377,8 @@ class WebInterface(YomboLibrary):
 
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         # self.webapp.templates.globals['func'] = self.functions
+
+        self.has_started = True
         self.start_web_servers()
 
     @inlineCallbacks
@@ -382,6 +388,8 @@ class WebInterface(YomboLibrary):
             return
 
         if port_nonsecure is not None:
+            if port_nonsecure == self.wi_port_nonsecure:
+                return
             self.wi_port_nonsecure(set=port_nonsecure)
             logger.info("Changing port for the non-secure web interface: {port}", port=port_nonsecure)
             if self.web_server_started:
@@ -389,6 +397,8 @@ class WebInterface(YomboLibrary):
                 self.web_server_started = False
 
         if port_secure is not None:
+            if port_secure == self.wi_port_secure:
+                return
             self.wi_port_secure(set=port_secure)
             logger.info("Changing port for the secure web interface: {port}", port=port_secure)
             if self.web_server_ssl_started:
@@ -398,6 +408,10 @@ class WebInterface(YomboLibrary):
         self.start_web_servers()
 
     def start_web_servers(self):
+        if self.already_start_web_servers is True:
+            return
+        self.already_start_web_servers = True
+        logger.warn("starting web servers")
         if self.web_server_started is False:
             if self.wi_port_nonsecure() == 0:
                 logger.warn("Non secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->nonsecure_port")
@@ -409,6 +423,7 @@ class WebInterface(YomboLibrary):
             if self.wi_port_secure() == 0:
                 logger.warn("Secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->secure_port")
             else:
+                self.web_server_ssl_started = True
                 cert = self._SSLCerts.get('lib_webinterface')
 
                 privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
@@ -421,8 +436,9 @@ class WebInterface(YomboLibrary):
                                                         certificate=certifpyssl,
                                                         extraCertChain=chainpyssl)
 
-                self.web_server_ssl_started = True
                 self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory, contextFactory)
+        logger.warn("done starting web servers")
+        self.already_start_web_servers = False
 
     def _configuration_set_(self, **kwargs):
         """
@@ -452,11 +468,12 @@ class WebInterface(YomboLibrary):
         :param kwargs:
         :return:
         """
-        cert = {}
-        cert['sslname'] = "lib_webinterface"
         fqdn = self._Configs.get('dns', 'fqdn', None, False)
         if fqdn is None:
-            raise YomboWarning("Unable to create webinterface SSL cert: DNS not set properly.")
+            logger.warn("Unable to create webinterface SSL cert: DNS not set properly.")
+            return
+        cert = {}
+        cert['sslname'] = "lib_webinterface"
         san_list = ['localhost', 'l', 'local', 'i', 'e', 'internal', 'external']
         cert['sans'] = [str(s + "." + fqdn) for s in san_list]
         cert['cn'] = cert['sans'][0]

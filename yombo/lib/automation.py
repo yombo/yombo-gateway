@@ -44,7 +44,6 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-from hashlib import sha1
 from time import time
 
 # Import 3rd-party libs
@@ -197,14 +196,14 @@ class Automation(YomboLibrary):
 
         other_rules = yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
         for component_name, rules in other_rules.iteritems():
-#            print "Merging 1: %s" % rules['rules']
-#            print "Merging 2: %s" % self._rulesRaw['rules']
+            # print "Merging 1: %s" % rules['rules']
+            # print "Merging 2: %s" % self._rulesRaw['rules']
             for rule in rules['rules']:
                 rule['source'] = 'callbacks'
                 self._rulesRaw['rules'].append(rule)
-#            print "Results: %s" % self._rulesRaw
+            # print "Results: %s" % self._rulesRaw
 
-#        logger.warn("rulesRaw: {rawrules}", rawrules=pprint(self._rulesRaw))
+        # logger.debug("rulesRaw: {rawrules}", rawrules=pprint(self._rulesRaw))
         if 'rules' not in self._rulesRaw:
             logger.warn("No automation rules found.")
             return

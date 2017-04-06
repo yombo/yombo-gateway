@@ -118,12 +118,9 @@ class Statistics(YomboLibrary):
         :param loader: Loader library.
         :return:
         """
-        self._LocalDB = self._Libraries['localdb']
         self.enabled = self._Configs.get('statistics', 'enabled', True)
         self.upload = self._Configs.get('statistics', 'upload', True)
         self.enabled = self._Configs.get('statistics', 'anonymous', True)
-
-        self.gwuuid = self._Configs.get("core", "gwuuid")
 
         # defines bucket time span, default is 5 minutes for all buckets
         self.count_bucket_duration = self._Configs.get('statistics', 'count_bucket_duration', 5)  # 5 minutes for count buckets

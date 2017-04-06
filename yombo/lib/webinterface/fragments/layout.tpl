@@ -90,7 +90,7 @@
       </div>
     </div>
 
-    <div id="wrapper">
+    <div id="wrapper" class="bgimage">
         <!-- Side Navigation -->
 		{%- include 'lib/webinterface/fragments/side_nav.tpl' -%}
         <!-- Page Content -->

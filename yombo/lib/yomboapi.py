@@ -53,10 +53,10 @@ class YomboAPI(YomboLibrary):
         self.valid_login_key = None
         self.session_validation_cache = ExpiringDict()
 
-        if self.allow_system_session:
+        try:
             self.system_session = self._Configs.get('yomboapi', 'auth_session')  # to be encrypted with gpg later
             self.system_login_key = self._Configs.get('yomboapi', 'login_key')  # to be encrypted with gpg later
-        else:
+        except KeyError:
             self.system_session = None
             self.system_login_key = None
 
@@ -70,12 +70,6 @@ class YomboAPI(YomboLibrary):
     def _start_(self):
         # print "system_session status: %s" % self.system_session
         # print "system_login_key status: %s" % self.system_login_key
-        pass
-
-    def _stop_(self):
-        pass
-
-    def _unload_(self):
         pass
 
     @inlineCallbacks

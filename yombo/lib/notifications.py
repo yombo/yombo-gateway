@@ -110,7 +110,6 @@ class Notifications(YomboLibrary):
         # return self.init_deferred
 
     def _load_(self):
-        self._LocalDB = self._Libraries['localdb']
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False))
         self.load_notifications()

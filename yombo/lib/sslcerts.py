@@ -80,7 +80,6 @@ class SSLCerts(YomboLibrary):
 
         :return:
         """
-        self._LocalDB = self._Libraries['localdb']
         self.hostname = gethostname()
 
         self.gwid = self._Configs.get("core", "gwid")

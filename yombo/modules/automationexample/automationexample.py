@@ -27,6 +27,12 @@ class AutomationExample(YomboModule):
 #         data = self._GPG.decrypt_asymmetric(data)
 #         print "Decrupted: %s" % data
 
+        if 'hv out 1' in self._Devices:
+            print "hv out exists!!!!!!!!!!!!!!!!!!!!!!!!!!11"
+        else:
+            print "hv NOT out exists!!!!!!!!!!!!!!!!!!!!!!!!!!11"
+
+        print self._Devices['hv out 1'].label
 
     def _load_(self):
         # in 3 seconds from now, change the state - test the trigger

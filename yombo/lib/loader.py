@@ -457,7 +457,7 @@ class Loader(YomboLibrary, object):
                 if isinstance(d, Deferred):
                     result = getattr(d, 'result', None)
                     if result is not None:
-#                      logger.warn("1111aaa:: {libraryName} {hook} {result}", libraryName=libraryName, hook=hook, result=result)
+#                      logger.debug("{libraryName} {hook} {result}", libraryName=libraryName, hook=hook, result=result)
                       results[library._FullName] = result
             except YomboWarning:
                 pass

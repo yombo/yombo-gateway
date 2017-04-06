@@ -20,7 +20,7 @@ from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
-from yombo.utils import search_instance, do_search_instance
+from yombo.utils import search_instance, do_search_instance, global_invoke_all
 
 logger = get_logger('library.devicetypes')
 
@@ -31,66 +31,202 @@ class DeviceTypes(YomboLibrary):
     and any required database tables are updated. Also maintains a list of module device types and device type commands
     in memory for access.
     """
-    def __getitem__(self, device_type_requested):
-        """
-        Return a device type, searching first by command ID and then by command
-        function (on, off, bright, dim, open, close, etc).  Modules should use
-        `self._Commands` to search with:
-
-            >>> self._DeviceTypes['137ab129da9318']  #by id
-            
-        or:
-        
-            >>> self._DeviceTypes['x10_appliance']  #by name
-
-        :param commandRequested: The device type ID or device type label to search for.
-        :type commandRequested: string
-        """
-        return self.get(device_type_requested)
-
-    def __len__(self):
-        return len(self.device_types)
-
     def __contains__(self, device_type_requested):
+        """
+        .. note:: The device type must be enabled to be found using this method. Use :py:meth:`get <DeviceTypes.get>`
+           to set status allowed.
+
+        Checks to if a provided device type id, label, or machine_label exists.
+
+        Simulate a dictionary when requested with:
+
+            >>> if 'SDjs2a01k7czf12' in self._DeviceTypes:  #by id
+
+        or:
+
+            >>> if 'x10_appliance' in self._DeviceTypes:  #by label
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param device_type_requested: The device type ID, label, or machine_label to search for.
+        :type device_type_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
         try:
             self.get(device_type_requested)
             return True
         except:
             return False
 
+    def __getitem__(self, device_type_requested):
+        """
+        .. note:: The device type must be enabled to be found using this method. Use :py:meth:`get <DeviceTypes.get>`
+           to set status allowed.
+
+        Attempts to find the device type requested using a couple of methods.
+
+        Simulate a dictionary when requested with:
+
+            >>> my_light = self._Devices['SDjs2a01k7czf12']  #by id
+
+        or:
+
+            >>> my_light = self._Devices['x10_appliance']  #by name
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param device_type_requested: The device type ID, label, or machine_label to search for.
+        :type device_type_requested: string
+        :return: A pointer to the device type instance.
+        :rtype: instance
+        """
+        return self.get(device_type_requested)
+
+    def __setitem__(self, device_type_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, command_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
     def __iter__(self):
+        """ iter commands. """
+        return self.commands.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of device types configured.
+
+        :return: The number of device types configured.
+        :rtype: int
+        """
+        return len(self.commands)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo device types library"
+
+    def keys(self):
+        """
+        Returns the keys (device type ID's) that are configured.
+
+        :return: A list of command IDs. 
+        :rtype: list
+        """
+        return self.device_types.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the device types configured.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.device_types.items()
+
+    def iteritems(self):
         return self.device_types.iteritems()
+
+    def iterkeys(self):
+        return self.device_types.iterkeys()
+
+    def itervalues(self):
+        return self.device_types.itervalues()
+
+    def values(self):
+        return self.device_types.values()
 
     def _init_(self):
         """
-        Setups up the basic framework. Nothing is loaded in here until the :poy:ref:_load_ stage.
+        Sets up basic attributes.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
-        self.library_state = 1
+        self.device_types = {}
         self.device_type_search_attributes = ['input_type_id', 'category_id', 'label', 'machine_label', 'description',
             'status', 'always_load', 'public']
 
-        self.device_types = {}
-
-        self._LocalDB = self._Libraries['localdb']
-
     def _load_(self):
-        self.library_state = 2
-        self._load_device_types()
+        """
+        Loads device types from the database and imports them.
+        
+        :return: 
+        """
         self.load_deferred = Deferred()
+        self._load_device_types_from_database()
         return self.load_deferred
 
-    def _start_(self):
+    def _stop_(self):
         """
-        Loads all device types from DB to various arrays for quick lookup.
+        Cleans up any pending deferreds.
         """
-        self.library_state = 3
+        if self.load_deferred is not None and self.load_deferred.called is False:
+            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _started_(self):
-        # print "device types info:"
-        # for dt, data in self.device_types.iteritems():
-        #     print "dt: %s, commands: %s" % (data.label, data.commands)
-        pass
+    @inlineCallbacks
+    def _load_device_types_from_database(self):
+        """
+        Loads device types from database and sends them to
+        :py:meth:`import_device_types <DeviceTypes.import_device_types>`
+
+        This can be triggered either on system startup or when new/updated device types have been saved to the
+        database and we need to refresh existing device types.
+        """
+        device_types = yield self._LocalDB.get_device_types()
+        logger.debug("device_types: {device_types}", device_types=device_types)
+        for device_type in device_types:
+            yield self.import_device_types(device_type)
+        self.load_deferred.callback(10)
+
+    @inlineCallbacks
+    def import_device_types(self, device_type, test_device_type=False):
+        """
+        Add a new device types to memory or update an existing device types.
+
+        **Hooks called**:
+
+        * _device_type_before_load_ : If added, sends device type dictionary as 'device_type'
+        * _device_type_before_update_ : If updated, sends device type dictionary as 'device_type'
+        * _device_type_loaded_ : If added, send the device type instance as 'device_type'
+        * _device_type_updated_ : If updated, send the device type instance as 'device_type'
+
+        :param device_type: A dictionary of items required to either setup a new device type or update an existing one.
+        :type device: dict
+        :param test_device_type: Used for unit testing.
+        :type test_device_type: bool
+        :returns: Pointer to new device. Only used during unittest
+        """
+        logger.debug("device_type: {device_type}", device_type=device_type)
+
+        global_invoke_all('_device_types_before_import_',
+                      **{'device_type': device_type})
+        device_type_id = device_type["id"]
+        if device_type_id not in self.device_types:
+            global_invoke_all('_device_type_before_load_',
+                              **{'device_type': device_type})
+            self.device_types[device_type_id] = DeviceType(device_type, self)
+            yield self.device_types[device_type_id]._init_()
+            global_invoke_all('_device_type_loaded_',
+                          **{'device_type': self.device_types[device_type_id]})
+        elif device_type_id not in self.device_types:
+            global_invoke_all('_device_type_before_update_',
+                              **{'device_type': device_type})
+            self.device_types[device_type_id].update_attributes(device_type)
+            yield self.device_types[device_type_id]._init_()
+            global_invoke_all('_device_type_updated_',
+                          **{'device_type': self.device_types[device_type_id]})
 
     def get(self, device_type_requested, limiter=None, status=None):
         """
@@ -173,7 +309,6 @@ class DeviceTypes(YomboLibrary):
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :param status: Deafult: 1 - The status of the device type to check for.
         :return: 
         """
         return search_instance(kwargs,
@@ -192,12 +327,12 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         if device_type_id not in self.device_types:
-            dt = yield self._LocalDB.get_device_type(device_type_id)
-            self.add_device_type(dt[0])
+            device_type = yield self._LocalDB.get_device_type(device_type_id)
+            yield self.import_device_types(device_type[0])
 
     def devices_by_device_type(self, requested_device_type):
         """
-        A list of devices types for a given device type.
+        A list of devicess for a given device type.
 
         :raises YomboWarning: Raised when module_id is not found.
         :param requested_device_type: A device type by either ID or Label.
@@ -245,45 +380,6 @@ class DeviceTypes(YomboLibrary):
             if item.public == 2:
                 results[item_id] = item
         return results
-
-    @inlineCallbacks
-    def _load_device_types(self):
-        """
-        Load device types into memory.
-        """
-        dts = yield self._LocalDB.get_device_types()
-        # print "zzz 222: %s" % dts
-
-        for dt in dts:
-            yield self.add_device_type(dt)
-        #
-        # for module_id, klass in self._Modules._moduleClasses.iteritems():
-        #     print "device types: module_id"
-        logger.debug("Done _load_device_types: {dts}", dts=dts)
-        self.load_deferred.callback(10)
-
-    def _stop_(self):
-        if self.load_deferred is not None and self.load_deferred.called is False:
-            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
-
-    def add_device_type(self, record, test_device_type=False):
-        """
-        Add a device_type based on data from a row in the SQL database.
-
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
-        :param test_device_type: If true, is a test device type not from SQL, only used for unittest.
-        :type test_device_type: bool
-        :returns: Pointer to new device type. Only used during unittest
-        """
-        logger.debug("record: {record}", record=record)
-        record = record.__dict__
-        dt_id = record['id']
-        self.device_types[dt_id] = DeviceType(record, self)
-        d = self.device_types[dt_id]._init_()
-
-#        if test_device_type:
-#            return self.__yombocommands[cmdUUID]
 
     @inlineCallbacks
     def dev_device_type_add(self, data, **kwargs):
@@ -610,7 +706,7 @@ class DeviceType:
     :ivar inputTypeID: The type of input that is required as a variable.
     :ivar voice_cmd: The voice command of the command.
     """
-    def __init__(self, device_type, device_type_library):
+    def __init__(self, device_type, _DeviceTypes):
         """
         A device type object used to lookup more information. Any changes to this record will be updated
         into the database.
@@ -623,8 +719,30 @@ class DeviceType:
         """
         logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
 
-        self._DTLibrary = device_type_library
+        self._DeviceTypes = _DeviceTypes
+        self.commands = {}
         self.device_type_id = device_type['id']
+
+        # the below are setup during update_attributes()
+        self.category_id = None
+        self.machine_label = None
+        self.label = None
+        self.description = None
+        self.public = None
+        self.status = None
+        self.created = None
+        self.updated = None
+
+        self.update_attributes(device_type)
+
+    def update_attributes(self, device_type):
+        """
+        Sets various values from a device type dictionary. This can be called when either new or
+        when updating.
+
+        :param device_type: 
+        :return: 
+        """
         self.category_id = device_type['category_id']
         self.machine_label = device_type['machine_label']
         self.label = device_type['label']
@@ -633,30 +751,18 @@ class DeviceType:
         self.status = device_type['status']
         self.created = device_type['created']
         self.updated = device_type['updated']
-        self.commands = {}
-
-#        self.updated_srv = device_type.updated_srv
 
     def _init_(self):
         """
-        Loads any related commands for the given device type.
-
-        :return:
-        """
-        return self.load_commands()
-
-    def load_commands(self):
-        """
         Loads available commands from the database. This should only be called when a device type is loaded,
         notification that device type has been updated, or when device type commands have changed.
-         
-        :return: 
+
         """
-        def set_commands(command_ids):
+        def set_commands(command_ids, self):
+            self.commands.clear()
             logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
             for command_id in command_ids:
-                self.commands[command_id] = self._DTLibrary._Commands[command_id]
-            # self.commands = vars
+                self.commands[command_id] = self._DeviceTypes._Commands[command_id]
 
         def gotException(failure):
            logger.warn("Exception 1: {failure}", failure=failure)
@@ -667,9 +773,9 @@ class DeviceType:
         # d.addErrback(gotException)
         # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
 
-        d = self._DTLibrary._Libraries['localdb'].get_device_type_commands(self.device_type_id)
+        d = self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
         d.addErrback(gotException)
-        d.addCallback(set_commands)
+        d.addCallback(set_commands, self)
         d.addErrback(gotException)
         return d
 
@@ -678,13 +784,6 @@ class DeviceType:
         print 'devicetype repsonse __getitem__: ', getattr(self, key)
         print 'devicetype repsonse __getitem__: ', type(getattr(self, key))
         return getattr(self, key)
-
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the cmdUUID so that
-        the command can be identified and referenced easily.
-        """
-        return self.device_type_id
 
     def get_devices(self):
         """
@@ -701,7 +800,8 @@ class DeviceType:
         ]
 
         try:
-            return self._DTLibrary._Devices.search(_limiter=1, device_type_id=self.device_type_id)
+            return do_search_instance(attrs, self._DeviceTypes._Devices.devices,
+                                      self.device_search_attributes)
         except YomboWarning, e:
             raise KeyError('Get devices had problems: %s' % e)
 
@@ -717,17 +817,24 @@ class DeviceType:
         else:
             raise YomboWarning("get_modules requires either 'id' or 'label'")
 
-    def dump(self):
+    def __str__(self):
+        """
+        Print a string when printing the class.  This will return the cmdUUID so that
+        the command can be identified and referenced easily.
+        """
+        return self.device_type_id
+
+    def __repl__(self):
         """
         Export command variables as a dictionary.
         """
         return {
             'device_type_id': str(self.device_type_id),
-            'machine_label' : str(self.machine_label),
-            'label'         : str(self.label),
-            'description'   : str(self.description),
-            'public'        : int(self.public),
-            'status'        : int(self.status),
-            'created'       : int(self.created),
-            'updated'       : int(self.updated),
+            'machine_label': str(self.machine_label),
+            'label': str(self.label),
+            'description': str(self.description),
+            'public': int(self.public),
+            'status': int(self.status),
+            'created': int(self.created),
+            'updated': int(self.updated),
         }

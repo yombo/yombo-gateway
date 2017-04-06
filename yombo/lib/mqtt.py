@@ -67,7 +67,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
-from yombo.utils import random_string
+from yombo.utils import random_string, sleep
 
 logger = get_logger('library.mqtt')
 
@@ -165,11 +165,14 @@ class MQTT(YomboLibrary):
         command = ['hbmqtt', "-c", self.hbmqtt_config_file]
         self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
 
+
     def _load_(self):
         if self.server_enabled is False:
             logger.info("Embedded MQTT Disabled.")
             return
 
+        # nasty hack..  TODO: remove nasty sleep hack
+        return sleep(0.2)
 
     def _start_(self):
         """
@@ -179,17 +182,16 @@ class MQTT(YomboLibrary):
         self.mqtt_local_client = self.new()  # System connection to send messages.
         # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
-
     def _stop_(self):
         """
         Stops the client connections and shuts down the MQTT server.
         :return:
         """
-        print("shutting down mqtt clients...")
+        logger.debug("shutting down mqtt clients...")
         for client_id, client in self.client_connections.iteritems():
-            print("in loop to try to stop mqtt client: %s" % client_id)
+            logger.debug("in loop to try to stop mqtt client: %s" % client_id)
             try:
-                print("telling client to say goodbye... %s" % client_id)
+                logger.debug("telling client to say goodbye... %s" % client_id)
                 client.factory.stopTrying(
 
                 )  # Tell reconnecting factory to don't attempt connecting after disconnect.
@@ -197,6 +199,7 @@ class MQTT(YomboLibrary):
                 client.factory.protocol.close()
             except:
                 pass
+        return sleep(0.1)
 
     def _unload_(self):
         self.mqtt_server.shutdown()
@@ -327,11 +330,11 @@ class MQTT(YomboLibrary):
     def test(self):
 #        self.local_mqtt_client_id = random_string(length=10)
 
-        self.mqtt_test_conenction = self.new(self.server_listen_ip,
+        self.mqtt_test_connection = self.new(self.server_listen_ip,
             self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False,
             self.test_mqtt_in, self.test_on_connect )
 
-        self.mqtt_test_conenction.subscribe("yombo/#")
+        self.mqtt_test_connection.subscribe("yombo/#")
 
         self.sendDataLoop = LoopingCall(self.test_send_data)
         self.sendDataLoop.start(5, True)
@@ -342,7 +345,7 @@ class MQTT(YomboLibrary):
 
     def test_send_data(self):
         print("mqtt sending test package")
-        self.mqtt_test_conenction.publish("yombo/devices/asdf/asdf", 'open')
+        self.mqtt_test_connection.publish("yombo/devices/asdf/asdf", 'open')
 
     def test_mqtt_in(self, topic, payload, qos, retain):
         print("i got this: %s / %s" % (topic, payload))
@@ -535,7 +538,7 @@ class MQTTClient(object):
 
     def client_connectionLost(self, reason):
         """
-        Called when the connection to the broker is lost. Calls a client conenction lost callbacks if defined.
+        Called when the connection to the broker is lost. Calls a client connection lost callbacks if defined.
         :param reason:
         :return:
         """

@@ -8,7 +8,8 @@
 
 .. seealso::
 
-   The :doc:`atoms library </lib/mqtt>` is used to store static data about the environment.
+   * The :doc:`Atoms library </lib/atoms>` is used to store static data about the environment.
+   * The :doc:`MQTT library </lib/mqtt>` is used to allow IoT devices to interact with states.
    
 The states library is used to collect and provide information about various states that the automation system
 can be in or exist around it. For example, it can tell if it's light outside, dawn, dusk, or if it's connected
@@ -78,6 +79,121 @@ class States(YomboLibrary, object):
     """
     MAX_HISTORY = 100
 
+    def __contains__(self, state_requested):
+        """
+        Checks to if a provided state exists.
+
+            >>> if 'is.light' in self._States:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param state_requested: The state key to search for.
+        :type state_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        if state_requested in self.__States:
+            return True
+        else:
+            return False
+
+    def __getitem__(self, state_requested):
+        """
+        Attempts to find the state requested.
+
+            >>> state_value = self._States['is.light']  #by id
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param state_requested: The state key to search for.
+        :type state_requested: string
+        :return: The value assigned to the state.
+        :rtype: mixed
+        """
+        return self.get(state_requested)
+
+    def __setitem__(self, state_requested, value):
+        """
+        Sets a state.
+        
+        .. note:: If this is a new state, or you wish to set a human filter for the value, use
+           :py:meth:`set <States.set>` method.
+
+            >>> self._States['module.local.name.hi'] = 'somee value'
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param state_requested: The state key to replace the value for.
+        :type state_requested: string
+        :param value: New value to set.
+        :type value: mixed
+        """
+        return self.set(state_requested, value)
+
+    def __delitem__(self, state_requested):
+        """
+        Attempts to delete the state.
+
+            >>> del self._States['module.local.name.hi']
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param state_requested: The state key to search for.
+        :type state_requested: string
+        :return: The value assigned to the state.
+        :rtype: mixed
+        """
+        return self.delete(key)
+
+    def __iter__(self):
+        """ iter states. """
+        return self.__States.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of states defined.
+
+        :return: The number of states defined.
+        :rtype: int
+        """
+        return len(self.__States)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo states library"
+
+    def keys(self):
+        """
+        Returns the keys of the states that are defined.
+
+        :return: A list of states defined. 
+        :rtype: list
+        """
+        return self.__States.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the states defined.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.__States.items()
+
+    def iteritems(self):
+        return self.__States.iteritems()
+
+    def iterkeys(self):
+        return self.__States.iterkeys()
+
+    def itervalues(self):
+        return self.__States.itervalues()
+
+    def values(self):
+        return self.__States.values()
+
     def _init_(self):
         self.automation = self._Libraries['automation']
 
@@ -107,30 +223,6 @@ class States(YomboLibrary, object):
     def _stop_(self):
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
-
-    def _unload_(self):
-        pass
-
-    def __delitem__(self, key):
-        self.delete(key)
-
-    def __getitem__(self, key):
-        return self.get(key)
-
-    def __len__(self):
-        return len(self.__States)
-
-    def __setitem__(self, key, value):
-        return self.set(key, value)
-
-    def __contains__(self, key):
-        return self.exists(key)
-
-    def __str__(self):
-        states = {}
-        for key, state in self.__States.iteritems():
-            states[key] = state['value']
-        return states
 
     @inlineCallbacks
     def load_states(self):
@@ -187,16 +279,21 @@ class States(YomboLibrary, object):
         else:
             raise YomboStateNotFound("Cannot get state time: %s not found" % key)
 
-    def get(self, key=None, human=None, full=None):
+    def get(self, key, human=None, full=None):
         """
         Get the value of a given state (key).
 
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
         :param key: Name of state to get.
+        :type key: string
+        :param human: If true, returns a state for human consumption.
+        :type human: bool
+        :param full: If true, Returns all data about the state. If false, just the value.
+        :type full: bool
         :return: Value of state
         """
         logger.debug('states:get: {key} = {value}', key=key)
-        if key is None:
-            raise YomboWarning("Key cannot be none")
 
         self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
 
@@ -243,12 +340,14 @@ class States(YomboLibrary, object):
         :return: Value of state
         """
         if key in self.__States:
+            is_new = True
             # If state is already set to value, we don't do anything.
             if self.__States[key]['value'] == value:
                 return
             self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
             self.__States[key]['created'] = int(round(time()))
         else:
+            is_new = False
             self.__States[key] = {
                 'created': int(time()),
             }
@@ -265,7 +364,8 @@ class States(YomboLibrary, object):
         self.__States[key]['value'] = value
         self.__States[key]['function'] = function
         self.__States[key]['arguments'] = arguments
-        self.__States[key]['value_type'] = value_type
+        if is_new is True or value_type is not None:
+            self.__States[key]['value_type'] = value_type
         self.__States[key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
@@ -332,6 +432,7 @@ class States(YomboLibrary, object):
         Deletes a status (key).
         YomboStateNotFound if state not found.
 
+        :raises KeyError: Raised when request is not found.
         :param key: Name of the state to delete.
         :return: None
         :rtype: None
@@ -339,7 +440,7 @@ class States(YomboLibrary, object):
         if key in self.__States:
             del self.__States[key]
         else:
-            raise YomboStateNotFound("Cannot delete state: %s not found" % key)
+            raise KeyError("Cannot delete state: %s not found" % key)
         return None
 
     def mqtt_incoming(self, topic, payload, qos, retain):
@@ -362,8 +463,13 @@ class States(YomboLibrary, object):
         :param retain:
         :return:
         """
-        #  0       1       2      3        4
-        # yombo/states/statename/get/requested_value
+        #getting
+        #  0       1       2      3      optional payload, one of:
+        # yombo/states/statename/get {value (default), value_type, value_human, all (response in json)}
+
+        #setting
+        #  0       1       2      3       payload
+        # yombo/states/statename/set    new value
         payload = str(payload)
 
         parts = topic.split('/', 10)
@@ -381,7 +487,7 @@ class States(YomboLibrary, object):
 
 
         if requested_state not in self.__States:
-            self.mqtt.publish('yombo/states/%s/get_response' % parts[2], str('invalid: state not found'))
+            self.mqtt.publish('yombo/states/%s/get_response' % parts[2], str('MQTT Error: state not found'))
             return
 
         state = self.__States[requested_state]
@@ -389,28 +495,49 @@ class States(YomboLibrary, object):
         if parts[3] == 'get':
             request_id = random_string(length=30)
 
-            if len(payload) > 0 and len(payload) < 40:
-                if not is_json(payload):
-                    request_id = payload
+            if len(payload) > 0:
+                if is_json(payload):
+                    if 'request_id' in payload:
+                        if len(payload['request_id']) > 100:
+                            self.mqtt.publish('yombo/states/%s/get_response' % parts[2],
+                                              str('MQTT Error: request id too long'))
+                            return
+                        request_id in payload['request_id']
 
-            if len(parts) == 5:
-                if parts[4] not in ('value', 'value_type', 'value_human'):
+            if len(parts) == 4 or (len(parts) == 5 and payload == 'all'):
+                response = {
+                    'value': state['value'],
+                    'value_type': state['value_type'],
+                    'value_human': state['value_human'],
+                    'request_id': request_id,
+                }
+                output = json.dumps(response, separators=(',', ':'))
+                self.mqtt.publish('yombo/states/%s/get_response' % parts[2],
+                                  str(output))
+                return
+            elif len(parts) == 5:
+
+                if payload == '':
+                    payload = 'value'
+                if payload not in ('value', 'value_type', 'value_human'):
                     logger.warn(
-                        "States received an invalid MQTT topic, discarding. '%s'" % topic)
+                        "States received an invalid MQTT get request, invalid request type: '%s'" % payload)
                     return
-                self.mqtt.publish('yombo/states/%s/get_response/%s' % (parts[2], parts[4]),
-                                  str(state[parts[4]]))
+
+                output = ""
+                if payload == 'value':
+                    if isinstance(state['value'], dict) or isinstance(state['value'], list):
+                        output = json.dumps(state['value'], separators=(',', ':'))
+                    else:
+                        output = state['value']
+                elif payload == 'value_type':
+                    output = state['value_type']
+                elif payload == 'value_human':
+                    output = state['value_human']
+
+                    self.mqtt.publish('yombo/states/%s/get_response/%s' % (parts[2], payload), str(output))
                 return
 
-            response = {
-                'value': state['value'],
-                'value_type': state['value_type'],
-                'value_human': state['value_human'],
-                'request_id': request_id,
-            }
-            self.mqtt.publish('yombo/states/%s/get_response' % parts[2],
-                              str(response) )
-            return
 
         elif parts[3] == 'set':
             request_id = random_string(length=30)
@@ -441,7 +568,7 @@ class States(YomboLibrary, object):
             if 'value_type' not in data:
                 data['value_type'] = None
 
-            self.set(requested_state, value, value_type=data['value_type'], function=None, arguments=None)
+            self.set(requested_state, data['value'], value_type=data['value_type'], function=None, arguments=None)
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #
@@ -534,7 +661,7 @@ class States(YomboLibrary, object):
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
 
-        This implementation allows automation rules set easily set Atom values.
+        This implementation allows automation rules set easily set state values.
 
         :param kwargs: None
         :return:

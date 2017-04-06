@@ -8,7 +8,7 @@
 
 .. seealso::
 
-   The :doc:`states library </lib/states>` is used to store states that change.
+   The :doc:`States library </lib/states>` is used to store states that change.
 
 Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
 some exceptions such as IP address changes.
@@ -42,8 +42,6 @@ from os.path import dirname, abspath
 import re
 
 from platform import _supported_dists
-_supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
-                     'slamd64', 'ovs', 'system', 'mint', 'oracle')
 from time import time
 
 # Import Yombo libraries
@@ -52,6 +50,8 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
 
+_supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
+                     'slamd64', 'ovs', 'system', 'mint', 'oracle')
 logger = get_logger("library.atoms")
 
 _REPLACE_LINUX_RE = re.compile(r'linux', re.IGNORECASE)
@@ -126,54 +126,138 @@ _MAP_OS_FAMILY = {
     'openSUSE Tumbleweed': 'Suse',
 }
 
+
 class Atoms(YomboLibrary):
     """
     Provides the Atom information for modules and libraries to get more
     information about the underlying system.
     """
+    def __contains__(self, atom_requested):
+        """
+        Checks to if a provided atom exists.
+
+            >>> if 'cpu.count' in self._Atoms:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param atom_requested: The atom key to search for.
+        :type atom_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        if atom_requested in self.__Atoms:
+            return True
+        else:
+            return False
+
+    def __getitem__(self, atom_requested):
+        """
+        Attempts to find the atom requested.
+
+            >>> system_cpus = self._Atoms['cpu.count']  #by id
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param atom_requested: The atom key to search for.
+        :type atom_requested: string
+        :return: The value assigned to the atom.
+        :rtype: mixed
+        """
+        return self.get(atom_requested)
+
+    def __setitem__(self, atom_requested, value):
+        """
+        Sets a state.
+
+        .. note:: If this is a new state, or you wish to set a human filter for the value, use
+           :py:meth:`set <States.set>` method.
+
+            >>> self._States['module.local.name.hi'] = 'somee value'
+
+        :raises YomboWarning: Raised when request is malformed.
+        :param atom_requested: The atom key to replace the value for.
+        :type atom_requested: string
+        :param value: New value to set.
+        :type value: mixed
+        """
+        return self.set(atom_requested, value)
+
+    def __delitem__(self, atom_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __iter__(self):
+        """ iter atoms. """
+        return self.__Atoms.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of atoms defined.
+
+        :return: The number of atoms defined.
+        :rtype: int
+        """
+        return len(self.__Atoms)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo atoms library"
+
+    def keys(self):
+        """
+        Returns the keys of the atoms that are defined.
+
+        :return: A list of atoms defined. 
+        :rtype: list
+        """
+        return self.__Atoms.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the atoms defined.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.__Atoms.items()
+
+    def iteritems(self):
+        return self.__Atoms.iteritems()
+
+    def iterkeys(self):
+        return self.__Atoms.iterkeys()
+
+    def itervalues(self):
+        return self.__Atoms.itervalues()
+
+    def values(self):
+        return self.__Atoms.values()
+
     def _init_(self):
-        self.run_state = 1
+        self.library_state = 1
         self.__Atoms = {}
         self.__Atoms.update(self.os_data())
 
         self.triggers = {}
-        self.automation = self._Libraries['automation']
+        self._Automation = self._Libraries['automation']
         self._loaded = False
         self.set('loader.operation_mode', 'run')
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
 
     def _load_(self):
-        self.run_state = 2
+        self.library_state = 2
         self.set('running_since', time())
         self._loaded = True
 
     def _start_(self):
-        self.run_state = 3
-
-    def _stop_(self):
-        pass
-
-    def _unload_(self):
-        pass
-
-    def __delitem__(self, key):
-        if key in self.__Atoms:
-            del self.__Atoms[key]
-
-    def __getitem__(self, key):
-        return self.get(key)
-
-    def __len__(self):
-        return len(self.__Atoms)
-
-    def __setitem__(self, key, value):
-        return self.set(key, value)
-
-    def __contains__(self, key):
-        return self.exists(key)
-
-    def __str__(self):
-        return self.__Atoms
+        self.library_state = 3
 
     def _statistics_lifetimes_(self, **kwargs):
         """
@@ -189,44 +273,31 @@ class Atoms(YomboLibrary):
         """
         return self.__Atoms.copy()
 
-    def exists(self, key):
-        """
-        Checks if a given atom exsist. Returns true or false.
-
-        :param key: Name of state to check.
-        :return: If state exists:
-        :rtype: Bool
-        """
-        if key in self.__Atoms:
-            return True
-        return False
-
-    def get(self, key=None):
+    def get(self, atom_requested):
         """
         Get the value of a given atom (key).
 
-        :param key: Name of atom to check.
+        :param atom_requested: Name of atom to check.
+        :rtype atom_requested: string
         :return: Value of atom
         """
-        logger.debug('atoms:get: {key} = {value}', key=key)
-        if key is None:
-            raise YomboWarning("Key cannot be none")
+        logger.debug('atoms:get: {atom_requested}', atom_requested=atom_requested)
 
         self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
 
         search_chars = ['#', '+']
-        if any(s in key for s in search_chars):
-            results = yombo.utils.pattern_search(key, self.__Atoms)
+        if any(s in atom_requested for s in search_chars):
+            results = yombo.utils.pattern_search(atom_requested, self.__Atoms)
             if len(results) > 1:
                 values = {}
                 for item in results:
                     values[item] = self.__Atoms[item]
                 return values
             else:
-                raise KeyError("Searched for atoms, none found.")
+                raise KeyError("Searched for atom, none found: %s" % atom_requested)
 
         # print "atoms: %s" % self.__Atoms
-        return self.__Atoms[key]
+        return self.__Atoms[atom_requested]
 
     def set(self, key, value):
         """
@@ -249,7 +320,7 @@ class Atoms(YomboLibrary):
 
         # Call any hooks
         already_set = False
-        if self.run_state >= 2:  # but only if we are not during init.
+        if self.library_state >= 2:  # but only if we are not during init.
             try:
                 atom_changes = yombo.utils.global_invoke_all('_atoms_preset_',
                                         **{'keys': key, 'value': value, 'new': key in self.__Atoms})
@@ -269,7 +340,7 @@ class Atoms(YomboLibrary):
         if not already_set:
            self.__Atoms[key]= value
 
-        if self.run_state >= 2:  # but only if we are not during init.
+        if self.library_state >= 2:  # but only if we are not during init.
             # Call any hooks
             try:
                 state_changes = yombo.utils.global_invoke_all('_atoms_set_', **{'key': key, 'value': value})
@@ -342,7 +413,7 @@ class Atoms(YomboLibrary):
         True - Rules fired, fale - no rules fired.
         """
         if self._loaded:
-            results = self.automation.triggers_check('atoms', key, value)
+            results = self._Automation.triggers_check('atoms', key, value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -388,7 +459,7 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        self.automation.triggers_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
+        self._Automation.triggers_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """

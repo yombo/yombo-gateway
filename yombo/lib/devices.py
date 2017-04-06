@@ -95,17 +95,19 @@ class Devices(YomboLibrary):
 
     def __contains__(self, device_requested):
         """
-        Checks to if a provided device name or device uuid exists.
+        .. note:: The device must be enabled to be found using this method. Use :py:meth:`get <Devices.get>`
+           to set status allowed.
 
-        Simulate a dictionary when requested with:
+        Checks to if a provided device label or device id exists.
 
-            >>> if '137ab129da9318' in self._Devices['137ab129da9318']:  #by uuid
+            >>> if '137ab129da9318' in self._Devices:  #by id
 
         or:
 
-            >>> if 'living room light' in self._Devices['137ab129da9318']:  #by uuid
+            >>> if 'living room light' in self._Devices:  #by label
 
-        :param device_requested: The device UUID or device label to search for.
+        :raises YomboWarning: Raised when request is malformed.
+        :param device_requested: The device ID or label to search for.
         :type device_requested: string
         :return: Returns true if exists, otherwise false.
         :rtype: bool
@@ -118,23 +120,44 @@ class Devices(YomboLibrary):
 
     def __getitem__(self, device_requested):
         """
+        .. note:: The device must be enabled to be found using this method. Use :py:meth:`get <Devices.get>`
+           to set status allowed.
+
         Attempts to find the device requested using a couple of methods.
 
-        Simulate a dictionary when requested with:
-
-            >>> my_light = self._Devices['137ab129da9318']  #by uuid
+            >>> my_light = self._Devices['137ab129da9318']  #by id
 
         or:
 
             >>> my_light = self._Devices['living room light']  #by name
 
-        :raises YomboDeviceError: Raised when device cannot be found.
-        :param device_requested: The device UUID or device label to search for.
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param device_requested: The device ID or label to search for.
         :type device_requested: string
-        :return: Pointer to array of all devices.
-        :rtype: dict
+        :return: A pointer to the device type instance.
+        :rtype: instance
         """
         return self.get(device_requested)
+
+    def __setitem__(self, device_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        :param device_requested: The atom key to replace the value for.
+        :type device_requested: string
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, device_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        :param device_requested: 
+        """
+        raise Exception("Not allowed.")
 
     def __iter__(self):
         """ iter devices. """
@@ -142,6 +165,7 @@ class Devices(YomboLibrary):
 
     def __len__(self):
         """
+        Returns an int of the number of device configured.
         
         :return: The number of devices configured.
         :rtype: int
@@ -150,12 +174,11 @@ class Devices(YomboLibrary):
 
     def __str__(self):
         """
-        .. warning:: The results of this should not be used by modules. Internal use only.
-        
-        :return: Returns the devices dictionary. 
-        :rtype: dict
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
         """
-        return self.devices
+        return "Yombo devices library"
 
     def keys(self):
         """
@@ -168,9 +191,7 @@ class Devices(YomboLibrary):
 
     def items(self):
         """
-        .. warning:: The results of this should not be used by modules. Internal use only.
-        
-        Gets a list of tuples representing the device's configured.
+        Gets a list of tuples representing the devices configured.
         
         :return: A list of tuples.
         :rtype: list
@@ -191,23 +212,19 @@ class Devices(YomboLibrary):
 
     def _init_(self):
         """
-        Setups up the basic framework. Nothing is loaded in here until the
-        Load() stage.
+        Sets up basic attributes.
         """
-        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
-
         self._AutomationLibrary = self._Loader.loadedLibraries['automation']
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
-        self._LocalDB = self._Libraries['localdb']
-        self.gwid = self._Configs.get("core", "gwid")
 
+        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.devices = {}
-        # self._save_status_loop = None
-        self.library_state = 1
-
-        self.device_search_attributes = ['device_id', 'device_type_id', 'label', 'description', 'enabled',
+        self.device_search_attributes = ['device_id', 'device_type_id', 'label', 'description',
             'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
             'created', 'updated', 'updated_srv']
+
+        self.gwid = self._Configs.get("core", "gwid")
+        # self._save_status_loop = None
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
@@ -215,38 +232,122 @@ class Devices(YomboLibrary):
         self.delay_queue_unique = {}  # allows us to only create delayed commands for unique instances.
 
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
-        self.delay_deviceList = {}  # list of devices that have pending messages.
         self.processing_commands = False
 
     def _load_(self):
-        self.library_state = 2
+        """
+        Loads devices from the database and imports them.
+        :return: 
+        """
         self.load_deferred = Deferred()
-        self.__load_devices()
+        self._load_devices_from_database()
         return self.load_deferred
 
     def _start_(self):
-        self.library_state = 3
-
+        """
+        Tells the system we are in run mode. Also, connects to MQTT broker to listen for device commands.
+        :return: 
+        """
         if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
-    def _started_(self):
-        self.library_state = 4
-
     def _stop_(self):
+        """
+        Cleans up any pending deferreds.
+        
+        :return: 
+        """
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _unload_(self):
-        """
-        Stop periodic loop, save status updates.
-        """
-        pass
-
     def _reload_(self):
-        return self.__load_devices()
+        return self._load_()
+
+    def _modules_prestarted_(self):
+        """
+        On start, sends all queued messages. Then, check delayed messages for any messages that were missed. Send
+        old messages and prepare future messages to run.
+        """
+        self.processing_commands = True
+        for command, request in self.startup_queue.iteritems():
+            self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
+                    max_delay=request['max_delay'], **request['kwargs'])
+        self.startup_queue.clear()
+
+    @inlineCallbacks
+    def _load_devices_from_database(self):
+        """
+        Loads devices from database and sends them to :py:meth:`import_device <Devices.import_device>`
+        
+        This can be triggered either on system startup or when new/updated devices have been saved to the
+        database and we need to refresh existing devices.
+        """
+        devices = yield self._LocalDB.get_devices()
+        logger.debug("Loading devices:::: {devices}", devices=devices)
+        if len(devices) > 0:
+            for record in devices:
+                record = record.__dict__
+                if record['energy_map'] is not None:
+                    record['energy_map'] = json.loads(str(record['energy_map']))
+                logger.debug("Loading device: {record}", record=record)
+                yield self.import_device(record)
+        yield self._load_delay_queue()
+
+    @inlineCallbacks
+    def import_device(self, device, test_device=None):  # load ore re-load if there was an update.
+        """
+        Add a new device to memory or update an existing device.
+
+        **Hooks called**:
+
+        * _device_before_load_ : If added, sends device dictionary as 'device'
+        * _device_before_update_ : If updated, sends device dictionary as 'device'
+        * _device_loaded_ : If added, send the device instance as 'device'
+        * _device_updated_ : If updated, send the device instance as 'device'
+
+        :param device: A dictionary of items required to either setup a new device or update an existing one.
+        :type device: dict
+        :param test_device: Used for unit testing.
+        :type test_device: bool
+        :returns: Pointer to new device. Only used during unittest
+        """
+        if test_device is None:
+            test_device = False
+
+
+        device_id = device["id"]
+        if device_id not in self.devices:
+            import_state = 'new'
+            global_invoke_all('_device_before_load_',
+                              **{'device': device})
+            self.devices[device_id] = Device(device, self)
+        if device_id not in self.devices:
+            import_state = 'update'
+            global_invoke_all('_device_before_update_',
+                              **{'device': device})
+            self.devices[device_id].update_attributes(device)
+
+        yield self.devices[device_id]._init_()
+
+        try:
+            self._VoiceCommandsLibrary.add_by_string(device["voice_cmd"], None, device["id"],
+                                                     device["voice_cmd_order"])
+        except YomboWarning:
+            logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=device["label"],
+                         voice_cmd=device["voice_cmd"])
+
+        # logger.debug("_add_device: {device}", device=device)
+
+        if import_state == 'new':
+            global_invoke_all('_device_loaded_',
+                          **{'device': self.devices[device_id]})
+        elif import_state == 'update':
+            global_invoke_all('_device_updated_',
+                              **{'device': self.devices[device_id]})
+        # if test_device:
+        #            returnValue(self.devices[device_id])
 
     @inlineCallbacks
     def _load_delay_queue(self):
@@ -276,16 +377,6 @@ class Devices(YomboLibrary):
                                 max_delay=request['max_delay'], **request['kwargs'])
         self.load_deferred.callback(10)
 
-    def _modules_prestarted_(self):
-        """
-        On start, sends all queued messages. Then, check delayed messages for any messages that were missed. Send
-        old messages and prepare future messages to run.
-        """
-        self.processing_commands = True
-        for command, request in self.startup_queue.iteritems():
-            self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
-                    max_delay=request['max_delay'], **request['kwargs'])
-        self.startup_queue.clear()
 
     def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
         """
@@ -301,67 +392,6 @@ class Devices(YomboLibrary):
         :return:
         """
         return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
-
-    @inlineCallbacks
-    def __load_devices(self):
-        """
-        Load the devices into memory. Set up various dictionaries to manage
-        devices. This also setups all the voice commands for all the devices.
-
-        This also loads all the device routing. This helps messages and modules determine how to route
-        commands between command modules and interface modules.
-        """
-        devices = yield self._LocalDB.get_devices()
-        logger.debug("Loading devices:::: {devices}", devices=devices)
-        if len(devices) > 0:
-            for record in devices:
-                record = record.__dict__
-                if record['energy_map'] is not None:
-                    energy_map = json.loads(str(record['energy_map']))
-                    energy_map_final = {}
-                    for percent, rate in energy_map.iteritems():
-                        energy_map_final[string_to_number(percent)] = string_to_number(rate)
-                    energy_map_final = OrderedDict(sorted(energy_map_final.items(), key=lambda (x, y): float(x)))
-                    record['energy_map'] = energy_map_final
-
-                logger.debug("Loading device: {record}", record=record)
-                yield self.load_device(record)
-        yield self._load_delay_queue()
-
-    def load_device(self, device, test_device=None):  # load ore re-load if there was an update.
-        """
-        Instantiate (load) a new device. Doesn't update database, must call add_update_delete isntead of this.
-
-        **Hooks called**:
-
-        * _device_loaded_ : Sends kwargs: *id* - The new device id.
-
-        :param device: Row of items from the SQLite3 database.
-        :type device: dict
-        :returns: Pointer to new device. Only used during unittest
-        """
-        if test_device is None:
-            test_device = False
-        device_id = device["id"]
-        self.devices[device_id] = Device(device, self)
-        d = self.devices[device_id]._init_()
-
-        try:
-            self._VoiceCommandsLibrary.add_by_string(device["voice_cmd"], None, device["id"], device["voice_cmd_order"])
-        except YomboWarning:
-            logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=device["label"], voice_cmd=device["voice_cmd"])
-        # try:
-        #     # todo: refactor voicecommands. Need to be able to update/delete them later.
-        # except Exception, e:
-        #     logger.warn("Error while adding voice command for device: {err}", err=e)
-
-
-        logger.debug("_add_device: {device}", device=device)
-
-        global_invoke_all('_device_loaded_', **{'id': device['id']})  # call hook "devices_add" when adding a new device.
-        return d
-#        if test_device:
-#            returnValue(self.devices[device_id])
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
@@ -421,13 +451,6 @@ class Devices(YomboLibrary):
                     self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
                 elif parts[5] == 'source':
                     self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
-
-    def _clear_(self):
-        """
-        Clear all devices. Should only be called by the loader module
-        during a reconfiguration event. **Do not call this function!**
-        """
-        self.devices.clear()
 
     def list_devices(self, field=None):
         """
@@ -505,12 +528,10 @@ class Devices(YomboLibrary):
             ]
             try:
                 logger.debug("Get is about to call search...: %s" % device_requested)
-                # found, key, item, ratio, others = self._search(attrs, operation="highest")
                 found, key, item, ratio, others = do_search_instance(attrs, self.devices,
                                                                      self.device_search_attributes,
                                                                      limiter=limiter,
-                                                                     operation="highest",
-                                                                     status=status)
+                                                                     operation="highest")
                 logger.debug("found device by search: {device_id}", device_id=key)
                 if found:
                     return self.devices[key]
@@ -521,7 +542,7 @@ class Devices(YomboLibrary):
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
-        Search for commands based on attributes for all devices.
+        Search for devices based on attributes for all devices.
         
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
@@ -981,6 +1002,13 @@ class Device:
     controlled and/or queried for status.  Examples include a lamp
     module, curtains, Plex client, rain sensor, etc.
     """
+    def __str__(self):
+        """
+        Print a string when printing the class.  This will return the device_id so that
+        the device can be identified and referenced easily.
+        """
+        return self.device_id
+
     def __init__(self, device, _DevicesLibrary, test_device=None):
         """
         :param device: *(list)* - A device as passed in from the devices class. This is a
@@ -994,8 +1022,6 @@ class Device:
         :ivar device_type_id: *(string)* - The device type UUID of the device.
         :ivar label: *(string)* - Device label as defined by the user.
         :ivar description: *(string)* - Device description as defined by the user.
-        :ivar enabled: *(bool)* - If the device is enabled - can send/receive command and/or
-            status updates.
         :ivar pin_required: *(bool)* - If a pin is required to access this device.
         :ivar pin_code: *(string)* - The device pin number.
             system to deliver commands and status update requests.
@@ -1007,25 +1033,78 @@ class Device:
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
-        if test_device is None:
-            test_device = False
-
         self._FullName = 'yombo.gateway.lib.Devices.Device'
         self._Name = 'Devices.Device'
         self._DevicesLibrary = _DevicesLibrary
-        logger.debug("New device - info: {device}", device=device)
+        # logger.debug("New device - info: {device}", device=device)
 
         self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")
 
+        self.do_command_requests = MaxDict(300, {})
         self.call_before_command = []
         self.call_after_command = []
 
         self.device_id = device["id"]
+        if test_device is None:
+            self.test_device = False
+        else:
+            self.test_device = test_device
+
+        self.last_command = deque({}, 30)
+        self.status_history = deque({}, 30)
+        self.device_variables = {}
+
+        self.device_is_new = False
+        self.update_attributes(device)
+
+    def _init_(self):
+        """
+        Performs items that require deferreds.
+
+        :return:
+        """
+        def set_variables(vars):
+            # print("GOT DEVICE VARS!!!!! %s" % vars)
+            self.device_variables = vars
+
+        def gotException(failure):
+           print("Exception : %r" % failure)
+           return 100  # squash exception, use 0 as value for next stage
+
+        def ensure_device_type_loaded(data, device_type_id):
+            # print("###############3 ensure loaded: device type id: %s" % device_type_id)
+            self._DevicesLibrary._DeviceTypes.ensure_loaded(device_type_id)
+
+        # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
+        # d.addCallback(set_commands)
+        # d.addErrback(gotException)
+        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
+
+        # print("getting device variables for: %s" % self.device_id)
+        d = self._DevicesLibrary._LocalDB.get_variables('device', self.device_id)
+        d.addErrback(gotException)
+        d.addCallback(set_variables)
+        d.addErrback(gotException)
+        d.addCallback(ensure_device_type_loaded, self.device_type_id)
+        d.addErrback(gotException)
+
+        if self.test_device is False and self.device_is_new is False:
+            self.device_is_new = True
+            d.addCallback(lambda ignored: self.load_history(35))
+        return d
+
+    def update_attributes(self, device):
+        """
+        Sets various values from a device dictionary. This can be called when either new or
+        when updating.
+        
+        :param device: 
+        :return: 
+        """
         self.device_type_id = device["device_type_id"]
         self.label = device["label"]
         self.description = device["description"]
-        self.enabled = int(device["status"])  # status from database means enabled or not.
         self.pin_required = int(device["pin_required"])
         self.pin_code = device["pin_code"]
         self.pin_timeout = int(device["pin_timeout"])
@@ -1036,82 +1115,23 @@ class Device:
         self.created = int(device["created"])
         self.updated = int(device["updated"])
         self.updated_srv = int(device["updated_srv"])
-
-        self.do_command_requests = MaxDict(300, {})
-
-        self.energy_type = None  # electric, gas, etc.
-        self.energy_tracker_source = None  # Source of tracking: None, calc, device
-        self.energy_tracker_device = None  # Only required if above is 'device'
-        self.energy_map = None  # Used to calculate energy usage
+        self.energy_tracker_device = device['energy_tracker_device']
+        self.energy_tracker_source = device['energy_tracker_source']
 
         if 'energy_type' in device:
             self.energy_type = device['energy_type']
-        self.energy_tracker_source = device['energy_tracker_source']
-
-        # self.energy_map = {float(k):v for k,v in device['energy_map'].items()}  # fix for JSON
-        self.energy_map = device['energy_map']
-        # elif self.energy_tracker_source == 'device':
-        self.energy_tracker_device = device['energy_tracker_device']
-
-        self.last_command = deque({}, 30)
-        self.status_history = deque({}, 30)
-        self.test_device = test_device
-        self.device_variables = {}
-        self.device_route = {}  # Destination module to send commands to
-        self._helpers = {}  # Helper class provided by route module that can provide additional features.
-
-        # this registers the device's device type so others know what kind of device this is.
-
-        if device['status'] == 1:
-            self.enabled = True
         else:
-            self.enabled = False
+            self.energy_type = None  # electric, gas, etc.
 
-    def __str__(self):
-        """
-        Print a string when printing the class.  This will return the device_id so that
-        the device can be identified and referenced easily.
-        """
-        return self.device_id
-
-    def _init_(self):
-        """
-        Performs items that require deferreds.
-
-        :return:
-        """
-        # def set_commands(commands):
-        #     for command in commands:
-        #         self.available_commands.append(str(command.command_id))
-
-        def set_variables(vars):
-            # print("GOT DEVICE VARS!!!!! %s" % vars)
-            self.device_variables = vars
-
-        def gotException(failure):
-           print("Exception : %r" % failure)
-           return 100  # squash exception, use 0 as value for next stage
-
-        def ensure_device_type_loaded(data, device_type_id):
-            print("###############3 ensure loaded: device type id: %s" % device_type_id)
-            self._DevicesLibrary._DeviceTypes.ensure_loaded(device_type_id)
-
-        # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
-        # d.addCallback(set_commands)
-        # d.addErrback(gotException)
-        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
-
-        # print("getting device variables for: %s" % self.device_id)
-        d = self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id)
-        d.addErrback(gotException)
-        d.addCallback(set_variables)
-        d.addErrback(gotException)
-        d.addCallback(ensure_device_type_loaded, self.device_type_id)
-        d.addErrback(gotException)
-
-        if self.test_device is False:
-            d.addCallback(lambda ignored: self.load_history(35))
-        return d
+        if device['energy_map'] is not None:
+            # create an energy map from a dictionary
+            energy_map_final = {}
+            for percent, rate in device['energy_map'].iteritems():
+                energy_map_final[string_to_number(percent)] = string_to_number(rate)
+            energy_map_final = OrderedDict(sorted(energy_map_final.items(), key=lambda (x, y): float(x)))
+            self.energy_map = energy_map_final
+        else:
+            self.energy_map = None
 
     def available_commands(self):
         # print("getting available_commands for devicetypeid: %s" % (self.device_type_id, ))
@@ -1125,7 +1145,6 @@ class Device:
                 'device_type_id': str(self.device_type_id),
                 'label': str(self.label),
                 'description': str(self.description),
-                'enabled': int(self.enabled),
                 'pin_code': "********",
                 'pin_required':  int(self.pin_required),
                 'pin_timeout': int(self.pin_timeout),
@@ -1160,7 +1179,7 @@ class Device:
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
-        logger.info("device::command kwargs: {kwargs}", kwargs=kwargs)
+        logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         if requested_by is None:  # soon, this will cause an error!
             requested_by = {
                     'user_id': 'Unknown',

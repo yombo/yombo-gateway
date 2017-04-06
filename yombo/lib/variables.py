@@ -51,9 +51,7 @@ class Variables(YomboLibrary):
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
 
-        self._LocalDB = self._Libraries['localdb']
         self.gwid = self._Configs.get("core", "gwid")
-
 
     @inlineCallbacks
     def dev_group_add(self, data, **kwargs):

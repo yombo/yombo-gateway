@@ -24,7 +24,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance
+from yombo.utils import search_instance, do_search_instance, global_invoke_all
 
 logger = get_logger('library.inputtypes')
 
@@ -35,31 +35,120 @@ class InputTypes(YomboLibrary):
     All modules already have a predefined reference to this library as
     `self._InputTypes`. All documentation will reference this use case.
     """
-    def __getitem__(self, input_type_requested):
-        """
-        Return an input type, searching first by input type ID and then by input type machine label.
-        Modules should use `self._InputTypes` to search with:
-
-            >>> input_type = self._InputTypes['137ab129da9318']  #by uuid
-            
-        or:
-        
-            >>> input_type = self._InputTypes['alpnum']  #by name
-
-        :param input_type_requested: The input type ID or input type machine label to search for.
-        :type input_type_requested: string
-        """
-        return self.get(input_type_requested)
-
-    def __len__(self):
-        return len(self.input_types)
-
     def __contains__(self, input_type_requested):
+        """
+        .. note:: The input type must be enabled to be found using this method. Use :py:meth:`get <InputTypes.get>`
+           to set status allowed.
+
+        Checks to if a provided input type ID, label, or machine_label exists.
+
+            >>> if '0kas02j1zss349k1' in self._InputTypes:
+
+        or:
+
+            >>> if 'living room light' in self._InputTypes:
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param input_type_requested: The input type id, label, or machine_label to search for.
+        :type input_type_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
         try:
             self.get(input_type_requested)
             return True
         except:
             return False
+
+    def __getitem__(self, input_type_requested):
+        """
+        .. note:: The input type must be enabled to be found using this method. Use :py:meth:`get <InputTypes.get>`
+           to set status allowed.
+
+        Attempts to find the device requested using a couple of methods.
+
+            >>> input_type = self._InputTypes['0kas02j1zss349k1']  #by uuid
+
+        or:
+
+            >>> input_type = self._InputTypes['alpnum']  #by name
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param input_type_requested: The input type ID, label, or machine_label to search for.
+        :type input_type_requested: string
+        :return: A pointer to the device type instance.
+        :rtype: instance
+        """
+        return self.get(input_type_requested)
+
+    def __setitem__(self, input_type_requested, value):
+        """
+        Sets are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __delitem__(self, input_type_requested):
+        """
+        Deletes are not allowed. Raises exception.
+
+        :raises Exception: Always raised.
+        """
+        raise Exception("Not allowed.")
+
+    def __iter__(self):
+        """ iter device types. """
+        return self.device_types.__iter__()
+
+    def __len__(self):
+        """
+        Returns an int of the number of device types configured.
+
+        :return: The number of input types configured.
+        :rtype: int
+        """
+        return len(self.input_types)
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo device types library"
+
+    def keys(self):
+        """
+        Returns the keys (device type ID's) that are configured.
+
+        :return: A list of device type IDs. 
+        :rtype: list
+        """
+        return self.input_types.keys()
+
+    def items(self):
+        """
+        Gets a list of tuples representing the device types configured.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return self.input_types.items()
+
+    def iteritems(self):
+        return self.input_types.iteritems()
+
+    def iterkeys(self):
+        return self.input_types.iterkeys()
+
+    def itervalues(self):
+        return self.input_types.itervalues()
+
+    def values(self):
+        return self.input_types.values()
 
     def _init_(self):
         """
@@ -75,17 +164,94 @@ class InputTypes(YomboLibrary):
         """
         Loads all commands from DB to various arrays for quick lookup.
         """
-        self._load_input_types()
         self.load_deferred = Deferred()
+        self._load_input_types_from_database()
         return self.load_deferred
 
     def _stop_(self):
+        """
+        Cleans up any pending deferreds.
+        """
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _reload_(self):
-        self.__load_input_types()
+    # @inlineCallbacks
+    # def _load_input_types(self):
+    #     """
+    #     Load the input types into memory.
+    #     """
+    #     self.input_types.clear()
+    #
+    #     input_types = yield self._LocalDB.get_input_types()
+    #     for input in input_types:
+    #         self._add_input_type(input)
+    #     logger.debug("Done _load_input_types: {input_types}", input_types=self.input_types)
+    #     self.load_deferred.callback(10)
+    #
+    # def _add_input_type(self, record, testCommand=False):
+    #     """
+    #     Add an input type on data from a row in the SQL database.
+    #
+    #     :param record: Row of items from the SQLite3 database.
+    #     :type record: dict
+    #     :param test: If true, is a test and not from SQL, only used for unittest.
+    #     :type test: bool
+    #     :returns: Pointer to new input type. Only used during unittest
+    #     """
+    #     logger.debug("record: {record}", record=record)
+    #     input_type_id = record.id
+    #     self.input_types[input_type_id] = InputType(record)
 
+
+    @inlineCallbacks
+    def _load_input_types_from_database(self):
+        """
+        Loads input types from database and sends them to
+        :py:meth:`import_input_types <InputTypes.import_input_types>`
+
+        This can be triggered either on system startup or when new/updated input types have been saved to the
+        database and we need to refresh existing input types.
+        """
+        input_types = yield self._LocalDB.get_input_types()
+        logger.debug("input_types: {input_types}", input_types=input_types)
+        for input_type in input_types:
+            self.import_input_types(input_type)
+        self.load_deferred.callback(10)
+
+    def import_input_types(self, input_type, test_input_type=False):
+        """
+        Add a new input types to memory or update an existing input types.
+
+        **Hooks called**:
+
+        * _input_type_before_load_ : If added, sends input type dictionary as 'input_type'
+        * _input_type_before_update_ : If updated, sends input type dictionary as 'input_type'
+        * _input_type_loaded_ : If added, send the input type instance as 'input_type'
+        * _input_type_updated_ : If updated, send the input type instance as 'input_type'
+
+        :param input_type: A dictionary of items required to either setup a new input type or update an existing one.
+        :type input: dict
+        :param test_input_type: Used for unit testing.
+        :type test_input_type: bool
+        :returns: Pointer to new input. Only used during unittest
+        """
+        logger.debug("input_type: {input_type}", input_type=input_type)
+
+        global_invoke_all('_input_types_before_import_',
+                      **{'input_type': input_type})
+        input_type_id = input_type["id"]
+        if input_type_id not in self.input_types:
+            global_invoke_all('_input_type_before_load_',
+                              **{'input_type': input_type})
+            self.input_types[input_type_id] = InputType(input_type)
+            global_invoke_all('_input_type_loaded_',
+                          **{'input_type': self.input_types[input_type_id]})
+        elif input_type_id not in self.input_types:
+            global_invoke_all('_input_type_before_update_',
+                              **{'input_type': input_type})
+            self.input_types[input_type_id].update_attributes(input_type)
+            global_invoke_all('_input_type_updated_',
+                          **{'input_type': self.input_types[input_type_id]})
 
     def get_all(self):
         """
@@ -183,35 +349,6 @@ class InputTypes(YomboLibrary):
                                self.input_type_search_attributes,
                                _limiter,
                                _operation)
-
-    @inlineCallbacks
-    def _load_input_types(self):
-        """
-        Load the input types into memory.
-        """
-        self.input_types.clear()
-
-        input_types = yield self._LocalDB.get_input_types()
-        for input in input_types:
-            self._add_input_type(input)
-        logger.debug("Done _load_input_types: {input_types}", input_types=self.input_types)
-        self.load_deferred.callback(10)
-
-    def _add_input_type(self, record, testCommand = False):
-        """
-        Add an input type on data from a row in the SQL database.
-
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
-        :param test: If true, is a test and not from SQL, only used for unittest.
-        :type test: bool
-        :returns: Pointer to new input type. Only used during unittest
-        """
-        logger.debug("record: {record}", record=record)
-        input_type_id = record.id
-        self.input_types[input_type_id] = InputType(record)
-#        if testCommand:
-#            return self.__yombocommands[command_id]
 
     @inlineCallbacks
     def dev_input_type_add(self, data, **kwargs):
@@ -344,7 +481,7 @@ class InputTypes(YomboLibrary):
         }
 
         input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
- #       print("disable input_type results: %s" % input_type_results)
+        # print("disable input_type results: %s" % input_type_results)
 
         if input_type_results['code'] != 200:
             results = {
@@ -366,37 +503,60 @@ class InputTypes(YomboLibrary):
 class InputType:
     """
     A class to manage a single input type.
-    :ivar label: Command label
-    :ivar description: The description of the command.
-    :ivar inputTypeID: The type of input that is required as a variable.
-    :ivar voice_cmd: The voice command of the command.
+    :ivar input_type_id: (string) The unique ID.
+    :ivar label: (string) Human label
+    :ivar machine_label: (string) A non-changable machine label.
+    :ivar category_id: (string) Reference category id.
+    :ivar input_regex: (string) A regex to validate if user input is valid or not.
+    :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
+    :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
+    :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
+    :ivar created: (int) EPOCH time when created
+    :ivar updated: (int) EPOCH time when last updated
     """
 
     def __init__(self, input_type):
         """
         Setup the input type object using information passed in.
 
-        :cvar input_type_id: (string) The UUID of the command.
-
-        :param command: A device as passed in from the devices class. This is a
-            dictionary with various device attributes.
-        :type command: dict
+        :param input_type: An input type with all required items to create the class.
+        :type input_type: dict
 
         """
         logger.debug("input_type info: {input_type}", input_type=input_type)
 
-        self.input_type_id = input_type.id
-        self.category_id = input_type.category_id
-        self.machine_label = input_type.machine_label
-        self.label = input_type.label
-        self.description = input_type.description
-        self.input_regex = input_type.input_regex
-        self.always_load = input_type.always_load
-        self.status = input_type.status
-        self.public = input_type.public
-        self.created = input_type.created
-        self.updated = input_type.updated
+        self.input_type_id = input_type['id']
+        self.machine_label = input_type['machine_label']
         self.updated_srv = None
+
+        # below are configure in update_attributes()
+        self.category_id = None
+        self.label = None
+        self.description = None
+        self.input_regex = None
+        self.always_load = None
+        self.status = None
+        self.public = None
+        self.created = None
+        self.updated = None
+
+    def update_attributes(self, input_type):
+        """
+        Sets various values from a input type dictionary. This can be called when either new or
+        when updating.
+
+        :param input_type: 
+        :return: 
+        """
+        self.category_id = input_type['category_id']
+        self.label = input_type['label']
+        self.description = input_type['description']
+        self.input_regex = input_type['input_regex']
+        self.always_load = input_type['always_load']
+        self.status = input_type['status']
+        self.public = input_type['public']
+        self.created = input_type['created']
+        self.updated = input_type['updated']
 
     def __str__(self):
         """
@@ -405,20 +565,20 @@ class InputType:
         """
         return self.input_type_id
 
-    def dump(self):
+    def __repl__(self):
         """
         Export command variables as a dictionary.
         """
         return {
             'input_type_id': str(self.input_type_id),
-            'category_id'          : str(self.category_id),
+            'category_id': str(self.category_id),
             'machine_label': str(self.machine_label),
-            'label'        : str(self.label),
-            'description'  : str(self.encryption),
+            'label': str(self.label),
+            'description': str(self.description),
             'input_regex': str(self.input_regex),
-            'always_load'  : str(self.always_load),
-            'public'       : int(self.public),
-            'status'       : int(self.status),
-            'created'      : int(self.created),
-            'updated'      : int(self.updated),
+            'always_load': str(self.always_load),
+            'public': int(self.public),
+            'status': int(self.status),
+            'created': int(self.created),
+            'updated': int(self.updated),
         }
