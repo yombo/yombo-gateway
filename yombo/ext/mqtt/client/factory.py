@@ -107,7 +107,7 @@ class MQTTFactory(ReconnectingClientFactory):
 
 
     def clientConnectionFailed(self, connector, reason):
-        log.warn('Conenction failed. Reason {reason!r}:', reason=reason)
+        log.warn('Connection failed. Reason {reason!r}:', reason=reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector,
                                                          reason)
 
