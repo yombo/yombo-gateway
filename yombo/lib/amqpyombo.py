@@ -34,11 +34,10 @@ import zlib
 from time import time
 import sys
 import traceback
-
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import 3rd party extensions
 import yombo.ext.six as six
@@ -47,7 +46,7 @@ import yombo.ext.six as six
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string
+from yombo.utils import percentage, random_string, random_int
 import yombo.ext.umsgpack as msgpack
 
 # Handlers for processing various messages.
@@ -184,7 +183,7 @@ class AMQPYombo(YomboLibrary):
             self.sendLocalInformationLoop = LoopingCall(self.sendLocalInformation)
 
         if self.sendLocalInformationLoop.running is False:
-            self.sendLocalInformationLoop.start(60*60*4)  # Sends various information, helps Yombo cloud know we are alive and where to find us.
+            self.sendLocalInformationLoop.start(random_int(60*60*4, .2))  # Sends various information, helps Yombo cloud know we are alive and where to find us.
 
         if self.request_configs is False:
             self.request_configs = True

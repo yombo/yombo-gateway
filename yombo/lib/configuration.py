@@ -73,6 +73,7 @@ from functools import partial
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
+from random import randint
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -308,7 +309,7 @@ class Configuration(YomboLibrary):
                 self.set("core", "localipaddresstime", int(time()))
 
         self.periodic_save_yombo_ini = LoopingCall(self.save)
-        self.periodic_save_yombo_ini.start(14400, False)
+        self.periodic_save_yombo_ini.start(randint(12600, 14400), False)  # every 3.5-4 hours
         # self.periodic_load_yombo_ini = LoopingCall(self.check_if_yombo_ini_modified)
         # self.periodic_load_yombo_ini.start(5)
 

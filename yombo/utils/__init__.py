@@ -874,6 +874,28 @@ def random_string(**kwargs):
         lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
         return "".join(lst)
 
+def random_int(middle, percent, **kwargs):
+    """
+    Generate random integer based a middle number and percent range.
+
+    **Usage**:
+
+    .. code-block:: python
+
+       from yombo.utils import random_int
+       someRandonness = random_string(1000, .40)  # get a random number 600 and 1400
+
+    :param middle: The middle number of the rang to get
+    :type middle: int
+    :param percent: A percentage to range from.
+    :type percent: float
+    :return: A random number
+    :rtype: int
+    """
+
+    start = round(middle - (middle * percent))
+    end = round(middle + (middle * percent))
+    return random.randint(start, end)
 
 def human_alpabet():
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"

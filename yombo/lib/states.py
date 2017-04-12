@@ -69,7 +69,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboStateNotFound, YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, is_json, random_string
+from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, is_json, random_string, random_int
 
 logger = get_logger("library.YomboStates")
 
@@ -211,7 +211,7 @@ class States(YomboLibrary, object):
 
     def _start_(self):
         self.clean_states_loop = LoopingCall(self.clean_states_table)
-        self.clean_states_loop.start(60*60*6)  # clean the database every 6 hours.
+        self.clean_states_loop.start(random_int(60*60*6, .05))  # clean the database every 6 hours.
 
         if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='states')

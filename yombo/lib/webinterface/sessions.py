@@ -17,11 +17,6 @@ web.py is in the public domain; it can be used for whatever purpose with absolut
 # Import python libraries
 import os
 from time import time
-import datetime
-import random
-import base64
-import os.path
-from copy import deepcopy
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -38,7 +33,7 @@ from yombo.ext.expiringdict import ExpiringDict
 from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, sleep
+from yombo.utils import random_string, random_int, sleep
 
 logger = get_logger("library.webconfig.session")
 
@@ -78,7 +73,7 @@ class Sessions(object):
 
         # print "active:sessions: %s" % self.active_sessions
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(randint(25,45))  # Every 30-ish seconds.  Save to disk, or remove from memory.
+        self._periodic_clean_sessions.start(random_int(35, .7))  # Every 30-ish seconds.  Save to disk, or remove from memory.
 
     def _unload_(self):
         logger.debug("sessions:_unload_")
