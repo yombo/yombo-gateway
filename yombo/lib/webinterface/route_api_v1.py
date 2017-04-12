@@ -104,6 +104,7 @@ def route_api_v1(webapp):
         @require_auth()
         @inlineCallbacks
         def api_v1_statistics_echarts_buckets(webinterface, request, session):
+            print "111";
             time_last = request.args.get('last', [None, ])[0]
             time_start = request.args.get('start', [None, ])[0]
             time_end = request.args.get('end', [None, ])[0]
@@ -216,13 +217,15 @@ def route_api_v1(webapp):
             except:
                 search = None
 
-            url = '/v1/command?offset=%s&limit=%s' % (offset, limit)
+            url = '/v1/command?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
                 url = url + "&label=%s" % search
 
+            print "about to call"
             results = yield webinterface._YomboAPI.request('GET', url)
+            print " call"
             data = {
-                'total': results['content']['total'],
+                'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
             request.setHeader('Content-Type', 'application/json')
@@ -270,13 +273,13 @@ def route_api_v1(webapp):
             except:
                 search = None
 
-            url = '/v1/device_type?offset=%s&limit=%s' % (offset, limit)
+            url = '/v1/device_type?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
                 url = url + "&label=%s" % search
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {
-                'total': results['content']['total'],
+                'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
             request.setHeader('Content-Type', 'application/json')
@@ -299,13 +302,13 @@ def route_api_v1(webapp):
             except:
                 search = None
 
-            url = '/v1/input_type?offset=%s&limit=%s' % (offset, limit)
+            url = '/v1/input_type?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
                 url = url + "&label=%s" % search
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {
-                'total': results['content']['total'],
+                'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
             request.setHeader('Content-Type', 'application/json')
@@ -328,13 +331,13 @@ def route_api_v1(webapp):
             except:
                 search = None
 
-            url = '/v1/module?offset=%s&limit=%s' % (offset, limit)
+            url = '/v1/module?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
                 url = url + "&label=%s" % search
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {
-                'total': results['content']['total'],
+                'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
             }
             request.setHeader('Content-Type', 'application/json')

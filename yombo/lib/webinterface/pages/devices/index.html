@@ -58,7 +58,7 @@
                                             <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for deviceID, device in devices.iteritems() %}
+                                    <tbody>{% for deviceID, device in devices.iteritems() if device.status <= 1 %}
                                          <tr>
                                             <td {% if device.status == 0
                                              %} style="background-color: #f4f3c6" {%

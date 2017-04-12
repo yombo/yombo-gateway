@@ -743,7 +743,7 @@ class WebInterface(YomboLibrary):
             login = results['content']['response']['login']
 
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
-            session = self.sessions.load(request)
+            session = yield self.sessions.load(request)
             if session is False:
                 session = self.sessions.create(request)
 
@@ -752,7 +752,7 @@ class WebInterface(YomboLibrary):
             session['auth_time'] = time()
             session['yomboapi_session'] = login['session']
             session['yomboapi_login_key'] = login['login_key']
-            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
+            request.received_cookies[self.sessions.config.cookie_session] = session['session_id']
 
             if self._op_mode == 'firstrun':
                 # print "###############33  saving system session stufff...."
@@ -771,7 +771,7 @@ class WebInterface(YomboLibrary):
         login_redirect = "/"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']
-            # print "$$$$$$$$$$$$$$$$$$ login redirect is set..."
+            print "$$$$$$$$$$$$$$$$$$ login redirect is set...%s" % login_redirect
             session.delete('login_redirect')
 
         # print "111 login_rdirect: %s" % login_redirect
@@ -803,7 +803,7 @@ class WebInterface(YomboLibrary):
             session['auth_time'] = 0
             session['yomboapi_session'] = ''
             session['yomboapi_login_key'] = ''
-            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
+            request.received_cookies[self.sessions.config.cookie_session] = session['session_id']
 
 
         if self.auth_pin_type() == 'pin':

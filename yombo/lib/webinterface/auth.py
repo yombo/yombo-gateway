@@ -25,7 +25,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
     def deco(f):
         @wraps(f)
-        # @inlineCallbacks
+        @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
             request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
             request.setHeader('Expires', '0')
@@ -52,7 +52,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
-            session = webinterface.sessions.load(request)
+            session = yield webinterface.sessions.load(request)
             if login_redirect is not None:
                 if session is False:
                     session = webinterface.sessions.create(request)
@@ -66,8 +66,9 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             if needs_web_pin(webinterface, request):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
-                return page.render(alerts=webinterface.get_alerts())
-                               # data=webinterface.data)
+                returnValue(page.render(alerts=webinterface.get_alerts()))
+                # return page.render(alerts=webinterface.get_alerts())
+                # data=webinterface.data)
 
             if session is not False:
                 if 'auth' in session:
@@ -77,11 +78,13 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         #     del session['login_redirect']
                         # except:
                         #     pass
-                        return call(f, webinterface, request, session, *a, **kw)
+                        results = yield call(f, webinterface, request, session, *a, **kw)
+                        returnValue(results)
+                        # return call(f, webinterface, request, session, *a, **kw)
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session
-            return page.render(alerts=webinterface.get_alerts())
+            returnValue(page.render(alerts=webinterface.get_alerts()))
                                # data=webinterface.data)
         return wrapped_f
     return deco

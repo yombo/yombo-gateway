@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Yombo - {{ misc_wi_data.gateway_label }}</title>
+    <title>{{ misc_wi_data.gateway_label()}} - Yombo</title>
 	{% block head_top %}{% endblock %}
 
     <!-- Bootstrap Core CSS ad metisMenu -->
