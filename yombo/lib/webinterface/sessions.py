@@ -267,8 +267,11 @@ class Sessions(object):
                 count += 1
         # logger.debug("Deleted {count} sessions from the session store.", count=count)
 
-        for session_id, session in self.active_sessions.iteritems():
-            if session.is_dirty >= 200 or close_deferred is not None or session.data['last_access'] > int(time() - (60*60*3)):  # delete session from memory after 3 hours
+        for session_id in list(self.active_sessions):
+            session = self.active_sessions[session_id]
+            print "session.data['last_access']: %s" % session.data['last_access']
+            print "time: %s" % int(time() - (60*60*3))
+            if session.is_dirty >= 200 or close_deferred is not None or session.data['last_access'] < int(time() - (60*60*3)):  # delete session from memory after 3 hours
                 if session.in_db:
                     session.in_db = True
                     logger.debug("updating old db session record: {id}", id=session_id)
@@ -279,7 +282,7 @@ class Sessions(object):
                     yield self.localdb.save_session(session_id, json.dumps(session.data), session.data['created'],
                                           session.data['last_access'], session.data['updated'])
                 session.is_dirty = 0
-                if session.data['last_access'] > int(time() - (60*60*3)):
+                if session.data['last_access'] < int(time() - (60*60*3)):
                     logger.debug("Deleting session from memory: {session_id}", session_id=session_id)
                     del self.active_sessions[session_id]
 
