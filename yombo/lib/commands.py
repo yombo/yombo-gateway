@@ -374,7 +374,7 @@ class Commands(YomboLibrary):
         command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
         # print("command edit results: %s" % command_results)
 
-        if command_results['code'] != 200:
+        if command_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add command",
@@ -403,7 +403,7 @@ class Commands(YomboLibrary):
         command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
         # print("command edit results: %s" % command_results)
 
-        if command_results['code'] != 200:
+        if command_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit command",
@@ -430,7 +430,7 @@ class Commands(YomboLibrary):
         """
         command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
 
-        if command_results['code'] != 200:
+        if command_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete command",
@@ -462,7 +462,7 @@ class Commands(YomboLibrary):
 
         command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
 
-        if command_results['code'] != 200:
+        if command_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable command",
@@ -495,7 +495,7 @@ class Commands(YomboLibrary):
         command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
  #       print("disable command results: %s" % command_results)
 
-        if command_results['code'] != 200:
+        if command_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable command",

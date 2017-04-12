@@ -333,6 +333,19 @@ class LocalDB(YomboLibrary):
             returnValue(records)
 
     @inlineCallbacks
+    def set_device_status(self, device_id, status=1):
+        # device = yield Device.findBy(id=device_id)
+
+        results = yield self.dbconfig.update('devices', {'status':status},
+                                             where=['id = ?', device_id])
+        #
+        # device = yield Device.find(device_id)
+        # print device
+        # device.status = status
+        # yield device.save()
+        # print "222 %s" % status
+
+    @inlineCallbacks
     def get_device_by_id(self, device_id, status=1):
         records = yield Device.find(where=['id = ? and status = ?', device_id, status])
         results = []
@@ -587,14 +600,15 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def save_session(self, session_id, session_data, created, last_access, updated):
-        # print "session_data: %s" % session_data
-        yield Sessions(
-            id=session_id,
-            session_data=session_data,
-            created=created,
-            last_access=last_access,
-            updated=updated,
-        ).save()
+        print "save_session: %s" % session_data
+        args = {
+            'id': session_id,
+            'session_data': session_data,
+            'created': created,
+            'last_access': last_access,
+            'updated': updated,
+        }
+        yield self.dbconfig.insert('webinterface_sessions', args, None, 'OR IGNORE')
 
     @inlineCallbacks
     def update_session(self, session_id, session_data, last_access, updated):

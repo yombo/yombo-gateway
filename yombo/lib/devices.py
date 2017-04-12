@@ -510,8 +510,8 @@ class Devices(YomboLibrary):
 
         if device_requested in self.devices:
             item = self.devices[device_requested]
-            if item.status != status:
-                raise KeyError("Requested device found, but has invalid status: %s" % item.status)
+            # if item.status != status:
+            #     raise KeyError("Requested device found, but has invalid status: %s" % item.status)
             return item
         else:
             attrs = [
@@ -527,12 +527,12 @@ class Devices(YomboLibrary):
                 }
             ]
             try:
-                logger.debug("Get is about to call search...: %s" % device_requested)
+                logger.info("Get is about to call search...: %s" % device_requested)
                 found, key, item, ratio, others = do_search_instance(attrs, self.devices,
                                                                      self.device_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
-                logger.debug("found device by search: {device_id}", device_id=key)
+                logger.info("found device by search: {device_id}", device_id=key)
                 if found:
                     return self.devices[key]
                 else:
@@ -590,7 +590,7 @@ class Devices(YomboLibrary):
             device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % data['device_id'], api_data)
             logger.debug("edit device results: {device_results}", device_results=device_results)
 
-        if device_results['code'] != 200:
+        if device_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add device",
@@ -602,7 +602,7 @@ class Devices(YomboLibrary):
 
         if 'variable_data' in data:
             variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
-            if variable_results['code'] != 200:
+            if variable_results['code'] > 299:
                 results = {
                     'status': 'failed',
                     'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
@@ -636,7 +636,7 @@ class Devices(YomboLibrary):
                     }
                     print("Posting new variable: %s" % post_data)
                     var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                    if var_data_results['code'] != 200:
+                    if var_data_results['code'] > 299:
                         results = {
                             'status': 'failed',
                             'msg': "Couldn't add device variables",
@@ -653,7 +653,7 @@ class Devices(YomboLibrary):
                     print("PATCHing variable: %s" % post_data)
                     var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
                                                                     post_data)
-                    if var_data_results['code'] != 200:
+                    if var_data_results['code'] > 299:
                         results = {
                             'status': 'failed',
                             'msg': "Couldn't add device variables",
@@ -678,7 +678,7 @@ class Devices(YomboLibrary):
 
         device_results = yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
         # print("deleted device: %s" % device_results)
-        if device_results['code'] != 200:
+        if device_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete device",
@@ -688,12 +688,13 @@ class Devices(YomboLibrary):
             }
             returnValue(results)
 
+        self.devices[device_id].delete()
+
         results = {
             'status': 'success',
             'msg': "Device deleted.",
             'device_id': device_id
         }
-        global_invoke_all('devices_delete', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
         returnValue(results)
 
     @inlineCallbacks
@@ -708,7 +709,7 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'edit_device', 'Devices')
 
         api_data = {}
         for key, value in data.iteritems():
@@ -723,7 +724,7 @@ class Devices(YomboLibrary):
 
         # print("send this data to api: %s" % api_data)
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        if device_results['code'] != 200:
+        if device_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit device",
@@ -735,7 +736,7 @@ class Devices(YomboLibrary):
 
         if 'variable_data' in data:
             variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
-            if variable_results['code'] != 200:
+            if variable_results['code'] > 299:
                 results = {
                     'status': 'failed',
                     'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
@@ -744,6 +745,8 @@ class Devices(YomboLibrary):
                     'device_id': device_id,
                 }
                 returnValue(results)
+
+        self.devices[device_id].edit(data)
 
         results = {
             'status': 'success',
@@ -762,14 +765,14 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'enable_device', 'Devices')
 
         api_data = {
             'status': 1,
         }
 
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        if device_results['code'] != 200:
+        if device_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable device",
@@ -778,6 +781,8 @@ class Devices(YomboLibrary):
                 'device_id': device_id,
             }
             returnValue(results)
+
+        self.devices[device_id].enable()
 
         results = {
             'status': 'success',
@@ -796,14 +801,14 @@ class Devices(YomboLibrary):
         :return:
         """
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'disable_device', 'Devices')
 
         api_data = {
             'status': 0,
         }
 
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        if device_results['code'] != 200:
+        if device_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable device",
@@ -812,6 +817,8 @@ class Devices(YomboLibrary):
                 'device_id': device_id,
             }
             returnValue(results)
+
+        self.devices[device_id].disable()
 
         results = {
             'status': 'success',
@@ -834,7 +841,7 @@ class Devices(YomboLibrary):
         """
         logger.debug("update_device: {record}", record=record)
         if record['device_id'] not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'delete_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'update_device', 'Devices')
             # self.devices[record['device_id']].update(record)
 
 
@@ -1055,7 +1062,7 @@ class Device:
         self.status_history = deque({}, 30)
         self.device_variables = {}
 
-        self.device_is_new = False
+        self.device_is_new = True
         self.update_attributes(device)
 
     def _init_(self):
@@ -1089,8 +1096,8 @@ class Device:
         d.addCallback(ensure_device_type_loaded, self.device_type_id)
         d.addErrback(gotException)
 
-        if self.test_device is False and self.device_is_new is False:
-            self.device_is_new = True
+        if self.test_device is False and self.device_is_new is True:
+            self.device_is_new = False
             d.addCallback(lambda ignored: self.load_history(35))
         return d
 
@@ -1132,6 +1139,9 @@ class Device:
             self.energy_map = energy_map_final
         else:
             self.energy_map = None
+
+        if self.device_is_new is True:
+            global_invoke_all('_device_updated_', **{'device': self})
 
     def available_commands(self):
         # print("getting available_commands for devicetypeid: %s" % (self.device_type_id, ))
@@ -1179,6 +1189,9 @@ class Device:
         :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
         :return:
         """
+        if self.status != 1:
+            raise YomboWarning("Device cannot be used, it's not enabled.")
+
         logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         if requested_by is None:  # soon, this will cause an error!
             requested_by = {
@@ -1588,23 +1601,45 @@ class Device:
         else:
             return False
 
-    def update(self, record):
-                # try:
-        #     # todo: refactor voicecommands. Need to be able to update/delete them later.
-        #     self._VoiceCommandsLibrary.add(record["voice_cmd"], "", record["id"], record["voice_cmd_order"])
-        # except:
-        #     pass
+    # def update(self, record):
+    #
+    #     # check if device_type_id changes.
+    #     if 'device_type_id' in record:
+    #         if record['device_type_id'] != self.device_type_id:
+    #             self.device_type_id = record['device_type_id']
+    #
+    #     # global_invoke_all('_devices_update_', **{'id': record['id']})  # call hook "device_update" when adding a new device.
 
-        if 'label' in record:
-            self._DevicesLibrary._devicesByName[record['label']] = self._devicesByName.pop(record["label"])  # Update label searching
-            self.label = record['label']
+    def delete(self):
+        """
+        Called when the device should delete itself.
+        
+        :return: 
+        """
+        print("deleting device.....")
+        self._DevicesLibrary._LocalDB.set_device_status(self.device_id, 2)
+        global_invoke_all('_device_deleted_', **{'device': self})  # call hook "devices_delete" when deleting a device.
+        self.status = 2
 
-        # check if device_type_id changes.
-        if 'device_type_id' in record:
-            if record['device_type_id'] != self.device_type_id:
-                self.device_type_id = record['device_type_id']
+    def enable(self):
+        """
+        Called when the device should delete itself.
 
-        # global_invoke_all('_devices_update_', **{'id': record['id']})  # call hook "device_update" when adding a new device.
+        :return:
+        """
+        self._DevicesLibrary._LocalDB.set_device_status(self.device_id, 1)
+        global_invoke_all('_device_enabled_', **{'device': self})  # call hook "devices_delete" when deleting a device.
+        self.status = 1
+
+    def disable(self):
+        """
+        Called when the device should delete itself.
+
+        :return:
+        """
+        self._DevicesLibrary._LocalDB.set_device_status(self.device_id, 0)
+        global_invoke_all('_device_disabled_', **{'device': self})  # call hook "devices_delete" when deleting a device.
+        self.status = 0
 
 class Device_Request:
     """

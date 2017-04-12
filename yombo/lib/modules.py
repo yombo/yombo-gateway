@@ -443,6 +443,8 @@ class Modules(YomboLibrary):
             # print "loading: %s" % pathName
             try:
                 module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
+            except ImportError, e:
+                continue
             except:
                 logger.error("--------==(Error: Loading Module)==--------")
                 logger.error("----Name: {pathName}", pathName=pathName)
@@ -540,23 +542,25 @@ class Modules(YomboLibrary):
 
 #                module_init_deferred.append(maybeDeferred(module._init_))
 #                continue
+#             d = yield maybeDeferred(module._init_)
             try:
+                # exc_info = sys.exc_info()
 #                module_init_deferred.append(maybeDeferred(module._init_))
                 d = yield maybeDeferred(module._init_)
                 module._hooks_called['_init_'] = 1
 #                    d.errback(self.SomeError)
 #                    yield d
-            except YomboCritical, e:
+            except YomboCritical as e:
                 logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
                 logger.error("--------------------------------------------------------")
                 logger.error("Error message: {e}", e=e)
                 logger.error("--------------------------------------------------------")
                 e.exit()
-            except:
+            except Exception:
                 logger.error("-------==(Error in init function for module: {name})==---------", name=module._FullName)
                 logger.error("1:: {e}", e=sys.exc_info())
                 logger.error("---------------==(Traceback)==--------------------------")
-                logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
+                logger.error("3{e}", e=traceback.format_exc())
                 logger.error("--------------------------------------------------------")
                 # except:
                 #     exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -849,7 +853,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gwid, api_data)
         print("add module results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add module",
@@ -881,7 +885,7 @@ class Modules(YomboLibrary):
                         # print("post_data: %s" % post_data)
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                         print "var_data_results: %s"  % var_data_results
-                        if var_data_results['code'] != 200:
+                        if var_data_results['code']  > 299:
                             results = {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables",
@@ -898,7 +902,7 @@ class Modules(YomboLibrary):
                         # print("posting to: /v1/variable/data/%s" % data_id)
                         # print("post_data: %s" % post_data)
                         var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
-                        if var_data_results['code'] != 200:
+                        if var_data_results['code']  > 299:
                             # print("bad results module_results: %s" % module_results)
                             # print("bad results var_data_results: %s" % var_data_results)
                             results = {
@@ -934,7 +938,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
         print("module edit results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit module",
@@ -965,7 +969,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
         print("delete module results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete module",
@@ -1006,7 +1010,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
         print("enable module results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable module",
@@ -1044,7 +1048,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
         print("disable module results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable module",
@@ -1074,7 +1078,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
         # print("module edit results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add module",
@@ -1102,7 +1106,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
         # print("module edit results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit module",
@@ -1129,7 +1133,7 @@ class Modules(YomboLibrary):
         """
         module_results = yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete module",
@@ -1160,7 +1164,7 @@ class Modules(YomboLibrary):
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable module",
@@ -1192,7 +1196,7 @@ class Modules(YomboLibrary):
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable module",
@@ -1225,7 +1229,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('POST', '/v1/module_device_type', data)
         # print("module edit results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't associate device type to module",
@@ -1254,7 +1258,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('DELETE', '/v1/module_device_type/%s/%s' % (module_id, device_type_id))
         # print("module edit results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't remove association device type from module",
@@ -1293,7 +1297,7 @@ class Modules(YomboLibrary):
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
         # print("disable module results: %s" % module_results)
 
-        if module_results['code'] != 200:
+        if module_results['code']  > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable module",

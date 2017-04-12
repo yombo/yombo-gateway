@@ -588,6 +588,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
 
     # used when return highest
     best_ratio = 0
+    best_limiter = 0
     best_match = None
     best_key = None
 

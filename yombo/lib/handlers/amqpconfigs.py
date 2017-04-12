@@ -382,6 +382,7 @@ class AmqpConfigHandler(YomboLibrary):
         """
         self.parent = amqpyombo
         self.init_startup_count = 0
+        self.inital_config_items_requested = 0
         self.init_defer = None  # Prevents loader from moving on until we are done.
         self.__doing_full_configs = False  # will be set to True later when download configurations
         self.__pending_updates = {}  # Holds a dict of configuration items we've asked for, but not response yet.
@@ -863,6 +864,7 @@ class AmqpConfigHandler(YomboLibrary):
 #            "getGatewayUserTokens",
 #            "getGatewayUsers",
         ]
+        self.inital_config_items_requested = len(allCommands)
         cur_time = int(time())
         for item in allCommands:
             logger.debug("sending command: {item}", item=item)
@@ -948,13 +950,20 @@ class AmqpConfigHandler(YomboLibrary):
         logger.debug("Waited {waitingTime} for startup; pending these configurations:", waitingTime=waitingTime)
         count_pending = 0
         currently_processing = ''
+        display_waiting_on = []
+        # print self.__pending_updates
         for key in list(self.__pending_updates):
             count_pending += 1
             logger.debug("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]['status'])
             if self.__pending_updates[key]['status'] == 'processing':
                 currently_processing = key
                 self.check_download_done_calllater.reset(30)
-        logger.info("Processing configuration, {count_pending} of 10. Currently processing: {currently_processing}", currently_processing=currently_processing,  count_pending=count_pending)
+            display_waiting_on.append(key)
+
+        if currently_processing == '':
+            logger.info("Waiting for the following items from server: {the_list}", the_list=", ".join(display_waiting_on))
+        else:
+            logger.info("Processing configuration, {count_pending} of {numer_requested}. Currently processing: {currently_processing}", currently_processing=currently_processing,  count_pending=self.inital_config_items_requested-count_pending, numer_requested=self.inital_config_items_requested)
 
 
     def is_json(self, myjson):

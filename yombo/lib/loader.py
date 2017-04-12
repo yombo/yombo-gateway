@@ -483,7 +483,6 @@ class Loader(YomboLibrary, object):
         try:
             # print "pymodulename: %s" % pymodulename
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
-            pass
         except ImportError as detail:
             self._log_loader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("--------==(Error: Library or Module not found)==--------")
@@ -491,7 +490,7 @@ class Loader(YomboLibrary, object):
             logger.error("---------------==(Traceback)==--------------------------")
             logger.error("{trace}", trace=traceback.format_exc())
             logger.error("--------------------------------------------------------")
-            return
+            raise ImportError("Cannot import module, not found.")
 
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
         # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
@@ -501,7 +500,7 @@ class Loader(YomboLibrary, object):
         # Put the component into various lists for mgmt
         if not callable(klass):
             logger.warn("Unable to start class '{classname}', it's not callable.", classname=pyclassname)
-            return
+            raise ImportError("Unable to start class '%s', it's not callable."  % pyclassname)
 
         try:
             # Instantiate the class

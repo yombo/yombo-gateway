@@ -67,7 +67,10 @@ class DBObject(Validator):
 
         @see: L{DBObject.afterInit}
         """
-        self._rowid = None
+        if "id" in kwargs:
+            self._rowid = kwargs['id']
+        else:
+            self._rowid = None
         self.id = None
         self._deleted = False
         self.errors = Errors()
@@ -104,10 +107,11 @@ class DBObject(Validator):
             raise DBObjectSaveError("Cannot save a previously deleted object.")
 #        print "111"
         def _save(isValid):
-#            print "222 %s" % self._rowid
             if self._rowid is None and isValid:
+                # print "create"
                 return self._create()
             elif isValid:
+                # print "update"
                 return self._update()
             return self
         return self.isValid().addCallback(_save)
