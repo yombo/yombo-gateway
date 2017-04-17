@@ -545,7 +545,7 @@ def search_instance(arguments, haystack, allowed_keys, limiter, operation):
                               operation=operation)
 
 
-def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None):
+def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None, status_field=None, status_value=None):
     """        
     Does the actual search of the devices. It scans through each device, and searches for any
     supplied attributes.
@@ -580,6 +580,10 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             elif attr["limiter"] < .10:
                 attr["limiter"] = .10
 
+    if status_field is None or status_value is None:
+        status_field = None
+        status_value = None
+
     # Prepare the minion
     stringDiff = SequenceMatcher()
 
@@ -596,6 +600,10 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     sorted_list = None
 
     for item_id, item in haystack.iteritems():
+        # print "checking item: %s" % item
+        if status_value is not None:
+            if getattr(item, status_field) != status_value:
+                continue
         for attr in attributes:
             stringDiff.set_seq1(str(attr['value']))
             # try:
@@ -603,6 +611,8 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             # except TypeError:
             #     continue  # might get here, even though it's not a string. Catch it!
             ratio = stringDiff.ratio()
+            # print "%s = %s has a ratio of: %s" % (getattr(item, attr['field']), attr['value'], ratio)
+
             if operation == "any":
                 if ratio > attr['limiter']:
                     item[item_id] = item
