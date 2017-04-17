@@ -51,44 +51,124 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                           <div class="dataTable_wrapper">
-                                <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>{% for deviceID, device in devices.iteritems() if device.status <= 1 %}
-                                         <tr>
-                                            <td {% if device.status == 0
-                                             %} style="background-color: #f4f3c6" {%
-                                             elif device.status == 2
-                                             %} style="background-color: #f4c6c6" {%
-                                             endif %}>
-                                                <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
-                                             {% if device.status == 0
-                                              %} ({{ _('webinterface', 'Disabled') }}) {%
-                                             elif device.status == 2
-                                              %} ({{ _('webinterface', 'Deleted') }}) {%
-                                             endif %}
-                                            </td>
-                                            <td>{{ device.description }}</td>
-                                            <td>{{ devicetypes[device.device_type_id].label }}</td>
-                                            <td>{{ device.status_history[0]['human_status'] }}</td>
-                                            <td>
-                                                {% if device.status == 0 -%}
-                                             <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                                {% elif device.status == 1 -%}
-                                             <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
-                                                {% elif device.status == 2 -%}
-                                             <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
-                                                {% endif %}
 
-                                            </td>
-                                         </tr>{% endfor %}
-                                    </tbody>
-                                </table>
+                            <div class="devices devices-tabs" role="tabpanel" data-example-id="togglable-tabs">
+                              <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
+                                <li role="presentation" class="active bg-success">
+                                  <a href="#enabled" id="enabled-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
+                                    <span class="text-success">Enabled</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-warning" id="tab-device-disbled">
+                                  <a href="#disabled" role="tab" id="disabled-tab" data-toggle="tab" aria-controls="profile">
+                                    <span class="text-warning">Disabled</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-danger" id="tab-device-deleted">
+                                  <a href="#deleted" role="tab" id="deleted-tab" data-toggle="tab" aria-controls="profile">
+                                    <span class="text-danger">Deleted</span>
+                                  </a>
+                                </li>
+                              </ul>
+                              <div id="myTabContent" class="tab-content">
+                                <div role="tabpanel" class="tab-pane fade in active" id="enabled" aria-labelledby="home-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-enabled">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for deviceID, device in devices.iteritems() if device.status == 1 %}
+                                                 <tr>
+                                                    <td>
+                                                        <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
+                                                    </td>
+                                                    <td>{{ device.description }}</td>
+                                                    <td>{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td>{{ device.status_history[0]['human_status'] }}</td>
+                                                    <td>
+                                                        {% if device.status == 0 -%}
+                                                     <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                        {% elif device.status == 1 -%}
+                                                     <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                        {% elif device.status == 2 -%}
+                                                     <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
+                                                        {% endif %}
+
+                                                    </td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane fade" id="disabled" aria-labelledby="profile-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-disabled">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for deviceID, device in devices.iteritems() if device.status == 0 %}
+                                                 <tr>
+                                                    <td>
+                                                        <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
+                                                    </td>
+                                                    <td>{{ device.description }}</td>
+                                                    <td>{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td>{{ device.status_history[0]['human_status'] }}</td>
+                                                    <td>
+                                                        {% if device.status == 0 -%}
+                                                     <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                        {% elif device.status == 1 -%}
+                                                     <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                        {% elif device.status == 2 -%}
+                                                     <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
+                                                        {% endif %}
+
+                                                    </td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane fade" id="deleted" aria-labelledby="dropdown1-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-deleted">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for deviceID, device in devices.iteritems() if device.status == 2 %}
+                                                 <tr>
+                                                    <td>
+                                                        <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
+                                                    </td>
+                                                    <td>{{ device.description }}</td>
+                                                    <td>{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td>{{ device.status_history[0]['human_status'] }}</td>
+                                                    <td>
+                                                        {% if device.status == 0 -%}
+                                                     <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                        {% elif device.status == 1 -%}
+                                                     <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                        {% elif device.status == 2 -%}
+                                                     <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
+                                                        {% endif %}
+
+                                                    </td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
+                              </div>
                             </div>
+
+
+
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -104,11 +184,41 @@
     <!-- Make the tables pretty -->
     <script>
     $(document).ready(function() {
-        $('#dataTables-example').DataTable({
+        $('#devices-enabled').DataTable({
                 responsive: true,
                 paging: true,
-                iDisplayLength: 50
+                iDisplayLength: 20,
+//                lengthMenu: [ 1, 2, 50, 75, 100 ],
+                dom: '<f<t>ip>'
+//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
         });
+
+        $('#devices-disabled').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 20,
+//                lengthMenu: [ 1, 2, 50, 75, 100 ],
+                dom: '<f<t>ip>'
+//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
+        });
+
+        $('#devices-deleted').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 20,
+//                lengthMenu: [ 1, 2, 50, 75, 100 ],
+                dom: '<f<t>ip>'
+//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
+        });
+        var disabled_table = $('#devices-disabled').DataTable();
+        if (disabled_table.rows( ).count() == 0){
+             $('#tab-device-disbled').css('display','none');
+        }
+        var deleted_table = $('#devices-deleted').DataTable();
+        if (deleted_table.rows( ).count() == 0){
+             $('#tab-device-deleted').css('display','none');
+        }
+
     });
     </script>
 {% endblock %}

@@ -279,17 +279,13 @@ def route_devices(webapp):
                                    devicetypes=webinterface._DeviceTypes,
                                    ))
 
-            results = yield webinterface._Devices.delete_device(device.device_id)
-            msg = {
-                'header': 'Device Deleted',
-                'label': 'Device deleted successfully',
-                'description': '',
-            }
+            device_results = yield webinterface._Devices.delete_device(device.device_id)
+            if device_results['status'] == 'failed':
+                webinterface.add_alert(device_results['apimsghtml'], 'warning')
+                returnValue(webinterface.redirect(request, '/devices/index'))
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    ))
+            webinterface.add_alert('Device deleted.', 'warning')
+            returnValue(webinterface.redirect(request, '/devices/index'))
 
         @webapp.route('/<string:device_id>/disable', methods=['GET'])
         @require_auth()
@@ -334,16 +330,9 @@ def route_devices(webapp):
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
 
-            msg = {
-                'header': 'Device Disabled',
-                'label': 'Device disabled successfully',
-                'description': '',
-            }
+            webinterface.add_alert('Device disabled.', 'warning')
+            returnValue(webinterface.redirect(request, '/devices/index'))
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    ))
 
         @webapp.route('/<string:device_id>/enable', methods=['GET'])
         @require_auth()
@@ -388,17 +377,8 @@ def route_devices(webapp):
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
 
-            msg = {
-                'header': 'Device Enabled',
-                'label': 'Device enabled successfully',
-                'description': '',
-            }
-
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    ))
-
+            webinterface.add_alert('Device enabled.', 'warning')
+            returnValue(webinterface.redirect(request, '/devices/%s/details' % device_id))
 
         @webapp.route('/<string:device_id>/edit', methods=['GET'])
         @require_auth()
@@ -546,23 +526,25 @@ def route_devices(webapp):
                                commands=webinterface._Commands,
                                ))
 
-            msg = {
-                'header': 'Device Updated',
-                'label': 'Device updated successfully',
-                'description': '',
-            }
+            returnValue(webinterface.redirect(request, '/devices/%s/details' % device_id))
 
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Device edited. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             })
+            # msg = {
+            #     'header': 'Device Updated',
+            #     'label': 'Device updated successfully',
+            #     'description': '',
+            # }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    ))
+            # webinterface._Notifications.add({'title': 'Restart Required',
+            #                                  'message': 'Device edited. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+            #                                  'source': 'Web Interface',
+            #                                  'persist': False,
+            #                                  'priority': 'high',
+            #                                  'always_show': True,
+            #                                  'always_show_allow_clear': False,
+            #                                  'id': 'reboot_required',
+            #                                  })
+            #
+            # page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+            # returnValue(page.render(alerts=webinterface.get_alerts(),
+            #                         msg=msg,
+            #                         ))
