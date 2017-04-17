@@ -12,6 +12,7 @@ gateway.
 
 from twisted.internet.error import ReactorNotRunning
 
+
 class YomboException(Exception):
     """
     Extends *Exception* - A non-fatal generic gateway exception that is used for minor errors.
@@ -171,7 +172,7 @@ class YomboCritical(RuntimeWarning):
         reactor.addSystemEventTrigger('after', 'shutdown', os._exit, 1)
         try:
             reactor.stop()
-        except ReactorNotRunning, e:
+        except ReactorNotRunning as e:
             pass
 
 
@@ -194,7 +195,7 @@ class YomboRestart(RuntimeWarning):
         @return: A formated string of the error message.
         @rtype: string
         """
-        output = "Restarting Yombo Gateway. Reason: %s." % (self.message)
+        output = "Restarting Yombo Gateway. Reason: %s." % self.message
         return repr(output)
 
     def exit(self):
