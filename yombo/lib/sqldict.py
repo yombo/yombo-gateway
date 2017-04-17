@@ -141,7 +141,6 @@ class SQLDict(YomboLibrary):
                 for key, item in di['dict'].iteritems():
                     if di['dict']._SQLDictionary__serializer is not None:
                         try:
-                            result = di['dict']._SQLDictionary__serializer(item)
                             safe_data[key] = di['dict']._SQLDictionary__serializer(item)
                         except YomboWarning:
                             continue
