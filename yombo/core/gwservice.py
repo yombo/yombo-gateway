@@ -5,7 +5,7 @@ This is the main class the is responsible for getting everything started.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import twisted libraries
@@ -19,6 +19,7 @@ from yombo.core.log import get_logger
 
 logger = get_logger('core.gwservice')
 
+
 class GWService(Service):
     """
     Responsible for starting/stopping the entire Yombo Gateway service.  This is called from Yombo.tac.
@@ -30,6 +31,7 @@ class GWService(Service):
         After twisted is running to get, call loader library and various starter functions
         to get everything started.
         """
+        reactor.suggestThreadPoolSize(40)
         reactor.callWhenRunning(self.start_loader_library)
 
     def startService(self):
