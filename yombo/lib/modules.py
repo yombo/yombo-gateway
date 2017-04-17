@@ -651,17 +651,19 @@ class Modules(YomboLibrary):
             self._invoke_list_cache[cache_key] = False
             # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
 
-    def module_invoke_all(self, hook, fullName=False, called_by=None, **kwargs):
+    def module_invoke_all(self, hook, full_name=None, called_by=None, **kwargs):
         """
         Calls module_invoke for all loaded modules.
         """
         logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
+        if full_name == None:
+            full_name = False
         results = {}
         for module_id, module in self.modules.iteritems():
             if int(module._status) != 1:
                 continue
 
-            label = module._FullName.lower() if fullName else module._Name.lower()
+            label = module._FullName.lower() if full_name else module._Name.lower()
             try:
                  result = self.module_invoke(module._Name, hook, called_by=called_by, **kwargs)
                  if result is not None:
@@ -722,6 +724,7 @@ class Modules(YomboLibrary):
             status = 1
 
         if module_requested in self.modules:
+            print "module found by key"
             item = self.modules[module_requested]
             if item._status != status:
                 raise KeyError("Requested mdule found, but has invalid status: %s" % item._status)
@@ -742,11 +745,6 @@ class Modules(YomboLibrary):
                     'field': '_machine_label',
                     'value': module_requested,
                     'limiter': limiter,
-                },
-                {
-                    'field': '_status',
-                    'value': status,
-                    'limiter': 1,
                 }
             ]
             try:
@@ -755,7 +753,7 @@ class Modules(YomboLibrary):
                                                                      self.module_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
-                logger.debug("found module by search: {module_id}", module_id=key)
+                # logger.debug("found module by search: {module_id}", module_id=key)
                 if found:
                     return item
                 else:
