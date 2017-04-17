@@ -2,12 +2,12 @@
 Yombo Documentation
 ====================
 
-The documentation found at https://docs.yombo.net is generated from the
-comments within the source code. This documentation is aimed at both
-users and developers.
+This directory generates the content found at https://docs.yombo.net and is
+generated from the comments within the source code.
 
-Developers may wish to visit https://projects.yombo.net community
-website.
+The primary purpose of this documentation to document the various
+API's within the Yombo Gateway framework. This allows users to
+develop better (advanced) automation rules, or implement a protocol
+that can extend the Yombo Gateway capabilities.
 
-This directory contains all the files needed to build the documentation
-such as index files.
+Tutorials and getting started guides are found at: https://yombo.net/docs/modules
