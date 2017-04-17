@@ -12,10 +12,39 @@ Handles logging functions.
 import ConfigParser
 from zope.interface import provider
 import io
+import os
+import gzip
 
 # Import twisted libraries
-from twisted.logger import FileLogObserver, FilteringLogObserver, globalLogPublisher, InvalidLogLevelError, \
-    Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime, jsonFileLogObserver
+from twisted.logger import globalLogPublisher, FilteringLogObserver, InvalidLogLevelError, \
+    Logger, LogLevel, LogLevelFilterPredicate, ILogObserver, formatEvent, formatTime, \
+    textFileLogObserver, jsonFileLogObserver
+from twisted.internet.task import LoopingCall
+from twisted.internet import reactor
+
+def static_var(varname, value):
+    """
+    Sets a static variable within a function. This is an easy way to set a default.
+
+    **Usage**:
+
+    .. code-block:: python
+
+        from yombo.utils.decorators import static_var
+
+        @static_var("my_variable", 0)
+        def some_function(x):
+            some_function.my_variable += 1
+            print "I've been called %s times." % some_function.my_variable
+
+    :param varname: variable name to create
+    :param value: initial value to set.
+    :return:
+    """
+    def decorate(func):
+        setattr(func, varname, value)
+        return func
+    return decorate
 
 loggers = {}
 configCache = {}
@@ -48,7 +77,7 @@ logFormat = lambda event: u"{0} [{1}]: {2}".format(formatTime(event["log_time"])
 def consoleLogObserver(event):
     print u"[{0}{1}\033[39m-{2}]: {3}".format(bcolor[event["log_level"].name.lower()], event["log_level"].name.upper(), event["log_namespace"], formatEvent(event))
 
-
+@static_var('rotate_loop', None)
 def get_logger(logname='yombolog', **kwargs):
     """
     Returns a logger object that allows logging of error messages.
@@ -125,11 +154,45 @@ def get_logger(logname='yombolog', **kwargs):
     if logFirstRun is True:
       logFirstRun = False
       # This doesn't appear to be working yet...
-#      globalLogPublisher.addObserver(jsonFileLogObserver(io.open("yombo.log.json", "a")))
+      globalLogPublisher.addObserver(jsonFileLogObserver(io.open("usr/log/yombo.json", "a")))
+      globalLogPublisher.addObserver(textFileLogObserver(io.open("usr/log/yombo.text", "a")))
 
     loggers[logname] = logger
-    
+
+    if get_logger.rotate_loop is None:
+        get_logger.rotate_loop = LoopingCall(rotate_logs)
+        get_logger.rotate_loop.start(5, False)  # about every 10 minutes
+        # get_logger.rotate_loop.start(615, False)  # about every 10 minutes
+
     return loggers[logname]
+
+def rotate_logs():
+    reactor.callInThread(do_rotate_logs, 'usr/log/yombo.json', 'json')
+    reactor.callInThread(do_rotate_logs, 'usr/log/yombo.text', 'text')
+
+def do_rotate_logs(basefile, type):
+    if os.path.exists(basefile):
+        if os.path.getsize(basefile) > 1000:
+            for c in range(19, 0, -1):
+                filename_cur = "%s.1" % basefile
+                if c == 1 and os.path.exists(filename_cur):
+                    with open(filename_cur) as src, gzip.open('%s.gz' % filename_cur, 'wb') as dst:
+                        dst.writelines(src)
+                    os.remove(filename_cur)
+
+                filename_cur = "%s.%s.gz" % (basefile, c)
+                filename_next = "%s.%s.gz" % (basefile, c+1)
+                if os.path.exists(filename_cur):
+                    os.rename(filename_cur, filename_next)
+            os.rename(basefile, "%s.1" % basefile)
+
+        if type == 'json':
+            globalLogPublisher.removeObserver(jsonFileLogObserver(io.open(basefile, "a")))
+            globalLogPublisher.addObserver(jsonFileLogObserver(io.open(basefile, "a")))
+        elif type == 'text':
+            globalLogPublisher.removeObserver(textFileLogObserver(io.open(basefile, "a")))
+            globalLogPublisher.addObserver(textFileLogObserver(io.open(basefile, "a")))
+
 
 def reset_log_levels():
     """
