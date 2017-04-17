@@ -233,7 +233,6 @@ class AMQPClient(object):
 
     def correlation_ids_serializer(self, correlation):
         output = {}
-        print "correlation: %s" % correlation
         correlation['callback'] = None
         return correlation
 
