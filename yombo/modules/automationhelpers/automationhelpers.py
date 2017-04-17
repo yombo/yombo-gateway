@@ -17,7 +17,7 @@ Helpers for automation items. Adds some core platforms to the source, filters, a
 import operator
 
 # Import python libraries
-from time import time
+# from time import time
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -67,6 +67,7 @@ class AutomationHelpers(YomboModule):
         """
         return [
             { 'platform': 'call_function',  # Defines a new action platform.
+              'description': 'Allows functions to be called as an action.',
               'validate_action_callback': self.call_function_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.call_function_do_action_callback  # function to be called to perform an action
             },
