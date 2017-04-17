@@ -223,8 +223,8 @@ class AMQPClient(object):
         self.send_correlation_ids = yield self.amqp_library._SQLDict.get(
             self,
             "send_request_ids",
-            # serializer=self.correlation_ids_serializer,
-            # unserializer=self.correlation_ids_unserializer,
+            serializer=self.correlation_ids_serializer,
+            unserializer=self.correlation_ids_unserializer,
             max_length=250
         )
 
@@ -233,11 +233,9 @@ class AMQPClient(object):
 
     def correlation_ids_serializer(self, correlation):
         output = {}
-        for key, value in correlation:
-            if key == 'callback':
-                value = None
-            output[key] = value
-        return output
+        print "correlation: %s" % correlation
+        correlation['callback'] = None
+        return correlation
 
     def correlation_ids_unserializer(self, correlation):
         output = correlation.copy()
@@ -251,10 +249,7 @@ class AMQPClient(object):
                                                         output['callback_component_type_function'] )
             except:
                 pass
-        for key, value in correlation:
-            if key == 'callback':
-                value = None
-            output[key] = value
+
         return output
 
     def _local_log(self, level, location="", msg=""):
@@ -485,7 +480,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self._local_log("debug", "PikaFactory::buildProtocol")
         self.resetDelay()
         self.AMQPProtocol = PikaProtocol(self)
-        self.AMQPProtocol.factory = self
         self.AMQPProtocol.ready.addCallback(self.AMQPProtocol.connected)
         return self.AMQPProtocol
 
@@ -731,12 +725,11 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
     @inlineCallbacks
     def connected(self, connection):
         """
-        Is called when connected to Yombo AMQP server. Binds to the gateway listening queue, and sends a basic hello
-        message. The response will be caught in the self.factory.incoming function.
+        Is called when connected to AMQP server.
 
         :param connection: The connection to Yombo AMQP server.
         """
-        self._local_log("debug", "PikaProtocol::connected")
+        self._local_log("warn", "PikaProtocol::connected")
         self.connection = connection
         self.channel = yield connection.channel()
 

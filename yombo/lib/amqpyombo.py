@@ -328,9 +328,10 @@ class AMQPYombo(YomboLibrary):
             "body"             : msgpack.dumps(body),
             "properties" : {
                 # "correlation_id" : correlation_id,
-                "user_id"        : self.gwid,
+                "user_id"        : self.gwid, # system id is required to be able to send it.
                 "content_type"   : 'application/msgpack',
                 "headers"        : {
+                    # "requesting_user_id"        : user
                     "source"        : source + ":" + self.gwid,
                     "destination"   : destination,
                     "type"          : header_type,
