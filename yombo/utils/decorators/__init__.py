@@ -6,9 +6,11 @@ Various function decorators.
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
-from time import time
 # Import python libraries
 from functools import wraps
+from time import time
+from hashlib import sha256
+import cPickle
 
 # Import Yombo libraries
 from yombo.core.log import get_logger
@@ -71,7 +73,7 @@ def memoize_(func):
 
 class memoize_ttl(object):
     """
-    Taken from: http://jonebird.com/2012/02/07/python-memoize-decorator-with-ttl-argument/
+    Yombo modified, but from: http://jonebird.com/2012/02/07/python-memoize-decorator-with-ttl-argument/
 
     Decorator that caches a function's return value each time it is called within a TTL.
     If called within the TTL and the same arguments, the cached value is returned,
@@ -98,24 +100,26 @@ class memoize_ttl(object):
     def __init__(self, ttl=60):
         self.cache = {}
         self.ttl = ttl
+
     def __call__(self, f):
-        def wrapped_f(*args):
+        def wrapped_f(*args, **kwargs):
             now = time()
+            the_hash = (args, sha256(cPickle.dumps(kwargs)).hexdigest())
             try:
-                value, last_update = self.cache[args]
+                value, last_update = self.cache[the_hash]
                 if self.ttl > 0 and now - last_update > self.ttl:
                     raise AttributeError
                 #print 'DEBUG: cached value'
                 return value
             except (KeyError, AttributeError):
-                value = f(*args)
-                self.cache[args] = (value, now)
+                value = f(*args, **kwargs)
+                self.cache[the_hash] = (value, now)
                 #print 'DEBUG: fresh value'
                 return value
             except TypeError:
                 # uncachable -- for instance, passing a list as an argument.
                 # Better to not cache than to blow up entirely.
-                return f(*args)
+                return f(*args, **kwargs)
         return wrapped_f
 
 def timing(function):
