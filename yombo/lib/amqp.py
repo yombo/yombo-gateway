@@ -36,6 +36,8 @@ from collections import deque
 from hashlib import sha1
 import sys
 import traceback
+from time import time
+from twisted.internet.task import LoopingCall
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -76,6 +78,19 @@ class AMQP(YomboLibrary):
     #                client.factory.protocol.disconnect()
                 except:
                     pass
+
+    # def _start_(self):
+    #     self.clean_send_correlation_ids_loop = LoopingCall(self.clean_send_correlation_ids)
+    #     self.clean_send_correlation_ids_loop.start(self._Configs.get('sqldict', 'save_interval', 16, False))
+
+    def clean_send_correlation_ids(self):
+        for client, data in self.client_connections.iteritems():
+            for correlation_id in data.send_correlation_id.keys():
+                if data[correlation_id]['time_received'] is None:
+                    if data[correlation_id]['time_received'] < (time() - (60*15)):
+                        del data[correlation_id]
+                elif data[correlation_id]['time_received'] < (time() - (60*2)):
+                        del data[correlation_id]
 
     def _local_log(self, level, location="", msg=""):
         logit = getattr(logger, level)
@@ -204,6 +219,7 @@ class AMQPClient(object):
         self.pika_factory = PikaFactory(self)
         self.pika_factory.noisy = False  # turn off Starting/stopping message
 
+        self.send_correlation_id = None
         pika_params = {
             'host': hostname,
             'port': port,
@@ -232,8 +248,10 @@ class AMQPClient(object):
         # MaxDict(250)  # correlate requests with responses
 
     def correlation_ids_serializer(self, correlation):
-        output = {}
+        # print "correlation_ids_serializer: %s" % correlation
+        #todo: using sys or function tools to get the module name and function name to re-create a link.
         correlation['callback'] = None
+        correlation['amqpyombo_callback'] = None
         return correlation
 
     def correlation_ids_unserializer(self, correlation):
@@ -249,6 +267,7 @@ class AMQPClient(object):
             except:
                 pass
 
+        # print "serializer output: %s" % output
         return output
 
     def _local_log(self, level, location="", msg=""):
@@ -615,7 +634,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             correlation_id = properties['correlation_id']
         else:
             if callback is not None:
-                correlation_id = random_string()
+                correlation_id = random_string(random_string(length=24))
             else:
                 correlation_id = None
         properties['user_id'] = self.AMQPClient.username
@@ -855,6 +874,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                     # logger.debug("exchange={exchange_name}, routing_key={routing_key}, body={body}, properties={properties}",
                     #             exchange_name=msg['exchange_name'], routing_key= msg['routing_key'], body=msg['body'], properties=msg['properties'])
                     msg['properties'] = pika.BasicProperties(**msg['properties'])
+                    msg['properties'].headers['msg_sent_time'] = str(time())
+
                     yield self.channel.basic_publish(exchange=msg['exchange_name'], routing_key=msg['routing_key'], body=msg['body'], properties=msg['properties'])
 
                 except Exception as error:
@@ -903,9 +924,10 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             time_info = self.factory.AMQPClient.send_correlation_ids[props.correlation_id]
             date_time = time_info['time_received'] - time_info['time_sent']
             milliseconds = (date_time.days * 24 * 60 * 60 + date_time.seconds) * 1000 + date_time.microseconds / 1000.0
+            self.factory.AMQPClient.send_correlation_ids[props.correlation_id]['time_round_trip'] = milliseconds
             logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
 
-        # if message has a direct callbackk, call that instead of the queue callback
+        # if message has a direct callback, call that instead of the queue callback
         already_calledback = False
         if correlation is not None:
             if correlation['callback'] is not None:
@@ -913,10 +935,10 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                     logger.warn("calling message callback, not incoming queue callback")
                     already_calledback = True
                     local_callback = correlation['callback']
-                    d = defer.maybeDeferred(local_callback, props, msg, correlation)
+                    d = defer.maybeDeferred(local_callback, msg=msg, properties=props, deliver=deliver, correlation=correlation)
 
         if already_calledback is False:
-            d = defer.maybeDeferred(callback, props, msg, correlation)
+            d = defer.maybeDeferred(callback, msg=msg, properties=props, deliver=deliver, correlation=correlation)
             logger.debug('Called callback: {callback}', callback=callback)
 
         if not queue_no_ack:
