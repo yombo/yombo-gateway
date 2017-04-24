@@ -80,18 +80,26 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 :license: LICENSE for details.
 """
 # Import python libraries
-from datetime import datetime, timedelta
+from __future__ import division
+from collections import OrderedDict
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
+from time import time
 from difflib import SequenceMatcher
 import re
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.utils import percentile, global_invoke_all, pattern_search
+from yombo.utils.decorators import memoize_ttl
 from yombo.core.log import get_logger
 
 logger = get_logger('library.statistics')
@@ -112,6 +120,16 @@ class Statistics(YomboLibrary):
     _datapoints = {}  # stores datapoint data
     _datapoint_last_value = {}  # Used to track duplicates. Duplicate values are removed as it adds no value!
 
+    bucket_lifetimes_default = {'size': 300, 'lifetime': 360}  # 300 seconds, saved for 180 days.
+    bucket_lifetimes = {
+        '#': {'size': 300, 'lifetime': 360},
+        'lib.#': {'size': 300, 'lifetime': 180},
+        'lib.device.status.#':  {'size': 60, 'lifetime': 180},
+        'lib.amqpyombo.amqp.#':{'size': 30, 'lifetime': 180},
+        'modules.#': {'size': 60, 'lifetime': 180},
+        'lib.atoms.#': {'size': 60, 'lifetime': 180},
+    }
+
     def _init_(self):
         """
         Brings the library module online. Responsible for setting up framework for storing statistics.
@@ -119,43 +137,33 @@ class Statistics(YomboLibrary):
         :return:
         """
         self.enabled = self._Configs.get('statistics', 'enabled', True)
-        self.upload = self._Configs.get('statistics', 'upload', True)
-        self.enabled = self._Configs.get('statistics', 'anonymous', True)
+        self.upload_allowed = self._Configs.get('statistics', 'upload', True)
+        self.anonymous_allowed = self._Configs.get('statistics', 'anonymous', True)
 
         # defines bucket time span, default is 5 minutes for all buckets
-        self.count_bucket_duration = self._Configs.get('statistics', 'count_bucket_duration', 5)  # 5 minutes for count buckets
-        self.averages_bucket_duration = self._Configs.get('statistics', 'averages_bucket_duration', 5)  # 5 minutes for averages buckets
-
-        # defines how long to keep things. All values in days! 0 - forever
-        self.count_bucket_life_full = self._Configs.get('statistics', 'count_bucket_life_full', 30, False)
-        self.count_bucket_life_5m = self._Configs.get('statistics', 'count_bucket_life_5m', 120, False)
-        self.count_bucket_life_15m = self._Configs.get('statistics', 'count_bucket_life_15m', 120, False)
-        self.count_bucket_life_60m = self._Configs.get('statistics', 'count_bucket_life_60m', 180, False)
-        self.count_bucket_life_daily = self._Configs.get('statistics', 'count_bucket_life_daily', 0, False)
-        self.averages_bucket_life_5m = self._Configs.get('statistics', 'averages_bucket_life_5m', 120, False)
-        self.averages_bucket_life_full = self._Configs.get('statistics', 'averages_bucket_life_full', 30, False)
-        self.averages_bucket_life_15m = self._Configs.get('statistics', 'averages_bucket_life_15m', 120, False)
-        self.averages_bucket_life_60m = self._Configs.get('statistics', 'averages_bucket_life_60m', 120, False)
-        self.averages_bucket_life_daily = self._Configs.get('statistics', 'averages_bucket_life_daily', 0, False)
-        self.datapoint_bucket_life_full = self._Configs.get('statistics', 'datapoint_bucket_life_full', 30, False)
-        self.datapoint_bucket_life_15m = self._Configs.get('statistics', 'datapoint_bucket_life_15m', 120, False)
-        self.datapoint_bucket_life_60m = self._Configs.get('statistics', 'datapoint_bucket_life_60m', 120, False)
-        self.datapoint_bucket_life_daily = self._Configs.get('statistics', 'datapoint_bucket_life_daily', 0, False)
-
-        self.bucket_lifetimes = {}  # caches meta life duration. Might get set many times, no need to hammer database
+        self.count_bucket_duration = self._Configs.get('statistics', 'count_bucket_duration', 300)  # 5 minutes for count buckets
+        self.averages_bucket_duration = self._Configs.get('statistics', 'averages_bucket_duration', 300)  # 5 minutes for averages buckets
 
         if self.enabled is not True:
             return
 
-        self.time_between_saves = self._Configs.get('statistics', 'time_between_saves', 1800 )  # 30 mins
-        self.sendDataLoop = LoopingCall(self._save_statistics)
-        self.sendDataLoop.start(self.time_between_saves, False)
+        self.time_between_saves = self._Configs.get('statistics', 'time_between_saves', 308 )  # ~5 mins
+        self.saveDataLoop = LoopingCall(self._save_statistics)
+        self.saveDataLoop.start(self.time_between_saves, False)
+
+        self.uploadDataLoop = LoopingCall(self._upload_statistics)
 
         self.unload_deferred = None
 
         self.init_deferred = Deferred()
         self.load_last_datapoints()
+
+        self.last_upload_count = None
+
         return self.init_deferred
+
+    def _start_(self):
+        self.uploadDataLoop.start(633, False) # ~ 30 minutes
 
     def _stop_(self):
         """
@@ -190,6 +198,38 @@ class Statistics(YomboLibrary):
             return
 
         self._datapoint_last_value = yield self._LocalDB.get_stat_last_datapoints()
+        unfinished = yield self._LocalDB.get_unfinished_statistics()
+        for stat in unfinished:
+            bucket_time = stat['bucket_time']
+            bucket_name = stat['bucket_name']
+            if stat['bucket_type'] == 'counter':
+                if bucket_time not in self._counters:
+                    self._counters[bucket_time] = {}
+                self._counters[bucket_time][bucket_name] = {
+                    'time': stat['bucket_time'],
+                    'size': stat['bucket_size'],
+                    'type': stat['bucket_type'],
+                    'name': stat['bucket_name'],
+                    'value': stat['bucket_value'],
+                    'anon': stat['anon'],
+                    'restored_from_db': True,
+                    'restored_db_id': stat['id'],
+                }
+            elif stat['bucket_type'] == 'average':
+                if bucket_time not in self._averages:
+                    self._averages[bucket_time] = {}
+                self._averages[bucket_time][bucket_name] = {
+                    'time': stat['bucket_time'],
+                    'size': stat['bucket_size'],
+                    'type': stat['bucket_type'],
+                    'name': stat['bucket_name'],
+                    'average_data': stat['bucket_average_data'],
+                    'value': stat['bucket_value'],
+                    'values': [],
+                    'anon': stat['anon'],
+                    'restored_from_db': stat['bucket_average_data'],
+                    'restored_db_id': stat['id'],
+                }
         self.init_deferred.callback(10)
 
     def _modules_prestarted_(self, **kwargs):
@@ -210,110 +250,86 @@ class Statistics(YomboLibrary):
         .. code-block:: python
 
            def _statistics_lifetimes_(**kwargs):
-               return {'modules.mymodulename': {'full':180, '5m':180}}
-
-        This will create statistics save duration with the following values:
-        {'full':180, '5m':180, '15m':90, '60m':365, '6hr':730, '24h':1825}
-
-        Notes: set any value to 0 and it will keep that level of data forever!
-
-        See :py:mod:`Atoms Library <yombo.lib.automationhelpers>` for demo.
+               return {'modules.mymodulename.#': {'size': 300, 'lifetime': 0}}
         """
-        # first, set some generic defaults. The filter matcher when processing will always use the most specific.
-        # full, 5m, 15m, 60m
-
         if self.enabled is not True:
             return
 
-        self.bucket_lifetimes_default = {
-            'full':60, '5m':90, '15m':90, '60m':365, '6hr':730, '24h':1825
-        }
-        self.add_bucket_lifetime('#', self.bucket_lifetimes_default)
-        self.add_bucket_lifetime('lib.#', {'full':15, '5m':30, '15m':60, '60m':90, '6hr':180, '24h':1000})
-        self.add_bucket_lifetime('lib.device.#', {'full':60, '5m':90, '15m':90, '60m':90, '6hr':180, '24h':1000})
-        self.add_bucket_lifetime('lib.amqpyombo.amqp.#', {'full':5, '5m':10, '15m':15, '60m':15, '6hr':15, '24h':90})
-        self.add_bucket_lifetime('lib.#', {'full':10, '5m':15, '15m':15, '60m':15, '6hr':180, '24h':720})
-        self.add_bucket_lifetime('modules.#', {'full':30, '5m':15, '15m':15, '60m':15, '6hr':180, '24h':1000})
-
         stat_lifetimes = global_invoke_all('_statistics_lifetimes_', called_by=self)
-#        print "################## %s " % stat_lifetimes
-#        logger.debug("message: automation_sources: {automation_sources}", automation_sources=automation_sources)
         for moduleName, item in stat_lifetimes.iteritems():
             if isinstance(item, dict):
-                for bucket, values in item.iteritems():
-                    # print "hook....bucket: %s" % bucket
-                    # print "hook....bucket: %s" % values
-                    self.add_bucket_lifetime(bucket, values)
+                for bucket_name, lifetime in item.iteritems():
+                    self.add_bucket_lifetime(bucket_name, lifetime)
 
-        # for name, data in self.bucket_lifetimes.iteritems():
-            # print "name: %s, data: %s" % (name, data)
+    def add_bucket_lifetime(self, bucket_name, values):
+        """
 
-    def _get_bucket_time(self, type, bucket_time=None):
+        :param bucket_name: bucket_name of bucket
+        :param lifetimes: dictionary: size, lifetime
+        :return:
+        """
+        if isinstance(values, dict) is False:
+            raise YomboWarning("Bucket lifetimes must be a dictionary.")
+        if 'size' not in values:
+            raise YomboWarning("Bucket lifetimes must have 'size' defined.")
+        if 'lifetime' not in values:
+            raise YomboWarning("Bucket lifetimes must have 'lifetime' defined.")
+        self.bucket_lifetimes[bucket_name] = values
+
+    @memoize_ttl(1)
+    def _get_bucket_time(self, type, bucket_size=None, bucket_name=None):
         """
         Internal function to get time for a given bucket type.
 
         :param type: Either count, averages, or datapoint.
         :return: A unix epoch time for a bucket.
         """
-        if bucket_time is not None:
-            if 60 % bucket_time != 0:
-                raise YomboWarning("bucket_time must be divisible by 60.")
-            bucket_minutes = bucket_time
+        # print "getting bucket: %s, %s, %s" %( type, bucket_size, bucket_name)
+        if bucket_name is not None:
+            bucket_size = self.find_bucket_time(bucket_name)
+        elif bucket_size is not None:
+            if isinstance(bucket_size, int) or isinstance(bucket_size, float):
+                bucket_size = int(bucket_size)
+            else:
+                raise YomboWarning("Invalid bucket_time submitted to _get_bucket_time")
         else:
             if type == "count":
-                bucket_minutes = self.count_bucket_duration
+                bucket_size = self.count_bucket_duration
             elif type == "averages":
-                bucket_minutes = self.averages_bucket_duration
+                bucket_size = self.averages_bucket_duration
             elif type == "datapoint":
-                return int(datetime.now().strftime('%s'))
+                return int(time())
             else:
                 raise YomboWarning('Invalid _get_bucket_time type: %s' % type)
 
-        now = datetime.now()
-        bucket = now - timedelta(minutes = now.minute % bucket_minutes, seconds = now.second, microseconds = now.microsecond )
-        return int(bucket.strftime('%s'))
+        return {'size': bucket_size, 'time': int(int((time() / bucket_size)) * bucket_size)}
 
-    def _validate_name(self, name):
+    @memoize_ttl(0)  # use the version that support kwargs....
+    def _validate_name(self, bucket_name):
         """
-        Validates the name being submitted is valid. No point in sending badly named
+        Validates the bucket_name being submitted is valid. No point in sending badly bucket_named
         items to the server, as the server will simply perform this same check and
         discard any invalid ones.
 
         .. note::
 
-            If the server detects too many invalid names, the gateway will be blocked from
+            If the server detects too many invalid bucket_names, the gateway will be blocked from
             saving statistics in the future.
 
-        :param name: Label for the statistic
-        :type name: string
+        :param bucket_name: Label for the statistic
+        :type bucket_name: string
         """
-        parts = name.split('.', 10)
+        parts = bucket_name.split('.', 10)
         if len(parts) < 3:
-            raise YomboWarning("Name must have at least 3 parts, preferably at least 4.")
+            raise YomboWarning("bucket_name must have at least 3 parts, preferably at least 4.")
         elif len(parts) > 8:
-            raise YomboWarning("Name has too many parts, no more than 8.")
+            raise YomboWarning("bucket_name has too many parts, no more than 8.")
 
         for count in range(0, len(parts)):
             if len(parts[count]) < 3:
                 raise YomboWarning("'%s' is too short, must be at least 3 characters: " % parts[count])
 
-    def add_bucket_lifetime(self, name, lifetimes):
-        """
-
-        :param name: name of bucket
-        :param lifetimes: list - [full, hourly, daily]
-        :return:
-        """
-        if isinstance(lifetimes, dict) is False:
-            raise YomboWarning("Bucket lifetimes must be a dictionary.")
-        base_dict = self.bucket_lifetimes_default.copy()
-        for key, value in lifetimes.iteritems():
-            if key in self.bucket_lifetimes_default:
-                base_dict[key] = value
-
-        self.bucket_lifetimes[name] = {'life': base_dict}
-
-    def datapoint(self, name, value, anon=False):
+    def datapoint(self, bucket_name, value, anon=None):
         """
         Set a datapoint numberic value. For example, set the current measured temperature.
 
@@ -321,8 +337,8 @@ class Statistics(YomboLibrary):
 
            self._Statistics.datapoint("house.upstairs.den.occupied", occupied_sensor['den'])
 
-        :param name: Name of the statistic to save.
-        :type name: string
+        :param bucket_name: bucket_name of the statistic to save.
+        :type bucket_name: string
         :param value: A numbered value to set.
         :type value: int
         :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
@@ -333,30 +349,42 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validate_name(name)
+        self._validate_name(bucket_name)
 
-        if name in self._datapoint_last_value:  # lookup last value saved.
-            if self._datapoint_last_value[name] == value:  # we don't save duplicates!
+        if bucket_name in self._datapoint_last_value:  # lookup last value saved.
+            if self._datapoint_last_value[bucket_name] == value:  # we don't save duplicates!
                 return
 
-        bucket = self._get_bucket_time('datapoint')  # not really a bucket, just standardized call.
-        if bucket not in self._datapoints:
-            self._datapoints[bucket] = {}
-        if name not in self._datapoints:
-            self._datapoints[bucket][name] = {}
-        self._datapoints[bucket][name]['value'] = value
-        self._datapoints[bucket][name]['anon'] = anon
+        bucket_time = int(time())
+        if bucket_time not in self._datapoints:
+            self._datapoints[bucket_time] = {}
+        if bucket_name not in self._datapoints:
+            self._datapoints[bucket_time][bucket_name] = {
+                'time': bucket_time,
+                'size': 0,
+                'type': 'datapoint',
+                'name': bucket_name,
+                'anon': False,
+                'restored_from_db': False,
+            }
+        self._datapoints[bucket_time][bucket_name]['value'] = value
 
-    def count(self, name, value, bucket_time=None, anon=False, lifetimes=None):
+        if anon is True:
+            self._datapoints[bucket_time][bucket_name]['anon'] = True
+        else:
+            self._datapoints[bucket_time][bucket_name]['anon'] = False
+
+
+    def count(self, bucket_name, value, bucket_size=None, anon=None, lifetimes=None):
         """
         Set a count value. Typically, this isn't used, instead use ``increment`` or ``decrement`` due to
         bucket time rollover.
 
-        :param name: Name of the statistic to save.
-        :type name: string
+        :param bucket_name: bucket_name of the statistic to save.
+        :type bucket_name: string
         :param value: A numbered value to set.
         :type value: int
-        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
+        :param bucket_size: How many seconds the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
@@ -364,94 +392,138 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validate_name(name)
-
-        bucket = self._get_bucket_time('count', bucket_time)
-
-        if bucket not in self._counters:
-            self._counters[bucket] = {}
-        self._counters[bucket][name]['value'] = value
-        self._counters[bucket][name]['anon'] = anon
         if lifetimes is not None:
-            self.add_bucket_lifetime(name, lifetimes)
+            self.add_bucket_lifetime(bucket_name, lifetimes)
 
-    def increment(self, name, count=1, bucket_time=None, anon=False, lifetimes=None):
+        self._validate_name(bucket_name)
+
+        bucket = self._get_bucket_time('count', bucket_size=bucket_size, bucket_name=bucket_name)
+
+        if bucket['time'] not in self._counters:
+            self._counters[bucket['time']] = {}
+
+        if bucket_name not in self._counters[bucket['time']]:
+            self._counters[bucket['time']][bucket_name] = {
+                'time': bucket['time'],
+                'size': bucket['size'],
+                'type': 'counter',
+                'name': bucket_name,
+                'anon': False,
+                'restored_from_db': False,
+            }
+
+        self._counters[bucket['time']][bucket_name]['value'] = value
+
+        if anon is None:
+            if 'anon' not in self._counters[bucket['time']][bucket_name]['anon']:
+                self._counters[bucket['time']][bucket_name]['anon'] = False
+        elif anon is True:
+            self._counters[bucket['time']][bucket_name]['anon'] = True
+        elif anon is False:
+            self._counters[bucket['time']][bucket_name]['anon'] = False
+
+    def increment(self, bucket_name, count=1, bucket_size=None, anon=None, lifetimes=None):
         """
-        Increment a counter value. If doesn't exist, will create the new counter for the given name.
+        Increment a counter value. If doesn't exist, will create the new counter for the given bucket_name.
 
         .. code-block:: python
         
            self._Statistics.increment("module.mymodule.requests.sent")
 
-        :param name: Name of the statistic to save.
-        :type name: string
+        :param bucket_name: bucket_name of the statistic to save.
+        :type bucket_name: string
         :param count: How many to increment by, defaults to 1.
         :type count: int
-        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
+        :param bucket_size: How many seconds the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
         if self.enabled is not True:
             return
-        self._validate_name(name)
-
-        bucket = self._get_bucket_time('count', bucket_time)
-
-        if bucket not in self._counters:
-            self._counters[bucket] = {}
-
-        if name not in self._counters[bucket]:
-                self._counters[bucket][name] = {}
-                self._counters[bucket][name]['value'] = count
-                self._counters[bucket][name]['anon'] = anon
-        else:
-                self._counters[bucket][name]['value'] += count
-                self._counters[bucket][name]['anon'] = anon
+        self._validate_name(bucket_name)
 
         if lifetimes is not None:
-            self.add_bucket_lifetime(name, lifetimes)
+            self.add_bucket_lifetime(bucket_name, lifetimes)
 
+        bucket = self._get_bucket_time('count', bucket_size=bucket_size, bucket_name=bucket_name)
 
-    def decrement(self, name, count=1, bucket_time=None, anon=False, lifetimes=None):
+        if bucket['time'] not in self._counters:
+            self._counters[bucket['time']] = {}
+
+        if bucket_name not in self._counters[bucket['time']]:
+            self._counters[bucket['time']][bucket_name] = {
+                'time': bucket['time'],
+                'size': bucket['size'],
+                'type': 'counter',
+                'name': bucket_name,
+                'anon': False,
+                'restored_from_db': False,
+                'value': count,
+            }
+        else:
+            self._counters[bucket['time']][bucket_name]['value'] += count
+
+        if anon is None:
+            if 'anon' not in self._counters[bucket['time']][bucket_name]['anon']:
+                self._counters[bucket['time']][bucket_name]['anon'] = False
+        elif anon is True:
+            self._counters[bucket['time']][bucket_name]['anon'] = True
+        elif anon is False:
+            self._counters[bucket['time']][bucket_name]['anon'] = False
+
+    def decrement(self, bucket_name, count=1, bucket_size=None, anon=None, lifetimes=None):
         """
-        Decrement a counter value. If doesn't exist, will create the new counter for the given name.
+        Decrement a counter value. If doesn't exist, will create the new counter for the given bucket_name.
 
         .. code-block:: python
         
            self._Statistics.decrement("module.mymodule.requests.sent")
 
-        :param name: Name of the statistic to save.
-        :type name: string
+        :param bucket_name: bucket_name of the statistic to save.
+        :type bucket_name: string
         :param count: How many to increment by, defaults to -1.
         :type count: int
-        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
+        :param bucket_size: How many seconds the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
         """
         if self.enabled is not True:
             return
-
-        self._validate_name(name)
-
-        bucket = self._get_bucket_time('count', bucket_time)
-
-        if bucket not in self._counters:
-            self._counters[bucket] = {}
-
-        if name not in self._counters[bucket]:
-                self._counters[bucket][name] = {}
-                self._counters[bucket][name]['value'] = -count
-                self._counters[bucket][name]['anon'] = anon
-        else:
-                self._counters[bucket][name]['value'] -= count
-                self._counters[bucket][name]['anon'] = anon
+        self._validate_name(bucket_name)
 
         if lifetimes is not None:
-            self.add_bucket_lifetime(name, lifetimes)
+            self.add_bucket_lifetime(bucket_name, lifetimes)
 
-    def averages(self, name, value, bucket_time=None, anon=False, lifetimes=None):
+        bucket = self._get_bucket_time('count', bucket_size=bucket_size, bucket_name=bucket_name)
+
+        if bucket['time'] not in self._counters:
+            self._counters[bucket['time']] = {}
+
+        if bucket_name not in self._counters[bucket['time']]:
+            self._counters[bucket['time']][bucket_name] = {
+                'time': bucket['time'],
+                'size': bucket['size'],
+                'type': 'counter',
+                'name': bucket_name,
+                'anon': False,
+                'restored_from_db': False,
+                'value': count,
+            }
+        else:
+            self._counters[bucket['time']][bucket_name]['value'] += count
+
+        if anon is None:
+            if 'anon' not in self._counters[bucket['time']][bucket_name]['anon']:
+                self._counters[bucket['time']][bucket_name]['anon'] = False
+        elif anon is True:
+            self._counters[bucket['time']][bucket_name]['anon'] = True
+        elif anon is False:
+            self._counters[bucket['time']][bucket_name]['anon'] = False
+
+
+    def averages(self, bucket_name, value, bucket_size=None, anon=None, lifetimes=None):
         """
         Set a time on how long something took to complete in milliseconds. A single timer can be set many times, but
         it will be averaged per bucket.
@@ -460,11 +532,11 @@ class Statistics(YomboLibrary):
         
            self._Statistics.averages("house.upstairs.den.temperature", data['den'])
 
-        :param name: Name of the statistic to save.
-        :type name: string
+        :param bucket_name: bucket_name of the statistic to save.
+        :type bucket_name: string
         :param value: How long something took in milliseconds.
         :type value: int4
-        :param bucket_time: How many minutes the bucket should be. Must be a multiple that gets to 60.
+        :param bucket_size: How many seconds the bucket should be. Must be a multiple that gets to 60.
         :type value: bool
         :param anon: If anonymous type data, set to True, default is False
         :type value: bool
@@ -472,24 +544,42 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        self._validate_name(name)
-
-        bucket = self._get_bucket_time('averages', bucket_time)
-
-        if bucket not in self._averages:
-            self._averages[bucket] = {}
-
-        if name not in self._averages[bucket]:
-            self._averages[bucket][name] = []
-        self._averages[bucket][name].append({'value': value, 'anon': anon})
+        self._validate_name(bucket_name)
 
         if lifetimes is not None:
-            self.add_bucket_lifetime(name, lifetimes)
+            self.add_bucket_lifetime(bucket_name, lifetimes)
 
-    def get_stat(self, name, type=None):
+        bucket = self._get_bucket_time('count', bucket_size=bucket_size, bucket_name=bucket_name)
+
+        if bucket['time'] not in self._averages:
+            self._averages[bucket['time']] = {}
+
+        if bucket_name not in self._averages[bucket['time']]:
+            self._averages[bucket['time']][bucket_name] = {
+                'time': bucket['time'],
+                'values': [value],
+                'restored_from_db': False,
+                'anon': False,
+                'size': bucket['size'],
+                'type': 'average',
+                'name': bucket_name,
+                'average_data': None
+            }
+        else:
+            self._averages[bucket['time']][bucket_name]['values'].append(value)
+
+        if anon is None:
+            if 'anon' not in self._averages[bucket['time']][bucket_name]['anon']:
+                self._averages[bucket['time']][bucket_name]['anon'] = False
+        elif anon is True:
+            self._averages[bucket['time']][bucket_name]['anon'] = True
+        elif anon is False:
+            self._averages[bucket['time']][bucket_name]['anon'] = False
+
+    def get_stat(self, bucket_name, type=None):
         results = []
-        # sum(value) as value, name, type, round(bucket / %s) * %s AS bucket
-        find_name = name.replace('%', '#')
+        # sum(value) as value, bucket_name, type, round(bucket / %s) * %s AS bucket
+        find_name = bucket_name.replace('%', '#')
         if type is None or type is 'counter':
             for bucket in self._counters:
                 for stat in pattern_search(find_name, self._counters[bucket]):
@@ -529,7 +619,7 @@ class Statistics(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def _save_statistics(self, full=False, final_save=False):
+    def _save_statistics(self, full=False, gateway_stopping=False):
         """
         Internal function to save the statistics information to database. This is performed regularly while the gateway
         is running and during shutdown. For perfomance reasons, it's not saved instantly.
@@ -537,103 +627,204 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        current_count_bucket = self._get_bucket_time('count')
-        current_averages_bucket = self._get_bucket_time('averages')
-        current_datapoint_bucket = self._get_bucket_time('count')
+        to_save = []
+        # print "counters: %s" % self._counters
+        for bucket_time in self._counters.keys():
+            # print "starting save _counters"
+            for bucket_name in self._counters[bucket_time].keys():
+                current_bucket = self._counters[bucket_time][bucket_name]
+                current_bucket_time = self._get_bucket_time('count', bucket_name=bucket_name)
+                if full or bucket_time < (current_bucket_time['time']):
+                    # print "int(bucket_time (%s) < (current_bucket_time (%s)) = %s" % (bucket_time, current_bucket_time['time'], (int(bucket_time < (current_bucket_time['time']))))
+                    if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
+                        yield self._LocalDB.save_statistic(current_bucket, int(bucket_time < (current_bucket_time['time'])))
+                    else:
+                        od = OrderedDict()
+                        od['bucket_time'] = current_bucket['time']
+                        od['bucket_size'] = current_bucket_time['size']
+                        od['bucket_type'] = current_bucket['type']
+                        od['bucket_name'] = current_bucket['name']
+                        od['bucket_value'] = current_bucket['value']
+                        od['updated'] = int(time())
+                        od['anon'] = current_bucket['anon']
+                        od['finished'] = int(bucket_time < (current_bucket_time['time']))
+                        to_save.append(od)
 
-        for bucket in self._counters.keys():
-            if full or bucket < (current_count_bucket):
-                for name in self._counters[bucket].keys():
-                    yield self._LocalDB.save_statistic(bucket, "counter", name,
-                                                                    self._counters[bucket][name]['value'],
-                                                                    self._counters[bucket][name]['anon'])
-            if full:                    
-                del self._counters[bucket]
+                        try:
+                            if len(to_save) > 0:
+                                yield self._LocalDB.save_statistic_bulk(to_save)
+                            to_save = []
+                        except:
+                            print "error while trying to bulk save: %s" % to_save
 
-        for bucket in self._averages.keys():
-            if full or bucket < (current_averages_bucket):
-                for name in self._averages[bucket].keys():
-#                    print "name: %s" % name
-                    # save_data.append({'type': 'count', 'name': name, 'value': self._averages[bucket][name]})
 
-                    values = []
-#                    print "_averages: %s" % self._averages[bucket][name]
-                    for item in self._averages[bucket][name]:
-                        values.append(item['value'])
-                        anon = item['anon']
-#                    print "values: %s" % values
-                    sorted_values = sorted(values)
+                if bucket_time < (current_bucket_time['time']):
+                    del self._counters[bucket_time][bucket_name]
+            if len(self._counters[bucket_time]) == 0:
+                del self._counters[bucket_time]
 
-                    median = percentile(list(sorted_values), 0.50)
-                    percentile90 = percentile(sorted_values, 0.90)
-                    values_90 = []
 
-                    for val in sorted_values:
-                        if val <= percentile90:
-                            values_90.append(val)
+        for bucket_time in self._averages.keys():
+            for bucket_name in self._averages[bucket_time].keys():
+                current_bucket = self._averages[bucket_time][bucket_name]
+                current_bucket_time = self._get_bucket_time('average', bucket_name=bucket_name)
+                if full or bucket_time < (current_bucket_time['time']):
+
+                    try:
+                        # print " "
+                        # print "Before calc averages: %s" % current_bucket
+                        self.calc_averages(bucket_time, bucket_name)
+                        # print "After calc averages: %s" % current_bucket
+                        # print " "
+                    except Exception as e:
+                        logger.warn("Not saving average bucket_time (no values): {bucket_time}:{bucket_name}  Error: {e}",
+                                    bucket_time=bucket_time, bucket_name=bucket_name, e=e)
+                        continue
+                    else:
+                        if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
+                            yield self._LocalDB.save_statistic(current_bucket,
+                                                                    int(bucket_time < (current_bucket_time['time'])))
                         else:
-                            break
-                    median_90 = percentile(values_90, 0.50)
+                            od = OrderedDict()
+                            od['bucket_time'] = current_bucket['time']
+                            od['bucket_size'] = current_bucket_time['size']
+                            od['bucket_type'] = current_bucket['type']
+                            od['bucket_name'] = current_bucket['name']
+                            od['bucket_value'] = current_bucket['value']
+                            od['bucket_average_data'] = json.dumps(current_bucket['average_data'], separators=(',',':'))
+                            od['updated'] = int(time())
+                            od['anon'] = current_bucket['anon']
+                            od['finished'] = int(bucket_time < (current_bucket_time['time']))
+                            to_save.append(od)
+                            try:
+                                if len(to_save) > 0:
+                                    yield self._LocalDB.save_statistic_bulk(to_save)
+                                to_save = []
+                            except:
+                                print "error while trying to bulk save: %s" % to_save
 
-                    # print "sorted_values: %s" % sorted_values
-                    # print "valpercentile90es_90: %s" % percentile90
-                    # print "values_90: %s" % values_90
-                    average_data = {
-                        'count': len(sorted_values),
-                        'median': median,
-                        'upper': sorted_values[-1],
-                        'lower': sorted_values[0],
-                        'upper_90': values_90[0],
-                        'lower_90': values_90[-1],
-                        'median_90': median_90,
-                    }
-#                    print "average data: %s" % average_data
-                    yield self._LocalDB.save_statistic(bucket, "average", name, median_90, anon, average_data)
-            if full:                    
-                del self._averages[bucket]
-            else:
-                self._upload_statistics()
 
-        for bucket in self._datapoints.keys():
-            if full or bucket < (current_datapoint_bucket):
-#                print "buck datapoints: %s" % self._datapoints[bucket]
-                for name in self._datapoints[bucket].keys():
-                    yield self._LocalDB.save_statistic(bucket, "datapoint", name,
-                                                                    self._datapoints[bucket][name]['value'],
-                                                                    self._datapoints[bucket][name]['anon'])
-    
-            if full:                    
-                del self._datapoints[bucket]
-                self.consolidate_db()  # for testing
+                if bucket_time < (current_bucket_time['time']):
+                    del self._averages[bucket_time][bucket_name]
+            if len(self._averages[bucket_time]) == 0:
+                del self._averages[bucket_time]
 
-        if final_save is True:
+
+        for bucket_time in self._datapoints.keys():
+            for bucket_name in self._datapoints[bucket_time].keys():
+                current_bucket = self._datapoints[bucket_time][bucket_name]
+                if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
+                    yield self._LocalDB.save_statistic(current_bucket, 1)
+                else:
+                    # print "saving in bulk: %s" % current_bucket
+                    od = OrderedDict()
+                    od['bucket_time'] = current_bucket['time']
+                    od['bucket_size'] = 0
+                    od['bucket_type'] = current_bucket['type']
+                    od['bucket_name'] = current_bucket['name']
+                    od['bucket_value'] = current_bucket['value']
+                    od['updated'] = int(time())
+                    od['anon'] = current_bucket['anon']
+                    od['finished'] = int(bucket_time < (current_bucket_time['time']))
+                    to_save.append(od)
+                    try:
+                        if len(to_save) > 0:
+                            yield self._LocalDB.save_statistic_bulk(to_save)
+                        to_save = []
+                    except:
+                        print "error while trying to bulk save: %s" % to_save
+
+                del self._datapoints[bucket_time][bucket_name]
+            if len(self._datapoints[bucket_time]) == 0:
+                del self._datapoints[bucket_time]
+
+        if len(to_save) > 0:
+            yield self._LocalDB.save_statistic_bulk(to_save)
+
+        if gateway_stopping is True:
             self.unload_deferred.callback(1)
+        # else:
+        #     self.consolidate_db()  # for testing
 
-    @inlineCallbacks
-    def consolidate_db(self):
+    def calc_averages(self, bucket_time, bucket_name):
+        values = self._averages[bucket_time][bucket_name]['values']
+        if len(values) > 0:
+            sorted_values = sorted(values)
+            # print "sorted_values: %s" % sorted_values
+
+            median = percentile(list(sorted_values), 0.50)
+            percentile90 = percentile(sorted_values, 0.90)
+            values_90 = []
+
+            for val in sorted_values:
+                if val <= percentile90:
+                    values_90.append(val)
+                else:
+                    break
+
+            median_90 = percentile(values_90, 0.50)
+
+            # print "sorted_values: %s" % sorted_values
+            # print "valpercentile90es_90: %s" % percentile90
+            # print "values_90: %s" % values_90
+            average_data = {
+                'count': len(sorted_values),
+                'median': median,
+                'upper': sorted_values[-1],
+                'lower': sorted_values[0],
+                'upper_90': values_90[0],
+                'lower_90': values_90[-1],
+                'median_90': median_90,
+            }
+
+            restored_averages = self._averages[bucket_time][bucket_name]['restored_from_db']
+
+            if restored_averages is not False:
+                counts = [restored_averages['count'], average_data['count']]
+                medians = [restored_averages['median'], average_data['median']]
+                uppers = [restored_averages['upper'], average_data['upper']]
+                lowers = [restored_averages['lower'], average_data['lower']]
+                upper_90s = [restored_averages['upper_90'], average_data['upper_90']]
+                lower_90s = [restored_averages['lower_90'], average_data['lower_90']]
+                median_90s = [restored_averages['median_90'], average_data['median_90']]
+
+                # found this weighted averaging method here:
+                # http://stackoverflow.com/questions/29330792/python-weighted-averaging-a-list
+                # new_average_data = {}
+                average_data['count'] = restored_averages['count'] + average_data['count']
+                average_data['median'] = sum(x * y for x, y in zip(medians, counts)) / sum(counts)
+                average_data['upper'] = sum(x * y for x, y in zip(uppers, counts)) / sum(counts)
+                average_data['lower'] = sum(x * y for x, y in zip(lowers, counts)) / sum(counts)
+                average_data['upper_90'] = sum(x * y for x, y in zip(upper_90s, counts)) / sum(counts)
+                average_data['lower_90'] = sum(x * y for x, y in zip(lower_90s, counts)) / sum(counts)
+                average_data['median_90'] = sum(x * y for x, y in zip(median_90s, counts)) / sum(counts)
+
+                # self._averages[bucket_time][bucket_name]['restored_from_db'] = True
+            self._averages[bucket_time][bucket_name]['value'] = average_data['median_90']
+            self._averages[bucket_time][bucket_name]['average_data'] = average_data
+
+            return average_data
+        elif self._averages[bucket_time][bucket_name]['restored_from_db'] is not False:
+            self._averages[bucket_time][bucket_name]['average_data'] = \
+                self._averages[bucket_time][bucket_name]['restored_from_db']
+        else:
+            raise YomboWarning("Calc_averages must have a list of ints or floats.")
+
+    def find_bucket_time(self, bucket_name):
         """
-        CPU intensive function consolidates statistic information.
-
-        NOT COMPLETE. Just geting started.
-
-        Steps:
-        1) Generate full list of names (ask sql for unique).
-        2) Match list of names with filters.
-        3) Ask SQL for names with date ranges as defined in filter+lifetime  *continue from here*
-        4) Add all the data up.
-        5) Remove date range of data from SQL
-        6) Add new consolidated data back to SQL.
         :return:
         """
 
-        #        1) Generate full list of names.
-        records = yield self._LocalDB.get_distinct_stat_names()
+        # #        1) Generate full list of bucket_names.
+        # records = yield self._LocalDB.get_distinct_stat_names()
+        #
+        # bucket_names = {}
+        # for record in records:
+        #     bucket_names[record['bucket_name']] = {'bucket_min':record['bucket_min'],'bucket_max':record['bucket_min']}
+        #
+        #       2) Match list of bucket_names with filters.
 
-        names = {}
-        for record in records:
-            names[record['name']] = {'bucket_min':record['bucket_min'],'bucket_max':record['bucket_min']}
-
-        #       2) Match list of names with filters.
+        # print "find bucket time for: %s" % bucket_name
         def make_regex(bucket_lifetimes):
             thelist = {}
             for filter, data in bucket_lifetimes.iteritems():
@@ -644,7 +835,7 @@ class Statistics(YomboLibrary):
             stringDiffLib = SequenceMatcher()
             stringDiffLib.set_seq1(search_for.lower())
             # examine each key in the dict
-            best_ratio = 0
+            best_ratio = -1
             best_match = None
             for key in the_list:
                 # key must be a string, otherwise it is skipped!
@@ -655,6 +846,7 @@ class Statistics(YomboLibrary):
                 try:
                     # get the match ratio
                     curRatio = stringDiffLib.ratio()
+                    # print "current ratio: %s" % curRatio
                 except TypeError:
                     break
                 # if this is the best ratio so far - save it and the value
@@ -666,30 +858,22 @@ class Statistics(YomboLibrary):
         regexs = make_regex(self.bucket_lifetimes)
 
         # get all possible matching filters
-        for name, name_info in names.iteritems():
-          for filter, regex in regexs.iteritems():
-            result = regex.match(name)
+        filters = []
+        for filter, regex in regexs.iteritems():
+            result = regex.match(bucket_name)
             if result is not None:
-              if 'filters' not in names[name]:
-                  names[name] = {'filters': []}
-              names[name]['filters'].append(filter)
+                filters.append(filter)
 
         # now lets strip this down
-        for name, data in names.iteritems():
-            if 'filters' in data:
-                filter = select_closest(data['filters'], name)
-                del names[name]['filters']
-                names[name]['life'] = self.bucket_lifetimes[filter]['life']
-            else:
-                names[name]['life'] = [0, 0, 0]
-
-#        print names
-#{'home.kitchen.bar': {'life': [1, 3, 5]}, 'home.office.light': {'life': [2, 4, 6]}, 'home.den.light': {'life': [2, 4, 6]}}
+        # print "got filters: %s" % filters
+        if len('filters') > 0:
+            bucket_time = select_closest(regexs, bucket_name)
+            return self.bucket_lifetimes[bucket_time]['size']
+        else:
+            return self.bucket_lifetimes_default['size']
 
 
-        #        3) Ask SQL for names with date ranges as defined in filter+lifetime  *continue from here*
-
-
+    @inlineCallbacks
     def _upload_statistics(self):
         """
         Internal function to upload statistics to Yombo based on system settings. This is called periodically
@@ -698,7 +882,39 @@ class Statistics(YomboLibrary):
         Not implemented yet.
         :return: 
         """
-        pass
+        stats = yield self._LocalDB.get_uploadable_statistics(0)
+        if len(stats) > 0:
+
+            headers= {
+                "request_type": "stats_save",
+            }
+            request_msg = self._AMQPYombo.generate_message_request(
+                'ysrv.e.py_stats',
+                'yombo.gateway.statistics',
+                'yombo.server.statistics',
+                headers,
+                stats)
+            request_msg['callback'] = self.upload_statistics_complete
+
+            # logger.info("request_msg: {request_msg}", request_msg=request_msg)
+            self._AMQPYombo.publish(**request_msg)
+            self.last_upload_count = len(stat)
+        else:
+            self.last_upload_count = 0
+
+    @inlineCallbacks
+    def upload_statistics_complete(self, msg=None, properties=None, **kwargs):
+        # print "upload_statistics_complete got properties: %s" % properties
+        # print "upload_statistics_complete got message: %s" % msg
+        if len(msg['stats_completed']):
+            yield self._LocalDB.set_uploaded_statistics(2, msg['stats_completed'])
+        if len(msg['stats_completed']):
+            yield self._LocalDB.set_uploaded_statistics(-1, msg['stats_failed'])
+
+
+        if self.last_upload_count > 275: # if we upload a lot of stats last time, maybe we have more to uplaod.
+            reactor.callLater(10, self._upload_statistics)  # get the system a few seconds to chill
+
     #             amqpBody.append({"name":name + ".count", "value"  : count, "timestamp": key})
     #             amqpBody.append({"name":name + ".median", "value" : median, "timestamp": key})
     #             amqpBody.append({"name":name + ".upper", "value"  : max, "timestamp": key})
@@ -739,3 +955,6 @@ class Statistics(YomboLibrary):
     #         }
     #
     #     return requestmsg
+
+
+

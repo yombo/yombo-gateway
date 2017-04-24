@@ -276,6 +276,14 @@ class Devices(YomboLibrary):
                     max_delay=request['max_delay'], **request['kwargs'])
         self.startup_queue.clear()
 
+    # def _statistics_lifetimes_(self, **kwargs):
+    #     """
+    #     For devices, we track statistics down to the nearest 5 minutes, and keep for 1 year.
+    #     """
+    #     return {'devices.#': {'size': 300, 'lifetime': 365},
+    #             'energy.#': {'size': 300, 'lifetime': 365}}
+    #     # we don't keep 6h averages.
+
     @inlineCallbacks
     def _load_devices_from_database(self):
         """
@@ -527,12 +535,12 @@ class Devices(YomboLibrary):
                 }
             ]
             try:
-                logger.info("Get is about to call search...: %s" % device_requested)
+                # logger.debug("Get is about to call search...: %s" % device_requested)
                 found, key, item, ratio, others = do_search_instance(attrs, self.devices,
                                                                      self.device_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
-                logger.info("found device by search: {device_id}", device_id=key)
+                # logger.debug("found device by search: {device_id}", device_id=key)
                 if found:
                     return self.devices[key]
                 else:
@@ -571,6 +579,7 @@ class Devices(YomboLibrary):
             'description': data['description'],
             'status': data['status'],
             'statistic_label': data['statistic_label'],
+            'statistic_lifetime': data['statistic_lifetime'],
             'device_type_id': data['device_type_id'],
             'pin_required': data['pin_required'],
             'pin_code': data['pin_code'],
@@ -602,6 +611,7 @@ class Devices(YomboLibrary):
 
         if 'variable_data' in data:
             variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
+            print("variable_results: %s" % variable_results)
             if variable_results['code'] > 299:
                 results = {
                     'status': 'failed',
@@ -662,6 +672,13 @@ class Devices(YomboLibrary):
                             'device_id': device_id
                         }
                         returnValue(results)
+        print("var_data_results: %s" % var_data_results)
+        returnValue({
+            'status': 'success',
+            'code': var_data_results['code'],
+            'msg': "Device added.",
+            'vairable_id': var_data_results['data']['id']
+        })
 
     @inlineCallbacks
     def delete_device(self, device_id):
@@ -711,19 +728,21 @@ class Devices(YomboLibrary):
         if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'edit_device', 'Devices')
 
+        device = self.devices[device_id]
+
         api_data = {}
         for key, value in data.iteritems():
-            if hasattr(self, key):
-                setattr(self, key, value)
-                # print("key (%s) is in this class... = %s" % (key, value))
+            print("key (%s) is of type: %s" % (key, type(value)))
+            if isinstance(value, str) and len(value) > 0 and hasattr(device, key):
                 if key == 'energy_map':
                     api_data['energy_map'] = json.dumps(value, separators=(',',':'))
                     # print("energy map json: %s" % json.dumps(value, separators=(',',':')))
                 else:
                     api_data[key] = value
 
-        # print("send this data to api: %s" % api_data)
+        print("send this data to api: %s" % api_data)
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+        print("got this data from api: %s" % device_results)
         if device_results['code'] > 299:
             results = {
                 'status': 'failed',
@@ -746,7 +765,7 @@ class Devices(YomboLibrary):
                 }
                 returnValue(results)
 
-        self.devices[device_id].edit(data)
+        device.update_attributes(data)
 
         results = {
             'status': 'success',
@@ -1061,6 +1080,8 @@ class Device:
         self.last_command = deque({}, 30)
         self.status_history = deque({}, 30)
         self.device_variables = {}
+        self.energy_type = None
+        self.energy_map = None
 
         self.device_is_new = True
         self.update_attributes(device)
@@ -1109,36 +1130,52 @@ class Device:
         :param device: 
         :return: 
         """
-        self.device_type_id = device["device_type_id"]
-        self.label = device["label"]
-        self.description = device["description"]
-        self.pin_required = int(device["pin_required"])
-        self.pin_code = device["pin_code"]
-        self.pin_timeout = int(device["pin_timeout"])
-        self.voice_cmd = device["voice_cmd"]
-        self.voice_cmd_order = device["voice_cmd_order"]
-        self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
-        self.status = int(device["status"])
-        self.created = int(device["created"])
-        self.updated = int(device["updated"])
-        self.updated_srv = int(device["updated_srv"])
-        self.energy_tracker_device = device['energy_tracker_device']
-        self.energy_tracker_source = device['energy_tracker_source']
+        if 'device_type_id' in device:
+            self.device_type_id = device["device_type_id"]
+        if 'label' in device:
+            self.label = device["label"]
+        if 'description' in device:
+            self.description = device["description"]
+        if 'pin_required' in device:
+            self.pin_required = int(device["pin_required"])
+        if 'pin_code' in device:
+            self.pin_code = device["pin_code"]
+        if 'pin_timeout' in device:
+            self.pin_timeout = int(device["pin_timeout"])
+        if 'voice_cmd' in device:
+            self.voice_cmd = device["voice_cmd"]
+        if 'voice_cmd_order' in device:
+            self.voice_cmd_order = device["voice_cmd_order"]
+        if 'statistic_label' in device:
+            self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
+        if 'statistic_lifetime' in device:
+            self.statistic_lifetime = device["statistic_lifetime"]  # 'myhome.groundfloor.kitchen'
+        if 'status' in device:
+            self.status = int(device["status"])
+        if 'created' in device:
+            self.created = int(device["created"])
+        if 'updated' in device:
+            self.updated = int(device["updated"])
+        if 'updated_srv' in device:
+            self.updated_srv = int(device["updated_srv"])
+        if 'energy_tracker_device' in device:
+            self.energy_tracker_device = device['energy_tracker_device']
+        if 'energy_tracker_source' in device:
+            self.energy_tracker_source = device['energy_tracker_source']
 
         if 'energy_type' in device:
             self.energy_type = device['energy_type']
-        else:
-            self.energy_type = None  # electric, gas, etc.
 
-        if device['energy_map'] is not None:
-            # create an energy map from a dictionary
-            energy_map_final = {}
-            for percent, rate in device['energy_map'].iteritems():
-                energy_map_final[string_to_number(percent)] = string_to_number(rate)
-            energy_map_final = OrderedDict(sorted(energy_map_final.items(), key=lambda (x, y): float(x)))
-            self.energy_map = energy_map_final
-        else:
-            self.energy_map = None
+        if 'energy_map' in device:
+            if device['energy_map'] is not None:
+                # create an energy map from a dictionary
+                energy_map_final = {}
+                for percent, rate in device['energy_map'].iteritems():
+                    energy_map_final[string_to_number(percent)] = string_to_number(rate)
+                energy_map_final = OrderedDict(sorted(energy_map_final.items(), key=lambda (x, y): float(x)))
+                self.energy_map = energy_map_final
+            else:
+                self.energy_map = None
 
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', **{'device': self})
@@ -1155,6 +1192,8 @@ class Device:
                 'device_type_id': str(self.device_type_id),
                 'label': str(self.label),
                 'description': str(self.description),
+                'statistic_label': str(self.statistic_label),
+                'statistic_lifetime': str(self.statistic_lifetime),
                 'pin_code': "********",
                 'pin_required':  int(self.pin_required),
                 'pin_timeout': int(self.pin_timeout),
@@ -1522,6 +1561,8 @@ class Device:
 
         source = kwargs.get('source', 'Unknown')
 
+        self._DevicesLibrary._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
+        self._DevicesLibrary._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
         new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
@@ -1694,7 +1735,6 @@ class Device_Request:
         self.sent_time = sent_time
         self.status = 'sent'
         self.history.append((sent_time, 'sent'))
-
 
     def set_status(self, status):
         self.status = status

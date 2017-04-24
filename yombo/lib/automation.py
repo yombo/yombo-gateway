@@ -194,12 +194,12 @@ class Automation(YomboLibrary):
                 vals['platform_source'] = component_name
                 self.actions[vals['platform']] = vals
 
-        other_rules = yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
-        for component_name, rules in other_rules.iteritems():
+        callback_rules = yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
+        for component_name, component_rules in callback_rules.iteritems():
             # print "Merging 1: %s" % rules['rules']
             # print "Merging 2: %s" % self._rulesRaw['rules']
-            for rule in rules['rules']:
-                rule['source'] = 'callbacks'
+            for rule in component_rules['rules']:
+                rule['source'] = 'callbacks:%s' % component_name
                 self._rulesRaw['rules'].append(rule)
             # print "Results: %s" % self._rulesRaw
 
@@ -322,7 +322,7 @@ class Automation(YomboLibrary):
                 is_valid = False   # Doesn't have all required fields.
                 return False
             if rule['action'][item]['platform'] not in self.actions:
-                logger.info("Platform ({platform}) doesn't exist as an action.",
+                logger.info("Platform ({platform}) doesn't exist as an action.  ({rule})",
                             platform=rule['action'][item]['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
                 return False
 

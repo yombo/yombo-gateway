@@ -47,6 +47,8 @@ def static_var(varname, value):
     return decorate
 
 loggers = {}
+open_files = {}
+observers = {}
 configCache = {}
 logFirstRun = True
 
@@ -99,12 +101,14 @@ def get_logger(logname='yombolog', **kwargs):
     :return: logger object
     """
     global loggers
+    global observers
+    global configCache
+    global open_files
 
     # A simple cache or existing loggers...
     if logname in loggers:
         return loggers[logname]
 
-    global configCache
 
     loglevel = None
     source = kwargs.get('source', logname)
@@ -149,20 +153,25 @@ def get_logger(logname='yombolog', **kwargs):
     consoleFilterObserver = FilteringLogObserver(consoleLogObserver, (logFilter,))
 
     logger = Logger(namespace=logname, source=source, observer=consoleFilterObserver)
-
-    global logFirstRun
-    if logFirstRun is True:
-      logFirstRun = False
-      # This doesn't appear to be working yet...
-      globalLogPublisher.addObserver(jsonFileLogObserver(io.open("usr/log/yombo.json", "a")))
-      globalLogPublisher.addObserver(textFileLogObserver(io.open("usr/log/yombo.text", "a")))
-
     loggers[logname] = logger
 
-    if get_logger.rotate_loop is None:
-        get_logger.rotate_loop = LoopingCall(rotate_logs)
-        get_logger.rotate_loop.start(5, False)  # about every 10 minutes
-        # get_logger.rotate_loop.start(615, False)  # about every 10 minutes
+    # global logFirstRun
+    # if logFirstRun is True:
+    #   logFirstRun = False
+      # This doesn't appear to be working yet...
+    #   observers['json'] = jsonFileLogObserver(io.open("usr/log/yombo.json", "a"))
+    #   globalLogPublisher.addObserver(observers['json'])
+    #   observers['text'] = textFileLogObserver(io.open("usr/log/yombo.text", "a"))
+    #   globalLogPublisher.addObserver(observers['text'])
+    #
+    #   # globalLogPublisher.addObserver(jsonFileLogObserver(io.open("usr/log/yombo.json", "a")))
+    #   # globalLogPublisher.addObserver(textFileLogObserver(io.open("usr/log/yombo.text", "a")))
+    #
+    #
+    # if get_logger.rotate_loop is None:
+    #     get_logger.rotate_loop = LoopingCall(rotate_logs)
+    #     get_logger.rotate_loop.start(5, False)  # about every 10 minutes
+    #     # get_logger.rotate_loop.start(615, False)  # about every 10 minutes
 
     return loggers[logname]
 
@@ -171,6 +180,8 @@ def rotate_logs():
     reactor.callInThread(do_rotate_logs, 'usr/log/yombo.text', 'text')
 
 def do_rotate_logs(basefile, type):
+    global observers
+
     if os.path.exists(basefile):
         if os.path.getsize(basefile) > 1000:
             for c in range(19, 0, -1):
@@ -186,11 +197,20 @@ def do_rotate_logs(basefile, type):
                     os.rename(filename_cur, filename_next)
             os.rename(basefile, "%s.1" % basefile)
 
+
         if type == 'json':
-            globalLogPublisher.removeObserver(jsonFileLogObserver(io.open(basefile, "a")))
+            globalLogPublisher.removeObserver(observers['json'])
+            observers['json'] = jsonFileLogObserver(io.open("usr/log/yombo.json", "a"))
+            globalLogPublisher.addObserver(observers['json'])
+
+
             globalLogPublisher.addObserver(jsonFileLogObserver(io.open(basefile, "a")))
         elif type == 'text':
-            globalLogPublisher.removeObserver(textFileLogObserver(io.open(basefile, "a")))
+            observers['text'] = textFileLogObserver(io.open("usr/log/yombo.text", "a"))
+            globalLogPublisher.addObserver(observers['text'])
+
+
+            globalLogPublisher.removeObserver(textFileLogObserver())
             globalLogPublisher.addObserver(textFileLogObserver(io.open(basefile, "a")))
 
 

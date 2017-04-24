@@ -391,7 +391,7 @@ class CronJob(object):
 
     def check(self, t):
         if self.enabled is True and self.match_time(t):
-            self._Statistics.increment("lib.crontab.jobs", bucket_time=15, anon=True)
+            self._Statistics.increment("lib.crontab.jobs", bucket_size=15, anon=True)
             self.crontab_callback(*self.args, **self.kwargs)
 
     def run_now(self):

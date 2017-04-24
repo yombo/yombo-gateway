@@ -259,12 +259,12 @@ class Atoms(YomboLibrary):
     def _start_(self):
         self.library_state = 3
 
-    def _statistics_lifetimes_(self, **kwargs):
-        """
-        We keep 10 days of max data, 30 days of hourly data, 1 of daily data
-        """
-        return {'lib.atoms.#': {'full':10, '5m':10, '15m':10, '60m':90, '6hr':1, '24h':720} }
-        # we don't keep 6h averages.
+    # def _statistics_lifetimes_(self, **kwargs):
+    #     """
+    #     We keep 10 days of max data, 30 days of hourly data, 1 of daily data
+    #     """
+    #     return {'lib.atoms.#': {'size': 60, 'lifetime': 180} }
+    #     # we don't keep 6h averages.
 
     def get_atoms(self):
         """
@@ -283,7 +283,7 @@ class Atoms(YomboLibrary):
         """
         logger.debug('atoms:get: {atom_requested}', atom_requested=atom_requested)
 
-        self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
+        self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
 
         search_chars = ['#', '+']
         if any(s in atom_requested for s in search_chars):
@@ -336,7 +336,7 @@ class Atoms(YomboLibrary):
                     already_set = True
                     break
 
-        self._Statistics.increment("lib.atoms.set", bucket_time=15, anon=True)
+        self._Statistics.increment("lib.atoms.set", bucket_size=15, anon=True)
         if not already_set:
            self.__Atoms[key]= value
 

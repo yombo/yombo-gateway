@@ -223,7 +223,7 @@ class YomboModule:
     #     """
     #     return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
 
-    def amqp_incoming(self, deliver, properties, message):
+    def amqp_incoming(self, msg=None, properties=None, deliver=None, correlation=None, **kwargs):
         """
         Basic routing of incoming AQMP message packagets to a module. Sends requests to 'amqp_incoming_request'
         and responses to 'amqp_incoming_response'.
@@ -235,14 +235,18 @@ class YomboModule:
 #        logger.info("deliver (%s), props (%s), message (%s)" % (deliver, properties, message,))
 #        logger.info("headers... {headers}", headers=properties.headers)
         if properties.headers['type'] == 'request':
-            if message['data_type'] == 'object': # a single response
-                self.amqp_incoming_request(deliver, properties, message['request'])
-            elif message['data_type'] == 'objects': # An array of responses
-                for response in message['request']:
-                    self.amqp_incoming_request(deliver, properties, response)
+            if msg['data_type'] == 'object':  # a single response
+                self.amqp_incoming_request(msg=msg, properties=properties, deliver=deliver, correlation=correlation,
+                                           **kwargs)
+            elif msg['data_type'] == 'objects':  # An array of responses
+                for response in msg['request']:
+                    self.amqp_incoming_request(msg=msg, properties=properties, deliver=deliver, correlation=correlation,
+                                               **kwargs)
         elif properties.headers['type'] == "response":
-            if message['data_type'] == 'object': # a single response
-                self.amqp_incoming_response(deliver, properties, message['response'])
-            elif message['data_type'] == 'objects': # An array of responses
-                for response in message['response']:
-                    self.amqp_incoming_response(deliver, properties, response)
+            if msg['data_type'] == 'object':  # a single response
+                self.amqp_incoming_response(msg=msg, properties=properties, deliver=deliver, correlation=correlation,
+                                            **kwargs)
+            elif msg['data_type'] == 'objects':  # An array of responses
+                for response in msg['response']:
+                    self.amqp_incoming_response(msg=msg, properties=properties, deliver=deliver,
+                                                correlation=correlation, **kwargs)

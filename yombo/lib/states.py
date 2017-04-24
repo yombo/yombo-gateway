@@ -295,7 +295,7 @@ class States(YomboLibrary, object):
         """
         logger.debug('states:get: {key} = {value}', key=key)
 
-        self._Statistics.increment("lib.atoms.get", bucket_time=15, anon=True)
+        self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
@@ -344,14 +344,14 @@ class States(YomboLibrary, object):
             # If state is already set to value, we don't do anything.
             if self.__States[key]['value'] == value:
                 return
-            self._Statistics.increment("lib.states.set.update", bucket_time=60, anon=True)
+            self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
             self.__States[key]['created'] = int(round(time()))
         else:
             is_new = False
             self.__States[key] = {
                 'created': int(time()),
             }
-            self._Statistics.increment("lib.states.set.new", bucket_time=60, anon=True)
+            self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
 
         # Call any hooks
         try:

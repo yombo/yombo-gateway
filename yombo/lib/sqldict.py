@@ -134,11 +134,13 @@ class SQLDict(YomboLibrary):
         :return:
         """
         for name, di in self._dictionaries.iteritems():
-            logger.debug("save_sql_dict {di}", di=di)
             if di['dirty'] or save_all:
+                # logger.info("save_sql_dict {name} ", name=name)
+                # logger.info("save_sql_dict {ser} ", ser=di['dict']._SQLDictionary__serializer)
 #                logger.warn("save_sql_dict 3 {di}", di=di)
                 safe_data = {}  # Sometimes wierd datatype's happen...  Not good.
                 for key, item in di['dict'].iteritems():
+
                     if di['dict']._SQLDictionary__serializer is not None:
                         try:
                             safe_data[key] = di['dict']._SQLDictionary__serializer(item)
@@ -148,7 +150,9 @@ class SQLDict(YomboLibrary):
                     else:
                         safe_data[key] = item
 
-                logger.debug("save_sql_dict 4 {di}", di=safe_data)
+                # logger.info("save_sql_dict 4 {di}", di=safe_data)
+
+                # logger.info("save_sql_dict {safe_data} ", safe_data=safe_data)
                 save_data = sqlite3Binary(cPickle.dumps(safe_data, cPickle.HIGHEST_PROTOCOL))
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
                         di['dict_name'], save_data)
@@ -163,7 +167,7 @@ class SQLDict(YomboLibrary):
     #     if len(self._SQLDictUpdates):
     #         logger.debug("Doing _saveSQLDictDB")
     #         for module in self._SQLDictUpdates.keys():
-    #             for dictname in self._SQLDictUpdates[module]:
+    #             for dictname in self._SQLDictUpdates[module]:g
     #                 for key1 in self._SQLDictUpdates[module][dictname]:
     #                     yield self._Libraries['localdb'].set_sql_dict(module,
     #                             dictname, key1, self._SQLDictUpdates[module][dictname][key1])

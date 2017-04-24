@@ -482,21 +482,8 @@ class AmqpConfigHandler(YomboLibrary):
             self.init_startup_count = self.init_startup_count + 1
             self.check_download_done_calllater = reactor.callLater(30, self.check_download_done) #
 
-    def generate_config_request(self, headers, request_data=""):
-        """
-        Generate a request specific to this library - configs!
 
-        :param headers:
-        :param request_data:
-        :return:
-        """
-        request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
-                                                    "yombo.server.configs", headers, request_data)
-        request_msg['routing_key'] = '*'
-        logger.debug("response: {request_msg}", request_msg=request_msg)
-        return request_msg
-
-    def process_config_response(self, properties, msg, correlation):
+    def process_config_response(self, msg=None, properties=None, **kwargs):
         """
         Process configuration information coming from Yombo Servers. After message is validated, the payload is
         delivered here.
@@ -887,20 +874,18 @@ class AmqpConfigHandler(YomboLibrary):
 
             self._append_full_download_queue(item)
 
+    def generate_config_request(self, headers, request_data=""):
+        """
+        Generate a request specific to this library - configs!
 
-
-    # def _generate_request_message(self, request_type, requestContent):
-    #     request = {
-    #         "exchange_name": "ysrv.e.gw_config",
-    #         "source"       : "yombo.gateway.lib.sslcerts",
-    #         "destination"  : "yombo.server.configs",
-    #         "body": {
-    #           "data_type": "object",
-    #           "request"  : requestContent,
-    #         },
-    #         "request_type": request_type,
-    #     }
-    #     return self.AMQPYombo.generate_request_message(**request)
+        :param headers:
+        :param request_data:
+        :return:
+        """
+        request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
+                                                    "yombo.server.configs", headers, request_data)
+        logger.debug("response: {request_msg}", request_msg=request_msg)
+        return request_msg
 
     def _append_full_download_queue(self, table):
         """

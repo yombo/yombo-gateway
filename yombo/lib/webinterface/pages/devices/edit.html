@@ -56,11 +56,11 @@
                         <div class="panel-body">
                             <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
+                                <input type="text" tabindex="1" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description }}">
+                                <input type="text" tabindex="2" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
                             <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
@@ -69,7 +69,7 @@
                             or send status updates. When deleted, the device will eventually be purged from the Yombo system.') }}
                             <br>
                             <div class="input-group">
-                                <select class="form-control" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
+                                <select class="form-control" tabindex="3" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
                                     <option value="enabled"{% if device.status == 1 %} selected{% endif %}>Enabled</option>
                                     <option value="disabled"{% if device.status == 0 %} selected{% endif %}>Disabled</option>
                                     <option value="deleted"{% if device.status == 2 %} selected{% endif %}>Deleted</option>
@@ -78,10 +78,10 @@
                             <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
                             <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
-                            <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
-                            a new device, but still maintain it's history. For example,
-                            if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
-                            the device name the same statistic label.</p>
+                            <p>This label is used to track a device history over long periods of time. For example, the hallway light
+                                might be currently controlled using an X10 device, but later, might be replaced with an Insteon device.
+                                Setting the same statistic label for a new device allows continuous tracking no matter what the controller
+                                method is.</p>
                             <p>The statistic label is free form!</p>
                             <p>You will want to name the location from least specific to most specific using a dotted notation, such as
                             'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
@@ -99,10 +99,25 @@
                             <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
                             you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
                             with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
+                            <p> <strong>Note:</strong> All statistic labels are preceeded with 'devices.' to help with tracking
+                                various other system statistics. Additionally, another statistic with 'energy.' will be used
+                                to track enery usage for this device.</p>
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Description of device." value="{{ device.location_label }}">
+                                <input type="text" tabindex="4" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.location_label }}">
+                            </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalStatisticLifetime"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalStatisticLifetime", 'Statistic Lifetime', "
+                            <p>How long (in days) the statistic or status information should stay in the local database. Keeping
+                                statistics locally for long periods of time can be cause the local database to become rather large.
+                                We recommend keeping this to under a year, and using the Yombo Online Statistics tools to track
+                                historical data.</p>
+                            ") }}
+                            <br>
+                            <div class="input-group">
+                                <input type="text" tabindex="5" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.location_label }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>
                             <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
@@ -111,7 +126,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                                <select class="form-control" tabindex="6" name="energy_type" id="energy_type" placeholder="Energy Type.">
                                     <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
                                     <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
                                     <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
@@ -137,7 +152,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select class="form-control" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
+                                <select class="form-control" tabindex="7" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
                                     <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %}>Enabled</option>
                                     <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %}>Disabled</option>
                                 </select>
@@ -149,7 +164,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code }}">
+                                <input type="text" tabindex="8" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
                             <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
@@ -159,7 +174,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout }}">
+                                <input type="text" tabindex="9" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout }}">
                             </div>
                         </div>
                     </div>

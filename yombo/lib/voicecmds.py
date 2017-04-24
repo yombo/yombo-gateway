@@ -271,10 +271,10 @@ class VoiceCmds(YomboLibrary):
         """
         try:
             result = self.voice_commands.search2(voice_command_requested, limiter_override=limiter_override)
-            self._Statistics.increment("lib.voicecmds.search.found", bucket_time=30, anon=True)
+            self._Statistics.increment("lib.voicecmds.search.found", bucket_size=30, anon=True)
             return self.voice_command_data[result]
         except:
-            self._Statistics.increment("lib.voicecmds.search.not_found", bucket_time=30, anon=True)
+            self._Statistics.increment("lib.voicecmds.search.not_found", bucket_size=30, anon=True)
             raise KeyError("Searched for voice command, none found: %s" % voice_command_requested)
 
     def add_by_string(self, voice_string, call_back = None, device = None, order = 'devicecmd'):

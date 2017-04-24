@@ -128,6 +128,7 @@ def route_devices(webapp):
                     'description': json_output['description'],
                     'status': status,
                     'statistic_label': json_output['statistic_label'],
+                    'statistic_lifetime': json_output['statistic_lifetime'],
                     'device_type_id': json_output['device_type_id'],
                     'pin_required': pin_required,
                     'pin_code': json_output['pin_code'],
@@ -143,6 +144,7 @@ def route_devices(webapp):
                     'description': '',
                     'status': 1,
                     'statistic_label': '',
+                    'statistic_lifetime': '',
                     'device_type_id': device_type_id,
                     'pin_required': 0,
                     'pin_code': '',
@@ -467,7 +469,7 @@ def route_devices(webapp):
                     returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
             else:
                 webinterface.add_alert('Device pin required was set to an illegal value.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/%/edits' % device_id))
+                returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
 
             start_percent = request.args.get('start_percent')
             energy_usage = request.args.get('energy_usage')
@@ -485,8 +487,9 @@ def route_devices(webapp):
             data = {
                 'label': request.args.get('label')[0],
                 'description': request.args.get('description')[0],
-                'status': request.args.get('status')[0],
+                'status': status,
                 'statistic_label': request.args.get('statistic_label')[0],
+                'statistic_lifetime': request.args.get('statistic_lifetime')[0],
                 'pin_required': pin_required,
                 'pin_code': request.args.get('pin_code')[0],
                 'pin_timeout': request.args.get('pin_timeout')[0],
@@ -508,7 +511,7 @@ def route_devices(webapp):
                     for field in fields:
                         field = field.__dict__
                         var_data = yield webinterface._Libraries['localdb'].get_variable_data_by_relation(field['id'],
-                                                                                                          device.device_id)
+                                                                                          device.device_id)
                         var_data_final = []
                         for data in var_data:
                             var_data_final.append(data.__dict__)
@@ -518,7 +521,7 @@ def route_devices(webapp):
                     group['fields'] = fields_final
                     var_groups_final.append(group)
 
-                webinterface.add_alert(results['content']['html_message'], 'warning')
+                webinterface.add_alert(results['apimsghtml'], 'warning')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
                 returnValue(page.render(alerts=webinterface.get_alerts(),
                                device=data,

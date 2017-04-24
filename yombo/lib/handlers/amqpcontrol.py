@@ -46,7 +46,8 @@ class AmqpControlHandler(YomboLibrary):
         self.parent = amqpyombo
         self._Devices = self.parent._Devices
 
-    def process_control(self, msg, headers):
+    def process_control(self,msg=None, properties=None, **kwargs):
+        logger.warn("recieved device-command request: {msg}", msg=msg)
         request = msg['request']
         # print request
         device_id = request['device']['id']

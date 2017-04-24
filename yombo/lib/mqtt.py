@@ -439,7 +439,7 @@ class MQTTClient(object):
         # print("client connected: %s" % self.connected)
         if self.connected:
             yield self.factory.protocol.publish(topic=topic, message=message, qos=qos)
-            self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_time=10, anon=True)
+            self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_size=10, anon=True)
         if self.connected:
             self.send_queue.append({
                 'type': 'publish',
@@ -460,7 +460,7 @@ class MQTTClient(object):
         """
         if self.connected:
             yield self.factory.protocol.subscribe(topic, qos)
-            self.mqtt_library._Statistics.increment("lib.mqtt.client.subscribe", bucket_time=10, anon=True)
+            self.mqtt_library._Statistics.increment("lib.mqtt.client.subscribe", bucket_size=10, anon=True)
         else:
             self.send_queue.append({
                 'type': 'subscribe',
@@ -477,7 +477,7 @@ class MQTTClient(object):
         """
         if self.connected:
             yield self.factory.protocol.unsubscribe(topic)
-            self.mqtt_library._Statistics.increment("lib.mqtt.client.unsubscribe", bucket_time=10, anon=True)
+            self.mqtt_library._Statistics.increment("lib.mqtt.client.unsubscribe", bucket_size=10, anon=True)
         if self.connected:
             self.send_queue.append({
                 'type': 'unsubscribe',

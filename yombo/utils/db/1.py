@@ -62,6 +62,7 @@ def upgrade(Registry, **kwargs):
      `label`           TEXT NOT NULL,
      `description`     TEXT,
      `statistic_label` TEXT,
+     `statistic_lifetime` INTEGER DEFAULT 0,
      `notes`           TEXT,
      `voice_cmd`       TEXT,
      `voice_cmd_order` TEXT,
@@ -116,6 +117,7 @@ def upgrade(Registry, **kwargs):
      `requested_by`         TEXT NOT NULL,
      `source`               TEXT NOT NULL,
      `uploaded`             INTEGER NOT NULL DEFAULT 0,
+     `needs_upload`         INTEGER NOT NULL DEFAULT 0,
      `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
      );"""
     yield Registry.DBPOOL.runQuery(table)
@@ -314,19 +316,21 @@ def upgrade(Registry, **kwargs):
 
     #  Defines the statistics data table. Stores statistics.
     table = """CREATE TABLE `statistics` (
-     `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `bucket`      INTEGER NOT NULL,
-     `type`        TEXT NOT NULL,
-     `name`        TEXT NOT NULL,
-     `value`       REAL NOT NULL,
-     `averagedata` BLOB,
-     `anon`        INTEGER NOT NULL DEFAULT 0, /* anon data */
-     `uploaded`    INTEGER NOT NULL DEFAULT 0,
-     `updated`     INTEGER NOT NULL);"""
+     `id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+     `bucket_time`         INTEGER NOT NULL,
+     `bucket_size`         INTEGER NOT NULL,
+     `bucket_type`         TEXT NOT NULL,
+     `bucket_name`         TEXT NOT NULL,
+     `bucket_value`        REAL NOT NULL,
+     `bucket_average_data` TEXT,
+     `anon`                INTEGER NOT NULL DEFAULT 0, /* anon data */
+     `uploaded`            INTEGER NOT NULL DEFAULT 0,
+     `finished`            INTEGER NOT NULL DEFAULT 0,
+     `updated`             INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('statistics', 'bucket'))
-    yield Registry.DBPOOL.runQuery(create_index('statistics', 'name'))
-    yield Registry.DBPOOL.runQuery(create_index('statistics', 'type'))
+    yield Registry.DBPOOL.runQuery(create_index('statistics', 'bucket_type'))
+    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS table_b_t_IDX ON statistics (bucket_name, bucket_type, bucket_time)")
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS table_t_n_t_IDX ON statistics (finished, uploaded, anon)")
 
     # Used by the tasks library to start various tasks.
     table = """CREATE TABLE `tasks` (

@@ -771,7 +771,9 @@ class WebInterface(YomboLibrary):
         login_redirect = "/"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']
-            print "$$$$$$$$$$$$$$$$$$ login redirect is set...%s" % login_redirect
+            if login_redirect is None:
+                login_redirect = "/"
+            # print "$$$$$$$$$$$$$$$$$$ login redirect is set...%s" % login_redirect
             session.delete('login_redirect')
 
         # print "111 login_rdirect: %s" % login_redirect
