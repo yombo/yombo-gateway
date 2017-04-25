@@ -47,7 +47,10 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string, random_int
-import yombo.ext.umsgpack as msgpack
+try:  # Prefer full version of msgpack, but we also ship a limited version with Yombo.
+    import msgpack
+except ImportError:
+    import yombo.ext.umsgpack as msgpack
 
 # Handlers for processing various messages.
 from yombo.lib.handlers.amqpcontrol import AmqpControlHandler
@@ -57,9 +60,6 @@ logger = get_logger('library.amqpyombo')
 
 PROTOCOL_VERSION = 4  # Which version of the yombo protocol we have implemented.
 PREFETCH_COUNT = 5  # Determine how many messages should be received/inflight before yombo servers
-
-
-# stop sending us messages. Should ACK/NACK all messages quickly.
 
 
 class AMQPYombo(YomboLibrary):
@@ -263,8 +263,12 @@ class AMQPYombo(YomboLibrary):
 
     def generate_message_response(self, properties, exchange_name, source, destination, headers, body):
         response_msg = self.generate_message(exchange_name, source, destination, "response", headers, body)
-        if properties.correlation_id:
+
+        if hasattr('correlation_id', properties) and properties.correlation_id is not None:
             response_msg['properties']['correlation_id'] = properties.correlation_id
+        if hasattr('message_id', properties) and properties.message_id is not None and \
+                properties.message_id[0:2] != "xx_":
+            response_msg['properties']['reply_to'] = properties.correlation_id
 
         # print "properties: %s" % properties
         if 'route' in properties.headers:
@@ -275,7 +279,7 @@ class AMQPYombo(YomboLibrary):
         return response_msg
 
     def generate_message_request(self, exchange_name=None, source=None, destination=None,
-                                 headers=None, body=None, callback=None, correlation_id=None):
+                                 headers=None, body=None, callback=None, correlation_id=None, message_id=None):
         new_body = {
             "data_type": "object",
             "request": body,
@@ -284,14 +288,12 @@ class AMQPYombo(YomboLibrary):
             new_body['data_type'] = 'objects'
 
         request_msg = self.generate_message(exchange_name, source, destination, "request",
-                                            headers, new_body, callback=callback)
-        if correlation_id is None:
-            request_msg['properties']['correlation_id'] = random_string(length=24)
-        else:
-            request_msg['properties']['correlation_id'] = correlation_id
+                                            headers, new_body, callback=callback, correlation_id=correlation_id,
+                                            message_id=message_id)
         return request_msg
 
-    def generate_message(self, exchange_name, source, destination, header_type, headers, body, callback=None):
+    def generate_message(self, exchange_name, source, destination, header_type, headers, body, callback=None,
+                         correlation_id=None, message_id=None):
         """
         When interacting with Yombo AMQP servers, we use a standard messaging layout. The below helps other functions
         and libraries conform to this standard.
@@ -344,29 +346,41 @@ class AMQPYombo(YomboLibrary):
                     "destination": destination,
                     "type": header_type,
                     "protocol_verion": PROTOCOL_VERSION,
-                    "msg_created_time": str(time())
+                    "message_id": random_string(length=20),
+                    "msg_created_time": str(time()),
                 },
             },
-            "callback": callback,
+            "meta": {
+                "content_type": 'application/msgpack',
+            },
+            "created_time": time(),
         }
 
-        # Lets test if we can compress. Set headers as needed.
+        if "callback" is not None:
+            request_msg['callback'] = callback
+            if correlation_id is None:
+                request_msg['properties']['correlation_id'] = random_string(length=24)
+            else:
+                request_msg['properties']['correlation_id'] = correlation_id
 
-        self._Statistics.averages("lib.amqpyombo.sent.size", len(request_msg['body']), bucket_size=15, anon=True)
+        if message_id is None:
+            request_msg['properties']['message_id'] = random_string(length=26)
+        else:
+            request_msg['properties']['message_id'] = message_id
+
+        # Lets test if we can compress. Set headers as needed.
         if len(request_msg['body']) > 800:
             beforeZlib = len(request_msg['body'])
-            request_msg['body'] = zlib.compress(request_msg['body'],
-                                                5)  # 5 appears to be the best speed/compression ratio - MSchwenk
-            request_msg['properties']['content_encoding'] = "zlib"
+            request_msg['body'] = zlib.compress(request_msg['body'], 5)  # 5 appears to be the best speed/compression ratio - MSchwenk
             afterZlib = len(request_msg['body'])
-            self._Statistics.increment("lib.amqpyombo.sent.compressed", bucket_size=15, anon=True)
-            self._Statistics.averages("lib.amqpyombo.sent.compressed.percentage", percentage(afterZlib, beforeZlib),
-                                      anon=True)
+            request_msg['meta']['compression_percent'] = percentage(afterZlib, beforeZlib)
+
+            request_msg['properties']['content_encoding'] = "zlib"
         else:
             request_msg['properties']['content_encoding'] = 'text'
-            self._Statistics.increment("lib.amqpyombo.sent.uncompressed", bucket_size=15, anon=True)
         request_msg['properties']['headers'].update(headers)
-
+        request_msg['meta']['content_encoding'] = request_msg['properties']['content_encoding']
+        request_msg['meta']['payload_size'] = len(request_msg['body'])
         return request_msg
 
     def publish(self, **kwargs):
@@ -384,12 +398,13 @@ class AMQPYombo(YomboLibrary):
         else:
             callback = None
 
-        # print "opublish kwargs: %s" % kwargs
-        correlation = self.amqp.publish(**kwargs)
-        if callback is not None:
-            correlation['amqpyombo_callback'] = callback
+        # print "publish kwargs: %s" % kwargs
+        results = self.amqp.publish(**kwargs)
+        if results['correlation_info'] is not None:
+            results['correlation_info']['amqpyombo_callback'] = callback
 
-    def amqp_incoming(self, msg=None, properties=None, deliver=None, correlation=None, **kwargs):
+    def amqp_incoming(self, msg=None, properties=None, deliver=None, correlation_info=None,
+                      received_message_info=None, sent_message_info=None, **kwargs):
         """
         All incoming messages come here. It will be parsed and sorted as needed.  Routing:
 
@@ -411,6 +426,7 @@ class AMQPYombo(YomboLibrary):
 
         #        log.msg('%s (%s): %s' % (deliver.exchange, deliver.routing_key, repr(msg)), system='Pika:<=')
 
+        msg_meta = {}
         if properties.user_id is None:
             self._Statistics.increment("lib.amqpyombo.received.discarded.nouserid", bucket_size=15, anon=True)
             raise YomboWarning("user_id missing.")
@@ -433,6 +449,7 @@ class AMQPYombo(YomboLibrary):
             raise YomboWarning(
                 "Content type must be 'application/msgpack', 'application/json' or 'text/plain'. Got: " + properties.content_type)
 
+        msg_meta['payload_size'] = len(msg)
         if properties.content_encoding == 'zlib':
             beforeZlib = len(msg)
             msg = zlib.decompress(msg)
@@ -440,12 +457,8 @@ class AMQPYombo(YomboLibrary):
             logger.debug(
                 "Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}, percent: {percent}",
                 compressed=beforeZlib, uncompressed=afterZlib, percent=percentage(beforeZlib, afterZlib))
-            self._Statistics.increment("lib.amqpyombo.received.compressed", bucket_size=15, anon=True)
-            self._Statistics.averages("lib.amqpyombo.received.compressed.percentage", percentage(beforeZlib, afterZlib),
-                                      bucket_size=15, anon=True)
-        else:
-            self._Statistics.increment("lib.amqpyombo.received.uncompressed", bucket_size=15, anon=True)
-        self._Statistics.averages("lib.amqpyombo.received.payload.size", len(msg), bucket_size=15, anon=True)
+            msg_meta['content_encoding'] = 'zlib'
+            msg_meta['compression_percent'] = percentage(beforeZlib, afterZlib)
 
         if properties.content_type == 'application/json':
             if self.is_json(msg):
@@ -458,9 +471,6 @@ class AMQPYombo(YomboLibrary):
             else:
                 raise YomboWarning("Received msg reported msgpack, but isn't: %s" % msg)
 
-        if properties.headers['type'] == 'request':
-            self._Statistics.increment("lib.amqpyombo.received.request", bucket_size=15, anon=True)
-
         # if a response, lets make sure it's something we asked for!
         elif properties.headers['type'] == "response":
             # print "send_correlation_ids: %s" % self.amqp.send_correlation_ids
@@ -469,12 +479,11 @@ class AMQPYombo(YomboLibrary):
                                            anon=True)
                 raise YomboWarning("correlation_id missing.")
 
-            time_info = self.amqp.send_correlation_ids[properties.correlation_id]
-            daate_time = time_info['time_received'] - time_info['time_sent']
-            milliseconds = (
-                               daate_time.days * 24 * 60 * 60 + daate_time.seconds) * 1000 + daate_time.microseconds / 1000.0
-            logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
-            self._Statistics.averages("lib.amqpyombo.amqp.response.time", milliseconds, bucket_size=15, anon=True)
+            if sent_message_info is not None and sent_message_info['sent_time'] is not None:
+                delay_date_time = received_message_info['received_time'] - sent_message_info['sent_time']
+                milliseconds = (delay_date_time.days * 24 * 60 * 60 + delay_date_time.seconds) * 1000 + delay_date_time.microseconds / 1000.0
+                logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
+                received_message_info['round_trip_timing'] = milliseconds
 
             if properties.correlation_id is None or not isinstance(properties.correlation_id, six.string_types):
                 self._Statistics.increment("lib.amqpyombo.received.discarded.correlation_id_invalid", bucket_size=15,
@@ -494,9 +503,11 @@ class AMQPYombo(YomboLibrary):
         # self._local_log("debug", "PikaProtocol::receive_item4")
 
         # if we are here.. we have a valid message....
-        if correlation is not None and 'amqpyombo_callback' in correlation:
-            return correlation['amqpyombo_callback'](msg=msg, properties=properties, deliver=deliver,
-                                                 correlation=correlation, **kwargs)
+        if correlation_info is not None and 'amqpyombo_callback' in correlation_info and \
+                correlation_info['amqpyombo_callback'] and callable(correlation_info['amqpyombo_callback']):
+            correlation_info['amqpyombo_callback'](msg=msg, properties=properties, deliver=deliver,
+                                                   correlation_info=correlation_info, **kwargs)
+        received_message_info['meta'] = msg_meta
 
         if properties.headers['type'] == 'request':
             try:
@@ -505,7 +516,7 @@ class AMQPYombo(YomboLibrary):
                     self.controlHandler.process_control(msg, properties)
                 elif properties.headers['request_type'] == 'system':
                     self.process_system_request(msg=msg, properties=properties, deliver=deliver,
-                                                correlation=correlation, **kwargs)
+                                                correlation_info=correlation_info, **kwargs)
 
             except Exception, e:
                 logger.error("--------==(Error: in response processing     )==--------")
@@ -519,10 +530,10 @@ class AMQPYombo(YomboLibrary):
                 logger.debug("headers: {headers}", headers=properties.headers)
                 if properties.headers['response_type'] == 'config':
                     self.configHandler.process_config_response(msg=msg, properties=properties, deliver=deliver,
-                                                 correlation=correlation, **kwargs)
+                                                 correlation_info=correlation_info, **kwargs)
                 elif properties.headers['response_type'] == 'sslcert':
                     self._SSLCerts.amqp_incoming(msg=msg, properties=properties, deliver=deliver,
-                                                 correlation=correlation, **kwargs)
+                                                 correlation_info=correlation_info, **kwargs)
 
             except Exception, e:
                 logger.error("--------==(Error: in response processing     )==--------")

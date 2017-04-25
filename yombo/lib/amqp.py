@@ -26,12 +26,10 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqp.py>`_
 """
 # Import python libraries
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+from __future__ import division
+
+import yombo.ext.umsgpack as msgpack
 import pika
-from datetime import datetime
 from collections import deque
 from hashlib import sha1
 import sys
@@ -40,7 +38,7 @@ from time import time
 from twisted.internet.task import LoopingCall
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
 from twisted.internet import ssl, protocol, defer
 from twisted.internet import reactor
 
@@ -49,7 +47,6 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string
-from yombo.utils.maxdict import MaxDict
 
 logger = get_logger('library.amqp')
 
@@ -65,6 +62,12 @@ class AMQP(YomboLibrary):
     """
     def _init_(self):
         self.client_connections = {}
+        self.messages_processed = None  # Track incoming and outgoing messages. Meta data only.
+        self.message_correlations = None  # Track various bits of information for sent correlation_ids.
+
+        self.init_deferred = Deferred()
+        self.load_meta_data()
+        return self.init_deferred
 
     def _unload_(self):
         self._local_log("debug", "AMQP::_unload_")
@@ -79,24 +82,71 @@ class AMQP(YomboLibrary):
                 except:
                     pass
 
-    # def _start_(self):
-    #     self.clean_send_correlation_ids_loop = LoopingCall(self.clean_send_correlation_ids)
-    #     self.clean_send_correlation_ids_loop.start(self._Configs.get('sqldict', 'save_interval', 16, False))
+    def _start_(self):
+        self.clean_message_ids_loop = LoopingCall(self.clean_message_ids)
+        self.clean_message_ids_loop.start(16, False)
 
-    def clean_send_correlation_ids(self):
-        for client, data in self.client_connections.iteritems():
-            for correlation_id in data.send_correlation_id.keys():
-                if data[correlation_id]['time_received'] is None:
-                    if data[correlation_id]['time_received'] < (time() - (60*15)):
-                        del data[correlation_id]
-                elif data[correlation_id]['time_received'] < (time() - (60*2)):
-                        del data[correlation_id]
+    def _stop_(self):
+        """
+        Cleans up any pending deferreds.
+
+        :return:
+        """
+        if self.init_deferred is not None and self.init_deferred.called is False:
+            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
+
+    @inlineCallbacks
+    def load_meta_data(self):
+        self.messages_processed = yield self._AMQP._SQLDict.get(
+            self,
+            "client_connections",
+            max_length=400
+        )
+
+        self.message_correlations = yield self._AMQP._SQLDict.get(
+            self,
+            "send_correlation_ids",
+            serializer=self.message_correlations_serializer,
+            unserializer=self.message_correlations_unserializer,
+            max_length=400
+        )
+
+        self.init_deferred.callback(10)
+
+    def message_correlations_serializer(self, correlation):
+        # print "correlation_ids_serializer: %s" % correlation
+        #todo: using sys or function tools to get the module name and function name to re-create a link.
+        correlation['callback'] = None
+        correlation['amqpyombo_callback'] = None
+        return correlation
+
+    def message_correlations_unserializer(self, correlation):
+        output = correlation.copy()
+
+        if output['callback_component_type'] is not None and \
+            output['callback_component_type_name'] is not None and \
+            output['callback_component_type_function'] is not None:
+            try:
+                output['callback'] = self._AMQP._Loader.find_function(output['callback_component_type'],
+                                                        output['callback_component_type_name'],
+                                                        output['callback_component_type_function'] )
+            except:
+                pass
+        # print "serializer output: %s" % output
+        return output
+
+    def clean_message_ids(self):
+        for correlation_id in self.message_correlations.keys():
+            if self.message_correlations[correlation_id]['received_time'] is None:
+                if self.message_correlations[correlation_id]['received_time'] < (time() - (60*15)):
+                    del self.message_correlations[correlation_id]
+            elif self.message_correlations[correlation_id]['received_time'] < (time() - (60*2)):
+                    del self.message_correlations[correlation_id]
 
     def _local_log(self, level, location="", msg=""):
         logit = getattr(logger, level)
         logit("In {location} : {msg}", location=location, msg=msg)
 
-    @inlineCallbacks
     def new(self, hostname=None, port=5671, virtual_host=None, username=None, password=None, use_ssl=True,
             connected_callback=None, disconnected_callback=None, error_callback=None, client_id=None, keepalive=1800,
             prefetch_count=10, critical=False):
@@ -162,12 +212,11 @@ class AMQP(YomboLibrary):
         self.client_connections[client_id] = AMQPClient(self, client_id, hostname, port, virtual_host, username,
                 password, use_ssl, connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count,
                 critical)
-        yield self.client_connections[client_id].init()
-        returnValue(self.client_connections[client_id])
+        return self.client_connections[client_id]
 
 
 class AMQPClient(object):
-    def __init__(self, amqp_library, client_id, hostname, port, virtual_host, username, password, use_ssl,
+    def __init__(self, _AMQP, client_id, hostname, port, virtual_host, username, password, use_ssl,
                  connected_callback, disconnected_callback, error_callback, keepalive, prefetch_count, critical_connection):
         """
         Abstracts much of the tasks for AMQP handling. Yombo Gateway libraries and modules should primarily interact
@@ -176,7 +225,7 @@ class AMQPClient(object):
         Note: Check with your AMQP host to validate you are have permissions before performing many of these tasks.
         Many times, the server will disconnect the session if a request is being made and don't have permission.
 
-        :param amqp_library: Class - A pointer to AMQP library.
+        :param _AMQP: Class - A pointer to AMQP library.
         :param client_id: String (default - random) - A client id to use for logging.
         :param hostname: String (required) - IP address or hostname to connect to.
         :param port: Int (required) - Port number to connect to.
@@ -197,7 +246,7 @@ class AMQPClient(object):
         self._FullName = 'yombo.gateway.lib.AMQP.AMQPClient'
         self._Name = 'AMQP.AMQPClient'
 
-        self.amqp_library = amqp_library
+        self._AMQP = _AMQP
         self.client_id = client_id
         self.hostname = hostname
         self.port = port
@@ -219,7 +268,6 @@ class AMQPClient(object):
         self.pika_factory = PikaFactory(self)
         self.pika_factory.noisy = False  # turn off Starting/stopping message
 
-        self.send_correlation_id = None
         pika_params = {
             'host': hostname,
             'port': port,
@@ -233,42 +281,6 @@ class AMQPClient(object):
             pika_params['credentials'] = self.pika_credentials
 
         self.pika_parameters = pika.ConnectionParameters(**pika_params)
-
-    @inlineCallbacks
-    def init(self):
-        self.send_correlation_ids = yield self.amqp_library._SQLDict.get(
-            self,
-            "send_request_ids",
-            serializer=self.correlation_ids_serializer,
-            unserializer=self.correlation_ids_unserializer,
-            max_length=250
-        )
-
-        # print "correlation_ids: %s" % self.send_correlation_ids
-        # MaxDict(250)  # correlate requests with responses
-
-    def correlation_ids_serializer(self, correlation):
-        # print "correlation_ids_serializer: %s" % correlation
-        #todo: using sys or function tools to get the module name and function name to re-create a link.
-        correlation['callback'] = None
-        correlation['amqpyombo_callback'] = None
-        return correlation
-
-    def correlation_ids_unserializer(self, correlation):
-        output = correlation.copy()
-
-        if output['callback_component_type'] is not None and \
-            output['callback_component_type_name'] is not None and \
-            output['callback_component_type_function'] is not None:
-            try:
-                output['callback'] = self.amqp_library._Loader.find_function(output['callback_component_type'],
-                                                        output['callback_component_type_name'],
-                                                        output['callback_component_type_function'] )
-            except:
-                pass
-
-        # print "serializer output: %s" % output
-        return output
 
     def _local_log(self, level, location="", msg=""):
         """
@@ -409,7 +421,7 @@ class AMQPClient(object):
             if callable(error_callback) is False:
                 # print "Error_callback - %s" % error_callback
                 raise YomboWarning(
-                        "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
+                      "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
                         204, 'subscribe', 'AMQPClient')
 
         self.pika_factory.subscribe(queue_name, incoming_callback, error_callback, queue_no_ack, persistent)
@@ -427,7 +439,7 @@ class AMQPClient(object):
           default routing is not allowed.
         :param body: Any - Any data that should be sent in the AMQP message payload.
         """
-        self._local_log("debug", "AMQPClient::send_amqp_message", "Message: %s" % kwargs)
+        # self._local_log("debug", "AMQPClient::send_amqp_message", "Message: %s" % kwargs)
         callback = kwargs.get('callback', None)
         if callback is not None:
             if callable(callback) is False:
@@ -447,11 +459,15 @@ class AMQPClient(object):
                     "AMQP Client:{%s} - Must have a body." % self.client_id,
                     202, 'publish', 'AMQPClient')
 
-        kwargs["time_created"] = kwargs.get("time_created", datetime.now())
+        if 'meta' not in kwargs:
+            kwargs['meta'] = {'created_time': time()}
+        elif 'created_time' not in kwargs['meta']:
+            kwargs['meta']['created_time'] = kwargs.get("created_time", time())
         if 'routing_key' not in kwargs:
             raise YomboWarning(
                     "AMQP Client:{%s} - Must have routing_key to publish to, therwise, don't know how to route!" % self.client_id,
                     201, 'publish', 'AMQPClient')
+
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
 
         return self.pika_factory.publish(**kwargs)
@@ -478,8 +494,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         self.AMQPClient = AMQPClient
         self.AMQPProtocol = None
-
-        self._Statistics = AMQPClient.amqp_library._Libraries['statistics']
 
         self.send_queue = deque() # stores any received items like publish and subscribe until fully connected
         self.exchanges = {}  # store a list of exchanges, will try to re-establish on reconnect.
@@ -579,7 +593,12 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         Queues up the message, and asks the protocol to send if connected.
         """
         logger.debug("factory:publish: {kwargs}", kwargs=kwargs)
-        self._local_log("debug", "PikaFactory::send_amqp_message", "Message: %s" % kwargs)
+
+        properties = kwargs.get('properties', {})
+
+        if 'message_id' not in properties:
+            properties['message_id'] = random_string(length=26)
+        message_id = properties['message_id']
 
         c_type = None
         c_name = None
@@ -602,7 +621,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                     callback = None
                 else:
                     try:
-                        callback = self.amqp_library._Loader.find_function(c_type, c_name, c_function)
+                        callback = self._AMQP._Loader.find_function(c_type, c_name, c_function)
                     except:
                         c_type = None
                         c_name = None
@@ -627,40 +646,66 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                     "AMQP Client:{client_id} - Must have a body." % self.client_id,
                     203, 'publish', 'AMQPClient')
 
-        kwargs["time_created"] = kwargs.get("time_created", datetime.now())
         kwargs['routing_key'] = kwargs.get('routing_key', '*')
-        properties = kwargs.get('properties', {})
         if 'correlation_id' in properties:
             correlation_id = properties['correlation_id']
         else:
             if callback is not None:
                 correlation_id = random_string(random_string(length=24))
+                properties['correlation_id'] = correlation_id
             else:
                 correlation_id = None
         properties['user_id'] = self.AMQPClient.username
 
         kwargs['properties'] = properties
 
+        msg_meta = kwargs.get('meta', {})
+
+        if 'created_time' in msg_meta:
+            created_time = msg_meta['created_time']
+            del msg_meta['created_time']
+        else:
+            created_time = time()
+
+        message_info = {
+            "direction": 'outgoing',
+            "message_id": message_id,
+            "correlation_id": correlation_id,
+            'replied_message_id': None,
+            'sent_time': None,
+            "reply_received": None,
+            "reply_received_time": None,
+            "round_trip_timing": None,
+            "created_time": created_time,
+            "sent_time": None,
+            "meta": msg_meta,
+        }
+
         if correlation_id is not None:
-            self.AMQPClient.send_correlation_ids[correlation_id] = {
-                "time_created"      : kwargs.get("time_created", datetime.now()),
-                'time_sent'         : None,
-                "time_received"     : None,
-                "callback"          : callback,
-                "callback_component_type"         : c_type, # module or component
-                "callback_component_type_name"    : c_name, # module of compentnt name
-                "callback_component_type_function": c_function, # name of the function to call
-                "correlation_id"  : correlation_id,
+            correlation_info = {
+                "message_id": message_id,
+                "callback": callback,
+                "callback_component_type": c_type,  # module or component
+                "callback_component_type_name": c_name,  # module of compentnt name
+                "callback_component_type_function": c_function,  # name of the function to call
+                "correlation_id": correlation_id,
             }
+            self.AMQPClient._AMQP.message_correlations[correlation_id] = correlation_info
+            message_info['correlation_id'] = correlation_id
+
+        self.AMQPClient._AMQP.messages_processed[message_id] = message_info
+        # print "saving outgoing message into message processed: %s" % message_info
         self.send_queue.append(kwargs)
 
         if self.AMQPProtocol:
             self.AMQPProtocol.do_publish()
 
-        if correlation_id is None:
-            return None
-        else:
-            return self.AMQPClient.send_correlation_ids[correlation_id]
+        results = {
+            'message_info': message_info,
+            'correlation_info': correlation_info,
+        }
+
+        return results
 
     def connected(self):
         """
@@ -734,6 +779,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.factory = factory
         self._connected = None
         self.connection = None
+        self.do_publish_running = False
         super(PikaProtocol, self).__init__(self.factory.AMQPClient.pika_parameters)
 
     def _local_log(self, level, location="", msg=""):
@@ -763,7 +809,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.channel.add_on_close_callback(close_connection)
 
         yield self.channel.basic_qos(prefetch_count=self.factory.AMQPClient.prefetch_count)
-        logger.debug("Setting AMQP connected to true.")
+        # logger.debug("Setting AMQP connected to true.")
         self._connected = True
         self.factory.connected()
 
@@ -785,8 +831,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         Performs the actual registration of exchanges.
         """
-        self._local_log("debug", "PikaProtocol::do_register_exchanges")
-        logger.debug("Do_register_exchanges, todo: {exchanges}", exchanges=self.factory.exchanges)
+        # self._local_log("debug", "PikaProtocol::do_register_exchanges")
+        # logger.debug("Do_register_exchanges, todo: {exchanges}", exchanges=self.factory.exchanges)
         for exchange_name in self.factory.exchanges.keys():
             fields = self.factory.exchanges[exchange_name]
             # print "do_register_exchanges, fields: %s" % fields
@@ -857,22 +903,27 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
 #        prop = spec.BasicProperties(delivery_mode=2)
 
-#        logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
+        # logger.info("exchange=%s, routing_key=%s, body=%s, properties=%s " % (kwargs['exchange_name'],kwargs['routing_key'],kwargs['body'], kwargs['properties']))
         logger.debug("In PikaProtocol do_publish...")
         if self._connected is None:
             returnValue(None)
 
+        if self.do_publish_running is True:
+            returnValue(None)
+        self.do_publish_running = True
+
         while True:
             try:
                 msg = self.factory.send_queue.popleft()
-                logger.debug("In PikaProtocol do_publish a: {msg}", msg=msg)
+                # logger.debug("In PikaProtocol do_publish a: {msg}", msg=msg)
                 # print "do_publish: %s"  % msg['properties']
                 try:
-                    if 'correlation_id' in msg['properties']:
-                        if msg['properties']['correlation_id'] in self.factory.AMQPClient.send_correlation_ids:
-                            self.factory.AMQPClient.send_correlation_ids[msg['properties']['correlation_id']]['time_sent'] = datetime.now()
-                    # logger.debug("exchange={exchange_name}, routing_key={routing_key}, body={body}, properties={properties}",
-                    #             exchange_name=msg['exchange_name'], routing_key= msg['routing_key'], body=msg['body'], properties=msg['properties'])
+                    if 'message_id' in msg['properties']:
+                        # print "do publish, has a message_id: %s " % msg['properties']['message_id']
+                        # print "do publish, has a message_id: messages_processed: %s" % self.factory.AMQPClient._AMQP.messages_processed
+                        if msg['properties']['message_id'] in self.factory.AMQPClient._AMQP.messages_processed:
+                            # print "do publish, has a message_id"
+                            self.factory.AMQPClient._AMQP.messages_processed[msg['properties']['message_id']]['sent_time'] = time()
                     msg['properties'] = pika.BasicProperties(**msg['properties'])
                     msg['properties'].headers['msg_sent_time'] = str(time())
 
@@ -889,6 +940,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             except IndexError:
                 break
 
+        self.do_publish_running = False
+
     def _register_consumer_success(self, tossaway, queue_name):
         self.factory.consumers[queue_name]['subscribed'] = True
 
@@ -896,6 +949,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         This function is called with EVERY incoming message. We don't have logic here, just send to factory.
         """
+        # logger.debug("In PikaProtocol receive_item...{item}", item=item)
+
         (channel, deliver, props, msg,) = item
         # print "protocol1: receive_item"
         # print "protocol: item %s" % item
@@ -907,39 +962,84 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         # print "props: msg %s" % msg
         # print "msg: item %s" % msg
 
-        if props.correlation_id in self.factory.AMQPClient.send_correlation_ids:
-            correlation = self.factory.AMQPClient.send_correlation_ids[props.correlation_id]
-            correlation['time_received'] = datetime.now()
+        sent_message_info = None
+        correlation_info = None
+
+        if hasattr(props, 'reply_to') and props.reply_to is not None:
+            if props.reply_to in self.factory.AMQPClient._AMQP.messages_processed:
+                sent_message_info = self.factory.AMQPClient._AMQP.messages_processed[props.reply_to]
+
+        if hasattr(props, 'correlation_id') and props.correlation_id is not None:
+            correlation_id = props.correlation_id
+            if correlation_id.isalnum() is False or len(correlation_id) < 15 or len(correlation_id) > 40:
+                logger.warn("Discarding incoming message, invalid correlation_id.")
+
+            if correlation_id in self.factory.AMQPClient._AMQP.message_correlations:
+                correlation_info = self.factory.AMQPClient._AMQP.message_correlations[correlation_id]
+                if sent_message_info is None and correlation_info['message_id'] is not None:
+                    if correlation_info['message_id'] in self.factory.AMQPClient._AMQP.messages_processed:
+                        sent_message_info = self.factory.AMQPClient._AMQP.messages_processed[correlation_info['message_id']]
+                        sent_message_info['reply_received_time'] = time()
+
+        if sent_message_info is not None:
+            sent_message_info['reply_received_time'] = time()
+        if correlation_info is not None:
+            sent_message_info['correlation_id'] = correlation_id
+
+        if hasattr(props, 'message_id') and sent_message_info is not None:
+            received_message_id = props.message_id
+            if received_message_id.isalnum() is False or len(received_message_id) < 15 or len(received_message_id) > 40:
+                logger.warn("Discarding incoming message, invalid message_id.")
         else:
-            correlation = None
+            received_message_id = "xx_%s" % random_string(length=10)
+
+        received_message_info = {
+            'direction': 'incoming',
+            'message_id': received_message_id,
+            'correlation_id': None,
+            "received_time": time(),
+            'replied_message_id': None,
+            "replied_time": None,
+            "round_trip_timing": None,
+            "meta": {},
+        }
+
+        try:
+            if received_message_id[0:2] != 'xx_' and sent_message_info is not None:
+                milliseconds = sent_message_info['reply_received_time'] - sent_message_info['sent_time']
+                sent_message_info['round_trip_timing'] = milliseconds
+        except Exception as e:
+            logger.warn("Problem calculating message rount_trip_timing: %s" % e)
+        if correlation_info is not None:
+            received_message_info['correlation_id'] = correlation_id
+
+        if sent_message_info is not None:
+            sent_message_info['reply_received_time'] = time()
+
+        self.factory.AMQPClient._AMQP.messages_processed[received_message_id] = received_message_info
 
         d = queue.get()  # get the queue again, so we can add another callback to get the next message.
         d.addCallback(self.receive_item, queue, queue_no_ack, callback)
         d.addErrback(self.receive_item_err)  # todo: use supplied error callback...  which one?
 
-        self._local_log("debug", "PikaProtocol::receive_item, callback: %s" % callback)
-
-#        print "send_correlation_ids: %s" % self.factory.AMQPClient.send_correlation_ids
-        if props.correlation_id in self.factory.AMQPClient.send_correlation_ids:
-            time_info = self.factory.AMQPClient.send_correlation_ids[props.correlation_id]
-            date_time = time_info['time_received'] - time_info['time_sent']
-            milliseconds = (date_time.days * 24 * 60 * 60 + date_time.seconds) * 1000 + date_time.microseconds / 1000.0
-            self.factory.AMQPClient.send_correlation_ids[props.correlation_id]['time_round_trip'] = milliseconds
-            logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
-
-        # if message has a direct callback, call that instead of the queue callback
+        # Queues designate default callbacks, however, a specific message can also designate a callback. First,
+        # lets see if the message has specific callback.
         already_calledback = False
-        if correlation is not None:
-            if correlation['callback'] is not None:
-                if callable(correlation['callback']) is True:
+        if correlation_info is not None:
+            if correlation_info['callback'] is not None:
+                if callable(correlation_info['callback']) is True:
                     logger.warn("calling message callback, not incoming queue callback")
                     already_calledback = True
-                    local_callback = correlation['callback']
-                    d = defer.maybeDeferred(local_callback, msg=msg, properties=props, deliver=deliver, correlation=correlation)
+                    messsage_callback = correlation_info['callback']
+                    d = defer.maybeDeferred(messsage_callback, msg=msg, properties=props, deliver=deliver,
+                                            correlation=sent_message_info, received_message_info=received_message_info,
+                                            sent_message_info=sent_message_info)
 
         if already_calledback is False:
-            d = defer.maybeDeferred(callback, msg=msg, properties=props, deliver=deliver, correlation=correlation)
-            logger.debug('Called callback: {callback}', callback=callback)
+            d = defer.maybeDeferred(callback, msg=msg, properties=props, deliver=deliver,
+                                    correlation_info=correlation_info, received_message_info=received_message_info,
+                                    sent_message_info=sent_message_info)
+            # logger.debug('Called callback: {callback}', callback=callback)
 
         if not queue_no_ack:
             # if it gets here, it's passed basic checks.

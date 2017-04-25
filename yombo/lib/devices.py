@@ -385,7 +385,6 @@ class Devices(YomboLibrary):
                                 max_delay=request['max_delay'], **request['kwargs'])
         self.load_deferred.callback(10)
 
-
     def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
         """
         Forwarder function to the actual device object for processing.

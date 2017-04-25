@@ -528,6 +528,7 @@ class AmqpConfigHandler(YomboLibrary):
             self.processing_queue = True
             for key in list(self.__process_queue):
                 queue = self.__process_queue[key]
+                # print "headers: %s" % queue['headers']
                 self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
                 yield self.process_config(queue['msg'], queue['headers']['config_item'], queue['headers']['config_type'])
                 del self.__process_queue[key]
