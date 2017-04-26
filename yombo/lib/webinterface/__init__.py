@@ -411,7 +411,7 @@ class WebInterface(YomboLibrary):
         if self.already_start_web_servers is True:
             return
         self.already_start_web_servers = True
-        logger.warn("starting web servers")
+        logger.debug("starting web servers")
         if self.web_server_started is False:
             if self.wi_port_nonsecure() == 0:
                 logger.warn("Non secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->nonsecure_port")
@@ -868,36 +868,38 @@ class WebInterface(YomboLibrary):
         return File(self._current_dir + "/lib/webinterface/static/dist")
 
     def display_pin_console(self):
-        dns_fqdn = self._Configs.get2('dns', 'fqdn', None, False)
-        dns_fqdn_value = dns_fqdn()
-        if dns_fqdn_value is None:
-            local_hostname = "127.0.0.1"
-            internal_hostname = self._Configs.get('core', 'localipaddress_v4')
-            external_hostname = self._Configs.get('core', 'externalipaddress_v4')
-        else:
-            local_hostname = "local.%s" % dns_fqdn_value
-            internal_hostname = "i.%s" % dns_fqdn_value
-            external_hostname = "e.%s" % dns_fqdn_value
-
-        local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure())
-        internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure())
-        external = "https://%s:%s" % (external_hostname, self.wi_port_secure())
         print "###########################################################"
         print "#                                                         #"
         if self._op_mode != 'run':
             print "# The Yombo Gateway website is running in                 #"
             print "# configuration only mode.                                #"
             print "#                                                         #"
-        print "# The website can be accessed from the following urls:    #"
-        print "#                                                         #"
-        print "# On local machine:                                       #"
-        print "#  %-54s #" % local
-        print "#                                                         #"
-        print "# On local network:                                       #"
-        print "#  %-54s #" % internal
-        print "#                                                         #"
-        print "# From external network (check port forwarding):          #"
-        print "#  %-54s #" % external
+
+        dns_fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        if dns_fqdn is None:
+            local_hostname = "127.0.0.1"
+            internal_hostname = self._Configs.get('core', 'localipaddress_v4')
+            external_hostname = self._Configs.get('core', 'externalipaddress_v4')
+            local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure())
+            internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure())
+            external = "https://%s:%s" % (external_hostname, self.wi_port_secure())
+            print "# The gateway can be accessed from the following urls:    #"
+            print "#                                                         #"
+            print "# On local machine:                                       #"
+            print "#  %-54s #" % local
+            print "#                                                         #"
+            print "# On local network:                                       #"
+            print "#  %-54s #" % internal
+            print "#                                                         #"
+            print "# From external network (check port forwarding):          #"
+            print "#  %-54s #" % external
+        else:
+            website_url = "http://%s" % dns_fqdn
+            print "# The gateway can be accessed from the following url:     #"
+            print "#                                                         #"
+            print "# From anywhere:                                          #"
+            print "#  %-54s #" % website_url
+
         print "#                                                         #"
         print "#                                                         #"
         print "# Web Interface access pin code:                          #"
