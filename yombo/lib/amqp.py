@@ -84,7 +84,7 @@ class AMQP(YomboLibrary):
 
     def _start_(self):
         self.clean_message_ids_loop = LoopingCall(self.clean_message_ids)
-        self.clean_message_ids_loop.start(16, False)
+        # self.clean_message_ids_loop.start(16, False)
 
     def _stop_(self):
         """
@@ -115,6 +115,8 @@ class AMQP(YomboLibrary):
 
     def message_correlations_serializer(self, correlation):
         # print "correlation_ids_serializer: %s" % correlation
+        if 'correlation_persistent' in correlation and correlation['correlation_persistent'] is False:
+            raise YomboWarning("We don't save non-persistent items...")
         #todo: using sys or function tools to get the module name and function name to re-create a link.
         correlation['callback'] = None
         correlation['amqpyombo_callback'] = None
@@ -459,8 +461,6 @@ class AMQPClient(object):
                     "AMQP Client:{%s} - Must have a body." % self.client_id,
                     202, 'publish', 'AMQPClient')
 
-        if 'meta' not in kwargs:
-            kwargs['meta'] = {'created_time': time()}
         elif 'created_time' not in kwargs['meta']:
             kwargs['meta']['created_time'] = kwargs.get("created_time", time())
         if 'routing_key' not in kwargs:
@@ -659,14 +659,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
 
         kwargs['properties'] = properties
 
-        msg_meta = kwargs.get('meta', {})
-
-        if 'created_time' in msg_meta:
-            created_time = msg_meta['created_time']
-            del msg_meta['created_time']
-        else:
-            created_time = time()
-
         message_info = {
             "direction": 'outgoing',
             "message_id": message_id,
@@ -676,11 +668,16 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             "reply_received": None,
             "reply_received_time": None,
             "round_trip_timing": None,
-            "created_time": created_time,
             "sent_time": None,
-            "meta": msg_meta,
         }
 
+        msg_meta = kwargs.get('meta', None)
+        if msg_meta is not None:
+            message_info.update(msg_meta)
+        if 'created_time' not in message_info:
+            message_info['created_time'] = time()
+
+        correlation_persistent = kwargs.get('correlation_persistent', True)
         if correlation_id is not None:
             correlation_info = {
                 "message_id": message_id,
@@ -689,6 +686,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 "callback_component_type_name": c_name,  # module of compentnt name
                 "callback_component_type_function": c_function,  # name of the function to call
                 "correlation_id": correlation_id,
+                "correlation_persistent": correlation_persistent,
             }
             self.AMQPClient._AMQP.message_correlations[correlation_id] = correlation_info
             message_info['correlation_id'] = correlation_id
@@ -965,7 +963,19 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         sent_message_info = None
         correlation_info = None
 
+        if hasattr(props, 'message_id') and sent_message_info is not None:
+            received_message_id = props.message_id
+            if received_message_id.isalnum() is False or len(received_message_id) < 15 or len(received_message_id) > 40:
+                logger.warn("Discarding incoming message, invalid message_id.")
+                return
+        else:
+            received_message_id = "xx_%s" % random_string(length=10)
+
         if hasattr(props, 'reply_to') and props.reply_to is not None:
+            reply_to = props.reply_to
+            if reply_to.isalnum() is False or len(reply_to) < 15 or len(reply_to) > 40:
+                logger.warn("Discarding incoming message, invalid reply_to.")
+                return
             if props.reply_to in self.factory.AMQPClient._AMQP.messages_processed:
                 sent_message_info = self.factory.AMQPClient._AMQP.messages_processed[props.reply_to]
 
@@ -973,6 +983,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             correlation_id = props.correlation_id
             if correlation_id.isalnum() is False or len(correlation_id) < 15 or len(correlation_id) > 40:
                 logger.warn("Discarding incoming message, invalid correlation_id.")
+                return
 
             if correlation_id in self.factory.AMQPClient._AMQP.message_correlations:
                 correlation_info = self.factory.AMQPClient._AMQP.message_correlations[correlation_id]
@@ -986,13 +997,6 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         if correlation_info is not None:
             sent_message_info['correlation_id'] = correlation_id
 
-        if hasattr(props, 'message_id') and sent_message_info is not None:
-            received_message_id = props.message_id
-            if received_message_id.isalnum() is False or len(received_message_id) < 15 or len(received_message_id) > 40:
-                logger.warn("Discarding incoming message, invalid message_id.")
-        else:
-            received_message_id = "xx_%s" % random_string(length=10)
-
         received_message_info = {
             'direction': 'incoming',
             'message_id': received_message_id,
@@ -1001,7 +1005,6 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             'replied_message_id': None,
             "replied_time": None,
             "round_trip_timing": None,
-            "meta": {},
         }
 
         try:
@@ -1012,6 +1015,9 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             logger.warn("Problem calculating message rount_trip_timing: %s" % e)
         if correlation_info is not None:
             received_message_info['correlation_id'] = correlation_id
+            received_message_info['correlation_id_correlated'] = True
+        else:
+            received_message_info['correlation_id_correlated'] = False
 
         if sent_message_info is not None:
             sent_message_info['reply_received_time'] = time()
@@ -1032,7 +1038,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                     already_calledback = True
                     messsage_callback = correlation_info['callback']
                     d = defer.maybeDeferred(messsage_callback, msg=msg, properties=props, deliver=deliver,
-                                            correlation=sent_message_info, received_message_info=received_message_info,
+                                            correlation=correlation_info, received_message_info=received_message_info,
                                             sent_message_info=sent_message_info)
 
         if already_calledback is False:

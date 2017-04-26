@@ -163,7 +163,8 @@ class Statistics(YomboLibrary):
         return self.init_deferred
 
     def _start_(self):
-        self.uploadDataLoop.start(633, False) # ~ 30 minutes
+        self.uploadDataLoop.start(5, False) # about every 6 hours
+        # self.uploadDataLoop.start(21557, False) # about every 6 hours
 
     def _stop_(self):
         """
@@ -355,7 +356,7 @@ class Statistics(YomboLibrary):
             if self._datapoint_last_value[bucket_name] == value:  # we don't save duplicates!
                 return
 
-        bucket_time = int(time())
+        bucket_time = round(time(), 3)
         if bucket_time not in self._datapoints:
             self._datapoints[bucket_time] = {}
         if bucket_name not in self._datapoints:
@@ -628,7 +629,6 @@ class Statistics(YomboLibrary):
             return
 
         to_save = []
-        # print "counters: %s" % self._counters
         for bucket_time in self._counters.keys():
             # print "starting save _counters"
             for bucket_name in self._counters[bucket_time].keys():
@@ -649,14 +649,6 @@ class Statistics(YomboLibrary):
                         od['anon'] = current_bucket['anon']
                         od['finished'] = int(bucket_time < (current_bucket_time['time']))
                         to_save.append(od)
-
-                        try:
-                            if len(to_save) > 0:
-                                yield self._LocalDB.save_statistic_bulk(to_save)
-                            to_save = []
-                        except:
-                            print "error while trying to bulk save: %s" % to_save
-
 
                 if bucket_time < (current_bucket_time['time']):
                     del self._counters[bucket_time][bucket_name]
@@ -696,50 +688,36 @@ class Statistics(YomboLibrary):
                             od['anon'] = current_bucket['anon']
                             od['finished'] = int(bucket_time < (current_bucket_time['time']))
                             to_save.append(od)
-                            try:
-                                if len(to_save) > 0:
-                                    yield self._LocalDB.save_statistic_bulk(to_save)
-                                to_save = []
-                            except:
-                                print "error while trying to bulk save: %s" % to_save
-
 
                 if bucket_time < (current_bucket_time['time']):
                     del self._averages[bucket_time][bucket_name]
             if len(self._averages[bucket_time]) == 0:
                 del self._averages[bucket_time]
 
-
         for bucket_time in self._datapoints.keys():
             for bucket_name in self._datapoints[bucket_time].keys():
                 current_bucket = self._datapoints[bucket_time][bucket_name]
-                if 'restored_db_id' in current_bucket and current_bucket['restored_db_id'] is not False:
-                    yield self._LocalDB.save_statistic(current_bucket, 1)
-                else:
-                    # print "saving in bulk: %s" % current_bucket
-                    od = OrderedDict()
-                    od['bucket_time'] = current_bucket['time']
-                    od['bucket_size'] = 0
-                    od['bucket_type'] = current_bucket['type']
-                    od['bucket_name'] = current_bucket['name']
-                    od['bucket_value'] = current_bucket['value']
-                    od['updated'] = int(time())
-                    od['anon'] = current_bucket['anon']
-                    od['finished'] = int(bucket_time < (current_bucket_time['time']))
-                    to_save.append(od)
-                    try:
-                        if len(to_save) > 0:
-                            yield self._LocalDB.save_statistic_bulk(to_save)
-                        to_save = []
-                    except:
-                        print "error while trying to bulk save: %s" % to_save
+                od = OrderedDict()
+                od['bucket_time'] = current_bucket['time']
+                od['bucket_size'] = 0
+                od['bucket_type'] = current_bucket['type']
+                od['bucket_name'] = current_bucket['name']
+                od['bucket_value'] = current_bucket['value']
+                od['updated'] = int(time())
+                od['anon'] = current_bucket['anon']
+                od['finished'] = 1
+                to_save.append(od)
 
                 del self._datapoints[bucket_time][bucket_name]
             if len(self._datapoints[bucket_time]) == 0:
                 del self._datapoints[bucket_time]
 
-        if len(to_save) > 0:
-            yield self._LocalDB.save_statistic_bulk(to_save)
+        try:
+            if len(to_save) > 0:
+                yield self._LocalDB.save_statistic_bulk(to_save)
+            to_save = []
+        except Exception as error:
+            logger.warn("Error while trying to bulk save: {error}", error=error)
 
         if gateway_stopping is True:
             self.unload_deferred.callback(1)
@@ -750,7 +728,6 @@ class Statistics(YomboLibrary):
         values = self._averages[bucket_time][bucket_name]['values']
         if len(values) > 0:
             sorted_values = sorted(values)
-            # print "sorted_values: %s" % sorted_values
 
             median = percentile(list(sorted_values), 0.50)
             percentile90 = percentile(sorted_values, 0.90)
@@ -884,6 +861,7 @@ class Statistics(YomboLibrary):
         """
         stats = yield self._LocalDB.get_uploadable_statistics(0)
         if len(stats) > 0:
+            # print " i have %s to upload" % len(stats)
 
             headers= {
                 "request_type": "stats_save",
@@ -898,7 +876,7 @@ class Statistics(YomboLibrary):
 
             # logger.info("request_msg: {request_msg}", request_msg=request_msg)
             self._AMQPYombo.publish(**request_msg)
-            self.last_upload_count = len(stat)
+            self.last_upload_count = len(stats)
         else:
             self.last_upload_count = 0
 
@@ -911,6 +889,5 @@ class Statistics(YomboLibrary):
         if len(msg['stats_completed']):
             yield self._LocalDB.set_uploaded_statistics(-1, msg['stats_failed'])
 
-
-        if self.last_upload_count > 275: # if we upload a lot of stats last time, maybe we have more to uplaod.
+        if self.last_upload_count > 1800: # if we upload a lot of stats last time, maybe we have more to upload.
             reactor.callLater(10, self._upload_statistics)  # get the system a few seconds to chill

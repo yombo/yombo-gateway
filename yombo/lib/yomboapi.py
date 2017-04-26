@@ -439,7 +439,7 @@ class YomboAPI(YomboLibrary):
 
         content_type = headers['content-type'][0]
 
-        print "######  content: %s" % content
+        # print "######  content: %s" % content
         if content_type == 'application/json':
             if self.is_json(content):
                 content = json.loads(content)
@@ -462,7 +462,7 @@ class YomboAPI(YomboLibrary):
             else:
                 content_type = "string"
 
-        print "!!!!!!!!!!!!!!content: %s" % content
+        # print "!!!!!!!!!!!!!!content: %s" % content
 
         results = {
             'content': content,

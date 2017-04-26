@@ -26,6 +26,7 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 """
 
 # Import python libraries
+from __future__ import division
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -242,7 +243,7 @@ class AMQPYombo(YomboLibrary):
             "external_secure_port": self._Configs.get("webinterface", "secure_port"),
         }
 
-        logger.error("sending local information.")
+        # logger.debug("sending local information.")
 
         requestmsg = self.generate_message_request(
             exchange_name='ysrv.e.gw_config',
@@ -451,14 +452,15 @@ class AMQPYombo(YomboLibrary):
 
         msg_meta['payload_size'] = len(msg)
         if properties.content_encoding == 'zlib':
-            beforeZlib = len(msg)
+            compressed_size = len(msg)
             msg = zlib.decompress(msg)
-            afterZlib = len(msg)
-            logger.debug(
-                "Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}, percent: {percent}",
-                compressed=beforeZlib, uncompressed=afterZlib, percent=percentage(beforeZlib, afterZlib))
-            msg_meta['content_encoding'] = 'zlib'
-            msg_meta['compression_percent'] = percentage(beforeZlib, afterZlib)
+            uncompressed_size = len(msg)
+            # logger.info(
+            #     "Message sizes: msg_size_compressed = {compressed}, non-compressed = {uncompressed}, percent: {percent}",
+            #     compressed=beforeZlib, uncompressed=afterZlib, percent=abs(percentage(beforeZlib, afterZlib)-1))
+            received_message_info['uncompressed_size'] = uncompressed_size
+            received_message_info['compression_percent'] = abs((compressed_size / uncompressed_size) - 1)*100
+
 
         if properties.content_type == 'application/json':
             if self.is_json(msg):
@@ -516,7 +518,8 @@ class AMQPYombo(YomboLibrary):
                     self.controlHandler.process_control(msg, properties)
                 elif properties.headers['request_type'] == 'system':
                     self.process_system_request(msg=msg, properties=properties, deliver=deliver,
-                                                correlation_info=correlation_info, **kwargs)
+                                                correlation_info=correlation_info, sent_message_info=sent_message_info,
+                                                received_message_info=received_message_info, **kwargs)
 
             except Exception, e:
                 logger.error("--------==(Error: in response processing     )==--------")
@@ -530,10 +533,13 @@ class AMQPYombo(YomboLibrary):
                 logger.debug("headers: {headers}", headers=properties.headers)
                 if properties.headers['response_type'] == 'config':
                     self.configHandler.process_config_response(msg=msg, properties=properties, deliver=deliver,
-                                                 correlation_info=correlation_info, **kwargs)
+                                                               correlation_info=correlation_info,
+                                                               sent_message_info=sent_message_info,
+                                                               received_message_info=received_message_info, **kwargs)
                 elif properties.headers['response_type'] == 'sslcert':
                     self._SSLCerts.amqp_incoming(msg=msg, properties=properties, deliver=deliver,
-                                                 correlation_info=correlation_info, **kwargs)
+                                                 correlation_info=correlation_info, sent_message_info=sent_message_info,
+                                                 received_message_info=received_message_info, **kwargs)
 
             except Exception, e:
                 logger.error("--------==(Error: in response processing     )==--------")

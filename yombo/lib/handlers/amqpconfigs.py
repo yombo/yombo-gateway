@@ -885,7 +885,8 @@ class AmqpConfigHandler(YomboLibrary):
         """
         request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
                                                     "yombo.server.configs", headers, request_data)
-        logger.debug("response: {request_msg}", request_msg=request_msg)
+        # logger.debug("response: {request_msg}", request_msg=request_msg)
+        request_msg['correlation_persistent'] = False
         return request_msg
 
     def _append_full_download_queue(self, table):

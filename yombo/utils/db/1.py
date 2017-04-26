@@ -317,7 +317,7 @@ def upgrade(Registry, **kwargs):
     #  Defines the statistics data table. Stores statistics.
     table = """CREATE TABLE `statistics` (
      `id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `bucket_time`         INTEGER NOT NULL,
+     `bucket_time`         DECIMAL(13,3) NOT NULL,
      `bucket_size`         INTEGER NOT NULL,
      `bucket_type`         TEXT NOT NULL,
      `bucket_name`         TEXT NOT NULL,

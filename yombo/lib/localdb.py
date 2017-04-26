@@ -878,6 +878,7 @@ ORDER BY id desc"""
 
     @inlineCallbacks
     def save_statistic_bulk(self, buckets):
+        # print "localdb save: %s" % buckets
         results = yield self.dbconfig.insertMany('statistics', buckets)
         returnValue(results)
 
@@ -929,13 +930,13 @@ ORDER BY id desc"""
         anonymous_allowed = self._Configs.get('statistics', 'anonymous', True)
         if anonymous_allowed:
             records = yield self.dbconfig.select('statistics',
-                 select='id as stat_id, bucket_time, bucket_type, bucket_name, bucket_value, bucket_average_data, bucket_time',
-                 where=['finished = 1 AND uploaded = ?', uploaded_type], limit=300)
+                 select='id as stat_id, bucket_time, bucket_size, bucket_type, bucket_name, bucket_value, bucket_average_data, bucket_time',
+                 where=['finished = 1 AND uploaded = ?', uploaded_type], limit=2000)
         else:
             records = yield self.dbconfig.select('statistics', select='*',
                  where=['finished = 1 AND uploaded = ? and anon = 0', uploaded_type])
 
-        self._unpickle_stats(records, 'bucket_type', 'bucket_average_data', limit=300)
+        self._unpickle_stats(records, 'bucket_type', 'bucket_average_data')
 
         returnValue(records)
 
