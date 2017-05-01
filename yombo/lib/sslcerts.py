@@ -56,7 +56,7 @@ from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import save_file, read_file, global_invoke_all, random_int
+from yombo.utils import save_file, read_file, global_invoke_modules, global_invoke_libraries, random_int
 from yombo.utils.dictobject import DictObject
 
 logger = get_logger('library.sslcerts')
@@ -80,10 +80,11 @@ class SSLCerts(YomboLibrary):
 
         :return:
         """
+        self.generate_csr_queue = self._Queue.new('library.sslcerts.generate_csr', self.generate_csr)
         self.hostname = gethostname()
 
         self.gwid = self._Configs.get("core", "gwid")
-        self.fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        self.fqdn = self._Configs.get2('dns', 'fqdn', None, False)
 
         self.recieved_message_for_unknown = ExpiringDict(100, 600)
         self.self_signed_cert_file = self._Atoms.get('yombo.path') + "/usr/etc/certs/sslcert_selfsigned.cert.pem"
@@ -93,7 +94,7 @@ class SSLCerts(YomboLibrary):
 
         if os.path.exists(self.self_signed_cert_file) is False or \
                 self.self_signed_expires is None or \
-                self.self_signed_expires < int(time()) or \
+                self.self_signed_expires < int(time() + (60*60*24*30)) or \
                 self.self_signed_created is None or \
                 not os.path.exists(self.self_signed_key_file) or \
                 not os.path.exists(self.self_signed_cert_file):
@@ -108,6 +109,10 @@ class SSLCerts(YomboLibrary):
         # print("startup: managed_certs: %s" % self.managed_certs)
 
         self.check_if_certs_need_update_loop = None
+
+        # get certs needed for system libraries.
+        sslcerts = global_invoke_libraries('_sslcerts_', called_by=self)
+        self._add_sslcerts(sslcerts)
 
     def _load_(self):
         """
@@ -136,24 +141,6 @@ class SSLCerts(YomboLibrary):
         for sslname, cert in self.managed_certs.iteritems():
             cert.check_if_rotate_needed()
 
-    def _configuration_set_(self, **kwargs):
-        """
-        Receive configuruation updates and adjust as needed.
-
-        :param kwargs: section, option(key), value
-        :return:
-        """
-        section = kwargs['section']
-        option = kwargs['option']
-        value = kwargs['value']
-
-        if section == 'dns':
-            if option == 'fqdn':
-                self.fqdn = value
-                for sslname, cert in self.managed_certs.iteritems():
-                    cert.check_updated_fqdn()
-                    # Now all our signed certs are invalid. Time to update them.
-
     def _modules_inited_(self):
         """
         Called before the modules have their preload called, after their _init_.
@@ -162,12 +149,16 @@ class SSLCerts(YomboLibrary):
 
         :return:
         """
-        # get all certs required.
-        # gerneate and request new certs
-        # delte old certs
-        # delete certs from database where there is a newer cert, but keep last 2 certs, keep non-expired
+        sslcerts = global_invoke_modules('_sslcerts_', called_by=self)
+        self._add_sslcerts(sslcerts)
 
-        sslcerts = global_invoke_all('_sslcerts_', called_by=self)
+    def _add_sslcerts(self, sslcerts):
+        """
+        Called when new SSL Certs need to be managed.
+        
+        :param sslcerts: 
+        :return: 
+        """
         for component_name, item in sslcerts.iteritems():
             # print("mod started, from: %s item: %s" % (component_name, item))
             try:
@@ -175,6 +166,7 @@ class SSLCerts(YomboLibrary):
             except YomboWarning, e:
                 logger.warn("Cannot add cert from hook: %s" % e)
                 continue
+            # print("sslcerts: item: %s" % item)
             if item['sslname'] in self.managed_certs:
                 self.managed_certs[item['sslname']].update_attributes(item)
             else:
@@ -183,6 +175,7 @@ class SSLCerts(YomboLibrary):
     def sslcert_serializer(self, item):
         """
         Used to hydrate the list of certs. Somethings shouldn't be stored in the SQLDict.
+        
         :param item:
         :return:
         """
@@ -199,8 +192,7 @@ class SSLCerts(YomboLibrary):
 
     def get(self, sslname_requested):
         """
-        Gets a cert for the request name. A callback can be specified if a self-signed
-        cert needed to be returned and later a real cert is available.
+        Gets a cert for the request name.
 
         .. note::
 
@@ -229,20 +221,28 @@ class SSLCerts(YomboLibrary):
             raise YomboWarning("'sslname' is required.")
         results['sslname'] = csr_request['sslname']
 
-        if self.fqdn is None:
+        fqdn = self.fqdn()
+        if fqdn is None:
             raise YomboWarning("Unable to create SSL Certs, no system domain set.")
 
         if 'cn' not in csr_request:
-            raise YomboWarning("'cn' must be included, and must end with our local FQDN: %s" % self.fqdn)
-        elif csr_request['cn'].endswith(self.fqdn) is False:
-            raise YomboWarning("'cn' must end with our FQDN: %s" % self.fqdn)
+            raise YomboWarning("'cn' must be included, and must end with our local FQDN: %s" % fqdn)
+        elif csr_request['cn'].endswith(fqdn) is False:
+            results['cn'] = csr_request['cn'] + "." + fqdn
         else:
             results['cn'] = csr_request['cn']
 
         if 'sans' not in csr_request:
             results['sans'] = None
         else:
-            results['sans'] = csr_request['sans']
+            san_list = []
+            for san in csr_request['sans']:
+                if san.endswith(fqdn) is False:
+                    san_list.append(str(san + "." + fqdn))
+                else:
+                    san_list.append(str(san))
+
+            results['sans'] = san_list
 
         # if 'key_type' in csr_request:  # allow changing default, might change in the future.
         #     if csr_request['key_type'] != 'rsa':
@@ -283,14 +283,19 @@ class SSLCerts(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def generate_csr(self, **kwargs):
+    def generate_csr(self, args):
         """
+        This function shouldn't be called directly. Instead, use the queue
+        "self.generate_csr_queue.put(request, callback, callback_args)" or
+        "self._SSLCerts.generate_csr_queue.put()".
+        
         Requests certs to be made. Will return right away with a request ID. A callback can be set to return
         the cert once it's complete.
 
         :return:
         """
-        kwargs = self.check_csr_input(kwargs)
+        logger.info("Generate_CSR called with args: {args}", args=args)
+        kwargs = self.check_csr_input(args)
 
         if kwargs['key_type'] == 'rsa':
             kwargs['key_type'] = crypto.TYPE_RSA
@@ -308,12 +313,8 @@ class SSLCerts(YomboLibrary):
 
         # Appends SAN to have 'DNS:'
         if kwargs['sans'] is not None:
-            sans_list = None
-            for san in kwargs['sans']:
-                sans_list = [str(s + "." + self.fqdn) for s in kwargs['sans']]  # dbl checked at server
-
             san_string = []
-            for i in sans_list:
+            for i in kwargs['sans']:
                 san_string.append("DNS: %s" % i)
             san_string = ", ".join(san_string)
 
@@ -336,13 +337,18 @@ class SSLCerts(YomboLibrary):
         if kwargs['key_file'] is not None:
             save_file(kwargs['key_file'], key_file)
 
-        returnValue({'csr': csr, 'key': key_file})
+        returnValue(
+            {
+                'csr': csr,
+                'key': key_file
+             }
+        )
 
     @inlineCallbacks
     def _create_self_signed_cert(self):
         """
-        If datacard.crt and datacard.key don't exist in cert_dir, create a new
-        self-signed cert and keypair and write them into that directory.
+        Creates a self signed cert. Shouldn't be called directly except by this library for its
+        own use.
         """
         req = crypto.X509()
         gwid = "%s %s" % (self.gwid, self.hostname)
@@ -370,10 +376,18 @@ class SSLCerts(YomboLibrary):
 
         save_file(self.self_signed_cert_file, csr_key)
         save_file(self.self_signed_key_file, key_file)
-        returnValue({'csr_key': csr_key, 'key': key_file})
+        returnValue(
+            {
+                'csr_key': csr_key,
+                'key': key_file
+             }
+        )
 
     def _generate_key(self, **kwargs):
         """
+        This is a blocking function and should only be called by the sslcerts library. This is called
+        in a seperate thread.
+        
         Responsible for generating a key and csr.
 
         :return:
@@ -384,7 +398,10 @@ class SSLCerts(YomboLibrary):
 
     def send_csr_request(self, csr_text, sslname):
         """
-        Submit CSR request to Yombo. The sslname we send will be returned to use exactly. A simple tracker.
+        Submit CSR request to Yombo. The sslname is also sent to be used for tracking. This will be returned
+        directly back to us. This allows us to get out signed cert back if we happen to restart
+        between sending the CSR and getting the signed key back.
+        
         :param csr_text: CSR request text
         :param sslname: Name of the ssl for tracking.
         :return:
@@ -402,48 +419,12 @@ class SSLCerts(YomboLibrary):
             "request_type": "sslcert",
             "ssl_item": "csr_request",
         }
-        request = self.generate_sslrequest_request(headers, body, self.yombo_csr_response)
+        request = self.generate_sslrequest_request_message(headers, body, self.send_csr_request_response)
 
         self._AMQPYombo.publish(**request)
         return request
 
-    def yombo_csr_response(self, properties, msg, correlation):
-        # print("########################yombo_csr_response %s" % msg)
-
-        if 'sslname' not in msg:
-            logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
-            return
-        sslname = msg['sslname'].encode('ascii','ignore')
-        # print("sslname: %s" % sslname)
-        # print("sslname: %s" % type(sslname))
-        # print("managed_certs: %s" % self.managed_certs)
-        # print("managed_certs: %s" % type(self.managed_certs))
-        if sslname not in self.managed_certs:
-            logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes.")
-            if sslname in self.recieved_message_for_unknown:
-                self.recieved_message_for_unknown[sslname].append(msg)
-            else:
-                self.recieved_message_for_unknown[sslname] = [msg]
-
-        self.managed_certs[sslname].yombo_csr_response(properties, msg, correlation)
-
-    def amqp_incoming(self, properties, msg, correlation):
-        """
-        Currently unused... Will be in the future.
-
-        :param properties:
-        :param msg:
-        :param correlation:
-        :return:
-        """
-        pass
-
-    def validate_csr_private_certs_match(self, csr_text, key_text):
-        csr = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr_text)
-        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_text)
-        return csr.verify(key)
-
-    def generate_sslrequest_request(self, headers, request_data=None, callback=None):
+    def generate_sslrequest_request_message(self, headers, request_data=None, callback=None):
         """
         Generate a request specific to this library - configs!
 
@@ -459,6 +440,49 @@ class SSLCerts(YomboLibrary):
         request_msg['routing_key'] = '*'
         logger.debug("response: {request_msg}", request_msg=request_msg)
         return request_msg
+
+    def send_csr_request_response(self, msg=None, properties=None, correlation_info=None, **kwargs):
+        """
+        Called when we get a signed cert back from a CSR.
+        
+        :param msg: 
+        :param properties: 
+        :param correlation_info: 
+        :param kwargs: 
+        :return: 
+        """
+        if 'sslname' not in msg:
+            logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
+            return
+        sslname = msg['sslname'].encode('ascii','ignore')
+        # print("sslname: %s" % sslname)
+        # print("sslname: %s" % type(sslname))
+        # print("managed_certs: %s" % self.managed_certs)
+        # print("managed_certs: %s" % type(self.managed_certs))
+        if sslname not in self.managed_certs:
+            logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes.")
+            if sslname in self.recieved_message_for_unknown:
+                self.recieved_message_for_unknown[sslname].append(msg)
+            else:
+                self.recieved_message_for_unknown[sslname] = [msg]
+        else:
+            self.managed_certs[sslname].yombo_csr_response(properties, msg, correlation_info)
+
+    def amqp_incoming(self, **kwargs):
+        """
+        Currently unused... Will be in the future.
+
+        :param properties:
+        :param msg:
+        :param correlation:
+        :return:
+        """
+        pass
+
+    def validate_csr_private_certs_match(self, csr_text, key_text):
+        csr = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr_text)
+        key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_text)
+        return csr.verify(key)
 
     def __contains__(self, cert_requested):
         """
@@ -555,7 +579,6 @@ class SSLCert(object):
         # check if we need to generate csr, sign csr, or rotate next with current.
         self.check_if_rotate_needed()
 
-
     def stop(self):
         self._sync_to_file()
 
@@ -610,6 +633,8 @@ class SSLCert(object):
                 # print("self.key_current: (should be None): %s" % self.key_current)
                 # print("self.current_expires: (should be not NOne): %s" % self.current_expires)
                 # print("int(time() + (30 * 24 * 60 * 60)): (should be less then above number): %s" % int(time() + (30 * 24 * 60 * 60)))
+                # if self.next_submitted < int(time() - (60*60)):
+                #     print("cccccccccccccc")
                 self.submit_csr()
         else:
             raise YomboWarning("next_is_valid is in an unknowns state.")
@@ -899,42 +924,6 @@ class SSLCert(object):
         self.clean_section('next')
 
         logger.debug("generate_new_csr: {sslname}.  Submit: {submit}", sslname=self.sslname, submit=submit)
-        def generate_new_csr_error(failure, self):
-            """
-            Report any errors during the certificate generation.
-            :param failure:
-            :param self:
-            :return:
-            """
-            self.next_csr_generation_error_count += 1
-            if self.next_csr_generation_error_count < 5:
-                logger.warn("Error generating new CSR for '{sslname}'. Will retry in 15 seconds. Exception : {failure}", sslname=self.sslname, failure=failure)
-                reactor.callLater(15, self.generate_new_csr)
-            else:
-                logger.error("Error generating new CSR for '{sslname}'. Too many retries, perhaps something wrong with our request. Exception : {failure}", sslname=self.sslname, failure=failure)
-                self.next_csr_generation_in_progress = False
-            return 500
-
-        def generate_new_csr_done(results, self):
-            """
-            Our CSR has been generated. Lets save it, and maybe subit it.
-
-            :param results: The CSR and KEY.
-            :param self: Pointer to the SSLCert class.
-            :param submit: True if we should submit it to yombo for signing.
-            :return:
-            """
-            logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
-            self.key_next = results['key']
-            self.csr_next = results['csr']
-            save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.csr_next)
-            save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.key_next)
-            self.next_created = int(time())
-            self.sync_to_file()
-            self.next_csr_generation_in_progress = False
-            if self.next_csr_submit_after_generation is True:
-                self.submit_csr()
-
         # End local functions.
         request = {
             'sslname': self.sslname,
@@ -956,15 +945,52 @@ class SSLCert(object):
         self.next_csr_generation_count = 0
         self.next_csr_generation_in_progress = True
         logger.debug("About to generate new csr request: {request}", request=request)
-        d = self._ParentLibrary.generate_csr(**request)
-        d.addCallback(generate_new_csr_done, self)
-        d.addErrback(generate_new_csr_error, self)
+
+        try:
+            self._ParentLibrary.generate_csr_queue.put(request, self.generate_new_csr_done, {'submit':submit})
+            return True
+        except Exception as e:
+            self.next_csr_generation_error_count += 1
+            if self.next_csr_generation_error_count < 5:
+                logger.warn("Error generating new CSR for '{sslname}'. Will retry in 15 seconds. Exception : {failure}",
+                            sslname=self.sslname, failure=e)
+                reactor.callLater(15, self.generate_new_csr)
+            else:
+                logger.error(
+                    "Error generating new CSR for '{sslname}'. Too many retries, perhaps something wrong with our request. Exception : {failure}",
+                    sslname=self.sslname, failure=e)
+                self.next_csr_generation_in_progress = False
+            return False
+
+    def generate_new_csr_done(self, args, results):
+        """
+        Our CSR has been generated. Lets save it, and maybe subit it.
+
+        :param args: Any args from the queue.
+        :param results: The CSR and KEY.
+        :param submit: True if we should submit it to yombo for signing.
+        :return:
+        """
+        logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
+        # logger.info("generate_new_csr_done:results: {results}", results=results)
+        self.key_next = results['key']
+        self.csr_next = results['csr']
+        save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.csr_next)
+        save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.key_next)
+        self.next_created = int(time())
+        self.sync_to_file()
+        self.next_csr_generation_in_progress = False
+        logger.debug("generate_new_csr_done:args: {args}", args=args)
+        if args['submit'] is True:
+            # print("calling submit_csr from generate_new_csr_done")
+            self.submit_csr()
 
     def submit_csr(self):
         """
         Submit a CSR for signing, only if we have a CSR and KEY.
         :return:
         """
+
         self.next_submitted = int(time())
         missing = []
         if self.csr_next is None:
@@ -981,7 +1007,7 @@ class SSLCert(object):
             raise YomboWarning("Unable to submit CSR.")
         logger.debug("Sending CSR Request from instance. Correlation id: {correlation_id}", correlation_id=request['properties']['correlation_id'])
 
-    def yombo_csr_response(self, properties, msg, correlation):
+    def yombo_csr_response(self, properties, msg, correlation_info):
         """
         A response from a CSR request has been received. Lets process it.
 
@@ -1054,7 +1080,7 @@ class SSLCert(object):
                 'self_signed': False,
             }
         else:
-            logger.info("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
+            logger.debug("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
             if self._ParentLibrary.self_signed_created is None:
                 raise YomboWarning("Self signed cert not avail. Try restarting gateway.")
             else:
