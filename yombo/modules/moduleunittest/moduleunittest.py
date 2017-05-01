@@ -10,12 +10,11 @@ import time
 from collections import namedtuple
 
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks, returnValue
 
-from yombo.core.helpers import getConfigValue
 from yombo.core.log import get_logger
 from yombo.core.module import YomboModule
-from yombo.lib.loader import getTheLoadedComponents # Don't use this!
-from yombo.utils.sqldict import SQLDict
+from yombo.utils import sleep
 
 logger = get_logger("module.test")
 
@@ -25,34 +24,21 @@ class ModuleUnitTest(YomboModule):
     """
     def _init_(self):
         """
-        Init the module.  Don't use __init__ as that will override the
-        setup functions of the base YomboModule class.
-        
-        Startup phase 1 of 3.
         """
-        self._ModDescription = "Insteon API command interface"
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "http://www.yombo.net"
 
-        self.reactors = SQLDict(self, "testr")
-
-        self.components = getTheLoadedComponents()
-        self.libraries = self.components['yombo.gateway.lib.loader'].libraryNames
-        self.modules = self.components['yombo.gateway.lib.loader'].moduleNames
-        
         # place to store our commands.
         self.available_commands = {}
-        self.available_commands['open'] = self.libraries['Commands']['open']
-        self.available_commands['close'] = self.libraries['Commands']['close']
-        self.available_commands['on'] = self.libraries['Commands']['on']
-        self.available_commands['off'] = self.libraries['Commands']['off']
-        
+
         # store our devices
         self.devices = {}
         
         # track messages we send.  Give it structure
         self.outMsg = namedtuple('outMsg', "time, device_id, message")
         self.outMessages = {}
+
+        # track success and failures
+        self.good = []
+        self.bad = []
 
     def _load_(self):
         """
@@ -64,47 +50,47 @@ class ModuleUnitTest(YomboModule):
         
         Startup phase 2 of 3.
         """
-        deviceCmds = []
-        for cmd in self.available_commands:
-            deviceCmds.append(self.available_commands[cmd].cmdUUID)
-        
-
-        # Don't ever do this in a real module. But add some test devices.
-        record = {'description'    : "Test device 1.",
-                  'created'        : int(time.time())-10,
-                  'updated'        : int(time.time()),
-                  'device_type_id' : "zZzZzZzZzZzZzZzZzZzZzZ01",
-                  'pin_timeout'     : 100,
-                  'device_id'     : "01zZzZzZzZzZzZzZzZzZzZzZ",
-                  'label'          : "tstdvc1",
-                  'pin_code'        : "1234",
-                  'pin_required'    : 0,
-                  'module_label'    : "ModuleUnitTest",
-                  'voice_cmd'       : "tstdvc01 [on, off, open, close]",
-                  'voice_cmd_order'  : "verbnoun",
-                  'status'         : 1,
-                 }
-       
-        self.devices[1] = self.libraries['Devices']._addDevice(record, True)
-        self.libraries['Devices'].yombodevices['01zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
-
-        record = {'description'   : "Test device 2.  Number in front t test fuzzy searches.",
-                  'created'       : int(time.time()),
-                  'updated'        : int(time.time()),
-                  'device_type_id': "zZzZzZzZzZzZzZzZzZzZzZ01",
-                  'pin_timeout'    : 100,
-                  'device_id'    : "02zZzZzZzZzZzZzZzZzZzZzZ",
-                  'label'         : "2dvctst",
-                  'pin_code'       : "1234",
-                  'pin_required'   : 0,
-                  'module_label'   : "ModuleUnitTest",
-                  'voice_cmd'      : "2dvctst [on, off, open, close]",
-                  'voice_cmd_order'  : "nounverb",
-                  'status'         : 1,
-                 }
-       
-        self.devices[2]= self.libraries['Devices']._addDevice(record, True)
-        self.libraries['Devices'].yombodevices['02zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
+        # deviceCmds = []
+        # for cmd in self.available_commands:
+        #     deviceCmds.append(self.available_commands[cmd].cmdUUID)
+        #
+        #
+        # # Don't ever do this in a real module. But add some test devices.
+        # record = {'description'    : "Test device 1.",
+        #           'created'        : int(time.time())-10,
+        #           'updated'        : int(time.time()),
+        #           'device_type_id' : "zZzZzZzZzZzZzZzZzZzZzZ01",
+        #           'pin_timeout'     : 100,
+        #           'device_id'     : "01zZzZzZzZzZzZzZzZzZzZzZ",
+        #           'label'          : "tstdvc1",
+        #           'pin_code'        : "1234",
+        #           'pin_required'    : 0,
+        #           'module_label'    : "ModuleUnitTest",
+        #           'voice_cmd'       : "tstdvc01 [on, off, open, close]",
+        #           'voice_cmd_order'  : "verbnoun",
+        #           'status'         : 1,
+        #          }
+        #
+        # self.devices[1] = self.libraries['Devices']._addDevice(record, True)
+        # self.libraries['Devices'].yombodevices['01zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
+        #
+        # record = {'description'   : "Test device 2.  Number in front t test fuzzy searches.",
+        #           'created'       : int(time.time()),
+        #           'updated'        : int(time.time()),
+        #           'device_type_id': "zZzZzZzZzZzZzZzZzZzZzZ01",
+        #           'pin_timeout'    : 100,
+        #           'device_id'    : "02zZzZzZzZzZzZzZzZzZzZzZ",
+        #           'label'         : "2dvctst",
+        #           'pin_code'       : "1234",
+        #           'pin_required'   : 0,
+        #           'module_label'   : "ModuleUnitTest",
+        #           'voice_cmd'      : "2dvctst [on, off, open, close]",
+        #           'voice_cmd_order'  : "nounverb",
+        #           'status'         : 1,
+        #          }
+        #
+        # self.devices[2]= self.libraries['Devices']._addDevice(record, True)
+        # self.libraries['Devices'].yombodevices['02zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
         
     def _start_(self):
         """
@@ -118,34 +104,82 @@ class ModuleUnitTest(YomboModule):
 
     def started(self):
 
-        logger.info("isDay: %s" % self.libraries['Times'].isDay)
-        logger.info("isLight: %s" % self.libraries['Times'].isLight)
-        logger.info("isTwilight: %s" % self.libraries['Times'].isTwilight)
+        self.assertNotEqual(self._Times.isTwilight, None, "self._Times.isTwilight should not be None")
 
-        logger.info("isDark: %s" % self.libraries['Times'].isDark)
-        logger.info("isNight: %s" % self.libraries['Times'].isNight)
+        q1 = self._Queue.new('module.unittest.1', self.queue_worker1)
+        q1.put('letsdoit', self.queue_results)
+        q1.put('letsdoit', self.queue_results)
+        q1.put('letsdoit', self.queue_results)
 
-        logger.info("Time is now: %f" % time.time())
+        q2 = self._Queue.new('module.unittest.2', self.queue_worker2)
+        q2.put('letsdoit', self.queue_results)
+        q2.put('letsdoit', self.queue_results)
+        q2.put('letsdoit', self.queue_results)
+        q2.put('letsdoit', self.show_results)
 
-        logger.info("My longitude is: %s " % str(getConfigValue('location', 'latitude', 0)) )
+    def queue_worker1(self, arguments):
+        print "queue_worker1 got arguments: %s" % arguments
+        self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
+        return "someresults"
 
-        if self.libraries['Times'].isLight:
-          delayed = int( self.libraries['Times'].CLnowDark.getTime() - time.time() )
-          logger.info("It will be dark in %d seconds." % delayed )
+    @inlineCallbacks
+    def queue_worker2(self, arguments):
+        print "queue_worker2 got arguments: %s" % arguments
+        yield sleep(1)
+        self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
+        returnValue("someresults")
+
+    def queue_results(self, args, results):
+        self.assertIsEqual(results, "someresults", "queue_results(), results should match.")
+
+    def show_results(self, dumpit = None, dumpit2 = None):
+        print "Module Unit Test results:"
+        print "Good results: %s" % len(self.good)
+        print "Bad results: %s" % len(self.bad)
+        for result in self.bad:
+            print "%s - %s" % (result['test'], result['description'])
+
+    def assertNotEqual(self, val1, val2, description):
+        if val1 != val2:
+            self.good.append({'description':description, 'test': "%s != %s" % (val1, val2)})
         else:
-          delayed = int( self.libraries['Times'].CLnowLight.getTime() - time.time() )
-          logger.info("It will be light in %d seconds." % int(time.time()) )
+            self.good.append({'description':description, 'test': "%s == %s" % (val1, val2)})
 
-        # test times
-        if self.libraries['Times'].isLight == self.libraries['Times'].isDark:
-            logger.error("It can't be light and dark at same time!!")
-        if self.libraries['Times'].isDay == self.libraries['Times'].isNight:
-            logger.error("It can't be day and night at same time!!")
+    def assertIsEqual(self, val1, val2, description):
+        if val1 == val2:
+            self.good.append({'description':description, 'test': "%s == %s" % (val1, val2)})
+        else:
+            self.good.append({'description':description, 'test': "%s != %s" % (val1, val2)})
 
-#        self.outMsg = namedtuple('outMsg', "time, device_id, message")
-#        self.outMessages = {}
-        msg = self.devices[1].getMessage(self, cmdobj=self.available_commands['open'])
-        self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].device_id, msg)
+            #
+#         logger.info("isDay: %s" % self._Times.isDay)
+#         logger.info("isLight: %s" % self.libraries['Times'].isLight)
+#         logger.info("isTwilight: %s" % self.libraries['Times'].isTwilight)
+#
+#         logger.info("isDark: %s" % self.libraries['Times'].isDark)
+#         logger.info("isNight: %s" % self.libraries['Times'].isNight)
+#
+#         logger.info("Time is now: %f" % time.time())
+#
+#         logger.info("My longitude is: %s " % str(getConfigValue('location', 'latitude', 0)) )
+#
+#         if self.libraries['Times'].isLight:
+#           delayed = int( self.libraries['Times'].CLnowDark.getTime() - time.time() )
+#           logger.info("It will be dark in %d seconds." % delayed )
+#         else:
+#           delayed = int( self.libraries['Times'].CLnowLight.getTime() - time.time() )
+#           logger.info("It will be light in %d seconds." % int(time.time()) )
+#
+#         # test times
+#         if self.libraries['Times'].isLight == self.libraries['Times'].isDark:
+#             logger.error("It can't be light and dark at same time!!")
+#         if self.libraries['Times'].isDay == self.libraries['Times'].isNight:
+#             logger.error("It can't be day and night at same time!!")
+#
+# #        self.outMsg = namedtuple('outMsg', "time, device_id, message")
+# #        self.outMessages = {}
+#         msg = self.devices[1].getMessage(self, cmdobj=self.available_commands['open'])
+#         self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].device_id, msg)
         
     
     def _stop_(self):
