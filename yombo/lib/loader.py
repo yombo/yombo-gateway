@@ -56,6 +56,7 @@ logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
 HARD_LOAD["Notifications"] = {'operation_mode':'all'}
+HARD_LOAD["Queue"] = {'operation_mode':'all'}
 HARD_LOAD["LocalDB"] = {'operation_mode':'all'}
 HARD_LOAD["SQLDict"] = {'operation_mode':'all'}
 HARD_LOAD["Atoms"] = {'operation_mode':'all'}
@@ -79,10 +80,10 @@ HARD_LOAD["Devices"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
-HARD_LOAD["SSLCerts"] = {'operation_mode':'all'}
 HARD_LOAD["MQTT"] = {'operation_mode':'run'}
 HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
 HARD_LOAD["Tasks"] = {'operation_mode':'all'}
+HARD_LOAD["SSLCerts"] = {'operation_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["SSLCerts"] = {'operation_mode':'all'}
@@ -114,6 +115,7 @@ HARD_UNLOAD["Modules"] = {'operation_mode':'all'}
 HARD_LOAD["Variables"] = {'operation_mode':'all'}
 # HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_UNLOAD["LocalDB"] = {'operation_mode':'all'}
+HARD_UNLOAD["Queue"] = {'operation_mode':'all'}
 
 
 class Loader(YomboLibrary, object):
@@ -334,6 +336,7 @@ class Loader(YomboLibrary, object):
             library._Notifications = self.loadedLibraries['notifications']
             library._Localize = self.loadedLibraries['localize']
             library._MQTT = self.loadedLibraries['mqtt']
+            library._Queue = self.loadedLibraries['queue']
             library._SQLDict = self.loadedLibraries['sqldict']
             library._SSLCerts = self.loadedLibraries['sslcerts']
             library._States = self.loadedLibraries['states']
