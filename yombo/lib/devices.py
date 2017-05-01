@@ -890,10 +890,11 @@ class Devices(YomboLibrary):
         """
         return [
             { 'platform': 'devices',
+              'platform_description': 'Allows devices to be used as triggers for rules or macros.',
               'validate_source_callback': self.devices_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.devices_add_trigger_callback,  # function to call to add a trigger
               'get_value_callback': self.devices_get_value_callback,  # get a value
-            }
+              }
          ]
 
     def devices_validate_source_callback(self, rule, portion, **kwargs):
@@ -952,9 +953,29 @@ class Devices(YomboLibrary):
         return [
             { 'platform': 'devices',
               'validate_action_callback': self.devices_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.devices_do_action_callback  # function to be called to perform an action
-            }
+              'do_action_callback': self.devices_do_action_callback,  # function to be called to perform an action
+              'get_available_items_callback': self.devices_get_available_devices_callback,  # get a value
+              'get_available_options_for_item_callback': self.devices_get_device_options_callback,  # get a value
+              }
          ]
+
+    def devices_get_available_devices_callback(self, **kwargs):
+
+        # iterate enabled devices
+        # for each device, list available commands (device type commnads)
+        # for each command, list any additional inputs (device type command inputs)
+
+        devices = []
+        for device_id, device in self.devices.iteritems():
+            devices.append({
+                'id': device.device_id,
+                'label': device.label,
+            })
+        return devices
+
+    def devices_get_device_options_callback(self, **kwargs):
+        device_id = kwargs['id']
+        return self.get(device_id).available_commands()
 
     def devices_validate_action_callback(self, rule, action, **kwargs):
         """

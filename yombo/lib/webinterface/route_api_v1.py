@@ -49,6 +49,23 @@ def route_api_v1(webapp):
                 return;
             return str(webinterface._Atoms['running_since'])
 
+        @webapp.route('/automation/list/items', methods=['GET'])
+        @require_auth()
+        def ajax_automation_list_items_get(webinterface, request, session):
+            try:
+                platform = request.args.get('platform')[0]
+            except:
+                return return_error('platform must be specified.')
+            # try:
+            #     type = request.args.get('type')[0]
+            # except:
+            #     return return_error('type must be specified.')
+            webinterface._Automation.get_available_items(platform=platform)
+
+            a = return_good('The list')
+            request.setHeader('Content-Type', 'application/json')
+            return json.dumps(a)
+
         @webapp.route('/devices', methods=['GET'])
         @require_auth()
         def ajax_devices_get(webinterface, request, session):
@@ -142,7 +159,7 @@ def route_api_v1(webapp):
                 time_start = int(time()) - time_last
 
             records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size,
-                                                                              type=stat_type, time_start=time_start,
+                                                                              bucket_type=stat_type, time_start=time_start,
                                                                               time_end=time_end)
             # print "stat records: %s" % records
             labels = []

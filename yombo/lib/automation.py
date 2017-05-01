@@ -10,6 +10,9 @@ The automation library provides users an easy method to setup simple automation 
 write a single line of code. It can also be extended by modules to include additional platforms. See link above for
 details on extending automation rule capabilities.
 
+The automation library also doubles as a 'macro' library. This allows rules to be called through other rules or
+other means, bypassing a rule trigger and filter.
+
 There are three steps to every rule:
 
 1) Source - A rule must be triggered by some source. A device state changes, an internal value changes, system
@@ -59,7 +62,8 @@ import yombo.utils
 logger = get_logger("library.automation")
 
 
-REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
+# REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
+REQUIRED_RULE_FIELDS = ['action']
 REQUIRED_TRIGGER_FIELDS = ['source']
 REQUIRED_CONDITION_FIELDS = ['source', 'filter']
 REQUIRED_ACTION_FIELDS = ['platform']
@@ -259,26 +263,28 @@ class Automation(YomboLibrary):
 
         # First pass - do basic checks
         logger.debug("About to add rule: {rule}", rule=rule)
-        if rule['trigger']['source']['platform'] not in self.sources:
-            logger.info("Platform ({platform}) doesn't exist as a trigger.",
-                        platform=rule['trigger']['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
-            return False
         if not all(section in rule for section in REQUIRED_RULE_FIELDS):
             logger.info("Rule doesn't have required trigger fields, skipping: {required}",
                         rule=rule, required=REQUIRED_RULE_FIELDS)
             return False  # Doesn't have all required fields.
-        if not all(section in rule['trigger'] for section in REQUIRED_TRIGGER_FIELDS):
-            logger.info("Rule:'{rule}' Doesn't have required trigger fields, has: ({trigger})  Required:{required}",
-                        rule=rule['name'], trigger=rule['trigger'], required=REQUIRED_RULE_FIELDS)
-            return False  # Doesn't have all required fields.
-        if not all(section in rule['trigger']['source'] for section in REQUIRED_SOURCE_FIELDS):
-            logger.info("Rule:'{rule}' Doesn't have required trigger source fields: ({trigger}) Required:{required}",
-                        rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_SOURCE_FIELDS)
-            return False  # Doesn't have all required fields.
-        if not all(section in rule['trigger']['filter'] for section in REQUIRED_FILTER_FIELDS):
-            logger.info("Rule:'{rule}' Doesn't have required trigger filter fields: ({trigger})  Required:{required}",
-                        rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_FILTER_FIELDS)
-            return False  # Doesn't have all required fields.
+
+        if 'trigger' in rule:
+            if rule['trigger']['source']['platform'] not in self.sources:
+                logger.info("Platform ({platform}) doesn't exist as a trigger.",
+                        platform=rule['trigger']['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+            return False
+            if not all(section in rule['trigger'] for section in REQUIRED_TRIGGER_FIELDS):
+                logger.info("Rule:'{rule}' Doesn't have required trigger fields, has: ({trigger})  Required:{required}",
+                            rule=rule['name'], trigger=rule['trigger'], required=REQUIRED_RULE_FIELDS)
+                return False  # Doesn't have all required fields.
+            if not all(section in rule['trigger']['source'] for section in REQUIRED_SOURCE_FIELDS):
+                logger.info("Rule:'{rule}' Doesn't have required trigger source fields: ({trigger}) Required:{required}",
+                            rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_SOURCE_FIELDS)
+                return False  # Doesn't have all required fields.
+            if not all(section in rule['trigger']['filter'] for section in REQUIRED_FILTER_FIELDS):
+                logger.info("Rule:'{rule}' Doesn't have required trigger filter fields: ({trigger})  Required:{required}",
+                            rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_FILTER_FIELDS)
+                return False  # Doesn't have all required fields.
 
         if 'condition' in rule:
             for item in range(len(rule['condition'])):
@@ -302,6 +308,7 @@ class Automation(YomboLibrary):
                     logger.info("Platform ({platform}) doesn't exist as a filter: ({rule}) {required}",
                                 platform=rule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
                     return False
+
 
         for item in range(len(rule['action'])):
             # Global settings
@@ -331,8 +338,9 @@ class Automation(YomboLibrary):
 
         # for each rule, make sure the trigger, condition, and action checker is valid.
         try:
-            rule['trigger'] = self._check_returned_rule(rule['trigger'], self._check_source_platform(rule, rule['trigger'], True))
-            rule['trigger'] = self._check_returned_rule(rule['trigger'], self._check_filter_platform(rule, rule['trigger']))
+            if 'trigger' in rule:
+                rule['trigger'] = self._check_returned_rule(rule['trigger'], self._check_source_platform(rule, rule['trigger'], True))
+                rule['trigger'] = self._check_returned_rule(rule['trigger'], self._check_filter_platform(rule, rule['trigger']))
 
             if 'condition' in rule:
                 if 'condition_type' in rule:
@@ -365,16 +373,18 @@ class Automation(YomboLibrary):
                     return False
 
 #            logger.debug("Passed adding rule condition check.... {rule}", rule=rule)
-            add_trigger_callback_function = self.sources[rule['trigger']['source']['platform']]['add_trigger_callback']
-            add_trigger_callback_function(rule, condition_callback=self.automation_check_conditions)
+            if 'trigger' in rule:
+                add_trigger_callback_function = self.sources[rule['trigger']['source']['platform']]['add_trigger_callback']
+                add_trigger_callback_function(rule, condition_callback=self.automation_check_conditions)
 
         except YomboWarning, e:
             logger.warn("Some error: {e}", e=e)
             return False
 
-        if rule['trigger']['source']['platform'] not in self.active_triggers:
-            self.active_triggers[rule['trigger']['source']['platform']] = []
-        self.active_triggers[rule['trigger']['source']['platform']].append(rule_id)
+        if 'trigger' in rule:
+            if rule['trigger']['source']['platform'] not in self.active_triggers:
+                self.active_triggers[rule['trigger']['source']['platform']] = []
+            self.active_triggers[rule['trigger']['source']['platform']].append(rule_id)
         self.rules[rule_id] = rule
 #        self.rules[rule_id] = Rule(rule)
 
@@ -533,6 +543,16 @@ class Automation(YomboLibrary):
             self.automation_check_conditions(rules_should_fire[item])
 
         return True
+
+    def get_available_items(self, **kwargs):
+        platform = kwargs['platform']
+        type = kwargs['type']
+        if platform not in self.actions:
+            logger.info("Platform ({platform}) doesn't exist as an action when gettings available platform items.",
+                        platform=platform)
+            return []
+
+        return self.actions[platform]['get_available_items_callback']()
 
     def automation_check_filter(self, rule_id, portion, new_value):
         if not portion['filter']['platform'] in self.filters:

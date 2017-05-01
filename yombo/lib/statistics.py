@@ -163,8 +163,8 @@ class Statistics(YomboLibrary):
         return self.init_deferred
 
     def _start_(self):
-        self.uploadDataLoop.start(5, False) # about every 6 hours
-        # self.uploadDataLoop.start(21557, False) # about every 6 hours
+        # self.uploadDataLoop.start(5, False) # for testing...
+        self.uploadDataLoop.start(21557, False) # about every 6 hours
 
     def _stop_(self):
         """
@@ -861,7 +861,7 @@ class Statistics(YomboLibrary):
         """
         stats = yield self._LocalDB.get_uploadable_statistics(0)
         if len(stats) > 0:
-            # print " i have %s to upload" % len(stats)
+            print " i have %s to upload" % len(stats)
 
             headers= {
                 "request_type": "stats_save",
@@ -882,8 +882,8 @@ class Statistics(YomboLibrary):
 
     @inlineCallbacks
     def upload_statistics_complete(self, msg=None, properties=None, **kwargs):
-        # print "upload_statistics_complete got properties: %s" % properties
-        # print "upload_statistics_complete got message: %s" % msg
+        print "upload_statistics_complete got properties: %s" % properties
+        print "upload_statistics_complete got message: %s" % msg
         if len(msg['stats_completed']):
             yield self._LocalDB.set_uploaded_statistics(2, msg['stats_completed'])
         if len(msg['stats_completed']):

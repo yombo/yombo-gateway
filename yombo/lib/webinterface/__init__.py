@@ -474,8 +474,7 @@ class WebInterface(YomboLibrary):
             return
         cert = {}
         cert['sslname'] = "lib_webinterface"
-        san_list = ['localhost', 'l', 'local', 'i', 'e', 'internal', 'external']
-        cert['sans'] = [str(s + "." + fqdn) for s in san_list]
+        cert['sans'] = ['localhost', 'l', 'local', 'i', 'e', 'internal', 'external']
         cert['cn'] = cert['sans'][0]
         cert['callback'] = self.new_ssl_cert
         return cert

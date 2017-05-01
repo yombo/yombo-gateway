@@ -61,6 +61,19 @@ class Times(YomboLibrary, object):
         """
         if PatchEnvironment: self.runned_for_tests()
 
+        # These are used below
+        # self.isTwilight = None
+        # self.isLight = None
+        # self.isDark = None
+        # self.isDay = None
+        # self.isNight = None
+        # self.isDawn = None
+        # self.isDusk = None
+        # self.nextSunrise = None
+        # self.nextSunset = None
+        # self.nextMoonrise = None
+        # self.nextMoonset = None
+
         self.time_ajust = 150.0
 
         self.obs = ephem.Observer()
