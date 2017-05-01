@@ -984,7 +984,7 @@ ORDER BY id desc"""
 
         # records = yield self.dbconfig.select('statistics',
         #             select='sum(value), bucket_name, bucket_type, round(bucket / 3600) * 3600 AS bucket',
-        select_fields = 'sum(value) as value, bucket_name, bucket_type, round(bucket / %s) * %s AS bucket' % (
+        select_fields = 'sum(bucket_value) as value, bucket_name, bucket_type, round(bucket_time / %s) * %s AS bucket' % (
         bucket_size, bucket_size)
         # print "select_fields: %s" % select_fields
         records = yield self.dbconfig.select('statistics',
