@@ -84,7 +84,7 @@ class AMQP(YomboLibrary):
 
     def _start_(self):
         self.clean_message_ids_loop = LoopingCall(self.clean_message_ids)
-        # self.clean_message_ids_loop.start(16, False)
+        self.clean_message_ids_loop.start(36)
 
     def _stop_(self):
         """
@@ -139,11 +139,12 @@ class AMQP(YomboLibrary):
 
     def clean_message_ids(self):
         for correlation_id in self.message_correlations.keys():
-            if self.message_correlations[correlation_id]['received_time'] is None:
-                if self.message_correlations[correlation_id]['received_time'] < (time() - (60*15)):
-                    del self.message_correlations[correlation_id]
-            elif self.message_correlations[correlation_id]['received_time'] < (time() - (60*2)):
-                    del self.message_correlations[correlation_id]
+            if self.message_correlations[correlation_id]['correlation_time'] < (time() - (60*10)):
+                del self.message_correlations[correlation_id]
+
+        for msg_id in self.messages_processed.keys():
+            if self.messages_processed[msg_id]['msg_time'] < (time() - (60*5)):
+                    del self.messages_processed[msg_id]
 
     def _local_log(self, level, location="", msg=""):
         logit = getattr(logger, level)
@@ -600,38 +601,38 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             properties['message_id'] = random_string(length=26)
         message_id = properties['message_id']
 
-        c_type = None
-        c_name = None
-        c_function = None
+        callback_type = None
+        callback_name = None
+        callback_function = None
         callback = kwargs.get('callback', None)
         if callback is not None:
-            if callable(callback) is False:
-                raise YomboWarning(
-                        "AMQP Client:%s - If callback is set, it must be be callable." % self.client_id,
-                        201, 'publish', 'AMQPClient')
-            elif isinstance(callback, dict):
+            if isinstance(callback, dict):
                 try:
-                    c_type = callback['callback_component_type']
-                    c_name = callback['callback_component_type_name']
-                    c_function = callback['callback_component_type_function']
+                    callback_type = callback['callback_component_type']
+                    callback_name = callback['callback_component_type_name']
+                    callback_function = callback['callback_component_type_function']
                 except:
-                    c_type = None
-                    c_name = None
-                    c_function = None
+                    callback_type = None
+                    callback_name = None
+                    callback_function = None
                     callback = None
                 else:
                     try:
-                        callback = self._AMQP._Loader.find_function(c_type, c_name, c_function)
+                        callback = self._AMQP._Loader.find_function(callback_type, callback_name, callback_function)
                     except:
-                        c_type = None
-                        c_name = None
-                        c_function = None
+                        callback_type = None
+                        callback_name = None
+                        callback_function = None
                         callback = None
+            elif callable(callback) is False:
+                raise YomboWarning(
+                        "AMQP Client:%s - If callback is set, it must be be callable." % self.client_id,
+                        201, 'publish', 'AMQPClient')
 
         else:
-            c_type = None
-            c_name = None
-            c_function = None
+            callback_type = None
+            callback_name = None
+            callback_function = None
             callback = None
 
         exchange_name = kwargs.get('exchange_name', None)
@@ -660,6 +661,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         kwargs['properties'] = properties
 
         message_info = {
+            "msg_time": time(),
             "direction": 'outgoing',
             "message_id": message_id,
             "correlation_id": correlation_id,
@@ -682,14 +684,16 @@ class PikaFactory(protocol.ReconnectingClientFactory):
             correlation_info = {
                 "message_id": message_id,
                 "callback": callback,
-                "callback_component_type": c_type,  # module or component
-                "callback_component_type_name": c_name,  # module of compentnt name
-                "callback_component_type_function": c_function,  # name of the function to call
+                "callback_component_type": callback_type,  # module or component
+                "callback_component_type_name": callback_name,  # module of compentnt name
+                "callback_component_type_function": callback_function,  # name of the function to call
                 "correlation_id": correlation_id,
                 "correlation_persistent": correlation_persistent,
+                "correlation_time": time()
             }
             self.AMQPClient._AMQP.message_correlations[correlation_id] = correlation_info
             message_info['correlation_id'] = correlation_id
+
 
         self.AMQPClient._AMQP.messages_processed[message_id] = message_info
         # print "saving outgoing message into message processed: %s" % message_info
@@ -956,7 +960,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         # print "channel: queue_no_ack %s" % queue_no_ack
         # print "deliver: callback %s" % callback
         # print "props: deliver %s" % deliver
-        # print "props: props %s" % props
+        # print "props: props %s" % props.__dict__
         # print "props: msg %s" % msg
         # print "msg: item %s" % msg
 
@@ -987,10 +991,14 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 
             if correlation_id in self.factory.AMQPClient._AMQP.message_correlations:
                 correlation_info = self.factory.AMQPClient._AMQP.message_correlations[correlation_id]
-                if sent_message_info is None and correlation_info['message_id'] is not None:
-                    if correlation_info['message_id'] in self.factory.AMQPClient._AMQP.messages_processed:
+                if sent_message_info is None:
+                    if correlation_info['message_id'] is not None and \
+                            correlation_info['message_id'] in self.factory.AMQPClient._AMQP.messages_processed:
                         sent_message_info = self.factory.AMQPClient._AMQP.messages_processed[correlation_info['message_id']]
                         sent_message_info['reply_received_time'] = time()
+
+        # print "received correlationInfo: %s" % correlation_info
+        # print "received correlationInfo: %s" % self.factory.AMQPClient._AMQP.message_correlations
 
         if sent_message_info is not None:
             sent_message_info['reply_received_time'] = time()
@@ -998,6 +1006,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             sent_message_info['correlation_id'] = correlation_id
 
         received_message_info = {
+            "msg_time": time(),
             'direction': 'incoming',
             'message_id': received_message_id,
             'correlation_id': None,
@@ -1022,7 +1031,8 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         if sent_message_info is not None:
             sent_message_info['reply_received_time'] = time()
 
-        self.factory.AMQPClient._AMQP.messages_processed[received_message_id] = received_message_info
+        if received_message_id[0:2] != 'xx_':
+            self.factory.AMQPClient._AMQP.messages_processed[received_message_id] = received_message_info
 
         d = queue.get()  # get the queue again, so we can add another callback to get the next message.
         d.addCallback(self.receive_item, queue, queue_no_ack, callback)
