@@ -34,7 +34,6 @@ import socket
 import binascii
 import os
 from difflib import SequenceMatcher
-from collections import OrderedDict
 
 #from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -556,7 +555,9 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     :type oepration: list of dictionaries
     :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
     """
-    # logger.debug("in _search... {attributes}", attributes=attributes)
+    # logger.debug("in do_search_instance...attributes: {attributes}", attributes=attributes)
+    # logger.debug("in do_search_instance...haystack: {haystack}", haystack=haystack)
+    # logger.debug("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
 
     if limiter is None:
         operation = .89
@@ -596,7 +597,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     best_match = None
     best_key = None
 
-    key_list = {}
+    key_list = []
     sorted_list = None
 
     for item_id, item in haystack.iteritems():
@@ -625,9 +626,9 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
                     best_match = item
 
                 # return a list of the top 5 key matches on failure.
-                key_list[ratio] = {'key': item_id, 'value': item, 'ratio': ratio}
-                sorted_list = OrderedDict(
-                    sorted(key_list.iteritems(), key=lambda tup: tup[1]['ratio'], reverse=True))
+                key_list.append({'key': item_id, 'value': item, 'ratio': ratio})
+
+    sorted_list = sorted(key_list, key=lambda k: k['ratio'], reverse=True)
 
     if operation == "any":
         return items
@@ -637,7 +638,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             best_key,
             best_match,
             best_ratio,
-            sorted_list)
+            sorted_list[:5])
 
 #
 # def get_command(commandSearch):
