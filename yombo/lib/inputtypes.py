@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Input Types @ Projects.yombo.net <https://projects.yombo.net/projects/modules/wiki/Input_Types>`_
+  For more information see: `Input Type @ Module Development <https://yombo.net/docs/modules/input_types/>`_
 
 This library maintains a list of all available input types. The input types (plural) is a wrapper class and contains all
 the individual input type classes.
@@ -30,7 +30,7 @@ logger = get_logger('library.inputtypes')
 
 class InputTypes(YomboLibrary):
     """
-    Manages all input types available for commands.
+    Manages all input types available for input types.
 
     All modules already have a predefined reference to this library as
     `self._InputTypes`. All documentation will reference this use case.
@@ -66,7 +66,7 @@ class InputTypes(YomboLibrary):
         .. note:: The input type must be enabled to be found using this method. Use :py:meth:`get <InputTypes.get>`
            to set status allowed.
 
-        Attempts to find the device requested using a couple of methods.
+        Attempts to find the input type requested using a couple of methods.
 
             >>> input_type = self._InputTypes['0kas02j1zss349k1']  #by uuid
 
@@ -78,12 +78,12 @@ class InputTypes(YomboLibrary):
         :raises KeyError: Raised when request is not found.
         :param input_type_requested: The input type ID, label, or machine_label to search for.
         :type input_type_requested: string
-        :return: A pointer to the device type instance.
+        :return: A pointer to the input type type instance.
         :rtype: instance
         """
         return self.get(input_type_requested)
 
-    def __setitem__(self, input_type_requested, value):
+    def __setitem__(self, **kwargs):
         """
         Sets are not allowed. Raises exception.
 
@@ -91,7 +91,7 @@ class InputTypes(YomboLibrary):
         """
         raise Exception("Not allowed.")
 
-    def __delitem__(self, input_type_requested):
+    def __delitem__(self, **kwargs):
         """
         Deletes are not allowed. Raises exception.
 
@@ -100,12 +100,11 @@ class InputTypes(YomboLibrary):
         raise Exception("Not allowed.")
 
     def __iter__(self):
-        """ iter device types. """
-        return self.device_types.__iter__()
+        return self.input_types.__iter__()
 
     def __len__(self):
         """
-        Returns an int of the number of device types configured.
+        Returns an int of the number of input types configured.
 
         :return: The number of input types configured.
         :rtype: int
@@ -118,20 +117,20 @@ class InputTypes(YomboLibrary):
         :return: Name of the library
         :rtype: string
         """
-        return "Yombo device types library"
+        return "Yombo input types library"
 
     def keys(self):
         """
-        Returns the keys (device type ID's) that are configured.
+        Returns the keys (input type ID's) that are configured.
 
-        :return: A list of device type IDs. 
+        :return: A list of input type IDs. 
         :rtype: list
         """
         return self.input_types.keys()
 
     def items(self):
         """
-        Gets a list of tuples representing the device types configured.
+        Gets a list of tuples representing the input types configured.
 
         :return: A list of tuples.
         :rtype: list
@@ -162,7 +161,7 @@ class InputTypes(YomboLibrary):
 
     def _load_(self):
         """
-        Loads all commands from DB to various arrays for quick lookup.
+        Loads all input types from DB to various arrays for quick lookup.
         """
         self.load_deferred = Deferred()
         self._load_input_types_from_database()
@@ -244,6 +243,7 @@ class InputTypes(YomboLibrary):
             global_invoke_all('_input_type_before_load_',
                               **{'input_type': input_type})
             self.input_types[input_type_id] = InputType(input_type)
+            self.input_types[input_type_id].update_attributes(input_type)
             global_invoke_all('_input_type_loaded_',
                           **{'input_type': self.input_types[input_type_id]})
         elif input_type_id not in self.input_types:
@@ -267,7 +267,7 @@ class InputTypes(YomboLibrary):
         .. note::
 
            Modules shouldn't use this function. Use the built in reference to
-           find devices:
+           find input types:
 
             >>> self._InputTypes['13ase45']
 
@@ -331,7 +331,7 @@ class InputTypes(YomboLibrary):
                 if found:
                     return item
                 else:
-                    raise KeyError("Command not found: %s" % input_type_requested)
+                    raise KeyError("Input type not found: %s" % input_type_requested)
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but had problems: %s' % (input_type_requested, e))
 
@@ -353,7 +353,7 @@ class InputTypes(YomboLibrary):
     @inlineCallbacks
     def dev_input_type_add(self, data, **kwargs):
         """
-        Add a module at the Yombo server level, not at the local gateway level.
+        Add a input_type at the Yombo server level, not at the local gateway level.
 
         :param data:
         :param kwargs:
@@ -373,7 +373,7 @@ class InputTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Device type added.",
+            'msg': "Input type added.",
             'input_type_id': input_type_results['data']['id'],
         }
         returnValue(results)
@@ -381,7 +381,7 @@ class InputTypes(YomboLibrary):
     @inlineCallbacks
     def dev_input_type_edit(self, input_type_id, data, **kwargs):
         """
-        Edit a module at the Yombo server level, not at the local gateway level.
+        Edit a input_type at the Yombo server level, not at the local gateway level.
 
         :param data:
         :param kwargs:
@@ -402,7 +402,7 @@ class InputTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Device type edited.",
+            'msg': "Input type edited.",
             'input_type_id': input_type_results['data']['id'],
         }
         returnValue(results)
@@ -429,7 +429,7 @@ class InputTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Command deleted.",
+            'msg': "Input type deleted.",
             'input_type_id': input_type_id,
         }
         returnValue(results)
@@ -461,7 +461,7 @@ class InputTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Command enabled.",
+            'msg': "Input type enabled.",
             'input_type_id': input_type_id,
         }
         returnValue(results)
@@ -494,7 +494,7 @@ class InputTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Command disabled.",
+            'msg': "Input type disabled.",
             'input_type_id': input_type_id,
         }
         returnValue(results)
@@ -560,14 +560,14 @@ class InputType:
 
     def __str__(self):
         """
-        Print a string when printing the class.  This will return the command_id so that
-        the command can be identified and referenced easily.
+        Print a string when printing the class.  This will return the input type id so that
+        the input type can be identified and referenced easily.
         """
         return self.input_type_id
 
     def __repl__(self):
         """
-        Export command variables as a dictionary.
+        Export input type variables as a dictionary.
         """
         return {
             'input_type_id': str(self.input_type_id),

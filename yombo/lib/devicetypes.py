@@ -1,6 +1,11 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Device Type @ Module Development <https://yombo.net/docs/modules/device_types/>`_
+
 This is a simple helper library to manage device type mapping. This is a mapping between modules, device types,
 and commands.
 
@@ -90,7 +95,7 @@ class DeviceTypes(YomboLibrary):
         """
         raise Exception("Not allowed.")
 
-    def __delitem__(self, command_requested):
+    def __delitem__(self, **kwargs):
         """
         Deletes are not allowed. Raises exception.
 
@@ -99,8 +104,8 @@ class DeviceTypes(YomboLibrary):
         raise Exception("Not allowed.")
 
     def __iter__(self):
-        """ iter commands. """
-        return self.commands.__iter__()
+        """ iter device_types. """
+        return self.device_types.__iter__()
 
     def __len__(self):
         """
@@ -109,7 +114,7 @@ class DeviceTypes(YomboLibrary):
         :return: The number of device types configured.
         :rtype: int
         """
-        return len(self.commands)
+        return len(self.device_types)
 
     def __str__(self):
         """
@@ -123,7 +128,7 @@ class DeviceTypes(YomboLibrary):
         """
         Returns the keys (device type ID's) that are configured.
 
-        :return: A list of command IDs. 
+        :return: A list of device types IDs. 
         :rtype: list
         """
         return self.device_types.keys()
@@ -299,7 +304,7 @@ class DeviceTypes(YomboLibrary):
                 if found:
                     return item
                 else:
-                    raise KeyError("Command not found: %s" % device_type_requested)
+                    raise KeyError("Device type not found: %s" % device_type_requested)
             except YomboWarning, e:
                 raise KeyError('Searched for %s, but had problems: %s' % (device_type_requested, e))
 
@@ -371,7 +376,7 @@ class DeviceTypes(YomboLibrary):
 
     def get_public_devicetypes(self):
         """
-        Return a dictionary with all the public commands.
+        Return a dictionary with all the public device types.
 
         :return:
         """
@@ -459,7 +464,7 @@ class DeviceTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Command deleted.",
+            'msg': "Device type deleted.",
             'device_type_id': device_type_id,
         }
         returnValue(results)
@@ -491,7 +496,7 @@ class DeviceTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Command enabled.",
+            'msg': "Device type enabled.",
             'device_type_id': device_type_id,
         }
         returnValue(results)
@@ -524,7 +529,7 @@ class DeviceTypes(YomboLibrary):
 
         results = {
             'status': 'success',
-            'msg': "Command disabled.",
+            'msg': "Device type disabled.",
             'device_type_id': device_type_id,
         }
         returnValue(results)
@@ -701,10 +706,9 @@ class DeviceTypes(YomboLibrary):
 class DeviceType:
     """
     A class to manage a single device type.
-    :ivar label: Command label
-    :ivar description: The description of the command.
+    :ivar label: Device type label
+    :ivar description: The description of the device type.
     :ivar inputTypeID: The type of input that is required as a variable.
-    :ivar voice_cmd: The voice command of the command.
     """
     def __init__(self, device_type, _DeviceTypes):
         """
@@ -715,7 +719,6 @@ class DeviceType:
 
         :param device_type: A device type as passed in from the device types class. This is a
             dictionary with various device type attributes.
-        :type command: dict
         """
         logger.debug("DeviceType::__init__: {device_type}", device_type=device_type)
 
@@ -819,14 +822,14 @@ class DeviceType:
 
     def __str__(self):
         """
-        Print a string when printing the class.  This will return the cmdUUID so that
-        the command can be identified and referenced easily.
+        Print a string when printing the class.  This will return the device type id so that
+        the device type can be identified and referenced easily.
         """
         return self.device_type_id
 
     def __repl__(self):
         """
-        Export command variables as a dictionary.
+        Export device type variables as a dictionary.
         """
         return {
             'device_type_id': str(self.device_type_id),
