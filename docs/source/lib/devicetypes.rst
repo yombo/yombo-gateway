@@ -17,4 +17,12 @@ Device Types
    :private-members:
    :undoc-members:
 
+Device Type
+================
+.. autoclass:: DeviceType
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
 Last updated: |today|

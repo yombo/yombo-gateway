@@ -17,4 +17,12 @@ InputTypes Class
    :private-members:
    :undoc-members:
 
+InputType Class
+===================================
+.. autoclass:: InputType
+   :members:
+   :special-members:
+   :private-members:
+   :undoc-members:
+
 Last updated: |today|

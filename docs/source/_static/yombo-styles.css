@@ -3,6 +3,10 @@
     border-top: dashed thin #d2c7cd;
 }
 
+/*.method dt {*/
+    /*font-size: 13px;*/
+/*}*/
+
 .method dd {
     margin-left: 1.5em;
 }
@@ -12,7 +16,16 @@
     border-top: dashed #bfabd2;
 }
 
+/*.exception dt {*/
+    /*font-size: 15px;*/
+/*}*/
+
 .exception dd {
     margin-left: 1em;
 }
 
+/*.class dt:first-child {*/
+    /*font-size: 20px;*/
+    /*padding-top: .15em;*/
+    /*border-top: dashed #bfabd2;*/
+/*}*/

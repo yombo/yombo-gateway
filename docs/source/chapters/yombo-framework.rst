@@ -66,7 +66,9 @@ IoT devices, etc.
    ../lib/localize.rst
    ../lib/modules.rst
    ../lib/mqtt.rst
+   ../lib/nodes.rst
    ../lib/notifications.rst
+   ../lib/queue.rst
    ../lib/sqldict.rst
    ../lib/sslcerts.rst
    ../lib/startup.rst
