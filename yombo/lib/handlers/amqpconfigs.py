@@ -306,6 +306,32 @@ class AmqpConfigHandler(YomboLibrary):
                 }
             },
 
+            'gateway_nodes': {
+                'dbclass': "Node",
+                'table': "nodes",
+                'library': None,
+                'functions': {
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'map': {
+                    'id': 'id',
+                    'parent_id': 'parent_id',
+                    'gateway_id': 'gateway_id',
+                    'node_type': 'node_type',
+                    'weight': 'weight',
+                    'machine_label': 'machine_label',
+                    'gw_always_load': 'gw_always_load',
+                    'destination': 'destination',
+                    'data': 'data',
+                    'data_type': 'data_type',
+                    'status': 'status',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
+
             'variable_groups': {
                 'dbclass': "VariableGroups",
                 'table': "variable_groups",
@@ -507,6 +533,7 @@ class AmqpConfigHandler(YomboLibrary):
             'msg': msg,
             'headers': properties.headers,
             }
+        # print "got type: %s" % properties.headers['config_item']
         self.__pending_updates['get_%s' % properties.headers['config_item']]['status'] = 'received'
 
         self.process_config_queue();
@@ -843,7 +870,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_users",
             "get_gateway_dns_name",
 
-
+            "get_gateway_nodes",  # Includes module variable groups/fields/data
 
             # "get_gateway_input_types",
             # "get_gateway_configs",

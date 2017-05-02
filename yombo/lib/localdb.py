@@ -145,7 +145,11 @@ class ModulesView(DBObject):
     TABLENAME = 'modules_view'
 
 
-class Notifications(DBObject):
+class Node(DBObject):
+    TABLENAME = 'nodes'
+
+
+class Notification(DBObject):
     TABLENAME = 'notifications'
 
 
@@ -381,12 +385,6 @@ class LocalDB(YomboLibrary):
 
         results = yield self.dbconfig.update('devices', {'status': status},
                                              where=['id = ?', device_id])
-        #
-        # device = yield Device.find(device_id)
-        # print device
-        # device.status = status
-        # yield device.save()
-        # print "222 %s" % status
 
     @inlineCallbacks
     def get_device_by_id(self, device_id, status=1):
@@ -524,9 +522,9 @@ class LocalDB(YomboLibrary):
         else:
             returnValue([])
 
-        #############################
-        ###    Modules          #####
-        #############################
+    #############################
+    ###    Modules          #####
+    #############################
 
     @inlineCallbacks
     def get_modules(self, get_all=False):
@@ -592,17 +590,87 @@ class LocalDB(YomboLibrary):
         returnValue(results)
 
     #############################
+    ###    Nodes            #####
+    #############################
+    @inlineCallbacks
+    def get_nodes(self):
+        records = yield self.dbconfig.select('nodes',
+            select="id, parent_id, node_type, weight, machine_label, gw_always_load, destination, data_type, status, updated, created")
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_node(self, node_id):
+        record = yield Node.find(where=['id = ?', node_id], limit=1)
+        record.node_id = record.id
+        del record.id
+        # attempt to decode the data..
+        if record.data_type == 'json':
+            try:
+                record.data = json.loads(record.data)
+            except:
+                pass
+        returnValue(record)
+
+    @inlineCallbacks
+    def get_node_siblings(self, node):
+        records = yield Node.find(where=['parent_id = ? and node_type = ?', node.parent_id, node.node_type])
+        for record in records:
+            # attempt to decode the data..
+            if record.data_type == 'json':
+                record.data = json.loads(record.data)
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_node_children(self, node):
+        records = yield Node.find(where=['parent_id = ? and node_type = ?', node.id, node.node_type])
+        for record in records:
+            # attempt to decode the data..
+            if record.data_type == 'json':
+                record.data = json.loads(record.data)
+        returnValue(records)
+
+    @inlineCallbacks
+    def set_node_status(self, node_id, status=1):
+        results = yield self.dbconfig.update('nodes', {'status': status},
+                                             where=['id = ?', node_id])
+
+    # @inlineCallbacks
+    # def save_new_node(self, node_id, **kwargs):
+    #     set_time = kwargs.get('set_time', time())
+    #     energy_usage = kwargs['energy_usage']
+    #     machine_status = kwargs['machine_status']
+    #     human_status = kwargs.get('human_status', machine_status)
+    #     machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',', ':'))
+    #     requested_by = json.dumps(kwargs.get('requested_by', ''), separators=(',', ':'))
+    #     source = kwargs.get('source', '')
+    #     uploaded = kwargs.get('uploaded', 0)
+    #     uploadable = kwargs.get('uploadable', 0)
+    #
+    #     yield DeviceStatus(
+    #         device_id=device_id,
+    #         set_time=set_time,
+    #         energy_usage=energy_usage,
+    #         human_status=human_status,
+    #         machine_status=machine_status,
+    #         machine_status_extra=machine_status_extra,
+    #         source=source,
+    #         uploaded=uploaded,
+    #         requested_by=requested_by,
+    #         uploadable=uploadable,
+    #     ).save()
+
+    #############################
     ###    Notifications    #####
     #############################
     @inlineCallbacks
     def get_notifications(self):
         cur_time = int(time())
-        records = yield Notifications.find(where=['expire > ?', cur_time], orderby='created DESC')
+        records = yield Notification.find(where=['expire > ?', cur_time], orderby='created DESC')
         returnValue(records)
 
     @inlineCallbacks
     def delete_notification(self, id):
-        records = yield Notifications.delete(where=['id = ?', id])
+        records = yield Notification.delete(where=['id = ?', id])
         returnValue(records)
 
     @inlineCallbacks
@@ -612,7 +680,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def add_notification(self, notice, **kwargs):
-        results = yield Notifications(
+        results = yield Notification(
             id=notice['id'],
             type=notice['type'],
             priority=notice['priority'],

@@ -9,8 +9,10 @@ a _unittest method.
 import time
 from collections import namedtuple
 
+# Import twisted libraries
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.task import LoopingCall
 
 from yombo.core.log import get_logger
 from yombo.core.module import YomboModule
@@ -37,8 +39,16 @@ class ModuleUnitTest(YomboModule):
         self.outMessages = {}
 
         # track success and failures
+        self.expected_tests = 0
+        self.completed_tests = 0
+        self.displayed_tests = 0
+        self.displayed_tests = 0
+        self.display_saw_new_items = 0
+        self.display_no_new_items = 0
         self.good = []
         self.bad = []
+        self.display_results_loop = LoopingCall(self.display_results)
+
 
     def _load_(self):
         """
@@ -100,31 +110,55 @@ class ModuleUnitTest(YomboModule):
         
         Startup phase 3 of 3.
         """
-        reactor.callLater(2, self.started) # so we can see our results easier
+        reactor.callLater(1, self.started) # so we can see our results easier
 
     def started(self):
+        self.display_results_loop.start(1)
+        logger.info("Module unit test running.")
+        self.test_nodes()
+        self.test_queues()
+
+    @inlineCallbacks
+    def test_nodes(self):
+        try:
+            node_base = self._Nodes['main_page']  # web interfaces should create the if it doesn't exist.
+        except KeyError as e:
+            logger.warn("Skipping node testing, cannot find main_menu")
+            self.testAddBad("Node 'main_menu' not found.", 'main_manu node not found')
+            return
+
+        # print "unittest has node: %s" % node_base
+
+        self.expected_tests += 2
+
+        node = yield self._Nodes.get('main_page')
+        self.assertIsEqual(node_base.node_id, node.node_id, "Node id's should match.")
+        # print "unittest has node2: %s" % node
+        node = yield self._Nodes.get('main_page', 'webinterface_page')
+        self.assertIsEqual(node_base.node_id, node.node_id, "Node id's should match.")
+        # print "unittest has node3: %s" % node
+
+    def test_queues(self):
+        self.expected_tests += 6
 
         self.assertNotEqual(self._Times.isTwilight, None, "self._Times.isTwilight should not be None")
 
-        q1 = self._Queue.new('module.unittest.1', self.queue_worker1)
+        q1 = self._Queue.new('module.unittest.1', self.queue_worker1)  # test calls to things that don't return deferred
         q1.put('letsdoit', self.queue_results)
         q1.put('letsdoit', self.queue_results)
         q1.put('letsdoit', self.queue_results)
 
-        q2 = self._Queue.new('module.unittest.2', self.queue_worker2)
+        q2 = self._Queue.new('module.unittest.2', self.queue_worker2)  # test calls which return deferreds
         q2.put('letsdoit', self.queue_results)
         q2.put('letsdoit', self.queue_results)
         q2.put('letsdoit', self.queue_results)
-        q2.put('letsdoit', self.show_results)
 
     def queue_worker1(self, arguments):
-        print "queue_worker1 got arguments: %s" % arguments
         self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
         return "someresults"
 
     @inlineCallbacks
     def queue_worker2(self, arguments):
-        print "queue_worker2 got arguments: %s" % arguments
         yield sleep(1)
         self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
         returnValue("someresults")
@@ -132,24 +166,64 @@ class ModuleUnitTest(YomboModule):
     def queue_results(self, args, results):
         self.assertIsEqual(results, "someresults", "queue_results(), results should match.")
 
-    def show_results(self, dumpit = None, dumpit2 = None):
-        print "Module Unit Test results:"
-        print "Good results: %s" % len(self.good)
-        print "Bad results: %s" % len(self.bad)
-        for result in self.bad:
-            print "%s - %s" % (result['test'], result['description'])
+        self.display_saw_new_items = 0
+        self.display_no_new_items = 0
+
+    def display_results(self):
+        if self.displayed_tests != self.completed_tests:
+            # print "DR - got difference.... %s  " % self.display_saw_new_items
+            self.display_no_new_items = 0
+            self.displayed_tests = self.completed_tests
+            self.display_saw_new_items += 1
+
+            if self.display_saw_new_items >= 5:
+                logger.info("Appears tests still running, count so far: Good - {good}, Bad - {bad}", good=len(self.good), bad=len(self.bad))
+                self.display_saw_new_items = 0
+
+        else:  # we don't have new data.
+            # print "DR - got same.... %s  " % self.display_no_new_items
+            self.display_no_new_items += 1
+            if self.display_no_new_items == 15:
+                logger.info("Appears tests are done. Good - {good}, Bad - {bad}", good=len(self.good), bad=len(self.bad))
+                if len(self.bad) > 0:
+                    logger.warn("Details for bad tests:")
+                    for result in self.bad:
+                        logger.warn("- Test:{test}    Description:{description}", test=result['test'], description=result['description'])
+
+    def testAddBad(self, description, test_output):
+        # self.display_results_loop.reset()
+        self.completed_tests += 1
+        self.bad.append({'description':description, 'test': test_output})
 
     def assertNotEqual(self, val1, val2, description):
+        # self.display_results_loop.reset()
+        self.completed_tests += 1
         if val1 != val2:
-            self.good.append({'description':description, 'test': "%s != %s" % (val1, val2)})
+            test = "%s != %s" % (val1, val2)
+            logger.debug("Module unit test found good test: {description} :: {test}", description=description, test=test)
+            self.good.append({'description':description, 'test': test})
         else:
-            self.good.append({'description':description, 'test': "%s == %s" % (val1, val2)})
+            test = "%s == %s" % (val1, val2)
+            logger.warn("Module unit test found bad test: {description} :: {test}", description=description, test=test)
+            self.bad.append({'description':description, 'test': test})
 
     def assertIsEqual(self, val1, val2, description):
+        # self.display_results_loop.reset()
+        self.completed_tests += 1
         if val1 == val2:
-            self.good.append({'description':description, 'test': "%s == %s" % (val1, val2)})
+            test = "%s == %s" % (val1, val2)
+            logger.debug("Module unit test found good test: {description} :: {test}", description=description, test=test)
+            self.good.append({'description':description, 'test': test})
         else:
-            self.good.append({'description':description, 'test': "%s != %s" % (val1, val2)})
+            test = "%s != %s" % (val1, val2)
+            logger.warn("Module unit test found bad test: {description} :: {test}", description=description, test=test)
+            self.bad.append({'description':description, 'test': test})
+
+    def assertNone(self, val1, description):
+        self.assertEqual(val1, None, description)
+
+    def assertNotNone(self, val1, description):
+        self.assertNotEqual(val1, None, description)
 
             #
 #         logger.info("isDay: %s" % self._Times.isDay)

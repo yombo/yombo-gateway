@@ -500,7 +500,7 @@ class InputTypes(YomboLibrary):
         returnValue(results)
 
 
-class InputType:
+class InputType(object):
     """
     A class to manage a single input type.
     :ivar input_type_id: (string) The unique ID.

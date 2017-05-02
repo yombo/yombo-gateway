@@ -70,9 +70,12 @@ class YomboQueue(object):
             raise YomboWarning("Must set 'workers'.")
         self.workers = workers
 
-    def put(self, worker_args, work_done_callback, done_args = None, description = None):
+    def put(self, worker_args = None, work_done_callback = None, done_args = None, description = None):
         if callable(work_done_callback) is False:
             raise YomboWarning("Invalid callable from queues.put...")
+        if description is None:
+            description = "No description."
+
         self.queue.put( Job(worker_args, work_done_callback, done_args, description) )
 
     @inlineCallbacks
@@ -90,27 +93,24 @@ class YomboQueue(object):
                 logger.error("--------------------------------------------------------")
                 return
 
-            try:
-                yield maybeDeferred(job.work_done_callback, job.done_args, results)
-            except Exception as e:
-                logger.error("Received error while calling worker done function: {e}", e=e)
-                logger.error("---------------==(Traceback)==--------------------------")
-                logger.error("{trace}", trace=traceback.format_exc())
-                logger.error("--------------------------------------------------------")
-
+            if job.work_done_callback is callable(job.work_done_callback):
+                try:
+                    yield maybeDeferred(job.work_done_callback, job.done_args, results)
+                except Exception as e:
+                    logger.error("Received error while calling worker done function: {e}", e=e)
+                    logger.error("---------------==(Traceback)==--------------------------")
+                    logger.error("{trace}", trace=traceback.format_exc())
+                    logger.error("--------------------------------------------------------")
 
 
 class Job(object):
     """
     A simple class to store extra data about a job.
     """
-    def __init__(self, worker_args, work_done_callback, done_args, description = None):
+    def __init__(self, worker_args, work_done_callback, done_args, description):
         self.worker_args = worker_args
         self.work_done_callback = work_done_callback
         self.done_args = done_args
-
-        if description is None:
-            description = "No description."
         self.description = description
 
 

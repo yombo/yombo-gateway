@@ -267,6 +267,25 @@ nav_side_menu = [
     },
 ]
 
+default_nodes = [
+    {
+        'machine_label': 'main_page',
+        'node_type': 'webinterface_page',
+        'data_type': 'text',
+        'data': 'no data yet....',
+        'destination': 'gw',
+        'children': [
+            {
+                'machine_label': 'some_item',
+                'node_type': 'webinterface_page_item',
+                'data_type': 'text',
+                'data': 'no data yet.... for item',
+                'destination': 'gw',
+            },
+        ],
+    },
+]
+
 notification_priority_map_css = {
     'low': 'info',
     'normal': 'info',
@@ -380,6 +399,13 @@ class WebInterface(YomboLibrary):
 
         self.has_started = True
         self.start_web_servers()
+
+    def check_have_required_nodes(self):
+        try:
+            node = yield self._Nodes.get('main_page', 'webinterface_page')
+        except KeyError as e:
+            pass
+            # add base node...
 
     @inlineCallbacks
     def change_ports(self, port_nonsecure=None, port_secure=None):

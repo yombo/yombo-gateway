@@ -703,7 +703,7 @@ class DeviceTypes(YomboLibrary):
         }
         returnValue(results)
 
-class DeviceType:
+class DeviceType(object):
     """
     A class to manage a single device type.
     :ivar label: Device type label
