@@ -115,8 +115,49 @@ class ModuleUnitTest(YomboModule):
     def started(self):
         self.display_results_loop.start(1)
         logger.info("Module unit test running.")
+        self.test_crontab()
         self.test_nodes()
         self.test_queues()
+
+    def test_crontab(self):
+        """
+        Test the crontab library.
+        :return: 
+        """
+        self.test_crontask1_called = False
+        self.test_crontask1 = self._CronTab.new(self.test_crontab_crontask1,
+                                           label='module.unittest.1',
+                                           args=['letsgo'],
+                                           kwargs={'arg1':'letsgo'}
+                                           )
+        reactor.callLater(122, self.test_crontab_crontask1_check_if_called, True)
+
+        self.assertIsEqual(self.test_crontask1, self._CronTab['module.unittest.1'], 'Looking up job using dictionary method')
+        self.assertIsEqual(self.test_crontask1, self._CronTab.get('module.unittest.1'), 'Looking up job using function')
+
+    def test_crontab_crontask1(self, *args, **kwargs):
+        """
+        A simple callable to test that crontab called this successfully.
+        :return: 
+        """
+        self.test_crontask1_called = True
+        self.assertIsEqual(args[0], kwargs['arg1'], 'Crontask calling callback with proper parameters.')
+        self.test_crontask1.disable()
+
+    def test_crontab_crontask1_check_if_called(self, should_have_been_called):
+        """
+        A simple callable to test that crontab called this successfully.
+        :return: 
+        """
+        if should_have_been_called is True:
+            self.assertIsEqual(self.test_crontask1_called, True, 'CronTask1 was called')
+            self.test_crontask1.disable()
+            self.test_crontask1_called = False
+            reactor.callLater(62, self.test_crontab_crontask1_check_if_called, False)
+        else:
+            self.assertIsEqual(self.test_crontask1_called, False, "CronTask1 is disabled and shouldn't be called.")
+        # print "test_crontab_crontask1 was called: %s, %s" % (args, kwargs)
+
 
     @inlineCallbacks
     def test_nodes(self):
@@ -219,11 +260,17 @@ class ModuleUnitTest(YomboModule):
             logger.warn("Module unit test found bad test: {description} :: {test}", description=description, test=test)
             self.bad.append({'description':description, 'test': test})
 
-    def assertNone(self, val1, description):
+    def assertIsNone(self, val1, description):
         self.assertEqual(val1, None, description)
 
     def assertNotNone(self, val1, description):
         self.assertNotEqual(val1, None, description)
+
+    def testReportGood(self, description, test):
+        self.good.append({'description': description, 'test': test})
+
+    def testReportBad(self, description, test):
+        self.bad.append({'description': description, 'test': test})
 
             #
 #         logger.info("isDay: %s" % self._Times.isDay)
