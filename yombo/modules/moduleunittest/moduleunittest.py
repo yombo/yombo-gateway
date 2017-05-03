@@ -47,7 +47,7 @@ class ModuleUnitTest(YomboModule):
         self.display_no_new_items = 0
         self.good = []
         self.bad = []
-        self.display_results_loop = LoopingCall(self.display_results)
+        # self.display_results_loop = LoopingCall(self.display_results)
 
 
     def _load_(self):
@@ -113,16 +113,18 @@ class ModuleUnitTest(YomboModule):
         reactor.callLater(1, self.started) # so we can see our results easier
 
     def started(self):
-        self.display_results_loop.start(1)
+        # self.display_results_loop.start(1)
         logger.info("Module unit test running.")
+
         self.test_crontab()
         self.test_nodes()
+        self.test_states()
         self.test_queues()
 
     def test_crontab(self):
         """
         Test the crontab library.
-        :return: 
+        :return:
         """
         self.test_crontask1_called = False
         self.test_crontask1 = self._CronTab.new(self.test_crontab_crontask1,
@@ -138,7 +140,7 @@ class ModuleUnitTest(YomboModule):
     def test_crontab_crontask1(self, *args, **kwargs):
         """
         A simple callable to test that crontab called this successfully.
-        :return: 
+        :return:
         """
         self.test_crontask1_called = True
         self.assertIsEqual(args[0], kwargs['arg1'], 'Crontask calling callback with proper parameters.')
@@ -147,7 +149,7 @@ class ModuleUnitTest(YomboModule):
     def test_crontab_crontask1_check_if_called(self, should_have_been_called):
         """
         A simple callable to test that crontab called this successfully.
-        :return: 
+        :return:
         """
         if should_have_been_called is True:
             self.assertIsEqual(self.test_crontask1_called, True, 'CronTask1 was called')
@@ -158,6 +160,26 @@ class ModuleUnitTest(YomboModule):
             self.assertIsEqual(self.test_crontask1_called, False, "CronTask1 is disabled and shouldn't be called.")
         # print "test_crontab_crontask1 was called: %s, %s" % (args, kwargs)
 
+    def test_states(self):
+        """
+        Test the states library.
+
+        :return:
+        """
+        #basic checks
+        self._States.set("module.unittest1", "letsdoit")
+        isLight_dynamic = self._States.get2("module.unittest1")
+        self.assertIsEqual("letsdoit", self._States['module.unittest1'], "Get states as dictionary")
+        self.assertIsEqual("letsdoit", self._States.get('module.unittest1'), "Get states as function")
+        self.assertIsEqual("letsdoit", isLight_dynamic(), "Get states as with dynamic get2")
+
+        self._States.set("module.unittest1", "letsdoit2")
+        self.assertIsEqual("letsdoit2", self._States['module.unittest1'], "Get states as dictionary")
+        self.assertIsEqual("letsdoit2", self._States.get('module.unittest1'), "Get states as dictionary and function")
+        self.assertIsEqual("letsdoit2", isLight_dynamic(), "Get states as dictionary and function")
+
+        self._States.delete("module.unittest1")
+        self.assertRaisesException(self._States.get, "KeyError", "States not exist, should raise KeyError", args=["module.unittest1"])
 
     @inlineCallbacks
     def test_nodes(self):
@@ -266,6 +288,17 @@ class ModuleUnitTest(YomboModule):
     def assertNotNone(self, val1, description):
         self.assertNotEqual(val1, None, description)
 
+    def assertRaisesException(self, callable, exception_name, description, args=None, kwargs=None):
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
+        try:
+            callable(*args, **kwargs)
+        except Exception as exception:
+            self.assertIsEqual(type(exception).__name__, exception_name, description)
+
     def testReportGood(self, description, test):
         self.good.append({'description': description, 'test': test})
 
@@ -301,15 +334,15 @@ class ModuleUnitTest(YomboModule):
 # #        self.outMessages = {}
 #         msg = self.devices[1].getMessage(self, cmdobj=self.available_commands['open'])
 #         self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].device_id, msg)
-        
-    
+
+
     def _stop_(self):
         """
         Stop sending messages.  Other components are unable to receive
         messages.  Queue up or pause functionality.
         """
         pass
-    
+
     def _unload_(self):
         """
         Called just before the gateway is about to shutdown
@@ -324,7 +357,5 @@ class ModuleUnitTest(YomboModule):
         """
         logger.info("we go something:%s" % message.dump())
         pass
-        
-        
-            
-            
+
+
