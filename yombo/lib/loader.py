@@ -46,7 +46,7 @@ from twisted.web import client
 client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboCritical, YomboWarning, YomboNoSuchLoadedComponentError, YomboHookStopProcessing
+from yombo.core.exceptions import YomboCritical, YomboWarning, YomboHookStopProcessing
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -566,10 +566,7 @@ class Loader(YomboLibrary, object):
         """
         Returns loaded module object by name. Module must be loaded.
         """
-        try:
-            return self.loadedComponents[name.lower()]
-        except KeyError:
-            raise YomboNoSuchLoadedComponentError("No such loaded component: %s" % str(name))
+        return self.loadedComponents[name.lower()]
 
     def get_all_loaded_components(self):
         """
