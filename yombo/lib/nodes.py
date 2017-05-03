@@ -213,7 +213,6 @@ class Nodes(YomboLibrary):
             global_invoke_all('_node_before_load_',
                               **{'node': node})
             self.nodes[node_id] = Node(node)
-            self.nodes[node_id].update_attributes(node)
             global_invoke_all('_node_loaded_',
                           **{'node': self.nodes[node_id]})
         elif node_id not in self.nodes:
@@ -628,6 +627,7 @@ class Node:
         self.status = None
         self.updated = None
         self.created = None
+        self.update_attributes(node)
 
     def update_attributes(self, node):
         """
