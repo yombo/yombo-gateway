@@ -35,8 +35,7 @@ class Commands(YomboLibrary):
     """
     def __contains__(self, command_requested):
         """
-        .. note:: The command must be enabled to be found using this method. Use :py:meth:`get <Commands.get>`
-           to set status allowed.
+        .. note:: The command must be enabled to be found using this method.
 
         Checks to if a provided command id, label, or machine_label exists.
 
@@ -60,8 +59,8 @@ class Commands(YomboLibrary):
 
     def __getitem__(self, command_requested):
         """
-        .. note:: The command must be enabled to be found using this method. Use :py:meth:`get <Commands.get>`
-           to set status allowed.
+        .. note:: The command must be enabled to be found using this method. An alternative,
+        but equal function is: :py:meth:`get() <Commands.get>`
         
         Attempts to find the device requested using a couple of methods.
 
@@ -186,7 +185,7 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def _load_commands_from_database(self):
         """
-        Loads commands from database and sends them to :py:meth:`import_command <Commands.import_device>`
+        Loads commands from database and sends them to :py:meth:`import_command() <Commands.import_device>`
         
         This can be triggered either on system startup or when new/updated commands have been saved to the
         database and we need to refresh existing commands.
@@ -240,7 +239,7 @@ class Commands(YomboLibrary):
 
     def get(self, command_requested, limiter=None, status=None):
         """
-        Performs the actual search.
+        Looks for commands by it's id, label, and machine_label.
 
         .. note::
 
@@ -255,7 +254,7 @@ class Commands(YomboLibrary):
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
-        :param command_requested: The command ID or command label to search for.
+        :param command_requested: The command ID, label, and machine_label to search for.
         :type command_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
@@ -314,7 +313,7 @@ class Commands(YomboLibrary):
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
-        Search for commands based on attributes for all commands.
+        Advanced search, typically should use the :py:meth:`get <yombo.lib.commands.Commands.get>` method. 
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
@@ -341,7 +340,8 @@ class Commands(YomboLibrary):
         """
         Return a dictionary with all the public commands.
 
-        :return:
+        :return: Returns any commands that are not publicly available.
+        :rtype: list of objects
         """
         results = {}
         for command_id, command in self.commands.iteritems():
@@ -365,11 +365,14 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def dev_command_add(self, data, **kwargs):
         """
-        Add a command at the Yombo server level, not at the local gateway level.
+        Used to interact with the Yombo API to add a new command. This doesn't add a new command
+        to the local gateway.
 
-        :param data:
-        :param kwargs:
-        :return:
+        :param data: Fields to send to the Yombo API. See https://yombo.net/docs/api/#commands for details.
+        :type data: dict
+        :param kwargs: Currently unused.
+        :return: Results on the success/fail of the add request.
+        :rtype: dict
         """
         command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
         # print("command edit results: %s" % command_results)
@@ -393,11 +396,14 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def dev_command_edit(self, command_id, data, **kwargs):
         """
-        Edit a command at the Yombo server level, not at the local gateway level.
+        Used to interact with the Yombo API to edit a command. This doesn't edit the command
+        on the local gateway.
 
-        :param data:
-        :param kwargs:
-        :return:
+        :param data: Fields to send to the Yombo API. See https://yombo.net/docs/api/#commands for details.
+        :type data: dict
+        :param kwargs: Currently unused.
+        :return: Results on the success/fail of the request.
+        :rtype: dict
         """
 
         command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
@@ -422,11 +428,14 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def dev_command_delete(self, command_id, **kwargs):
         """
-        Delete a command at the Yombo server level, not at the local gateway level.
+        Used to interact with the Yombo API to delete a command. This doesn't delete the command
+        on the local gateway.
 
-        :param data:
-        :param kwargs:
-        :return:
+        :param data: Fields to send to the Yombo API. See https://yombo.net/docs/api/#commands for details.
+        :type data: dict
+        :param kwargs: Currently unused.
+        :return: Results on the success/fail of the request.
+        :rtype: dict
         """
         command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
 
@@ -449,13 +458,15 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def dev_command_enable(self, command_id, **kwargs):
         """
-        Enable a command at the Yombo server level, not at the local gateway level.
+        Used to interact with the Yombo API to enable a command. This doesn't enable the command
+        on the local gateway.
 
-        :param command_id: The command ID to enable.
-        :param kwargs:
-        :return:
+        :param data: Fields to send to the Yombo API. See https://yombo.net/docs/api/#commands for details.
+        :type data: dict
+        :param kwargs: Currently unused.
+        :return: Results on the success/fail of the request.
+        :rtype: dict
         """
-#        print "enabling command: %s" % command_id
         api_data = {
             'status': 1,
         }
@@ -481,11 +492,14 @@ class Commands(YomboLibrary):
     @inlineCallbacks
     def dev_command_disable(self, command_id, **kwargs):
         """
-        Enable a command at the Yombo server level, not at the local gateway level.
+        Used to interact with the Yombo API to disable a command. This doesn't diable the command
+        on the local gateway.
 
-        :param command_id: The command ID to disable.
-        :param kwargs:
-        :return:
+        :param data: Fields to send to the Yombo API. See https://yombo.net/docs/api/#commands for details.
+        :type data: dict
+        :param kwargs: Currently unused.
+        :return: Results on the success/fail of the request.
+        :rtype: dict
         """
 #        print "disabling command: %s" % command_id
         api_data = {
@@ -514,10 +528,8 @@ class Commands(YomboLibrary):
 
 class Command:
     """
-    A class to manage a single command.
-    :ivar label: Command label
-    :ivar description: The description of the command.
-    :ivar voice_cmd: The voice command of the command.
+    A command is represented by this class is is returned to callers of the
+    :py:meth:`get() <Commands.get>` or :py:meth:`__getitem__() <Commands.__getitem__>` functions.
     """
 
     def __init__(self, command):
@@ -526,7 +538,7 @@ class Command:
 
         :param command: A command containing required items to setup.
         :type command: dict
-
+        :return: None
         """
         logger.debug("command info: {command}", command=command)
 
@@ -552,8 +564,9 @@ class Command:
         Sets various values from a command dictionary. This can be called when either new or
         when updating.
 
-        :param command: 
-        :return: 
+        :param command: A dictionary containing attributes to update.
+        :type command: dict
+        :return: None
         """
         self.label = command['label']
         self.description = command['description']
@@ -568,12 +581,18 @@ class Command:
         """
         Print a string when printing the class.  This will return the command_id so that
         the command can be identified and referenced easily.
+
+        :return: The command id.
+        :rtype: str
         """
         return self.command_id
 
     def __repl__(self):
         """
         Export command variables as a dictionary.
+
+        :return: A dictionary that can be used to re-create this instance.
+        :rtype: dict
         """
         return {
             'command_id': str(self.command_id),
