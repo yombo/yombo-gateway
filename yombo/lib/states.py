@@ -57,9 +57,9 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from collections import deque
 from time import time
-import urllib
+from functools import partial
+
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
@@ -278,6 +278,42 @@ class States(YomboLibrary, object):
             return self.__States[key]['created']
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
+
+    def get2(self, key, human=None, full=None, set=None, **kwargs):
+        """
+        Like :py:meth:`get() <get>` below, however, this returns a callable to retrieve the value instead of an actual
+        value. The callable can also be used to set the value of the state too. See
+        example for usage details.
+
+        **Usage**:
+
+        .. code-block:: python
+
+           some_state = self._States.get2("some_state")
+           logger.info("The state or some_state is: {state}", state=some_state()
+           # set a new state value for 'some_state'.
+           some_state(set="New label")
+
+        .. versionadded:: 0.13.0
+
+        :raises YomboWarning: Raised when request is malformed.
+        :raises KeyError: Raised when request is not found.
+        :param key: Name of state to get.
+        :type key: string
+        :param human: If true, returns a state for human consumption.
+        :type human: bool
+        :param full: If true, Returns all data about the state. If false, just the value.
+        :type full: bool
+        :return: Value of state
+        """
+
+        if set is not None:
+            self.set(key, set, **kwargs)
+            return set
+
+        self.get(key, human, full)
+
+        return partial(self.get, key, human, full)
 
     def get(self, key, human=None, full=None):
         """
