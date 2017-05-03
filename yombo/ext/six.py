@@ -1,4 +1,4 @@
-# Copyright (c) 2010-2016 Benjamin Peterson
+# Copyright (c) 2010-2017 Benjamin Peterson
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -241,6 +241,8 @@ _moved_attributes = [
     MovedAttribute("map", "itertools", "builtins", "imap", "map"),
     MovedAttribute("getcwd", "os", "os", "getcwdu", "getcwd"),
     MovedAttribute("getcwdb", "os", "os", "getcwd", "getcwdb"),
+    MovedAttribute("getstatusoutput", "commands", "subprocess"),
+    MovedAttribute("getoutput", "commands", "subprocess"),
     MovedAttribute("range", "__builtin__", "builtins", "xrange", "range"),
     MovedAttribute("reload_module", "__builtin__", "importlib" if PY34 else "imp", "reload"),
     MovedAttribute("reduce", "__builtin__", "functools"),
@@ -338,6 +340,7 @@ _urllib_parse_moved_attributes = [
     MovedAttribute("quote_plus", "urllib", "urllib.parse"),
     MovedAttribute("unquote", "urllib", "urllib.parse"),
     MovedAttribute("unquote_plus", "urllib", "urllib.parse"),
+    MovedAttribute("unquote_to_bytes", "urllib", "urllib.parse", "unquote", "unquote_to_bytes"),
     MovedAttribute("urlencode", "urllib", "urllib.parse"),
     MovedAttribute("splitquery", "urllib", "urllib.parse"),
     MovedAttribute("splittag", "urllib", "urllib.parse"),
