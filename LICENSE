@@ -42,8 +42,18 @@ to meet the requirements of the Open Source Definition as maintained by the
 Open Source Initiative (OSI). The specific terms and conditions of the license
 are defined in the remainder of this document.
 
+BY DOWNLOADING AND/OR USING ANY SOFTWARE AND/OR APPLICATIONS (COLLECTIVELY,
+"SOFTWARE") PROVIDED TO YOU BY OR ON BEHALF OF YOMBO, INC. AND ITS AFFILIATED
+ENTITIES ("YOMBO") IN CONNECTION WITH YOUR USE OF THE YOMBO SERVICE, YOU
+ACKNOWLEDGE AND AGREE THAT (1) YOU HAVE READ THIS END USER LICENSE AGREEMENT
+("LICENSE AGREEMENT"); (2) YOU UNDERSTAND IT; (3) YOU ARE BOUND BY THE TERMS
+OF THIS LICENSE AGREEMENT; AND (4) YOU MAY RECEIVE, WITHOUT FURTHER NOTICE OR
+PROMPTING, UPDATED VERSIONS OF THE SOFTWARE. IF YOU DO NOT AGREE TO THE
+FOREGOING, YOU AGREE THAT YOU DO NOT HAVE A LICENSE TO, AND YOU WILL NOT USE,
+THE SOFTWARE.
+
 LICENSE TERMS 
-1.0 General; Applicability Definitions. This Reciprocal Public License
+1.0 General. Applicability Definitions. This Reciprocal Public License
   Version 1.6 ("License") applies to any programs or other works as well as any
   and all updates or maintenance releases of said programs or works
   ("Software") not already covered by this License which the Software copyright
@@ -164,10 +174,10 @@ THE SOFTWARE.
   basis or as part of Derivative Works. All source code must accompany any
   executable form of the Licensed Software.
 4.2 Under claims of patents now or hereafter owned or controlled by
-Contributor, to make, use, have made, and/or otherwise dispose of
-Extensions or portions thereof, but solely to the extent that any such claim
-is necessary to enable You to make, use, have made, and/or otherwise dispose
-of Licensed Software or portions thereof.
+  Contributor, to make, use, have made, and/or otherwise dispose of
+  Extensions or portions thereof, but solely to the extent that any such claim
+  is necessary to enable You to make, use, have made, and/or otherwise dispose
+  of Licensed Software or portions thereof.
 
 5.0 Exclusions From License Grant. Nothing in this License shall be deemed to
   grant any rights to trademarks, copyrights, patents, trade secrets or any
@@ -510,13 +520,13 @@ You distribute of the Licensed Software or any Extensions thereto:
         language governing rights and limitations under the YRPL.
 
         Copies of the YRPL can be found at:
-        https://yombo.net/policies/gateway_license
+        https://yombo.net/policies/EULA
 
 EXHIBIT B
 The User-Visible Attribution Notice below, must appear in each user-visible
 display as defined in Section 6.4 (d):
 
-        Parts of this software use the Yombo Gateway software and is coverd by the Yombo
+        Parts of this software use the Yombo Gateway software and is covered by the Yombo
         Reciprocal Public License ("YRPL"). All software distributed under the YRPL is
         provided strictly on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
         EXPRESS OR IMPLIED, AND LICENSOR HEREBY DISCLAIMS ALL SUCH WARRANTIES, INCLUDING
@@ -524,4 +534,4 @@ display as defined in Section 6.4 (d):
         PURPOSE, QUIET ENJOYMENT, OR NON-INFRINGEMENT. See the YRPL for specific
         language governing rights and limitations under the YRPL.
 
-        YRPL can found at: https://yombo.net/policies/gateway_license
+        YRPL can found at: https://yombo.net/policies/EULA
