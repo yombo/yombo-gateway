@@ -190,6 +190,11 @@ Comment: https://github.com/bmuller/twistar commit hash:19f4ce3d759f03f5066dfbaf
   OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+Files: yombo/ext/txrdq
+Copyright: Anton Efimenko
+License: Apache License, 2.0 http://www.apache.org/licenses/
+Comment: https://github.com/terrycojones/txrdq commit hash: 62cc3a5239c4c3e5d03da55e45e27969a9cc335d
+
 Files: yombo/ext/umsgpack.py
 Copyright: 2013-2014 Ivan A. Sergeev
 License: MIT License

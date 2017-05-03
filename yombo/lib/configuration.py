@@ -608,7 +608,7 @@ class Configuration(YomboLibrary):
 
     def get2(self, section, option, default="Jx^pG!+M3UByJc*MdJVz", set_if_missing=True, set=None, **kwargs):
         """
-        Like :py:meth:`get() <get>` below, however, returns a callable to retrieve the value instead of an actual
+        Like :py:meth:`get() <get>` below, however, this returns a callable to retrieve the value instead of an actual
         value. The callable can also be used to set the value of the configuration item too. See
         example for usage details.
 
@@ -617,7 +617,7 @@ class Configuration(YomboLibrary):
         .. code-block:: python
 
            gw_label = self._Config.get2("core", "label", "Default Value")
-           logger.info("The Gateway Label is: {labe}", label=gw_label)
+           logger.info("The Gateway Label is: {label}", label=gw_label)
            # set a new label.  Don't really ever do this.
            gw_label(set="New label")
 

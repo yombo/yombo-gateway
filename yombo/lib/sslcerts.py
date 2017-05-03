@@ -947,7 +947,7 @@ class SSLCert(object):
         logger.debug("About to generate new csr request: {request}", request=request)
 
         try:
-            self._ParentLibrary.generate_csr_queue.put(request, self.generate_new_csr_done, {'submit':submit})
+            self._ParentLibrary.generate_csr_queue.put(request, done_callback=self.generate_new_csr_done, done_arg={'submit':submit})
             return True
         except Exception as e:
             self.next_csr_generation_error_count += 1

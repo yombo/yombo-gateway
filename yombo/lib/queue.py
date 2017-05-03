@@ -6,7 +6,8 @@
 
   For more information see: `Queues @ command Development <https://yombo.net/docs/modules/queues/>`_
 
-A library to create simple work queues. Useful when you need a simple FIFO queue to handle lots of tasks.
+This library implements a modified version of a queue developed by Terry Jones
+( http://blogs.fluidinfo.com/terry/2011/06/27/a-resizable-dispatch-queue-for-twisted/ ).
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
@@ -14,11 +15,14 @@ A library to create simple work queues. Useful when you need a simple FIFO queue
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
-import Queue
+import pickle
 import traceback
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, DeferredQueue, maybeDeferred
+from twisted.internet.defer import Deferred, DeferredList
+
+#Import third party extensions
+from yombo.ext.txrdq.rdq import ResizableDispatchQueue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -29,88 +33,48 @@ logger = get_logger('library.queue')
 
 class Queue(YomboLibrary):
     """
-    Allows libraries and modules to implement a simple FIFO queue.
+    Allows libraries and modules to implement a FIFO queue with various features. See 
+    `Queues @ command Development <https://yombo.net/docs/modules/queues/>`_ for full usage.
     """
     def _init_(self):
         """
-        Setups up the basic framework. Nothing is loaded in here until the
-        Load() stage.
+        Track all the queue created so we can gracefully shut them down.
         """
         self.queues = {}
 
-    def _unload_(self):
-        for name, work in self.workers.iteritems():
-            self.workers[name]['running'] = False
+    def _stop_(self):
+        self.unload_deferred = Deferred()
+        to_stop = []
+        logger.info("Stopping queues. Waiting for in-flight jobs to finish.")
+        try:
+            for name, queue in self.queues.iteritems():
+                to_stop.append(queue.stop())
+                if queue.stopped is True:
+                    continue
+                # print "stopping queue: %s " % name
+                # print queue.size()
+                # pending = queue.pending()
+                # if len(pending) > 0:
+                #     for job in pending:
+                #         print "job in queue jobarg: %s" % job.__repr__()
 
-    def new(self, name, worker_callback, workers = None):
+            dl = DeferredList(to_stop)
+            dl.addCallback(self.unload_deferred.callback)
+            # self.unload_deferred.callback(1)
+            return self.unload_deferred
+
+        except Exception as e:
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.format_exc())
+            logger.error("--------------------------------------------------------")
+
+    def new(self, name, worker_callback, width=None, size=None, save_on_exit=None):
         if name in self.queues:
             raise YomboWarning("'name' already exists in Queues.")
-        if workers is None:
-            workers = 1
+        if width is None:
+            width = 1
         if callable(worker_callback) is False:
             raise YomboWarning("Invalid callable from queues.new...")
 
-        self.queues[name] = YomboQueue(self, name, worker_callback, workers)
+        self.queues[name] = ResizableDispatchQueue(worker_callback, width, size, name=name, save_on_exit=save_on_exit)
         return self.queues[name]
-
-
-class YomboQueue(object):
-
-    def __init__(self, parent, name, worker_callback, workers):
-        self._Parent = parent
-        self.name = name
-        self.worker_callback = worker_callback
-        self.workers = workers
-        self.queue = DeferredQueue()
-        self.running = True
-        self.do_work()
-
-    def width(self, workers = None):
-        if workers is None:
-            raise YomboWarning("Must set 'workers'.")
-        self.workers = workers
-
-    def put(self, worker_args = None, work_done_callback = None, done_args = None, description = None):
-        if callable(work_done_callback) is False:
-            raise YomboWarning("Invalid callable from queues.put...")
-        if description is None:
-            description = "No description."
-
-        self.queue.put( Job(worker_args, work_done_callback, done_args, description) )
-
-    @inlineCallbacks
-    def do_work(self):
-        while self.running:
-            job = yield self.queue.get() # wait for a url from the queue
-            try:
-                # print "calling worker function: %s" % self.worker_callback
-                # print "calling worker args: %s" % job.worker_args
-                results = yield maybeDeferred(self.worker_callback, job.worker_args)
-            except Exception as e:
-                logger.error("Received error while calling worker function: {e}", e=e)
-                logger.error("---------------==(Traceback)==--------------------------")
-                logger.error("{trace}", trace=traceback.format_exc())
-                logger.error("--------------------------------------------------------")
-                return
-
-            if job.work_done_callback is callable(job.work_done_callback):
-                try:
-                    yield maybeDeferred(job.work_done_callback, job.done_args, results)
-                except Exception as e:
-                    logger.error("Received error while calling worker done function: {e}", e=e)
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{trace}", trace=traceback.format_exc())
-                    logger.error("--------------------------------------------------------")
-
-
-class Job(object):
-    """
-    A simple class to store extra data about a job.
-    """
-    def __init__(self, worker_args, work_done_callback, done_args, description):
-        self.worker_args = worker_args
-        self.work_done_callback = work_done_callback
-        self.done_args = done_args
-        self.description = description
-
-

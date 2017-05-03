@@ -292,9 +292,8 @@ class Nodes(YomboLibrary):
                                                                      operation="highest")
                 # logger.debug("found node by search: others: {others}", others=others)
                 if node_type is not None:
-                    print "others: %s" % others
                     for other in others:
-                        print "other: %s" % other
+                        # print "other: %s" % other
                         if other['value'].node_type == node_type and other['ratio'] > limiter:
                             return other['value']
                 else:

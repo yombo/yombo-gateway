@@ -431,7 +431,9 @@ class Loader(YomboLibrary, object):
                 self.hook_counts[library._Name][hook][called_by]['count'] = self.hook_counts[library._Name][hook][called_by]['count'] + 1
                 self.hook_counts[library._Name][hook]['Total Count']['count'] = self.hook_counts[library._Name][hook]['Total Count']['count'] + 1
                 self._invoke_list_cache[cache_key] = True
+                # print "call start: %s" % method
                 results = yield maybeDeferred(method, **kwargs)
+                # print "call end: %s" % method
                 self._log_loader('debug', requested_library, 'library', 'library_invoke', 'Finished with call: %s' % hook)
                 returnValue(results)
             else:

@@ -1,0 +1,8 @@
+{
+  "yombo/ext/mqtt/client/test/test_base.py": true, 
+  "yombo/ext/mqtt/client/test/test_factory.py": true, 
+  "yombo/ext/mqtt/client/test/test_publisher.py": true, 
+  "yombo/ext/mqtt/client/test/test_pubsubs.py": true, 
+  "yombo/ext/mqtt/client/test/test_subscriber.py": true, 
+  "yombo/ext/mqtt/test/test_pdu.py": true
+}

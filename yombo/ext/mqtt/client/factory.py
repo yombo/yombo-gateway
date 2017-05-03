@@ -44,7 +44,7 @@ from twisted.internet.protocol import ReconnectingClientFactory
 from ..      import __version__
 from ..error import ProfileValueError
 
-# Yombo Modules
+# Yombo Items
 from yombo.core.log import get_logger
 log = get_logger('ext.mqtt.factory')
 

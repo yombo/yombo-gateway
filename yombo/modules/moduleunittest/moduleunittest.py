@@ -207,14 +207,16 @@ class ModuleUnitTest(YomboModule):
         self.assertNotEqual(self._Times.isTwilight, None, "self._Times.isTwilight should not be None")
 
         q1 = self._Queue.new('module.unittest.1', self.queue_worker1)  # test calls to things that don't return deferred
-        q1.put('letsdoit', self.queue_results)
-        q1.put('letsdoit', self.queue_results)
-        q1.put('letsdoit', self.queue_results)
+        q1.put('letsdoit', self.queue_results, "someargs")
+        q1.put('letsdoit', self.queue_results, "someargs")
+        q1.put('letsdoit', self.queue_results, "someargs")
 
         q2 = self._Queue.new('module.unittest.2', self.queue_worker2)  # test calls which return deferreds
-        q2.put('letsdoit', self.queue_results)
-        q2.put('letsdoit', self.queue_results)
-        q2.put('letsdoit', self.queue_results)
+        q2.put('letsdoit', self.queue_results, "someargs")
+        q2.put('letsdoit', self.queue_results, "someargs")
+        q2.put('letsdoit', self.queue_results, "someargs")
+        q2.put('letsdoit', self.queue_results, "someargs")
+        q2.put('letsdoit', self.queue_results, "someargs")
 
     def queue_worker1(self, arguments):
         self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
@@ -222,11 +224,14 @@ class ModuleUnitTest(YomboModule):
 
     @inlineCallbacks
     def queue_worker2(self, arguments):
-        yield sleep(1)
+        print "started....."
+        yield sleep(5)
+        print "finished......."
         self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
         returnValue("someresults")
 
     def queue_results(self, args, results):
+        self.assertIsEqual(args, "someargs", "queue_results(), args should match.")
         self.assertIsEqual(results, "someresults", "queue_results(), results should match.")
 
         self.display_saw_new_items = 0
