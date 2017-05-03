@@ -10,12 +10,11 @@
 
    The :doc:`States library </lib/states>` is used to store states that change.
 
-Atoms provide an interface to derive information about the underlying system. Atoms are generally immutable, with
-some exceptions such as IP address changes.
+Atoms provide non-changing information about the environment the gateway is running in as well as about the
+Yombo Gateway software. Atoms are generally immutable, however, if the system state changes and is detected, the
+atom should also be updated.
 
 For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
-
-If a requested atom doesn't exist, a value of None will be returned instead of an exception.
 
 **Usage**:
 
@@ -129,14 +128,14 @@ _MAP_OS_FAMILY = {
 
 class Atoms(YomboLibrary):
     """
-    Provides the Atom information for modules and libraries to get more
-    information about the underlying system.
+    Provides information about the system environment and yombo gateway.
     """
     def __contains__(self, atom_requested):
         """
         Checks to if a provided atom exists.
 
             >>> if 'cpu.count' in self._Atoms:
+            >>>    print("The system has {0} cpus. ".format(self._Atoms['cpu.count']))
 
         :raises YomboWarning: Raised when request is malformed.
         :param atom_requested: The atom key to search for.
@@ -153,7 +152,7 @@ class Atoms(YomboLibrary):
         """
         Attempts to find the atom requested.
 
-            >>> system_cpus = self._Atoms['cpu.count']  #by id
+            >>> system_cpus = self._Atoms['cpu.count']
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
@@ -166,12 +165,9 @@ class Atoms(YomboLibrary):
 
     def __setitem__(self, atom_requested, value):
         """
-        Sets a state.
+        Sets an atom value..
 
-        .. note:: If this is a new state, or you wish to set a human filter for the value, use
-           :py:meth:`set <States.set>` method.
-
-            >>> self._States['module.local.name.hi'] = 'somee value'
+            >>> system_cpus = self._Atoms['cpu.count'] = 4
 
         :raises YomboWarning: Raised when request is malformed.
         :param atom_requested: The atom key to replace the value for.
@@ -241,6 +237,11 @@ class Atoms(YomboLibrary):
         return self.__Atoms.values()
 
     def _init_(self):
+        """
+        Sets up the atom library and files basic atoms values about the system.
+
+        :return: None
+        """
         self.library_state = 1
         self.__Atoms = {}
         self.__Atoms.update(self.os_data())
@@ -259,17 +260,12 @@ class Atoms(YomboLibrary):
     def _start_(self):
         self.library_state = 3
 
-    # def _statistics_lifetimes_(self, **kwargs):
-    #     """
-    #     We keep 10 days of max data, 30 days of hourly data, 1 of daily data
-    #     """
-    #     return {'lib.atoms.#': {'size': 60, 'lifetime': 180} }
-    #     # we don't keep 6h averages.
-
     def get_atoms(self):
         """
         Shouldn't really be used. Just returns a _copy_ of all the atoms.
-        :return:
+
+        :return: A dictionary containing all atoms.
+        :rtype: dict
         """
         return self.__Atoms.copy()
 
@@ -277,9 +273,11 @@ class Atoms(YomboLibrary):
         """
         Get the value of a given atom (key).
 
-        :param atom_requested: Name of atom to check.
-        :rtype atom_requested: string
-        :return: Value of atom
+        :raises KeyError: Raised when request is not found.
+        :param atom_requested: Name of atom to retrieve.
+        :type atom_requested: string
+        :return: Value of the atom
+        :rtype: mixed
         """
         logger.debug('atoms:get: {atom_requested}', atom_requested=atom_requested)
 
@@ -308,9 +306,13 @@ class Atoms(YomboLibrary):
         * _atoms_set_ : Sends kwargs 'key', and 'value'. *key* is the name of the atom being set and *value* is
           the new value to set.
 
+        :raises YomboWarning: Raised when request is malformed.
         :param key: Name of atom to set.
+        :type key: string
         :param value: Value to set the atom to.
+        :type value: mixed
         :return: Value of atom
+        :rtype: mixed
         """
         logger.debug('atoms:set: {key} = {value}', key=key, value=value)
 
@@ -351,7 +353,9 @@ class Atoms(YomboLibrary):
 
     def os_data(self):
         """
-        Returns atoms about the operating system.
+        Sets atoms concerning the operating system.
+
+        :return: None
         """
         atoms = {}
         (atoms['kernel'],atoms['system.name'],atoms['kernel.release'], version,
@@ -407,6 +411,10 @@ class Atoms(YomboLibrary):
 
     def check_trigger(self, key, value):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         Called by the atoms.set function when a new value is set. It asks the automation library if this key is
         trigger, and if so, fire any rules.
 
@@ -417,6 +425,10 @@ class Atoms(YomboLibrary):
 
     def _automation_source_list_(self, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
         :param kwargs: None
@@ -439,6 +451,10 @@ class Atoms(YomboLibrary):
 
     def atoms_validate_source_callback(self, rule, portion, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to check if a provided source is valid before being added as a possible source.
 
         :param rule: The potential rule being added.
@@ -452,7 +468,10 @@ class Atoms(YomboLibrary):
 
     def atoms_add_trigger_callback(self, rule, **kwargs):
         """
-        Called to add a trigger.  We simply use the automation library for the heavy lifting.
+        .. note::
+
+          Should only be called by the automation system.
+
         Called to add a trigger.  We simply use the automation library for the heavy lifting.
 
         :param rule: The potential rule being added.
@@ -463,6 +482,10 @@ class Atoms(YomboLibrary):
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to the value for platform "atom". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
@@ -473,6 +496,10 @@ class Atoms(YomboLibrary):
 
     def _automation_action_list_(self, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
 
@@ -503,6 +530,10 @@ class Atoms(YomboLibrary):
 
     def atoms_validate_action_callback(self, rule, action, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to check if a provided action is valid before being added as a possible action.
 
         :param rule: The potential rule being added.
@@ -516,6 +547,10 @@ class Atoms(YomboLibrary):
 
     def atoms_do_action_callback(self, rule, action, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to perform an action.
 
         :param rule: The complete rule being fired.
