@@ -66,7 +66,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboStateNotFound, YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, is_json, random_string, random_int
@@ -277,7 +277,7 @@ class States(YomboLibrary, object):
         if key in self.__States:
             return self.__States[key]['created']
         else:
-            raise YomboStateNotFound("Cannot get state time: %s not found" % key)
+            raise KeyError("Cannot get state time: %s not found" % key)
 
     def get(self, key, human=None, full=None):
         """
@@ -430,7 +430,7 @@ class States(YomboLibrary, object):
     def delete(self, key):
         """
         Deletes a status (key).
-        YomboStateNotFound if state not found.
+        KeyError if state not found.
 
         :raises KeyError: Raised when request is not found.
         :param key: Name of the state to delete.
