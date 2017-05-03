@@ -76,7 +76,7 @@ from twisted.internet import reactor
 from random import randint
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, InvalidArgumentError
 from yombo.utils import get_external_ip_address_v4, get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
@@ -623,6 +623,8 @@ class Configuration(YomboLibrary):
 
         .. versionadded:: 0.13.0
 
+        :raises InvalidArgumentError: When an argument is invalid or illegal.
+        :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
         :param option: The option (key) to use. Use * to return all possible options as a dict.
@@ -634,15 +636,11 @@ class Configuration(YomboLibrary):
         :return: The configuration value requested by section and option.
         :rtype: int or string or None
         """
-        if len(section) > self.MAX_SECTION_LENGTH:
-            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
-        if len(option) > self.MAX_OPTION_LENGTH:
-            self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
-
         if set is not None:
-            return self.set(section, option, set, **kwargs)
+            self.set(section, option, set, **kwargs)
+            return set
+
+        self.get(section, option, default, set_if_missing, set, **kwargs)
 
         section = section.lower()
         option = option.lower()
@@ -666,6 +664,7 @@ class Configuration(YomboLibrary):
 
            gatewayUUID = self._Config.get("core", "gwuuid", "Default Value")
 
+        :raises InvalidArgumentError: When an argument is invalid or illegal.
         :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
@@ -679,14 +678,15 @@ class Configuration(YomboLibrary):
         :rtype: int or string or None
         """
         if set is not None:
-            return self.set(section, option, set, **kwargs)
+            self.set(section, option, set, **kwargs)
+            return set
 
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise InvalidArgumentError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise InvalidArgumentError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         section = section.lower()
         option = option.lower()
@@ -697,9 +697,9 @@ class Configuration(YomboLibrary):
                 return self.yombo_vars[option]
             else:
                 self._Statistics.increment("lib.configuration.get.none", bucket_size=15, anon=True)
-            return KeyError("Requested configuration not found: %s : %s" % (section, option))
+            raise KeyError("Requested configuration not found: %s : %s" % (section, option))
 
-        if section == "*":  # we now allow to get all config items. Useful for the web.
+        if section == "*":  # Get all sections and options.
             results = {}
             for section, options in self.configs.iteritems():
                 if section not in results:
@@ -708,7 +708,7 @@ class Configuration(YomboLibrary):
                     results[section][option] = self.configs[section][option]['value']
             return results
 
-        if section in self.configs:
+        if section in self.configs:  # Get all options for a provided section name.
             if option == "*":
                 if len(self.configs[section]) > 0:
                     results = {}
@@ -757,6 +757,8 @@ class Configuration(YomboLibrary):
 
            gatewayUUID = self._Config.set("section_name", "myoption", "New Value")
 
+        :raises InvalidArgumentError: When an argument is invalid or illegal.
+        :raises KeyError: When the requested section and option are not found.
         :param section: The configuration section to use.
         :type section: string
         :param option: The option (key) to use.
@@ -766,20 +768,20 @@ class Configuration(YomboLibrary):
         """
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise ValueError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise InvalidArgumentError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
         if len(option) > self.MAX_OPTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
-            raise ValueError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
+            raise InvalidArgumentError("option cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
 
         # Can't set value!
         if section == 'yombo':
             self._Statistics.increment("lib.configuration.set.no_setting_yombo", bucket_size=15, anon=True)
-            raise ValueError("Not allowed to set value")
+            raise InvalidArgumentError("Not allowed to set value")
 
         if isinstance(value, str):
             if len(value) > self.MAX_VALUE_LENGTH:
                 self._Statistics.increment("lib.configuration.set.value_too_long", bucket_size=15, anon=True)
-                raise ValueError("value cannot be more than %d chars" %
+                raise InvalidArgumentError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
         # print "setting section: %s, option: %s, value: %s" % (section, option, value)
@@ -841,6 +843,10 @@ class Configuration(YomboLibrary):
 
     def check_trigger(self, section, option, value):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         Called by the configs.set function when a new value is set. It asks the automation library if this key is
         trigger, and if so, fire any rules.
 
@@ -853,6 +859,10 @@ class Configuration(YomboLibrary):
 
     def _automation_source_list_(self, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         hook_automation_source_list called by the automation library to get a list of possible sources.
 
         :param kwargs: None
@@ -887,6 +897,10 @@ class Configuration(YomboLibrary):
 
     def configs_validate_source_callback(self, rule, portion, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to check if a provided source is valid before being added as a possible source.
 
         :param rule: The potential rule being added.
@@ -900,6 +914,10 @@ class Configuration(YomboLibrary):
 
     def configs_add_trigger_callback(self, rule, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         Called to add a trigger.  We simply use the automation library for the heavy lifting.
 
         :param rule: The potential rule being added.
@@ -917,6 +935,10 @@ class Configuration(YomboLibrary):
 
     def configs_startup_trigger_callback(self):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         Called when automation rules are active. Check for any automation rules that are marked with run_on_start
 
         :return:
@@ -932,6 +954,10 @@ class Configuration(YomboLibrary):
 
     def configs_get_value_callback(self, rule, portion, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to the value for platform "states". We simply just do a get based on key_name.
 
         :param rule: The potential rule being added.
@@ -946,6 +972,10 @@ class Configuration(YomboLibrary):
 
     def _automation_action_list_(self, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         hook_automation_action_list called by the automation library to list possible actions this module can
         perform.
 
@@ -981,6 +1011,10 @@ class Configuration(YomboLibrary):
 
     def configs_validate_action_callback(self, rule, action, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to check if a provided action is valid before being added as a possible action.
 
         :param rule: The potential rule being added.
@@ -995,6 +1029,10 @@ class Configuration(YomboLibrary):
 
     def configs_do_action_callback(self, rule, action, **kwargs):
         """
+        .. note::
+
+          Should only be called by the automation system.
+
         A callback to perform an action.
 
         :param rule: The complete rule being fired.
