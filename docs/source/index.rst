@@ -57,6 +57,7 @@ Table of Contents
    chapters/useful-links.rst
    chapters/yombo-framework.rst
    chapters/developing-yombo-modules.rst
+   chapters/license.rst
 
 Contributing to Developer Documentation
 ========================================

@@ -4,6 +4,14 @@
 
 .. currentmodule:: yombo.lib.commands
 
+.. rubric:: Classes in this module
+
+.. autosummary::
+   :nosignatures:
+
+   Commands
+   Command
+
 =============================
 Commands (yombo.lib.commands)
 =============================
