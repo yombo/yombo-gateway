@@ -243,7 +243,6 @@ class InputTypes(YomboLibrary):
             global_invoke_all('_input_type_before_load_',
                               **{'input_type': input_type})
             self.input_types[input_type_id] = InputType(input_type)
-            self.input_types[input_type_id].update_attributes(input_type)
             global_invoke_all('_input_type_loaded_',
                           **{'input_type': self.input_types[input_type_id]})
         elif input_type_id not in self.input_types:
@@ -539,6 +538,7 @@ class InputType(object):
         self.public = None
         self.created = None
         self.updated = None
+        self.update_attributes(input_type)
 
     def update_attributes(self, input_type):
         """
