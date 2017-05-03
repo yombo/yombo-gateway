@@ -1,10 +1,10 @@
 """
-Various utilities to help the Yombo Gateway get things done.
+Various utilities used to perform common functions to help speed development.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2016 by Yombo.
-:license: LICENSE for details.
+:copyright: Copyright 2016-2017 by Yombo.
+:license: See LICENSE for details.
 """
 # Import python libraries
 try:
@@ -52,7 +52,7 @@ from yombo.core.log import get_logger
 logger = get_logger('utils.__init__')
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboNoSuchLoadedComponentError, YomboWarning
+from yombo.core.exceptions import YomboWarning
 
 
 def pattern_search(look_for, items):
@@ -1082,7 +1082,7 @@ def get_component(name):
     class to make searching easier, but can only be off one or two letters
     due to importance of selecting the correct library or module.
 
-    :raises YomboNoSuchLoadedComponentError: When the requested component cannot be found.
+    :raises KeyError: When the requested component cannot be found.
     :param name: The name of the component (library or module) to find.  Returns a
         pointer to the object so it's functions and attributes can be accessed.
     :type name: string
@@ -1095,7 +1095,7 @@ def get_component(name):
     try:
         return get_component.components[name.lower()]
     except KeyError:
-        raise YomboNoSuchLoadedComponentError("No such loaded component:" + str(name))
+        raise KeyError("No such loaded component:" + str(name))
 
 
 def is_string_bool(value=None):
