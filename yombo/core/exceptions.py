@@ -106,26 +106,6 @@ class YomboAutomationWarning(YomboWarning):
         YomboWarning.__init__(self, message, errorno, component, name)
 
 
-class YomboStateNotFound(YomboWarning):
-    """
-    Extends *YomboWarning* - When a state is not found.
-    """
-    def __init__(self, message, errorno=101, name="States", component="library"):
-        """
-        Setup the YomboWarning and then pass everying to YomboException
-
-        :param message: The error message to log/display.
-        :type message: string
-        :param errorno: The error number to log/display.
-        :type errorno: int
-        :param name: Name of the library, component, or module rasing the exception.
-        :type name: string
-        :param component: What type of ojbect is calling: component, library, or module
-        :type component: string
-        """
-        YomboWarning.__init__(self, message, errorno, component, name)
-
-
 class YomboCritical(RuntimeWarning):
     """
     Extends *RuntimeWarning* - A **fatal error** gateway exception - **forces the gateway to quit**.
@@ -380,14 +360,6 @@ class YomboDeviceError(Exception):
         return {'message': self.message,
                 'name': self.name}
 
-        
-class YomboNoSuchLoadedComponentError(Exception):
-    """
-    Extends *Exception* - Raised when a request for a loaded module or library
-    (aka component), is not found.
-    """
-    pass
-
 
 class YomboFuzzySearchError(Exception):
     """
@@ -440,13 +412,6 @@ class YomboPinCodeError(Exception):
     pass
 
 
-class YomboCommandError(Exception):
-    """
-    If commands class has an error.
-    """
-    pass
-
-
 class YomboCronTabError(Exception):
     """
     If crontab class has an error.
@@ -454,9 +419,9 @@ class YomboCronTabError(Exception):
     pass
 
 
-class YomboTimeError(Exception):
+class InvalidArgumentError(ValueError):
     """
-    If :py:mod:`yombo.lib.times` class has an error.
+    Used when an argument is invalid. We don't use ValueError as that is for built-in functions.
     """
     pass
 
