@@ -10,13 +10,14 @@
 
    The :doc:`mqtt library </lib/mqtt>` can connect to MQTT brokers, this a light weight message broker.
 
-AMQP messaging is implemented by this library. It's used by Yombo Gateway to commuicate with it's servers. This
-library also exposes and API that modules can use to connect to other servers.
-AMQP protocol can be used for sending messages to other systems for processing, status updates, or requests. For
-for more informatin, see the `RabbitMQ Tutorials <https://www.rabbitmq.com/getstarted.html>`_.
+All AMQP connetions are managed by this library. To create a new connection use the
+:py:meth:`self._AMQP.new() <AMQP.new>` function to create a new connection. This will return a
+:class:`AMQPClient` instance which allows for creating exchanges, queues, queue bindings,
+and sending/receiving messages.
+
+To learn more about AMQP, see the `RabbitMQ Tutorials <https://www.rabbitmq.com/getstarted.html>`_.
 
 Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this library.
-
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
@@ -53,12 +54,7 @@ logger = get_logger('library.amqp')
 
 class AMQP(YomboLibrary):
     """
-    This library can connect to any AMQP compatible server. It uses the Pika library to perform the actual
-    AMQP handling.
-
-    Developers should only be interested in the **new** function of this class. You will get back a
-    :py:class:AMQPClient instance. This instance will allow you to subscribe, publish, and setup exchanges and
-    queues.
+    Base, or root class that manages all AMQP connections.
     """
     def _init_(self):
         self.client_connections = {}
