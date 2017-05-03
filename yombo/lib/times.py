@@ -39,7 +39,7 @@ from datetime import datetime, timedelta
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboTimeError, YomboHookStopProcessing
+from yombo.core.exceptions import InvalidArgumentError, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import is_one_zero, global_invoke_all
@@ -614,22 +614,23 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            saturn_visible = self._Times.item_visible('Saturn') # Is Saturn above the horizon? (True/False)
+            saturn_visible = self._Times.item_visible(item='Saturn') # Is Saturn above the horizon? (True/False)
 
-        :raises YomboTimeError: Raised when function encounters an error.
+        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param item: The device UUID or device label to search for.
         :type item: string
         :return: Pointer to array of all devices for requested device type
         :rtype: dict
         """
         if 'item' not in kwargs:
-           raise YomboTimeError("item_visible() must have 'item' set.")
+           raise InvalidArgumentError("Missing 'item' argument.")
         item = kwargs['item']
 
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise YomboTimeError("Couldn't not find PyEphem item: %s" % item)
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
         self.obs.date = datetime.utcnow()
 
         #if it is rised and not set, then it is visible
@@ -648,7 +649,8 @@ class Times(YomboLibrary, object):
 
             mars_rise = self._Times.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Mars.
 
-        :raises YomboTimeError: Raised when function encounters an error.
+        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days in future to find when item rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
         :param item: Default='Sun'. PyEphem item to search for and return results for.
@@ -657,7 +659,7 @@ class Times(YomboLibrary, object):
         :rtype: dict
         """
         if 'item' not in kwargs:
-           raise YomboTimeError("item_rise() must have 'item' set.")
+           raise InvalidArgumentError("Missing 'item' argument.")
         item = kwargs['item']
         dayOffset = 0
         if 'dayOffset' in kwargs:
@@ -666,7 +668,7 @@ class Times(YomboLibrary, object):
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise YomboTimeError("Couldn't not find PyEphem item: %s" % item)
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
         self.obs.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obs,obj())
         return self._timegm (temp)
@@ -681,7 +683,8 @@ class Times(YomboLibrary, object):
 
             pluto_set = self._Times.item_set(dayOffset=0, item='Pluto') # the NEXT (0) setting of Pluto.
 
-        :raises YomboTimeError: Raised when function encounters an error.
+        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days in future to find when item sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
         :type dayOffset: int
         :param item: Default='Sun'. PyEphem item to search for and return results for.
@@ -690,7 +693,7 @@ class Times(YomboLibrary, object):
         :rtype: dict
         """
         if 'item' not in kwargs:
-           raise YomboTimeError("item_set() must have 'item' set.")
+           raise InvalidArgumentError("Missing 'item' argument.")
         item = kwargs['item']
         dayOffset = 0
         if 'dayOffset' in kwargs:
@@ -699,7 +702,7 @@ class Times(YomboLibrary, object):
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise YomboTimeError("Couldn't not find PyEphem item: %s" % item)
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
         # we want the date part only, but date.today() isn't UTC.
         dt = datetime.utcnow()+timedelta(days=dayOffset)
         self.obs.date = dt
@@ -736,6 +739,7 @@ class Times(YomboLibrary, object):
         """
         Return sunrise, optionally returns sunrise +/- # days.
 
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
         :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
         :type dayOffset: int
         :param item: Which item to return information on. Sun, Moon, Mars, Jupiter, etc.
@@ -751,7 +755,7 @@ class Times(YomboLibrary, object):
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            raise YomboTimeError("Couldn't not find PyEphem item: %s" % item)
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
         self.obsTwilight.date = datetime.utcnow()+timedelta(days=dayOffset)
         temp = self._next_rising(self.obsTwilight,obj(),use_center=True)
         return self._timegm(temp)
@@ -759,6 +763,12 @@ class Times(YomboLibrary, object):
     def sunset_twilight(self, **kwargs):
         """
         Return sunset, optionaly returns sunset +/- # days.
+
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
+        :type dayOffset: int
+        :param item: Which item to return information on. Sun, Moon, Mars, Jupiter, etc.
+        :type item: string
         """
         dayOffset = 0
         if 'dayOffset' in kwargs:
@@ -770,7 +780,7 @@ class Times(YomboLibrary, object):
         try:
             obj = getattr(ephem, item)
         except AttributeError:
-            obj = getattr(ephem, 'Sun')
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
 
         # we want the date part only, but date.today() isn't UTC.
         dt = datetime.utcnow()+timedelta(days=dayOffset)
