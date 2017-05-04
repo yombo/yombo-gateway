@@ -236,7 +236,7 @@ def route_api_v1(webapp):
 
             url = '/v1/command?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
-                url = url + "&label=%s" % search
+                url = url + "&?_filters[label]*%s&_filters[short_description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             print "about to call"
             results = yield webinterface._YomboAPI.request('GET', url)
@@ -292,7 +292,7 @@ def route_api_v1(webapp):
 
             url = '/v1/device_type?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
-                url = url + "&label=%s" % search
+                url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {
@@ -321,7 +321,7 @@ def route_api_v1(webapp):
 
             url = '/v1/input_type?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
-                url = url + "&label=%s" % search
+                url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {
@@ -350,7 +350,7 @@ def route_api_v1(webapp):
 
             url = '/v1/module?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
-                url = url + "&label=%s" % search
+                url = url + "&?_filters[label]*%s&_filters[short_description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {
