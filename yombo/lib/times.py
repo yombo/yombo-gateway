@@ -31,9 +31,10 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 """
 # Import python libraries
 import ephem
-from time import time
 from calendar import timegm as CalTimegm
 from datetime import datetime, timedelta
+import parsedatetime as pdt
+import time
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -43,7 +44,7 @@ from yombo.core.exceptions import InvalidArgumentError, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import is_one_zero, global_invoke_all
-import arrow
+from yombo.utils.decorators import static_var
 
 logger = get_logger('library.times')
 
@@ -289,14 +290,14 @@ class Times(YomboLibrary, object):
 
         setTime = 0
         if self.isLight:
-            setTime = self.sunset_twilight() - time()
-            #print "%d = %d - %d" % (setTime, self.sunset_twilight(),time())
+            setTime = self.sunset_twilight() - time.time()
+            #print "%d = %d - %d" % (setTime, self.sunset_twilight(),time.time())
             self.CLnowDark = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_dark')
             #print "self.CLnowDark = reactor.callLater(setTime, self.send_event_hook, 'nowDark')"
         else:
-            setTime = self.sunrise_twilight() - time()
+            setTime = self.sunrise_twilight() - time.time()
             #print "setTime = self.sunrise_twilight()"
-            #print "%d = %d - %d" % (setTime, self.sunrise_twilight(),time())
+            #print "%d = %d - %d" % (setTime, self.sunrise_twilight(),time.time())
             self.CLnowLight = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_light')
 
         #set a callLater to redo islight/dark, and setup next broadcast.
@@ -312,11 +313,11 @@ class Times(YomboLibrary, object):
         """
         self._CalcDayNight()
         if self.isDay:
-            setTime = self.sunset() - time()
+            setTime = self.sunset() - time.time()
             logger.debug("NowNight event in: {setTime}", setTime=setTime)
             self.CLnowNight = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_night')
         else:
-            setTime = self.sunrise() -time()
+            setTime = self.sunrise() -time.time()
             logger.debug("NowDay event in: {setTime}", setTime=setTime)
             self.CLnowDay = reactor.callLater(setTime+1.1, self.send_event_hook, 'now_day')
 
@@ -338,14 +339,14 @@ class Times(YomboLibrary, object):
         self._CalcDayNight()
         self._CalcTwilight()  #is it twilight right now?
         if self.isTwilight:
-            setTime = self.sunset_twilight() - time()
-            riseTime = self.sunrise() - time()
+            setTime = self.sunset_twilight() - time.time()
+            riseTime = self.sunrise() - time.time()
             twTime = min (setTime, riseTime)
             logger.debug("nowNotTwilight event in: {twTime}", twTime=twTime)
             self.CLnowNotTwilight = reactor.callLater(twTime+1.1, self.send_event_hook, 'now_not_twilight')
         else:
-            setTime = self.sunset() - time()
-            riseTime = self.sunrise_twilight() - time()
+            setTime = self.sunset() - time.time()
+            riseTime = self.sunrise_twilight() - time.time()
             twTime = min(setTime, riseTime)
             logger.debug("nowTwilight event in: {twTime}", twTime=twTime)
             self.CLnowTwilight = reactor.callLater(twTime+1.1, self.send_event_hook, 'now_twilight')
@@ -374,8 +375,8 @@ class Times(YomboLibrary, object):
         sunrise_end = self.sunrise() # for today
         sunset_end = self.sunset_twilight()  # for today
         logger.debug("_setup_next_dawn_dusk_event - Sunset: {sunset}", sunset=sunset)
-        #print "t = %s" % datetime.fromtimestamp(time())
-        curtime = time()
+        #print "t = %s" % datetime.fromtimestamp(time.time())
+        curtime = time.time()
         # First, determine we are closer to sunrise or sunset
         secsRise = sunrise - curtime#here
         secsSet = sunset - curtime
@@ -441,65 +442,85 @@ class Times(YomboLibrary, object):
         self.isDusk = False
         self.send_event_hook('now_not_dusk')
 
-    def get_future(self, **kwargs):
+    @static_var("calendar", pdt.Calendar())
+    def get_time(self, some_time):
         """
-        Get a time in the future. Can specify years, weeks, months, hours, minutes, seconds
-        
+        Using the parsedatetime library, use human terms to get various dates and times. This method
+        returns epoch times UTC, but does consider the system local time zone and daylight savings times.
+
+        Also, check out :py:meth:`get_next_time() <get_next_time>` if you want the next a specific time of
+        day occurs.
+
         .. code-block:: python
 
-            a_time = self._Times.get_future(weeks=+1, minutes=+3)  # 1 week, 3 minutes into the future
-        
-        :param kwargs: 
-        :return: 
-        """
-        utc = arrow.utcnow()
-        return utc.replace(hours=+2, minutes=+1).timestamp
+            a_time = self._Times.get_time('tomorrow 10pm')
+            a_time = self._Times.get_time('1 hour ago')
 
-    def get_next(self, **kwargs):
+        :param some_time: A human time to convert to epoch, considering local timezone.
+        :type some_time: str
+        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
+        :rtype: tuple
         """
-        Get a time when the next time occurs. For example, if you want when the next 10pm at night is:
+        now = datetime.fromtimestamp(time.time())
+        dt = self.get_time.calendar.parseDT(some_time, now)[0]
 
-            >>> a_time = self._Times.get_next(hour=22)  # The next time it's 10pm
-         
+        return (float(dt.strftime('%s')), dt)
 
-        :param kwargs: 
-        :return: 
+    @static_var("calendar", pdt.Calendar())
+    def get_next_time(self, some_time):
         """
-        return datetime.now().replace(**kwargs).strftime('%s')
+        This is used when trying to get the next time it's a specific time. If it's passed for today, it
+        prepends 'tomorrow' to the request to get tomorrow's specific time.
 
-    def get_future_or_next(self, **kwargs):
-        """
-        Returns a time of whichever is less of :py:meth:`get_future <get_future>` and :py:meth:`get_next <get_next>`.
-        
-        This is useful for when you want to turn something on or off, but don't want to wait too long. For example,
-        if you request the next time it's 10pm, and it's 10:01pm, you probably don't want to wait 23 hours and 59
-        minutes.
-        
         .. code-block:: python
 
-            a_time = self._Times.get_future_or_next(hours=5, hour=2200)
-            # Return least time of either 5 hour or 10pm.
-        
+            a_time = self._Times.get_next_time('1:15pm')
 
-        :param kwargs: 
-        :return: 
+        :param some_time: A human time to convert to epoch, considering local timezone.
+        :type some_time: str
+        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
+        :rtype: tuple
         """
-        vars = {}
-        for key, value in kwargs.iteritems():
-            if key in ['year', 'month', 'day', 'hour', 'minute', 'second']:
-                vars[key] = value
-        next_time = self.get_next(**vars)
+        a_time = self.get_time(some_time)
+        if a_time[0] < time.time():
+            a_time = self.get_time("tomorrow " + some_time)
+        return a_time
 
-        vars = {}
-        for key, value in kwargs.iteritems():
-            if key in ['years', 'months', 'days', 'hours', 'minutes', 'seconds']:
-                vars[key] = value
-        future_time = self.get_next(**vars)
+    def day_of_week(self, year, month, day):
+        """
+        Get the day of the week.
+        From: http://stackoverflow.com/questions/9847213/which-day-of-week-given-a-date-python
 
-        if future_time < next_time:
-            return future_time
-        else:
-            return next_time
+        :param year: Any year after 1700
+        :type year: int
+        :param month: The month
+        :type month: int
+        :param day: The day
+        :type day: int
+        :return: Day of the week in english.
+        :rtype: str
+        """
+        offset = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+        week = ['Sunday',
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday']
+        afterFeb = 1
+        if month > 2: afterFeb = 0
+        aux = year - 1700 - afterFeb
+        # dayOfWeek for 1700/1/1 = 5, Friday
+        dayOfWeek = 5
+        # partial sum of days betweem current date and 1700/1/1
+        dayOfWeek += (aux + afterFeb) * 365
+        # leap year correction
+        dayOfWeek += aux / 4 - aux / 100 + (aux + 100) / 400
+        # sum monthly and day offsets
+        dayOfWeek += offset[month - 1] + (day - 1)
+        dayOfWeek %= 7
+        return dayOfWeek, week[dayOfWeek]
 
     def send_event_hook(self, event_msg):
         """
@@ -831,7 +852,7 @@ class Times(YomboLibrary, object):
         self.show_messages = True
         def callLaterMy (a,b,c=None):
             assert a>0, "callLater will fail if secondsOffset <= 0 (%s)" % a
-            coef = time()
+            coef = time.time()
             self.mutex.acquire()
             if (self.show_messages):
                 print 'calling reactor.callLater (', a, b, c, ')'
@@ -849,11 +870,11 @@ class Times(YomboLibrary, object):
         setattr(reactor, 'callLater', callLaterMy)
 
         self.year_array = [0]*(365*24)
-        self.start_time = time()
+        self.start_time = time.time()
         def send_event_hook_my(a):
-            #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time()))
-            ct = int ((time() - self.start_time) / 60 / 60)
-            #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time()))
+            #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time.time()))
+            ct = int ((time.time() - self.start_time) / 60 / 60)
+            #print 'send_event_hook %s on %s' % (a, datetime.fromtimestamp(time.time()))
             if (ct >= (365*24)):
                 return
             if (a == 'nowDark'):
@@ -971,15 +992,15 @@ class Times(YomboLibrary, object):
     def run_inner_tests(self):
         print self.obs
         print self.obsTwilight
-        print 'time()', time()
+        print 'time.time()', time.time()
         print 'sr', self.sunrise()
         print 'ss', self.sunset()
         print 'srt', self.sunrise_twilight()
         print 'sst', self.sunset_twilight()
-        assert (self.sunrise()>time()),"next rise after current time"
-        assert (self.sunset()>time()),"next set after current time"
-        assert (self.sunrise_twilight()>time()),"next twilight rise after current time"
-        assert (self.sunset_twilight()>time()),"next twilight set after current time"
+        assert (self.sunrise()>time.time()),"next rise after current time"
+        assert (self.sunset()>time.time()),"next set after current time"
+        assert (self.sunrise_twilight()>time.time()),"next twilight rise after current time"
+        assert (self.sunset_twilight()>time.time()),"next twilight set after current time"
 
         print '************Year check midnights********************'
         old_time=globals()['time']
@@ -987,10 +1008,10 @@ class Times(YomboLibrary, object):
         class DateTime(datetime):
             @staticmethod
             def utcnow():
-                return datetime.utcfromtimestamp(time())
+                return datetime.utcfromtimestamp(time.time())
             @staticmethod
             def now():
-                return datetime.fromtimestamp(time())
+                return datetime.fromtimestamp(time.time())
             def timetuple(self):
                 return(self.year, self.month, self.day, self.hour, self.minute, self.second + self.microsecond / 1000000.0)
         globals()['datetime'] = DateTime
@@ -1001,7 +1022,7 @@ class Times(YomboLibrary, object):
         globals()['datetime'] = old_datetime
         t = CalTimegm (datetime.utcnow().timetuple()) + 24*60*60
         globals()['datetime'] = DateTime
-        print 'time()', time()
+        print 'time.time()', time.time()
         print 'sr', self.sunrise()
         print 'ss', self.sunset()
         print 'srt', self.sunrise_twilight()
@@ -1067,7 +1088,7 @@ class Times(YomboLibrary, object):
 
         #iterate callLater events
         old_events = []
-        self.start_time = time()
+        self.start_time = time.time()
 
         self.show_messages = False
         for i in range (0,2000):

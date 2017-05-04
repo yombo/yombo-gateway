@@ -6,6 +6,7 @@ This module also creates a few rules for demonstration.
 :copyright: 2016 Yombo
 :license: MIT
 """
+import time
 from twisted.internet import reactor
 
 from yombo.core.log import get_logger
@@ -20,19 +21,6 @@ class AutomationExample(YomboModule):
     """
     def _init_(self):
         logger.info("Output from translation: {out}", out=_('automationexample','demo.automationexample')) # demo of using i18n...
-#        self._States['automationexample'] = 0
-#
-#         data = self._GPG.encrypt_asymmetric('/dev/homevision')
-#         print "Encrypted: %s"  % data
-#         data = self._GPG.decrypt_asymmetric(data)
-#         print "Decrupted: %s" % data
-
-        if 'hv out 1' in self._Devices:
-            print "hv out exists!!!!!!!!!!!!!!!!!!!!!!!!!!11"
-        else:
-            print "hv NOT out exists!!!!!!!!!!!!!!!!!!!!!!!!!!11"
-
-        print self._Devices['hv out 1'].label
 
     def _load_(self):
         # in 3 seconds from now, change the state - test the trigger

@@ -17,20 +17,4 @@ Queue class
    :private-members:
    :undoc-members:
 
-YomboQueue class (Helper to Queue class)
-===========================================
-.. autoclass:: YomboQueue
-   :members:
-   :special-members:
-   :private-members:
-   :undoc-members:
-
-Job class (Helper to YomboQueue class)
-===========================================
-.. autoclass:: Job
-   :members:
-   :special-members:
-   :private-members:
-   :undoc-members:
-
 Last updated: |today|

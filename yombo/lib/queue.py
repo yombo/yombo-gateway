@@ -69,6 +69,23 @@ class Queue(YomboLibrary):
             logger.error("--------------------------------------------------------")
 
     def new(self, name, worker_callback, width=None, size=None, save_on_exit=None):
+        """
+        Create a new queue. Returns the queue itself so that various operations can be
+        performed such as pause, resume, stop, etc.
+
+        :param name: A unique name for the queue. Usually: 'module.modulename.queuename'
+        :type name: str
+        :param worker_callback: The callback to call when it's time to do work.
+        :type worker_callback: callable
+        :param width: How many callbacks can be running at the same time, default: 1
+        :type width: int
+        :param size: Max size of the queue.
+        :type size: int or None for no limit
+        :param save_on_exit: For futureu use: save queue on exit to be re-loaded on startup.
+        :type save_on_exit: bool
+        :return: A queue instance
+        :rtype: object
+        """
         if name in self.queues:
             raise YomboWarning("'name' already exists in Queues.")
         if width is None:
