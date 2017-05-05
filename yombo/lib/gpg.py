@@ -395,7 +395,7 @@ class GPG(YomboLibrary):
             if output.status != "encryption ok":
                 raise YomboWarning("Unable to encrypt string. Error 1.")
             returnValue(output.data)
-        except Exception, e:
+        except Exception as e:
             raise YomboWarning("Unable to encrypt string. Error 2.: %s" % e)
 
     def _gpg_encrypt(self, data, destination):
@@ -423,8 +423,8 @@ class GPG(YomboLibrary):
                 output = yield threads.deferToThread(self._gpg_decrypt, in_text)
                 # out = self.gpg.decrypt(in_text)
                 returnValue(output.data)
-            except:
-                raise YomboWarning("Unable to decrypt string.")
+            except Exception as e:
+                raise YomboWarning("Unable to decrypt string. Reason: {e}", e)
         returnValue(in_text)
 
     def _gpg_decrypt(self, data):
@@ -439,8 +439,8 @@ class GPG(YomboLibrary):
             try:
                 signed = self.gpg.sign(in_text, keyid=self.mykeyid(), clearsign=asciiarmor)
                 return signed.data
-            except:
-                raise YomboWarning("Error with GPG system. Unable to sign your message. 101b")
+            except Exception as e:
+                raise YomboWarning("Error with GPG system. Unable to sign your message: {e}", e=e)
         return False
 
     def verify_asymmetric(self, in_text):
@@ -461,8 +461,8 @@ class GPG(YomboLibrary):
                     return out.data
                 else:
                     return False
-            except:
-                raise YomboWarning("Error with GPG system. Unable to verify signed text. 101a")
+            except Exception as e:
+                raise YomboWarning("Error with GPG system. Unable to verify signed text: {e}", e=e)
         return False
 
     def verify_destination(self, destination):
