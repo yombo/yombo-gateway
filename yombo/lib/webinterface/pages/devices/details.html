@@ -161,7 +161,7 @@
                                 <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
                                     <thead>
                                         <tr>
-                                            <th>Field Label</th><th>Values</th><th>Default Value</th>
+                                            <th>Field Label</th><th>Values</th>
                                         </tr>
                                     </thead>
                                     <tbody>{% for field_label, variable in device.device_variables.iteritems() %}
@@ -176,8 +176,6 @@
                                                 </tbody>
 
                                             </table></td>
-                                            <td> {{ variable.value }}</td>
-                                            <td> {{ variable.default_value }}</td>
                                          </tr>{% endfor %}
                                     </tbody>
                                 </table>

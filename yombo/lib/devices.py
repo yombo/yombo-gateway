@@ -633,6 +633,7 @@ class Devices(YomboLibrary):
     def set_device_variables(self, device_id, variables):
         # print("set variables: %s" % variables)
         for field_id, data in variables.iteritems():
+            print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.iteritems():
                 if data_id.startswith('new_'):
                     post_data = {
@@ -1036,7 +1037,7 @@ class Devices(YomboLibrary):
             device.command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
 
 
-class Device:
+class Device(object):
     """
     A class to manage a single device.  This clas contains various attributes
     about a device and can perform function on behalf of a device.  Can easily
@@ -1054,6 +1055,38 @@ class Device:
         the device can be identified and referenced easily.
         """
         return self.device_id
+
+    ## <start dict emulation>
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __repr__(self):
+        return repr(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
+    def has_key(self, k):
+        return self.__dict__.has_key(k)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def items(self):
+        return self.__dict__.items()
+
+    def __cmp__(self, dict):
+        return cmp(self.__dict__, dict)
+
+    def __contains__(self, item):
+        return item in self.__dict__
+
+    def __iter__(self):
+        return iter(self.__dict__)
+    ##  <end dict emulation>
 
     def __init__(self, device, _DevicesLibrary, test_device=None):
         """
@@ -1127,10 +1160,10 @@ class Device:
         # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
         # d.addCallback(set_commands)
         # d.addErrback(gotException)
-        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variable_data('device', self.device_id))
+        # d.addCallback(lambda ignored: self._Variables.get_variable_data('device', self.device_id))
 
         # print("getting device variables for: %s" % self.device_id)
-        d = self._DevicesLibrary._LocalDB.get_variable_data('device', self.device_id)
+        d = self._DevicesLibrary._Variables.get_variable_fields_data(relation_type='device', relation_id=self.device_id)
         d.addErrback(gotException)
         d.addCallback(set_variables)
         d.addErrback(gotException)
@@ -1150,6 +1183,8 @@ class Device:
         :param device: 
         :return: 
         """
+
+
         if 'device_type_id' in device:
             self.device_type_id = device["device_type_id"]
         if 'label' in device:
@@ -1199,6 +1234,11 @@ class Device:
 
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', **{'device': self})
+
+        if 'variable_data' in device:
+            print("device.update_attributes: %s: " % device['variable_data'])
+            print("device.update_attributes.device_variables: %s: " % self.device_variables)
+
 
     def available_commands(self):
         # print("getting available_commands for devicetypeid: %s" % (self.device_type_id, ))

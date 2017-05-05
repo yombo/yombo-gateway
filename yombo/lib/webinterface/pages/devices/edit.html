@@ -105,7 +105,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="4" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.location_label }}">
+                                <input type="text" tabindex="4" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.statistic_label }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
                             <a href="#" data-toggle="modal" data-target="#modalStatisticLifetime"><i class="fa fa-question fa-lg"></i></a>
@@ -117,7 +117,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="5" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.location_label }}">
+                                <input type="text" tabindex="5" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.statistic_lifetime }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>
                             <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
@@ -249,10 +249,10 @@
                         <div class="panel-body">
                             <div class="input-group">
         {% if dev_variables is not none -%}
-            {% for group in dev_variables %}
+            {% for group_id, group in dev_variables.iteritems() %}
             <h4>{{ group.group_label }}</h4>
             {{ group.group_description }}
-                {% for field in group.fields %}
+                {% for field_id, field in group.fields.iteritems() %}
                     <table width="100%" class="table table-striped table-bordered table-hover" id="{{ group.id }}">
                         <thead>
                             <tr>
@@ -264,10 +264,10 @@
                             <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
                             <td> {% if field.data|length > 0 %}
                                 {%- for data in field.data %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data.id }}]" id="vars[{{ field.id }}][{{ data.id }}]" value="{{ data.data }}">
+                                    <input type="text" class="form-control" name="vars[{{ field_id }}][{{ data.id }}]" id="vars[{{ field_id }}][{{ data.id }}]" value="{{ data.value }}">
                                 {%- endfor %}
                                 {%- else %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value="">
+                                    <input type="text" class="form-control" name="vars[{{ field_id }}][new_1]" id="vars[{{ field.id }}][new_1]" value="">
                                 {%- endif %}
                             </td>
                          </tr>

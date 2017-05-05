@@ -49,12 +49,12 @@
                             </div>                    </div>
                     <div class="panel-body">
                         <p></p>
-                        <form action="/devices/add_details" method="POST" role="form">
+                        <form action="/devices/add_details" method="GET" role="form">
                         <h2>Select Device Type&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h2>
                         <p></p>
-                        <select name="device_type_id" required class="selectpicker show-tick" title="Select...">
+                        <select name="device_type_id" id="device_type_id" required class="selectpicker show-tick" title="Select...">
                             {% for id, devicetype in device_types.iteritems() -%}
-                            <option value="{{ id }}"{% if selected_device_type == id %} selected{% endif %}>{{ devicetype.label }}</option>
+                            <option value="/devices/add/{{ id }}">{{ devicetype.label }}</option>
                             {%- endfor %}
                         </select>
                         <p>&nbsp;</p>
@@ -68,5 +68,19 @@
         </div>
 {% endblock %}
 
-{% block body_bottom_js %}{% include 'lib/webinterface/fragments/select_js.tpl' %}{% endblock %}
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/select_js.tpl' %}
+
+<script>
+    $(function(){
+      // bind change event to select
+      $('#device_type_id').on('change', function () {
+          var url = $(this).val(); // get selected value
+          if (url) { // require a URL
+              window.location = url; // redirect
+          }
+          return false;
+      });
+    });
+</script>
+{% endblock %}
 

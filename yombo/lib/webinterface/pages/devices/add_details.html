@@ -2,7 +2,7 @@
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
 {% block content %}
-            <form method="post" action="/devices/add_details" id="devicenew">
+            <form method="post" id="devicenew">
             <div class="row">
                 <div class="col-md-10 col-md-offset-1">
                     <div class="login-panel panel panel-default">
@@ -79,9 +79,18 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Description of device." value="{{ device.location_label }}">
+                                    <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="myhouse.living_room.corner_light" value="{{ device.statistic_label }}">
                                 </div>
-                                <label style="margin-top: 0px; margin-bottom: 0px">Pin Required: </label>
+                                <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalStatisticlifetime"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalStatisticlifetime", 'Statistic Lifetime', "
+                                <p>How many days of statistics should be kept for this device. Use 0 (zero) for unlimited.</p>
+                                ") }}
+                                <br>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="1825" value="{{ device.statistic_lifetime }}">
+                                </div>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Pin Required: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
                                 {{ macros.modal("modalpinrequired", 'Pin required', '
                                 If a pin is required, the user must enter a device pin to send a command. This is useful for devices that are alarm systems.
