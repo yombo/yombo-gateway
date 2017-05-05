@@ -401,6 +401,7 @@ class GPG(YomboLibrary):
     def _gpg_encrypt(self, data, destination):
         return self.gpg.encrypt(data, destination)
 
+    @inlineCallbacks
     def decrypt(self, in_text):
         """
         Decrypt a PGP / GPG ascii armor text.  If passed in string/text is not detected as encrypted,
