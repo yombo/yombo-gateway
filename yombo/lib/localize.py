@@ -38,7 +38,9 @@ import traceback
 import yombo.ext.polib as polib
 
 # Import Yombo libraries
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
+from yombo.utils import unit_convert
 from yombo.core.log import get_logger
 
 logger = get_logger("library.localize")
@@ -63,10 +65,42 @@ class Localize(YomboLibrary):
         if 'en' not in self.hashes:
             self.hashes['en'] = ''
 
+        self.localization_degrees = self._Configs.get2("localization", "degrees", "fahrenheit")
+
         self.files = {}
         self.locale_files = abspath('.') + "/usr/locale/"
         self.translator = self.get_translator()
         __builtin__.__dict__['_'] = self.handle_translate
+
+    def display_temperature(self, i_temp, temp_type, o_decimals=None):
+        """
+        Convert a temperature input for display according to the system settings.
+
+        :param i_temp: input temperature to consider
+        :type i_temp: int, float
+        :param temp_type: Input temp type. C or F.
+        :type temp_type: str
+        :param o_decimals: How many decimals to output. None means don't modify.
+        :type o_decimals: int
+        :return: 
+        """
+        system_type = self.localization_degrees()[0].lower()
+        temp_type = temp_type[0].lower()
+        print "i_temp: %s" % i_temp
+        print "temp_type: %s" % temp_type
+        print "system_type: %s" % system_type
+
+        if system_type != temp_type:
+            if temp_type == 'f':
+                i_temp = unit_convert('f_c', i_temp)
+            elif temp_type == 'c':
+                i_temp = unit_convert('c_f', i_temp)
+            else:
+                raise YomboWarning("display_temperate received invalid incoming temperature type: %s" % temp_type)
+        if o_decimals is not None:
+            return "{0:.{1}f}".format(i_temp, o_decimals)
+        else:
+            return i_temp
 
     def _modules_created_(self, **kwargs):
         """
