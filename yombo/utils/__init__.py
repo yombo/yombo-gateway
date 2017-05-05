@@ -7,6 +7,8 @@ Various utilities used to perform common functions to help speed development.
 :license: See LICENSE for details.
 """
 # Import python libraries
+from __future__ import division
+
 try:
     import fcntl
     HAS_FCNTL = True
@@ -54,6 +56,28 @@ logger = get_logger('utils.__init__')
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 
+def convert_temp(i_temp):
+    """
+    Convert a temperature from celsius to fahrenheit and back. Just input a number followed by C or F.
+
+    Example: 32F  returns a tuple of (0,C)
+
+    Useful when you're too lazy to to use unit_convert below.
+
+    :param temp: A temperature to convert
+    :type temp: str
+    :return: A tuple containing the value and new unit type
+    :rtype: tuple
+    """
+    degree = float(i_temp[:-1])
+    i_convention = i_temp[-1]
+
+    if i_convention.upper() == "C":
+        return unit_convert('c_f', degree)
+    elif i_convention.upper() == "F":
+        return unit_convert('f_c', degree)
+    else:
+        raise YomboWarning("Invalid temperature requested.")
 
 def pattern_search(look_for, items):
     """
@@ -588,9 +612,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     # Prepare the minion
     stringDiff = SequenceMatcher()
 
-    # used when returning all
-    items = {}
-
     # used when return highest
     best_ratio = 0
     best_limiter = 0
@@ -625,20 +646,36 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
                     best_key = item_id
                     best_match = item
 
-                # return a list of the top 5 key matches on failure.
                 key_list.append({'key': item_id, 'value': item, 'ratio': ratio})
 
     sorted_list = sorted(key_list, key=lambda k: k['ratio'], reverse=True)
 
+    return_list = []
+    if best_ratio >= best_limiter: # if we have one match, only return a list of matches.
+        for item in sorted_list:
+            if item['ratio'] >= limiter:
+                return_list.append(item)
+        return (
+            best_ratio >= best_limiter,  # the part that does the actual check.
+            best_key,
+            best_match,
+            best_ratio,
+            return_list)
+
     if operation == "any":
-        return items
+        return (
+            best_ratio >= best_limiter,  # the part that does the actual check.
+            best_key,
+            best_match,
+            best_ratio,
+            sorted_list)
     else:
         return (
             best_ratio >= best_limiter,  # the part that does the actual check.
             best_key,
             best_match,
             best_ratio,
-            sorted_list[:5])
+            sorted_list[:10])
 
 #
 # def get_command(commandSearch):
@@ -947,7 +984,7 @@ def pretty_date(time=False):
         if second_diff < 120:
             return "a minute ago"
         if second_diff < 3600:
-            time_count = second_diff / 60
+            time_count = second_diff // 60
             time_ago = "minutes ago"
             if time_count == 1:
                 time_ago = "minute ago"
@@ -955,7 +992,7 @@ def pretty_date(time=False):
         if second_diff < 7200:
             return "an hour ago"
         if second_diff < 86400:
-            return str(second_diff / 3600) + " hours ago"
+            return str(second_diff // 3600) + " hours ago"
     if day_diff == 1:
         return "Yesterday"
     if day_diff < 7:
@@ -965,18 +1002,18 @@ def pretty_date(time=False):
             time_ago = "day ago"
         return "%s %s" % (time_count, time_ago)
     if day_diff < 60:
-        time_count = day_diff / 7
+        time_count = day_diff // 7
         time_ago = "weeks ago"
         if time_count == 1 :
             time_ago = "week ago"
         return "%s %s" % (time_count, time_ago)
     if day_diff < 365:
-        time_count = day_diff / 30
+        time_count = day_diff // 30
         time_ago = "months ago"
         if time_count == 1 :
             time_ago = "month ago"
         return "%s %s" % (time_count, time_ago)
-    return str(day_diff / 365) + " years ago"
+    return str(day_diff // 365) + " years ago"
 
 
 def generate_uuid(**kwargs):
@@ -1254,7 +1291,7 @@ unit_converters = {
     'kg_lb': lambda x: x*2.20462262185,  # pounds
     'lb_kg': lambda x: x*0.45359237,  # pounds
     'f_c': lambda x: float((x - 32) * (5.0/9.0)),  # celsius
-    'c_f': lambda x: float((9.0/5.0) * (x + 32)),  # fahrenheit
+    'c_f': lambda x: float((x * (9.0/5.0)) + 32),  # fahrenheit
     'btu_kwh': lambda x: x*0.00029307107017,  # kilowatt-hour
     'kwh_btu': lambda x: x*3412.14163312794,  # btu
 }
