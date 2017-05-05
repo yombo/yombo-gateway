@@ -160,7 +160,7 @@ class DeviceTypes(YomboLibrary):
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.device_types = {}
-        self.device_type_search_attributes = ['input_type_id', 'category_id', 'label', 'machine_label', 'description',
+        self.device_type_search_attributes = ['device_type_id', 'input_type_id', 'category_id', 'label', 'machine_label', 'description',
             'status', 'always_load', 'public']
 
     def _load_(self):
@@ -803,8 +803,16 @@ class DeviceType(object):
         ]
 
         try:
-            return do_search_instance(attrs, self._DeviceTypes._Devices.devices,
-                                      self.device_search_attributes)
+
+            found, key, item, ratio, others = do_search_instance(attrs, self._DeviceTypes._Devices.devices,
+                                      self._DeviceTypes.device_type_search_attributes)
+            if found:
+                devices = []
+                for device in others:
+                    devices.append(device['value'])
+                return devices
+            else:
+                return []
         except YomboWarning, e:
             raise KeyError('Get devices had problems: %s' % e)
 
