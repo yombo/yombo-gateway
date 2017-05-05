@@ -47,7 +47,10 @@ class ModuleUnitTest(YomboModule):
         self.display_no_new_items = 0
         self.good = []
         self.bad = []
-        # self.display_results_loop = LoopingCall(self.display_results)
+
+        self.display_saw_new_items = 0
+        self.display_no_new_items = 0
+        self.display_results_loop = LoopingCall(self.display_results)
 
 
     def _load_(self):
@@ -113,10 +116,11 @@ class ModuleUnitTest(YomboModule):
         reactor.callLater(1, self.started) # so we can see our results easier
 
     def started(self):
-        # self.display_results_loop.start(1)
+        self.display_results_loop.start(1)
         logger.info("Module unit test running.")
 
         self.test_crontab()
+        self.test_gpg()
         self.test_nodes()
         self.test_states()
         self.test_queues()
@@ -159,6 +163,16 @@ class ModuleUnitTest(YomboModule):
         else:
             self.assertIsEqual(self.test_crontask1_called, False, "CronTask1 is disabled and shouldn't be called.")
         # print "test_crontab_crontask1 was called: %s, %s" % (args, kwargs)
+
+    @inlineCallbacks
+    def test_gpg(self):
+        encrypted = yield self._GPG.encrypt("hello1")
+        decrypted = yield self._GPG.decrypt(encrypted)
+        self.assertIsEqual("hello1", decrypted, "Testing GPG priv/pub keys.")
+
+        encrypted = yield self._GPG.encrypt_aes("mypass", "hello2")
+        decrypted = yield self._GPG.decrypt_aes("mypass", encrypted)
+        self.assertIsEqual("hello2", decrypted, "Testing GPG AES 256 password")
 
     def test_states(self):
         """
@@ -224,29 +238,25 @@ class ModuleUnitTest(YomboModule):
 
     @inlineCallbacks
     def queue_worker2(self, arguments):
-        print "started....."
         yield sleep(5)
-        print "finished......."
         self.assertIsEqual(arguments, 'letsdoit', "queue_worker() arguments should be the same.")
         returnValue("someresults")
 
-    def queue_results(self, args, results):
+    def queue_results(self, results, args):
         self.assertIsEqual(args, "someargs", "queue_results(), args should match.")
         self.assertIsEqual(results, "someresults", "queue_results(), results should match.")
 
-        self.display_saw_new_items = 0
-        self.display_no_new_items = 0
-
     def display_results(self):
+        # print "self.display_saw_new_items: %s" % self.display_saw_new_items
+        self.display_saw_new_items += 1
+        if self.display_saw_new_items >= 30 and self.display_no_new_items < 15:
+            logger.info("Appears tests still running, count so far: Good - {good}, Bad - {bad}", good=len(self.good),
+                        bad=len(self.bad))
+            self.display_saw_new_items = 0
+
         if self.displayed_tests != self.completed_tests:
-            # print "DR - got difference.... %s  " % self.display_saw_new_items
             self.display_no_new_items = 0
             self.displayed_tests = self.completed_tests
-            self.display_saw_new_items += 1
-
-            if self.display_saw_new_items >= 5:
-                logger.info("Appears tests still running, count so far: Good - {good}, Bad - {bad}", good=len(self.good), bad=len(self.bad))
-                self.display_saw_new_items = 0
 
         else:  # we don't have new data.
             # print "DR - got same.... %s  " % self.display_no_new_items
@@ -268,11 +278,11 @@ class ModuleUnitTest(YomboModule):
         self.completed_tests += 1
         if val1 != val2:
             test = "%s != %s" % (val1, val2)
-            logger.debug("Module unit test found good test: {description} :: {test}", description=description, test=test)
+            logger.debug("Good test: {description} :: {test}", description=description, test=test)
             self.good.append({'description':description, 'test': test})
         else:
             test = "%s == %s" % (val1, val2)
-            logger.warn("Module unit test found bad test: {description} :: {test}", description=description, test=test)
+            logger.warn("Bad test: {description} :: {test}", description=description, test=test)
             self.bad.append({'description':description, 'test': test})
 
     def assertIsEqual(self, val1, val2, description):
@@ -280,11 +290,11 @@ class ModuleUnitTest(YomboModule):
         self.completed_tests += 1
         if val1 == val2:
             test = "%s == %s" % (val1, val2)
-            logger.debug("Module unit test found good test: {description} :: {test}", description=description, test=test)
+            logger.debug("Good test: {description} :: {test}", description=description, test=test)
             self.good.append({'description':description, 'test': test})
         else:
             test = "%s != %s" % (val1, val2)
-            logger.warn("Module unit test found bad test: {description} :: {test}", description=description, test=test)
+            logger.warn("Bad test: {description} :: {test}", description=description, test=test)
             self.bad.append({'description':description, 'test': test})
 
     def assertIsNone(self, val1, description):
