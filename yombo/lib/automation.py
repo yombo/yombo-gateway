@@ -682,7 +682,7 @@ class Automation(YomboLibrary):
 #         d.addCallback(set_commands)
 #         d.addErrback(gotException)
 #
-#         d.addCallback(lambda ignored: self._allDevices._Libraries['localdb'].get_variable_data('device', self.device_id))
+#         d.addCallback(lambda ignored: self._allDevices._Variables.get_variable_data(relation_type='device', relation_id=self.device_id))
 #         d.addErrback(gotException)
 #         d.addCallback(set_variables)
 #         d.addErrback(gotException)

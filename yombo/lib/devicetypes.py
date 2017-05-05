@@ -771,11 +771,6 @@ class DeviceType(object):
            logger.warn("Exception 1: {failure}", failure=failure)
            return 100  # squash exception, use 0 as value for next stage
 
-        # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
-        # d.addCallback(set_commands)
-        # d.addErrback(gotException)
-        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
-
         d = self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
         d.addErrback(gotException)
         d.addCallback(set_commands, self)
