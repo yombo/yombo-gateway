@@ -58,6 +58,39 @@ class DBObject(Validator):
     # it will be of the form {'othername': <BelongsTo instance>, 'anothername': <HasMany instance>}
     RELATIONSHIP_CACHE = None
 
+    #the following were added to support the object being accessed as a dictionary too.
+    ## <start dict emulation>
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __repr__(self):
+        return repr(self.__dict__)
+
+    def __len__(self):
+        return len(self.__dict__)
+
+    def has_key(self, k):
+        return self.__dict__.has_key(k)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def items(self):
+        return self.__dict__.items()
+
+    def __cmp__(self, dict):
+        return cmp(self.__dict__, dict)
+
+    def __contains__(self, item):
+        return item in self.__dict__
+
+    def __iter__(self):
+        return iter(self.__dict__)
+    ##  <end dict emulation>
+
     def __init__(self, **kwargs):
         """
         Constructor.  DO NOT OVERWRITE.  Use the L{DBObject.afterInit} method.
