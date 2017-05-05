@@ -492,7 +492,7 @@ class Modules(YomboLibrary):
 
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
-            module_variables = yield self._LocalDB.get_variables('module', module_id)
+            module_variables = yield self._LocalDB.get_variable_data('module', module_id)
             # print "getting vars: %s "% module_variables
             module._ModuleVariables = module_variables
 

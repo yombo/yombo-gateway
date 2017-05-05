@@ -1128,10 +1128,10 @@ ORDER BY id desc"""
         returnValue(results)
 
     ###########################
-    ###  Users              ###
+    ###  Variables          ###
     ###########################
     @inlineCallbacks
-    def get_variables(self, relation_type, relation_id):
+    def get_variable_data(self, relation_type, relation_id):
         """
         Gets available variables for a given device_id.
 
@@ -1146,7 +1146,6 @@ ORDER BY id desc"""
             orderby='field_weight ASC, data_weight ASC')
         variables = {}
         for record in records:
-
             if record.field_machine_label not in variables:
                 variables[record.field_machine_label] = {
                     'id': record.id,

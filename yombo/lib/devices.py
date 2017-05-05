@@ -1127,10 +1127,10 @@ class Device:
         # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
         # d.addCallback(set_commands)
         # d.addErrback(gotException)
-        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variables('device', self.device_id))
+        # d.addCallback(lambda ignored: self._DevicesLibrary._Libraries['localdb'].get_variable_data('device', self.device_id))
 
         # print("getting device variables for: %s" % self.device_id)
-        d = self._DevicesLibrary._LocalDB.get_variables('device', self.device_id)
+        d = self._DevicesLibrary._LocalDB.get_variable_data('device', self.device_id)
         d.addErrback(gotException)
         d.addCallback(set_variables)
         d.addErrback(gotException)
