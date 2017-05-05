@@ -498,7 +498,6 @@ class Modules(YomboLibrary):
             module._ModuleVariables = module_variables
 
             if module._Name in self._localModuleVars:
-                print "module module._ModuleVariables: %s" % module._ModuleVariables
                 module._ModuleVariables = dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
                 del self._localModuleVars[module._Name]
 
@@ -729,7 +728,7 @@ class Modules(YomboLibrary):
             status = 1
 
         if module_requested in self.modules:
-            print "module found by key"
+            # print "module found by key"
             item = self.modules[module_requested]
             if item._status != status:
                 raise KeyError("Requested mdule found, but has invalid status: %s" % item._status)
@@ -854,7 +853,7 @@ class Modules(YomboLibrary):
         }
 
         module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gwid, api_data)
-        print("add module results: %s" % module_results)
+        # print("add module results: %s" % module_results)
 
         if module_results['code']  > 299:
             results = {
@@ -866,17 +865,17 @@ class Modules(YomboLibrary):
             }
             returnValue(results)
 
-        print("checking if var data... %s" % data)
+        # print("checking if var data... %s" % data)
         if 'variable_data' in data:
-            print("adding variable data...")
+            # print("adding variable data...")
             variable_data = data['variable_data']
             for field_id, var_data in variable_data.iteritems():
-                print("field_id: %s" % field_id)
-                print("var_data: %s" % var_data)
+                # print("field_id: %s" % field_id)
+                # print("var_data: %s" % var_data)
                 for data_id, value in var_data.iteritems():
-                    print("data_id: %s" % data_id)
+                    # print("data_id: %s" % data_id)
                     if data_id.startswith('new_'):
-                        print("data_id starts with new...")
+                        # print("data_id starts with new...")
                         post_data = {
                             'gateway_id': self.gwid,
                             'field_id': field_id,
@@ -887,7 +886,7 @@ class Modules(YomboLibrary):
                         }
                         # print("post_data: %s" % post_data)
                         var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        print "var_data_results: %s"  % var_data_results
+                        # print "var_data_results: %s"  % var_data_results
                         if var_data_results['code']  > 299:
                             results = {
                                 'status': 'failed',
@@ -939,7 +938,7 @@ class Modules(YomboLibrary):
         }
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
-        print("module edit results: %s" % module_results)
+        # print("module edit results: %s" % module_results)
 
         if module_results['code']  > 299:
             results = {
@@ -970,7 +969,7 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to remove.", 300, 'disable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
-        print("delete module results: %s" % module_results)
+        # print("delete module results: %s" % module_results)
 
         if module_results['code']  > 299:
             results = {
@@ -1011,7 +1010,7 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
-        print("enable module results: %s" % module_results)
+        # print("enable module results: %s" % module_results)
 
         if module_results['code']  > 299:
             results = {
@@ -1049,7 +1048,7 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
         module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
-        print("disable module results: %s" % module_results)
+        # print("disable module results: %s" % module_results)
 
         if module_results['code']  > 299:
             results = {
@@ -1192,7 +1191,7 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        print "disabling module: %s" % module_id
+        # print "disabling module: %s" % module_id
         api_data = {
             'status': 0,
         }
