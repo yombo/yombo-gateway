@@ -1127,6 +1127,9 @@ ORDER BY id desc"""
             results.append(record.__dict__)  # we need a dictionary, not an object
         returnValue(results)
 
+    ###########################
+    ###  Users              ###
+    ###########################
     @inlineCallbacks
     def get_variables(self, relation_type, relation_id):
         """
@@ -1167,13 +1170,15 @@ ORDER BY id desc"""
                     'data': [],
                 }
 
-            variables[record.field_machine_label]['data'].append({
+            data = {
                 'id': record.id,
-                'value': self._GPG.decrypt_asymmetric(record.data),
                 'weight': record.data_weight,
                 'created': record.data_created,
                 'updated': record.data_updated,
-            })
+            }
+            data['value'] = yield self._GPG.decrypt(record.data)
+
+            variables[record.field_machine_label]['data'].append(data)
             # variables[record.machine_label]['value'].append(record.value)
         #                print record.__dict__
         #         print "variables %s:%s = %s" % (relation_type, relation_id, variables)

@@ -18,11 +18,16 @@ It's important to note that any module within the Yombo system will have access 
 
 # Import python libraries
 import gnupg
-import os
+# import os
 from subprocess import Popen, PIPE
+import base64
+from Crypto import Random
+from Crypto.Cipher import AES
+import hashlib
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet import reactor, threads
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical
@@ -45,6 +50,7 @@ class GPG(YomboLibrary):
         self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
         self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
 
+        self.aes_blocksize = 32
         self._key_generation_status = {}
 
         self.initDefer = Deferred()
@@ -366,7 +372,8 @@ class GPG(YomboLibrary):
     ###########################################
     ###  Encrypt / Decrypt / Sign / Verify  ###
     ###########################################
-    def encrypt_asymmetric(self, in_text, destination=None):
+    @inlineCallbacks
+    def encrypt(self, in_text, destination=None, ):
         """
         Encrypt text and output as ascii armor text.
 
@@ -383,14 +390,18 @@ class GPG(YomboLibrary):
 
         try:
             # output = self.gpg.encrypt(in_text, destination, sign=self.mykeyid())
-            output = self.gpg.encrypt(in_text, destination)
+            output = yield threads.deferToThread(self._gpg_encrypt, in_text, destination)
+            # output = self.gpg.encrypt(in_text, destination)
             if output.status != "encryption ok":
                 raise YomboWarning("Unable to encrypt string. Error 1.")
-            return output.data
+            returnValue(output.data)
         except Exception, e:
             raise YomboWarning("Unable to encrypt string. Error 2.: %s" % e)
 
-    def decrypt_asymmetric(self, in_text):
+    def _gpg_encrypt(self, data, destination):
+        return self.gpg.encrypt(data, destination)
+
+    def decrypt(self, in_text):
         """
         Decrypt a PGP / GPG ascii armor text.  If passed in string/text is not detected as encrypted,
         will simply return the input.
@@ -404,16 +415,21 @@ class GPG(YomboLibrary):
         :raises: YomboException - If decoding failed.
         """
         if in_text.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
-            return self.verify_asymmetric(in_text)
+            verify = yield self.verify_asymmetric(in_text)
+            returnValue(verify)
         elif in_text.startswith('-----BEGIN PGP MESSAGE-----'):
             try:
-                out = self.gpg.decrypt(in_text)
-                return out.data
+                output = yield threads.deferToThread(self._gpg_decrypt, in_text)
+                # out = self.gpg.decrypt(in_text)
+                returnValue(output.data)
             except:
                 raise YomboWarning("Unable to decrypt string.")
-        return in_text
+        returnValue(in_text)
 
-    def sign_asymmetric(self, in_text, asciiarmor=True):
+    def _gpg_decrypt(self, data):
+        return self.gpg.decrypt(data)
+
+    def sign(self, in_text, asciiarmor=True):
         """
         Signs in_text and returns the signature.
         """
@@ -473,9 +489,46 @@ class GPG(YomboLibrary):
     # Retyrn true if good.
         pass
 
+    @inlineCallbacks
+    def encrypt_aes(self, key, raw):
+        """
+        Encrypt something using AES 256 (very strong).
 
+        From: https://gist.github.com/mguezuraga/257a662a51dcde53a267e838e4d387cd
 
+        :param key: A password
+        :type key: string
+        :param data: Any type of data can be encrypted. Text, binary.
+        :return: String containing the encrypted content.
+        """
+        key = hashlib.sha256(key.encode('utf-8')).digest()
+        raw = self._aes_pad(raw)
+        results = yield threads.deferToThread(self._encrypt_aes, key, raw)
+        returnValue(results)
 
+    def _encrypt_aes(self, key, raw):
+        iv = Random.new().read(AES.block_size)
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        return base64.b64encode(iv + cipher.encrypt(raw))
+
+    @inlineCallbacks
+    def decrypt_aes(self, key, enc):
+        key = hashlib.sha256(key.encode('utf-8')).digest()
+        enc = base64.b64decode(enc)
+        results = yield threads.deferToThread(self._decrypt_aes, key, enc)
+        returnValue(results)
+
+    def _decrypt_aes(self, key, enc):
+        iv = enc[:AES.block_size]
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        return self._aes_unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+
+    def _aes_pad(self, s):
+        return s + (self.aes_blocksize - len(s) % self.aes_blocksize) * chr(self.aes_blocksize - len(s) % self.aes_blocksize)
+
+    @staticmethod
+    def _aes_unpad(s):
+        return s[:-ord(s[len(s)-1:])]
 
 ############ OLD Stuff
     #
