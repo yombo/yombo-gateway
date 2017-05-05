@@ -289,12 +289,9 @@ class CronTab(YomboLibrary):
         elif limiter < .10:
             limiter = .10
 
-        if status is None:
-            status = 1
-
         if cron_task_requested in self.cron_tasks:
             item = self.cron_tasks[cron_task_requested]
-            if item.status != status:
+            if status is not None and item.status != status:
                 raise KeyError("Requested cron tab found, but has invalid status: %s" % item.status)
             return item
         else:

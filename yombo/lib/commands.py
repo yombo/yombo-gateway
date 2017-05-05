@@ -271,12 +271,9 @@ class Commands(YomboLibrary):
         elif limiter < .10:
             limiter = .10
 
-        if status is None:
-            status = 1
-
         if command_requested in self.commands:
             item = self.commands[command_requested]
-            if item.status != status:
+            if status is not None and item.status != status:
                 raise KeyError("Requested command found, but has invalid status: %s" % item.status)
             return item
         else:

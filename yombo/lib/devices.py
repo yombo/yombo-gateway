@@ -512,13 +512,10 @@ class Devices(YomboLibrary):
         elif limiter < .10:
             limiter = .10
 
-        if status is None:
-            status = 1
-
         if device_requested in self.devices:
             item = self.devices[device_requested]
-            # if item.status != status:
-            #     raise KeyError("Requested device found, but has invalid status: %s" % item.status)
+            if status is not None and item.status != status:
+                raise KeyError("Requested device found, but has invalid status: %s" % item.status)
             return item
         else:
             attrs = [

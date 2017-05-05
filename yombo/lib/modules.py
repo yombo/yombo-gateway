@@ -480,6 +480,8 @@ class Modules(YomboLibrary):
             self.modules[module_id]._updated = module['updated']
             self.modules[module_id]._load_source = module['load_source']
             self.modules[module_id]._device_types = []  # populated by Modules::module_init_invoke
+            print "loading modules: %s" % self.modules[module_id]._machine_label
+            print "loading modules: %s" % self.modules[module_id]._status
 
     @inlineCallbacks
     def module_init_invoke(self):
@@ -724,13 +726,10 @@ class Modules(YomboLibrary):
         elif limiter < .10:
             limiter = .10
 
-        if status is None:
-            status = 1
-
         if module_requested in self.modules:
-            # print "module found by key"
             item = self.modules[module_requested]
-            if item._status != status:
+            print "module found by key: %s" % item.__dict__
+            if status is not None and item.status != status:
                 raise KeyError("Requested mdule found, but has invalid status: %s" % item._status)
             return item
         else:
