@@ -218,13 +218,39 @@
                            </div>
 
                          </div> <!-- /.row -->
+                         <div class="row">
+
+                           <div class="col-lg-4 col-md-6">
+                            <div class="form-group">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Value required: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalvalue_required"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalvalue_required", 'Value Required', '
+                                <p>Defnes if user is required to enter a value when configuring this item.</p>
+                                <p>
+                                    <ul>
+                                <li><strong>No</strong> - The user does not have to enter anything here.</li>
+                                <li><strong>Yes</strong> - The user needs to enter something here.</li>
+                            </ul>
+                                </p>
+                                ') }}
+                                <br>
+                                <div class="input-group">
+                                    <select tabindex="10" class="selectpicker show-tick form-control" name="value_required" id="value_required">
+                                        <option value="0"{% if field.value_required == "0" %} selected{% endif %} data-subtext="Do not require value from user">No</option>
+                                        <option value="1"{% if field.value_required == "1" %} selected{% endif %} data-subtext="Require value from user">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                           </div>
+
+                         </div> <!-- /.row -->
                         <a class="btn btn-md btn-danger" href="/devtools/config/{%
                     if group.relation_type == 'module'
                        %}modules/{{ group.relation_id }}/details{%
                     elif parent_type == 'device_type'
                        %}/device_type/{{group.relation_id}}/details{%
                     endif %}">Cancel</a>
-                        <button type="submit" class="btn btn-success">Save Device Type</button>
+                        <button type="submit" class="btn btn-success">Save Field</button>
                     </div>
                     <!-- /.panel-body -->
                 </div>

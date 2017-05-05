@@ -67,7 +67,7 @@ from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
 #from yombo.lib.webinterfaceyombosession import YomboSession
 
-logger = get_logger("library.webconfig")
+logger = get_logger("library.webinterface")
 
 nav_side_menu = [
     {
@@ -222,8 +222,16 @@ nav_side_menu = [
         'tooltip': '',
         'opmode': 'run',
     },
-
-
+    {
+        'label1': 'Tools',
+        'label2': 'Debug',
+        'priority1': 3000,
+        'priority2': 100000,
+        'icon': 'fa fa-code fa-fw',
+        'url': '/devtools/debug/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
 
     {
         'label1': 'Developer Tools',
@@ -232,16 +240,6 @@ nav_side_menu = [
         'priority2': 500,
         'icon': 'fa fa-code fa-fw',
         'url': '/devtools/config/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Developer Tools',
-        'label2': 'Debug',
-        'priority1': 5000,
-        'priority2': 1000,
-        'icon': 'fa fa-code fa-fw',
-        'url': '/devtools/debug/index',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -999,7 +997,6 @@ class WebInterface(YomboLibrary):
             self.misc_wi_data['breadcrumb'] = request.breadcrumb
         request.breadcrumb.append({'url': url, 'text': text, 'show': show})
 
-
     def setup_basic_filters(self):
         self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no
         self.webapp.templates.filters['make_link'] = self.make_link
@@ -1008,6 +1005,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['epoch_to_human'] = yombo.utils.epoch_to_string
         self.webapp.templates.filters['epoch_to_pretty_date'] = yombo.utils.pretty_date # yesterday, 5 minutes ago, etc.
         self.webapp.templates.filters['format_markdown'] = self.format_markdown
+        self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
 
     def WebInterface_configuration_set(self, **kwargs):
         """

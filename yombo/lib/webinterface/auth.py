@@ -52,6 +52,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
+            print "111"
             session = yield webinterface.sessions.load(request)
             if login_redirect is not None:
                 if session is False:
@@ -70,10 +71,14 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 # return page.render(alerts=webinterface.get_alerts())
                 # data=webinterface.data)
 
+            print "222"
             if session is not False:
+                print "222 1"
                 if 'auth' in session:
+                    print "222 2"
                     if session['auth'] is True:
-                        session['last_access'] = int(time())
+                        print "222 55"
+                        session.touch()
                         # try:
                         #     del session['login_redirect']
                         # except:
@@ -82,6 +87,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         returnValue(results)
                         # return call(f, webinterface, request, session, *a, **kw)
 
+            print "333"
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session
             returnValue(page.render(alerts=webinterface.get_alerts()))

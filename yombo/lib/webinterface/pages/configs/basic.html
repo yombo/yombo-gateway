@@ -265,6 +265,22 @@
 										<label for="device_sendstatusgps" class="label-primary"></label>
 									</div>
 								</div>
+							</div>
+						</div>
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4>Localization Settings</h4>
+							</div>
+							<div class="panel-body">
+								<div class="form-group">
+									<label  for="system_degrees" data-toggle="tooltip" title="Select how the system should display temperatures.">Temperature Display</label>
+									<div class="material-switch pull-right">
+										<select name="localization_degrees" id="localization_degrees" required class="selectpicker show-tick" title="Select...">
+											<option value="fahrenheit"{% if config.localization.degrees == 'fahrenheit' %} selected{% endif %}>Fahrenheit</option>
+											<option value="celsius"{% if config.localization.degrees == 'celsius' %} selected{% endif %}>Celsius</option>
+										</select>
+									</div>
+								</div>
 
 							</div>
 						</div>

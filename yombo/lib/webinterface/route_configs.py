@@ -159,8 +159,13 @@ def route_configs(webapp):
                         webinterface.add_alert("No auth type set. This is unwise.")
                         webinterface._Configs.set('webinterface', 'auth_pin_type', submitted_webinterface_pin_type)
 
-            configs = webinterface._Configs.get("*", "*")
+            try:
+                webinterface._Configs.set('localization', 'degrees', request.args.get('localization_degrees')[0])
+            except:
+                print "can't save degrees"
+                pass
 
+            configs = webinterface._Configs.get("*", "*")
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/basic.html')
             return page.render(alerts=webinterface.get_alerts(),

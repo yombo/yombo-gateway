@@ -73,7 +73,7 @@ class Sessions(object):
 
         # print "active:sessions: %s" % self.active_sessions
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(random_int(35, .7))  # Every 30-ish seconds.  Save to disk, or remove from memory.
+        self._periodic_clean_sessions.start(random_int(300, .7))  # Every 30-ish seconds.  Save to disk, or remove from memory.
 
     def _unload_(self):
         logger.debug("sessions:_unload_")
@@ -269,8 +269,8 @@ class Sessions(object):
 
         for session_id in list(self.active_sessions):
             session = self.active_sessions[session_id]
-            print "session.data['last_access']: %s" % session.data['last_access']
-            print "time: %s" % int(time() - (60*60*3))
+            # print "session.data['last_access']: %s" % session.data['last_access']
+            # print "time: %s" % int(time() - (60*60*3))
             if session.is_dirty >= 200 or close_deferred is not None or session.data['last_access'] < int(time() - (60*60*3)):  # delete session from memory after 3 hours
                 if session.in_db:
                     session.in_db = True
@@ -307,14 +307,16 @@ class Session(object):
         :rtype: bool
         """
         try:
+            print "aa 11"
             self.get(data_requested)
+            # print "aa 22"
             return True
-        except:
+        except Exception as e:
+            print "aa 33 %s" % e
             return False
 
     def __setitem__(self, key, val):
         return self.set(key, val)
-
 
     def __getitem__(self, data_requested):
         """
@@ -374,13 +376,18 @@ class Session(object):
             'updated': int(time()),
         }
 
-
-    def get(self, key, default=None):
-        if key in self:
-            if key in self.data:
-                self.data['last_access'] = int(time())
-                return self.data[key]
-        return default
+    def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
+        print "session, getting key: %s" % key
+        # if key in self:
+        #     print "zzz"
+        if key in self.data:
+            self.data['last_access'] = int(time())
+            return self.data[key]
+        if default != "BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT":
+            return default
+        else:
+            # return None
+            raise KeyError("Cannot find session key: %s" % key)
 
 
     def set(self, key, val):
@@ -389,7 +396,7 @@ class Session(object):
             self.data[key] = val
             self.is_dirty = 200
             return val
-        return None
+        raise KeyError("Session doesn't have key: %s" % key)
 
     def delete(self, key):
         if key in self:
