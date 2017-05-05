@@ -434,8 +434,8 @@ def upgrade(Registry, **kwargs):
      `field_description`   TEXT NOT NULL,
      `field_weight`        INTEGER DEFAULT 0,
      `value_required`      INTEGER NOT NULL,
-     `value_max`           INTEGER NOT NULL,
-     `value_min`           INTEGER NOT NULL,
+     `value_max`           INTEGER,
+     `value_min`           INTEGER,
      `value_casing`        TEXT NOT NULL,
      `encryption`          TEXT NOT NULL,
      `input_type_id`       TEXT NOT NULL,
@@ -506,9 +506,8 @@ def upgrade(Registry, **kwargs):
     """
     yield Registry.DBPOOL.runQuery(view)
 
-
-    view = """CREATE VIEW variable_data_view AS
-    SELECT variable_data.id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id, variable_data.relation_type,
+    view = """CREATE VIEW variable_field_data_view AS
+    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id, variable_data.relation_type,
     variable_data.data, variable_data.data_weight, variable_data.updated as data_updated, variable_data.created as data_created,
     variable_fields.field_machine_label,variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
     variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text,
@@ -518,7 +517,32 @@ def upgrade(Registry, **kwargs):
     JOIN variable_fields ON variable_data.field_id = variable_fields.id"""
     yield Registry.DBPOOL.runQuery(view)
 
+    view = """CREATE VIEW variable_group_field_view AS
+    SELECT  variable_fields.field_machine_label,variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
+    variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text,
+    variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
+    variable_fields.multiple, variable_fields.created as field_created, variable_fields.updated as field_updated,
+    variable_groups.id as group_id, variable_groups.group_machine_label,
+    variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
+    FROM variable_fields
+    JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
+    yield Registry.DBPOOL.runQuery(view)
 
+    view = """CREATE VIEW variable_group_field_data_view AS
+    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id as data_relation_id,
+    variable_data.relation_type as data_relation_type, variable_data.data, variable_data.data_weight,
+    variable_data.updated as data_updated, variable_data.created as data_created, variable_fields.field_machine_label,
+    variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight, variable_fields.encryption,
+    variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text, variable_fields.value_required,
+    variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
+    variable_fields.created as field_created, variable_fields.updated as field_updated, variable_groups.id as group_id,
+    variable_groups.group_machine_label, variable_groups.relation_type as group_relation_type,
+    variable_groups.relation_id as group_relation_id, variable_groups.group_description, variable_groups.group_weight,
+    variable_groups.status as group_status
+    FROM variable_data
+    JOIN variable_fields ON variable_data.field_id = variable_fields.id
+    JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
+    yield Registry.DBPOOL.runQuery(view)
 
 
 def downgrade(Registry, **kwargs):

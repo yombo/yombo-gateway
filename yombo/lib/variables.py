@@ -2,7 +2,7 @@
 # software.  Details can be found at https://yombo.net
 """
 
-A small library for various variable tools.
+A library to get variables in various formats. Also used to send updates to Yombo API.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
@@ -17,26 +17,13 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
-from hashlib import sha1
-import copy
-from collections import deque, namedtuple
-from time import time
-from collections import OrderedDict
-
-# Import 3rd-party libs
-import yombo.ext.six as six
-
 # Import twisted libraries
-from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
-# from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboFuzzySearchError, YomboWarning
+
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-# from yombo.utils import random_string, split, global_invoke_all, string_to_number
-# from yombo.utils.maxdict import MaxDict
-from yombo.lib.commands import Command  # used only to determine class type
 logger = get_logger('library.devices')
 
 
@@ -54,6 +41,93 @@ class Variables(YomboLibrary):
         self.gwid = self._Configs.get("core", "gwid")
 
     @inlineCallbacks
+    def get_variable_data(self, relation_type=None, relation_id=None, **kwargs):
+        """
+        Gets available variable data for a given device_id or module_id. Any additional named arguments
+        will be used as key/value pairs in the where statement.
+
+        :param relation_type: Either 'module' or 'device'.
+        :type relation_type: str
+        :param relation_id: The id of the module or device to find.
+        :type relation_id: str
+        :return: Available variable data.
+        :rtype: list
+        """
+        if relation_type is not None:
+            kwargs['relation_type'] = relation_type
+        if relation_id is not None:
+            kwargs['relation_id'] = relation_id
+
+        print("variables.get_variable_data.kwargs = %s" % kwargs)
+        results = yield self._LocalDB.get_variable_data(**kwargs)
+        print("variables.get_variable_data.results = %s" % results)
+        returnValue(results)
+
+    @inlineCallbacks
+    def get_variable_fields(self, group_id=None, **kwargs):
+        """
+        Gets available variable fields for a given group_id. Any additional named arguments
+        will be used as key/value pairs in the where statement.
+
+        :param group_id: Field group_id to search for.
+        :type group_id: str
+        :return: Available variable fields.
+        :rtype: list
+        """
+        if group_id is not None:
+            kwargs['group_id'] = group_id
+        results = yield self._LocalDB.get_variable_fields(**kwargs)
+        returnValue(results)
+
+    @inlineCallbacks
+    def get_variable_groups(self, relation_type=None, relation_id=None, **kwargs):
+        """
+        Gets available variable groups for a given module_id or device_type_id. Any additional named arguments
+        will be used as key/value pairs in the where statement.
+
+        :param relation_type: Either 'module' or 'device'.
+        :type relation_type: str
+        :param relation_id: The id of the module or device to find.
+        :type relation_id: str
+        :return: Available variable groups.
+        :rtype: list
+        """
+        if relation_type is not None:
+            kwargs['relation_type'] = relation_type
+        if relation_id is not None:
+            kwargs['relation_id'] = relation_id
+
+        results = yield self._LocalDB.get_variable_groups(**kwargs)
+        returnValue(results)
+
+    @inlineCallbacks
+    def get_variable_fields_data(self, **kwargs):
+        groups = yield self._LocalDB.get_variable_fields_data(**kwargs)
+        # print("variables library: get_groups_fields: groups: %s" % groups)
+        returnValue(groups)
+
+    @inlineCallbacks
+    def get_groups_fields(self, relation_type=None, relation_id=None, variable_data=None):
+
+        groups = yield self._LocalDB.get_variable_groups_fields(group_relation_type=relation_type, group_relation_id=relation_id)
+        if variable_data is not None:
+            for group in groups:
+                fields = group['fields']
+                for field in fields:
+                    if group['id'] in variable_data:
+                        if field['id'] in variable_data[group['id']]:
+                            groups[group['id']][field['id']] = variable_data[group['id']][field['id']]
+        # print("variables library: get_groups_fields: groups: %s" % groups)
+        returnValue(groups)
+
+    @inlineCallbacks
+    def get_variable_groups_fields_data(self, **kwargs):
+        # print("variables library: get_variable_groups_fields_data: kwargs: %s" % kwargs)
+        groups = yield self._LocalDB.get_variable_groups_fields_data(**kwargs)
+        # print("variables library: get_variable_groups_fields_data: groups: %s" % groups)
+        returnValue(groups)
+
+    @inlineCallbacks
     def dev_group_add(self, data, **kwargs):
         """
         Add a new variable group.
@@ -65,7 +139,7 @@ class Variables(YomboLibrary):
 
         var_results = yield self._YomboAPI.request('POST', '/v1/variable/group', data)
         # print("group edit results: %s" % group_results)
-        print("var_results: %s" % var_results)
+        # print("var_results: %s" % var_results)
         if var_results['code'] > 299:
             results = {
                 'status': 'failed',
@@ -212,7 +286,7 @@ class Variables(YomboLibrary):
 
         var_results = yield self._YomboAPI.request('POST', '/v1/variable/field', data)
         # print("field edit results: %s" % field_results)
-        print("var_results: %s" % var_results)
+        # print("var_results: %s" % var_results)
         if var_results['code'] > 299:
             results = {
                 'status': 'failed',

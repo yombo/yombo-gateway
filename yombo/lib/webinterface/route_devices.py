@@ -29,6 +29,9 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.exceptions import YomboHookStopProcessing
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_string, global_invoke_all
+from yombo.core.log import get_logger
+
+logger = get_logger("library.webinterface.route_devices")
 
 def route_devices(webapp):
     with webapp.subroute("/devices") as webapp:
@@ -74,23 +77,28 @@ def route_devices(webapp):
             )
 
 
-        @webapp.route('/add_details', methods=['POST'])
+        @webapp.route('/add/<string:device_type_id>', methods=['POST', 'GET'])
         @require_auth()
         @inlineCallbacks
         @run_first()
-        def page_devices_add_post(webinterface, request, session):
-            device_type_id = request.args.get('device_type_id')[0]
+        def page_devices_add_post(webinterface, request, session, device_type_id):
             try:
                 device_type = webinterface._DeviceTypes[device_type_id]
             except Exception, e:
                 webinterface.add_alert('Device Type ID was not found: %s' % device_type_id, 'warning')
                 returnValue(webinterface.redirect(request, '/devices/add'))
 
-            json_output = None
+            ok_to_save = True
+
+            if 'json_output' in request.args:
+                json_output = request.args.get('json_output', [{}])[0]
+                json_output = json.loads(json_output)
+            else:
+                json_output = {}
+                ok_to_save = False
+
             try:
-                json_output = json.loads(request.args.get('json_output')[0])
-                start_percent = request.args.get('start_percent')
-                status = request.args.get('status')[0]
+                status = json_output.get('status', 'enabled')
                 if status == 'disabled':
                     status = 0
                 elif status == 'enabled':
@@ -101,7 +109,8 @@ def route_devices(webapp):
                     webinterface.add_alert('Device status was set to an illegal value.', 'warning')
                     returnValue(webinterface.redirect(request, '/devices'))
 
-                pin_required = request.args.get('pin_required')[0]
+
+                pin_required = json_output.get('pin_required', 'disabled')
                 if pin_required == 'disabled':
                     pin_required = 0
                 elif pin_required == 'enabled':
@@ -113,47 +122,42 @@ def route_devices(webapp):
                     webinterface.add_alert('Device pin required was set to an illegal value.', 'warning')
                     returnValue(webinterface.redirect(request, '/devices'))
 
-                energy_usage = request.args.get('energy_usage')
+                start_percent = json_output.get('start_percent', None)
+                energy_usage = json_output.get('energy_usage', None)
                 energy_map = {}
-                for idx, percent in enumerate(start_percent):
-                    try:
-                        energy_map[float(float(percent) / 100)] = energy_usage[idx]
-                    except:
-                        pass
+                if start_percent is not None and energy_usage is not None:
+                    for idx, percent in enumerate(start_percent):
+                        try:
+                            energy_map[float(float(percent) / 100)] = energy_usage[idx]
+                        except:
+                            pass
+                else:
+                    ok_to_save = False
 
                 energy_map = OrderedDict(sorted(energy_map.items(), key=lambda (x, y): float(x)))
-                device = {
-                    'device_id': json_output['device_id'],
-                    'label': json_output['label'],
-                    'description': json_output['description'],
-                    'status': status,
-                    'statistic_label': json_output['statistic_label'],
-                    'statistic_lifetime': json_output['statistic_lifetime'],
-                    'device_type_id': json_output['device_type_id'],
-                    'pin_required': pin_required,
-                    'pin_code': json_output['pin_code'],
-                    'pin_timeout': json_output['pin_timeout'],
-                    'energy_type': json_output['energy_type'],
-                    'energy_map': energy_map,
-                    'variable_data': json_output['vars'],
-                }
-            except:
-                device = {
-                    'device_id': '',
-                    'label': '',
-                    'description': '',
-                    'status': 1,
-                    'statistic_label': '',
-                    'statistic_lifetime': '',
-                    'device_type_id': device_type_id,
-                    'pin_required': 0,
-                    'pin_code': '',
-                    'pin_timeout': 0,
-                    'energy_type': 'calc',
-                    'energy_map': {0:0, 1:0},
-                }
 
-            if json_output is not None:
+
+            except Exception as e:
+                logger.warn("Error while processing device add_details: {e}", e=e)
+
+            device = {
+                'device_id': json_output.get('device_id', ""),
+                'label': json_output.get('label', ""),
+                'description': json_output.get('description', ""),
+                'status': status,
+                'statistic_label': json_output.get('statistic_label', ""),
+                'statistic_lifetime': json_output.get('statistic_lifetime', ""),
+                'device_type_id': json_output.get('device_type_id', ""),
+                'pin_required': pin_required,
+                'pin_code': json_output.get('pin_code', ""),
+                'pin_timeout': json_output.get('pin_timeout', ""),
+                'energy_type': json_output.get('energy_type', ""),
+                'energy_map': energy_map,
+                'variable_data': json_output.get('vars', []),
+            }
+
+
+            if ok_to_save:
                 try:
                     global_invoke_all('_device_before_add_',  **{'called_by': webinterface, 'device': device})
                 except YomboHookStopProcessing as e:
@@ -400,44 +404,6 @@ def route_devices(webapp):
             page = yield page_devices_edit_form(webinterface, request, session, device, None)
             returnValue(page)
 
-        @inlineCallbacks
-        def page_devices_edit_form(webinterface, request, session, device, var_data):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
-            var_groups = yield webinterface._Libraries['localdb'].get_variable_groups('device_type', device.device_type_id)
-            var_groups_final = []
-            for group in var_groups:
-                group = group.__dict__
-                fields = yield webinterface._Libraries['localdb'].get_variable_fields_by_group(group['id'])
-                fields_final = []
-                for field in fields:
-                    field = field.__dict__
-                    if var_data is None:
-                        var_data_field = yield webinterface._Libraries['localdb'].get_variable_data_by_relation(field['id'],
-                                                                                                  device.device_id)
-                    else:
-                        if field['id'] in var_data:
-                            var_data_field = var_data[field['id']]
-                        else:
-                            var_data_field = []
-
-                    # print "device var_data_field: %s" % var_data_field
-
-                    var_data_final = []
-                    for data in var_data_field:
-                        var_data_final.append(data.__dict__)
-                    field['data'] = var_data_final
-
-                    fields_final.append(field)
-                group['fields'] = fields_final
-                var_groups_final.append(group)
-
-            # print "final groups: %s" % var_groups_final
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                               device=device,
-                               dev_variables=var_groups_final,
-                               commands=webinterface._Commands,
-                               ))
-
         @webapp.route('/<string:device_id>/edit', methods=['POST'])
         @require_auth()
         @run_first()
@@ -501,53 +467,33 @@ def route_devices(webapp):
             results = yield webinterface._Devices.edit_device(device_id, data)
 
             if results['status'] == 'failed':
-                var_groups = yield webinterface._Libraries['localdb'].get_variable_groups('device_type',
-                                                                                          device.device_type_id)
-                var_groups_final = []
-                for group in var_groups:
-                    group = group.__dict__
-                    fields = yield webinterface._Libraries['localdb'].get_variable_fields_by_group(group['id'])
-                    fields_final = []
-                    for field in fields:
-                        field = field.__dict__
-                        var_data = yield webinterface._Libraries['localdb'].get_variable_data_by_relation(field['id'],
-                                                                                          device.device_id)
-                        var_data_final = []
-                        for data in var_data:
-                            var_data_final.append(data.__dict__)
-                        field['data'] = var_data_final
 
-                        fields_final.append(field)
-                    group['fields'] = fields_final
-                    var_groups_final.append(group)
-
+                data['device_type_id'] = device.device_type_id
+                data['device_id'] = device.device_id
                 webinterface.add_alert(results['apimsghtml'], 'warning')
-                page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
-                               device=data,
-                               dev_variables=var_groups_final,
-                               commands=webinterface._Commands,
-                               ))
+
+                webinterface.home_breadcrumb(request)
+                webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+                webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+                webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
+                page = yield page_devices_edit_form(webinterface, request, session, data, json_output['vars'])
+                returnValue(page)
 
             returnValue(webinterface.redirect(request, '/devices/%s/details' % device_id))
 
-            # msg = {
-            #     'header': 'Device Updated',
-            #     'label': 'Device updated successfully',
-            #     'description': '',
-            # }
 
-            # webinterface._Notifications.add({'title': 'Restart Required',
-            #                                  'message': 'Device edited. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-            #                                  'source': 'Web Interface',
-            #                                  'persist': False,
-            #                                  'priority': 'high',
-            #                                  'always_show': True,
-            #                                  'always_show_allow_clear': False,
-            #                                  'id': 'reboot_required',
-            #                                  })
-            #
-            # page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-            # returnValue(page.render(alerts=webinterface.get_alerts(),
-            #                         msg=msg,
-            #                         ))
+
+        @inlineCallbacks
+        def page_devices_edit_form(webinterface, request, session, device, var_data):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
+            var_groups_final_new = yield webinterface._Variables.get_variable_groups_fields_data(
+                group_relation_type='device_type',
+                group_relation_id=device['device_type_id'],
+                data_relation_type='device',
+                data_relation_id=device['device_id'],
+            )
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    device=device,
+                                    dev_variables=var_groups_final_new,
+                                    commands=webinterface._Commands,
+                                    ))

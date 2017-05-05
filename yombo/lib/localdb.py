@@ -189,9 +189,14 @@ class VariableGroups(DBObject):
     TABLENAME = 'variable_groups'
 
 
-class VariableDataView(DBObject):
-    TABLENAME = 'variable_data_view'
+class VariableFieldDataView(DBObject):
+    TABLENAME = 'variable_field_data_view'
 
+class VariableGroupFieldView(DBObject):
+    TABLENAME = 'variable_group_field_view'
+
+class VariableGroupFieldDataView(DBObject):
+    TABLENAME = 'variable_group_field_data_view'
 
 # class Variable(DBObject):
 #     TABLENAME='variables'
@@ -1131,24 +1136,68 @@ ORDER BY id desc"""
     ###  Variables          ###
     ###########################
     @inlineCallbacks
-    def get_variable_data(self, relation_type, relation_id):
+    def get_variable_data(self, **kwargs):
         """
-        Gets available variables for a given device_id.
+        Searches for variable data, using named agurments as where search fields, and'd together.
 
-        Called by: library.Devices::_init_
-
-        :param variable_type:
-        :param foreign_id:
-        :return:
+        :param group_id: Field group_id to search for.
+        :type group_id: str
+        :return: Available variable fields.
+        :rtype: list
         """
-        records = yield VariableDataView.find(
-            where=['relation_type = ? AND relation_id =?', relation_type, relation_id],
+        records = yield VariableData.find(
+            where=dictToWhere(kwargs),
+            orderby='data_weight ASC')
+
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_variable_fields(self, **kwargs):
+        """
+        Searches for variable fields, using named agurments as where search fields, and'd together.
+
+        :param group_id: Field group_id to search for.
+        :type group_id: str
+        :return: Available variable fields.
+        :rtype: list
+        """
+        records = yield VariableFields.find(
+            where=dictToWhere(kwargs),
+            orderby='field_weight ASC')
+
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_variable_groups(self, **kwargs):
+        """
+        Searches for variable groups, using named agurments as where search fields, and'd together.
+
+        :return: Available variable groups.
+        :rtype: list
+        """
+        records = yield VariableGroups.find(
+            where=dictToWhere(kwargs),
+            orderby='group_weight ASC')
+
+        returnValue(records)
+
+    @inlineCallbacks
+    def get_variable_fields_data(self,  **kwargs):
+        """
+        Gets fields an associated data. Named arguments are used to crate the WHERE statement.
+
+        :return: Available variable data nested inside the fields as 'data'.
+        :rtype: list
+        """
+        records = yield VariableFieldDataView.find(
+            where=dictToWhere(kwargs),
             orderby='field_weight ASC, data_weight ASC')
+        # print "get_variable_data records: %s" % records
         variables = {}
         for record in records:
             if record.field_machine_label not in variables:
                 variables[record.field_machine_label] = {
-                    'id': record.id,
+                    'id': record.field_id,
                     'relation_id': record.relation_id,
                     'relation_type': record.relation_type,
                     'field_machine_label': record.field_machine_label,
@@ -1170,7 +1219,7 @@ ORDER BY id desc"""
                 }
 
             data = {
-                'id': record.id,
+                'id': record.data_id,
                 'weight': record.data_weight,
                 'created': record.data_created,
                 'updated': record.data_updated,
@@ -1178,6 +1227,115 @@ ORDER BY id desc"""
             data['value'] = yield self._GPG.decrypt(record.data)
 
             variables[record.field_machine_label]['data'].append(data)
+            # variables[record.machine_label]['value'].append(record.value)
+        #                print record.__dict__
+        #         print "variables %s:%s = %s" % (relation_type, relation_id, variables)
+        returnValue(variables)
+
+    @inlineCallbacks
+    def get_variable_groups_fields(self,  **kwargs):
+        """
+        Gets groups with nested fields, with nested data. Named arguments are used to crate the WHERE statement.
+
+        :return: Available variable data nested inside the fields as 'data'.
+        :rtype: list
+        """
+        records = yield VariableFieldDataView.find(
+            where=dictToWhere(kwargs),
+            orderby='field_weight ASC, data_weight ASC')
+        variables = {}
+        for record in records:
+            # print "get_variable_groups_fields record: %s" % record
+            if record.group_machine_label not in variables:
+                variables[record.group_machine_label] = {
+                    'id': record.group_id,
+                    'group_relation_id': record.group_relation_id,
+                    'group_relation_type': record.group_relation_type,
+                    'group_machine_label': record.group_machine_label,
+                    'group_description': record.group_description,
+                    'group_weight': record.group_weight,
+                    'group_status': record.group_status,
+                    'fields': {},
+                }
+            if record.field_machine_label not in variables[record.group_machine_label]['fields']:
+                variables[record.group_machine_label]['fields'][record.field_machine_label] = {
+                    'id': record.field_id,
+                    'relation_id': record.relation_id,
+                    'relation_type': record.relation_type,
+                    'field_machine_label': record.field_machine_label,
+                    'field_label': record.field_label,
+                    'field_weight': record.field_weight,
+                    'value_min': record.value_min,
+                    'value_max': record.value_max,
+                    'value_casing': record.encryption,
+                    'value_required': record.value_required,
+                    'encryption': record.encryption,
+                    'input_type_id': record.input_type_id,
+                    'default_value': record.default_value,
+                    'help_text': record.help_text,
+                    'multiple': record.multiple,
+                    'data_weight': record.data_weight,
+                    'created': record.field_created,
+                    'updated': record.field_updated,
+                    'data': [],
+                }
+        returnValue(variables)
+
+    @inlineCallbacks
+    def get_variable_groups_fields_data(self,  **kwargs):
+        """
+        Gets groups with nested fields, with nested data. Named arguments are used to crate the WHERE statement.
+
+        :return: Available variable data nested inside the fields as 'data'.
+        :rtype: list
+        """
+        records = yield VariableGroupFieldDataView.find(
+            where=dictToWhere(kwargs),
+            orderby='group_weight ASC, field_weight ASC, data_weight ASC')
+        variables = {}
+        for record in records:
+            if record.group_machine_label not in variables:
+                variables[record.group_machine_label] = {
+                    'id': record.group_id,
+                    'group_relation_type': record.group_relation_type,
+                    'group_machine_label': record.group_machine_label,
+                    'group_machine_label': record.group_machine_label,
+                    'group_description': record.group_description,
+                    'group_weight': record.group_weight,
+                    'group_status': record.group_status,
+                    'fields': {},
+                }
+            if record.field_machine_label not in variables[record.group_machine_label]['fields']:
+                variables[record.group_machine_label]['fields'][record.field_machine_label] = {
+                    'id': record.field_id,
+                    'relation_id': record.data_relation_id,
+                    'relation_type': record.data_relation_type,
+                    'field_machine_label': record.field_machine_label,
+                    'field_label': record.field_label,
+                    'field_weight': record.field_weight,
+                    'value_min': record.value_min,
+                    'value_max': record.value_max,
+                    'value_casing': record.encryption,
+                    'value_required': record.value_required,
+                    'encryption': record.encryption,
+                    'input_type_id': record.input_type_id,
+                    'default_value': record.default_value,
+                    'help_text': record.help_text,
+                    'multiple': record.multiple,
+                    'data_weight': record.data_weight,
+                    'created': record.field_created,
+                    'updated': record.field_updated,
+                    'data': [],
+                }
+            data = {
+                'id': record.data_id,
+                'weight': record.data_weight,
+                'created': record.data_created,
+                'updated': record.data_updated,
+            }
+            data['value'] = yield self._GPG.decrypt(record.data)
+
+            variables[record.group_machine_label]['fields'][record.field_machine_label]['data'].append(data)
             # variables[record.machine_label]['value'].append(record.value)
         #                print record.__dict__
         #         print "variables %s:%s = %s" % (relation_type, relation_id, variables)
