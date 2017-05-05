@@ -66,8 +66,7 @@ class Variables(YomboLibrary):
         var_results = yield self._YomboAPI.request('POST', '/v1/variable/group', data)
         # print("group edit results: %s" % group_results)
         print("var_results: %s" % var_results)
-        if var_results['code'] != 200:
-
+        if var_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add variable group",
@@ -95,7 +94,7 @@ class Variables(YomboLibrary):
         group_results = yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % (group_id), data)
         # print("group edit results: %s" % group_results)
 
-        if group_results['code'] != 200:
+        if group_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit variable group",
@@ -122,7 +121,7 @@ class Variables(YomboLibrary):
         """
         group_results = yield self._YomboAPI.request('DELETE', '/v1/variable/group/%s' % group_id)
 
-        if group_results['code'] != 200:
+        if group_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete variable group",
@@ -154,7 +153,7 @@ class Variables(YomboLibrary):
 
         group_results = yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id, api_data)
 
-        if group_results['code'] != 200:
+        if group_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable variable group",
@@ -185,7 +184,7 @@ class Variables(YomboLibrary):
 
         group_results = yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id, api_data)
 
-        if group_results['code'] != 200:
+        if group_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable variable group",
@@ -214,7 +213,7 @@ class Variables(YomboLibrary):
         var_results = yield self._YomboAPI.request('POST', '/v1/variable/field', data)
         # print("field edit results: %s" % field_results)
         print("var_results: %s" % var_results)
-        if var_results['code'] != 200:
+        if var_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add variable field",
@@ -242,7 +241,7 @@ class Variables(YomboLibrary):
         field_results = yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % (field_id), data)
         # print("field edit results: %s" % field_results)
 
-        if field_results['code'] != 200:
+        if field_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit variable field",
@@ -269,7 +268,7 @@ class Variables(YomboLibrary):
         """
         field_results = yield self._YomboAPI.request('DELETE', '/v1/variable/field/%s' % field_id)
 
-        if field_results['code'] != 200:
+        if field_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete variable field",
@@ -301,7 +300,7 @@ class Variables(YomboLibrary):
 
         field_results = yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id, api_data)
 
-        if field_results['code'] != 200:
+        if field_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable variable field",
@@ -332,7 +331,7 @@ class Variables(YomboLibrary):
 
         field_results = yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id, api_data)
 
-        if field_results['code'] != 200:
+        if field_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable variable field",
