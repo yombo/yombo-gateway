@@ -492,11 +492,13 @@ class Modules(YomboLibrary):
 
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
-            module_variables = yield self._LocalDB.get_variable_data('module', module_id)
+            module_variables = yield self._Variables.get_variable_fields_data(relation_type='module',
+                                                                              relation_id=module_id)
             # print "getting vars: %s "% module_variables
             module._ModuleVariables = module_variables
 
             if module._Name in self._localModuleVars:
+                print "module module._ModuleVariables: %s" % module._ModuleVariables
                 module._ModuleVariables = dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
                 del self._localModuleVars[module._Name]
 
@@ -526,6 +528,7 @@ class Modules(YomboLibrary):
             module._Tasks = self._Loader.loadedLibraries['tasks']
             module._Times = self._Loader.loadedLibraries['times']
             module._YomboAPI = self._Loader.loadedLibraries['yomboapi']
+            module._Variables = self._Loader.loadedLibraries['variables']
             module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
 
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
