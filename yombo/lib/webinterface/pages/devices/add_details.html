@@ -47,9 +47,8 @@
                                 <br>
                                 <div class="input-group">
                                     <select class="form-control" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
-                                        <option value="enabled"{% if device.status == 1 %} selected{% endif %}>Enabled</option>
-                                        <option value="disabled"{% if device.status == 0 %} selected{% endif %}>Disabled</option>
-                                        <option value="deleted"{% if device.status == 2 %} selected{% endif %}>Deleted</option>
+                                        <option value="1"{% if device.status == 1 %} selected{% endif %}>Enabled</option>
+                                        <option value="0"{% if device.status == 0 %} selected{% endif %}>Disabled</option>
                                     </select>
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
@@ -98,8 +97,8 @@
                                 <br>
                                 <div class="input-group">
                                     <select class="form-control" name="pin_required" id="pin_required" placeholder="Is a pin required to change status?">
-                                        <option value="enabled"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %}>Enabled</option>
-                                        <option value="disabled"{% if device.pin_required|yes_no == "No" %} selected{% endif %}>Disabled</option>
+                                        <option value="1"{% if device.pin_required|yes_no == "Yes" %} selected{% endif %}>Enabled</option>
+                                        <option value="0"{% if device.pin_required|yes_no == "No" %} selected{% endif %}>Disabled</option>
                                     </select>
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Pin Code: </label>
@@ -252,10 +251,12 @@
                         </thead>
                     <tbody>
                          <tr>
+
                             <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
-                            <td> {% if field.data|length > 0 %}
+                            <td>{{field}} {% if field.data|length > 0 %}
                                 {% for data in field.data %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data.id }}]" id="vars[{{ field.id }}][{{ data.id }}]" value="{{ data.data }}"
+                                xxxxxxxxxx{{ data}}
+                                    <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data.id }}]" id="vars[{{ field.id }}][{{ data.id }}]" value="{{ data.value }}"
                                     {% if field.required %} required{% endif %}>
                                 {% endfor %}
                                 {% else %}

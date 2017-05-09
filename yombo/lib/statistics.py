@@ -233,6 +233,7 @@ class Statistics(YomboLibrary):
                 }
         self.init_deferred.callback(10)
 
+    @inlineCallbacks
     def _modules_prestarted_(self, **kwargs):
         """
         This function is called before the _start_ function of all modules is called. This implements the hook:
@@ -256,7 +257,7 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        stat_lifetimes = global_invoke_all('_statistics_lifetimes_', called_by=self)
+        stat_lifetimes = yield global_invoke_all('_statistics_lifetimes_', called_by=self)
         for moduleName, item in stat_lifetimes.iteritems():
             if isinstance(item, dict):
                 for bucket_name, lifetime in item.iteritems():

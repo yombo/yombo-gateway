@@ -248,8 +248,8 @@
                         </div>
                         <div class="panel-body">
                             <div class="input-group">
-        {% if dev_variables is not none -%}
-            {% for group_id, group in dev_variables.iteritems() %}
+        {% if device_variables is not none -%}
+            {% for group_id, group in device_variables.iteritems() %}
             <h4>{{ group.group_label }}</h4>
             {{ group.group_description }}
                 {% for field_id, field in group.fields.iteritems() %}
@@ -263,7 +263,7 @@
                          <tr>
                             <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
                             <td> {% if field.data|length > 0 %}
-                                {%- for data in field.data %}
+                                {%- for data_id, data in field.data.iteritems() %}
                                     <input type="text" class="form-control" name="vars[{{ field_id }}][{{ data.id }}]" id="vars[{{ field_id }}][{{ data.id }}]" value="{{ data.value }}">
                                 {%- endfor %}
                                 {%- else %}

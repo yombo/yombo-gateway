@@ -563,6 +563,7 @@ class WebInterface(YomboLibrary):
         """
         return web_translator(self, request)
 
+    @inlineCallbacks
     def _modules_loaded_(self, **kwargs):
         """
         Called before modules have their _prestart_ function called (after _load_).
@@ -602,7 +603,7 @@ class WebInterface(YomboLibrary):
             if level1 not in newlist:
                 temp_dict[level1] = item['priority1']
 
-        temp_strings = yombo.utils.global_invoke_all('_webinterface_add_routes_')
+        temp_strings = yield yombo.utils.global_invoke_all('_webinterface_add_routes_')
         # print "new routes: %s" % temp_strings
         for component, options in temp_strings.iteritems():
             # print "1111"

@@ -111,7 +111,7 @@ class SSLCerts(YomboLibrary):
         self.check_if_certs_need_update_loop = None
 
         # get certs needed for system libraries.
-        sslcerts = global_invoke_libraries('_sslcerts_', called_by=self)
+        sslcerts = yield global_invoke_libraries('_sslcerts_', called_by=self)
         self._add_sslcerts(sslcerts)
 
     def _load_(self):
@@ -141,6 +141,7 @@ class SSLCerts(YomboLibrary):
         for sslname, cert in self.managed_certs.iteritems():
             cert.check_if_rotate_needed()
 
+    @inlineCallbacks
     def _modules_inited_(self):
         """
         Called before the modules have their preload called, after their _init_.
@@ -149,7 +150,7 @@ class SSLCerts(YomboLibrary):
 
         :return:
         """
-        sslcerts = global_invoke_modules('_sslcerts_', called_by=self)
+        sslcerts = yield global_invoke_modules('_sslcerts_', called_by=self)
         self._add_sslcerts(sslcerts)
 
     def _add_sslcerts(self, sslcerts):

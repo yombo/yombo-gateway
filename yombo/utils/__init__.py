@@ -37,7 +37,7 @@ import binascii
 import os
 from difflib import SequenceMatcher
 
-#from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
 from twisted.internet import reactor
 
@@ -1072,7 +1072,7 @@ def generate_uuid(**kwargs):
     tempit = uuid + subtype + maintype
     return tempit
 
-
+@inlineCallbacks
 def global_invoke_all(hook, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
@@ -1082,23 +1082,11 @@ def global_invoke_all(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
-    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
-    return dict_merge(modules_results, lib_results)
+    lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
+    modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
+    returnValue(dict_merge(modules_results, lib_results))
 
-def global_invoke_modules(hook, **kwargs):
-    """
-    Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
-    methods.
-
-    :param hook: The hook name to call.
-    :param kwargs: kwargs to send to the function.
-    :return: a dictionary of results.
-    """
-    lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
-    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
-    return dict_merge(modules_results, lib_results)
-
+@inlineCallbacks
 def global_invoke_libraries(hook, **kwargs):
     """
     Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
@@ -1108,9 +1096,21 @@ def global_invoke_libraries(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
-    lib_results = get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
-    modules_results = get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
-    return dict_merge(modules_results, lib_results)
+    lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
+    returnValue(lib_results)
+
+@inlineCallbacks
+def global_invoke_modules(hook, **kwargs):
+    """
+    Call all hooks in libraries and modules. Basically a shortcut for calling module_invoke_all and libraries_invoke_all
+    methods.
+
+    :param hook: The hook name to call.
+    :param kwargs: kwargs to send to the function.
+    :return: a dictionary of results.
+    """
+    modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
+    returnValue(modules_results)
 
 def get_component(name):
     """

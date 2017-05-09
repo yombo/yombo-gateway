@@ -444,6 +444,7 @@ class Loader(YomboLibrary, object):
 #            logger.debug("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
             self._invoke_list_cache[cache_key] = False
 
+    @inlineCallbacks
     def library_invoke_all(self, hook, fullName=False, called_by=None, **kwargs):
         """
         Calls library_invoke for all loaded libraries.
@@ -461,12 +462,10 @@ class Loader(YomboLibrary, object):
         for library_name, library in self.loadedLibraries.iteritems():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
             try:
-                d = self.library_invoke(library_name, hook, called_by=called_by, **kwargs)
-                if isinstance(d, Deferred):
-                    result = getattr(d, 'result', None)
-                    if result is not None:
-#                      logger.debug("{libraryName} {hook} {result}", libraryName=libraryName, hook=hook, result=result)
-                      results[library._FullName] = result
+                result = yield self.library_invoke(library_name, hook, called_by=called_by, **kwargs)
+                if result is None:
+                    continue
+                results[library._FullName] = result
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:
@@ -474,7 +473,7 @@ class Loader(YomboLibrary, object):
                 e.by_who =  label
                 raise
 
-        return results
+        returnValue(results)
 
     def import_component(self, pathName, componentName, componentType, componentUUID=None):
         """

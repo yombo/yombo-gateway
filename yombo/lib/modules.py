@@ -24,6 +24,7 @@ import sys
 import traceback
 from time import time
 import hashlib
+from functools import partial
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
@@ -387,15 +388,15 @@ class Modules(YomboLibrary):
 
                 self._localModuleVars[mod_label] = {}
                 for item in options:
-                    logger.debug("Adding module from localmodule.ini: {item}", item=item)
+                    logger.info("Adding module from localmodule.ini: {item}", item=item)
                     if item not in self._localModuleVars[mod_label]:
                         self._localModuleVars[mod_label][item] = []
                     values = ini.get(section, item)
                     values = values.split(":::")
                     for value in values:
                         variable = {
-                            'relation_id': newUUID,
-                            'relation_type': 'module',
+                            'data_relation_id': newUUID,
+                            'data_relation_type': 'module',
                             'field_machine_label': item,
                             'field_label': item,
                             'value': value,
@@ -480,8 +481,20 @@ class Modules(YomboLibrary):
             self.modules[module_id]._updated = module['updated']
             self.modules[module_id]._load_source = module['load_source']
             self.modules[module_id]._device_types = []  # populated by Modules::module_init_invoke
-            print "loading modules: %s" % self.modules[module_id]._machine_label
-            print "loading modules: %s" % self.modules[module_id]._status
+            # print "loading modules: %s" % self.modules[module_id]._machine_label
+            # print "loading modules: %s" % self.modules[module_id]._status
+
+
+    @inlineCallbacks
+    def get_module_variables(self, module_name, data_relation_type, data_relation_id):
+        variables = yield self._Variables.get_variable_fields_data(
+            data_relation_type=data_relation_type,
+            data_relation_id=data_relation_id)
+
+        if module_name in self._localModuleVars:
+            returnValue(dict_merge(variables, self._localModuleVars[module_name]))
+
+        returnValue(variables)
 
     @inlineCallbacks
     def module_init_invoke(self):
@@ -489,19 +502,24 @@ class Modules(YomboLibrary):
         Calls the _init_ functions of modules.
         """
         module_init_deferred = []
+
         for module_id, module in self.modules.iteritems():
             self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
 
             # Get variables, and merge with any local variable settings
             # print "getting vars for module: %s" % module_id
-            module_variables = yield self._Variables.get_variable_fields_data(relation_type='module',
-                                                                              relation_id=module_id)
             # print "getting vars: %s "% module_variables
-            module._ModuleVariables = module_variables
+            # module._ModuleVariables_get_live = self._Variables.get_variable_fields_data_callable(
+            #     data_relation_type='module',
+            #     data_relation_id=module_id)
+            #
 
-            if module._Name in self._localModuleVars:
-                module._ModuleVariables = dict_merge(module._ModuleVariables, self._localModuleVars[module._Name])
-                del self._localModuleVars[module._Name]
+            module._ModuleVariables = partial(
+                self.get_module_variables,
+                module._Name,
+                'module',
+                module_id,
+            )
 
             # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
             module._ModuleType = self._rawModulesList[module_id]['module_type']
@@ -587,7 +605,7 @@ class Modules(YomboLibrary):
     def SomeError(self, error):
         logger.error("Received an error: {error}", error=error)
 
-#    @inlineCallbacks
+    @inlineCallbacks
     def module_invoke(self, requestedModule, hook, called_by=None, **kwargs):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
@@ -604,7 +622,7 @@ class Modules(YomboLibrary):
         if module._Name == 'yombo.core.module.YomboModule':
             self._invoke_list_cache[cache_key] is False
             # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
-            return
+            returnValue(None)
             # raise YomboWarning("Cannot call YomboModule hooks")
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = module._Name.lower() + "_" + hook
@@ -635,7 +653,9 @@ class Modules(YomboLibrary):
                         module._hooks_called[hook] = 1
                     else:
                         module._hooks_called[hook] += 1
-                    return method(**kwargs)
+                    results = yield maybeDeferred(method, **kwargs)
+                    returnValue(results)
+                    # return method(**kwargs)
                 # except Exception, e:
                 #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
                 #     logger.error("--------------------------------------------------------")
@@ -657,6 +677,7 @@ class Modules(YomboLibrary):
             self._invoke_list_cache[cache_key] = False
             # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
 
+    @inlineCallbacks
     def module_invoke_all(self, hook, full_name=None, called_by=None, **kwargs):
         """
         Calls module_invoke for all loaded modules.
@@ -671,7 +692,7 @@ class Modules(YomboLibrary):
 
             label = module._FullName.lower() if full_name else module._Name.lower()
             try:
-                 result = self.module_invoke(module._Name, hook, called_by=called_by, **kwargs)
+                 result = yield self.module_invoke(module._Name, hook, called_by=called_by, **kwargs)
                  if result is not None:
                      results[label] = result
             except YomboWarning:
@@ -681,7 +702,7 @@ class Modules(YomboLibrary):
                 e.by_who =  label
                 raise
 
-        return results
+        returnValue(results)
 
     @inlineCallbacks
     def load_module_data(self):
@@ -728,7 +749,6 @@ class Modules(YomboLibrary):
 
         if module_requested in self.modules:
             item = self.modules[module_requested]
-            print "module found by key: %s" % item.__dict__
             if status is not None and item.status != status:
                 raise KeyError("Requested mdule found, but has invalid status: %s" % item._status)
             return item

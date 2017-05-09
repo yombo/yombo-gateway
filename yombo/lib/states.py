@@ -60,7 +60,6 @@ except ImportError:
 from time import time
 from functools import partial
 
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from twisted.internet.task import LoopingCall
@@ -359,6 +358,7 @@ class States(YomboLibrary, object):
         """
         return self.__States.copy()
 
+    @inlineCallbacks
     def set(self, key, value, value_type=None, function=None, arguments=None):
         """
         Set the value of a given state (key).
@@ -391,11 +391,11 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_preset_', **{'called_by': self,'key': key, 'value': value})
+            state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,'key': key, 'value': value})
         except YomboHookStopProcessing as e:
             logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                            state=key, resource=e.by_who)
-            return
+            returnValue(None)
 
         self.__States[key]['value'] = value
         self.__States[key]['function'] = function
@@ -406,7 +406,7 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value})
+            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value})
         except YomboHookStopProcessing:
             pass
 

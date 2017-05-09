@@ -171,8 +171,8 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules.get(module_id)
                 # module = webinterface._Modules[module_id]
-            except Exception, e:
-                # print "Module find errr: %s" % e
+            except Exception as e:
+                print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue( webinterface.redirect(request, '/modules/index'))
 
@@ -220,7 +220,7 @@ def route_modules(webapp):
         def page_modules_disable_post(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))

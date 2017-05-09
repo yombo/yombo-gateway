@@ -307,12 +307,10 @@ class Session(object):
         :rtype: bool
         """
         try:
-            print "aa 11"
             self.get(data_requested)
             # print "aa 22"
             return True
         except Exception as e:
-            print "aa 33 %s" % e
             return False
 
     def __setitem__(self, key, val):
@@ -377,7 +375,6 @@ class Session(object):
         }
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
-        print "session, getting key: %s" % key
         # if key in self:
         #     print "zzz"
         if key in self.data:

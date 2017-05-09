@@ -16,6 +16,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from functools import partial
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -41,22 +42,22 @@ class Variables(YomboLibrary):
         self.gwid = self._Configs.get("core", "gwid")
 
     @inlineCallbacks
-    def get_variable_data(self, relation_type=None, relation_id=None, **kwargs):
+    def get_variable_data(self, data_relation_type=None, data_relation_id=None, **kwargs):
         """
         Gets available variable data for a given device_id or module_id. Any additional named arguments
         will be used as key/value pairs in the where statement.
 
-        :param relation_type: Either 'module' or 'device'.
-        :type relation_type: str
-        :param relation_id: The id of the module or device to find.
-        :type relation_id: str
+        :param data_relation_type: Either 'module' or 'device'.
+        :type data_relation_type: str
+        :param data_relation_id: The id of the module or device to find.
+        :type data_relation_id: str
         :return: Available variable data.
         :rtype: list
         """
-        if relation_type is not None:
-            kwargs['relation_type'] = relation_type
-        if relation_id is not None:
-            kwargs['relation_id'] = relation_id
+        if data_relation_type is not None:
+            kwargs['data_relation_type'] = data_relation_type
+        if data_relation_id is not None:
+            kwargs['data_relation_id'] = data_relation_id
 
         print("variables.get_variable_data.kwargs = %s" % kwargs)
         results = yield self._LocalDB.get_variable_data(**kwargs)
@@ -80,36 +81,66 @@ class Variables(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def get_variable_groups(self, relation_type=None, relation_id=None, **kwargs):
+    def get_variable_groups(self, group_relation_type=None, group_relation_id=None, **kwargs):
         """
         Gets available variable groups for a given module_id or device_type_id. Any additional named arguments
         will be used as key/value pairs in the where statement.
 
-        :param relation_type: Either 'module' or 'device'.
-        :type relation_type: str
+        :param group_relation_type: Either 'module' or 'device'.
+        :type group_relation_type: str
         :param relation_id: The id of the module or device to find.
         :type relation_id: str
         :return: Available variable groups.
         :rtype: list
         """
-        if relation_type is not None:
-            kwargs['relation_type'] = relation_type
-        if relation_id is not None:
-            kwargs['relation_id'] = relation_id
+        if group_relation_type is not None:
+            kwargs['group_relation_type'] = group_relation_type
+        if group_relation_id is not None:
+            kwargs['group_relation_id'] = group_relation_id
 
         results = yield self._LocalDB.get_variable_groups(**kwargs)
         returnValue(results)
 
     @inlineCallbacks
     def get_variable_fields_data(self, **kwargs):
+        """
+        Used to get the fields and data. Named arguments needs to be data_relation_id and data_relation_type.
+        
+        This method returns a deferred.
+        
+        :param kwargs: 
+        :return: 
+        """
         groups = yield self._LocalDB.get_variable_fields_data(**kwargs)
         # print("variables library: get_groups_fields: groups: %s" % groups)
         returnValue(groups)
 
-    @inlineCallbacks
-    def get_groups_fields(self, relation_type=None, relation_id=None, variable_data=None):
+    def get_variable_fields_data_callable(self, **kwargs):
+        """
+        Like get_variable_fields_data, but returns a callable. This callable can be used to get the latest
+        information. The callable is called, it will return a deferred.
+        
+        :param kwargs: 
+        :return: 
+        """
+        return partial(self.get_variable_fields_data, **kwargs)
 
-        groups = yield self._LocalDB.get_variable_groups_fields(group_relation_type=relation_type, group_relation_id=relation_id)
+    @inlineCallbacks
+    def get_groups_fields(self, group_relation_type=None, group_relation_id=None, variable_data=None):
+        """
+        Returns groups and fields for a given group_relation_id and group_relation_type.
+        
+        This method returns a deferred.
+        
+        :param group_relation_type: 
+        :param group_relation_id: 
+        :param variable_data: 
+        :return: 
+        """
+
+        print("get group fields: %s %s" % (group_relation_type, group_relation_id))
+        groups = yield self._LocalDB.get_variable_groups_fields(group_relation_type=group_relation_type,
+                                                                group_relation_id=group_relation_id)
         if variable_data is not None:
             for group in groups:
                 fields = group['fields']
@@ -122,10 +153,70 @@ class Variables(YomboLibrary):
 
     @inlineCallbacks
     def get_variable_groups_fields_data(self, **kwargs):
+        """
+        Returns groups, fields, and data. Usually data_relation_id and data_relation_type is submitted.
+        
+        This returns a deferred.
+
+        :param kwargs: 
+        :return: 
+        """
         # print("variables library: get_variable_groups_fields_data: kwargs: %s" % kwargs)
         groups = yield self._LocalDB.get_variable_groups_fields_data(**kwargs)
         # print("variables library: get_variable_groups_fields_data: groups: %s" % groups)
         returnValue(groups)
+
+    def merge_variable_fields_data_data(self, fields, new_data_items):
+        """
+        Merge the results from get_variable_fields_data and a dictiionary of data times, usually
+        the response from a web post.
+        :param groups: 
+        :param data: 
+        :return: 
+        """
+        for field_name, field in fields:
+            if field_name in new_data_items:
+                new_data = new_data_items['field_name']
+                if field['id'] in new_data:
+                    field['id']['value'] = new_data[field['id']]
+
+                # for data in field['data']:
+                #     if data['name']
+
+            field['values'] = []
+            for data_id, data in field['data'].iteritems():
+                field['values'].append(data['value'])
+
+    def merge_variable_groups_fields_data_data(self, groups, new_data_items):
+        """
+        Merge the results from get_variable_groups_fields_data and a dictiionary of data times, usually
+        the response from a web post.
+        :param groups: 
+        :param data: 
+        :return: 
+        """
+        # print("merge_variable_data. Groups: %s" % groups)
+        # print("merge_variable_data. new_data_items: %s" % new_data_items)
+        for group_name, group in groups.iteritems():
+            for field_name, field in group['fields'].iteritems():
+                # print("111 %s" % field )
+                if field_name in new_data_items:
+                    new_data_item = new_data_items[field_name]
+                    # print("222 new_data: %s" % new_data_item)
+                    # print("222 field['id']: %s" % field['id'])
+                    for new_data_id, new_data in new_data_item.iteritems():
+                        if new_data_id in field['data']:
+                            field['data'][new_data_id]['value'] = new_data
+
+                    # for data in field['data']:
+                    #     if data['name']
+
+                field['values'] = []
+                for data_id, data in field['data'].iteritems():
+                    field['values'].append(data['value'])
+
+        print("merge_variable_data. groups_done: %s" % groups)
+        return groups
 
     @inlineCallbacks
     def dev_group_add(self, data, **kwargs):

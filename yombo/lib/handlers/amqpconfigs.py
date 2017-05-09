@@ -340,8 +340,8 @@ class AmqpConfigHandler(YomboLibrary):
                 },
                 'map': {
                     'id': 'id',
-                    'relation_id': 'relation_id',
-                    'relation_type': 'relation_type',
+                    'relation_id': 'group_relation_id',
+                    'relation_type': 'group_relation_type',
                     'group_machine_label': 'group_machine_label',
                     'group_label': 'group_label',
                     'group_description': 'group_description',
@@ -389,8 +389,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'id': 'id',
                     'gateway_id': 'gateway_id',
                     'field_id': 'field_id',
-                    'relation_id': 'relation_id',
-                    'relation_type': 'relation_type',
+                    'relation_id': 'data_relation_id',
+                    'relation_type': 'data_relation_type',
                     'data': 'data',
                     'data_weight': 'data_weight',
                     'created_at': 'created',
@@ -712,7 +712,7 @@ class AmqpConfigHandler(YomboLibrary):
             yield self._LocalDBLibrary.delete('module_device_types', where=['module_id = ?', data['id']])
 
         if config_item == 'variable_groups':
-            yield self._LocalDBLibrary.delete('variable_groups', where=['relation_id = ?', data['relation_id']])
+            yield self._LocalDBLibrary.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
 
         if config_item == 'gateway_users':
             yield self._LocalDBLibrary.delete('users')
@@ -822,7 +822,7 @@ class AmqpConfigHandler(YomboLibrary):
         if 'variable_data' in data:
             if len(data['variable_data']):
                 # print "var data: %s"  % data['variable_data']
-                yield self._LocalDBLibrary.delete('variable_data', where=['relation_type = ? and relation_id = ?',
+                yield self._LocalDBLibrary.delete('variable_data', where=['data_relation_type = ? and data_relation_id = ?',
                                                                           data['variable_data'][0]['relation_type'],
                                                                           data['variable_data'][0]['relation_id']])
                 newMsg = msg.copy()

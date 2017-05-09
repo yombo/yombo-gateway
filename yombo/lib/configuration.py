@@ -74,6 +74,7 @@ from functools import partial
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 from random import randint
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, InvalidArgumentError
@@ -558,6 +559,7 @@ class Configuration(YomboLibrary):
             logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
             logger.error("--------------------------------------------------------")
 
+    @inlineCallbacks
     def _modules_loaded_(self, **kwargs):
         """
         Called after _load_ is called for all the modules. Get's a list of configuration items all library
@@ -590,7 +592,7 @@ class Configuration(YomboLibrary):
                }]
 
         """
-        config_details = global_invoke_all('_configuration_details_')
+        config_details = yield global_invoke_all('_configuration_details_')
 
         for component, details in config_details.iteritems():
             if details is None:
@@ -744,6 +746,7 @@ class Configuration(YomboLibrary):
             else:
                 raise KeyError("Configuration option doesn't exist in section: %s" % option)
 
+    @inlineCallbacks
     def set(self, section, option, value, **kwargs):
         """
         Set value of configuration option for a given section.  The option length
@@ -812,15 +815,16 @@ class Configuration(YomboLibrary):
         self.configs_dirty = True
         if self.loading_yombo_ini is False:
             self.configs[section][option]['writes'] += 1
-            global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value, 'action': 'set'})
+            yield global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value, 'action': 'set'})
 
 
     def get_meta(self, section, option, meta_type='time'):
         try:
-            return self.configs_meta[section, option][meta_type]
+            returnValue(self.configs_meta[section, option][meta_type])
         except:
-            return None
+            returnValue(None)
 
+    @inlineCallbacks
     def delete(self, section, option):
         """
         Delete a section/option value from configs (yombo.ini).
@@ -834,7 +838,7 @@ class Configuration(YomboLibrary):
             if option in self.configs[section]:
                 self.configs_dirty = True
                 del self.configs[section][option]
-                global_invoke_all('_configuration_set_', **{'section': section, 'option': option, 'value': None, 'action': 'delete'})
+                yield global_invoke_all('_configuration_set_', **{'section': section, 'option': option, 'value': None, 'action': 'delete'})
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #

@@ -74,7 +74,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboWarning
+from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, split, global_invoke_all, string_to_number, search_instance, do_search_instance
@@ -584,6 +584,13 @@ class Devices(YomboLibrary):
             'energy_map': json.dumps(data['energy_map'], separators=(',',':')),
         }
 
+        try:
+            global_invoke_all('_device_before_add_', **{'called_by': webinterface, 'device': device})
+        except YomboHookStopProcessing as e:
+            raise YomboWarning()
+            self.add_alert("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
+            returnValue(webinterface.redirect(request, '/devices'))
+
         if data['device_id'] == '':
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
             device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
@@ -636,8 +643,8 @@ class Devices(YomboLibrary):
                     post_data = {
                         'gateway_id': self.gwid,
                         'field_id': field_id,
-                        'relation_id': device_id,
-                        'relation_type': 'device',
+                        'data_relation_id': device_id,
+                        'data_relation_type': 'device',
                         'data_weight': 0,
                         'data': value,
                     }
@@ -1136,41 +1143,23 @@ class Device(object):
         self.device_is_new = True
         self.update_attributes(device)
 
+    @inlineCallbacks
     def _init_(self):
         """
         Performs items that require deferreds.
 
         :return:
         """
-        def set_variables(vars):
-            # print("GOT DEVICE VARS!!!!! %s" % vars)
-            self.device_variables = vars
-
-        def gotException(failure):
-           print("Exception : %r" % failure)
-           return 100  # squash exception, use 0 as value for next stage
-
-        def ensure_device_type_loaded(data, device_type_id):
-            # print("###############3 ensure loaded: device type id: %s" % device_type_id)
-            self._DevicesLibrary._DeviceTypes.ensure_loaded(device_type_id)
-
-        # d = self._DevicesLibrary._Libraries['localdb'].get_commands_for_device_type(self.device_type_id)
-        # d.addCallback(set_commands)
-        # d.addErrback(gotException)
-        # d.addCallback(lambda ignored: self._Variables.get_variable_data('device', self.device_id))
-
         # print("getting device variables for: %s" % self.device_id)
-        d = self._DevicesLibrary._Variables.get_variable_fields_data(relation_type='device', relation_id=self.device_id)
-        d.addErrback(gotException)
-        d.addCallback(set_variables)
-        d.addErrback(gotException)
-        d.addCallback(ensure_device_type_loaded, self.device_type_id)
-        d.addErrback(gotException)
+        self.device_variables = self._DevicesLibrary._Variables.get_variable_fields_data_callable(
+            data_relation_type='device',
+            data_relation_id=self.device_id
+        )
+        yield self._DevicesLibrary._DeviceTypes.ensure_loaded(self.device_type_id)
 
         if self.test_device is False and self.device_is_new is True:
             self.device_is_new = False
-            d.addCallback(lambda ignored: self.load_history(35))
-        return d
+            yield self.load_history(35)
 
     def update_attributes(self, device):
         """
@@ -1180,8 +1169,6 @@ class Device(object):
         :param device: 
         :return: 
         """
-
-
         if 'device_type_id' in device:
             self.device_type_id = device["device_type_id"]
         if 'label' in device:
@@ -1420,10 +1407,11 @@ class Device(object):
         self.do_command_requests[request_id].set_sent_time()
         request = self._DevicesLibrary.delay_queue_active[request_id]
         # request['kwargs']['request_id'] = request_id
-        self.do_command_hook(request['command'], request['kwargs'])
+        yield self.do_command_hook(request['command'], request['kwargs'])
         del self._DevicesLibrary.delay_queue_storage[request_id]
         del self._DevicesLibrary.delay_queue_active[request_id]
 
+    @inlineCallbacks
     def do_command_hook(self, cmdobj, **kwargs):
         """
         Performs the actual sending of a device command. It does this through the hook system. This allows any module

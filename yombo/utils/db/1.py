@@ -412,8 +412,8 @@ def upgrade(Registry, **kwargs):
     # The following three tables and following views manages the variables set for devices and modules.
     table = """ CREATE TABLE `variable_groups` (
      `id`                  TEXT NOT NULL, /* group_id */
-     `relation_id`         TEXT NOT NULL,
-     `relation_type`       TEXT NOT NULL,
+     `group_relation_id`         TEXT NOT NULL,
+     `group_relation_type`       TEXT NOT NULL,
      `group_machine_label` TEXT NOT NULL,
      `group_label`         TEXT NOT NULL,
      `group_description`   TEXT NOT NULL,
@@ -424,7 +424,7 @@ def upgrade(Registry, **kwargs):
      `created`             INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_groups_relation_id_type_idx ON variable_groups (relation_id, relation_type)")
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_groups_relation_id_type_idx ON variable_groups (group_relation_id, group_relation_type)")
 
     table = """ CREATE TABLE `variable_fields` (
      `id`                  TEXT NOT NULL, /* field_id */
@@ -453,8 +453,8 @@ def upgrade(Registry, **kwargs):
      `id`            TEXT NOT NULL,  /* field_id */
      `gateway_id`    TEXT DEFAULT 0,
      `field_id`      TEXT NOT NULL,
-     `relation_id`   TEXT NOT NULL,
-     `relation_type` TEXT NOT NULL,
+     `data_relation_id`   TEXT NOT NULL,
+     `data_relation_type` TEXT NOT NULL,
      `data`          TEXT NOT NULL,
      `data_weight`   INTEGER DEFAULT 0,
      `updated_srv`   INTEGER DEFAULT 0,
@@ -462,7 +462,7 @@ def upgrade(Registry, **kwargs):
      `created`       INTEGER NOT NULL,
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_data_id_type_idx ON variable_data (field_id, relation_id)")
+    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_data_id_type_idx ON variable_data (field_id, data_relation_id, data_relation_type)")
 
     ## Create view for easily consuming the above tables during gateway startup
     # view = """CREATE VIEW variables_view AS
@@ -507,9 +507,10 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(view)
 
     view = """CREATE VIEW variable_field_data_view AS
-    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id, variable_data.relation_type,
-    variable_data.data, variable_data.data_weight, variable_data.updated as data_updated, variable_data.created as data_created,
-    variable_fields.field_machine_label,variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
+    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.data_relation_id,
+    variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
+    variable_data.updated as data_updated, variable_data.created as data_created, variable_fields.field_machine_label,
+    variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
     variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text,
     variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
     variable_fields.multiple, variable_fields.created as field_created, variable_fields.updated as field_updated
@@ -518,27 +519,28 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(view)
 
     view = """CREATE VIEW variable_group_field_view AS
-    SELECT  variable_fields.field_machine_label,variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
+    SELECT  variable_fields.id as field_id, variable_fields.field_machine_label,variable_fields.field_label,
+    variable_fields.field_description, variable_fields.field_weight,
     variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text,
     variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
     variable_fields.multiple, variable_fields.created as field_created, variable_fields.updated as field_updated,
-    variable_groups.id as group_id, variable_groups.group_machine_label,
-    variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
+    variable_groups.id as group_id, variable_groups.group_machine_label,variable_groups.group_description,
+    variable_groups.group_weight, variable_groups.status as group_status, variable_groups.group_relation_type,
+    variable_groups.group_relation_id
     FROM variable_fields
     JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
     yield Registry.DBPOOL.runQuery(view)
 
     view = """CREATE VIEW variable_group_field_data_view AS
-    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.relation_id as data_relation_id,
-    variable_data.relation_type as data_relation_type, variable_data.data, variable_data.data_weight,
+    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.data_relation_id,
+    variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
     variable_data.updated as data_updated, variable_data.created as data_created, variable_fields.field_machine_label,
     variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight, variable_fields.encryption,
     variable_fields.input_type_id, variable_fields. default_value, variable_fields.help_text, variable_fields.value_required,
     variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
     variable_fields.created as field_created, variable_fields.updated as field_updated, variable_groups.id as group_id,
-    variable_groups.group_machine_label, variable_groups.relation_type as group_relation_type,
-    variable_groups.relation_id as group_relation_id, variable_groups.group_description, variable_groups.group_weight,
-    variable_groups.status as group_status
+    variable_groups.group_machine_label, variable_groups.group_relation_type, variable_groups.group_relation_id,
+    variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
     FROM variable_data
     JOIN variable_fields ON variable_data.field_id = variable_fields.id
     JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""

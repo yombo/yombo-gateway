@@ -39,9 +39,11 @@ except ImportError:
 import platform
 from os.path import dirname, abspath
 import re
-
 from platform import _supported_dists
 from time import time
+
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
@@ -297,6 +299,7 @@ class Atoms(YomboLibrary):
         # print "atoms: %s" % self.__Atoms
         return self.__Atoms[atom_requested]
 
+    @inlineCallbacks
     def set(self, key, value):
         """
         Get the value of a given atom (key).
@@ -324,12 +327,12 @@ class Atoms(YomboLibrary):
         already_set = False
         if self.library_state >= 2:  # but only if we are not during init.
             try:
-                atom_changes = yombo.utils.global_invoke_all('_atoms_preset_',
+                atom_changes = yield yombo.utils.global_invoke_all('_atoms_preset_',
                                         **{'keys': key, 'value': value, 'new': key in self.__Atoms})
             except YomboHookStopProcessing as e:
                 logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                                state=key, resource=e.by_who)
-                return
+                returnValue(None)
             for moduleName, newValue in atom_changes.iteritems():
                 if newValue is not None:
                     logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
@@ -345,7 +348,7 @@ class Atoms(YomboLibrary):
         if self.library_state >= 2:  # but only if we are not during init.
             # Call any hooks
             try:
-                state_changes = yombo.utils.global_invoke_all('_atoms_set_', **{'key': key, 'value': value})
+                state_changes = yield yombo.utils.global_invoke_all('_atoms_set_', **{'key': key, 'value': value})
             except YomboHookStopProcessing:
                 pass
 

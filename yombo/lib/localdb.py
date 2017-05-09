@@ -1198,8 +1198,8 @@ ORDER BY id desc"""
             if record.field_machine_label not in variables:
                 variables[record.field_machine_label] = {
                     'id': record.field_id,
-                    'relation_id': record.relation_id,
-                    'relation_type': record.relation_type,
+                    'data_relation_id': record.data_relation_id,
+                    'data_relation_type': record.data_relation_type,
                     'field_machine_label': record.field_machine_label,
                     'field_label': record.field_label,
                     'field_weight': record.field_weight,
@@ -1215,7 +1215,8 @@ ORDER BY id desc"""
                     'data_weight': record.data_weight,
                     'created': record.field_created,
                     'updated': record.field_updated,
-                    'data': [],
+                    'data': {},
+                    'values': [],
                 }
 
             data = {
@@ -1226,10 +1227,8 @@ ORDER BY id desc"""
             }
             data['value'] = yield self._GPG.decrypt(record.data)
 
-            variables[record.field_machine_label]['data'].append(data)
-            # variables[record.machine_label]['value'].append(record.value)
-        #                print record.__dict__
-        #         print "variables %s:%s = %s" % (relation_type, relation_id, variables)
+            variables[record.field_machine_label]['data'][record.data_id] = data
+            variables[record.field_machine_label]['values'].append(data['value'])
         returnValue(variables)
 
     @inlineCallbacks
@@ -1240,17 +1239,18 @@ ORDER BY id desc"""
         :return: Available variable data nested inside the fields as 'data'.
         :rtype: list
         """
-        records = yield VariableFieldDataView.find(
+        print "lbdb: %s" % dictToWhere(kwargs)
+        records = yield VariableGroupFieldView.find(
             where=dictToWhere(kwargs),
-            orderby='field_weight ASC, data_weight ASC')
+            orderby='group_weight ASC, field_weight ASC')
         variables = {}
         for record in records:
             # print "get_variable_groups_fields record: %s" % record
             if record.group_machine_label not in variables:
                 variables[record.group_machine_label] = {
                     'id': record.group_id,
-                    'group_relation_id': record.group_relation_id,
                     'group_relation_type': record.group_relation_type,
+                    'group_id': record.group_id,
                     'group_machine_label': record.group_machine_label,
                     'group_description': record.group_description,
                     'group_weight': record.group_weight,
@@ -1260,8 +1260,8 @@ ORDER BY id desc"""
             if record.field_machine_label not in variables[record.group_machine_label]['fields']:
                 variables[record.group_machine_label]['fields'][record.field_machine_label] = {
                     'id': record.field_id,
-                    'relation_id': record.relation_id,
-                    'relation_type': record.relation_type,
+                    'data_relation_id': record.data_relation_id,
+                    'data_relation_type': record.data_relation_type,
                     'field_machine_label': record.field_machine_label,
                     'field_label': record.field_label,
                     'field_weight': record.field_weight,
@@ -1274,10 +1274,10 @@ ORDER BY id desc"""
                     'default_value': record.default_value,
                     'help_text': record.help_text,
                     'multiple': record.multiple,
-                    'data_weight': record.data_weight,
                     'created': record.field_created,
                     'updated': record.field_updated,
-                    'data': [],
+                    'data': {},
+                    'values': [],
                 }
         returnValue(variables)
 
@@ -1298,7 +1298,7 @@ ORDER BY id desc"""
                 variables[record.group_machine_label] = {
                     'id': record.group_id,
                     'group_relation_type': record.group_relation_type,
-                    'group_machine_label': record.group_machine_label,
+                    'group_id': record.group_id,
                     'group_machine_label': record.group_machine_label,
                     'group_description': record.group_description,
                     'group_weight': record.group_weight,
@@ -1308,8 +1308,8 @@ ORDER BY id desc"""
             if record.field_machine_label not in variables[record.group_machine_label]['fields']:
                 variables[record.group_machine_label]['fields'][record.field_machine_label] = {
                     'id': record.field_id,
-                    'relation_id': record.data_relation_id,
-                    'relation_type': record.data_relation_type,
+                    'data_relation_id': record.data_relation_id,
+                    'data_relation_type': record.data_relation_type,
                     'field_machine_label': record.field_machine_label,
                     'field_label': record.field_label,
                     'field_weight': record.field_weight,
@@ -1325,7 +1325,8 @@ ORDER BY id desc"""
                     'data_weight': record.data_weight,
                     'created': record.field_created,
                     'updated': record.field_updated,
-                    'data': [],
+                    'data': {},
+                    'values': [],
                 }
             data = {
                 'id': record.data_id,
@@ -1335,64 +1336,36 @@ ORDER BY id desc"""
             }
             data['value'] = yield self._GPG.decrypt(record.data)
 
-            variables[record.group_machine_label]['fields'][record.field_machine_label]['data'].append(data)
-            # variables[record.machine_label]['value'].append(record.value)
-        #                print record.__dict__
-        #         print "variables %s:%s = %s" % (relation_type, relation_id, variables)
+            variables[record.group_machine_label]['fields'][record.field_machine_label]['data'][record.data_id] = data
+            variables[record.group_machine_label]['fields'][record.field_machine_label]['values'].append(data['value'])
         returnValue(variables)
 
     @inlineCallbacks
-    def del_variables(self, relation_type, relation_id):
+    def del_variables(self, data_relation_type, data_relation_id):
         """
         Deletes variables for a given relation type and relation id.
 
         :return:
         """
         results = yield self.dbconfig.delete('variable_data',
-                                             where=['relation_type = ? and relation_id = ?', relation_type,
-                                                    relation_id])
+                                             where=['data_relation_type = ? and data_relation_id = ?',
+                                                    data_relation_type,
+                                                    data_relation_id]
+                                             )
         returnValue(results)
 
     @inlineCallbacks
-    def get_variable_groups(self, relation_type, relation_id):
+    def get_variable_groups(self, group_relation_type, group_relation_id):
         """
         Gets all variable groups for a given type and by id.
 
-        :param relation_type:
-        :param relation_id:
+        :param group_relation_type:
+        :param group_relation_id:
         :return:
         """
         records = yield VariableGroups.find(
-            where=['relation_type = ? AND relation_id =?', relation_type, relation_id],
+            where=['group_relation_type = ? AND group_relation_id =?', group_relation_type, group_relation_id],
             orderby='group_weight ASC')
-        returnValue(records)
-
-    @inlineCallbacks
-    def get_variable_fields_by_group(self, group_id):
-        """
-        Get all variable fields by groupId
-
-        :param group_id:
-        :param relation_id:
-        :return:
-        """
-        records = yield VariableFields.find(
-            where=['group_id = ?', group_id],
-            orderby='field_weight ASC')
-        returnValue(records)
-
-    @inlineCallbacks
-    def get_variable_data_by_relation(self, field_id, relation_id):
-        """
-        Get variable data for a give field/relation
-
-        :param field_id:
-        :param relation_id:
-        :return:
-        """
-        records = yield VariableData.find(
-            where=['field_id = ? and relation_id = ?', field_id, relation_id],
-            orderby='data_weight ASC')
         returnValue(records)
 
     @inlineCallbacks

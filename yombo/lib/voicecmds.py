@@ -88,6 +88,9 @@ the fuzzysearch phase of voice command lookup.
 from inspect import isclass
 import re
 
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks, returnValue
+
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -219,6 +222,7 @@ class VoiceCmds(YomboLibrary):
 
         self.commandsByVoice = self._Commands.get_commands_by_voice()
 
+    @inlineCallbacks
     def _modules_loaded_(self, **kwargs):
         """
         Implements the _modules_loaded_ and is called after _load_ is called for all the modules.
@@ -236,7 +240,7 @@ class VoiceCmds(YomboLibrary):
            def ModuleName_voice_cmds_load(self, **kwargs):
                return ['status']
         """
-        voicecommands_to_add = global_invoke_all('_voicecmds_add_')
+        voicecommands_to_add = yield global_invoke_all('_voicecmds_add_')
 #        logger.info("voicecommands_to_add: {voice_cmds}", voice_cmds=voicecommands_to_add)
 
         for componentName, voice_cmds in voicecommands_to_add.iteritems():
