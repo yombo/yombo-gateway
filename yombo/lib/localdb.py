@@ -31,7 +31,7 @@ from sqlite3 import Binary as sqlite3Binary
 import sys
 import inspect
 from os import chmod
-
+from collections import OrderedDict
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.utils import dictToWhere
@@ -1193,13 +1193,11 @@ ORDER BY id desc"""
             where=dictToWhere(kwargs),
             orderby='field_weight ASC, data_weight ASC')
         # print "get_variable_data records: %s" % records
-        variables = {}
+        variables = OrderedDict()
         for record in records:
             if record.field_machine_label not in variables:
                 variables[record.field_machine_label] = {
                     'id': record.field_id,
-                    'data_relation_id': record.data_relation_id,
-                    'data_relation_type': record.data_relation_type,
                     'field_machine_label': record.field_machine_label,
                     'field_label': record.field_label,
                     'field_weight': record.field_weight,
@@ -1215,7 +1213,7 @@ ORDER BY id desc"""
                     'data_weight': record.data_weight,
                     'created': record.field_created,
                     'updated': record.field_updated,
-                    'data': {},
+                    'data': OrderedDict(),
                     'values': [],
                 }
 
@@ -1224,6 +1222,8 @@ ORDER BY id desc"""
                 'weight': record.data_weight,
                 'created': record.data_created,
                 'updated': record.data_updated,
+                'relation_id': record.data_relation_id,
+                'relation_type': record.data_relation_type,
             }
             data['value'] = yield self._GPG.decrypt(record.data)
 
@@ -1243,7 +1243,7 @@ ORDER BY id desc"""
         records = yield VariableGroupFieldView.find(
             where=dictToWhere(kwargs),
             orderby='group_weight ASC, field_weight ASC')
-        variables = {}
+        variables = OrderedDict()
         for record in records:
             # print "get_variable_groups_fields record: %s" % record
             if record.group_machine_label not in variables:
@@ -1255,13 +1255,11 @@ ORDER BY id desc"""
                     'group_description': record.group_description,
                     'group_weight': record.group_weight,
                     'group_status': record.group_status,
-                    'fields': {},
+                    'fields': OrderedDict(),
                 }
             if record.field_machine_label not in variables[record.group_machine_label]['fields']:
                 variables[record.group_machine_label]['fields'][record.field_machine_label] = {
                     'id': record.field_id,
-                    'data_relation_id': record.data_relation_id,
-                    'data_relation_type': record.data_relation_type,
                     'field_machine_label': record.field_machine_label,
                     'field_label': record.field_label,
                     'field_weight': record.field_weight,
@@ -1276,13 +1274,13 @@ ORDER BY id desc"""
                     'multiple': record.multiple,
                     'created': record.field_created,
                     'updated': record.field_updated,
-                    'data': {},
+                    'data': OrderedDict(),
                     'values': [],
                 }
         returnValue(variables)
 
     @inlineCallbacks
-    def get_variable_groups_fields_data(self,  **kwargs):
+    def get_variable_groups_fields_data(self, **kwargs):
         """
         Gets groups with nested fields, with nested data. Named arguments are used to crate the WHERE statement.
 
@@ -1292,7 +1290,7 @@ ORDER BY id desc"""
         records = yield VariableGroupFieldDataView.find(
             where=dictToWhere(kwargs),
             orderby='group_weight ASC, field_weight ASC, data_weight ASC')
-        variables = {}
+        variables = OrderedDict()
         for record in records:
             if record.group_machine_label not in variables:
                 variables[record.group_machine_label] = {
@@ -1303,13 +1301,11 @@ ORDER BY id desc"""
                     'group_description': record.group_description,
                     'group_weight': record.group_weight,
                     'group_status': record.group_status,
-                    'fields': {},
+                    'fields': OrderedDict(),
                 }
             if record.field_machine_label not in variables[record.group_machine_label]['fields']:
                 variables[record.group_machine_label]['fields'][record.field_machine_label] = {
                     'id': record.field_id,
-                    'data_relation_id': record.data_relation_id,
-                    'data_relation_type': record.data_relation_type,
                     'field_machine_label': record.field_machine_label,
                     'field_label': record.field_label,
                     'field_weight': record.field_weight,
@@ -1325,7 +1321,7 @@ ORDER BY id desc"""
                     'data_weight': record.data_weight,
                     'created': record.field_created,
                     'updated': record.field_updated,
-                    'data': {},
+                    'data': OrderedDict(),
                     'values': [],
                 }
             data = {
@@ -1333,6 +1329,8 @@ ORDER BY id desc"""
                 'weight': record.data_weight,
                 'created': record.data_created,
                 'updated': record.data_updated,
+                'relation_id': record.data_relation_id,
+                'relation_type': record.data_relation_type,
             }
             data['value'] = yield self._GPG.decrypt(record.data)
 
