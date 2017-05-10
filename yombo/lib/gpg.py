@@ -368,6 +368,18 @@ class GPG(YomboLibrary):
         asciiArmoredPublicKey = self.gpg.export_keys(keyid)
         return asciiArmoredPublicKey
 
+    def display_encrypted(self, in_text):
+        """
+        Makes an input field friend version of an input. If encrypted, returns
+        "-----ENCRYPTED DATA-----", otherwise returns the text unchanged.
+
+        :param in_text:
+        :return:
+        """
+        if in_text.startswith('-----BEGIN PGP MESSAGE-----'):
+            return "-----ENCRYPTED DATA-----"
+        else:
+            return in_text
 
     ###########################################
     ###  Encrypt / Decrypt / Sign / Verify  ###
@@ -385,6 +397,9 @@ class GPG(YomboLibrary):
         :rtype: string
         :raises: YomboException - If encryption failed.
         """
+        if in_text.startswith('-----BEGIN PGP MESSAGE-----'):
+            returnValue(in_text)
+
         if destination is None:
             destination = self.mykeyid()
 
