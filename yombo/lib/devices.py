@@ -635,7 +635,7 @@ class Devices(YomboLibrary):
     def set_device_variables(self, device_id, variables):
         # print("set variables: %s" % variables)
         for field_id, data in variables.iteritems():
-            print("devices.set_device_variables.data: %s" % data)
+            # print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.iteritems():
                 if data_id.startswith('new_'):
                     post_data = {
@@ -646,7 +646,7 @@ class Devices(YomboLibrary):
                         'data_weight': 0,
                         'data': value,
                     }
-                    print("Posting new variable: %s" % post_data)
+                    # print("Posting new variable: %s" % post_data)
                     var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                     if var_data_results['code'] > 299:
                         results = {
@@ -662,7 +662,7 @@ class Devices(YomboLibrary):
                         'data_weight': 0,
                         'data': value,
                     }
-                    print("PATCHing variable: %s" % post_data)
+                    # print("PATCHing variable: %s" % post_data)
                     var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
                                                                     post_data)
                     if var_data_results['code'] > 299:
@@ -674,7 +674,7 @@ class Devices(YomboLibrary):
                             'device_id': device_id
                         }
                         returnValue(results)
-        print("var_data_results: %s" % var_data_results)
+        # print("var_data_results: %s" % var_data_results)
         returnValue({
             'status': 'success',
             'code': var_data_results['code'],
@@ -734,7 +734,7 @@ class Devices(YomboLibrary):
 
         api_data = {}
         for key, value in data.iteritems():
-            print("key (%s) is of type: %s" % (key, type(value)))
+            # print("key (%s) is of type: %s" % (key, type(value)))
             if isinstance(value, str) and len(value) > 0 and hasattr(device, key):
                 if key == 'energy_map':
                     api_data['energy_map'] = json.dumps(value, separators=(',',':'))
@@ -742,9 +742,9 @@ class Devices(YomboLibrary):
                 else:
                     api_data[key] = value
 
-        print("send this data to api: %s" % api_data)
+        # print("send this data to api: %s" % api_data)
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        print("got this data from api: %s" % device_results)
+        # print("got this data from api: %s" % device_results)
         if device_results['code'] > 299:
             results = {
                 'status': 'failed',

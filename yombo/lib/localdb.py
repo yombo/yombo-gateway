@@ -1165,6 +1165,25 @@ ORDER BY id desc"""
             where=dictToWhere(kwargs),
             orderby='field_weight ASC')
 
+        items = []
+        for record in records:
+            items.append(record.id)
+
+        returnValue(items)
+
+    @inlineCallbacks
+    def get_variable_fields_encrypted(self):
+        """
+        Get all field id's that should be encrypted.
+
+        :return: Field id's that have encryption set to suggested or always.
+        :rtype: list
+        """
+        records = yield VariableFields.find(
+            where=["encryption = 'always' or encryption = 'suggested'"],
+            select='id'
+        )
+
         returnValue(records)
 
     @inlineCallbacks

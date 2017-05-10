@@ -173,21 +173,26 @@ def route_devices(webapp):
                     webinterface.add_alert("%s: %s" % (results['msg'], results['apimsghtml']))
                     device['device_id'] = results['device_id']
 
-                var_groups = yield webinterface._Variables.get_variable_groups_fields(
-                    relation_type='device_type',
-                    relation_id=device['device_type_id'],
+            device_variables = yield webinterface._Variables.get_variable_groups_fields(
+                group_relation_type='device_type',
+                group_relation_id=device['device_type_id'],
+            )
+
+            if device['variable_data'] is not None:
+                device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
+                    device_variables,
+                    device['variable_data']
                 )
 
-                var_groups = webinterface._Variables.merge_variable_groups_fields_data_data(var_groups, device['variable_data'])
 
-            # print "final groups: %s" % var_groups_final
+            # print "final device_variables: %s" % device_variables
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Details")
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     device=device,
-                                    dev_variables=var_groups,
+                                    device_variables=device_variables,
                                     commands=webinterface._Commands,
                                     ))
 
@@ -436,6 +441,7 @@ def route_devices(webapp):
             json_output = json.loads(request.args.get('json_output')[0])
 
             # print "energy usage: %s " % map
+            variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             data = {
                 'label': request.args.get('label')[0],
                 'description': request.args.get('description')[0],
@@ -447,7 +453,7 @@ def route_devices(webapp):
                 'pin_timeout': request.args.get('pin_timeout')[0],
                 'energy_type': request.args.get('energy_type')[0],
                 'energy_map': energy_map,
-                'variable_data':  json_output['vars'],
+                'variable_data':  variable_data,
             }
 
             results = yield webinterface._Devices.edit_device(device_id, data)
@@ -472,8 +478,6 @@ def route_devices(webapp):
                 returnValue(page)
 
             returnValue(webinterface.redirect(request, '/devices/%s/details' % device_id))
-
-
 
         @inlineCallbacks
         def page_devices_edit_form(webinterface, request, session, device, variable_data=None):

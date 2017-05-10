@@ -1006,6 +1006,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['epoch_to_human'] = yombo.utils.epoch_to_string
         self.webapp.templates.filters['epoch_to_pretty_date'] = yombo.utils.pretty_date # yesterday, 5 minutes ago, etc.
         self.webapp.templates.filters['format_markdown'] = self.format_markdown
+        self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted
         self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
 
     def WebInterface_configuration_set(self, **kwargs):

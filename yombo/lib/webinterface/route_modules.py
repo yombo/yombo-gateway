@@ -181,12 +181,14 @@ def route_modules(webapp):
             # print "webinterface._Modules[module_id]._dump: %s" % webinterface._Modules[module_id]._dump()
             # print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
             device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
+            module_variables = yield module._ModuleVariables()
+            print "module_variables: %s" % module_variables
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                module=module,
-                               variables=webinterface._Modules[module_id]._ModuleVariables,
+                               module_variables=module_variables,
                                device_types=device_types,
                                )
                         )
@@ -282,7 +284,8 @@ def route_modules(webapp):
                 webinterface.add_alert(module_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/modules/index'))
 
-            # print "results: %s " % results
+            module_variables = yield module._ModuleVariables()
+            device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -291,6 +294,8 @@ def route_modules(webapp):
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     server_module=module_results['data'],
                                     module=module,
+                                    module_variables=module_variables,
+                                    device_types=device_types,
                                     ))
 
         @webapp.route('/<string:module_id>/edit', methods=['POST'])
@@ -346,6 +351,28 @@ def route_modules(webapp):
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     ))
+
+        @inlineCallbacks
+        def page_modules_edit_form(webinterface, request, session, device, variable_data=None):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
+            device_variables = yield webinterface._Variables.get_variable_groups_fields_data(
+                group_relation_type='device_type',
+                group_relation_id=device['device_type_id'],
+                data_relation_type='device',
+                data_relation_id=device['device_id'],
+            )
+
+            if variable_data is not None:
+                device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
+                    device_variables,
+                    variable_data
+                )
+            returnValue(page.render(alerts=webinterface.get_alerts(),
+                                    device=device,
+                                    device_variables=device_variables,
+                                    commands=webinterface._Commands,
+                                    )
+                        )
 
 
         @webapp.route('/<string:module_id>/enable', methods=['GET'])

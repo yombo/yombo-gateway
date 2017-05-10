@@ -22,7 +22,7 @@ from functools import partial
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
-
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 logger = get_logger('library.devices')
@@ -81,6 +81,17 @@ class Variables(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
+    def get_variable_fields_encrypted(self):
+        """
+        Get all field id's that should be encrypted.
+
+        :return: Field id's that have encryption set to suggested or always.
+        :rtype: list
+        """
+        results = yield self._LocalDB.get_variable_fields_encypted()
+        returnValue(results)
+
+    @inlineCallbacks
     def get_variable_groups(self, group_relation_type=None, group_relation_id=None, **kwargs):
         """
         Gets available variable groups for a given module_id or device_type_id. Any additional named arguments
@@ -126,7 +137,7 @@ class Variables(YomboLibrary):
         return partial(self.get_variable_fields_data, **kwargs)
 
     @inlineCallbacks
-    def get_groups_fields(self, group_relation_type=None, group_relation_id=None, variable_data=None):
+    def get_variable_groups_fields(self, group_relation_type=None, group_relation_id=None, variable_data=None):
         """
         Returns groups and fields for a given group_relation_id and group_relation_type.
         
@@ -177,8 +188,14 @@ class Variables(YomboLibrary):
         for field_name, field in fields:
             if field_name in new_data_items:
                 new_data = new_data_items['field_name']
+                print("new_data: %s" % new_data)
                 if field['id'] in new_data:
                     field['id']['value'] = new_data[field['id']]
+                else:
+                    field[field['id']] = {
+                        'id': field['id'],
+                        'value': new_data[field['id']],
+                    }
 
                 # for data in field['data']:
                 #     if data['name']
@@ -199,24 +216,93 @@ class Variables(YomboLibrary):
         # print("merge_variable_data. new_data_items: %s" % new_data_items)
         for group_name, group in groups.iteritems():
             for field_name, field in group['fields'].iteritems():
-                # print("111 %s" % field )
+                print("111 %s" % field )
+                found_field_id = None
+                found_field_key = None
                 if field_name in new_data_items:
-                    new_data_item = new_data_items[field_name]
+                    found_field_id = field['id']
+                    found_field_key = field_name
+                elif field['id'] in new_data_items:
+                    found_field_id = field['id']
+                    found_field_key = field['id']
+                if found_field_id is not None:
+                    new_data_item = new_data_items[found_field_key]
                     # print("222 new_data: %s" % new_data_item)
                     # print("222 field['id']: %s" % field['id'])
                     for new_data_id, new_data in new_data_item.iteritems():
-                        if new_data_id in field['data']:
-                            field['data'][new_data_id]['value'] = new_data
+                        print("newdata: %s" % new_data)
+                        final_value = ""
+                        if isinstance(new_data, dict):
+                            if new_data['input'] == '-----ENCRYPTED DATA-----':
+                                print("encry: %s" % new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
+                                print("encry: %s" % new_data['orig'])
+                                if new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----') is False:
+                                    final_value = 'error'
+                                else:
+                                    final_value = new_data['orig']
+                            else:
+                                final_value = new_data['input']
+                        else:
+                            final_value = new_data
 
-                    # for data in field['data']:
+                        if new_data_id in field['data']:
+                            field['data'][new_data_id]['value'] = final_value
+                        else:
+                            field['data'][new_data_id] = {
+                                'id': new_data_id,
+                                'value': final_value,
+                            }
+
+                            # for data in field['data']:
                     #     if data['name']
 
                 field['values'] = []
                 for data_id, data in field['data'].iteritems():
                     field['values'].append(data['value'])
 
-        print("merge_variable_data. groups_done: %s" % groups)
+        # print("merge_variable_data. groups_done: %s" % groups)
         return groups
+
+    @inlineCallbacks
+    def extract_variables_from_web_data(self, new_data_items, encrypt=None):
+        """
+        Extract values posted from webinterface pages into something that can be submitted to either
+        modules or devices to the Yombo API.
+        :param new_data_items: 
+        :return: 
+        """
+        if encrypt is None:
+            encrypt = True
+
+        if encrypt is True:
+            encrypt_fields = yield self.get_variable_fields()
+        else:
+            encrypt_fields = []
+
+        results = new_data_items.copy()
+        # print("extract_variables_from_web_data1: %s" % data)
+
+        for field_id, data in results.iteritems():
+            for data_id, value in data.iteritems():
+                final_value = ""
+                if isinstance(value, dict):
+                    if value['input'] == '-----ENCRYPTED DATA-----':
+                        # print("encry: %s" % value['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
+                        # print("encry: %s" % value['orig'])
+                        if value['orig'].startswith('-----BEGIN PGP MESSAGE-----') is False:
+                            raise YomboWarning("Invalid variable data.")
+                        else:
+                            final_value = value['orig']
+                    else:
+                        final_value = value['input']
+                else:
+                    final_value = value
+
+                if field_id in encrypt_fields:
+                    final_value = yield self._GPG.encrypt(final_value)
+                results[field_id][data_id] = final_value
+        # print("extract_variables_from_web_data: %s" % results)
+        returnValue(results)
 
     @inlineCallbacks
     def dev_group_add(self, data, **kwargs):
