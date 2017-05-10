@@ -585,11 +585,9 @@ class Devices(YomboLibrary):
         }
 
         try:
-            global_invoke_all('_device_before_add_', **{'called_by': webinterface, 'device': device})
+            global_invoke_all('_device_before_add_', **{'called_by': self, 'device': data})
         except YomboHookStopProcessing as e:
-            raise YomboWarning()
-            self.add_alert("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
-            returnValue(webinterface.redirect(request, '/devices'))
+            raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 
         if data['device_id'] == '':
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
