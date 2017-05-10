@@ -248,12 +248,14 @@
                         </div>
                         <div class="panel-body">
                             <div class="input-group">
-        {% if device_variables is not none -%}
+        {% if device_variables|length != 0 -%}
             {% for group_id, group in device_variables.iteritems() %}
             <h4>{{ group.group_label }}</h4>
             {{ group.group_description }}
                 {% for field_id, field in group.fields.iteritems() %}
-                    <table width="100%" class="table table-striped table-bordered table-hover" id="{{ group.id }}">
+                    {{ macros.modal("modalfieldhelp{{field_id}}", 'help_text}') }}
+
+                                <table width="100%" class="table table-striped table-bordered table-hover" id="{{ group.id }}">
                         <thead>
                             <tr>
                                 <th>Field Information</th><th>Value(s)</th>
@@ -261,11 +263,17 @@
                         </thead>
                     <tbody>
                          <tr>
-                            <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
-                            <td> {% if field.data|length > 0 %}
-                                {%- for data_id, data in field.data.iteritems() %}
-                                    <input type="text" class="form-control" name="vars[{{ field_id }}][{{ data.id }}]" id="vars[{{ field_id }}][{{ data.id }}]" value="{{ data.value }}">
-                                {%- endfor %}
+                            <td><b>{{ field.field_label }}</b>
+<a href="#" data-toggle="modal" data-target="#modalfieldhelp{{field_id}}"><i class="fa fa-question fa-lg"></i></a>
+
+                                <br>{{ field.field_description }}</td>
+                            <td>{% if field.data|length > 0 %}
+                                    {%- for data_id, data in field.data.iteritems() %}
+                                        <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}][input]" id="vars[{{ field.id }}][{{ data.id }}][input]" value="{{ data.value|display_encrypted }}"
+                                        {% if field.required %} required{% endif %}>
+                                        <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value }}">
+                                    {%- endfor %}
+                                {%- elif field.data|length == 0 or field.multiple -%}
                                 {%- else %}
                                     <input type="text" class="form-control" name="vars[{{ field_id }}][new_1]" id="vars[{{ field.id }}][new_1]" value="">
                                 {%- endif %}
@@ -276,6 +284,8 @@
 
                 {% endfor %}
             {% endfor %}
+        {% else %}
+            <h4>No Variables</h4>
         {% endif %}
                             </div>
                         </div>

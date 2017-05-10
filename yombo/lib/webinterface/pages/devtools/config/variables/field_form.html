@@ -8,11 +8,11 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/config/{%
-                    if group.relation_type == 'module'
-                       %}modules/{{ group.relation_id }}/details{%
-                    elif parent_type == 'device_type'
-                       %}/device_type/{{group.relation_id}}/details{%
-                    endif %}" aria-label="Delete">
+                    if parent == 'module'
+                       %}modules{%
+                    elif parent == 'device_type'
+                       %}device_types{%
+                    endif %}/{{ group.id }}/variables" aria-label="Delete">
   <i class="fa fa-arrow-left" aria-hidden="true"></i></a> {{ header_label }} </h1>
                     <p></p>
                 </div>
@@ -70,7 +70,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <textarea tabindex="3" class="form-control" rows="15" cols="60" name="field_description" id="field_description" placeholder="Description for developers.">{{ field.field_description }}</textarea>
+                                    <textarea tabindex="3" class="form-control" rows="15" cols="60" name="field_description" id="field_description" placeholder="Description for users">{{ field.field_description }}</textarea>
                                 </div>
                             </div>
 
@@ -95,7 +95,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <textarea tabindex="5" class="form-control" rows="15" cols="60" name="help_text" id="help_text" placeholder="Help text for users, about this input.">{{ field.help_text }}</textarea>
+                                    <textarea tabindex="5" class="form-control" rows="15" cols="60" name="help_text" id="help_text" placeholder="Help text will be displayed as a modal to the users if they click on help.">{{ field.help_text }}</textarea>
                                 </div>
                             </div>
                            </div>
@@ -236,8 +236,8 @@
                                 <br>
                                 <div class="input-group">
                                     <select tabindex="10" class="selectpicker show-tick form-control" name="value_required" id="value_required">
-                                        <option value="0"{% if field.value_required == "0" %} selected{% endif %} data-subtext="Do not require value from user">No</option>
-                                        <option value="1"{% if field.value_required == "1" %} selected{% endif %} data-subtext="Require value from user">Yes</option>
+                                        <option value="0"{% if field.value_required == 0 %} selected{% endif %} data-subtext="Do not require value from user">No</option>
+                                        <option value="1"{% if field.value_required == 1 %} selected{% endif %} data-subtext="Require value from user">Yes</option>
                                     </select>
                                 </div>
                             </div>
