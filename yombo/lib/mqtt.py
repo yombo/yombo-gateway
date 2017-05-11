@@ -436,8 +436,8 @@ class MQTTClient(object):
         :return:
         """
         # print("publishing (%s): %s" % (topic, message))
-        # print("client connected: %s" % self.connected)
         if self.connected:
+            # print("publishing now")
             yield self.factory.protocol.publish(topic=topic, message=message, qos=qos)
             self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_size=10, anon=True)
         if self.connected:

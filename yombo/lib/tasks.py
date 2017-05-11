@@ -3,7 +3,6 @@
 """
 Performs various tasks as needed. Usually used to run various processes at startup.
 
-
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.13.0
 

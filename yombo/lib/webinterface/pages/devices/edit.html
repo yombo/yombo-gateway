@@ -58,9 +58,13 @@
                             <div class="input-group">
                                 <input type="text" tabindex="1" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
                             </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Machine Label: </label><br>
+                            <div class="input-group">
+                                <input type="text" tabindex="1" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.machine_label }}" autofocus required>
+                            </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
                             <div class="input-group">
-                                <input type="text" tabindex="2" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description }}">
+                                <input type="text" tabindex="2" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description|hide_none }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
                             <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
@@ -105,7 +109,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="4" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.statistic_label }}">
+                                <input type="text" tabindex="4" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="Statistic label" value="{{ device.statistic_label|hide_none }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
                             <a href="#" data-toggle="modal" data-target="#modalStatisticLifetime"><i class="fa fa-question fa-lg"></i></a>
@@ -117,7 +121,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="5" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.statistic_lifetime }}">
+                                <input type="text" tabindex="5" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.statistic_lifetime|hide_none }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>
                             <a href="#" data-toggle="modal" data-target="#modalenergytype"><i class="fa fa-question fa-lg"></i></a>
@@ -164,7 +168,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="8" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code }}">
+                                <input type="text" tabindex="8" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code|hide_none }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
                             <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
@@ -174,7 +178,7 @@
                             ") }}
                             <br>
                             <div class="input-group">
-                                <input type="text" tabindex="9" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout }}">
+                                <input type="text" tabindex="9" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout|hide_none }}">
                             </div>
                         </div>
                     </div>
@@ -269,9 +273,9 @@
                                 <br>{{ field.field_description }}</td>
                             <td>{% if field.data|length > 0 %}
                                     {%- for data_id, data in field.data.iteritems() %}
-                                        <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}][input]" id="vars[{{ field.id }}][{{ data.id }}][input]" value="{{ data.value|display_encrypted }}"
+                                        <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}][input]" id="vars[{{ field.id }}][{{ data.id }}][input]" value="{{ data.value_display }}"
                                         {% if field.required %} required{% endif %}>
-                                        <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value }}">
+                                        <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value_orig }}">
                                     {%- endfor %}
                                 {%- elif field.data|length == 0 or field.multiple -%}
                                 {%- else %}

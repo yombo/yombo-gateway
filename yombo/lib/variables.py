@@ -59,9 +59,7 @@ class Variables(YomboLibrary):
         if data_relation_id is not None:
             kwargs['data_relation_id'] = data_relation_id
 
-        print("variables.get_variable_data.kwargs = %s" % kwargs)
         results = yield self._LocalDB.get_variable_data(**kwargs)
-        print("variables.get_variable_data.results = %s" % results)
         returnValue(results)
 
     @inlineCallbacks
@@ -88,7 +86,7 @@ class Variables(YomboLibrary):
         :return: Field id's that have encryption set to suggested or always.
         :rtype: list
         """
-        results = yield self._LocalDB.get_variable_fields_encypted()
+        results = yield self._LocalDB.get_variable_fields_encrypted()
         returnValue(results)
 
     @inlineCallbacks
@@ -149,7 +147,7 @@ class Variables(YomboLibrary):
         :return: 
         """
 
-        print("get group fields: %s %s" % (group_relation_type, group_relation_id))
+        # print("get group fields: %s %s" % (group_relation_type, group_relation_id))
         groups = yield self._LocalDB.get_variable_groups_fields(group_relation_type=group_relation_type,
                                                                 group_relation_id=group_relation_id)
         if variable_data is not None:
@@ -188,7 +186,7 @@ class Variables(YomboLibrary):
         for field_name, field in fields:
             if field_name in new_data_items:
                 new_data = new_data_items['field_name']
-                print("new_data: %s" % new_data)
+                # print("new_data: %s" % new_data)
                 if field['id'] in new_data:
                     field['id']['value'] = new_data[field['id']]
                 else:
@@ -216,7 +214,7 @@ class Variables(YomboLibrary):
         # print("merge_variable_data. new_data_items: %s" % new_data_items)
         for group_name, group in groups.iteritems():
             for field_name, field in group['fields'].iteritems():
-                print("111 %s" % field )
+                # print("111 %s" % field )
                 found_field_id = None
                 found_field_key = None
                 if field_name in new_data_items:
@@ -230,12 +228,12 @@ class Variables(YomboLibrary):
                     # print("222 new_data: %s" % new_data_item)
                     # print("222 field['id']: %s" % field['id'])
                     for new_data_id, new_data in new_data_item.iteritems():
-                        print("newdata: %s" % new_data)
+                        # print("newdata: %s" % new_data)
                         final_value = ""
                         if isinstance(new_data, dict):
                             if new_data['input'] == '-----ENCRYPTED DATA-----':
-                                print("encry: %s" % new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
-                                print("encry: %s" % new_data['orig'])
+                                # print("encry: %s" % new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
+                                # print("encry: %s" % new_data['orig'])
                                 if new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----') is False:
                                     final_value = 'error'
                                 else:
@@ -275,10 +273,11 @@ class Variables(YomboLibrary):
             encrypt = True
 
         if encrypt is True:
-            encrypt_fields = yield self.get_variable_fields()
+            encrypt_fields = yield self.get_variable_fields_encrypted()
         else:
             encrypt_fields = []
 
+        # print("extract_variables_from_web_data: %s" % encrypt_fields)
         results = new_data_items.copy()
         # print("extract_variables_from_web_data1: %s" % data)
 
@@ -292,12 +291,15 @@ class Variables(YomboLibrary):
                         if value['orig'].startswith('-----BEGIN PGP MESSAGE-----') is False:
                             raise YomboWarning("Invalid variable data.")
                         else:
+                            # print("final_value: value['orig']")
                             final_value = value['orig']
                     else:
+                        # print("final_value: value['input']")
                         final_value = value['input']
                 else:
+                    # print("final_value: value")
                     final_value = value
-
+                # print("final_value: %s" % final_value)
                 if field_id in encrypt_fields:
                     final_value = yield self._GPG.encrypt(final_value)
                 results[field_id][data_id] = final_value
