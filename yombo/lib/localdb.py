@@ -368,9 +368,9 @@ class LocalDB(YomboLibrary):
             returnValue([])
 
 
-        #########################
-        ###    Devices      #####
-        #########################
+    #########################
+    ###    Devices      #####
+    #########################
 
     @inlineCallbacks
     def get_devices(self, status=None):
@@ -417,6 +417,7 @@ class LocalDB(YomboLibrary):
         energy_usage = kwargs['energy_usage']
         machine_status = kwargs['machine_status']
         human_status = kwargs.get('human_status', machine_status)
+        human_message = kwargs.get('human_message', machine_status)
         machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',', ':'))
         requested_by = json.dumps(kwargs.get('requested_by', ''), separators=(',', ':'))
         source = kwargs.get('source', '')
@@ -428,6 +429,7 @@ class LocalDB(YomboLibrary):
             set_time=set_time,
             energy_usage=energy_usage,
             human_status=human_status,
+            human_message=human_message,
             machine_status=machine_status,
             machine_status_extra=machine_status_extra,
             source=source,
@@ -1165,11 +1167,7 @@ ORDER BY id desc"""
             where=dictToWhere(kwargs),
             orderby='field_weight ASC')
 
-        items = []
-        for record in records:
-            items.append(record.id)
-
-        returnValue(items)
+        returnValue(records)
 
     @inlineCallbacks
     def get_variable_fields_encrypted(self):
@@ -1180,11 +1178,12 @@ ORDER BY id desc"""
         :rtype: list
         """
         records = yield VariableFields.find(
-            where=["encryption = 'always' or encryption = 'suggested'"],
-            select='id'
+            where=["encryption = 'always' or encryption = 'suggested'"]
         )
-
-        returnValue(records)
+        items = []
+        for record in records:
+            items.append(record.id)
+        returnValue(items)
 
     @inlineCallbacks
     def get_variable_groups(self, **kwargs):
@@ -1234,6 +1233,8 @@ ORDER BY id desc"""
                     'updated': record.field_updated,
                     'data': OrderedDict(),
                     'values': [],
+                    'values_display': [],
+                    'values_orig': [],
                 }
 
             data = {
@@ -1245,9 +1246,13 @@ ORDER BY id desc"""
                 'relation_type': record.data_relation_type,
             }
             data['value'] = yield self._GPG.decrypt(record.data)
+            data['value_display'] = yield self._GPG.display_encrypted(record.data)
+            data['value_orig'] = record.data
 
             variables[record.field_machine_label]['data'][record.data_id] = data
             variables[record.field_machine_label]['values'].append(data['value'])
+            variables[record.field_machine_label]['values_display'].append(data['value_display'])
+            variables[record.field_machine_label]['values_orig'].append(data['value_orig'])
         returnValue(variables)
 
     @inlineCallbacks
@@ -1295,6 +1300,8 @@ ORDER BY id desc"""
                     'updated': record.field_updated,
                     'data': OrderedDict(),
                     'values': [],
+                    'values_display': [],
+                    'values_orig': [],
                 }
         returnValue(variables)
 
@@ -1342,6 +1349,8 @@ ORDER BY id desc"""
                     'updated': record.field_updated,
                     'data': OrderedDict(),
                     'values': [],
+                    'values_display': [],
+                    'values_orig': [],
                 }
             data = {
                 'id': record.data_id,
@@ -1352,9 +1361,13 @@ ORDER BY id desc"""
                 'relation_type': record.data_relation_type,
             }
             data['value'] = yield self._GPG.decrypt(record.data)
+            data['value_display'] = yield self._GPG.display_encrypted(record.data)
+            data['value_orig'] = record.data
 
             variables[record.group_machine_label]['fields'][record.field_machine_label]['data'][record.data_id] = data
             variables[record.group_machine_label]['fields'][record.field_machine_label]['values'].append(data['value'])
+            variables[record.group_machine_label]['fields'][record.field_machine_label]['values_display'].append(data['value_display'])
+            variables[record.group_machine_label]['fields'][record.field_machine_label]['values_orig'].append(data['value_orig'])
         returnValue(variables)
 
     @inlineCallbacks
@@ -1408,7 +1421,7 @@ ORDER BY id desc"""
     @inlineCallbacks
     def delete(self, table, where=None):
         """
-        Truncate table
+        Delete items from table
 
         :param table:
         :return:
