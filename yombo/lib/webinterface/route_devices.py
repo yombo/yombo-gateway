@@ -100,8 +100,8 @@ def route_devices(webapp):
                 ok_to_save = False
 
             try:
-                pin_required = json_output.get('pin_required', '0')
-                if pin_required == '1':
+                pin_required = int(json_output.get('pin_required', 0))
+                if pin_required == 1:
                     if request.args.get('pin_code')[0] == "":
                         webinterface.add_alert('Device requires a pin code, but none was set.', 'warning')
                         returnValue(webinterface.redirect(request, '/devices'))
@@ -124,22 +124,32 @@ def route_devices(webapp):
             except Exception as e:
                 logger.warn("Error while processing device add_details: {e}", e=e)
 
+            variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             device = {
                 'device_id': json_output.get('device_id', ""),
+                'machine_label': json_output.get('machine_label', ""),
                 'label': json_output.get('label', ""),
                 'description': json_output.get('description', ""),
-                'status': json_output.get('description', 1),
+                'status': int(json_output.get('status', 1)),
                 'statistic_label': json_output.get('statistic_label', ""),
-                'statistic_lifetime': json_output.get('statistic_lifetime', ""),
+                'statistic_lifetime': json_output.get('statistic_lifetime', 365),
                 'device_type_id': json_output.get('device_type_id', ""),
                 'pin_required': pin_required,
                 'pin_code': json_output.get('pin_code', ""),
                 'pin_timeout': json_output.get('pin_timeout', ""),
                 'energy_type': json_output.get('energy_type', ""),
                 'energy_map': energy_map,
-                'variable_data': json_output.get('vars', []),
+                'variable_data': variable_data,
             }
 
+            for key in device.keys():
+                if device[key] == "":
+                    del device[key]
+                elif key in ['statistic_lifetime', 'pin_timeout']:
+                    if device[key] is None:
+                        del device[key]
+                    else:
+                        device[key] = int(device[key])
 
             if ok_to_save:
                 try:
@@ -181,7 +191,7 @@ def route_devices(webapp):
             if device['variable_data'] is not None:
                 device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
                     device_variables,
-                    device['variable_data']
+                    json_output.get('vars', [])
                 )
 
 
@@ -443,6 +453,7 @@ def route_devices(webapp):
             # print "energy usage: %s " % map
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             data = {
+                'machine_label': request.args.get('machine_label')[0],
                 'label': request.args.get('label')[0],
                 'description': request.args.get('description')[0],
                 'status': status,
