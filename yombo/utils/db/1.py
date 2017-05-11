@@ -59,6 +59,7 @@ def upgrade(Registry, **kwargs):
      `id`              TEXT NOT NULL,
      `gateway_id`      TEXT NOT NULL,
      `device_type_id`  TEXT NOT NULL,
+     `machine_label`   TEXT NOT NULL,
      `label`           TEXT NOT NULL,
      `description`     TEXT,
      `statistic_label` TEXT,
@@ -112,12 +113,12 @@ def upgrade(Registry, **kwargs):
      `set_time`             REAL NOT NULL,
      `energy_usage`         INTEGER NOT NULL,
      `human_status`         TEXT NOT NULL,
+     `human_message`         TEXT NOT NULL,
      `machine_status`       TEXT NOT NULL,
      `machine_status_extra` TEXT,
      `requested_by`         TEXT NOT NULL,
      `source`               TEXT NOT NULL,
      `uploaded`             INTEGER NOT NULL DEFAULT 0,
-     `needs_upload`         INTEGER NOT NULL DEFAULT 0,
      `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
      );"""
     yield Registry.DBPOOL.runQuery(table)
