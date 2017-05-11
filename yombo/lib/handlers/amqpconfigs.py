@@ -61,6 +61,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'category_type': 'category_type',
@@ -80,6 +81,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'library': None,
                 'functions': {
                 },
+                'purgeable': False,
                 'map': {
                 }
             },
@@ -94,6 +96,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'machine_label': 'machine_label',
@@ -114,12 +117,14 @@ class AmqpConfigHandler(YomboLibrary):
                 'table': "devices",
                 'library': "devices",
                 'functions': {
-                    'enabled': "enable_device",
-                    'disabled': "disable_device",
-                    'deleted': "delete_device",
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
                 },
+                'purgeable': True,
                 'map': {
                     'id': 'id',
+                    'machine_label': 'machine_label',
                     'label': 'label',
                     'notes': 'notes',
                     'description': 'description',
@@ -151,6 +156,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'category_id': 'category_id',
@@ -173,12 +179,13 @@ class AmqpConfigHandler(YomboLibrary):
             'gateway_device_types': {
                 'dbclass': "DeviceType",
                 'table': "device_types",
-                'library': "devices",
+                'library': "devicestypes",
                 'functions': {
                     # 'enabled': "enable_device",
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'category_id': 'category_id',
@@ -202,6 +209,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'device_type_id': 'device_type_id',
@@ -219,6 +227,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'category_id': 'category_id',
@@ -243,6 +252,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "enable_command",
                     # 'deleted': "enable_command",
                 },
+                'purgeable': True,
                 'map': {
                     'module_id': 'id',
                     'gateway_id': 'gateway_id',
@@ -279,6 +289,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'library': None,
                 'functions': {
                 },
+                'purgeable': True,
                 'map': {
                     'id': 'id',
                     'gateway_id': 'gateway_id',
@@ -298,6 +309,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'module_id': 'module_id',
@@ -315,6 +327,7 @@ class AmqpConfigHandler(YomboLibrary):
                     # 'disabled': "disable_device",
                     # 'deleted': "delete_device",
                 },
+                'purgeable': True,
                 'map': {
                     'id': 'id',
                     'parent_id': 'parent_id',
@@ -338,6 +351,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'library': "configuration",
                 'functions': {
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'relation_id': 'group_relation_id',
@@ -358,6 +372,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'library': "configuration",
                 'functions': {
                 },
+                'purgeable': False,
                 'map': {
                     'id': 'id',
                     'group_id': 'group_id',
@@ -385,6 +400,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'library': "configuration",
                 'functions': {
                 },
+                'purgeable': True,
                 'map': {
                     'id': 'id',
                     'gateway_id': 'gateway_id',
@@ -418,7 +434,7 @@ class AmqpConfigHandler(YomboLibrary):
         self._checkProcessQueueLoop = LoopingCall(self.process_config_queue)
         self.check_download_done_calllater = None
 
-        self._LocalDBLibrary = self.parent._Libraries['localdb']
+        self._LocalDB = self.parent._LocalDB
 
         self.amqp = None  # holds our pointer for out amqp connection.
         self._getAllConfigsLoggerLoop = None
@@ -602,7 +618,10 @@ class AmqpConfigHandler(YomboLibrary):
             config_data = self.config_items[config_item]
             # print "Msg: %s" % msg
             if config_type == 'full':
-                yield self._LocalDBLibrary.truncate(config_data['table'])
+                # print "truncating table: %s" % config_data['table']
+                yield self._LocalDB.truncate(config_data['table'])
+                if config_data['table'] == 'devices':
+                    yield self._LocalDB.delete('variable_data', where=["data_relation_type = 'device'"])
 
             if msg['data_type'] == 'object':
                 data = self.field_remap(msg['data'], config_data)
@@ -632,7 +651,7 @@ class AmqpConfigHandler(YomboLibrary):
         # print "field remap - data =%s" % data
         new_data = {}
         # print "remap data: %s" % data
-        table_meta = self._LocalDBLibrary.db_model[config_data['table']]
+        table_meta = self._LocalDB.db_model[config_data['table']]
         # print "tablemeta: %s" % table_meta
         key = None
         value = None
@@ -680,14 +699,15 @@ class AmqpConfigHandler(YomboLibrary):
         :param from_amqp_incoming:
         :return:
         """
+        # if config_item == "gateway_devices":
         # print "add_update_delete config_item111111: %s" % config_item
-        # print "add_update_delete msg....11111111111 %s" % msg
-        # print "data: %s"%data
+        #     print "add_update_delete msg....11111111111 %s" % msg
+        #     print "data: %s"%data
         config_data = self.config_items[config_item]
         required_db_keys = []
         allowed_db_keys = []
 
-        table_cols = self._LocalDBLibrary.db_model[config_data['table']].iteritems()
+        table_cols = self._LocalDB.db_model[config_data['table']].iteritems()
         for col, col_data in table_cols:
             allowed_db_keys.append(col)
             if col_data['notnull'] == 1:
@@ -709,19 +729,21 @@ class AmqpConfigHandler(YomboLibrary):
         #     db_data['commands'] = ','.join(local_data)
 
         if config_item == 'gateway_modules':
-            yield self._LocalDBLibrary.delete('module_device_types', where=['module_id = ?', data['id']])
+            yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
 
         if config_item == 'variable_groups':
-            yield self._LocalDBLibrary.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
+            yield self._LocalDB.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
 
         if config_item == 'gateway_users':
-            yield self._LocalDBLibrary.delete('users')
+            yield self._LocalDB.delete('users')
 
         if 'status' in data:
             if data['status'] == 2:  # delete any nested items...
                 if config_item == 'gateway_modules':
-                    yield self._LocalDBLibrary.delete('module_installed', where=['module_id = ?', data['id']])
-                    yield self._LocalDBLibrary.delete('module_device_types', where=['module_id = ?', data['id']])
+                    print "!!!!!!!!!!!!!!!!!!  deleting item.........gateway_modules"
+
+                    yield self._LocalDB.delete('module_installed', where=['module_id = ?', data['id']])
+                    yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
 
         # print "config_data: %s"%config_data
         # print "db_data: %s"%db_data
@@ -731,7 +753,7 @@ class AmqpConfigHandler(YomboLibrary):
             raise YomboWarning("Cannot do anything. Must have these keys: %s  Only had these keys: %s" % (required_db_keys, data), 300, 'add_update_delete', 'Devices')
 
 
-        records = yield self._LocalDBLibrary.get_dbitem_by_id(config_data['dbclass'], db_data['id'])
+        records = yield self._LocalDB.get_dbitem_by_id(config_data['dbclass'], db_data['id'])
 
         library = None
         if config_data['library'] is not None:
@@ -750,8 +772,11 @@ class AmqpConfigHandler(YomboLibrary):
             # print "inserting into: %s   data: %s" % (config_data['table'], db_data)
             if 'status' in data:
                 if data['status'] == 2: # we don't add deleted items...
+                    if self.config_items[config_item]['purgeable']:
+                        self.item_purged(config_item, data['id'])
+
                     returnValue(None)
-            yield self._LocalDBLibrary.insert(config_data['table'], db_data)
+            yield self._LocalDB.insert(config_data['table'], db_data)
             if 'added' in config_data['functions']:
                 klass = getattr(library, config_data['functions']['updated'])
                 klass(data, True)  # True = the library doesn't need to update the database
@@ -783,14 +808,16 @@ class AmqpConfigHandler(YomboLibrary):
             if 'updated' in data and 'updated' in record:
                 if 'status' in record: # if the record has been marked deleted, lets delete it.
                     if record['status'] == 2:
-                        self._LocalDBLibrary.dbconfig.delete(config_data['table'], where=['id = ?', data['id']])
+                        self._LocalDB.dbconfig.delete(config_data['table'], where=['id = ?', data['id']])
+                        if self.config_items[config_item]['purgeable']:
+                            self.item_purged(config_item, data['id'])
 
                 elif data['updated'] > record['updated']:  # lets update!
                     action = 'update'
                     if from_amqp_incoming:
                         if 'updated_srv' in table_cols:
                             db_data['updated_srv'] = data['updated']
-                    self._LocalDBLibrary.dbconfig.update(config_data['table'], db_data, where=['id = ?', data['id']] )
+                    self._LocalDB.dbconfig.update(config_data['table'], db_data, where=['id = ?', data['id']] )
                     if 'added' in config_data['functions']:
                         klass = getattr(library, config_data['functions']['added'])
                         klass(data, True)
@@ -822,7 +849,7 @@ class AmqpConfigHandler(YomboLibrary):
         if 'variable_data' in data:
             if len(data['variable_data']):
                 # print "var data: %s"  % data['variable_data']
-                yield self._LocalDBLibrary.delete('variable_data', where=['data_relation_type = ? and data_relation_id = ?',
+                yield self._LocalDB.delete('variable_data', where=['data_relation_type = ? and data_relation_id = ?',
                                                                           data['variable_data'][0]['relation_type'],
                                                                           data['variable_data'][0]['relation_id']])
                 newMsg = msg.copy()
@@ -899,8 +926,26 @@ class AmqpConfigHandler(YomboLibrary):
 
 #            print request
             self.parent.publish(**request)
-
             self._append_full_download_queue(item)
+
+    def item_purged(self, config_item, id):
+        # request device updates
+        body = {
+            "id": id
+        }
+
+        headers = {
+            "request_type": "config",
+            "config_item": 'purged_' + config_item,
+        }
+
+        print "requesting item to be purged... %s" % body
+        print "requesting item to be purged... %s" % headers
+
+        request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
+                                                           "yombo.server.configs", headers, body)
+        request_msg['correlation_persistent'] = False
+        self.parent.publish(**request_msg)
 
     def generate_config_request(self, headers, request_data=""):
         """
