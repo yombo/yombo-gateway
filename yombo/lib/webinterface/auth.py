@@ -1,8 +1,14 @@
 from functools import wraps
 from time import time
-from yombo.utils import get_local_network_info, ip_address_in_network
 
 from twisted.internet.defer import inlineCallbacks, returnValue
+
+from yombo.core.exceptions import YomboWarning
+from yombo.utils import get_local_network_info, ip_address_in_network
+
+from yombo.core.log import get_logger
+logger = get_logger('library.webinterface.auth')
+
 
 def get_session(roles=None, *args, **kwargs):
 
@@ -52,10 +58,23 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
-            session = yield webinterface.sessions.load(request)
+            try:
+                session = yield webinterface.sessions.load(request)
+            except YomboWarning as e:
+                logger.warn("Discarding request, appears to be malformed session id.")
+                page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                # print "require_auth..session: %s" % session
+                returnValue(page.render(alerts=webinterface.get_alerts()))
+
             if login_redirect is not None:
                 if session is False:
-                    session = webinterface.sessions.create(request)
+                    try:
+                        session = webinterface.sessions.create(request)
+                    except YomboWarning as e:
+                        logger.warn("Discarding request, appears to be malformed request. Unable to create session.")
+                        page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                        # print "require_auth..session: %s" % session
+                        returnValue(page.render(alerts=webinterface.get_alerts()))
                     session['auth'] = False
                     session['auth_id'] = ''
                     session['auth_time'] = 0

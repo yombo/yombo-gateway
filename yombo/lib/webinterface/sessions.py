@@ -111,7 +111,8 @@ class Sessions(object):
         cookies = request.received_cookies
         if cookie_session in cookies:
             session_id = cookies[cookie_session]
-
+            if self.validate_session_id(session_id) is False:
+                raise YomboWarning("Invalid session id.")
             if session_id in self.active_sessions:
                 returnValue(True)
             else:
@@ -162,6 +163,8 @@ class Sessions(object):
         logger.debug("has session: {has_session}", has_session=has_session)
         if has_session:
             session_id = cookies[cookie_session]
+            if self.validate_session_id(session_id) is False:
+                raise YomboWarning("Invalid session id.")
             # return self.active_sessions[session_id]
             returnValue(self.active_sessions[session_id])
         returnValue(False)
@@ -231,7 +234,19 @@ class Sessions(object):
                 return False
         return None
 
-
+    def validate_session_id(self, session_id):
+        """
+        Validate the session id to make sure it's reasonable.
+        :param session_id: 
+        :return: 
+        """
+        if session_id.isalnum() is False:
+            return False
+        if len(session_id) < 15:
+            return False
+        if len(session_id) > 40:
+            return False
+        return True
 
     # def _validate_ip(self):
     #     # check for change of IP
