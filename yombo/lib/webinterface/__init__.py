@@ -776,7 +776,7 @@ class WebInterface(YomboLibrary):
             session['auth_time'] = time()
             session['yomboapi_session'] = login['session']
             session['yomboapi_login_key'] = login['login_key']
-            request.received_cookies[self.sessions.config.cookie_session] = session['session_id']
+            request.received_cookies[self.sessions.config.cookie_session] = session['id']
 
             if self._op_mode == 'firstrun':
                 # print "###############33  saving system session stufff...."
