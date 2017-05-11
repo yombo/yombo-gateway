@@ -795,16 +795,16 @@ class DeviceType(object):
         ]
 
         try:
-
             found, key, item, ratio, others = do_search_instance(attrs, self._DeviceTypes._Devices.devices,
                                       self._DeviceTypes.device_type_search_attributes)
             if found:
-                devices = []
-                for device in others:
-                    devices.append(device['value'])
+                devices = {}
+                for item in others:
+                    device = item['value']
+                    devices[device['device_id']] = device
                 return devices
             else:
-                return []
+                return {}
         except YomboWarning, e:
             raise KeyError('Get devices had problems: %s' % e)
 
