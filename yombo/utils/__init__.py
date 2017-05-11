@@ -8,6 +8,7 @@ Various utilities used to perform common functions to help speed development.
 """
 # Import python libraries
 from __future__ import division
+from __future__ import print_function
 
 try:
     import fcntl
@@ -584,7 +585,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     # logger.debug("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
 
     if limiter is None:
-        operation = .89
+        limiter = .89
     if operation is None:
         operation = "any"
     if isinstance(attributes, list) is False:
@@ -593,7 +594,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
         if isinstance(attr, dict) is False:
             raise YomboWarning("Attribute items must be dictionaries")
         if all(k in ("field", "value") for k in attr):
-            print("says dont' have all keys: %s" % attr)
             raise YomboWarning("Attribute dictionary doesn't have required keys.")
         if attr['field'] not in allowed_keys:
             raise YomboWarning("Field is not a valid searchable item: %s" % attr['field'])
@@ -637,7 +637,8 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
 
             if operation == "any":
                 if ratio > attr['limiter']:
-                    item[item_id] = item
+                    key_list.append({'key': item_id, 'value': item, 'ratio': ratio})
+                    # item[item_id] = item
             else:
                 # if this is the best ratio so far - save it and the value
                 if ratio > best_ratio:
