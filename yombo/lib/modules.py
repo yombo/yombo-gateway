@@ -521,6 +521,17 @@ class Modules(YomboLibrary):
                 module_id,
             )
 
+            module._ModuleDevices = partial(
+                self.module_devices,
+                module_id,
+            )
+
+            module._ModuleDeviceTypes = partial(
+                self.module_device_types,
+                module_id,
+            )
+
+
             # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
             module._ModuleType = self._rawModulesList[module_id]['module_type']
 
@@ -830,6 +841,7 @@ class Modules(YomboLibrary):
             # print "dt..module_id: %s" % module_id
             # print "dt..self._Modules.modules[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
             for dt in self.module_device_types(module_id):
+                # print "self._DeviceTypes[dt].get_devices(): %s" % self._DeviceTypes[dt].get_devices()
                 temp.update(self._DeviceTypes[dt].get_devices())
         # tempset = set(temp)
         # return list(temp)
