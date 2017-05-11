@@ -34,23 +34,23 @@ To send a command to a device is simple.
 
    # Lets turn off every every device, using a very specific command id.
    for device in self._Devices:
-       self.Devices[device].command(cmd='js83j9s913')  # Made up number, but can be same as off
+       self.Devices[device].command(cmd='js83j9s913')  # Made up id, but can be same as off
 
    # Turn off the christmas tree.
    self._Devices.command('christmas tree', 'off')
 
    # Get devices by device type:
-   deviceList = self._Devices.search(device_type='137ab129da9318')  # Can search on any device attribute
+   deviceList = self._Devices.search(device_type='x10_appliance')  # Can search on any device attribute
 
    # Turn on all x10 lights off (regardless of house / unit code)
-   allX10Lamps = self._DeviceTypes.devices_by_device_type('137ab129da9318')
+   allX10Lamps = self._DeviceTypes.devices_by_device_type('x10_light')
    # Turn off all x10 lamps
    for lamp in allX10Lamps:
-       self._Devices.command(lamp, 'off')
+       lamp.command('off')
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 # Import python libraries
@@ -87,10 +87,9 @@ class Devices(YomboLibrary):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
-        * :func:`get_all` - Get a pointer to all devices.
-        * :func:`get_devices_by_device_type` - Get all device for a certain deviceType (UUID or MachineLabel)
-        * :func:`search` - Get a pointer to a device, using device_id or device label.
-
+        * :py:meth:`__getitem__ <Devices.__getitem__>` - Get a pointer to a device, using self._Devices as a dictionary of objects.
+        * :py:meth:`command <Devices.command>` - Send a command to a device.
+        * :py:meth:`search <Devices.search>` - Get a pointer to a device, using device_id or device label.
     """
 
     def __contains__(self, device_requested):
@@ -98,7 +97,7 @@ class Devices(YomboLibrary):
         .. note:: The device must be enabled to be found using this method. Use :py:meth:`get <Devices.get>`
            to set status allowed.
 
-        Checks to if a provided device label or device id exists.
+        Checks to if a provided device label, device machine label, or device id exists.
 
             >>> if '137ab129da9318' in self._Devices:  #by id
 
@@ -123,7 +122,7 @@ class Devices(YomboLibrary):
         .. note:: The device must be enabled to be found using this method. Use :py:meth:`get <Devices.get>`
            to set status allowed.
 
-        Attempts to find the device requested using a couple of methods.
+        Finds the device requested by device label, device machine label, or device id exists.
 
             >>> my_light = self._Devices['137ab129da9318']  #by id
 
@@ -133,7 +132,7 @@ class Devices(YomboLibrary):
 
         :raises YomboWarning: Raised when request is malformed.
         :raises KeyError: Raised when request is not found.
-        :param device_requested: The device ID or label to search for.
+        :param device_requested: The device ID, machine_label, or label to search for.
         :type device_requested: string
         :return: A pointer to the device type instance.
         :rtype: instance
@@ -219,7 +218,7 @@ class Devices(YomboLibrary):
 
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.devices = {}
-        self.device_search_attributes = ['device_id', 'device_type_id', 'label', 'description',
+        self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label', 'description',
             'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
             'created', 'updated', 'updated_srv']
 
@@ -385,18 +384,44 @@ class Devices(YomboLibrary):
                                 max_delay=request['max_delay'], **request['kwargs'])
         self.load_deferred.callback(10)
 
-    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, **kwargs):
+    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, input=None, **kwargs):
         """
-        Forwarder function to the actual device object for processing.
+        Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
+        if they are supposed to.
 
-        :param device: Device ID or Label.
-        :param cmd: Command ID or Label to send.
+        If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
+        hook call.
+
+        :raises YomboDeviceError: Raised when:
+
+            - cmd doesn't exist
+            - delay or max_delay is not a float or int.
+
+        :raises YomboPinCodeError: Raised when:
+
+            - pin is required but not recieved one.
+
+        :param device: Device ID, machine_label, or Label.
+        :type device: str
+        :param cmd: Command ID, machine_label, or Label to send.
+        :type cmd: str
         :param pin: A pin to check.
-        :param not_before: A time (EPOCH) in the future that the command should run.
-        :param request_id: A request ID for tracking.
-        :param delay: How many seconds to delay sending the command.
-        :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
-        :return:
+        :type pin: str
+        :param request_id: Request ID for tracking. If none given, one will be created.
+        :type request_id: str
+        :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
+        :type delay: int or float
+        :param not_before: An epoch time when the command should be sent. Not to be combined with 'delay'.
+        :type not_before: int or float
+        :param max_delay: How many second after the 'delay' or 'not_before' can the command be send. This can occur
+            if the system was stopped when the command was supposed to be send.
+        :type max_delay: int or float
+        :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
+        :type input: list of dictionaries
+        :param kwargs: Any additional named arguments will be sent to the module for processing.
+        :type kwargs: named arguments
+        :return: The request id.
+        :rtype: str
         """
         return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
 
@@ -434,30 +459,36 @@ class Devices(YomboLibrary):
 
         if parts[3] == 'get':
             status = device.status_history[0]
-            if payload == 'human':
-                self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
+
+            if payload == '' or payload == 'all':
+                self.mqtt.publish('yombo/devices/%s/state' % device.machine_label, json.dumps(device.status_history[0]))
+            elif payload == 'human':
+                self.mqtt.publish('yombo/devices/%s/state/human' % device.machine_label, str(status.human_status))
             elif payload == 'machine':
-                self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
+                self.mqtt.publish('yombo/devices/%s/state/machine' % device.machine_label, str(status.machine_status))
             elif payload == 'extra':
-                self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
+                self.mqtt.publish('yombo/devices/%s/state/extra' % device.machine_label, str(status.machine_status_extra))
             elif payload == 'last':
-                self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
+                self.mqtt.publish('yombo/devices/%s/state/last' % device.machine_label, str(status.set_time))
             elif payload == 'source':
-                self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
+                self.mqtt.publish('yombo/devices/%s/state/source' % device.machine_label, str(status.source))
         elif parts[3] == 'cmd':
             device.command(self, cmd=parts[4])
             if len(parts) > 5:
                 status = device.status_history[0]
-                if parts[5] == 'human':
-                    self.mqtt.publish('yombo/devices/%s/state/human' % device.label.replace(" ", "_"), str(status.human_status))
+                if payload == '' or payload == 'all':
+                    self.mqtt.publish('yombo/devices/%s/state' % device.machine_label,
+                                      json.dumps(device.status_history[0]))
+                elif parts[5] == 'human':
+                    self.mqtt.publish('yombo/devices/%s/state/human' % device.machine_label, str(status.human_status))
                 elif parts[5] == 'machine':
-                    self.mqtt.publish('yombo/devices/%s/state/machine' % device.label.replace(" ", "_"), str(status.machine_status))
+                    self.mqtt.publish('yombo/devices/%s/state/machine' % device.machine_label, str(status.machine_status))
                 elif parts[5] == 'extra':
-                    self.mqtt.publish('yombo/devices/%s/state/extra' % device.label.replace(" ", "_"), str(status.machine_status_extra))
+                    self.mqtt.publish('yombo/devices/%s/state/extra' % device.lmachine_label, str(status.machine_status_extra))
                 elif parts[5] == 'last':
-                    self.mqtt.publish('yombo/devices/%s/state/last' % device.label.replace(" ", "_"), str(status.set_time))
+                    self.mqtt.publish('yombo/devices/%s/state/last' % device.machine_label, str(status.set_time))
                 elif parts[5] == 'source':
-                    self.mqtt.publish('yombo/devices/%s/state/source' % device.label.replace(" ", "_"), str(status.source))
+                    self.mqtt.publish('yombo/devices/%s/state/source' % device.machine_label, str(status.source))
 
     def list_devices(self, field=None):
         """
@@ -467,15 +498,16 @@ class Devices(YomboLibrary):
         :type field: string
         :return: 
         """
-
         if field is None:
-            field = 'label'
+            field = 'machine_label'
 
         if field not in self.device_search_attributes:
             raise YomboWarning('Invalid field for device attribute: %s' % field)
 
+        devices = []
         for device_id, device in self.devices.iteritems():
-            yield getattr(device, field)
+            devices.append(getattr(device, field))
+        return devices
 
     def get(self, device_requested, limiter=None, status=None):
         """
@@ -494,7 +526,7 @@ class Devices(YomboLibrary):
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
-        :param device_requested: The device ID or device label to search for.
+        :param device_requested: The device ID, machine_label, or device label to search for.
         :type device_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
@@ -521,6 +553,11 @@ class Devices(YomboLibrary):
             attrs = [
                 {
                     'field': 'device_id',
+                    'value': device_requested,
+                    'limiter': limiter,
+                },
+                {
+                    'field': 'machine_label',
                     'value': device_requested,
                     'limiter': limiter,
                 },
@@ -571,25 +608,20 @@ class Devices(YomboLibrary):
         logger.debug("Add new device.  Data: {data}", data=data)
         api_data = {
             'gateway_id': self.gwid,
-            'label': data['label'],
-            'description': data['description'],
-            'status': data['status'],
-            'statistic_label': data['statistic_label'],
-            'statistic_lifetime': data['statistic_lifetime'],
-            'device_type_id': data['device_type_id'],
-            'pin_required': data['pin_required'],
-            'pin_code': data['pin_code'],
-            'pin_timeout': data['pin_timeout'],
-            'energy_type': data['energy_type'],
-            'energy_map': json.dumps(data['energy_map'], separators=(',',':')),
         }
+
+        for key, value in data.iteritems():
+            if key == 'energy_map':
+                api_data['energy_map'] = json.dumps(data['energy_map'], separators=(',',':'))
+            else:
+                api_data[key] = data[key]
 
         try:
             global_invoke_all('_device_before_add_', **{'called_by': self, 'device': data})
         except YomboHookStopProcessing as e:
             raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 
-        if data['device_id'] == '':
+        if 'device_id' not in api_data:
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
             device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
             logger.debug("add new device results: {device_results}", device_results=device_results)
@@ -611,6 +643,7 @@ class Devices(YomboLibrary):
             returnValue(results)
 
         if 'variable_data' in data:
+            print("data['variable_data']: %s", data['variable_data'])
             variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
             print("variable_results: %s" % variable_results)
             if variable_results['code'] > 299:
@@ -641,8 +674,8 @@ class Devices(YomboLibrary):
                     post_data = {
                         'gateway_id': self.gwid,
                         'field_id': field_id,
-                        'data_relation_id': device_id,
-                        'data_relation_type': 'device',
+                        'relation_id': device_id,
+                        'relation_type': 'device',
                         'data_weight': 0,
                         'data': value,
                     }
@@ -663,8 +696,11 @@ class Devices(YomboLibrary):
                         'data': value,
                     }
                     # print("PATCHing variable: %s" % post_data)
-                    var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
-                                                                    post_data)
+                    var_data_results = yield self._YomboAPI.request(
+                        'PATCH',
+                        '/v1/variable/data/%s' % data_id,
+                        post_data
+                    )
                     if var_data_results['code'] > 299:
                         results = {
                             'status': 'failed',
@@ -679,7 +715,7 @@ class Devices(YomboLibrary):
             'status': 'success',
             'code': var_data_results['code'],
             'msg': "Device added.",
-            'vairable_id': var_data_results['data']['id']
+            'variable_id': var_data_results['data']['id']
         })
 
     @inlineCallbacks
@@ -972,7 +1008,7 @@ class Devices(YomboLibrary):
         for device_id, device in self.devices.iteritems():
             devices.append({
                 'id': device.device_id,
-                'label': device.label,
+                'machine_label': device.machine_label,
             })
         return devices
 
@@ -1005,7 +1041,7 @@ class Devices(YomboLibrary):
                 raise YomboWarning("Error while searching for device, could not be found: %s  Rason: %s" % (action['device'], e),
                                104, 'devices_validate_action_callback', 'lib.devices')
         else:
-            raise YomboWarning("For platform 'devices' as an 'action', must have 'device' and can be either device ID or device label.",
+            raise YomboWarning("For platform 'devices' as an 'action', must have 'device' and can be either device ID, device machine_label, or device label.",
                                105, 'devices_validate_action_callback', 'lib.devices')
 
     def devices_do_action_callback(self, rule, action, options=None, **kwargs):
@@ -1035,21 +1071,29 @@ class Devices(YomboLibrary):
                 delay = None
                 max_delay = None
 
-            unique_hash = sha1('automation' + rule['name'] + action['command'] + device.label).hexdigest()
+            unique_hash = sha1('automation' + rule['name'] + action['command'] + device.machine_label).hexdigest()
             device.command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
 
 
 class Device(object):
     """
-    A class to manage a single device.  This clas contains various attributes
-    about a device and can perform function on behalf of a device.  Can easily
-    send a Yombo :ref:`Message` using a device instance.
+    A class to manage a single device. This clas contains various attributes about the
+    device as well as several functions. For exaqmple, a command be easily sent using the
+    :py:meth:`command <Device.command>` function.
 
-    The self.status attribute stores the last 30 states the device has been in.
 
-    Device: An item which was specified by a user or module that can be
-    controlled and/or queried for status.  Examples include a lamp
-    module, curtains, Plex client, rain sensor, etc.
+    The primary functions developers should use are:
+        * :py:meth:`available_commands <Device.available_commands>` - List available commands for a device.
+        * :py:meth:`command <Device.command>` - Send a command to a device.
+        * :py:meth:`device_command_received <Device.device_command_received>` - Called by any module processing a command.
+        * :py:meth:`device_command_pending <Device.device_command_pending>` - When a module needs more time.
+        * :py:meth:`device_command_failed <Device.device_command_failed>` - When a module is unable to process a command.
+        * :py:meth:`device_command_done <Device.device_command_done>` - When a command has completed..
+        * :py:meth:`energy_get_usage <Device.energy_get_usage>` - Get current energy being used by a device.
+        * :py:meth:`get_status <Device.get_status>` - Get a named tuple containing the device status.
+        * :py:meth:`set_status <Device.set_status>` - Set the device status.
+        * :py:meth:`get_status <Device.get_status>` - Get a named tuple containing the device status.
+        * :py:meth:`get_status <Device.get_status>` - Get a named tuple containing the device status.
     """
     def __str__(self):
         """
@@ -1119,7 +1163,7 @@ class Device(object):
         self._DevicesLibrary = _DevicesLibrary
         # logger.debug("New device - info: {device}", device=device)
 
-        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable")
+        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, source")
 
         self.do_command_requests = MaxDict(300, {})
@@ -1169,6 +1213,8 @@ class Device(object):
         """
         if 'device_type_id' in device:
             self.device_type_id = device["device_type_id"]
+        if 'machine_label' in device:
+            self.machine_label = device["machine_label"]
         if 'label' in device:
             self.label = device["label"]
         if 'description' in device:
@@ -1178,7 +1224,10 @@ class Device(object):
         if 'pin_code' in device:
             self.pin_code = device["pin_code"]
         if 'pin_timeout' in device:
-            self.pin_timeout = int(device["pin_timeout"])
+            try:
+                self.pin_timeout = int(device["pin_timeout"])
+            except:
+                self.pin_timeout = None
         if 'voice_cmd' in device:
             self.voice_cmd = device["voice_cmd"]
         if 'voice_cmd_order' in device:
@@ -1217,13 +1266,16 @@ class Device(object):
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', **{'device': self})
 
-        if 'variable_data' in device:
-            print("device.update_attributes: %s: " % device['variable_data'])
-            print("device.update_attributes.device_variables: %s: " % self.device_variables)
+        # if 'variable_data' in device:
+        #     print("device.update_attributes: %s: " % device['variable_data'])
+        #     print("device.update_attributes.device_variables: %s: " % self.device_variables)
 
 
     def available_commands(self):
-        # print("getting available_commands for devicetypeid: %s" % (self.device_type_id, ))
+        """
+        Returns available commands for the current device.
+        :return: 
+        """
         return self._DevicesLibrary._DeviceTypes.device_type_commands(self.device_type_id)
 
     def dump(self):
@@ -1232,6 +1284,7 @@ class Device(object):
         """
         return {'device_id': str(self.device_id),
                 'device_type_id': str(self.device_type_id),
+                'machine_label': str(self.machine_label),
                 'label': str(self.label),
                 'description': str(self.description),
                 'statistic_label': str(self.statistic_label),
@@ -1246,7 +1299,7 @@ class Device(object):
                 'status_history': copy.copy(self.status_history),
                }
 
-    def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, **kwargs):
+    def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, inputs=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -1264,11 +1317,24 @@ class Device(object):
             - pin is required but not recieved one.
 
         :param cmd: Command ID or Label to send.
+        :type cmd: str
         :param pin: A pin to check.
+        :type pin: str
         :param request_id: Request ID for tracking. If none given, one will be created.
-        :param delay: How many seconds to delay sending the command.
-        :param kwargs: If a command is not sent at the delay sent time, how long can pass before giving up. For example, Yombo Gateway not running.
-        :return:
+        :type request_id: str
+        :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
+        :type delay: int or float
+        :param not_before: An epoch time when the command should be sent. Not to be combined with 'delay'.
+        :type not_before: int or float
+        :param max_delay: How many second after the 'delay' or 'not_before' can the command be send. This can occur
+            if the system was stopped when the command was supposed to be send.
+        :type max_delay: int or float
+        :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
+        :type input: list of dictionaries
+        :param kwargs: Any additional named arguments will be sent to the module for processing.
+        :type kwargs: named arguments
+        :return: The request id.
+        :rtype: str
         """
         if self.status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
@@ -1316,16 +1382,17 @@ class Device(object):
         elif request_id is None:
             request_id = random_string(length=16)        # print("in device command: rquest_id 2: %s" % request_id)
 
-        kwargs['request_id'] = request_id
-        details = {
-            'request_id': request_id,  # not as redundant as you may think!
-            'sent_time': None,
-            'device_id': self.device_id,
-            'cmd_id': cmdobj.command_id,
-            'history': [],  # contains any notes about the status. Errors, etc.
-            'requested_by': requested_by,
-        }
-        self.do_command_requests[request_id] = Device_Request(details, self)
+        self.do_command_requests[request_id] = Device_Request(
+            {
+                'request_id': request_id,  # not as redundant as you may think!
+                'sent_time': None,
+                'command': cmdobj,
+                'history': [],  # contains any notes about the status. Errors, etc.
+                'inputs': inputs,
+                'requested_by': requested_by,
+            },
+            self
+        )
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
             if max_delay is None:
@@ -1348,6 +1415,7 @@ class Device(object):
                         'max_delay': max_delay,
                         'unique_hash': unique_hash,
                         'request_id': request_id,
+                        'inputs': inputs,
                         'kwargs': kwargs,
                     }
                 self._DevicesLibrary.delay_queue_active[request_id] = {
@@ -1358,6 +1426,7 @@ class Device(object):
                     'unique_hash': unique_hash,
                     'kwargs': kwargs,
                     'request_id': request_id,
+                    'inputs': inputs,
                     'reactor': None,
                 }
                 self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
@@ -1380,6 +1449,7 @@ class Device(object):
                         'max_delay': max_delay,
                         'unique_hash': unique_hash,
                         'kwargs': kwargs,
+                        'inputs': inputs,
                         'request_id': request_id,
                     }
                 self._DevicesLibrary.delay_queue_active[request_id] = {
@@ -1390,6 +1460,7 @@ class Device(object):
                     'unique_hash': unique_hash,
                     'kwargs': kwargs,
                     'request_id': request_id,
+                    'inputs': inputs,
                     'reactor': None,
                 }
                 self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
@@ -1398,6 +1469,7 @@ class Device(object):
                 raise YomboDeviceError("'not_before' must be a float or int.")
 
         else:
+            kwargs['request_id'] = request_id
             self.do_command_hook(cmdobj, **kwargs)
         return request_id
 
@@ -1409,11 +1481,10 @@ class Device(object):
         del self._DevicesLibrary.delay_queue_storage[request_id]
         del self._DevicesLibrary.delay_queue_active[request_id]
 
-    @inlineCallbacks
     def do_command_hook(self, cmdobj, **kwargs):
         """
-        Performs the actual sending of a device command. It does this through the hook system. This allows any module
-        to setup any monitoring, or perfom the actual action.
+        Performs the actual sending of a device command. This calls the hook "_device_command_". Any modules that
+        have implemented this hook can monitor or act on the hook.
 
         When a device changes state, whatever module changes the state of a device, or is responsible for reporting
         those changes, it *must* call "self._Devices['devicename/deviceid'].set_state()
@@ -1432,7 +1503,6 @@ class Device(object):
         kwargs['device'] = self
         self.do_command_requests[kwargs['request_id']].set_sent_time()
         global_invoke_all('_device_command_', called_by=self, **kwargs)
-        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.device_id, kwargs['command'].machine_label), "", 1)
         self._DevicesLibrary._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def device_command_received(self, request_id, **kwargs):
@@ -1442,10 +1512,10 @@ class Device(object):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id].set_status('received')
+        self.do_command_requests[request_id].set_received_time()
         if 'message' in kwargs:
             self.do_command_requests[request_id].set_message(kwargs['message'])
-        global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
+        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
 
     def device_command_pending(self, request_id, **kwargs):
         """
@@ -1457,8 +1527,8 @@ class Device(object):
         """
         self.do_command_requests[request_id].set_pending_time()
         if 'message' in kwargs:
-            self.do_command_requests[request_id]['message'] = kwargs['message']
-        global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
+            self.do_command_requests[request_id].set_message(kwargs['message'])
+        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
 
     def device_command_failed(self, request_id, **kwargs):
         """
@@ -1471,8 +1541,10 @@ class Device(object):
         """
         self.do_command_requests[request_id].set_failed_time()
         if 'message' in kwargs:
+            logger.warn('Device ({label}) command failed: {message}', label=self.label, message=kwargs['message'])
             self.do_command_requests[request_id].set_message(kwargs['message'])
-        global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
+        # print("self.do_command_requests[request_id]: %s" % self.do_command_requests[request_id])
+        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
 
     def device_command_done(self, request_id, **kwargs):
         """
@@ -1485,18 +1557,37 @@ class Device(object):
         """
         self.do_command_requests[request_id].set_finished_time()
         if 'message' in kwargs:
-            self.do_command_requests[request_id]['message'] = kwargs['message']
-        global_invoke_all('_device_command_status_', called_by=self, **self.do_command_requests[request_id])
+            self.do_command_requests[request_id].set_message(kwargs['message'])
+        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
 
-    def energy_get_usage(self, machine_status, **kwargs):
+    def get_request(self, request_id):
         """
-        Determine the current energy usage.  Currently only support energy maps.
+        Returns a request instance for a provide request_id.
 
-        :param machine_status: New status
+        :raises KeyError: When an invalid request_id is requested.        
+        :param request_id: A request id returned from a 'command()' call. 
+        :return: Device_Request instance
+        """
+        return self.do_command_requests[request_id]
+
+    def energy_get_usage(self, machine_status=None, **kwargs):
+        """
+        Determine the current energy usage.  Currently only supports energy maps. Returns a dictionary
+        containing "energy_type" and "value".
+
+        :param machine_status: Provide a status to base the calculation from. Otherwise, will use current device status.
+        :type machine_status: int or float
         :return:
         """
+        if machine_status is None:
+            machine_status = self.status_history[0]['machine_status']
+
         if self.energy_tracker_source == 'calc':
-            return self.energy_calc(machine_status)
+            results = {
+                'energy_type': self.energy_type,
+                'value': self.energy_calc(machine_status),
+            }
+            return results
         return 0
 
     def energy_calc(self, machine_status, **kwargs):
@@ -1562,30 +1653,34 @@ class Device(object):
 
             - If no valid status sent in. Errorno: 120
             - If statusExtra was set, but not a dictionary. Errorno: 121
-            - If payload was set, but not a dictionary. Errorno: 122
-        :param kwargs: key/value dictionary with the following keys-
+        :param kwargs: Named arguments:
 
             - human_status *(int or string)* - The new status.
+            - human_message *(string)* - A human friendly text message to display.
             - machine_status *(int or string)* - The new status.
             - machine_status_extra *(dict)* - Extra status as a dictionary.
             - request_id *(string)* - Request ID that this should correspond to.
             - source *(string)* - The source module or library name creating the status.
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
-            - payload *(dict)* - a dict to be appended to the payload portion of the
-              status message.
         """
-        logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
+        logger.info("set_status called...: {kwargs}", kwargs=kwargs)
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status()
 
     def _set_status(self, **kwargs):
+        """
+        A private function used to do the work of setting the status.
+        :param kwargs: 
+        :return: 
+        """
         machine_status = None
         if 'machine_status' not in kwargs:
             raise YomboDeviceError("set_status was called without a real machine_status!", errorno=120)
 
         human_status = kwargs.get('human_status', machine_status)
+        human_message = kwargs.get('human_message', machine_status)
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', '')
         energy_usage = self.energy_get_usage(machine_status)
@@ -1606,11 +1701,29 @@ class Device(object):
 
         self._DevicesLibrary._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
         self._DevicesLibrary._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
-        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable)
+        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
             self._DevicesLibrary._LocalDB.save_device_status(**new_status.__dict__)
         self._DevicesLibrary.check_trigger(self.device_id, new_status)
+
+        message = {
+            'device_id': self.device_id,
+            'device_machine_label': self.machine_label,
+            'device_label': self.label,
+            'machine_status': machine_status,
+            'human_status': human_status,
+            'time': set_time,
+            'requested_by': requested_by,
+        }
+
+        if 'command' in kwargs:
+            command_machine_label = kwargs['command'].machine_label
+            command_label = kwargs['command'].label
+            command_id = kwargs['command'].command_id
+        else:
+            command = machine_status
+        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.machine_label, command), json.dumps(message), 1)
 
     def send_status(self, **kwargs):
         """
@@ -1670,11 +1783,11 @@ class Device(object):
                 'component': 'Unknown',
                 'gateway': 'Unknown'
             }
-            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'unknown', {}, requested_by, '', 0, 0))
+            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'Unknown status for device', None, {}, requested_by, '', 0, 1))
         else:
             for record in records:
-                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['source'], record['uploaded'], record['uploadable']))
-#                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           machine_status,                             machine_status_extra,             source,           uploaded,           uploadable")
+                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['human_message'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['source'], record['uploaded'], record['uploadable']))
+#                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           human_message,           machine_status,          machine_status_extra,             source,           uploaded,           uploadable")
 
         #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
@@ -1700,7 +1813,7 @@ class Device(object):
         
         :return: 
         """
-        print("deleting device.....")
+        # print("deleting device.....")
         self._DevicesLibrary._LocalDB.set_device_status(self.device_id, 2)
         global_invoke_all('_device_deleted_', **{'device': self})  # call hook "devices_delete" when deleting a device.
         self.status = 2
@@ -1741,36 +1854,16 @@ class Device_Request:
         self.device = device
         self.request_id = request['request_id']
         self.sent_time = request['sent_time']
-        self.cmd_id = request['cmd_id']
+        self.command = request['command']
         self.history = request['history']
         self.requested_by = request['requested_by']
         self.status = None
         self.sent_time = None
+        self.received_time = None
         self.pending_time = None
         self.finished_time = None
         self.message = None
         self.set_status('new')
-
-    def set_failed_time(self, finished_time=None):
-        if finished_time is None:
-            finished_time = time()
-        self.finished_time = finished_time
-        self.status = 'failed'
-        self.history.append((finished_time, 'failed'))
-
-    def set_finished_time(self, finished_time=None):
-        if finished_time is None:
-            finished_time = time()
-        self.finished_time = finished_time
-        self.status = 'done'
-        self.history.append((finished_time, 'done'))
-
-    def set_pending_time(self, pending_time=None):
-        if pending_time is None:
-            pending_time = time()
-        self.pending_time = pending_time
-        self.status = 'pending'
-        self.history.append((pending_time, 'pending'))
 
     def set_sent_time(self, sent_time=None):
         if sent_time is None:
@@ -1779,6 +1872,34 @@ class Device_Request:
         self.status = 'sent'
         self.history.append((sent_time, 'sent'))
 
+    def set_received_time(self, finished_time=None):
+        if finished_time is None:
+            finished_time = time()
+        self.finished_time = finished_time
+        self.status = 'failed'
+        self.history.append((finished_time, 'failed'))
+
+    def set_pending_time(self, pending_time=None):
+        if pending_time is None:
+            pending_time = time()
+        self.pending_time = pending_time
+        self.status = 'pending'
+        self.history.append((pending_time, 'pending'))
+
+    def set_finished_time(self, finished_time=None):
+        if finished_time is None:
+            finished_time = time()
+        self.finished_time = finished_time
+        self.status = 'done'
+        self.history.append((finished_time, 'done'))
+
+    def set_failed_time(self, finished_time=None):
+        if finished_time is None:
+            finished_time = time()
+        self.finished_time = finished_time
+        self.status = 'failed'
+        self.history.append((finished_time, 'failed'))
+
     def set_status(self, status):
         self.status = status
         self.history.append((time(), status))
@@ -1786,4 +1907,3 @@ class Device_Request:
     def set_message(self, message):
         self.message = message
         self.history.append((time(), message))
-
