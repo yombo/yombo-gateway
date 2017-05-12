@@ -117,7 +117,7 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def gateway__module_put(self, gateway_id, values, session=None):
-        results = yield self.request("PATCH", "/v1/gateway/%s/modules" % gateway_id, values, session)
+        results = yield self.request("PUT", "/v1/gateway/%s/modules" % gateway_id, values, session)
         if results['code'] == 200:
             returnValue(results)
         elif results['code'] == 404:
@@ -368,6 +368,9 @@ class YomboAPI(YomboLibrary):
         results = None
         # print "session2: %s" % session
         headers = self.make_headers(session)
+
+        if data is not None:
+            data = json.dumps(data)
 
         if method == 'GET':
             results = yield self.__get(path, headers, data)
