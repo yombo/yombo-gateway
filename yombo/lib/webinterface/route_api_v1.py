@@ -81,13 +81,12 @@ def route_api_v1(webapp):
                 except:
                     return return_error('deviceid and commandid must be specified for "runcommand".')
 
-                # print "making request for command...."
                 device = webinterface._Devices.get(deviceid)
                 device.command(
                     cmd=commandid,
                     requested_by={
                         'user_id': session['auth_id'],
-                        'component': 'WebInterface',
+                        'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
                         'gateway': webinterface.gwid
                     }
                     )
@@ -121,7 +120,6 @@ def route_api_v1(webapp):
         @require_auth()
         @inlineCallbacks
         def api_v1_statistics_echarts_buckets(webinterface, request, session):
-            print "111";
             time_last = request.args.get('last', [None, ])[0]
             time_start = request.args.get('start', [None, ])[0]
             time_end = request.args.get('end', [None, ])[0]
@@ -161,7 +159,6 @@ def route_api_v1(webapp):
             records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size,
                                                                               bucket_type=stat_type, time_start=time_start,
                                                                               time_end=time_end)
-            # print "stat records: %s" % records
             labels = []
             data = []
             live_stats = webinterface._Statistics.get_stat(stat_name, stat_type)
@@ -238,9 +235,7 @@ def route_api_v1(webapp):
             if search is not None:
                 url = url + "&?_filters[label]*%s&_filters[short_description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
-            print "about to call"
             results = yield webinterface._YomboAPI.request('GET', url)
-            print " call"
             data = {
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
