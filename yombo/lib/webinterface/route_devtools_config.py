@@ -3217,16 +3217,25 @@ def route_devtools_config(webapp):
                 'multiple': int(webinterface.request_get_default(request, 'multiple', 0)),
             }
 
+            for key in data.keys():
+                if data[key] == "":
+                    del data[key]
+                elif key in ['value_min', 'value_max']:
+                    if data[key] is None:
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
+            if parent['code'] != 200:
+                webinterface.add_alert(parent['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
             webinterface.add_breadcrumb(request, "/", "Edit Field")
-
-            if parent['code'] != 200:
-                webinterface.add_alert(parent['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
 
             results = yield webinterface._Variables.dev_field_edit(field_id, data)
             if results['status'] == 'failed':

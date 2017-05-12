@@ -124,7 +124,7 @@ def route_devices(webapp):
             except Exception as e:
                 logger.warn("Error while processing device add_details: {e}", e=e)
 
-            variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
+            variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
             device = {
                 'device_id': json_output.get('device_id', ""),
                 'machine_label': json_output.get('machine_label', ""),
@@ -133,7 +133,7 @@ def route_devices(webapp):
                 'status': int(json_output.get('status', 1)),
                 'statistic_label': json_output.get('statistic_label', ""),
                 'statistic_lifetime': json_output.get('statistic_lifetime', 365),
-                'device_type_id': json_output.get('device_type_id', ""),
+                'device_type_id': device_type_id,
                 'pin_required': pin_required,
                 'pin_code': json_output.get('pin_code', ""),
                 'pin_timeout': json_output.get('pin_timeout', ""),
@@ -185,7 +185,7 @@ def route_devices(webapp):
 
             device_variables = yield webinterface._Variables.get_variable_groups_fields(
                 group_relation_type='device_type',
-                group_relation_id=device['device_type_id'],
+                group_relation_id=device_type_id,
             )
 
             if device['variable_data'] is not None:
@@ -222,7 +222,6 @@ def route_devices(webapp):
         @webapp.route('/<string:device_id>/details')
         @require_auth()
         @run_first()
-        @inlineCallbacks
         def page_devices_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -233,14 +232,13 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
-            device_variables = yield device.device_variables()
-            the_page = page.render(alerts=webinterface.get_alerts(),
+            device_variables = device.device_variables
+            return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                device_variables=device_variables,
                                device_types=webinterface._DeviceTypes,
                                commands=webinterface._Commands,
                                )
-            returnValue(the_page)
 
         @webapp.route('/<string:device_id>/delete', methods=['GET'])
         @require_auth()

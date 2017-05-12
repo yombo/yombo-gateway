@@ -314,7 +314,6 @@ class WebInterface(YomboLibrary):
         self.gwid = self._Configs.get("core", "gwid")
         self._LocalDb = self._Loader.loadedLibraries['localdb']
         self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
-        # print "web interface direct1: %s" % self._current_dir
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
         self.secret_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp',
@@ -604,15 +603,10 @@ class WebInterface(YomboLibrary):
                 temp_dict[level1] = item['priority1']
 
         temp_strings = yield yombo.utils.global_invoke_all('_webinterface_add_routes_')
-        # print "new routes: %s" % temp_strings
         for component, options in temp_strings.iteritems():
-            # print "1111"
             if 'nav_side' in options:
-                # print "1111 2"
                 for new_nav in options['nav_side']:
-                    # print "1111 3"
                     if new_nav['label1'] in temp_dict:
-                        # print "1111 4"
                         new_nav['priority1'] =  temp_dict[new_nav['label1']]
                     nav_side_menu.append(new_nav)
             if 'routes' in options:
@@ -626,7 +620,6 @@ class WebInterface(YomboLibrary):
             if level1 not in self.misc_wi_data['nav_side']:
                 self.misc_wi_data['nav_side'][level1] = []
             self.misc_wi_data['nav_side'][level1].append(item)
-        # print self.misc_wi_data['nav_side']
         self.starting = False
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):
@@ -685,7 +678,6 @@ class WebInterface(YomboLibrary):
     def check_op_mode(self, request, router, **kwargs):
 #        print "op mode: %s" % self._op_mode
         if self._op_mode == 'config':
-            # print "showing config home"
             method = getattr(self, 'config_'+ router)
             return method(request, **kwargs)
         elif self._op_mode == 'firstrun':
@@ -728,7 +720,6 @@ class WebInterface(YomboLibrary):
     @webapp.route('/logout', methods=['GET'])
     @run_first()
     def page_logout_get(self, request):
-        # print "logout"
         self.sessions.close_session(request)
         request.received_cookies[self.sessions.config.cookie_session] = 'LOGOFF'
         return self.home(request)
@@ -762,7 +753,6 @@ class WebInterface(YomboLibrary):
                             )
 
         results = yield self.api.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
-        # print "results:::::::::::::::::  %s" % results
         if (results['code'] == 200):
             login = results['content']['response']['login']
 
@@ -779,9 +769,7 @@ class WebInterface(YomboLibrary):
             request.received_cookies[self.sessions.config.cookie_session] = session['id']
 
             if self._op_mode == 'firstrun':
-                # print "###############33  saving system session stufff...."
                 self.api.save_system_login_key(login['login_key'])
-                # print "###############33  saving system session stufff....done"
                 self.api.save_system_session(login['session'])
         else:
 
@@ -797,14 +785,8 @@ class WebInterface(YomboLibrary):
             login_redirect = session['login_redirect']
             if login_redirect is None:
                 login_redirect = "/"
-            # print "$$$$$$$$$$$$$$$$$$ login redirect is set...%s" % login_redirect
             session.delete('login_redirect')
 
-        # print "111 login_rdirect: %s" % login_redirect
-
-#        print "delete login redirect... %s" % self.sessions.delete(request, 'login_redirect')
-#        print "login/user:login_redirect: %s" % login_redirect
-#        print "after delete rediret...session: %s" % session
         returnValue(self.redirect(request, login_redirect))
 
     @webapp.route('/login/pin', methods=['POST'])
@@ -812,7 +794,6 @@ class WebInterface(YomboLibrary):
     def page_login_pin_post(self, request):
         submitted_pin = request.args.get('authpin')[0]
         valid_pin = False
-        # print "pin submit: %s" % submitted_pin
         if submitted_pin.isalnum() is False:
             self.add_alert('Invalid authentication.', 'warning')
             return self.redirect(request, '/login/pin')
@@ -830,7 +811,6 @@ class WebInterface(YomboLibrary):
             session['yomboapi_session'] = ''
             session['yomboapi_login_key'] = ''
             request.received_cookies[self.sessions.config.cookie_session] = session['session_id']
-
 
         if self.auth_pin_type() == 'pin':
             if submitted_pin == self.auth_pin:
@@ -1052,14 +1032,11 @@ class WebInterface(YomboLibrary):
 
         def do_cat(inputs, output):
             output = 'yombo/lib/webinterface/static/' + output
-            # print "Saving to %s..." % output
             with open(output, 'w') as outfile:
                 for fname in inputs:
                     fname = 'yombo/lib/webinterface/static/' + fname
-                    # print "...%s" % fname
                     with open(fname) as infile:
                         outfile.write(infile.read())
-            # print ""
 
         def copytree(src, dst, symlinks=False, ignore=None):
             src = 'yombo/lib/webinterface/static/' + src
