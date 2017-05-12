@@ -350,8 +350,10 @@ class Statistics(YomboLibrary):
         """
         if self.enabled is not True:
             return
-
-        self._validate_name(bucket_name)
+        try:
+            self._validate_name(bucket_name)
+        except YomboWarning as e:
+            return
 
         if bucket_name in self._datapoint_last_value:  # lookup last value saved.
             if self._datapoint_last_value[bucket_name] == value:  # we don't save duplicates!
@@ -393,11 +395,13 @@ class Statistics(YomboLibrary):
         """
         if self.enabled is not True:
             return
+        try:
+            self._validate_name(bucket_name)
+        except YomboWarning as e:
+            return
 
         if lifetimes is not None:
             self.add_bucket_lifetime(bucket_name, lifetimes)
-
-        self._validate_name(bucket_name)
 
         bucket = self._get_bucket_time('count', bucket_size=bucket_size, bucket_name=bucket_name)
 
@@ -443,7 +447,10 @@ class Statistics(YomboLibrary):
         """
         if self.enabled is not True:
             return
-        self._validate_name(bucket_name)
+        try:
+            self._validate_name(bucket_name)
+        except YomboWarning as e:
+            return
 
         if lifetimes is not None:
             self.add_bucket_lifetime(bucket_name, lifetimes)
@@ -493,7 +500,10 @@ class Statistics(YomboLibrary):
         """
         if self.enabled is not True:
             return
-        self._validate_name(bucket_name)
+        try:
+            self._validate_name(bucket_name)
+        except YomboWarning as e:
+            return
 
         if lifetimes is not None:
             self.add_bucket_lifetime(bucket_name, lifetimes)
@@ -545,8 +555,10 @@ class Statistics(YomboLibrary):
         """
         if self.enabled is not True:
             return
-
-        self._validate_name(bucket_name)
+        try:
+            self._validate_name(bucket_name)
+        except YomboWarning as e:
+            return
 
         if lifetimes is not None:
             self.add_bucket_lifetime(bucket_name, lifetimes)
