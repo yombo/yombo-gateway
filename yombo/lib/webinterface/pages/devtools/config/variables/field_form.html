@@ -95,7 +95,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <textarea tabindex="5" class="form-control" rows="15" cols="60" name="help_text" id="help_text" placeholder="Help text will be displayed as a modal to the users if they click on help.">{{ field.help_text }}</textarea>
+                                    <textarea tabindex="5" class="form-control" rows="15" cols="60" name="field_help_text" id="field_help_text" placeholder="Help text will be displayed as a modal to the users if they click on help.">{{ field.field_help_text }}</textarea>
                                 </div>
                             </div>
                            </div>
@@ -351,7 +351,7 @@
                 maxlength: 1024,
                 required: true,
             },
-            help_text: {
+            field_help_text: {
                 minlength: 0,
                 maxlength: 4096,
                 required: false,

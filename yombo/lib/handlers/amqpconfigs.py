@@ -387,7 +387,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'encryption': 'encryption',
                     'input_type_id': 'input_type_id',
                     'default_value': 'default_value',
-                    'help_text': 'help_text',
+                    'field_help_text': 'field_help_text',
                     'multiple': 'multiple',
                     'created_at': 'created',
                     'updated_at': 'updated',
@@ -598,7 +598,7 @@ class AmqpConfigHandler(YomboLibrary):
             logger.warn("Configuration for configuration '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
             self._remove_full_download_dueue("get_" + config_item)
             self.processing = False
-            return;
+            return
 
         if config_item == "gateway_configs":
             payload = msg['data']
@@ -621,6 +621,7 @@ class AmqpConfigHandler(YomboLibrary):
                 # print "truncating table: %s" % config_data['table']
                 yield self._LocalDB.truncate(config_data['table'])
                 if config_data['table'] == 'devices':
+                    print "delete variable_data for devices."
                     yield self._LocalDB.delete('variable_data', where=["data_relation_type = 'device'"])
 
             if msg['data_type'] == 'object':
@@ -728,19 +729,24 @@ class AmqpConfigHandler(YomboLibrary):
         #         local_data.append(temp_data['UUID'])
         #     db_data['commands'] = ','.join(local_data)
 
-        if config_item == 'gateway_modules':
-            yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
-
-        if config_item == 'variable_groups':
-            yield self._LocalDB.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
-
-        if config_item == 'gateway_users':
-            yield self._LocalDB.delete('users')
+        # if config_item == 'gateway_modules':
+        #     print "delete variable_data for gateway_modules."
+        #     yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
+        #
+        # if config_item == 'variable_groups':
+        #     print "delete variable_data for variable_groups."
+        #     yield self._LocalDB.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
+        #
+        # if config_item == 'gateway_users':
+        #     print "delete variable_data for gateway_users."
+        #     yield self._LocalDB.delete('users')
 
         if 'status' in data:
             if data['status'] == 2:  # delete any nested items...
                 if config_item == 'gateway_modules':
                     print "!!!!!!!!!!!!!!!!!!  deleting item.........gateway_modules"
+                    print "delete variable_data for module_installed."
+                    print "delete variable_data for module_device_types."
 
                     yield self._LocalDB.delete('module_installed', where=['module_id = ?', data['id']])
                     yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
@@ -808,6 +814,7 @@ class AmqpConfigHandler(YomboLibrary):
             if 'updated' in data and 'updated' in record:
                 if 'status' in record: # if the record has been marked deleted, lets delete it.
                     if record['status'] == 2:
+                        print "delete variable_data for (dynamic) %s." % config_data['table']
                         self._LocalDB.dbconfig.delete(config_data['table'], where=['id = ?', data['id']])
                         if self.config_items[config_item]['purgeable']:
                             self.item_purged(config_item, data['id'])
@@ -838,6 +845,7 @@ class AmqpConfigHandler(YomboLibrary):
             if len(data['variable_groups']):
                 newMsg = msg.copy()
                 newMsg['data'] = data['variable_groups']
+                print newMsg
                 self.process_config(newMsg, 'variable_groups')
 
         if 'variable_fields' in data:
@@ -849,6 +857,7 @@ class AmqpConfigHandler(YomboLibrary):
         if 'variable_data' in data:
             if len(data['variable_data']):
                 # print "var data: %s"  % data['variable_data']
+                print "delete variable_data for variable_data."
                 yield self._LocalDB.delete('variable_data', where=['data_relation_type = ? and data_relation_id = ?',
                                                                           data['variable_data'][0]['relation_type'],
                                                                           data['variable_data'][0]['relation_id']])

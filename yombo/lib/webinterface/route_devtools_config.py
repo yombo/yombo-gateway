@@ -2888,7 +2888,7 @@ def route_devtools_config(webapp):
                 'encryption': webinterface.request_get_default(request, 'encryption', ""),
                 'input_type_id': webinterface.request_get_default(request, 'input_type_id', ""),
                 'default_value': webinterface.request_get_default(request, 'default_value', ""),
-                'help_text': webinterface.request_get_default(request, 'help_text', ""),
+                'field_help_text': webinterface.request_get_default(request, 'field_help_text', ""),
                 'multiple': int(webinterface.request_get_default(request, 'multiple', 0)),
             }
 
@@ -2941,7 +2941,7 @@ def route_devtools_config(webapp):
                 'encryption': webinterface.request_get_default(request, 'encryption', ""),
                 'input_type_id': webinterface.request_get_default(request, 'input_type_id', ""),
                 'default_value': webinterface.request_get_default(request, 'default_value', ""),
-                'help_text': webinterface.request_get_default(request, 'help_text', ""),
+                'field_help_text': webinterface.request_get_default(request, 'field_help_text', ""),
                 'multiple': int(webinterface.request_get_default(request, 'multiple', 0)),
             }
 
@@ -3213,7 +3213,7 @@ def route_devtools_config(webapp):
                 'encryption': webinterface.request_get_default(request, 'encryption', ""),
                 'input_type_id': webinterface.request_get_default(request, 'input_type_id', ""),
                 'default_value': webinterface.request_get_default(request, 'default_value', ""),
-                'help_text': webinterface.request_get_default(request, 'help_text', ""),
+                'field_help_text': webinterface.request_get_default(request, 'field_help_text', ""),
                 'multiple': int(webinterface.request_get_default(request, 'multiple', 0)),
             }
 
