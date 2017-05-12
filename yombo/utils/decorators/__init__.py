@@ -109,12 +109,12 @@ class memoize_ttl(object):
                 value, last_update = self.cache[the_hash]
                 if self.ttl > 0 and now - last_update > self.ttl:
                     raise AttributeError
-                #print 'DEBUG: cached value'
+                # print 'DEBUG: cached value'
                 return value
             except (KeyError, AttributeError):
                 value = f(*args, **kwargs)
                 self.cache[the_hash] = (value, now)
-                #print 'DEBUG: fresh value'
+                # print 'DEBUG: fresh value'
                 return value
             except TypeError:
                 # uncachable -- for instance, passing a list as an argument.

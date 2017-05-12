@@ -25,6 +25,8 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.utils.decorators import memoize_ttl
+
 logger = get_logger('library.devices')
 
 
@@ -41,6 +43,7 @@ class Variables(YomboLibrary):
 
         self.gwid = self._Configs.get("core", "gwid")
 
+    # @memoize_ttl(15)
     @inlineCallbacks
     def get_variable_data(self, data_relation_type=None, data_relation_id=None, **kwargs):
         """
@@ -62,6 +65,7 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_data(**kwargs)
         returnValue(results)
 
+    # @memoize_ttl(60)
     @inlineCallbacks
     def get_variable_fields(self, group_id=None, **kwargs):
         """
@@ -78,6 +82,7 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_fields(**kwargs)
         returnValue(results)
 
+    # @memoize_ttl(60)
     @inlineCallbacks
     def get_variable_fields_encrypted(self):
         """
@@ -89,6 +94,7 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_fields_encrypted()
         returnValue(results)
 
+    # @memoize_ttl(60)
     @inlineCallbacks
     def get_variable_groups(self, group_relation_type=None, group_relation_id=None, **kwargs):
         """
@@ -110,6 +116,7 @@ class Variables(YomboLibrary):
         results = yield self._LocalDB.get_variable_groups(**kwargs)
         returnValue(results)
 
+    # @memoize_ttl(30)
     @inlineCallbacks
     def get_variable_fields_data(self, **kwargs):
         """
@@ -134,6 +141,7 @@ class Variables(YomboLibrary):
         """
         return partial(self.get_variable_fields_data, **kwargs)
 
+    # @memoize_ttl(10)
     @inlineCallbacks
     def get_variable_groups_fields(self, group_relation_type=None, group_relation_id=None, variable_data=None):
         """
@@ -160,6 +168,7 @@ class Variables(YomboLibrary):
         # print("variables library: get_groups_fields: groups: %s" % groups)
         returnValue(groups)
 
+    # @memoize_ttl(10)
     @inlineCallbacks
     def get_variable_groups_fields_data(self, **kwargs):
         """
@@ -175,6 +184,7 @@ class Variables(YomboLibrary):
         # print("variables library: get_variable_groups_fields_data: groups: %s" % groups)
         returnValue(groups)
 
+    # @memoize_ttl(10)
     def merge_variable_fields_data_data(self, fields, new_data_items):
         """
         Merge the results from get_variable_fields_data and a dictiionary of data times, usually
@@ -202,6 +212,7 @@ class Variables(YomboLibrary):
             for data_id, data in field['data'].iteritems():
                 field['values'].append(data['value'])
 
+    # @memoize_ttl(10)
     def merge_variable_groups_fields_data_data(self, groups, new_data_items):
         """
         Merge the results from get_variable_groups_fields_data and a dictiionary of data times, usually

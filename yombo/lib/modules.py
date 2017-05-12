@@ -17,8 +17,6 @@ Also calls module hooks as requested by other libraries and modules.
 :license: LICENSE for details.
 """
 # Import python libraries
-#import sys
-#import traceback
 import ConfigParser
 import sys
 import traceback
@@ -34,6 +32,7 @@ from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboCr
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, dict_merge
+from yombo.utils.decorators import memoize_ttl
 
 from yombo.utils.maxdict import MaxDict
 
@@ -824,6 +823,7 @@ class Modules(YomboLibrary):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
+    @memoize_ttl(120)
     def module_devices(self, module_id):
         """
         A list of devices for a given module id.
@@ -833,6 +833,7 @@ class Modules(YomboLibrary):
         :return: A dictionary of devices for a given module id.
         :rtype: list
         """
+        print "in module devices"
         if module_id not in self.modules:
                 return {}
 
@@ -843,8 +844,6 @@ class Modules(YomboLibrary):
             for dt in self.module_device_types(module_id):
                 # print "self._DeviceTypes[dt].get_devices(): %s" % self._DeviceTypes[dt].get_devices()
                 temp.update(self._DeviceTypes[dt].get_devices())
-        # tempset = set(temp)
-        # return list(temp)
         return temp
 
     def module_device_types(self, module_id, return_value=None):
