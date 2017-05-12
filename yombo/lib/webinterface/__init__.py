@@ -62,7 +62,6 @@ from yombo.lib.webinterface.route_statistics import route_statistics
 from yombo.lib.webinterface.route_states import route_states
 from yombo.lib.webinterface.route_system import route_system
 from yombo.lib.webinterface.route_voicecmds import route_voicecmds
-
 from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
 
 #from yombo.lib.webinterfaceyombosession import YomboSession

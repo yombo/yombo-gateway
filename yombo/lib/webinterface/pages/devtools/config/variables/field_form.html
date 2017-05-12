@@ -153,7 +153,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <input tabindex="8" type="text" class="form-control" name="value_min" id="value_min" size="10" value="{{ field.value_min }}">
+                                    <input tabindex="8" type="text" class="form-control" name="value_min" id="value_min" size="10" value="{{ field.value_min|hide_none }}">
                                 </div>
                             </div>
                            </div>
@@ -168,7 +168,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <input tabindex="9" type="text" class="form-control" name="value_max" id="value_max" size="10" value="{{ field.value_max }}">
+                                    <input tabindex="9" type="text" class="form-control" name="value_max" id="value_max" size="10" value="{{ field.value_max|hide_none }}">
                                 </div>
                             </div>
                            </div>

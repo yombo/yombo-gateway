@@ -355,6 +355,25 @@ class InputTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        try:
+            for key in data.keys():
+                if data[key] == "":
+                    data[key] = None
+                elif key in ['status']:
+                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+        except Exception as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add input type device",
+                'apimsg': e,
+                'apimsghtml': e,
+                'device_id': '',
+            }
+            returnValue(results)
+
         input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
         # print("dt_results: %s" % input_type_results)
 
@@ -383,6 +402,24 @@ class InputTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        try:
+            for key in data.keys():
+                if data[key] == "":
+                    data[key] = None
+                elif key in ['status']:
+                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+        except Exception as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit input type device",
+                'apimsg': e,
+                'apimsghtml': e,
+                'device_id': '',
+            }
+            returnValue(results)
 
         input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
         # print("module edit results: %s" % module_results)

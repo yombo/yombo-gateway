@@ -142,15 +142,6 @@ def route_devices(webapp):
                 'variable_data': variable_data,
             }
 
-            for key in device.keys():
-                if device[key] == "":
-                    del device[key]
-                elif key in ['statistic_lifetime', 'pin_timeout']:
-                    if device[key] is None:
-                        del device[key]
-                    else:
-                        device[key] = int(device[key])
-
             if ok_to_save:
                 try:
                     results = yield webinterface._Devices.add_device(device)

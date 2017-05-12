@@ -1728,7 +1728,7 @@ def route_devtools_config(webapp):
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
-                'input_regex': webinterface.request_get_default(request, 'input_regex', 1),
+                'input_regex': webinterface.request_get_default(request, 'input_regex', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
@@ -1748,7 +1748,7 @@ def route_devtools_config(webapp):
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
-                'input_regex': webinterface.request_get_default(request, 'input_regex', 1),
+                'input_regex': webinterface.request_get_default(request, 'input_regex', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
@@ -3221,7 +3221,7 @@ def route_devtools_config(webapp):
                 if data[key] == "":
                     del data[key]
                 elif key in ['value_min', 'value_max']:
-                    if data[key] is None:
+                    if data[key] is None or data[key].lower() == "none":
                         del data[key]
                     else:
                         data[key] = int(data[key])

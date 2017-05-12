@@ -392,6 +392,25 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        try:
+            for key in data.keys():
+                if data[key] == "":
+                    data[key] = None
+                elif key in ['status']:
+                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+        except Exception as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add device type",
+                'apimsg': e,
+                'apimsghtml': e,
+                'device_id': '',
+            }
+            returnValue(results)
+
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
         # print("dt_results: %s" % device_type_results)
 
@@ -420,6 +439,26 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
+
+        try:
+            for key in data.keys():
+                if data[key] == "":
+                    data[key] = None
+                elif key in ['status']:
+                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+        except Exception as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add device type",
+                'apimsg': e,
+                'apimsghtml': e,
+                'device_id': '',
+            }
+            returnValue(results)
+
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
         # print("module edit results: %s" % module_results)
 
