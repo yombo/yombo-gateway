@@ -610,6 +610,25 @@ class Devices(YomboLibrary):
             'gateway_id': self.gwid,
         }
 
+        try:
+            for key in data.keys():
+                if data[key] == "":
+                    data[key] = None
+                elif key in ['statistic_lifetime', 'pin_timeout']:
+                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+        except Exception as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't add device",
+                'apimsg': e,
+                'apimsghtml': e,
+                'device_id': '',
+            }
+            returnValue(results)
+
         for key, value in data.iteritems():
             if key == 'energy_map':
                 api_data['energy_map'] = json.dumps(data['energy_map'], separators=(',',':'))
@@ -767,6 +786,25 @@ class Devices(YomboLibrary):
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'edit_device', 'Devices')
 
         device = self.devices[device_id]
+
+        try:
+            for key in data.keys():
+                if data[key] == "":
+                    data[key] = None
+                elif key in ['statistic_lifetime', 'pin_timeout']:
+                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
+                        del data[key]
+                    else:
+                        data[key] = int(data[key])
+        except Exception as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't edit device",
+                'apimsg': e,
+                'apimsghtml': e,
+                'device_id': '',
+            }
+            returnValue(results)
 
         api_data = {}
         for key, value in data.iteritems():
@@ -1193,7 +1231,7 @@ class Device(object):
         :return:
         """
         # print("getting device variables for: %s" % self.device_id)
-        self.device_variables = self._DevicesLibrary._Variables.get_variable_fields_data_callable(
+        self.device_variables = yield self._DevicesLibrary._Variables.get_variable_fields_data(
             data_relation_type='device',
             data_relation_id=self.device_id
         )
@@ -1266,9 +1304,9 @@ class Device(object):
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', **{'device': self})
 
-        # if 'variable_data' in device:
-        #     print("device.update_attributes: %s: " % device['variable_data'])
-        #     print("device.update_attributes.device_variables: %s: " % self.device_variables)
+        if 'variable_data' in device:
+            print("device.update_attributes: new: %s: " % device['variable_data'])
+            print("device.update_attributes: existing %s: " % self.device_variables)
 
 
     def available_commands(self):
@@ -1339,7 +1377,8 @@ class Device(object):
         if self.status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
 
-        logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
+        # logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
+        # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
         if requested_by is None:  # soon, this will cause an error!
             requested_by = {
                     'user_id': 'Unknown',
@@ -1667,7 +1706,7 @@ class Device(object):
         logger.info("set_status called...: {kwargs}", kwargs=kwargs)
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
-            self.send_status()
+            self.send_status(**kwargs)
 
     def _set_status(self, **kwargs):
         """
@@ -1688,19 +1727,21 @@ class Device(object):
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
 
-        if "request_id" in kwargs:
+        requested_by = {
+            'user_id': 'Unknown',
+            'component': 'Unknown',
+            'gateway': 'Unknown'
+        }
+
+        if "request_id" in kwargs and kwargs['request_id'] in self.do_command_requests:
             requested_by = self.do_command_requests[kwargs['request_id']].requested_by
-        else:
-            requested_by = {
-                'user_id': 'Unknown',
-                'component': 'Unknown',
-                'gateway': 'Unknown'
-            }
+            kwargs['command'] = self.do_command_requests[kwargs['request_id']].command
 
         source = kwargs.get('source', 'Unknown')
 
-        self._DevicesLibrary._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
-        self._DevicesLibrary._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
+        if self.statistic_label is not None and self.statistic_label != "":
+            self._DevicesLibrary._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
+            self._DevicesLibrary._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
         new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
@@ -1719,11 +1760,13 @@ class Device(object):
 
         if 'command' in kwargs:
             command_machine_label = kwargs['command'].machine_label
-            command_label = kwargs['command'].label
-            command_id = kwargs['command'].command_id
+            message['command_machine_label'] = kwargs['command'].machine_label
+            message['command_label'] = kwargs['command'].label
+            message['command_id'] = kwargs['command'].command_id
         else:
-            command = machine_status
-        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.machine_label, command), json.dumps(message), 1)
+            command_machine_label = machine_status
+
+        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.machine_label, command_machine_label), json.dumps(message), 1)
 
     def send_status(self, **kwargs):
         """
@@ -1735,17 +1778,24 @@ class Device(object):
         :param kwargs:
         :return:
         """
-        if len(self.status_history) == 1:
-            kwargs.update({"deviceobj" : self,
-                       "status" : None,
-                       "previous_status" : self.status_history[0],
-                      } )
+
+        message = {
+            'device': self,
+        }
+
+        if 'command' in kwargs:
+            message['command'] = kwargs['command']
         else:
-            kwargs.update({"device" : self,
-                       "status" : self.status_history[0],
-                       "previous_status" : self.status_history[1],
-                      } )
-        global_invoke_all('_device_status_', called_by=self, **kwargs)
+            message['command'] = None
+
+        if len(self.status_history) == 1:
+            message['status'] = self.status_history[0]
+            message['previous_status'] = None
+        else:
+            message['status'] = self.status_history[0]
+            message['previous_status'] = self.status_history[1]
+
+        global_invoke_all('_device_status_', called_by=self, **message)
 
     def remove_delayed(self):
         """
