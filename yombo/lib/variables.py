@@ -165,7 +165,6 @@ class Variables(YomboLibrary):
                     if group['id'] in variable_data:
                         if field['id'] in variable_data[group['id']]:
                             groups[group['id']][field['id']] = variable_data[group['id']][field['id']]
-        # print("variables library: get_groups_fields: groups: %s" % groups)
         returnValue(groups)
 
     # @memoize_ttl(10)

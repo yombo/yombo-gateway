@@ -833,7 +833,6 @@ class Modules(YomboLibrary):
         :return: A dictionary of devices for a given module id.
         :rtype: list
         """
-        print "in module devices"
         if module_id not in self.modules:
                 return {}
 

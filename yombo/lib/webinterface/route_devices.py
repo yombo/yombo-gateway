@@ -126,7 +126,6 @@ def route_devices(webapp):
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
             device = {
-                'device_id': json_output.get('device_id', ""),
                 'machine_label': json_output.get('machine_label', ""),
                 'label': json_output.get('label', ""),
                 'description': json_output.get('description', ""),
@@ -193,8 +192,10 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Details")
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     device=device,
+                                    devices=webinterface._Devices.devices,
                                     device_variables=device_variables,
                                     commands=webinterface._Commands,
+                                    input_types=webinterface._InputTypes.input_types,
                                     ))
 
         @webapp.route('/delayed_commands')
@@ -496,7 +497,9 @@ def route_devices(webapp):
                 )
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     device=device,
+                                    devices=webinterface._Devices.devices,
                                     device_variables=device_variables,
                                     commands=webinterface._Commands,
+                                    input_types=webinterface._InputTypes.input_types,
                                     )
                         )

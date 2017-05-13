@@ -635,6 +635,7 @@ class Devices(YomboLibrary):
             else:
                 api_data[key] = data[key]
 
+        print("apidata: %s" % api_data)
         try:
             global_invoke_all('_device_before_add_', **{'called_by': self, 'device': data})
         except YomboHookStopProcessing as e:

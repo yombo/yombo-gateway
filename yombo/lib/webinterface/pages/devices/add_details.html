@@ -1,5 +1,6 @@
 {% extends "lib/webinterface/fragments/layout.tpl" %}
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
 
 {% block content %}
             <form method="post" id="devicenew">
@@ -33,15 +34,15 @@
                             <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label }}" autofocus required>
+                                    <input type="text" class="form-control" name="label" id="label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.label|hide_none }}" autofocus required>
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Machine Label: </label><br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'bedroom_light', 'living_room_fame'" value="{{ device.machine_label }}" required>
+                                    <input type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'bedroom_light', 'living_room_fame'" value="{{ device.machine_label|hide_none }}" required>
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Description: </label><br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description }}">
+                                    <input type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of device." value="{{ device.description|hide_none }}">
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Status: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
@@ -82,7 +83,7 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="myhouse.living_room.corner_light" value="{{ device.statistic_label }}">
+                                    <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="myhouse.living_room.corner_light" value="{{ device.statistic_label|hide_none }}">
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalStatisticlifetime"><i class="fa fa-question fa-lg"></i></a>
@@ -91,7 +92,7 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="1825" value="{{ device.statistic_lifetime }}">
+                                    <input type="text" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="1825" value="{{ device.statistic_lifetime|hide_none }}">
                                 </div>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Pin Required: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalpinrequired"><i class="fa fa-question fa-lg"></i></a>
@@ -112,7 +113,7 @@
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code }}">
+                                    <input type="text" class="form-control" name="pin_code" id="pin_code" size="15" value="{{ device.pin_code|hide_none }}">
                                 </div>
                                 <label style="margin-top: 20px; margin-bottom: 0px">Pin Timeout: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalpintimeout"><i class="fa fa-question fa-lg"></i></a>
@@ -122,7 +123,7 @@
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout }}">
+                                    <input type="text" class="form-control" name="pin_timeout" id="pin_timeout" size="4" value="{{ device.pin_timeout|hide_none }}">
                                 </div>
                             </div>
                         </div>
@@ -236,56 +237,9 @@
                         <br>
                         </div>
                         <div class="panel-body">
-                            <div class="input-group">
-        {% if device_variables|length != 0 -%}
-            {% for group_name, group in device_variables.iteritems() %}
-            <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h4>{{ group.group_label }}</h4>
-                </div>
-                <div class="panel-body">
-
-            {{ group.group_description }}
-                {% for field_name, field in group.fields.iteritems() %}
-                    <table width="100%" class="table table-striped table-bordered table-hover" id="{{ group.id }}">
-                        <thead>
-                            <tr>
-                                <th>Field Information</th><th>Value(s)</th>
-                            </tr>
-                        </thead>
-                    <tbody>
-                         <tr>
-
-                            <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
-                            <td> {% if field.data|length > 0 %}
-                                {% for data_id, data in field.data.iteritems() %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}][input]" id="vars[{{ field.id }}][{{ data.id }}][input]" value="{{ data.value|display_encrypted }}"
-                                    {% if field.required %} required{% endif %}>
-                                    <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value }}">
-                                {% endfor %}
-                                {% else %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value=""
-                                    {% if field.required %} required{% endif %}>
-                                {% endif %}
-                                {% if field.multiple %}
-                                    <input type="text" class="form-control" name="vars[{{ field.id }}][new_2]" id="vars[{{ field.id }}][new_1]" value=""
-                                    {% if field.required %} required{% endif %}>
-                                {% endif %}
-                            </td>
-                         </tr>
-                    </tbody>
-                </table>
-
-                {% endfor %}
-            {% endfor %}
-        {% endif %}
-                </div>
-            </div>
-
-                            </div>
+{{macros.edit_item_variables(devices, input_types, device, device_variables)}}
                         </div>
                     </div>
-            <input type="hidden" name="device_id" id="device_id" value="{{ device.device_id }}">
             <input type="hidden" name="device_type_id" id="device_type_id" value="{{ device.device_type_id }}">
             <input type="hidden" name="json_output" id="json_output" value="">
             <button type="submit" class="btn btn-primary btn-lg btn-block">Submit New Device</button>
@@ -296,7 +250,9 @@
             </form>
 {% endblock %}
 
+
 {% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
     <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
     <script>
      $(document).ready(function(){
