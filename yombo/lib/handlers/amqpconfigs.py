@@ -618,16 +618,11 @@ class AmqpConfigHandler(YomboLibrary):
             config_data = self.config_items[config_item]
             # print "Msg: %s" % msg
             if config_type == 'full':
-                # print "truncating table: %s" % config_data['table']
+                # print "truncating table (dynamic): %s" % config_data['table']
                 yield self._LocalDB.truncate(config_data['table'])
-                if config_data['table'] == 'devices':
-                    print "delete variable_data for devices."
-                    yield self._LocalDB.delete('variable_data', where=["data_relation_type = 'device'"])
 
             if msg['data_type'] == 'object':
                 data = self.field_remap(msg['data'], config_data)
-                # if 'updated' in data:
-                #     data['updated_srv'] = data['updated']
 #                logger.info("in amqpyombo:process_config ->> config_item: {config_item}", config_item=config_item)
 #                logger.info("amqpyombo::process_config - data: {data}", data=data)
                 yield self.add_update_delete(msg, data, config_item, config_data, True)
@@ -700,10 +695,6 @@ class AmqpConfigHandler(YomboLibrary):
         :param from_amqp_incoming:
         :return:
         """
-        # if config_item == "gateway_devices":
-        # print "add_update_delete config_item111111: %s" % config_item
-        #     print "add_update_delete msg....11111111111 %s" % msg
-        #     print "data: %s"%data
         config_data = self.config_items[config_item]
         required_db_keys = []
         allowed_db_keys = []
@@ -719,37 +710,17 @@ class AmqpConfigHandler(YomboLibrary):
             if key in allowed_db_keys:
                 db_data[key] = data[key]
 
-
-        # print "has_required_db_keys: %s"%has_required_db_keys
-
-        # if config_item == 'device_types':
-        #     temp = db_data['commands']
-        #     local_data = []
-        #     for temp_data in temp:
-        #         local_data.append(temp_data['UUID'])
-        #     db_data['commands'] = ','.join(local_data)
-
-        # if config_item == 'gateway_modules':
-        #     print "delete variable_data for gateway_modules."
-        #     yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
-        #
         # if config_item == 'variable_groups':
         #     print "delete variable_data for variable_groups."
         #     yield self._LocalDB.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
-        #
-        # if config_item == 'gateway_users':
-        #     print "delete variable_data for gateway_users."
-        #     yield self._LocalDB.delete('users')
 
         if 'status' in data:
             if data['status'] == 2:  # delete any nested items...
                 if config_item == 'gateway_modules':
-                    print "!!!!!!!!!!!!!!!!!!  deleting item.........gateway_modules"
-                    print "delete variable_data for module_installed."
-                    print "delete variable_data for module_device_types."
-
+                    self.item_purged(config_item, data['id'])
+                    yield self._LocalDB.delete('modules', where=['id = ?', data['id']])
                     yield self._LocalDB.delete('module_installed', where=['module_id = ?', data['id']])
-                    yield self._LocalDB.delete('module_device_types', where=['module_id = ?', data['id']])
+                returnValue(None)
 
         # print "config_data: %s"%config_data
         # print "db_data: %s"%db_data
@@ -812,14 +783,14 @@ class AmqpConfigHandler(YomboLibrary):
             #             raise YomboWarning("Device status set to an unknown value: %s." % data['status'], 300, 'add_update_delete', 'Devices')
 
             if 'updated' in data and 'updated' in record:
-                if 'status' in record: # if the record has been marked deleted, lets delete it.
-                    if record['status'] == 2:
-                        print "delete variable_data for (dynamic) %s." % config_data['table']
-                        self._LocalDB.dbconfig.delete(config_data['table'], where=['id = ?', data['id']])
-                        if self.config_items[config_item]['purgeable']:
-                            self.item_purged(config_item, data['id'])
+                # if 'status' in record: # if the record has been marked deleted, lets delete it.
+                #     if record['status'] == 2:
+                #         print "deleteing(dynamic) %s." % config_data['table']
+                #         self._LocalDB.dbconfig.delete(config_data['table'], where=['id = ?', data['id']])
+                #         if self.config_items[config_item]['purgeable']:
+                #             self.item_purged(config_item, data['id'])
 
-                elif data['updated'] > record['updated']:  # lets update!
+                if data['updated'] > record['updated']:  # lets update!
                     action = 'update'
                     if from_amqp_incoming:
                         if 'updated_srv' in table_cols:
@@ -845,7 +816,6 @@ class AmqpConfigHandler(YomboLibrary):
             if len(data['variable_groups']):
                 newMsg = msg.copy()
                 newMsg['data'] = data['variable_groups']
-                print newMsg
                 self.process_config(newMsg, 'variable_groups')
 
         if 'variable_fields' in data:
@@ -856,16 +826,9 @@ class AmqpConfigHandler(YomboLibrary):
 
         if 'variable_data' in data:
             if len(data['variable_data']):
-                # print "var data: %s"  % data['variable_data']
-                print "delete variable_data for variable_data."
-                yield self._LocalDB.delete('variable_data', where=['data_relation_type = ? and data_relation_id = ?',
-                                                                          data['variable_data'][0]['relation_type'],
-                                                                          data['variable_data'][0]['relation_id']])
                 newMsg = msg.copy()
                 newMsg['data'] = data['variable_data']
                 self.process_config(newMsg, 'variable_data')
-
-                    # print "device add-update-delete action: %s, status_change_action: %s" %( action, status_change_actions)
 
     def get_config_item(self, library):
         """
@@ -948,8 +911,8 @@ class AmqpConfigHandler(YomboLibrary):
             "config_item": 'purged_' + config_item,
         }
 
-        print "requesting item to be purged... %s" % body
-        print "requesting item to be purged... %s" % headers
+        # print "requesting item to be purged... %s" % body
+        # print "requesting item to be purged... %s" % headers
 
         request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
                                                            "yombo.server.configs", headers, body)

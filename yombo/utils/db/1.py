@@ -385,7 +385,12 @@ def upgrade(Registry, **kwargs):
      `gateway_id`    TEXT NOT NULL,
      `permission_id` TEXT NOT NULL,
      `updated`       INTEGER NOT NULL,
-     `created`       INTEGER NOT NULL );"""
+     `created`       INTEGER NOT NULL,
+    CONSTRAINT fk_user_permission
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('user_permission', 'id', unique=True))
 
@@ -411,7 +416,7 @@ def upgrade(Registry, **kwargs):
 
 
     # The following three tables and following views manages the variables set for devices and modules.
-    table = """ CREATE TABLE `variable_groups` (
+    table = """CREATE TABLE `variable_groups` (
      `id`                  TEXT NOT NULL, /* group_id */
      `group_relation_id`         TEXT NOT NULL,
      `group_relation_type`       TEXT NOT NULL,
@@ -427,7 +432,7 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_groups_relation_id_type_idx ON variable_groups (group_relation_id, group_relation_type, group_machine_label)")
 
-    table = """ CREATE TABLE `variable_fields` (
+    table = """CREATE TABLE `variable_fields` (
      `id`                  TEXT NOT NULL, /* field_id */
      `group_id`            TEXT NOT NULL,
      `field_machine_label` TEXT NOT NULL,
@@ -445,12 +450,12 @@ def upgrade(Registry, **kwargs):
      `multiple`            INTEGER NOT NULL,
      `updated_srv`         INTEGER DEFAULT 0,
      `updated`             INTEGER NOT NULL,
-     `created`             INTEGER NOT NULL );"""
+     `created`             INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('variable_fields', 'group_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 
-    table = """ CREATE TABLE `variable_data` (
+    table = """CREATE TABLE `variable_data` (
      `id`            TEXT NOT NULL,  /* field_id */
      `gateway_id`    TEXT DEFAULT 0,
      `field_id`      TEXT NOT NULL,
@@ -461,7 +466,8 @@ def upgrade(Registry, **kwargs):
      `updated_srv`   INTEGER DEFAULT 0,
      `updated`       INTEGER NOT NULL,
      `created`       INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+     PRIMARY KEY(id))
+     ;"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_data_id_type_idx ON variable_data (field_id, data_relation_id, data_relation_type)")
 
@@ -489,6 +495,58 @@ def upgrade(Registry, **kwargs):
     #  PRIMARY KEY(id));"""
     # yield Registry.DBPOOL.runQuery(table)
     # yield Registry.DBPOOL.runQuery("CREATE  INDEX IF NOT EXISTS variables_foreign_id_variable_type_idx ON variables (variable_type, foreign_id)")
+
+    ## Create triggers ##
+    trigger = """CREATE TRIGGER delete_device_status
+    AFTER DELETE ON devices
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM device_status WHERE device_id = OLD.id;
+    END"""
+    yield Registry.DBPOOL.runQuery(trigger)
+
+    trigger = """CREATE TRIGGER delete_device_variable_data
+    AFTER DELETE ON devices
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "device";
+    END"""
+    yield Registry.DBPOOL.runQuery(trigger)
+
+    # trigger = """CREATE TRIGGER delete_module_module_installed
+    # AFTER DELETE ON modules
+    # FOR EACH ROW
+    # BEGIN
+    #     DELETE FROM module_installed WHERE module_id = OLD.id;
+    # END"""
+    # yield Registry.DBPOOL.runQuery(trigger)
+
+    trigger = """CREATE TRIGGER delete_module_variable_data
+    AFTER DELETE ON modules
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM module_device_types WHERE module_id = OLD.id;
+        /* DELETE FROM module_installed WHERE module_id = OLD.id; */
+        DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "module";
+    END"""
+    yield Registry.DBPOOL.runQuery(trigger)
+
+    trigger = """CREATE TRIGGER delete_variablegroups_variable_fields
+    AFTER DELETE ON variable_groups
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM variable_fields WHERE group_id = OLD.id;
+    END"""
+    yield Registry.DBPOOL.runQuery(trigger)
+
+    trigger = """CREATE TRIGGER delete_variablefields_variable_data
+    AFTER DELETE ON variable_fields
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM variable_data WHERE field_id = OLD.id;
+    END"""
+    yield Registry.DBPOOL.runQuery(trigger)
+
 
     ## Create views ##
     view = """CREATE VIEW devices_view AS

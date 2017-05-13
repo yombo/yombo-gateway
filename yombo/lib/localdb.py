@@ -242,10 +242,13 @@ class LocalDB(YomboLibrary):
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
         """
+        def show_connected(connection):
+            connection.execute("PRAGMA foreign_keys = ON")
+
         self.db_model = {}  # store generated database model here.
         # Connect to the DB
         Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread=False,
-                                                cp_min=1, cp_max=1)
+                                                cp_min=1, cp_max=1, cp_openfun=show_connected)
         self.dbconfig = Registry.getConfig()
 
         self.schema_version = 0
