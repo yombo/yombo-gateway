@@ -837,12 +837,12 @@ class Modules(YomboLibrary):
                 return {}
 
         temp = {}
-        if module_id in self.modules:
-            # print "dt..module_id: %s" % module_id
-            # print "dt..self._Modules.modules[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
-            for dt in self.module_device_types(module_id):
-                # print "self._DeviceTypes[dt].get_devices(): %s" % self._DeviceTypes[dt].get_devices()
-                temp.update(self._DeviceTypes[dt].get_devices())
+        # print "dt..module_id: %s" % module_id
+        # print "dt..self._Modules.modules[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
+        for dt in self.module_device_types(module_id):
+            # print "self._DeviceTypes[dt].get_devices(): %s" % self._DeviceTypes[dt].get_devices()
+            temp.update(self._DeviceTypes[dt].get_devices())
+
         return temp
 
     def module_device_types(self, module_id, return_value=None):
