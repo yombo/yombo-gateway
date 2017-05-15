@@ -117,7 +117,7 @@ def upgrade(Registry, **kwargs):
      `machine_status`       TEXT NOT NULL,
      `machine_status_extra` TEXT,
      `requested_by`         TEXT NOT NULL,
-     `source`               TEXT NOT NULL,
+     `reported_by`          TEXT NOT NULL,
      `uploaded`             INTEGER NOT NULL DEFAULT 0,
      `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
      );"""

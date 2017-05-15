@@ -455,8 +455,6 @@ class Devices(YomboLibrary):
             logger.info("Received MQTT request for a device that doesn't exist")
             return
 
-#Status = namedtuple('Status', "device_id, set_time, human_status, machine_status, machine_status_extra, source, uploaded, uploadable")
-
         if parts[3] == 'get':
             status = device.status_history[0]
 
@@ -470,8 +468,8 @@ class Devices(YomboLibrary):
                 self.mqtt.publish('yombo/devices/%s/state/extra' % device.machine_label, str(status.machine_status_extra))
             elif payload == 'last':
                 self.mqtt.publish('yombo/devices/%s/state/last' % device.machine_label, str(status.set_time))
-            elif payload == 'source':
-                self.mqtt.publish('yombo/devices/%s/state/source' % device.machine_label, str(status.source))
+            elif payload == 'requested_by':
+                self.mqtt.publish('yombo/devices/%s/state/requested_by' % device.machine_label, str(status.requested_by))
         elif parts[3] == 'cmd':
             device.command(self, cmd=parts[4])
             if len(parts) > 5:
@@ -487,8 +485,8 @@ class Devices(YomboLibrary):
                     self.mqtt.publish('yombo/devices/%s/state/extra' % device.lmachine_label, str(status.machine_status_extra))
                 elif parts[5] == 'last':
                     self.mqtt.publish('yombo/devices/%s/state/last' % device.machine_label, str(status.set_time))
-                elif parts[5] == 'source':
-                    self.mqtt.publish('yombo/devices/%s/state/source' % device.machine_label, str(status.source))
+                elif parts[5] == 'requested_by':
+                    self.mqtt.publish('yombo/devices/%s/state/requested_by' % device.machine_label, str(status.requested_by))
 
     def list_devices(self, field=None):
         """
@@ -635,7 +633,7 @@ class Devices(YomboLibrary):
             else:
                 api_data[key] = data[key]
 
-        print("apidata: %s" % api_data)
+        # print("apidata: %s" % api_data)
         try:
             global_invoke_all('_device_before_add_', **{'called_by': self, 'device': data})
         except YomboHookStopProcessing as e:
@@ -663,9 +661,9 @@ class Devices(YomboLibrary):
             returnValue(results)
 
         if 'variable_data' in data:
-            print("data['variable_data']: %s", data['variable_data'])
+            # print("data['variable_data']: %s", data['variable_data'])
             variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
-            print("variable_results: %s" % variable_results)
+            # print("variable_results: %s" % variable_results)
             if variable_results['code'] > 299:
                 results = {
                     'status': 'failed',
@@ -684,12 +682,15 @@ class Devices(YomboLibrary):
         }
         returnValue(results)
 
+    #todo: convert to use a deferred semaphore
     @inlineCallbacks
     def set_device_variables(self, device_id, variables):
         # print("set variables: %s" % variables)
         for field_id, data in variables.iteritems():
             # print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.iteritems():
+                if value == "":
+                    continue
                 if data_id.startswith('new_'):
                     post_data = {
                         'gateway_id': self.gwid,
@@ -721,6 +722,7 @@ class Devices(YomboLibrary):
                         '/v1/variable/data/%s' % data_id,
                         post_data
                     )
+                    # print("var_data_results: %s" % var_data_results)
                     if var_data_results['code'] > 299:
                         results = {
                             'status': 'failed',
@@ -1202,8 +1204,8 @@ class Device(object):
         self._DevicesLibrary = _DevicesLibrary
         # logger.debug("New device - info: {device}", device=device)
 
-        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable")
-        self.Command = namedtuple('Command', "time, cmduuid, source")
+        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable")
+        self.Command = namedtuple('Command', "time, cmduuid, requested_by")
 
         self.do_command_requests = MaxDict(300, {})
         self.call_before_command = []
@@ -1305,9 +1307,9 @@ class Device(object):
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', **{'device': self})
 
-        if 'variable_data' in device:
-            print("device.update_attributes: new: %s: " % device['variable_data'])
-            print("device.update_attributes: existing %s: " % self.device_variables)
+        # if 'variable_data' in device:
+            # print("device.update_attributes: new: %s: " % device['variable_data'])
+            # print("device.update_attributes: existing %s: " % self.device_variables)
 
 
     def available_commands(self):
@@ -1503,7 +1505,7 @@ class Device(object):
                     'inputs': inputs,
                     'reactor': None,
                 }
-                self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(when, self.do_command_delayed, request_id)
+                self._DevicesLibrary.delay_queue_active[request_id]['reactor'] = reactor.callLater(delay, self.do_command_delayed, request_id)
                 self.do_command_requests[request_id].set_status('delayed')
             else:
                 raise YomboDeviceError("'not_before' must be a float or int.")
@@ -1513,11 +1515,13 @@ class Device(object):
             self.do_command_hook(cmdobj, **kwargs)
         return request_id
 
+    @inlineCallbacks
     def do_command_delayed(self, request_id):
         self.do_command_requests[request_id].set_sent_time()
         request = self._DevicesLibrary.delay_queue_active[request_id]
         # request['kwargs']['request_id'] = request_id
-        yield self.do_command_hook(request['command'], request['kwargs'])
+        request['kwargs']['request_id'] = request_id
+        yield self.do_command_hook(request['command'], **request['kwargs'])
         del self._DevicesLibrary.delay_queue_storage[request_id]
         del self._DevicesLibrary.delay_queue_active[request_id]
 
@@ -1700,11 +1704,11 @@ class Device(object):
             - machine_status *(int or string)* - The new status.
             - machine_status_extra *(dict)* - Extra status as a dictionary.
             - request_id *(string)* - Request ID that this should correspond to.
-            - source *(string)* - The source module or library name creating the status.
+            - requested_by *(string)* - A dictionary containing user_id, component, and gateway.
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
         """
-        logger.info("set_status called...: {kwargs}", kwargs=kwargs)
+        # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
@@ -1734,16 +1738,31 @@ class Device(object):
             'gateway': 'Unknown'
         }
 
+        if "requested_by" in kwargs:
+            requested_by = kwargs['requested_by']
+            if isinstance(requested_by, dict) is False:
+                kwargs['requested_by'] = requested_by
+            else:
+                if 'user_id' not in requested_by:
+                    requested_by['user_id'] = 'Unknown'
+                if 'component' not in requested_by:
+                    requested_by['component'] = 'Unknown'
+                if 'gateway' not in requested_by:
+                    requested_by['gateway'] = 'Unknown'
+
         if "request_id" in kwargs and kwargs['request_id'] in self.do_command_requests:
             requested_by = self.do_command_requests[kwargs['request_id']].requested_by
             kwargs['command'] = self.do_command_requests[kwargs['request_id']].command
 
-        source = kwargs.get('source', 'Unknown')
+        kwargs['requested_by'] = requested_by
+
+        reported_by = kwargs.get('reported_by', 'Unknown')
+        kwargs['reported_by'] = reported_by
 
         if self.statistic_label is not None and self.statistic_label != "":
             self._DevicesLibrary._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
             self._DevicesLibrary._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
-        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, source, uploaded, uploadable)
+        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
             self._DevicesLibrary._LocalDB.save_device_status(**new_status.__dict__)
@@ -1757,6 +1776,7 @@ class Device(object):
             'human_status': human_status,
             'time': set_time,
             'requested_by': requested_by,
+            'reported_by': reported_by,
         }
 
         if 'command' in kwargs:
@@ -1834,20 +1854,51 @@ class Device(object):
                 'component': 'Unknown',
                 'gateway': 'Unknown'
             }
-            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'Unknown status for device', None, {}, requested_by, '', 0, 1))
+            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'Unknown status for device', None, {}, requested_by, 'Unknown', 0, 1))
         else:
             for record in records:
-                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['human_message'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['source'], record['uploaded'], record['uploadable']))
-#                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           human_message,           machine_status,          machine_status_extra,             source,           uploaded,           uploadable")
+                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['human_message'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['reported_by'], record['uploaded'], record['uploadable']))
+#                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
 
         #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
-    def validate_command(self, command_id):
-#        print "checking cmdavail for %s, looking for '%s': %s" % (self.label, command_id, self.available_commands)
-        if str(command_id) in self.available_commands():
-            return True
+    def validate_command(self, command_requested):
+        available_commands = self.available_commands()
+        if command_requested in available_commands:
+            return available_commands[command_requested]
         else:
-            return False
+            attrs = [
+                {
+                    'field': 'command_id',
+                    'value': command_requested,
+                    'limiter': .96,
+                },
+                {
+                    'field': 'label',
+                    'value': command_requested,
+                    'limiter': .89,
+                },
+                {
+                    'field': 'machine_label',
+                    'value': command_requested,
+                    'limiter': .89,
+                }
+            ]
+            try:
+                logger.debug("Get is about to call search...: %s" % command_requested)
+                found, key, item, ratio, others = do_search_instance(attrs, available_commands,
+                                                                     self._DevicesLibrary._Commands.command_search_attributes,
+                                                                     limiter=.89,
+                                                                     operation="highest")
+                logger.debug("found command by search: {command_id}", command_id=key)
+                if found:
+                    return True
+                else:
+                    return False
+            except YomboWarning, e:
+                return False
+                # raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
+
 
     # def update(self, record):
     #
