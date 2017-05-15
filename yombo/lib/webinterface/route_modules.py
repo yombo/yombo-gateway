@@ -103,11 +103,22 @@ def route_modules(webapp):
                 'install_branch': module_results['data']['prod_branch'],
                 'variable_data': {},
             }
+
+            variable_groups = {}
+            for group in module_results['data']['variable_groups']:
+                variable_groups[group['id']] = group
+            for field in module_results['data']['variable_fields']:
+                if 'fields' not in variable_groups[field['group_id']]:
+                    variable_groups[field['group_id']]['fields'] = {}
+                variable_groups[field['group_id']]['fields'][field['id']] = field
+
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/index", "Add Module")
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     server_module=module_results['data'],
+                                    variable_groups=variable_groups,
+                                    input_types=webinterface._InputTypes.input_types,
                                     module_data={},
                                     ))
 
@@ -125,17 +136,30 @@ def route_modules(webapp):
             }
             # print "jsonoutput = %s" % json_output
             if 'vars' in json_output:
-                data['variable_data'] = json_output['vars']
+                variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
+                data['variable_data'] = variable_data
 
             results = yield webinterface._Modules.add_module(data)
             if results['status'] == 'failed':
                 # print "failed to submit new module: %s" % results
                 webinterface.add_alert(results['apimsghtml'], 'warning')
 
+                device_variables = yield webinterface._Variables.get_variable_groups_fields(
+                    group_relation_type='device_type',
+                    group_relation_id=device_type_id,
+                )
+
+                if device['variable_data'] is not None:
+                    device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
+                        device_variables,
+                        json_output.get('vars', {})
+                    )
+
                 results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
                 returnValue(page.render(alerts=webinterface.get_alerts(),
                                         server_module=results['data'],
+                                        input_types=webinterface._InputTypes.input_types,
                                         module_data=data,
                                         ))
 

@@ -181,7 +181,7 @@ def route_devices(webapp):
             if device['variable_data'] is not None:
                 device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
                     device_variables,
-                    json_output.get('vars', [])
+                    json_output.get('vars', {})
                 )
 
 

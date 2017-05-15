@@ -714,6 +714,9 @@ class AmqpConfigHandler(YomboLibrary):
         #     print "delete variable_data for variable_groups."
         #     yield self._LocalDB.delete('variable_groups', where=['group_relation_id = ?', data['group_relation_id']])
 
+        # if config_item == 'gateway_modules':
+        #     print "module data: %s" % data
+
         if 'status' in data:
             if data['status'] == 2:  # delete any nested items...
                 if config_item == 'gateway_modules':

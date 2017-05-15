@@ -34,27 +34,27 @@
 </div>
 {%- endmacro %}
 
-{% macro select_device(devices, field, name, id) -%}
+{% macro select_device(devices, item, field, name, id, value) -%}
     <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{name}}" id="{{id}}">
         <option value="" data-subtext="No device selected">None</option>
     {%- for device_id, device in devices.iteritems() %}
-        <option value="{{device_id}}"{% if field.selected == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.label}}</option>
+        <option value="{{device_id}}"{% if value == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.label}}</option>
     {%- endfor %}
     </select>
 {%- endmacro %}
 
-{% macro form_input_type(devices, input_types, field, device, name, id, value="") -%}
+{% macro form_input_type(items, item, input_types, field, name, id, value="") -%}
     {%- if input_types[field.input_type_id].machine_label == "yombo_device" %}
-    {{select_device(devices, field, name, id)}}
+    {{select_device(items, item, field, name, id, value)}}
     {%- else -%}
     <input type="text" class="form-control" name="{{name}}" id="{{id}}" value="{{value}}"
     {%- if field.required %} required{% endif %}>
     {%- endif -%}
 {%- endmacro %}
 
-{% macro edit_item_variables(devices, input_types, device, device_variables) -%}
-    {%- if device_variables|length != 0 -%}
-        {%- for group_name, group in device_variables.iteritems() %}
+{% macro edit_item_variables(items, item, input_types, variables) -%}
+    {%- if variables|length != 0 -%}
+        {%- for group_name, group in variables.iteritems() %}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>{{ group.group_label }}</h4>
@@ -80,12 +80,12 @@
                         </td>
                         <td>{%- if field.data|length > 0 %}
                             {%- for data_id, data in field.data.iteritems() %}
-                            {{form_input_type(devices, input_types, field, device, "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]", "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]",  data.value|display_encrypted)}}
+                            {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]", "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]",  data.value|display_encrypted)}}
                              <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value }}">
                             {%- endfor %}
                             {%- endif %}
                             {%- if field.multiple or field.data|length == 0%}
-                            {{form_input_type(devices, input_types, field, device, "vars[" ~ field.id ~ "][new_2]", "vars[" ~ field.id ~ "][new_2]")}}
+                            {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][new_2]", "vars[" ~ field.id ~ "][new_2]")}}
                             {%- endif %}
                         </td>
                      </tr>

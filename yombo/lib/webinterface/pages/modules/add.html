@@ -73,46 +73,7 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <div class="input-group">
-                            {%- if server_module.variable_groups|length > 0 -%}
-                                {% for group in server_module.variable_groups if group.status == 1 %}
-                                <div class="panel panel-default">
-                                    <div class="panel-heading">
-                                        <h4>{{ group.group_label }}</h4>
-                                    </div>
-                                    <div class="panel-body">
-                                    {{ group.group_description }}
-                                    {%- for field in server_module.variable_fields -%}
-                                        {%- if field.group_id == group.id %}
-                                            <table width="100%" class="table table-striped table-bordered table-hover" id="{{ group.id }}">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Field Information</th><th>Value(s)</th>
-                                                    </tr>
-                                                </thead>
-                                            <tbody>
-                                                 <tr>
-                                                    <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
-                                                    <td>
-                                                         <input type="text" class="form-control" name="vars[{{ field.id }}][new_0]" id="vars[{{ field.id }}][new_0]" value=""
-                                                            {%- if field.required %} required{% endif -%}>
-                                                       {%- if field.multiple -%}
-                                                         <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value=""
-                                                         {%- if field.required %} required{% endif -%}>
-                                                       {%- endif -%}
-                                                    </td>
-                                                 </tr>
-                                            </tbody>
-                                        </table>
-                                        {%- endif %}
-                                    {%- endfor %}
-                                    </div>
-                                </div>
-                                {%- endfor %}
-                            {%- else %}
-                                        No module variables configured.
-                            {%- endif %}
-                            </div>
+{{macros.edit_item_variables({}, server_module, input_types, variable_groups)}}
                         </div>
                     </div>
                     <!-- /.panel-body -->
