@@ -65,8 +65,9 @@
                                 <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
                         </div>
                         <div class="panel-body">
-<div>
+                         <div>
                             <form action="/login/user" method="POST" role="form" id="login">
+                                <input type="hidden" class="hiddenRecaptcha required" name="hiddenRecaptcha" id="hiddenRecaptcha">
                                 <fieldset>
                                     <div class="input-group">
                                         <input type="text" class="form-control" name="email" id="email" placeholder="E-mail"  required>
@@ -78,12 +79,13 @@
                                         <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
                                     </div>
                                     <!-- Change this to a button or input when using this as a form -->
+                                    <br>
                                     <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
                                     <div>&nbsp;</div>
-                                    <button type="submit" id="submit-login" class="btn btn-lg btn-success btn-block">Login</button>
+                                    <button type="submit" id="submit_login" class="btn btn-lg btn-success btn-block">Login</button>
                                 </fieldset>
                             </form>
-            </div>
+                         </div>
                         </div>
                     </div>
                     <div class="panel-heading">
@@ -102,7 +104,9 @@
 {% block body_bottom %}
 <script>
 $().ready(function() {
+
     $('#login').validate({
+        ignore: ".ignore",
         rules: {
             email: {
                 minlength: 5,
@@ -113,7 +117,16 @@ $().ready(function() {
                 minlength: 4,
                 maxlength: 200,
                 required: true
-            }
+            },
+            hiddenRecaptcha: {
+                required: function () {
+                    if (grecaptcha.getResponse() == '') {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            },
         },
         messages: {
             email: {
@@ -123,6 +136,9 @@ $().ready(function() {
             password: {
                 required: "Password is required",
                 minlength: "Must be at least 4 characters long.",
+            },
+            hiddenRecaptcha: {
+                required: "Please check the box saying \"I'm not a robot\"",
             }
         },
         highlight: function (element) {
@@ -135,9 +151,16 @@ $().ready(function() {
             $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
             $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
         },
-      errorPlacement: function (error, element) {
-        element.before(error);
-      }
+        errorPlacement: function (error, element) {
+            element.before(error);
+        },
+        submitHandler: function(form) {
+            if (grecaptcha.getResponse()) {
+                form.submit();
+            } else {
+                alert('Please confirm captcha to proceed')
+            }
+        }
     });
 });
 </script>
