@@ -497,21 +497,21 @@ def upgrade(Registry, **kwargs):
     # yield Registry.DBPOOL.runQuery("CREATE  INDEX IF NOT EXISTS variables_foreign_id_variable_type_idx ON variables (variable_type, foreign_id)")
 
     ## Create triggers ##
-    trigger = """CREATE TRIGGER delete_device_status
-    AFTER DELETE ON devices
-    FOR EACH ROW
-    BEGIN
-        DELETE FROM device_status WHERE device_id = OLD.id;
-    END"""
-    yield Registry.DBPOOL.runQuery(trigger)
-
-    # trigger = """CREATE TRIGGER delete_device_variable_data
+    # trigger = """CREATE TRIGGER delete_device_status
     # AFTER DELETE ON devices
     # FOR EACH ROW
     # BEGIN
-    #     DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "device";
+    #     DELETE FROM device_status WHERE device_id = OLD.id;
     # END"""
     # yield Registry.DBPOOL.runQuery(trigger)
+
+    trigger = """CREATE TRIGGER delete_device_variable_data
+    AFTER DELETE ON devices
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "device";
+    END"""
+    yield Registry.DBPOOL.runQuery(trigger)
 
     # trigger = """CREATE TRIGGER delete_module_module_installed
     # AFTER DELETE ON modules
