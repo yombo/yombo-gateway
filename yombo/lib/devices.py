@@ -1773,6 +1773,7 @@ class Device(object):
             'device_machine_label': self.machine_label,
             'device_label': self.label,
             'machine_status': machine_status,
+            'human_message': human_message,
             'human_status': human_status,
             'time': set_time,
             'requested_by': requested_by,
@@ -1832,22 +1833,19 @@ class Device(object):
         """
         self._DevicesLibrary._MessageLibrary.device_delay_list(self.device_id)
 
-    def load_history(self, how_many=None):
+    @inlineCallbacks
+    def load_history(self, limit=None):
         """
         Loads device history into the device instance. This method gets the data from the db and adds a callback
         to _do_load_history to actually set the values.
 
-        :param how_many: int - How many history items should be loaded. Default: 35
+        :param limit: int - How many history items should be loaded. Default: 35
         :return:
         """
-        if how_many is None:
-            how_many = False
+        if limit is None:
+            limit = False
 
-        d =  self._DevicesLibrary._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=how_many)
-        d.addCallback(self._do_load_history)
-        return d
-
-    def _do_load_history(self, records):
+        records =  yield self._DevicesLibrary._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=limit)
         if len(records) == 0:
             requested_by = {
                 'user_id': 'Unknown',
