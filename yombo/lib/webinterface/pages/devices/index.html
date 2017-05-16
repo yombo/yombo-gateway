@@ -35,9 +35,31 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">{{ _('webinterface_label', 'Devices') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
+                    <h1 class="page-header">{{ _('webinterface_label', 'Devices') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
                     <p></p>
+    <select>
+        <option>1</option>
+        <option>2</option>
+        <option>3</option>
+        <option>4</option>
+        <option>5</option>
+    </select>
 
+
+    <a id="btn-change-option" data-option="2" href="#">Change to 3</a>
+
+    <script>
+
+    $("#btn-change-option").click(function(){
+
+         // get option to select from the data attribute of your link
+         var optionToSelect = $(this).data('option');
+
+         $('select>option:eq('+optionToSelect +')').attr('selected', true);
+
+    })
+
+    </script>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>

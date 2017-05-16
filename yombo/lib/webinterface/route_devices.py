@@ -45,6 +45,8 @@ def route_devices(webapp):
         @run_first()
         def page_devices_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             return page.render(
                 alerts=webinterface.get_alerts(),
                 devices=webinterface._Libraries['devices'].devices,

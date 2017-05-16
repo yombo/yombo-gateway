@@ -58,6 +58,7 @@ from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
 from yombo.lib.webinterface.route_devtools_config import route_devtools_config
 from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_notices import route_notices
+from yombo.lib.webinterface.route_panel import route_panel
 from yombo.lib.webinterface.route_statistics import route_statistics
 from yombo.lib.webinterface.route_states import route_states
 from yombo.lib.webinterface.route_system import route_system
@@ -284,6 +285,7 @@ default_nodes = [
 ]
 
 notification_priority_map_css = {
+    'debug': 'info',
     'low': 'info',
     'normal': 'info',
     'high': 'warning',
@@ -337,6 +339,7 @@ class WebInterface(YomboLibrary):
         route_devtools_config(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
+        route_panel(self.webapp)
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
@@ -941,11 +944,6 @@ class WebInterface(YomboLibrary):
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
 
-    def epoch_to_human(self, the_time, format=None):
-        if format is None:
-            format = '%b %d %Y %H:%M:%S %Z'
-        return strftime(format, localtime(the_time))
-
     def format_markdown(webinterface, description, description_formatting):
         if description_formatting == 'restructured':
             return publish_parts(description, writer_name='html')['html_body']
@@ -1061,9 +1059,9 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
-            'source/jquery/jquery.validate-1.15.0.min.js',
+            'source/jquery/jquery.validate.min.js',
         ]
-        CAT_SCRIPTS_OUT = 'dist/js/jquery.validate-1.15.0.min.js'
+        CAT_SCRIPTS_OUT = 'dist/js/jquery.validate.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1135,6 +1133,13 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
+            'source/echarts/echarts.min.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/echarts.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+
+        CAT_SCRIPTS = [
             'source/sb-admin/js/mappicker.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/mappicker.js'
@@ -1145,24 +1150,22 @@ class WebInterface(YomboLibrary):
         CAT_SCRIPTS_OUT = 'dist/css/mappicker.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
-
         CAT_SCRIPTS = [
-            'source/echarts/echarts.min.js',
+            'source/mqtt/mqttws31.min.js',
             ]
-        CAT_SCRIPTS_OUT = 'dist/js/echarts.min.js'
-
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            'source/sb-admin/js/sha256.js',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/js/sha256.js'
+        CAT_SCRIPTS_OUT = 'dist/js/mqttws31.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             'source/sb-admin/js/jquery.serializejson.min.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/jquery.serializejson.min.js'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/sb-admin/js/sha256.js',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/js/sha256.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [

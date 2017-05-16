@@ -138,9 +138,21 @@
                     <div class="col-lg-12">
                         <div class="breadcrumbs">
                         {%- for breadcrumb in misc_wi_data.breadcrumb -%}
-                            {% if loop.last or breadcrumb.show == false %}
+                            {%- if loop.last or breadcrumb.show == false %}
                                 {{ breadcrumb.text }}
-                            {% else %}
+                            {%- else %}
+                                {%- if breadcrumb.style == 'select' %}
+                                    <select>
+                                    {%- for label, url in breadcrumb.select.iteritems() %}
+                                        <option value="{{url}}">{{label}}</option>
+                                        {{ breadcrumb.text }}
+                                    {% endfor %}
+                                    </select>
+                                {% else %}
+                                    {%- for label, url in breadcrumb.select.iteritems() %}
+                                        {{ breadcrumb.text }}
+                                {% endif %}
+
                                 <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
                             {% endif %}
 

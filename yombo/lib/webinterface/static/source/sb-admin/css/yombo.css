@@ -182,3 +182,18 @@ color:#dd3939;
     opacity: 0.15;
     background-repeat: no-repeat;
 }
+
+.fa-stack[data-count]:after{
+  position:absolute;
+  right:-30%;
+  top:30%;
+  content: attr(data-count);
+  font-size:80%;
+  padding:.6em;
+  border-radius:1000px;
+  line-height:.15em;
+  color: rgba(255,0,0,.9);
+  background:rgba(255,220,220,.50);
+  text-align:center;
+  min-width:0em;
+}

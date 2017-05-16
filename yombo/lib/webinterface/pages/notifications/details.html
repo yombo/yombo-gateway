@@ -27,6 +27,10 @@
                             {{ notice.title }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Message: </label><br>
                             {{ notice.message }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Acknowledged: </label><br>
+                            {{ notice.acknowledged|yes_no }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Acknowledged Time: </label><br>
+                            {{ notice.acknowledged_time|epoch_to_human }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Source: </label><br>
                             {{ notice.source }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>

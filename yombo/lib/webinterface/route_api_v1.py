@@ -14,13 +14,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 
-
-def return_error(message, status=500):
-    return json.dumps({
-        'status': status,
-        'message': message,
-    })
-
+from yombo.utils import epoch_to_string
 
 def return_good(message, payload=None):
     if payload is None:
@@ -30,6 +24,20 @@ def return_good(message, payload=None):
         'message': message,
         'payload': payload,
     }
+
+def return_not_found(message, status=404):
+    return json.dumps({
+        'status': status,
+        'message': message,
+    })
+
+def return_error(message, status=500):
+    return json.dumps({
+        'status': status,
+        'message': message,
+    })
+
+
 
 
 def route_api_v1(webapp):
@@ -66,37 +74,38 @@ def route_api_v1(webapp):
             request.setHeader('Content-Type', 'application/json')
             return json.dumps(a)
 
-        @webapp.route('/devices', methods=['GET'])
+        @webapp.route('/devices/<string:device_id>/command/<string:command_id>', methods=['GET'])
         @require_auth()
-        def ajax_devices_get(webinterface, request, session):
-            try:
-                action = request.args.get('action')[0]
-            except:
-                return return_error('Action must be specified.')
+        def ajax_devices_command_get(webinterface, request, session, device_id, command_id):
 
-            if action == 'runcommand':
-                try:
-                    deviceid = request.args.get('deviceid')[0]
-                    commandid = request.args.get('commandid')[0]
-                except:
-                    return return_error('deviceid and commandid must be specified for "runcommand".')
+            if device_id in webinterface._Devices:
+                device = webinterface._Devices[device_id]
+            else:
+                return return_not_found('device not found')
 
-                device = webinterface._Devices.get(deviceid)
-                device.command(
-                    cmd=commandid,
-                    requested_by={
-                        'user_id': session['auth_id'],
-                        'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
-                        'gateway': webinterface.gwid
-                    }
-                    )
-                a = return_good('Command executed.')
-                request.setHeader('Content-Type', 'application/json')
-                return json.dumps(a)
+            if command_id not in webinterface._Commands:
+                return return_not_found('command not found')
+
+            device.command(
+                cmd=command_id,
+                requested_by={
+                    'user_id': session['auth_id'],
+                    'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
+                    'gateway': webinterface.gwid
+                }
+                )
+            a = return_good('Command executed.')
+            request.setHeader('Content-Type', 'application/json')
+            return json.dumps(a)
 
         @webapp.route('/notifications', methods=['GET'])
         @require_auth()
         def api_v1_notifications_get(webinterface, request, session):
+            return return_good(''. webinterface.notifications.notifications)
+
+        @webapp.route('/web_notif', methods=['GET'])
+        @require_auth()
+        def api_v1_web_notif_get(webinterface, request, session):
             action = request.args.get('action')[0]
             results = {}
             if action == "closed":
@@ -164,11 +173,11 @@ def route_api_v1(webapp):
             live_stats = webinterface._Statistics.get_stat(stat_name, stat_type)
 
             for record in records:
-                labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
+                labels.append(epoch_to_string(record['bucket'], '%Y/%-m/%-d %H:%M'))
                 data.append(record['value'])
 
             for record in live_stats:
-                labels.append(webinterface.epoch_to_human(record['bucket'], '%Y/%-m/%-d %H:%M'))
+                labels.append(epoch_to_string(record['bucket'], '%Y/%-m/%-d %H:%M'))
                 data.append(record['value'])
 
             results = {

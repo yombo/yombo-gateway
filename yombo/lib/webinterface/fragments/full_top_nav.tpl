@@ -18,7 +18,10 @@
 	                <!-- /.dropdown -->
 	                <li class="dropdown">
 	                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-	                        <i class="fa fa-bell fa-fw"></i>  <i class="fa fa-caret-down"></i>
+						<span class="fa-stack fa-1x has-badge" data-count="{{misc_wi_data.notifications.get_important()|length}}">
+						  <i class="fa fa-bell fa-stack-1x"></i>
+						</span>&nbsp;
+						<i class="fa fa-caret-down"></i>
 	                    </a>
 	                    <ul class="dropdown-menu dropdown-alerts">
 						{% if misc_wi_data.notifications|length > 0 %}
