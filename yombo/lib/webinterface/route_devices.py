@@ -33,6 +33,16 @@ from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.route_devices")
 
+def add_devices_breadcrumb(webinterface, request, device_id):
+    urls = OrderedDict()
+    for select_device_id, select_device in webinterface._Devices.sorted().iteritems():
+        if select_device.device_id == device_id:
+            urls[select_device.label] = "$/devices/%s/details" % select_device_id
+        else:
+            urls[select_device.label] = "/devices/%s/details" % select_device_id
+
+    webinterface.add_breadcrumb(request, style='select', data=urls)
+
 def route_devices(webapp):
     with webapp.subroute("/devices") as webapp:
         @webapp.route('/')
@@ -225,7 +235,7 @@ def route_devices(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
-            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+            add_devices_breadcrumb(webinterface, request, device_id)
             device_variables = device.device_variables
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,

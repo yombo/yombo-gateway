@@ -302,6 +302,19 @@ class Devices(YomboLibrary):
                 yield self.import_device(record)
         yield self._load_delay_queue()
 
+    def sorted(self, key=None):
+        """
+        Returns an OrderedDict, sorted by key.  If key is not set, then default is 'label'.
+
+        :param key: Attribute contained in a device to sort by.
+        :type key: str
+        :return: All devices, sorted by key.
+        :rtype: OrderedDict
+        """
+        if key is None:
+            key = 'label'
+        return OrderedDict(sorted(self.devices.iteritems(), key=lambda i: i[1][key]))
+
     @inlineCallbacks
     def import_device(self, device, test_device=None):  # load ore re-load if there was an update.
         """

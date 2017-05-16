@@ -23,11 +23,11 @@ import markdown
 from docutils.core import publish_parts
 from random import randint
 import datetime
-
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+from hashlib import sha256
 
 # Import twisted libraries
 from twisted.web.server import Site
@@ -71,9 +71,19 @@ logger = get_logger("library.webinterface")
 
 nav_side_menu = [
     {
+        'label1': 'Panel',
+        'label2': 'Panel',
+        'priority1': 200,
+        'priority2': 500,
+        'icon': 'fa fa-gamepad fa-fw',
+        'url': '/panel/index',
+        'tooltip': 'System Panel',
+        'opmode': 'run',
+    },
+    {
         'label1': 'Devices',
         'label2': 'Devices',
-        'priority1': 400,
+        'priority1': 300,
         'priority2': 500,
         'icon': 'fa fa-wifi fa-fw',
         'url': '/devices/index',
@@ -83,7 +93,7 @@ nav_side_menu = [
     {
         'label1': 'Modules',
         'label2': 'Modules',
-        'priority1': 425,
+        'priority1': 400,
         'priority2': 500,
         'icon': 'fa fa-puzzle-piece fa-fw',
         'url': '/modules/index',
@@ -969,11 +979,41 @@ class WebInterface(YomboLibrary):
     def home_breadcrumb(self, request):
         self.add_breadcrumb(request, "/", "Home")
 
-    def add_breadcrumb(self, request, url, text, show = True):
+    def add_breadcrumb(self, request, url = None, text = None, show = None, style = None, data = None):
         if hasattr(request, 'breadcrumb') is False:
             request.breadcrumb = []
             self.misc_wi_data['breadcrumb'] = request.breadcrumb
-        request.breadcrumb.append({'url': url, 'text': text, 'show': show})
+
+        if show is None:
+            show = True
+
+        if style is None:
+            style = 'link'
+        elif style == 'select':
+            items = []
+            for select_text, select_url in data.iteritems():
+                selected = ''
+                if select_url.startswith("$"):
+                    selected = 'selected'
+                    select_url = select_url[1:]
+
+                items.append({
+                    'text': select_text,
+                    'url': select_url,
+                    'selected': selected,
+                })
+            data = items
+
+        hash = sha256(str(url) + str(text) + str(show) + str(style) + json.dumps(data)).hexdigest()
+        breadcrumb = {
+            'hash': hash,
+            'url': url,
+            'text': text,
+            'show': show,
+            'style': style,
+            'data': data,
+        }
+        request.breadcrumb.append(breadcrumb)
 
     def setup_basic_filters(self):
         self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no

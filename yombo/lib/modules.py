@@ -513,12 +513,17 @@ class Modules(YomboLibrary):
             #     data_relation_id=module_id)
             #
 
-            module._ModuleVariables = partial(
-                self.get_module_variables,
-                module._Name,
-                'module',
-                module_id,
-            )
+            # module._ModuleVariables = partial(
+            #     self.get_module_variables,
+            #     module._Name,
+            #     'module',
+            #     module_id,
+            # )
+
+            module._ModuleVariables = yield self.get_module_variables(module._Name,
+                                                                      'module',
+                                                                      module_id,
+                                                                      )
 
             module._ModuleDevices = partial(
                 self.module_devices,

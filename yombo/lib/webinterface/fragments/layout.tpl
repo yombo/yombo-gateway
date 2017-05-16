@@ -17,6 +17,8 @@
     <!-- SB Admin 2 and Font Awesome CSS -->
     <link href="/static/css/admin2.min.css" rel="stylesheet">
     <link href="/static/css/font_awesome.min.css" rel="stylesheet">
+    <!-- Bootsrap-Select CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/css/bootstrap-select.min.css" rel="stylesheet">
 
 	{% block head_bottom %}{% endblock %}
    </head>
@@ -138,24 +140,19 @@
                     <div class="col-lg-12">
                         <div class="breadcrumbs">
                         {%- for breadcrumb in misc_wi_data.breadcrumb -%}
-                            {%- if loop.last or breadcrumb.show == false %}
-                                {{ breadcrumb.text }}
+                            {%- if breadcrumb.style == 'select' %}
+                                <select class="selectpicker" data-width="fit" id="{{breadcrumb.hash}}" data-style="btn-primary">
+                                {%- for data in breadcrumb.data %}
+                                    <option value="{{data.url}}" {{data.selected}}>{{data.text}}</option>
+                                {%- endfor %}
+                                </select>
                             {%- else %}
-                                {%- if breadcrumb.style == 'select' %}
-                                    <select>
-                                    {%- for label, url in breadcrumb.select.iteritems() %}
-                                        <option value="{{url}}">{{label}}</option>
-                                        {{ breadcrumb.text }}
-                                    {% endfor %}
-                                    </select>
-                                {% else %}
-                                    {%- for label, url in breadcrumb.select.iteritems() %}
-                                        {{ breadcrumb.text }}
-                                {% endif %}
-
-                                <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
-                            {% endif %}
-
+                                {%- if loop.last or breadcrumb.show == false %}
+                                    {{ breadcrumb.text }}
+                                {%- else %}
+                                    <a href="{{ breadcrumb.url }}">{{ breadcrumb.text }}</a>
+                                {%- endif %}
+                            {%- endif %}
                         {{ ' <i class="fa fa-angle-double-right" aria-hidden="true"></i> ' if not loop.last }}
                         {%- endfor -%}
                         </div>
@@ -180,15 +177,31 @@
     <!-- Custom Theme JavaScript -->
     <script src="/static/js/sb-admin2.min.js"></script>
 
+    <!-- Bootsrap-Select JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/js/bootstrap-select.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/js/i18n/defaults-en_US.min.js"></script>
+
    {% block body_bottom %}{% endblock %}
     <script>
 
 
+{%- if misc_wi_data.breadcrumb|length > 0 -%}
+    {%- for breadcrumb in misc_wi_data.breadcrumb -%}
+        {%- if breadcrumb.style == 'select' %}
+    document.getElementById("{{breadcrumb.hash}}").onchange = function() {
+            window.location.href = this.value;
+    };
+        {%- endif %}
+    {%- endfor -%}
+{%- endif %}
+
     $('.confirm-logout').on('click', function(e) {
+        console.log("asdfasdf")
         e.preventDefault();
         var id = $(this).data('id');
         $('#logoutModal').data('id', id).modal('show');
     });
+
     $('#logoutBtnYes').click(function() {
         $('#logoutModal').modal('hide');
         window.location.href = "/logout";
