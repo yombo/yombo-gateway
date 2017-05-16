@@ -213,6 +213,9 @@ class SSLCerts(YomboLibrary):
                 'created': self.self_signed_created,
                 'signed': self.self_signed_created,
                 'self_signed': True,
+                'cert_file': self.self_signed_cert_file,
+                'key_file': self.self_signed_key_file,
+                'chain_file': None,
             }
 
     def check_csr_input(self, csr_request):
@@ -1079,6 +1082,10 @@ class SSLCert(object):
                 'created': self.current_created,
                 'signed': self.current_signed,
                 'self_signed': False,
+                'cert_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%s.current.cert.pem' % self.sslname,
+                'key_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%s.current.key.pem' % self.sslname,
+                'chain_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%s.current.chain.pem' %
+                self.sslname,
             }
         else:
             logger.debug("Sending SELF SIGNED cert details for {sslname}", sslname=self.sslname)
@@ -1093,6 +1100,9 @@ class SSLCert(object):
                     'created': self._ParentLibrary.self_signed_created,
                     'signed': self._ParentLibrary.self_signed_created,
                     'self_signed': True,
+                    'cert_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/sslcert_selfsigned.cert.pem',
+                    'key_file': self._ParentLibrary._Atoms.get('yombo.path') + '/usr/etc/certs/%sslcert_selfsigned.key.pem',
+                    'chain_file': None,
                 }
 
     def _dump(self):
