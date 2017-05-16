@@ -5,6 +5,14 @@
 Responsible for receiving and distributing notifications. Typically, they are system messages that need
 attention by the user, this includes alerts for devices, or system settings that need updating.
 
+Priority levels:
+
+* debug
+* low
+* normal
+* high
+* urgent
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
@@ -129,6 +137,13 @@ class Notifications(YomboLibrary):
         self._clear_()
         self.load_notifications()
 
+    def get_important(self):
+        items = {}
+        for notification_id, notification in self.notifications.iteritems():
+            if notification.priority in ('high', 'urgent'):
+                items[notification_id] = notification
+        return items
+
     def check_expired(self):
         """
         Called by looping call to periodically purge expired notifications.
@@ -136,6 +151,8 @@ class Notifications(YomboLibrary):
         """
         cur_time = time()
         for id, notice in self.notifications.iteritems():
+            if notice.expire == "Never":
+                continue
             if cur_time > notice.expire:
                 del self.notifications[id]
         self._LocalDB.delete_expired_notifications()
@@ -162,7 +179,7 @@ class Notifications(YomboLibrary):
         logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
         # self.init_deferred.callback(10)
 
-    def ack(self, notice_id, new_ack=None):
+    def ack(self, notice_id, ack_time=None, new_ack=None):
         """
         Acknowledge a notice id.
 
@@ -173,8 +190,11 @@ class Notifications(YomboLibrary):
             raise YomboWarning('Notification not found: %s' % notice_id)
 
         if new_ack is None:
-            new_ack = 1
-        self.notifications[notice_id].set_ack(new_ack)
+            new_ack = True
+
+        if ack_time is None:
+            act_time = time()
+        self.notifications[notice_id].set_ack(act_time, new_ack)
 
         pass #TODO
 
@@ -220,18 +240,24 @@ class Notifications(YomboLibrary):
             if 'timeout' in notice:
                 notice['expire'] = time() + notice['timeout']
             else:
-                notice['expire'] = time() + 3600
+                notice['expire'] = time() + 7200
         else:
-            if notice['expire'] > time():
+            if notice['expire'] == None:
+                if notice['persist'] == True:
+                    YomboWarning("Cannot persist a non-expiring notification")
+            elif notice['expire'] > time():
                 YomboWarning("New notification is set to expire before current time.")
         if 'created' not in notice:
             notice['created'] = time()
 
         if 'acknowledged' not in notice:
-            notice['acknowledged'] = 0
+            notice['acknowledged'] = False
         else:
             if notice['acknowledged'] not in (True, False):
                 YomboWarning("New notification 'acknowledged' must be either True or False.")
+
+        if 'acknowledged_time' not in notice:
+            notice['acknowledged_time'] = None
 
         logger.debug("notice: {notice}", notice=notice)
         if from_db is None and notice['persist'] is True:
@@ -256,7 +282,8 @@ class Notifications(YomboLibrary):
             del self.notifications[notice_id]
         except:
             pass
-        self._LocalDB.delete_notification(notice_id)
+        print "delete notice_id: %s" % notice_id
+        # self._LocalDB.delete_notification(notice_id)
         self.check_always_show_count()
 
     def get(self, notice_id, get_all=None):
@@ -301,8 +328,13 @@ class Notification:
         self.type = notice['type']
         self.priority = notice['priority']
         self.source = notice['source']
-        self.expire = notice['expire']
+        if notice['expire'] == 0:
+            self.expire = "None"
+        else:
+            self.expire = notice['expire']
+
         self.acknowledged = notice['acknowledged']
+        self.acknowledged_time = notice['acknowledged_time']
         self.title = notice['title']
         self.message = notice['message']
         self.meta = notice['meta']
@@ -311,6 +343,8 @@ class Notification:
         self.persist = notice['persist']
         self.created = notice['created']
 
+        print "new notif: %s" % notice
+
     def __str__(self):
         """
         Print a string when printing the class.  This will return the command_id so that
@@ -318,10 +352,11 @@ class Notification:
         """
         return "%s: %s" % (self.notification_id, self.message)
 
-    def set_ack(self, new_ack):
+    def set_ack(self, ack_time, new_ack):
         self.acknowledged = new_ack
-        #todo: update database!
-        self.notification_library._LocalDB.set_ack(self.notification_id, new_ack)
+        self.acknowledged_time = ack_time
+
+        self.notification_library._LocalDB.set_ack(self.notification_id, new_ack, ack_time)
 
     def update(self, notice):
         """
@@ -346,6 +381,7 @@ class Notification:
             'source': str(self.source),
             'expire': str(self.expire),
             'acknowledged': str(self.acknowledged),
+            'acknowledged_time': float(self.acknowledged_time),
             'title': str(self.title),
             'message': str(self.message),
             'meta': str(self.meta),
