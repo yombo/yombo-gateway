@@ -138,6 +138,17 @@ def public_to_string(pubic_value):
 
 
 def epoch_to_string(the_time, format_string=None):
+    if the_time is None:
+        return "None"
+    if isinstance(the_time, str):
+        try:
+            the_time = int(the_time)
+        except:
+            try:
+                the_time = float(the_time)
+            except:
+                return the_time
+
     if format_string is None:
         format_string = '%b %d %Y %H:%M:%S %Z'
     return strftime(format_string, localtime(the_time))
