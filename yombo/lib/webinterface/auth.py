@@ -54,6 +54,15 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             # session = "mysession"
 
             # print "request:url: %s" % request.path
+            host = request.getHeader('host')
+            host_info = host.split(':')
+            request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
+
+            if len(host_info) > 1:
+                request.requestHeaders.setRawHeaders('host_port', [host_info[1]])
+            else:
+                request.requestHeaders.setRawHeaders('host_port', [None])
+
             if hasattr(request, 'breadcrumb') is False:
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb

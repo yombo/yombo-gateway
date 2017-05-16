@@ -363,6 +363,8 @@ class WebInterface(YomboLibrary):
         self.already_start_web_servers = False
         self.has_started = False
 
+        mqtt_password = self._Configs.get('mqtt_users', 'panel.webinterface', yombo.utils.random_string()),
+        mqtt_port = self._Configs.get('mqtt', 'server_listen_port_websockets'),
 
     # def _start_(self):
     #     self.webapp.templates.globals['_'] = _  # i18n

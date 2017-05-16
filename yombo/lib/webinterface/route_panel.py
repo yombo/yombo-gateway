@@ -23,6 +23,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.core.log import get_logger
+from yombo.utils import random_string
 
 logger = get_logger("library.webinterface.route_devices")
 
@@ -37,6 +38,7 @@ def route_panel(webapp):
         @require_auth()
         @run_first()
         def page_panel_index(webinterface, request, session):
+            print request.requestHeaders
             page = webinterface.get_template(request, webinterface._dir + 'pages/panel/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
@@ -44,4 +46,7 @@ def route_panel(webapp):
                 devices=webinterface._Devices.devices,
                 devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
+                mqtt_ports = webinterface._MQTT.mqtt_client_connections,
+                mqtt_password=webinterface._Configs.get('mqtt_users', 'panel.webinterface', random_string()),
+                # mqtt_port = webinterface._Configs.get('mqtt', 'server_listen_port_websockets_ssl'),
                 )
