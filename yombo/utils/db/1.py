@@ -302,7 +302,8 @@ def upgrade(Registry, **kwargs):
      `expire`       INTEGER NOT NULL, /* timestamp when msg should expire */
      `always_show`  INTEGER NOT NULL, /* If notification should always show until user clears it. */
      `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
-     `acknowledged` INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
+     `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
+     `acknowledged_time`       INTEGER, /* Timestemp when msg was ack'd by the user. */
      `title`        TEXT, /* Message data */
      `message`      TEXT, /* Message data */
      `meta`         TEXT, /* Any extra meta data. JSON format */
@@ -365,8 +366,7 @@ def upgrade(Registry, **kwargs):
      `created`        INTEGER NOT NULL
      );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_status', 'device_id'))
-    yield Registry.DBPOOL.runQuery(create_index('device_status', 'uploaded'))
+    yield Registry.DBPOOL.runQuery(create_index('tasks', 'id'))
 
     table = """CREATE TABLE `users` (
      `id`         TEXT NOT NULL,
@@ -505,13 +505,13 @@ def upgrade(Registry, **kwargs):
     END"""
     yield Registry.DBPOOL.runQuery(trigger)
 
-    trigger = """CREATE TRIGGER delete_device_variable_data
-    AFTER DELETE ON devices
-    FOR EACH ROW
-    BEGIN
-        DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "device";
-    END"""
-    yield Registry.DBPOOL.runQuery(trigger)
+    # trigger = """CREATE TRIGGER delete_device_variable_data
+    # AFTER DELETE ON devices
+    # FOR EACH ROW
+    # BEGIN
+    #     DELETE FROM variable_data WHERE data_relation_id = OLD.id and data_relation_type = "device";
+    # END"""
+    # yield Registry.DBPOOL.runQuery(trigger)
 
     # trigger = """CREATE TRIGGER delete_module_module_installed
     # AFTER DELETE ON modules
