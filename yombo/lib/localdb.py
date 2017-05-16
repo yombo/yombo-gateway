@@ -407,7 +407,7 @@ class LocalDB(YomboLibrary):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
         records = yield self.dbconfig.select('device_status',
-                                             select='device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, reported_by uploaded, uploadable',
+                                             select='device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable',
                                              where=['device_id = ?', id], orderby='set_time', limit=limit)
         for index in range(len(records)):
             records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
@@ -427,8 +427,6 @@ class LocalDB(YomboLibrary):
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
 
-        # print "localdb: kwargs: %s" % kwargs
-        print "localdb: human_message: %s" % human_message
         yield DeviceStatus(
             device_id=device_id,
             set_time=set_time,
@@ -707,8 +705,8 @@ class LocalDB(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def set_ack(self, id, new_ack):
-        records = yield self.dbconfig.update('notifications', {'acknowledged': new_ack}, where=['id = ?', id])
+    def set_ack(self, id, new_ack, ack_time):
+        records = yield self.dbconfig.update('notifications', {'acknowledged': new_ack, 'acknowledged_time': ack_time}, where=['id = ?', id])
         returnValue(records)
 
     #########################
