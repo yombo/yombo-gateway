@@ -36,7 +36,6 @@ Implements MQTT. It does 2 things:
 """
 # Import python libraries
 from __future__ import print_function
-import yaml
 from os.path import abspath
 from os import environ
 import crypt
@@ -48,6 +47,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 import yaml
+from collections import OrderedDict
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory
@@ -109,19 +109,27 @@ class MQTT(YomboLibrary):
         self.server_enabled = self._Configs.get('mqtt', 'server_enabled', True)
         self.server_max_connections = self._Configs.get('mqtt', 'server_max_connections', 1000)
         self.server_timeout_disconnect_delay = self._Configs.get('mqtt', 'server_timeout_disconnect_delay', 2)
-        self.server_listen_ip = self._Configs.get('mqtt', 'server_listen_ip', '127.0.0.1')
-        self.server_listen_port_nonsecure = self._Configs.get('mqtt', 'server_listen_port_nonsecure', 1883)
-        self.server_listen_port_ssl = self._Configs.get('mqtt', 'server_listen_port_ssl', 8883)
+        self.server_listen_ip = self._Configs.get('mqtt', 'server_listen_ip', '*')
+        self.server_listen_port = self._Configs.get('mqtt', 'server_listen_port', 1883)
+        self.server_listen_port_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_ss_ssl', 1884)
+        self.server_listen_port_le_ssl = self._Configs.get('mqtt', 'server_listen_port_le_ssl', 1885)
         self.server_listen_port_websockets = self._Configs.get('mqtt', 'server_listen_port_websockets', 8081)
+        self.server_listen_port_websockets_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_ss_ssl', 8444)
+        self.server_listen_port_websockets_le_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
         self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
-
+        self.mqtt_client_connections = None
         self.mqtt_local_client = None
         self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'yombo', random_string(length=16))
 
         if not self.server_enabled:
             return
 
-        yaml_config = {
+    def _load_(self):
+        if self.server_enabled is False:
+            logger.info("Embedded MQTT Disabled.")
+            return
+
+        yaml_config = OrderedDict({
             'listeners': {
                 'default': {
                     'max_connections': self.server_max_connections,
@@ -133,21 +141,59 @@ class MQTT(YomboLibrary):
                 'password-file': self.hbmqtt_pass_file,
                 'allow-anonymous': self.server_allow_anonymous,
             },
+        })
+
+        ssl_self_signed = self._SSLCerts.get('selfsigned')
+        ssl_lib_webinterface = self._SSLCerts.get('lib_webinterface')
+
+        self.mqtt_client_connections = {
+            'ws': self.server_listen_port_websockets,
+            'wss': self.server_listen_port_websockets_le_ssl,
+            'wss-ss': self.server_listen_port_websockets_ss_ssl,
         }
 
-        if self.server_listen_port_nonsecure > 0:
-            yaml_config['listeners']['yombo-tcp-1-nonsecure'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_nonsecure),
+        if ssl_lib_webinterface['self_signed'] is True:
+            self.mqtt_client_connections['wss'] = self.server_listen_port_websockets_ss_ssl
+
+
+        if self.server_listen_port > 0:
+            yaml_config['listeners']['yombo-mqtt'] = {
+                'bind': self.server_listen_ip + ":" + str(self.server_listen_port),
             }
-        if self.server_listen_port_ssl > 0:
-            yaml_config['listeners']['yombo-tcp-2-ssl'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_ssl),
+        if self.server_listen_port_ss_ssl > 0:
+            yaml_config['listeners']['yombo-mqtts-ss'] = {
+                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_ss_ssl),
+                'ssl': 'on',
+                'certfile': ssl_self_signed['cert_file'],
+                'keyfile': ssl_self_signed['key_file'],
+            }
+        if self.server_listen_port_le_ssl > 0 and  ssl_lib_webinterface['self_signed'] is False:
+            yaml_config['listeners']['yombo-mqtts-le'] = {
+                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_le_ssl),
+                'ssl': 'on',
+                'certfile': ssl_lib_webinterface['cert_file'],
+                'keyfile': ssl_lib_webinterface['key_file'],
             }
         if self.server_listen_port_websockets > 0:
-            yaml_config['listeners']['yom' \
-                                     'bo-tcp-3-websocket'] = {
+            yaml_config['listeners']['yombo-ws'] = {
                 'bind': self.server_listen_ip + ":" + str(self.server_listen_port_websockets),
                 'type': 'ws',
+            }
+        if self.server_listen_port_websockets_ss_ssl > 0:
+            yaml_config['listeners']['yombo-wss-ss'] = {
+                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_websockets_ss_ssl),
+                'type': 'ws',
+                'ssl': 'on',
+                'certfile': ssl_self_signed['cert_file'],
+                'keyfile': ssl_self_signed['key_file'],
+            }
+        if self.server_listen_port_websockets_le_ssl > 0 and  ssl_lib_webinterface['self_signed'] is False:
+            yaml_config['listeners']['yombo-wss-le'] = {
+                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_websockets_le_ssl),
+                'type': 'ws',
+                'ssl': 'on',
+                'certfile': ssl_lib_webinterface['cert_file'],
+                'keyfile': ssl_lib_webinterface['key_file'],
             }
 
         with open(self.hbmqtt_config_file, 'w') as yaml_conf_file:
@@ -164,12 +210,6 @@ class MQTT(YomboLibrary):
         self.mqtt_server = MQTTServer(self.hbmqtt_config_file)
         command = ['hbmqtt', "-c", self.hbmqtt_config_file]
         self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
-
-
-    def _load_(self):
-        if self.server_enabled is False:
-            logger.info("Embedded MQTT Disabled.")
-            return
 
         # nasty hack..  TODO: remove nasty sleep hack
         return sleep(0.2)
@@ -306,7 +346,7 @@ class MQTT(YomboLibrary):
             server_hostname = self.server_listen_ip
 
         if server_port is None:
-            server_port = self.server_listen_port_nonsecure
+            server_port = self.server_listen_port
 
         if username is None:
             username = 'yombo'
@@ -331,7 +371,7 @@ class MQTT(YomboLibrary):
 #        self.local_mqtt_client_id = random_string(length=10)
 
         self.mqtt_test_connection = self.new(self.server_listen_ip,
-            self.server_listen_port_nonsecure, 'yombo', self.yombo_mqtt_password, False,
+            self.server_listen_port, 'yombo', self.yombo_mqtt_password, False,
             self.test_mqtt_in, self.test_on_connect )
 
         self.mqtt_test_connection.subscribe("yombo/#")

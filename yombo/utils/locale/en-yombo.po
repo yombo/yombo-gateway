@@ -335,20 +335,45 @@ msgstr "MQTT broker timeout disconnect. Sets 'timeout_disconnect_delay' for the 
 
 #: defined in mqtt library
 msgctxt "config_item"
-msgid "mqtt:server_listen_port_nonsecure"
+msgid "mqtt:server_listen_port"
 msgstr ""
-"Non-secure (non-ssl) port to listen on. 0 = disabled.  Use non-secure port only when connecting to the local machine. "
+"MQTT Non-secure (non-ssl) port to listen on. 0 = disabled.  Use non-secure port only when connecting to the local machine. "
 "Using the non-secure port for local connections reduces load on CPU for low-powered devices."
 
 #: defined in mqtt library
 msgctxt "config_item"
-msgid "mqtt:server_listen_port_ssl"
-msgstr "SSL Connection port to listen on."
+msgid "mqtt:server_listen_port_ss_ssl"
+msgstr "MQTT Self-Signed cert port."
+
+#: defined in mqtt library
+msgctxt "config_item"
+msgid "mqtt:server_listen_port_ss_ssl"
+msgstr "MQTT Self-Signed cert port."
+
+#: defined in mqtt library
+msgctxt "config_item"
+msgid "mqtt:server_listen_port_le_ssl"
+msgstr "MQTT Lets encrypt cert port."
+
+#: defined in mqtt library
+msgctxt "config_item"
+msgid "mqtt:server_listen_port_ss_ssl"
+msgstr "MQTT Self-Signed cert port."
 
 #: defined in mqtt library
 msgctxt "config_item"
 msgid "mqtt:server_listen_port_websockets"
-msgstr "Websockets port to listen on."
+msgstr "WS port to listen on."
+
+#: defined in mqtt library
+msgctxt "config_item"
+msgid "mqtt:server_listen_port_websockets_ss_ssl"
+msgstr "WSS Self-Signed cert secure port."
+
+#: defined in mqtt library
+msgctxt "config_item"
+msgid "mqtt:server_listen_port_websockets_le_ssl"
+msgstr "WSS Lets Encrypt secure port."
 
 #: defined in mqtt library
 msgctxt "config_item"
