@@ -966,17 +966,18 @@ class SSLCert(object):
                 self.next_csr_generation_in_progress = False
             return False
 
-    def generate_new_csr_done(self, args, results):
+    def generate_new_csr_done(self, results, args):
         """
         Our CSR has been generated. Lets save it, and maybe subit it.
 
-        :param args: Any args from the queue.
         :param results: The CSR and KEY.
+        :param args: Any args from the queue.
         :param submit: True if we should submit it to yombo for signing.
         :return:
         """
-        logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
-        # logger.info("generate_new_csr_done:results: {results}", results=results)
+        # logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
+        # logger.info("generate_new_csr_done:results: results {results}", results=results)
+        # logger.info("generate_new_csr_done:results: args {results}", results=args)
         self.key_next = results['key']
         self.csr_next = results['csr']
         save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.csr_next)

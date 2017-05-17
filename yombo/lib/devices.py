@@ -465,41 +465,45 @@ class Devices(YomboLibrary):
             device_label = self.get(parts[2].replace("_", " "))
             device = self.get(device_label)
         except YomboDeviceError, e:
-            logger.info("Received MQTT request for a device that doesn't exist")
+            logger.info("Received MQTT request for a device that doesn't exist: %s" % parts[2])
             return
-
         if parts[3] == 'get':
             status = device.status_history[0]
 
             if payload == '' or payload == 'all':
-                self.mqtt.publish('yombo/devices/%s/state' % device.machine_label, json.dumps(device.status_history[0]))
+                self.mqtt.publish('yombo/devices/%s/status' % device.machine_label, json.dumps(device.status_history[0]))
             elif payload == 'human':
-                self.mqtt.publish('yombo/devices/%s/state/human' % device.machine_label, str(status.human_status))
+                self.mqtt.publish('yombo/devices/%s/status/human' % device.machine_label, str(status.human_status))
             elif payload == 'machine':
-                self.mqtt.publish('yombo/devices/%s/state/machine' % device.machine_label, str(status.machine_status))
+                self.mqtt.publish('yombo/devices/%s/status/machine' % device.machine_label, str(status.machine_status))
             elif payload == 'extra':
-                self.mqtt.publish('yombo/devices/%s/state/extra' % device.machine_label, str(status.machine_status_extra))
+                self.mqtt.publish('yombo/devices/%s/status/extra' % device.machine_label, str(status.machine_status_extra))
             elif payload == 'last':
-                self.mqtt.publish('yombo/devices/%s/state/last' % device.machine_label, str(status.set_time))
+                self.mqtt.publish('yombo/devices/%s/status/last' % device.machine_label, str(status.set_time))
             elif payload == 'requested_by':
-                self.mqtt.publish('yombo/devices/%s/state/requested_by' % device.machine_label, str(status.requested_by))
+                self.mqtt.publish('yombo/devices/%s/status/requested_by' % device.machine_label, str(status.requested_by))
         elif parts[3] == 'cmd':
-            device.command(self, cmd=parts[4])
+            try:
+                device.command(cmd=parts[4], reported_by='yombo.gateway.lib.devices.mqtt_incoming')
+
+            except Exception as e:
+                logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
+
             if len(parts) > 5:
                 status = device.status_history[0]
                 if payload == '' or payload == 'all':
-                    self.mqtt.publish('yombo/devices/%s/state' % device.machine_label,
+                    self.mqtt.publish('yombo/devices/%s/None' % device.machine_label,
                                       json.dumps(device.status_history[0]))
                 elif parts[5] == 'human':
-                    self.mqtt.publish('yombo/devices/%s/state/human' % device.machine_label, str(status.human_status))
+                    self.mqtt.publish('yombo/devices/%s/status/human' % device.machine_label, str(status.human_status))
                 elif parts[5] == 'machine':
-                    self.mqtt.publish('yombo/devices/%s/state/machine' % device.machine_label, str(status.machine_status))
+                    self.mqtt.publish('yombo/devices/%s/status/machine' % device.machine_label, str(status.machine_status))
                 elif parts[5] == 'extra':
-                    self.mqtt.publish('yombo/devices/%s/state/extra' % device.lmachine_label, str(status.machine_status_extra))
+                    self.mqtt.publish('yombo/devices/%s/status/extra' % device.lmachine_label, str(status.machine_status_extra))
                 elif parts[5] == 'last':
-                    self.mqtt.publish('yombo/devices/%s/state/last' % device.machine_label, str(status.set_time))
+                    self.mqtt.publish('yombo/devices/%s/status/last' % device.machine_label, str(status.set_time))
                 elif parts[5] == 'requested_by':
-                    self.mqtt.publish('yombo/devices/%s/state/requested_by' % device.machine_label, str(status.requested_by))
+                    self.mqtt.publish('yombo/devices/%s/status/requested_by' % device.machine_label, str(status.requested_by))
 
     def list_devices(self, field=None):
         """
@@ -1393,6 +1397,11 @@ class Device(object):
         if self.status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
 
+        if isinstance(cmd, Command):
+            cmdobj = cmd
+        else:
+            cmdobj = self._DevicesLibrary._Commands.get(cmd)
+
         # logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
         if requested_by is None:  # soon, this will cause an error!
@@ -1409,10 +1418,6 @@ class Device(object):
                     if self.pin_code != pin:
                         raise YomboPinCodeError("'pin' supplied is incorrect.")
 
-        if isinstance(cmd, Command):
-            cmdobj = cmd
-        else:
-            cmdobj = self._DevicesLibrary._Commands.get(cmd)
 
         # print("cmdobj is: %s" % cmdobj)
 
@@ -1801,7 +1806,7 @@ class Device(object):
         else:
             command_machine_label = machine_status
 
-        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/%s" % (self.machine_label, command_machine_label), json.dumps(message), 1)
+        self._DevicesLibrary.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
 
     def send_status(self, **kwargs):
         """

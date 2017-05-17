@@ -12,7 +12,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </div>
-                <a class="navbar-brand" href="/">{{ misc_wi_data.gateway_label() }}</a>
+                <a class="navbar-brand" href="/?">{{ misc_wi_data.gateway_label() }}</a>
 
 	            <ul class="nav navbar-top-links navbar-right">
 	                <!-- /.dropdown -->

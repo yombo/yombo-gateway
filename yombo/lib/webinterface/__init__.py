@@ -464,13 +464,18 @@ class WebInterface(YomboLibrary):
                 cert = self._SSLCerts.get('lib_webinterface')
 
                 privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
-                certifpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
+                certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
                 if cert['chain'] is not None:
                     chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+                    # chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
                 else:
                     chainpyssl = None
+                # chainpyssl = None
+                print "privkeypyssl: %s" % privkeypyssl
+                print "certpyssl: %s" % certpyssl
+                print "chain: %s" % chainpyssl
                 contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
-                                                        certificate=certifpyssl,
+                                                        certificate=certpyssl,
                                                         extraCertChain=chainpyssl)
 
                 self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory, contextFactory)
@@ -824,7 +829,7 @@ class WebInterface(YomboLibrary):
             session['auth_time'] = 0
             session['yomboapi_session'] = ''
             session['yomboapi_login_key'] = ''
-            request.received_cookies[self.sessions.config.cookie_session] = session['session_id']
+            request.received_cookies[self.sessions.config.cookie_session] = session['id']
 
         if self.auth_pin_type() == 'pin':
             if submitted_pin == self.auth_pin:
@@ -979,7 +984,7 @@ class WebInterface(YomboLibrary):
             return default
 
     def home_breadcrumb(self, request):
-        self.add_breadcrumb(request, "/", "Home")
+        self.add_breadcrumb(request, "/?", "Home")
 
     def add_breadcrumb(self, request, url = None, text = None, show = None, style = None, data = None):
         if hasattr(request, 'breadcrumb') is False:

@@ -9,7 +9,7 @@
                 <h1 class="page-header"></a>System Panel<br> </h1>
             </div>
             <div class="col-lg-4">
-                <h4><div class="pull-right" style="vertical-align: bottom; display: inline-block;"><span id='status'>aaa</span></div></h4>
+                <h4><div class="pull-right" style="vertical-align: bottom; display: inline-block;"><span id='status'>Connecting</span></div></h4>
             </div>
         </div>
     </div>
@@ -21,7 +21,7 @@
         <table class="table table-striped">
             {%- for device_id, device in devices.iteritems() %}
                 <tr>
-                <td width="40%" style="vertical-align:middle;"><h4>{{ device.label }}</h4><small id="value_{{device.machine_label}}">{{device.status_history[0].human_message}}</small></td>
+                <td width="60%" style="vertical-align:middle;"><h4>{{ device.label }}</h4><small id="value_{{device.machine_label}}">{{device.status_history[0].human_message}}</small></td>
                 <td style="vertical-align:middle;"></td>
                 <td width="30%" style="vertical-align:middle;"><h4>&nbsp;<span id="{{device.machine_label}}" class="label label-success"">{{device.status_history[0].human_status}}</span></h4></td>
                 </tr>
@@ -52,7 +52,7 @@
 			    host,
 			    port,
 			    path,
-			    "mqtt_panel" + parseInt(Math.random() * 100, 10)
+			    "mqtt_panel" + parseInt(Math.random() * 100, 100)
 	    );
 	    var options = {
                 timeout: 3,
@@ -69,7 +69,7 @@
 
             mqtt.onConnectionLost = onConnectionLost;
             mqtt.onMessageArrived = onMessageArrived;
-//            console.log("Host: "+ host + ", Port: " + port + ", Path: " + path + " TLS: " + useTLS);
+            console.log("Host: "+ host + ", Port: " + port + ", Path: " + path + " TLS: " + useTLS);
             mqtt.connect(options);
         };
 
@@ -89,38 +89,40 @@
 //			console.log("got a message!");
             var topic = message.destinationName;
             var payload = message.payloadString;
-//			console.log(payload);
-//            console.log("Topic: " + topic + ", Message payload: " + payload);
+            console.log("Topic: " + topic + ", Message payload: " + payload);
             $('#message').html(topic + ', ' + payload);
-            var message = topic.split('/');
-            var source = message[0];  // 'yombo'
-            var msgtype = message[1];  // 'devices'
+            var topic_parts = topic.split('/');
+            var source = topic_parts[0];  // 'yombo'
+            var msgtype = topic_parts[1];  // 'devices'
 
-//			console.log("source:" + source);
 			var payloadParsed = JSON.parse(payload)
 
-			if (message != "yombo") {
+			if (source != "yombo") {
 				return;
 			}
 
             var timestamp = Math.round((new Date()).getTime() / 1000);
 
 			if (msgtype == "devices") {
-				handleDeviceMQTT(message, payloadParsed, timestamp)
+				handleDeviceMQTT(topic_parts, payloadParsed, timestamp)
 			} else if (source == "states") {
 				console.log("don't know how to handle states yet")
 			}
 		};
 
-		function handleDeviceMQTT(message, payload, timestamp) {
-			var device = message[2];
-			var machine_status = message[3];
+		function handleDeviceMQTT(topic, payload, timestamp) {
+			var device = topic[2];
+			var action = topic[3];
 
+            if(action != 'status') {
+                console.log("handleDeviceMQTT - unable to process action: " + action);
+                return;
+            }
 //			console.log("handleDeviceMQTT: " + device);
             switch (device) {
             {%- for device_id, device in devices.iteritems() %}
                 case '{{device.machine_label}}':
-					console.log("got {{device.machine_label}}");
+//					console.log("got {{device.machine_label}}");
                     $('#value_{{device.machine_label}}').html(payload.human_message);
 					$('#{{device.machine_label}}').text(payload.human_status);
 					$('#{{device.machine_label}}').removeClass('label-danger').addClass('label-success');

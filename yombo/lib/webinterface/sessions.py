@@ -401,7 +401,6 @@ class Session(object):
             # return None
             raise KeyError("Cannot find session key: %s" % key)
 
-
     def set(self, key, val):
         if key not in ('last_access', 'created', 'updated'):
             self.data['updated'] = int(time())
