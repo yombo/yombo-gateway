@@ -477,17 +477,8 @@ class MQTTClient(object):
         """
         # print("publishing (%s): %s" % (topic, message))
         if self.connected:
-            # print("publishing now")
             yield self.factory.protocol.publish(topic=topic, message=message, qos=qos)
             self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_size=10, anon=True)
-        if self.connected:
-            self.send_queue.append({
-                'type': 'publish',
-                'topic': topic,
-                'message': message,
-                'qos': qos,
-                'retain': False,
-            })
 
     @inlineCallbacks
     def subscribe(self, topic, qos=1):
@@ -530,7 +521,7 @@ class MQTTClient(object):
         if the client has a connected callback, will also call that.
         :return:
         """
-        logger.debug("client ID connected: {client_id}", client_id=self.client_id)
+        # logger.debug("client ID connected: {client_id}", client_id=self.client_id)
         self.connected = True
         while True:
             try:
