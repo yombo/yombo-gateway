@@ -667,12 +667,12 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
         for item in sorted_list:
             if item['ratio'] >= limiter:
                 return_list.append(item)
-        return (
-            best_ratio >= best_limiter,  # the part that does the actual check.
-            best_key,
-            best_match,
-            best_ratio,
-            return_list)
+        # return (
+        #     best_ratio >= best_limiter,  # the part that does the actual check.
+        #     best_key,
+        #     best_match,
+        #     best_ratio,
+        #     return_list)
 
     if operation == "any":
         return (
@@ -682,6 +682,8 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             best_ratio,
             sorted_list)
     else:
+        if best_key is None:
+            raise KeyError("No items found above the cut off limit.")
         return (
             best_ratio >= best_limiter,  # the part that does the actual check.
             best_key,
