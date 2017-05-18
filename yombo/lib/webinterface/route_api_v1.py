@@ -83,20 +83,20 @@ def route_api_v1(webapp):
             else:
                 return return_not_found('device not found')
 
-            if command_id not in webinterface._Commands:
+            try:
+                device.command(
+                    cmd=command_id,
+                    requested_by={
+                        'user_id': session['auth_id'],
+                        'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
+                        'gateway': webinterface.gwid
+                    }
+                    )
+                a = return_good('Command executed.')
+                request.setHeader('Content-Type', 'application/json')
+                return json.dumps(a)
+            except KeyError as e:
                 return return_not_found('command not found')
-
-            device.command(
-                cmd=command_id,
-                requested_by={
-                    'user_id': session['auth_id'],
-                    'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
-                    'gateway': webinterface.gwid
-                }
-                )
-            a = return_good('Command executed.')
-            request.setHeader('Content-Type', 'application/json')
-            return json.dumps(a)
 
         @webapp.route('/notifications', methods=['GET'])
         @require_auth()
@@ -242,7 +242,7 @@ def route_api_v1(webapp):
 
             url = '/v1/command?_pagestart=%s&_pagelimit=%s' % (offset, limit)
             if search is not None:
-                url = url + "&?_filters[label]*%s&_filters[short_description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
+                url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             results = yield webinterface._YomboAPI.request('GET', url)
             data = {

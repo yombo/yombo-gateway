@@ -460,6 +460,7 @@ class Devices(YomboLibrary):
         # yombo/devices/DEVICEID/get|cmd/option
         parts = topic.split('/', 10)
         logger.debug("Yombo Devices got this: {topic} / {parts}", topic=topic, parts=parts)
+        payload = payload.lower().strip()
 
         try:
             device_label = self.get(parts[2].replace("_", " "))
@@ -472,38 +473,24 @@ class Devices(YomboLibrary):
 
             if payload == '' or payload == 'all':
                 self.mqtt.publish('yombo/devices/%s/status' % device.machine_label, json.dumps(device.status_history[0]))
-            elif payload == 'human':
-                self.mqtt.publish('yombo/devices/%s/status/human' % device.machine_label, str(status.human_status))
-            elif payload == 'machine':
-                self.mqtt.publish('yombo/devices/%s/status/machine' % device.machine_label, str(status.machine_status))
-            elif payload == 'extra':
-                self.mqtt.publish('yombo/devices/%s/status/extra' % device.machine_label, str(status.machine_status_extra))
-            elif payload == 'last':
-                self.mqtt.publish('yombo/devices/%s/status/last' % device.machine_label, str(status.set_time))
-            elif payload == 'requested_by':
-                self.mqtt.publish('yombo/devices/%s/status/requested_by' % device.machine_label, str(status.requested_by))
-        elif parts[3] == 'cmd':
-            try:
-                device.command(cmd=parts[4], reported_by='yombo.gateway.lib.devices.mqtt_incoming')
+            elif payload in status:
+                self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload), str(getattr(payload, status)))
 
-            except Exception as e:
-                logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
-
-            if len(parts) > 5:
-                status = device.status_history[0]
-                if payload == '' or payload == 'all':
-                    self.mqtt.publish('yombo/devices/%s/None' % device.machine_label,
-                                      json.dumps(device.status_history[0]))
-                elif parts[5] == 'human':
-                    self.mqtt.publish('yombo/devices/%s/status/human' % device.machine_label, str(status.human_status))
-                elif parts[5] == 'machine':
-                    self.mqtt.publish('yombo/devices/%s/status/machine' % device.machine_label, str(status.machine_status))
-                elif parts[5] == 'extra':
-                    self.mqtt.publish('yombo/devices/%s/status/extra' % device.lmachine_label, str(status.machine_status_extra))
-                elif parts[5] == 'last':
-                    self.mqtt.publish('yombo/devices/%s/status/last' % device.machine_label, str(status.set_time))
-                elif parts[5] == 'requested_by':
-                    self.mqtt.publish('yombo/devices/%s/status/requested_by' % device.machine_label, str(status.requested_by))
+        # elif parts[3] == 'cmd':
+        #     try:
+        #         device.command(cmd=parts[4], reported_by='yombo.gateway.lib.devices.mqtt_incoming')
+        #
+        #     except Exception as e:
+        #         logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
+        #
+        #     if len(parts) > 5:
+        #         status = device.status_history[0]
+        #         if payload == '' or payload == 'all':
+        #             self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+        #                               json.dumps(device.status_history[0]))
+        #         elif payload in status:
+        #             self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload),
+        #                               str(getattr(payload, status)))
 
     def list_devices(self, field=None):
         """
@@ -1221,7 +1208,7 @@ class Device(object):
         self._DevicesLibrary = _DevicesLibrary
         # logger.debug("New device - info: {device}", device=device)
 
-        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable")
+        self.StatusTuple = namedtuple('Status', "device_id, set_time, energy_usage, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable")
         self.Command = namedtuple('Command', "time, cmduuid, requested_by")
 
         self.do_command_requests = MaxDict(300, {})
@@ -1327,7 +1314,55 @@ class Device(object):
         # if 'variable_data' in device:
             # print("device.update_attributes: new: %s: " % device['variable_data'])
             # print("device.update_attributes: existing %s: " % self.device_variables)
+    #
+    # def can_toggle(self):
+    #     """
+    #     If a device is toggleable, return True. It's toggleable if a device only has two commands.
+    #     :return:
+    #     """
+    #     available_commands = self.available_commands()
+    #     if len(available_commands) == 2:
+    #         return True
+    #     else:
+    #         return False
+    #
+    # def toggle(self):
+    #     """
+    #     If a device is toggleable, return True. It's toggleable if a device only has two commands.
+    #     :return:
+    #     """
+    #     last_command_label = self.status_history[0].last_command
+    #     if last_command_label is None:
+    #         raise YomboWarning("Last command is unknown, unable to toggle.")
+    #
+    #     available_commands = self.available_commands()
+    #     last_command = self._Commands[last_command_label]
+    #
+    #     if last_command.command_id in available_commands:
+    #         del available_commands[last_command.command_id]
+    #     print("available commands: %s" % available_commands)
+    #     remaining = available_commands.keys()[0]
+    #     print("remaining commands: %s" % remaining)
+    #     self.command(remaining)
 
+    def toggle(self):
+        """
+        If a device is toggleable, return True. It's toggleable if a device only has two commands.
+        :return: 
+        """
+        last_command_label = self.status_history[0].last_command
+        if last_command_label is None:
+            raise YomboWarning("Last command is unknown, unable to toggle.")
+
+        available_commands = self.available_commands()
+        last_command = self._DevicesLibrary._Commands[last_command_label]
+
+        for command_id in available_commands.keys():
+            if available_commands[command_id].machine_label in [last_command.machine_label, 'toggle']:
+                continue
+            return available_commands[command_id]
+
+        raise YomboWarning("Cannot find a toggle command.")
 
     def available_commands(self):
         """
@@ -1402,6 +1437,11 @@ class Device(object):
         else:
             cmdobj = self._DevicesLibrary._Commands.get(cmd)
 
+        if cmdobj.machine_label == 'toggle':
+            cmdobj = self.toggle()
+
+        cmd = cmdobj.machine_label
+
         # logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
         if requested_by is None:  # soon, this will cause an error!
@@ -1418,20 +1458,12 @@ class Device(object):
                     if self.pin_code != pin:
                         raise YomboPinCodeError("'pin' supplied is incorrect.")
 
-
-        # print("cmdobj is: %s" % cmdobj)
-
-#        if self.validate_command(cmdobj) is not True:
         if str(cmdobj.command_id) not in self.available_commands():
             logger.warn("Requested command: {cmduuid}, but only have: {ihave}",
                         cmduuid=cmdobj.command_id, ihave=self.available_commands())
             raise YomboDeviceError("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
-        # print("in device command: request_id: %s" % request_id)
-        # print("in device command: kwargs: %s" % kwargs)
-        # print("in device command: self._DevicesLibrary.delay_queue_unique: %s" % self._DevicesLibrary.delay_queue_unique)
-
         if 'unique_hash' in kwargs:
             unique_hash = kwargs['unique_hash']
             del kwargs['unique_hash']
@@ -1719,6 +1751,7 @@ class Device(object):
 
             - human_status *(int or string)* - The new status.
             - human_message *(string)* - A human friendly text message to display.
+            - last_command *(string)* - Command label from the last command.
             - machine_status *(int or string)* - The new status.
             - machine_status_extra *(dict)* - Extra status as a dictionary.
             - request_id *(string)* - Request ID that this should correspond to.
@@ -1780,11 +1813,6 @@ class Device(object):
         if self.statistic_label is not None and self.statistic_label != "":
             self._DevicesLibrary._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
             self._DevicesLibrary._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
-        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, human_message, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable)
-        self.status_history.appendleft(new_status)
-        if self.test_device is False:
-            self._DevicesLibrary._LocalDB.save_device_status(**new_status.__dict__)
-        self._DevicesLibrary.check_trigger(self.device_id, new_status)
 
         message = {
             'device_id': self.device_id,
@@ -1800,11 +1828,20 @@ class Device(object):
 
         if 'command' in kwargs:
             command_machine_label = kwargs['command'].machine_label
+            message['last_command'] = kwargs['command'].machine_label
             message['command_machine_label'] = kwargs['command'].machine_label
             message['command_label'] = kwargs['command'].label
             message['command_id'] = kwargs['command'].command_id
+            last_command = kwargs['command'].machine_label
         else:
             command_machine_label = machine_status
+            last_command = kwargs.get('last_command', None)
+
+        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable)
+        self.status_history.appendleft(new_status)
+        if self.test_device is False:
+            self._DevicesLibrary._LocalDB.save_device_status(**new_status.__dict__)
+        self._DevicesLibrary.check_trigger(self.device_id, new_status)
 
         self._DevicesLibrary.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
 
@@ -1870,10 +1907,10 @@ class Device(object):
                 'component': 'Unknown',
                 'gateway': 'Unknown'
             }
-            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'Unknown status for device', None, {}, requested_by, 'Unknown', 0, 1))
+            self.status_history.append(self.StatusTuple(self.device_id, int(time()), 0, 'Unknown', 'Unknown status for device', None, None, {}, requested_by, 'Unknown', 0, 1))
         else:
             for record in records:
-                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['human_message'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['reported_by'], record['uploaded'], record['uploadable']))
+                self.status_history.appendleft(self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['human_status'], record['human_message'], record['last_command'], record['machine_status'],record['machine_status_extra'], record['requested_by'], record['reported_by'], record['uploaded'], record['uploadable']))
 #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,           human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
 
         #logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)

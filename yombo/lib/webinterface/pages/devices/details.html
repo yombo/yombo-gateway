@@ -74,7 +74,12 @@
                             <label style="margin-top: 0px; margin-bottom: 0px">
                                 <a class="deviceCmd" data-doc_value="{{ commands[command].cmdUUID }}" href="/api/v1/devices/{{ device.device_id }}/command/{{ commands[command].command_id }}">{{ commands[command].label }}</a>
                             </label>&nbsp;&nbsp;
-                            {% endfor %}
+                            {%- endfor %}
+                            {%- if device.can_toggle() %}
+                            <label style="margin-top: 0px; margin-bottom: 0px">
+                                <!--<a class="deviceCmd" data-doc_value="{{ special_toggle }}" href="/api/v1/devices/{{ device.device_id }}/command/special__toggle">Toggle</a>-->
+                            </label>&nbsp;&nbsp;
+                            {%- endif %}
                         </div>
                     </div>
                     <!-- /.panel-body -->

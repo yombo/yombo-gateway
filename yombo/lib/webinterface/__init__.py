@@ -747,7 +747,7 @@ class WebInterface(YomboLibrary):
     @require_auth_pin()
     @run_first()
     def page_login_user_get(self, request):
-        return self.redirect(request, '/')
+        return self.redirect(request, '/?')
 
     @webapp.route('/login/user', methods=['POST'])
     @require_auth_pin()
@@ -799,11 +799,11 @@ class WebInterface(YomboLibrary):
                                )
                        )
 
-        login_redirect = "/"
+        login_redirect = "/?"
         if 'login_redirect' in session:
             login_redirect = session['login_redirect']
             if login_redirect is None:
-                login_redirect = "/"
+                login_redirect = "/?"
             session.delete('login_redirect')
 
         returnValue(self.redirect(request, login_redirect))
@@ -852,13 +852,13 @@ class WebInterface(YomboLibrary):
     @require_auth()
     @run_first()
     def page_login_pin_get(self, request):
-        return self.redirect(request, '/')
+        return self.redirect(request, '/?')
 
     def restart(self, request, message=None, redirect=None):
         if message is None:
             message = "Web interface requested restart."
         if redirect is None:
-            redirect = "/"
+            redirect = "/?"
 
         page = self.get_template(request, self._dir + 'pages/restart.html')
         reactor.callLater(0.3, self.do_restart)
