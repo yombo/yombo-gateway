@@ -127,6 +127,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'machine_label': 'machine_label',
                     'label': 'label',
                     'notes': 'notes',
+                    'platform': 'platform',
+                    'attributes': 'attributes',
                     'description': 'description',
                     'gateway_id': 'gateway_id',
                     'device_type_id': 'device_type_id',

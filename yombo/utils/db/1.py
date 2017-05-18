@@ -65,6 +65,8 @@ def upgrade(Registry, **kwargs):
      `statistic_label` TEXT,
      `statistic_lifetime` INTEGER DEFAULT 0,
      `notes`           TEXT,
+     `platform`        TEXT,
+     `attributes`      TEXT,
      `voice_cmd`       TEXT,
      `voice_cmd_order` TEXT,
      `voice_cmd_src`   TEXT,
@@ -112,6 +114,7 @@ def upgrade(Registry, **kwargs):
      `device_id`            TEXT NOT NULL, /* device_id */
      `set_time`             REAL NOT NULL,
      `energy_usage`         INTEGER NOT NULL,
+     `energy_type`          TEXT,
      `human_status`         TEXT NOT NULL,
      `human_message`        TEXT NOT NULL,
      `last_command`         TEXT,

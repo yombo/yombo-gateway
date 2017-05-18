@@ -407,7 +407,7 @@ class LocalDB(YomboLibrary):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
         records = yield self.dbconfig.select('device_status',
-                                             select='device_id, set_time, energy_usage, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable',
+                                             select='device_id, set_time, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable',
                                              where=['device_id = ?', id], orderby='set_time', limit=limit)
         for index in range(len(records)):
             records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
@@ -418,6 +418,7 @@ class LocalDB(YomboLibrary):
     def save_device_status(self, device_id, **kwargs):
         set_time = kwargs.get('set_time', time())
         energy_usage = kwargs['energy_usage']
+        energy_type = kwargs['energy_type']
         machine_status = kwargs['machine_status']
         human_status = kwargs.get('human_status', machine_status)
         human_message = kwargs.get('human_message', machine_status)
@@ -432,6 +433,7 @@ class LocalDB(YomboLibrary):
             device_id=device_id,
             set_time=set_time,
             energy_usage=energy_usage,
+            energy_type=energy_type,
             human_status=human_status,
             human_message=human_message,
             last_command=last_command,
