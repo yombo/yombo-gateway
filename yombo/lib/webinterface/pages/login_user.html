@@ -82,7 +82,7 @@
                                     <br>
                                     <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
                                     <div>&nbsp;</div>
-                                    <button type="submit" id="submit_login" class="btn btn-lg btn-success btn-block">Login</button>
+                                    <button type="submit" id="submit" class="btn btn-lg btn-success btn-block">Login</button>
                                 </fieldset>
                             </form>
                          </div>
@@ -156,6 +156,7 @@ $().ready(function() {
         },
         submitHandler: function(form) {
             if (grecaptcha.getResponse()) {
+                $('#submit').prop('disabled', true);
                 form.submit();
             } else {
                 alert('Please confirm captcha to proceed')
