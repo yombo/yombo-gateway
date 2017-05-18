@@ -736,7 +736,11 @@ class WebInterface(YomboLibrary):
     @webapp.route('/logout', methods=['GET'])
     @run_first()
     def page_logout_get(self, request):
-        self.sessions.close_session(request)
+        try:
+            self.sessions.close_session(request)
+        except:
+            pass
+
         request.received_cookies[self.sessions.config.cookie_session] = 'LOGOFF'
         return self.home(request)
 
