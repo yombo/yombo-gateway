@@ -387,7 +387,7 @@ class Modules(YomboLibrary):
 
                 self._localModuleVars[mod_label] = {}
                 for item in options:
-                    logger.info("Adding module from localmodule.ini: {item}", item=item)
+                    logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
                     if item not in self._localModuleVars[mod_label]:
                         self._localModuleVars[mod_label][item] = []
                     values = ini.get(section, item)

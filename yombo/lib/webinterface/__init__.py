@@ -471,15 +471,12 @@ class WebInterface(YomboLibrary):
                 else:
                     chainpyssl = None
                 # chainpyssl = None
-                print "privkeypyssl: %s" % privkeypyssl
-                print "certpyssl: %s" % certpyssl
-                print "chain: %s" % chainpyssl
                 contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
                                                         certificate=certpyssl,
                                                         extraCertChain=chainpyssl)
 
                 self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory, contextFactory)
-        logger.warn("done starting web servers")
+        logger.debug("done starting web servers")
         self.already_start_web_servers = False
 
     def _configuration_set_(self, **kwargs):

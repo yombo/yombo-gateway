@@ -204,7 +204,8 @@ class SSLCerts(YomboLibrary):
             logger.debug("found by cert! {cert_requested}", sslname_requested=sslname_requested)
             return self.managed_certs[sslname_requested].get()
         else:
-            logger.info("Could not find cert for '{sslname}', sending self signed. Library or module should implement _sslcerts_ with a callback method.", sslname=sslname_requested)
+            if sslname_requested != 'selfsigned':
+                logger.info("Could not find cert for '{sslname}', sending self signed. Library or module should implement _sslcerts_ with a callback method.", sslname=sslname_requested)
             return {
                 'key': self.self_signed_key,
                 'cert': self.self_signed_cert,

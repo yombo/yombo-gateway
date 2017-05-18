@@ -791,7 +791,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
 
         :param connection: The connection to Yombo AMQP server.
         """
-        self._local_log("warn", "PikaProtocol::connected")
+        self._local_log("debug", "PikaProtocol::connected")
         self.connection = connection
         self.channel = yield connection.channel()
 

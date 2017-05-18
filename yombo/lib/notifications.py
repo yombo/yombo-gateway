@@ -343,8 +343,6 @@ class Notification:
         self.persist = notice['persist']
         self.created = notice['created']
 
-        print "new notif: %s" % notice
-
     def __str__(self):
         """
         Print a string when printing the class.  This will return the command_id so that
