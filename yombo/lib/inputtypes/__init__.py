@@ -17,6 +17,8 @@ The input type (singular) class represents one input type.
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
+from functools import partial
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
@@ -24,9 +26,33 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
-
+from yombo.utils import search_instance, do_search_instance, global_invoke_all, global_invoke_libraries, global_invoke_modules
 logger = get_logger('library.inputtypes')
+
+BASE_VALIDATORS = [
+        ['yombo.lib.inputtypes.any', '_Any'],
+        ['yombo.lib.inputtypes.email', 'Email'],
+        ['yombo.lib.inputtypes.float', '_Float'],
+        ['yombo.lib.inputtypes.integer', 'Integer'],
+        ['yombo.lib.inputtypes.ip_address', 'IP_Address'],
+        ['yombo.lib.inputtypes.ip_address', 'IP_Address_Public'],
+        ['yombo.lib.inputtypes.ip_address', 'IP_Address_Private'],
+        ['yombo.lib.inputtypes.ip_address', 'IPv4_Address'],
+        ['yombo.lib.inputtypes.ip_address', 'IPv4_Address_Public'],
+        ['yombo.lib.inputtypes.ip_address', 'IPv4_Address_Private'],
+        ['yombo.lib.inputtypes.ip_address', 'IPv6_Address'],
+        ['yombo.lib.inputtypes.ip_address', 'IPv6_Address_Public'],
+        ['yombo.lib.inputtypes.ip_address', 'IPv6_Address_Private'],
+        ['yombo.lib.inputtypes.latin_alphabet', 'Latin_Alphabet'],
+        ['yombo.lib.inputtypes.latin_alphanumeric', 'Latin_Alphanumeric'],
+        ['yombo.lib.inputtypes.none', '_None'],
+        ['yombo.lib.inputtypes.password', 'Password'],
+        ['yombo.lib.inputtypes.percent', 'Percent'],
+        ['yombo.lib.inputtypes.string', 'String'],
+        ['yombo.lib.inputtypes.voice_command', 'Voice_Command'],
+        ['yombo.lib.inputtypes.yombo_command', 'Yombo_Command'],
+        ['yombo.lib.inputtypes.yombo_device', 'Yombo_Device'],
+]
 
 class InputTypes(YomboLibrary):
     """
@@ -159,6 +185,8 @@ class InputTypes(YomboLibrary):
         self.input_type_search_attributes = ['input_type_id', 'category_id', 'label', 'machine_label', 'description',
             'status', 'always_load', 'public']
 
+        self.validators = {}
+
     def _load_(self):
         """
         Loads all input types from DB to various arrays for quick lookup.
@@ -167,6 +195,13 @@ class InputTypes(YomboLibrary):
         self._load_input_types_from_database()
         return self.load_deferred
 
+    @inlineCallbacks
+    def _start_(self):
+        self.load_validators(BASE_VALIDATORS)
+
+        validators = yield global_invoke_libraries('_input_type_validators_', called_by=self)
+        self.load_validators(validators)
+
     def _stop_(self):
         """
         Cleans up any pending deferreds.
@@ -174,33 +209,42 @@ class InputTypes(YomboLibrary):
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    # @inlineCallbacks
-    # def _load_input_types(self):
-    #     """
-    #     Load the input types into memory.
-    #     """
-    #     self.input_types.clear()
-    #
-    #     input_types = yield self._LocalDB.get_input_types()
-    #     for input in input_types:
-    #         self._add_input_type(input)
-    #     logger.debug("Done _load_input_types: {input_types}", input_types=self.input_types)
-    #     self.load_deferred.callback(10)
-    #
-    # def _add_input_type(self, record, testCommand=False):
-    #     """
-    #     Add an input type on data from a row in the SQL database.
-    #
-    #     :param record: Row of items from the SQLite3 database.
-    #     :type record: dict
-    #     :param test: If true, is a test and not from SQL, only used for unittest.
-    #     :type test: bool
-    #     :returns: Pointer to new input type. Only used during unittest
-    #     """
-    #     logger.debug("record: {record}", record=record)
-    #     input_type_id = record.id
-    #     self.input_types[input_type_id] = InputType(record)
+    @inlineCallbacks
+    def _modules_inited_(self):
+        """
+        Called before the modules have their preload called, after their _init_.
 
+        In turn, calls the hook "sslcerts" to get any additional input type validators.
+        """
+        validators = yield global_invoke_libraries('_input_type_validators_', called_by=self)
+        self.load_validators(validators)
+
+    def load_validators(self, validators):
+        """
+        Load the validators and prep them for usage.
+        
+        :param validators: 
+        :return: 
+        """
+        for item in validators:
+            item_key = item[1].lower()
+            if item_key.startswith('_'):
+                item_key = item_key[1:]
+            try:
+                input_type = self.get(item_key, limiter=.95)
+            except:
+                # print "Skipping validator due to input type not being loaded: %s" % item_key
+                continue
+
+            module_root = __import__(item[0], globals(), locals(), [], 0)
+            module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
+            klass = getattr(module_tail, item[1])
+            if not callable(klass):
+                logger.warn("Unable to start validator '{name}', it's not callable.", name=item[1])
+                raise ImportError("Unable to start validator '%s', it's not callable." % item[1])
+            self.validators[item_key] = klass(self)
+
+            input_type.validate = partial(self.validators[item_key].validate)
 
     @inlineCallbacks
     def _load_input_types_from_database(self):
@@ -242,7 +286,7 @@ class InputTypes(YomboLibrary):
         if input_type_id not in self.input_types:
             global_invoke_all('_input_type_before_load_',
                               **{'input_type': input_type})
-            self.input_types[input_type_id] = InputType(input_type)
+            self.input_types[input_type_id] = InputType(self, input_type)
             global_invoke_all('_input_type_loaded_',
                           **{'input_type': self.input_types[input_type_id]})
         elif input_type_id not in self.input_types:
@@ -317,13 +361,13 @@ class InputTypes(YomboLibrary):
                 }
             ]
             try:
-                logger.debug("Get is about to call search...: %s" % input_type_requested)
+                # logger.debug("Get is about to call search...: %s" % input_type_requested)
                 # found, key, item, ratio, others = self._search(attrs, operation="highest")
                 found, key, item, ratio, others = do_search_instance(attrs, self.input_types,
                                                                      self.input_type_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
-                logger.debug("found input type by search: {input_type_id}", input_type_id=key)
+                # logger.debug("found input type by search: {input_type_id}", input_type_id=key)
                 if found:
                     return item
                 else:
@@ -548,7 +592,7 @@ class InputType(object):
     :ivar updated: (int) EPOCH time when last updated
     """
 
-    def __init__(self, input_type):
+    def __init__(self, parent, input_type):
         """
         Setup the input type object using information passed in.
 
@@ -558,6 +602,7 @@ class InputType(object):
         """
         logger.debug("input_type info: {input_type}", input_type=input_type)
 
+        self._Parent = parent
         self.input_type_id = input_type['id']
         self.machine_label = input_type['machine_label']
         self.updated_srv = None
@@ -565,6 +610,7 @@ class InputType(object):
         # below are configure in update_attributes()
         self.category_id = None
         self.label = None
+        self.machine_label = None
         self.description = None
         self.input_regex = None
         self.always_load = None
@@ -572,7 +618,12 @@ class InputType(object):
         self.public = None
         self.created = None
         self.updated = None
+        self.validate = self.validate  # is set in the load validators up above. This will become a callable.
         self.update_attributes(input_type)
+
+    def validate(self, input, **kwargs):
+        logger.warn("Input type doesn't have a validator. Accepting input by default. '{machine_label}",
+                    machine_label=self.machine_label)
 
     def update_attributes(self, input_type):
         """
@@ -584,6 +635,7 @@ class InputType(object):
         """
         self.category_id = input_type['category_id']
         self.label = input_type['label']
+        self.machine_label = input_type['machine_label']
         self.description = input_type['description']
         self.input_regex = input_type['input_regex']
         self.always_load = input_type['always_load']
