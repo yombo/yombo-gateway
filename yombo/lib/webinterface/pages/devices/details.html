@@ -118,6 +118,10 @@
                                         {{ device.statistic_label }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
                                         {{ device.statistic_lifetime }}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
+                                        {{ device.PLATFORM }}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Attributes: </label><br>
+                                        {{ device.attributes }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label><br>
                                         {{ device.energy_type }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Energy Map: </label><br>
@@ -261,6 +265,18 @@ $('.deviceCmd').click(function (event){
             $("#cmdresult").html(resp.message);
             $("#cmdresultmodal").modal('show');
             setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);
+        },
+        error:function (xhr, ajaxOptions, thrownError){
+            $("#cmdresult").html(xhr.responseJSON.message + ' <br><label><a href="' + xhr.responseJSON.redirect + '">Login</a></label>');
+            $("#cmdresultmodal").modal('show');
+
+            if(xhr.status==404) {
+                alert(thrownError);
+            }
+        },
+        fail: function(resp){
+            console.log("got fail");
+            console.log(resp.message);
         }
      })
      return false; //for good measure

@@ -16,28 +16,53 @@ from yombo.lib.webinterface.auth import require_auth
 
 from yombo.utils import epoch_to_string
 
-def return_good(message, payload=None):
+def return_good(request, message=None, payload=None, status=None):
+    if status is None:
+        status = 200
+    request.setResponseCode(status)
     if payload is None:
         payload = {}
+    if message is None:
+        message = "OK"
     return {
-        'status': 200,
+        'status': status,
         'message': message,
         'payload': payload,
     }
 
-def return_not_found(message, status=404):
+def return_not_found(request, message=None, status=None):
+    if status is None:
+        status = 404
+    request.setResponseCode(status)
+    if message is None:
+        message = "Not found"
     return json.dumps({
         'status': status,
         'message': message,
     })
 
-def return_error(message, status=500):
+def return_error(request, message=None, status=None):
+    if status is 500:
+        status = 401
+    request.setResponseCode(status)
+    if message is None:
+        message = "System error"
     return json.dumps({
         'status': status,
         'message': message,
     })
 
-
+def return_unauthorized(request, message=None, status=None):
+    if status is None:
+        status = 401
+    request.setResponseCode(status)
+    if message is None:
+        message = "Not authorized"
+    return json.dumps({
+        'status': status,
+        'message': message,
+        'redirect': "/?",
+    })
 
 
 def route_api_v1(webapp):
@@ -51,7 +76,7 @@ def route_api_v1(webapp):
             return "y-pong-01"
 
         @webapp.route('/uptime')
-        @require_auth()
+        @require_auth(api=True)
         def api_v1_uptime(webinterface, request, session):
             if webinterface.starting == True:
                 return;
@@ -63,25 +88,26 @@ def route_api_v1(webapp):
             try:
                 platform = request.args.get('platform')[0]
             except:
-                return return_error('platform must be specified.')
+                return return_error(request, 'platform must be specified.')
             # try:
             #     type = request.args.get('type')[0]
             # except:
             #     return return_error('type must be specified.')
             webinterface._Automation.get_available_items(platform=platform)
 
-            a = return_good('The list')
+            a = return_good(request, 'The list')
             request.setHeader('Content-Type', 'application/json')
             return json.dumps(a)
 
         @webapp.route('/devices/<string:device_id>/command/<string:command_id>', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         def ajax_devices_command_get(webinterface, request, session, device_id, command_id):
 
+            # return return_unauthorized(request)
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
-                return return_not_found('device not found')
+                return return_not_found(request, 'device not found')
 
             try:
                 device.command(
@@ -92,16 +118,16 @@ def route_api_v1(webapp):
                         'gateway': webinterface.gwid
                     }
                     )
-                a = return_good('Command executed.')
+                a = return_good(request, 'Command executed.')
                 request.setHeader('Content-Type', 'application/json')
                 return json.dumps(a)
             except KeyError as e:
-                return return_not_found('command not found')
+                return return_not_found(request, 'Error with command: %s' % e)
 
         @webapp.route('/notifications', methods=['GET'])
         @require_auth()
         def api_v1_notifications_get(webinterface, request, session):
-            return return_good(''. webinterface.notifications.notifications)
+            return return_good(request, ''. webinterface.notifications.notifications)
 
         @webapp.route('/web_notif', methods=['GET'])
         @require_auth()
@@ -137,32 +163,32 @@ def route_api_v1(webapp):
             bucket_size = int(request.args.get('bucket_size', [3600, ])[0])
 
             if stat_name is None:
-                returnValue(return_error("'name' is required."))
+                returnValue(return_error(request, "'name' is required."))
             if not isinstance(stat_name, six.string_types):
-                returnValue(return_error("'name' Must be a string. Got: %s" % stat_name))
+                returnValue(return_error(request, "'name' Must be a string. Got: %s" % stat_name))
 
             if time_start is not None:
                 if not isinstance(time_start, int) or time_start < 0:
-                    returnValue(return_error("'start' must be an int and must be greater than 0"))
+                    returnValue(return_error(request, "'start' must be an int and must be greater than 0"))
 
             if time_end is not None:
                 if not isinstance(time_end, int) or time_end < 0:
-                    returnValue(return_error("'end' must be an int and must be greater than 0"))
+                    returnValue(return_error(request, "'end' must be an int and must be greater than 0"))
 
             if stat_type is not None:
                 if stat_type is not isinstance(stat_type, six.string_types):
-                    returnValue(return_error("'type' Must be a string"))
+                    returnValue(return_error(request, "'type' Must be a string"))
                 if stat_type not in ('counter', 'datapoint', 'average'):
-                    returnValue(return_error("'type' must be either: 'counter', 'datapoint', or 'average'"))
+                    returnValue(return_error(request, "'type' must be either: 'counter', 'datapoint', or 'average'"))
 
             if bucket_size is not None:
                 if bucket_size < 0:
-                    returnValue(return_error("'bucket_size' must be an int and must be greater than 0."))
+                    returnValue(return_error(request, "'bucket_size' must be an int and must be greater than 0."))
 
             if time_last is not None:
                 time_last = int(time_last)
                 if time_last < 0:
-                    returnValue(return_error("'last' must be an int and must be greater than 0."))
+                    returnValue(return_error(request, "'last' must be an int and must be greater than 0."))
                 time_start = int(time()) - time_last
 
             records = yield webinterface._Libraries['localdb'].get_stats_sums(stat_name, bucket_size=bucket_size,

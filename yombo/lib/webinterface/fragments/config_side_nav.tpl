@@ -18,7 +18,7 @@
                             <!-- /input-group -->
                         </li>
                         <li>
-                            <a href="/"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
+                            <a href="/?"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
                         </li>
 						<li>
                             <a href="#" class="dropdown-collapse"><i class="fa fa-wrench fa-fw"></i> <span class="side-menu-title">Settings</span><span class="fa arrow"></span></a>

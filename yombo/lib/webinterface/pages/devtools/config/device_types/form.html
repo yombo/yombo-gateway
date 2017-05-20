@@ -44,7 +44,8 @@
                             <br>
                             <div class="input-group">
                                 <input {% if action_type == 'edit' %}disabled {% endif %}tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'device_type_name', 'devicetypename'" value="{{ device_type.machine_label }}">
-                                <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ device_type.machine_label }}">                            </div>
+                                <input type="hidden" class="form-control" name="machine_label_hidden" id="machine_label_hidden" size="30" value="{{ device_type.machine_label }}">
+                            </div>
 						</div>
 
 						<div class="form-group">
@@ -77,6 +78,30 @@
 						</div>
 
 						<div class="form-group">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Platform: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalPlatform"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalPlatform", 'Platform', '
+                            <p>A platform is way to classify devices. A platform is a class that is used to instantiate the
+                            device. The base or default platform is "device". Other base classes defined by Yombo:</p>
+                            <ul>
+                                <li>light - A light based device. Has attributes for lights such as dimming.</li>
+                                <li>appliance - A light based device. Has attributes for lights such as dimming.</li>
+                                <ul>
+                                    <li>relay - A subclass of appliance. Renames toggle commands to 'open' and 'close'.</li>
+                                </ul>
+                            </ul>
+                            <p>A module can define additional classes. See <a href="https://yombo.net/docs/modules/device_platforms/"
+                            target="_blank">Yombo Developer Documentation</a> for more details. </p>
+                            <p>This value can be a comma seperated list of classes to try to instantiate the device with,
+                            from highest to lowest. Example: "special_relay, relay, appliance, device".</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <input tabindex=5" type="text" class="form-control" name="label" id="label" size="30" placeholder="zwave_light, light, device" value="{{ device.platform|hide_none }}" required>
+                            </div>
+						</div>
+
+						<div class="form-group">
                             <label style="margin-top: 0px; margin-bottom: 0px">Status: </label>
                             <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalstatus", 'Status: enabled / disabled', '
@@ -85,7 +110,7 @@
                             delete device type to fully propogate through the entire Yombo eco system.</p>') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="status" id="status">
+                                <select tabindex="6" class="selectpicker show-tick form-control" name="status" id="status">
                                     <option value="0"{% if device_type.status == 0 %} selected{% endif %} data-subtext="Gateways cannot use.">Disabled</option>
                                     <option value="1"{% if device_type.status == 1 %} selected{% endif %} data-subtext="Works as normal.">Enabled</option>
                                     <option value="2"{% if device_type.status == 2 %} selected{% endif %} data-subtext="Will be removed soon.">Deleted</option>
@@ -106,7 +131,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <select tabindex="5" class="selectpicker show-tick form-control" name="public" id="public">
+                                <select tabindex="7" class="selectpicker show-tick form-control" name="public" id="public">
                                     <option value="0"{% if device_type.public == 0 %} selected{% endif %} data-subtext="Only current user can access.">Private</option>
                                     <option value="1"{% if device_type.public == 1 %} selected{% endif %} data-subtext="Request Yombo to make item available to all.">Public Pending</option>
                                     <option value="2"{% if device_type.public == 2 %} selected{% endif %} data-subtext="Available to everyone.">Public</option>

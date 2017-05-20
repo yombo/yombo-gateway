@@ -1299,6 +1299,7 @@ def route_devtools_config(webapp):
 
             data = {
                 'category_id': webinterface.request_get_default(request, 'category_id', ""),
+                'platform': webinterface.request_get_default(request, 'platform', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
@@ -1319,6 +1320,7 @@ def route_devtools_config(webapp):
         def page_devtools_device_types_add_post(webinterface, request, session):
             data = {
                 'category_id': webinterface.request_get_default(request, 'category_id', ""),
+                'platform': webinterface.request_get_default(request, 'platform', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
@@ -1386,6 +1388,7 @@ def route_devtools_config(webapp):
         def page_devtools_device_types_edit_post(webinterface, request, session, device_type_id):
             data = {
                 'category_id': webinterface.request_get_default(request, 'category_id', ""),
+                'platform': webinterface.request_get_default(request, 'platform', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),
                 #                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),

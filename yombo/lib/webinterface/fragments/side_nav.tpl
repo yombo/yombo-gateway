@@ -17,7 +17,7 @@
                             <!--&lt;!&ndash; /input-group &ndash;&gt;-->
                         <!--</li>-->
                         <li>
-                            <a href="/"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
+                            <a href="/?"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
                         </li>
         {%- for priority1, items in misc_wi_data.nav_side.iteritems() -%}
             {% set printed_nested_header = False -%}
