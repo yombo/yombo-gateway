@@ -38,6 +38,8 @@ class AutomationExample(YomboModule):
         :return: Returns a dictionary of rules to be parsed.
         :rtype: dict
         """
+        self._States['demo.automationexample'] = 0
+        # return
         return{'rules': [
             {
                 'name': 'Empty test 0',
@@ -69,7 +71,7 @@ class AutomationExample(YomboModule):
                         },
                     'filter': {
                         'platform': 'basic_values',
-                        'value': 'true'
+                        'value': 'false'
                         }
                     },
                 ],
@@ -79,15 +81,18 @@ class AutomationExample(YomboModule):
                         'component_type': 'module',
                         'component_name': 'AutomationExample',
                         'component_function': 'call_when_low',
+                        'delay': '5s',
                         'arguments': {
                             'argument1': 'somevalue'
                         }
-                    }
-                ,
+                    },
                     {
                         'platform': 'devices',
-                        'device': 'Christmas tree',
-                        'command': 'off',
+                        'device': 'hv out 1',
+                        'command': 'open',
+                        'arguments': {
+                            'delay': '5',
+                        }
                     }
                 ]
             },
@@ -107,49 +112,55 @@ class AutomationExample(YomboModule):
                     {
                         'platform': 'call_function',
                         'component_callback': self.call_when_high,
+                        'delay': 5,
                         'arguments': {
                             'argument1': 'somevalue'
                         }
-                    }
-                ,
+                    },
 
                     {
                         'platform': 'devices',
-                        'device': 'Christmas tree',
-                        'command': 'on',
+                        'device': 'hv out 1',
+                        'command': 'close',
+                        'arguments': {
+                            'delay': '5',
+                        }
                     }
                 ],
             },
-            {
-                'name': 'AutomationExample',
-                'description': 'Test rule created in AutomationExample module',
-                'trigger': {
-                    'source': {
-                        'platform': 'devices',
-                        'device': 'Christmas Tree',
-                    },
-                    'filter': {
-                        'platform': 'basic_values',
-                        'value': 1
-                    }
-                },
-                'action': [
-                    {
-                        'platform': 'call_function',
-                        'component_callback': self.call_when_high,
-                        'arguments': {
-                            'command': 'off'
-                        }
-                    }
-                ]
-            }
+            # {
+            #     'name': 'AutomationExample',
+            #     'description': 'Test rule created in AutomationExample module',
+            #     'trigger': {
+            #         'source': {
+
+
+
+            #             'platform': 'devices',
+            #             'device': 'hv out 1',
+            #         },
+            #         'filter': {
+            #             'platform': 'basic_values',
+            #             'value': 1
+            #         }
+            #     },
+            #     'action': [
+            #         {
+            #             'platform': 'call_function',
+            #             'component_callback': self.call_when_high,
+            #             'arguments': {
+            #                 'command': 'off'
+            #             }
+            #         }
+            #     ]
+            # }
             ]
         }
         
     def _start_(self):
         logger.info("States: Is Light: {times_light}", times_light=self._States['is.light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
-        self._States['demo.automationexample'] = 0
+        self._States['demo.automationexample'] = 1
 
     def set_high(self):
         logger.info("in set_high - setting automationexample = 1")
@@ -161,11 +172,12 @@ class AutomationExample(YomboModule):
 
     def call_when_high(self, **kwargs):
         logger.info("it's now high! {kwargs}", kwargs=kwargs)
-        reactor.callLater(5, self.set_low)
+        self.set_low()
 
     def call_when_low(self, **kwargs):
         logger.info("it's now low! {kwargs}", kwargs=kwargs)
-        reactor.callLater(5, self.set_high)
+        self.set_high()
+        #reactor.callLater(5, self.set_high)
 
     def _stop_(self):
         pass
