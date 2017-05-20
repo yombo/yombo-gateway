@@ -17,6 +17,7 @@ Also calls module hooks as requested by other libraries and modules.
 :license: LICENSE for details.
 """
 # Import python libraries
+from __future__ import absolute_import
 import ConfigParser
 import sys
 import traceback
@@ -203,6 +204,12 @@ class Modules(YomboLibrary):
             'short_description', 'description_formatting', '_public', '_status']
 
     @inlineCallbacks
+    def import_modules(self):
+        #        logger.debug("starting modules::load_modules !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
+        yield self.do_import_modules()  # Just call "import moduleName"
+
+    @inlineCallbacks
     def load_modules(self):
         """
         Loads the modules. Imports and calls various module hooks at startup.
@@ -225,9 +232,6 @@ class Modules(YomboLibrary):
 
         :return:
         """
-#        logger.debug("starting modules::load_modules !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
-        yield self.import_modules()  # Just call "import moduleName"
 
         logger.debug("starting modules::init....")
         # Init
@@ -296,6 +300,7 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def build_raw_module_list(self):
+        logger.debug("Building raw module list start.")
         try:
             fp = open("localmodules.ini")
             ini = ConfigParser.SafeConfigParser()
@@ -303,6 +308,8 @@ class Modules(YomboLibrary):
             ini.readfp(fp)
             for section in ini.sections():
                 options = ini.options(section)
+                # print("options before loading: %s" % options)
+                # print("options before loading: %s" % type(options))
                 if 'mod_machine_label' in options:
                     mod_machine_label = ini.get(section, 'mod_machine_label')
                     options.remove('mod_machine_label')
@@ -386,6 +393,7 @@ class Modules(YomboLibrary):
                 }
 
                 self._localModuleVars[mod_label] = {}
+                # print("options before adding: %s" % options)
                 for item in options:
                     logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
                     if item not in self._localModuleVars[mod_label]:
@@ -413,6 +421,7 @@ class Modules(YomboLibrary):
                         }
                         self._localModuleVars[mod_label][variable['field_machine_label']].append(variable)
 
+                # print("done importing variables frmom localmodule.ini")
 #            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
             fp.close()
         except IOError as (errno, strerror):
@@ -425,8 +434,9 @@ class Modules(YomboLibrary):
                 continue
             self._rawModulesList[data['id']] = data
 
+        # print("getting DB modules.")
         modulesDB = yield self._LocalDB.get_modules()
-        # print "modulesdb: %s" % modulesDB
+        # print("modulesdb: %s" % modulesDB)
         # print " "
         for module in modulesDB:
             # print "module: %s" % module
@@ -434,10 +444,12 @@ class Modules(YomboLibrary):
             self._rawModulesList[module.id]['load_source'] = 'sql'
         # print "_rawModulesList: %s" % self._rawModulesList
 
+        logger.debug("Building raw module list done.")
+
 #        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
-    def import_modules(self):
-        logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
+    def do_import_modules(self):
+        # logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
         for module_id, module in self._rawModulesList.iteritems():
             pathName = "yombo.modules.%s" % module['machine_label']
             # print "loading: %s" % pathName
