@@ -30,7 +30,7 @@ import parsedatetime.parsedatetime as pdt
 from struct import pack as struct_pack, unpack as struct_unpack
 from socket import inet_aton, inet_ntoa
 import math
-from time import strftime, localtime
+from time import strftime, localtime, time
 import netifaces
 import netaddr
 import socket
@@ -154,7 +154,7 @@ def epoch_to_string(the_time, format_string=None):
     return strftime(format_string, localtime(the_time))
 
 
-def epoch_from_string( the_string ):
+def epoch_from_string( the_string , difference = None):
     """
     Receives a string and parses it into seconds. Some example strings:
 
@@ -165,10 +165,17 @@ def epoch_from_string( the_string ):
     Inspiration from here:
     http://stackoverflow.com/questions/1810432/handling-the-different-results-from-parsedatetime
 
-    :param s:
-    :return:
+    :param the_string: The string to parse
+    :type the_string: str
+    :param difference: Return is a difference in seconds from current epoch.
+    :type dict: bool
+    :return: Either epoch time the diference between the_string and epoch.
+    :rtype: float
     """
+    if isinstance(the_string, int) or isinstance(the_string, float):
+        the_string = "%ss" % the_string
     c = pdt.Calendar()
+    cur_time = time()
     result, what = c.parse( the_string )
 
     dt = None
@@ -188,7 +195,11 @@ def epoch_from_string( the_string ):
     if dt is None:
         # Failed to parse
         raise YomboWarning("Cannot parse this string into a date: '"+the_string+"'", 101, "epoch_from_string", 'utils')
-    return int(dt.strftime('%s'))
+
+    if difference is True:
+        return float(dt.strftime('%s'))-cur_time
+    else:
+        return float(dt.strftime('%s'))
 
 
 def convert_to_seconds(s):
@@ -1126,6 +1137,15 @@ def global_invoke_modules(hook, **kwargs):
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     returnValue(modules_results)
 
+@memoize_ttl(3600)
+def get_public_gw_id():
+    configs = get_component('yombo.gateway.lib.configuration')
+    try:
+        gwid = configs.get('core', 'gwid')[0:6] + ":" + configs.get('core', 'gwuuid')[0:5]
+        return gwid
+    except:
+        return "unknown"
+
 def get_component(name):
     """
     Return loaded component (module or library). This can be used to find
@@ -1164,6 +1184,10 @@ def is_string_bool(value=None):
             return False
         elif str(value).lower() == 'none':
             return None
+        else:
+            raise YomboWarning("String is not true, false, or none.")
+    if isinstance(value, bool):
+        return value
     raise YomboWarning("String is not true, false, or none.")
 
 
