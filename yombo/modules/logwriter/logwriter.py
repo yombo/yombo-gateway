@@ -38,7 +38,8 @@ class LogWriter(YomboModule):
         try:
             self.fp_out = open("logwriter.out", "a")
             logger.info("logwriter opened file: %s" % self.fileName)
-        except IOError as (errno, strerror):
+        except IOError as xxx_todo_changeme:
+            (errno, strerror) = xxx_todo_changeme.args
             logger.warn("Lowriter could not open file for writing. Reason: %s" % strerror)
             self.fp_out = None
             callLater(10, self.load)

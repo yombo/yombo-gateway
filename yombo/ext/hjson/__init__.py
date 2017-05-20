@@ -35,7 +35,7 @@ Using hjson.tool from the shell to validate and pretty-print::
     Other formats are -c for compact or -j for formatted JSON.
 
 """
-from __future__ import absolute_import
+
 __version__ = '1.5.2'
 __all__ = [
     'dump', 'dumps', 'load', 'loads',

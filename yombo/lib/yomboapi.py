@@ -14,7 +14,7 @@ Manages interactions with api.yombo.net
 import yombo.ext.umsgpack as msgpack
 
 try: # python 2/3
-    from urllib import quote as parse
+    from urllib.parse import quote as parse
 except ImportError:
     from urllib import parse
 from hashlib import sha1
@@ -264,7 +264,7 @@ class YomboAPI(YomboLibrary):
     def do_validate_login_key(self, login_key):
         try:
             results = yield self.request("GET", "/v1/user/login_key/validate/%s" % login_key)
-        except Exception, e:
+        except Exception as e:
             logger.info("do_validate_login_key API Errror: {error}", error=e)
             returnValue(False)
 
@@ -280,7 +280,7 @@ class YomboAPI(YomboLibrary):
     def do_validate_session(self, session):
         try:
             results = yield self.request("GET", "/v1/user/session/validate", None, session=session)
-        except Exception, e:
+        except Exception as e:
             logger.debug("$$$1 API Errror: {error}", error=e)
             returnValue(False)
 
@@ -298,7 +298,7 @@ class YomboAPI(YomboLibrary):
         results = yield self.request("POST", "/v1/user/login", {'login_key': login_key}, False)
         try:
             results = yield self.request("POST", "/v1/user/login", {'login_key': login_key}, False)
-        except Exception, e:
+        except Exception as e:
             logger.debug("$$$2 API Errror: {error}", error=e)
             returnValue(False)
 
@@ -340,7 +340,7 @@ class YomboAPI(YomboLibrary):
         if session is not None:
             headers['Authorization'] = 'Bearer %s' % session
 
-        for k, v in headers.iteritems():
+        for k, v in headers.items():
             headers[k] = v.encode('utf-8')
         return headers
 
@@ -431,7 +431,7 @@ class YomboAPI(YomboLibrary):
 
     def response_headers(self, response):
         data = {}
-        for key, value in response.headers._rawHeaders.iteritems():
+        for key, value in response.headers._rawHeaders.items():
             data[key.lower()] = value
         return data
 
@@ -490,7 +490,7 @@ class YomboAPI(YomboLibrary):
         """
         try:
             json_object = json.loads(myjson)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 
@@ -503,6 +503,6 @@ class YomboAPI(YomboLibrary):
         """
         try:
             json_object = msgpack.loads(mymsgpack)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True

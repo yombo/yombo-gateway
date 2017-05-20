@@ -54,7 +54,7 @@ To send a command to a device is simple.
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import print_function
+
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -184,7 +184,7 @@ class Devices(YomboLibrary):
         :return: A list of device IDs. 
         :rtype: list
         """
-        return self.devices.keys()
+        return list(self.devices.keys())
 
     def items(self):
         """
@@ -193,19 +193,19 @@ class Devices(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.devices.items()
+        return list(self.devices.items())
 
     def iteritems(self):
-        return self.devices.iteritems()
+        return iter(self.devices.items())
 
     def iterkeys(self):
-        return self.devices.iterkeys()
+        return iter(self.devices.keys())
 
     def itervalues(self):
-        return self.devices.itervalues()
+        return iter(self.devices.values())
 
     def values(self):
-        return self.devices.values()
+        return list(self.devices.values())
 
     def _init_(self):
         """
@@ -250,7 +250,7 @@ class Devices(YomboLibrary):
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
     def _modules_started_(self):
-        for request_id, device_command in self.device_commands.iteritems():
+        for request_id, device_command in self.device_commands.items():
             device_command.start()
 
     def _unload_(self):
@@ -258,7 +258,7 @@ class Devices(YomboLibrary):
         Save any device commands that need to be saved.
         :return: 
         """
-        for request_id, device_command in self.device_commands.iteritems():
+        for request_id, device_command in self.device_commands.items():
             device_command.save_to_db(True)
 
     def _reload_(self):
@@ -270,7 +270,7 @@ class Devices(YomboLibrary):
         old messages and prepare future messages to run.
         """
         self.processing_commands = True
-        for command, request in self.startup_queue.iteritems():
+        for command, request in self.startup_queue.items():
             self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
                     max_delay=request['max_delay'], **request['kwargs'])
         self.startup_queue.clear()
@@ -312,7 +312,7 @@ class Devices(YomboLibrary):
         """
         if key is None:
             key = 'label'
-        return OrderedDict(sorted(self.devices.iteritems(), key=lambda i: i[1][key]))
+        return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: i[1][key]))
 
     @inlineCallbacks
     def import_device(self, device, test_device=None):  # load or re-load if there was an update.
@@ -410,14 +410,14 @@ class Devices(YomboLibrary):
         :return: 
         """
         cur_time = time()
-        for request_id in self.device_commands.keys():
+        for request_id in list(self.device_commands.keys()):
             device_command = self.device_commands[request_id]
             if device_command.finished_time > cur_time - (60*45):  # keep 45 minutes worth.
                 yield device_command.save_to_db()
                 del self.device_commands[request_id]
 
         # This is split up to incase a new request_id was created....
-        for persistent_request_id in self.device_commands_persistent.keys():
+        for persistent_request_id in list(self.device_commands_persistent.keys()):
             request_id = self.device_commands_persistent[persistent_request_id]
             if request_id not in self.device_commands:
                 del self.device_commands_persistent[persistent_request_id]
@@ -491,7 +491,7 @@ class Devices(YomboLibrary):
         try:
             device_label = self.get(parts[2].replace("_", " "))
             device = self.get(device_label)
-        except YomboDeviceError, e:
+        except YomboDeviceError as e:
             logger.info("Received MQTT request for a device that doesn't exist: %s" % parts[2])
             return
         if parts[3] == 'get':
@@ -533,7 +533,7 @@ class Devices(YomboLibrary):
             raise YomboWarning('Invalid field for device attribute: %s' % field)
 
         devices = []
-        for device_id, device in self.devices.iteritems():
+        for device_id, device in self.devices.items():
             devices.append(getattr(device, field))
         return devices
 
@@ -606,7 +606,7 @@ class Devices(YomboLibrary):
                     return self.devices[key]
                 else:
                     raise KeyError("Device not found: %s" % device_requested)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (device_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
@@ -639,7 +639,7 @@ class Devices(YomboLibrary):
         }
 
         try:
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
                 elif key in ['statistic_lifetime', 'pin_timeout']:
@@ -657,7 +657,7 @@ class Devices(YomboLibrary):
             }
             returnValue(results)
 
-        for key, value in data.iteritems():
+        for key, value in data.items():
             if key == 'energy_map':
                 api_data['energy_map'] = json.dumps(data['energy_map'], separators=(',',':'))
             else:
@@ -716,9 +716,9 @@ class Devices(YomboLibrary):
     @inlineCallbacks
     def set_device_variables(self, device_id, variables):
         # print("set variables: %s" % variables)
-        for field_id, data in variables.iteritems():
+        for field_id, data in variables.items():
             # print("devices.set_device_variables.data: %s" % data)
-            for data_id, value in data.iteritems():
+            for data_id, value in data.items():
                 if value == "":
                     continue
                 if data_id.startswith('new_'):
@@ -821,7 +821,7 @@ class Devices(YomboLibrary):
         device = self.devices[device_id]
 
         try:
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
                 elif key in ['statistic_lifetime', 'pin_timeout']:
@@ -840,7 +840,7 @@ class Devices(YomboLibrary):
             returnValue(results)
 
         api_data = {}
-        for key, value in data.iteritems():
+        for key, value in data.items():
             # print("key (%s) is of type: %s" % (key, type(value)))
             if isinstance(value, str) and len(value) > 0 and hasattr(device, key):
                 if key == 'energy_map':
@@ -1024,7 +1024,7 @@ class Devices(YomboLibrary):
                 device = self.get(portion['source']['device'], .89)
                 portion['source']['device_pointers'] = device
                 return portion
-            except Exception, e:
+            except Exception as e:
                 raise YomboWarning("Error while searching for device, could not be found: %s" % portion['source']['device'],
                                    101, 'devices_validate_source_callback', 'lib.devices')
         else:
@@ -1078,7 +1078,7 @@ class Devices(YomboLibrary):
         # for each command, list any additional inputs (device type command inputs)
 
         devices = []
-        for device_id, device in self.devices.iteritems():
+        for device_id, device in self.devices.items():
             devices.append({
                 'id': device.device_id,
                 'machine_label': device.machine_label,
@@ -1110,7 +1110,7 @@ class Devices(YomboLibrary):
                     devices.append(self.get(action['device']))
                 action['device_pointers'] = devices
                 return action
-            except Exception, e:
+            except Exception as e:
                 raise YomboWarning("Error while searching for device, could not be found: %s  Rason: %s" % (action['device'], e),
                                104, 'devices_validate_action_callback', 'lib.devices')
         else:

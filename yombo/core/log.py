@@ -9,7 +9,7 @@ Handles logging functions.
 :license: LICENSE for details.
 """
 # Import python libraries
-import ConfigParser
+import configparser
 from zope.interface import provider
 import io
 import os
@@ -69,15 +69,15 @@ bcolor = {'debug':'\033[94m',
 @provider(ILogObserver)
 def simpleObserver(event):
 #    event['log_system'] = "asdf"
-    print event
-    print(formatEvent(event))
+    print(event)
+    print((formatEvent(event)))
 
-logFormat = lambda event: u"{0} [{1}]: {2}".format(formatTime(event["log_time"]), event["log_level"].name.upper(),
+logFormat = lambda event: "{0} [{1}]: {2}".format(formatTime(event["log_time"]), event["log_level"].name.upper(),
                                                    formatEvent(event))
 
 @provider(ILogObserver)
 def consoleLogObserver(event):
-    print u"[{0}{1}\033[39m-{2}]: {3}".format(bcolor[event["log_level"].name.lower()], event["log_level"].name.upper(), event["log_namespace"], formatEvent(event))
+    print("[{0}{1}\033[39m-{2}]: {3}".format(bcolor[event["log_level"].name.lower()], event["log_level"].name.upper(), event["log_namespace"], formatEvent(event)))
 
 @static_var('rotate_loop', None)
 def get_logger(logname='yombolog', **kwargs):
@@ -116,7 +116,7 @@ def get_logger(logname='yombolog', **kwargs):
 
     # Determine the logging level
     if len(loggers) == 0:
-        config_parser = ConfigParser.SafeConfigParser()
+        config_parser = configparser.SafeConfigParser()
         try:
             fp = open('yombo.ini')
             config_parser.readfp(fp)
@@ -127,7 +127,7 @@ def get_logger(logname='yombolog', **kwargs):
             fp.close()
         except IOError:
             pass
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             pass
 
     logFilter = LogLevelFilterPredicate()

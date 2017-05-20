@@ -215,7 +215,7 @@ class Atoms(YomboLibrary):
         :return: A list of atoms defined. 
         :rtype: list
         """
-        return self.__Atoms.keys()
+        return list(self.__Atoms.keys())
 
     def items(self):
         """
@@ -224,19 +224,19 @@ class Atoms(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.__Atoms.items()
+        return list(self.__Atoms.items())
 
     def iteritems(self):
-        return self.__Atoms.iteritems()
+        return iter(self.__Atoms.items())
 
     def iterkeys(self):
-        return self.__Atoms.iterkeys()
+        return iter(self.__Atoms.keys())
 
     def itervalues(self):
-        return self.__Atoms.itervalues()
+        return iter(self.__Atoms.values())
 
     def values(self):
-        return self.__Atoms.values()
+        return list(self.__Atoms.values())
 
     def _init_(self):
         """
@@ -333,7 +333,7 @@ class Atoms(YomboLibrary):
                 logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                                state=key, resource=e.by_who)
                 returnValue(None)
-            for moduleName, newValue in atom_changes.iteritems():
+            for moduleName, newValue in atom_changes.items():
                 if newValue is not None:
                     logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
                                  moduleName=moduleName, newValue=newValue)

@@ -2949,7 +2949,7 @@ def route_devtools_config(webapp):
             }
 
             # print data
-            for data_key in data.keys():
+            for data_key in list(data.keys()):
                 # print "key:data %s:%s" % (data_key, data[data_key])
                 if isinstance(data[data_key], str) and len(data[data_key]) == 0:
                     del data[data_key]
@@ -3220,7 +3220,7 @@ def route_devtools_config(webapp):
                 'multiple': int(webinterface.request_get_default(request, 'multiple', 0)),
             }
 
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     del data[key]
                 elif key in ['value_min', 'value_max']:

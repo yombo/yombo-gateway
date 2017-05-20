@@ -83,7 +83,7 @@ allMatch = AllMatch()
 def conv_to_set(obj):  # Allow single integer to be provided
     if isinstance(obj, str) and obj == '*': # return AllMatch
         return conv_to_set(AllMatch) 
-    if isinstance(obj, (int,long)):
+    if isinstance(obj, int):
         return set([obj])  # Single item
     if not isinstance(obj, set):
         obj = set(obj)
@@ -186,7 +186,7 @@ class CronTab(YomboLibrary):
         :return: A list of cron task IDs. 
         :rtype: list
         """
-        return self.cron_tasks.keys()
+        return list(self.cron_tasks.keys())
 
     def items(self):
         """
@@ -195,19 +195,19 @@ class CronTab(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.cron_tasks.items()
+        return list(self.cron_tasks.items())
 
     def iteritems(self):
-        return self.cron_tasks.iteritems()
+        return iter(self.cron_tasks.items())
 
     def iterkeys(self):
-        return self.cron_tasks.iterkeys()
+        return iter(self.cron_tasks.keys())
 
     def itervalues(self):
-        return self.cron_tasks.itervalues()
+        return iter(self.cron_tasks.values())
 
     def values(self):
-        return self.cron_tasks.values()
+        return list(self.cron_tasks.values())
 
     def _init_(self):
         """
@@ -318,7 +318,7 @@ class CronTab(YomboLibrary):
                     return item
                 else:
                     raise KeyError("Cron tab not found: %s" % cron_task_requested)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (cron_task_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):

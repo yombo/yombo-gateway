@@ -17,7 +17,7 @@ Responsible for adding, removing, and updating devices that are used by the gate
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
 
-from __future__ import division
+
 from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -35,7 +35,7 @@ logger = get_logger("library.webinterface.route_devices")
 
 def add_devices_breadcrumb(webinterface, request, device_id):
     urls = OrderedDict()
-    for select_device_id, select_device in webinterface._Devices.sorted().iteritems():
+    for select_device_id, select_device in webinterface._Devices.sorted().items():
         if select_device.device_id == device_id:
             urls[select_device.label] = "$/devices/%s/details" % select_device_id
         else:
@@ -96,7 +96,7 @@ def route_devices(webapp):
         def page_devices_add_post(webinterface, request, session, device_type_id):
             try:
                 device_type = webinterface._DeviceTypes[device_type_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device Type ID was not found: %s' % device_type_id, 'warning')
                 returnValue(webinterface.redirect(request, '/devices/add'))
 
@@ -130,7 +130,7 @@ def route_devices(webapp):
                 else:
                     ok_to_save = False
 
-                energy_map = OrderedDict(sorted(energy_map.items(), key=lambda (x, y): float(x)))
+                energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y: float(x_y[0])))
 
 
             except Exception as e:
@@ -229,7 +229,7 @@ def route_devices(webapp):
         def page_devices_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/details.html')
@@ -250,7 +250,7 @@ def route_devices(webapp):
         def page_device_delete_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delete.html')
@@ -271,7 +271,7 @@ def route_devices(webapp):
             # print "in device delete post"
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
             confirm = request.args.get('confirm')[0]
@@ -297,7 +297,7 @@ def route_devices(webapp):
         def page_device_disable_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/disable.html')
@@ -317,7 +317,7 @@ def route_devices(webapp):
         def page_device_disable_post(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
             confirm = request.args.get('confirm')[0]
@@ -344,7 +344,7 @@ def route_devices(webapp):
         def page_device_enable_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/enable.html')
@@ -364,7 +364,7 @@ def route_devices(webapp):
         def page_device_enable_post(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
             confirm = request.args.get('confirm')[0]
@@ -391,7 +391,7 @@ def route_devices(webapp):
         def page_devices_edit_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices.get(device_id)
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
 
@@ -414,7 +414,7 @@ def route_devices(webapp):
         def page_devices_edit_post(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices.get(device_id)
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/devices/index'))
             status = request.args.get('status')[0]
@@ -449,7 +449,7 @@ def route_devices(webapp):
                 except:
                     pass
 
-            energy_map = OrderedDict(sorted(energy_map.items(), key=lambda (x, y): float(x)))
+            energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y1: float(x_y1[0])))
             json_output = json.loads(request.args.get('json_output')[0])
 
             # print "energy usage: %s " % map

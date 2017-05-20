@@ -30,7 +30,7 @@ except ImportError:
 from hashlib import md5
 from time import gmtime, strftime
 from os.path import abspath
-import __builtin__
+import builtins
 import sys
 import traceback
 
@@ -70,7 +70,7 @@ class Localize(YomboLibrary):
         self.files = {}
         self.locale_files = abspath('.') + "/usr/locale/"
         self.translator = self.get_translator()
-        __builtin__.__dict__['_'] = self.handle_translate
+        builtins.__dict__['_'] = self.handle_translate
 
     def display_temperature(self, i_temp, temp_type, o_decimals=None):
         """
@@ -86,9 +86,9 @@ class Localize(YomboLibrary):
         """
         system_type = self.localization_degrees()[0].lower()
         temp_type = temp_type[0].lower()
-        print "i_temp: %s" % i_temp
-        print "temp_type: %s" % temp_type
-        print "system_type: %s" % system_type
+        print("i_temp: %s" % i_temp)
+        print("temp_type: %s" % temp_type)
+        print("system_type: %s" % system_type)
 
         if system_type != temp_type:
             if temp_type == 'f':
@@ -117,7 +117,7 @@ class Localize(YomboLibrary):
             self.parse_directory("yombo/utils/locale", has_header=True)
 
             try:
-                for item, data in self._Modules.modules.iteritems():
+                for item, data in self._Modules.modules.items():
                     the_directory = path.dirname(path.abspath(inspect.getfile(data.__class__))) + "/locale"
                     if path.exists(the_directory):
                         self.parse_directory(the_directory)
@@ -137,7 +137,7 @@ class Localize(YomboLibrary):
                 self.hashes = {}
 
             # Generate/update locale file hashes. If anything changed, add to languages_to_update
-            for lang, files in self.files.iteritems():
+            for lang, files in self.files.items():
                 hash_obj = md5(open(files[0], 'rb').read())
                 for fname in files[1:]:
                     hash_obj.update(open(fname, 'rb').read())
@@ -197,14 +197,14 @@ class Localize(YomboLibrary):
             # self.default_lang() = 'es' # some testing...
             self._States['localize.default_language'] = self.default_lang()
 
-            for lang, files in languages_to_update.iteritems():
+            for lang, files in languages_to_update.items():
                 self.do_update(lang)
 
             # Save the updated hash into the configuration for next time.
             self._Configs.set('localize', 'hashes', json.dumps(self.hashes, separators=(',',':')))
 
             self.translator = self.get_translator()
-            __builtin__.__dict__['_'] = self.handle_translate
+            builtins.__dict__['_'] = self.handle_translate
         except Exception as e: # if problem with translation, at least return msgid...
             logger.error("Unable to load translations. Gettng null one. Reason: %s" % e)
             logger.error("--------------------------------------------------------")
@@ -213,7 +213,7 @@ class Localize(YomboLibrary):
             logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
             logger.error("--------------------------------------------------------")
             self.translator = self.get_translator(get_null=True)
-            __builtin__.__dict__['_'] = self.handle_translate
+            builtins.__dict__['_'] = self.handle_translate
 
     def get_system_language(self):
         """

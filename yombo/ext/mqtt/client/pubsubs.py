@@ -610,9 +610,9 @@ class MQTTProtocol(MQTTBaseProtocol):
         Tries to restore the session state upon a new MQTT connection made (publisher)
         '''
         #log.debug("{event}", event="Sync Persistent Session")
-        for _, reply in self.factory.windowPubRelease[self.addr].items():
+        for _, reply in list(self.factory.windowPubRelease[self.addr].items()):
             self._retryRelease(reply, dup=True)
-        for _, request in self.factory.windowPublish[self.addr].items():
+        for _, request in list(self.factory.windowPublish[self.addr].items()):
             self._retryPublish(request, dup=True)
 
     # --------------------------------------------------------------------------
@@ -622,12 +622,12 @@ class MQTTProtocol(MQTTBaseProtocol):
         Purges the persistent state in the client 
         '''
         #log.debug("{event}", event="Clean Persistent Session")
-        for k in self.factory.windowPublish[self.addr].keys():
+        for k in list(self.factory.windowPublish[self.addr].keys()):
             request = self.factory.windowPublish[self.addr][k]
             del self.factory.windowPublish[self.addr][k]
             request.deferred.errback(MQTTSessionCleared)
 
-        for k in self.factory.windowPubRelease[self.addr].keys():
+        for k in list(self.factory.windowPubRelease[self.addr].keys()):
             request = self.factory.windowPubRelease[self.addr][k]
             del self.factory.windowPubRelease[self.addr][k]
             request.deferred.errback(MQTTSessionCleared)
@@ -643,37 +643,37 @@ class MQTTProtocol(MQTTBaseProtocol):
         '''
        
         # Cancel Alarms first
-        for _, request in self.factory.windowSubscribe[self.addr].items():
+        for _, request in list(self.factory.windowSubscribe[self.addr].items()):
             if request.alarm is not None:
                 request.alarm.cancel()
                 request.alarm = None
-        for _, request in self.factory.windowUnsubscribe[self.addr].items():
+        for _, request in list(self.factory.windowUnsubscribe[self.addr].items()):
             if request.alarm is not None:
                 request.alarm.cancel()
                 request.alarm = None
-        for _, request in self.factory.windowPublish[self.addr].items():
+        for _, request in list(self.factory.windowPublish[self.addr].items()):
             if request.alarm is not None:
                 request.alarm.cancel()
                 request.alarm = None
-        for _, request in self.factory.windowPubRelease[self.addr].items():
+        for _, request in list(self.factory.windowPubRelease[self.addr].items()):
             if request.alarm is not None:
                 request.alarm.cancel()
                 request.alarm = None
         # Then, invoke errbacks anyway if we do not persist state
         if self._cleanStart:
-            for k in self.factory.windowSubscribe[self.addr].keys():
+            for k in list(self.factory.windowSubscribe[self.addr].keys()):
                 request = self.factory.windowSubscribe[self.addr][k]
                 del self.factory.windowSubscribe[self.addr][k]
                 request.deferred.errback(reason)
-            for k in self.factory.windowUnsubscribe[self.addr].keys():
+            for k in list(self.factory.windowUnsubscribe[self.addr].keys()):
                 request = self.factory.windowUnsubscribe[self.addr][k]
                 del self.factory.windowUnsubscribe[self.addr][k]
                 request.deferred.errback(reason)
-            for k in self.factory.windowPubRelease[self.addr].keys():
+            for k in list(self.factory.windowPubRelease[self.addr].keys()):
                 request = self.factory.windowPubRelease[self.addr][k]
                 del self.factory.windowPubRelease[self.addr][k]
                 request.deferred.errback(reason)                
-            for k in self.factory.windowPublish[self.addr].keys():
+            for k in list(self.factory.windowPublish[self.addr].keys()):
                 request = self.factory.windowPublish[self.addr][k]
                 del self.factory.windowPublish[self.addr][k]
                 request.deferred.errback(reason)   

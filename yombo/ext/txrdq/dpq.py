@@ -112,7 +112,7 @@ class DeferredPriorityQueue(object):
                 if existing.valid:
                     raise RuntimeError("Object %r already in queue." % (obj,))
             if count is None:
-                count = self._counter.next()
+                count = next(self._counter)
             task = _Task(obj, priority, count)
             self._objFinder[obj] = task
             heappush(self._pending, task)

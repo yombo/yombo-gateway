@@ -497,7 +497,7 @@ def route_setup_wizard(webapp):
             webinterface._Configs.set('core', 'firstrun', False)
 
             # Remove wizard settings...
-            for k in session.keys():
+            for k in list(session.keys()):
                 if k.startswith('setup_wizard_'):
                     session.pop(k)
             session['setup_wizard_done'] = True

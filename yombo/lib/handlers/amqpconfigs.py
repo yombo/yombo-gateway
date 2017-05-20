@@ -654,7 +654,7 @@ class AmqpConfigHandler(YomboLibrary):
         key = None
         value = None
         try:
-            for key, value in data.iteritems(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
+            for key, value in data.items(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
                 if key in config_data['map']:
                     # print "field remap - key = %s (%s)" % (key, table_meta[config_data['map'][key]]['type'])
                     # Convert ints and floats.
@@ -668,13 +668,13 @@ class AmqpConfigHandler(YomboLibrary):
                 else:
                     new_data[key] = value
             return new_data
-        except Exception, e:
-            print "error in field remap.  Last key: %s" % key
+        except Exception as e:
+            print("error in field remap.  Last key: %s" % key)
             # print "table info for key: %s" % table_meta[config_data['map'][key]]
-            print "input value: %s" % value
-            print "field remap - config_data =%s" % config_data
-            print "field remap - data =%s" % data
-            print "tablemeta: %s" % table_meta
+            print("input value: %s" % value)
+            print("field remap - config_data =%s" % config_data)
+            print("field remap - data =%s" % data)
+            print("tablemeta: %s" % table_meta)
 
             logger.error("--------==(Error: Something bad              )==--------")
             logger.error("--------------------------------------------------------")
@@ -701,14 +701,14 @@ class AmqpConfigHandler(YomboLibrary):
         required_db_keys = []
         allowed_db_keys = []
 
-        table_cols = self._LocalDB.db_model[config_data['table']].iteritems()
+        table_cols = iter(self._LocalDB.db_model[config_data['table']].items())
         for col, col_data in table_cols:
             allowed_db_keys.append(col)
             if col_data['notnull'] == 1:
                 required_db_keys.append(col)
 
         db_data = {}  # dict of just keys that are allowed in the DB.
-        for key, value in data.iteritems():
+        for key, value in data.items():
             if key in allowed_db_keys:
                 db_data[key] = data[key]
 
@@ -1011,7 +1011,7 @@ class AmqpConfigHandler(YomboLibrary):
         """
         try:
             json_object = json.loads(myjson)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 
@@ -1024,7 +1024,7 @@ class AmqpConfigHandler(YomboLibrary):
         """
         try:
             json_object = msgpack.loads(mymsgpack)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 

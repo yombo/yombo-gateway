@@ -116,7 +116,8 @@ class FileReader:
                 
             self.fp_in = codecs.open(self.filename, encoding='utf-8')
             self.fp_in.seek(self.fileInfo['startLocation'])
-        except IOError as (errno, strerror):
+        except IOError as xxx_todo_changeme:
+            (errno, strerror) = xxx_todo_changeme.args
             raise YomboFileError("Logreader could not open file for reading. Reason: %s" % strerror,
                                  104, '__init__', 'FileReader')
 #            self.fileOpened = None

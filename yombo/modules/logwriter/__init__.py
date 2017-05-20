@@ -1,1 +1,1 @@
-from logwriter import LogWriter
+from .logwriter import LogWriter

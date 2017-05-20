@@ -1,17 +1,18 @@
 """Implementation of HjsonEncoder
 """
-from __future__ import absolute_import
+
 import re
 from operator import itemgetter
 from decimal import Decimal
-from .compat import u, unichr, binary_type, string_types, integer_types, PY3
+from .compat import u, chr, binary_type, string_types, integer_types, PY3
 
 from .decoder import PosInf
+import collections
 
 #ESCAPE = re.compile(ur'[\x00-\x1f\\"\b\f\n\r\t\u2028\u2029]')
 # This is required because u() will mangle the string and ur'' isn't valid
 # python3 syntax
-ESCAPE = re.compile(u'[\\x00-\\x1f\\\\"\\b\\f\\n\\r\\t\u2028\u2029]')
+ESCAPE = re.compile('[\\x00-\\x1f\\\\"\\b\\f\\n\\r\\t\u2028\u2029]')
 ESCAPE_ASCII = re.compile(r'([\\"]|[^\ -~])')
 HAS_UTF8 = re.compile(r'[\x80-\xff]')
 ESCAPE_DCT = {
@@ -27,12 +28,12 @@ for i in range(0x20):
     #ESCAPE_DCT.setdefault(chr(i), '\\u{0:04x}'.format(i))
     ESCAPE_DCT.setdefault(chr(i), '\\u%04x' % (i,))
 for i in [0x2028, 0x2029]:
-    ESCAPE_DCT.setdefault(unichr(i), '\\u%04x' % (i,))
+    ESCAPE_DCT.setdefault(chr(i), '\\u%04x' % (i,))
 
 NEEDSESCAPENAME = re.compile(r'[,\{\[\}\]\s]')
-NEEDSESCAPE = re.compile(u'[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]')
-NEEDSQUOTES = re.compile(u'[\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]') # like needsEscape but without \\ and \"
-NEEDSESCAPEML = re.compile(u'\'\'\'|[\x00-\x09\x0b\x0c\x0e-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]') # ml or (needsQuotes but without \n and \r)
+NEEDSESCAPE = re.compile('[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]')
+NEEDSQUOTES = re.compile('[\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]') # like needsEscape but without \\ and \"
+NEEDSESCAPEML = re.compile('\'\'\'|[\x00-\x09\x0b\x0c\x0e-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]') # ml or (needsQuotes but without \n and \r)
 
 WHITESPACE = ' \t\n\r'
 STARTSWITHNUMBER = re.compile(r'^[\t ]*(-?(?:0|[1-9]\d*))(\.\d+)?([eE][-+]?\d+)?\s*((,|\]|\}|#|\/\/|\/\*).*)?$');
@@ -247,7 +248,7 @@ class HjsonEncoder(object):
         if self.ensure_ascii:
             return ''.join(chunks)
         else:
-            return u''.join(chunks)
+            return ''.join(chunks)
 
     def iterencode(self, o, _one_shot=False):
         """Encode the given object and yield each string
@@ -318,7 +319,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
         str=str,
         tuple=tuple,
     ):
-    if _item_sort_key and not callable(_item_sort_key):
+    if _item_sort_key and not isinstance(_item_sort_key, collections.Callable):
         raise TypeError("item_sort_key must be None or callable")
     elif _sort_keys and not _item_sort_key:
         _item_sort_key = itemgetter(0)
@@ -440,12 +441,12 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
         yield '{'
 
         if _PY3:
-            iteritems = dct.items()
+            iteritems = list(dct.items())
         else:
-            iteritems = dct.iteritems()
+            iteritems = iter(dct.items())
         if _item_sort_key:
             items = []
-            for k, v in dct.items():
+            for k, v in list(dct.items()):
                 if not isinstance(k, string_types):
                     k = _stringify_key(k)
                     if k is None:
@@ -527,7 +528,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
             yield _floatstr(o)
         else:
             for_json = _for_json and getattr(o, 'for_json', None)
-            if for_json and callable(for_json):
+            if for_json and isinstance(for_json, collections.Callable):
                 for chunk in _iterencode(for_json(), _current_indent_level, _isRoot):
                     yield chunk
             elif isinstance(o, list):
@@ -535,7 +536,7 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
                     yield chunk
             else:
                 _asdict = _namedtuple_as_object and getattr(o, '_asdict', None)
-                if _asdict and callable(_asdict):
+                if _asdict and isinstance(_asdict, collections.Callable):
                     for chunk in _iterencode_dict(_asdict(), _current_indent_level, _isRoot):
                         yield chunk
                 elif (_tuple_as_array and isinstance(o, tuple)):

@@ -6,14 +6,14 @@ if sys.version_info[0] < 3:
     def b(s):
         return s
     def u(s):
-        return unicode(s, 'unicode_escape')
-    import cStringIO as StringIO
+        return str(s, 'unicode_escape')
+    import io as StringIO
     StringIO = BytesIO = StringIO.StringIO
-    text_type = unicode
+    text_type = str
     binary_type = str
-    string_types = (basestring,)
-    integer_types = (int, long)
-    unichr = unichr
+    string_types = (str,)
+    integer_types = (int, int)
+    chr = chr
     reload_module = reload
     def fromhex(s):
         return s.decode('hex')
@@ -37,7 +37,7 @@ else:
     string_types = (str,)
     integer_types = (int,)
 
-    def unichr(s):
+    def chr(s):
         return u(chr(s))
 
     def fromhex(s):

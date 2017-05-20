@@ -297,7 +297,7 @@ def route_api_v1(webapp):
 
             try:
                 results = yield webinterface.get_api(request, "GET", url)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 returnValue(e.message)
 
             request.setHeader('Content-Type', 'application/json')

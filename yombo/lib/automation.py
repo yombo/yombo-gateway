@@ -47,8 +47,8 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import absolute_import
-from __future__ import print_function
+
+
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -63,6 +63,7 @@ from yombo.core.exceptions import YomboAutomationWarning, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
+import collections
 
 logger = get_logger("library.automation")
 
@@ -114,7 +115,7 @@ class Automation(YomboLibrary):
                 temp_rules = hjson.loads(fp_.read())
                 self._rulesRaw = msgpack.loads(msgpack.dumps(temp_rules))  # remove ordered dict.
                 # logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
-        except Exception, e:
+        except Exception as e:
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
         else:
@@ -182,7 +183,7 @@ class Automation(YomboLibrary):
         """
         automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
         # logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
-        for component_name, item in automation_sources.iteritems():
+        for component_name, item in automation_sources.items():
             for vals in item:
                 vals['platform_source'] = component_name
                 self.sources[vals['platform']] = vals
@@ -190,7 +191,7 @@ class Automation(YomboLibrary):
 
         automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
         # logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
-        for component_name, item in automation_filters.iteritems():
+        for component_name, item in automation_filters.items():
             for vals in item:
                 vals['platform_source'] = component_name
                 self.filters[vals['platform']] = vals
@@ -198,13 +199,13 @@ class Automation(YomboLibrary):
 
         automation_actions = yield yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
-        for component_name, item in automation_actions.iteritems():
+        for component_name, item in automation_actions.items():
             for vals in item:
                 vals['platform_source'] = component_name
                 self.actions[vals['platform']] = vals
 
         callback_rules = yield yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
-        for component_name, component_rules in callback_rules.iteritems():
+        for component_name, component_rules in callback_rules.items():
             for rule in component_rules['rules']:
                 rule['source'] = 'callbacks:%s' % component_name
                 self._rulesRaw['rules'].append(rule)
@@ -222,7 +223,7 @@ class Automation(YomboLibrary):
             self.add_rule(rule)
 
         # logger.debug("All active rules: {rules}", rules=self.rules)
-        for source, functions in self.sources.iteritems():
+        for source, functions in self.sources.items():
             if 'startup_trigger_callback' in functions:
                 functions['startup_trigger_callback']()
 
@@ -323,7 +324,7 @@ class Automation(YomboLibrary):
             if 'delay' in rule['action'][item]:
                 try:
                     self.get_action_delay(rule['action'][item]['delay'])
-                except Exception, e:
+                except Exception as e:
                     logger.warn("Error parsing 'delay' within action, dropping rule. Delay:{delay}. Other reasons: {e}",
                                 delay=rule['action'][item]['delay'], e=e)
                     return False
@@ -360,7 +361,7 @@ class Automation(YomboLibrary):
                         rule['condition'][item] = \
                             self._check_returned_rule(rule['condition'][item],
                                                 self._check_filter_platform(rule, rule['condition'][item]))
-                    except YomboWarning, e:
+                    except YomboWarning as e:
                         return False
 
             for item in range(len(rule['action'])):
@@ -372,7 +373,7 @@ class Automation(YomboLibrary):
                 validate_action_callback_function = self.actions[platform]['validate_action_callback']
                 try:
                     rule['action'][item] = self._check_returned_rule(rule['action'][item], validate_action_callback_function(rule, rule['action'][item]))
-                except YomboWarning, e:
+                except YomboWarning as e:
                     logger.warn("Warning: {e}", e=e)
                     return False
 
@@ -383,7 +384,7 @@ class Automation(YomboLibrary):
                 add_trigger_callback_function = self.sources[rule['trigger']['source']['platform']]['add_trigger_callback']
                 add_trigger_callback_function(rule, condition_callback=self.automation_check_conditions)
 
-        except YomboWarning, e:
+        except YomboWarning as e:
             logger.warn("Some error: {e}", e=e)
             return False
 
@@ -418,7 +419,7 @@ class Automation(YomboLibrary):
         source_platform = portion['source']['platform']
         if trigger_required:
             if 'add_trigger_callback' in self.sources[source_platform]:
-                if not callable(self.sources[source_platform]['add_trigger_callback']):
+                if not isinstance(self.sources[source_platform]['add_trigger_callback'], collections.Callable):
 #                    logger.warn("Rule '{rule}': {source_platform} doesn't have a callable trigger adder.",
 #  rule=rule['name'], source_platform=source_platform)
                     raise YomboWarning("'%s' doesn't have a callable trigger adder" % source_platform, 111,
@@ -454,7 +455,7 @@ class Automation(YomboLibrary):
             validate_filter_callback_function = self.filters[filter_platform]['validate_filter_callback']
             try:
                 rule = validate_filter_callback_function(rule, portion)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 logger.warn("Rule '{rule}': Has invalid filter platform params. filter_platform: {filter_platform}.",
                             rule=rule['name'], filter_platform=filter_platform)
                 raise YomboWarning("Rule '%s': Has invalid filter platform params. filter_platform: %s." %
@@ -644,7 +645,7 @@ class Automation(YomboLibrary):
             if 'delay' in rule['action'][item]:
                 try:
                     delay = self.get_action_delay(rule['action'][item]['delay'])
-                except Exception, e:
+                except Exception as e:
                     logger.error("Error parsing 'delay' within action. Cannot perform action: {e}", e=e)
                     raise YomboWarning("Error parsing 'delay' within action. Cannot perform action. (%s)" % rule['action'][item]['delay'],
                                    301, 'devices_validate_action_callback', 'lib.devices')

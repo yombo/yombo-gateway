@@ -129,7 +129,7 @@ class GPG(YomboLibrary):
         logger.debug("gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys)
         logger.debug("gpg_private_keys: {gpg_keys}", gpg_keys=gpg_private_keys)
 
-        for fingerprint, data in gpg_public_keys.iteritems():
+        for fingerprint, data in gpg_public_keys.items():
             if fingerprint not in db_keys:
                 if int(gpg_public_keys[fingerprint]['length']) < 2048:
                     logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable", length=gpg_public_keys[fingerprint]['length'])
@@ -331,12 +331,12 @@ class GPG(YomboLibrary):
         newkey = yield self.gpg.gen_key(input_data)
         self._key_generation_status[request_id] = 'done'
 
-        print "newkey!!!!!! ===="
-        print format(newkey)
-        print "request id ="
-        print request_id
+        print("newkey!!!!!! ====")
+        print(format(newkey))
+        print("request id =")
+        print(request_id)
         if newkey == '':
-            print "\n\rERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?\n\r"
+            print("\n\rERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?\n\r")
             raise YomboCritical("Error with python GPGP interface.  Is it installed?")
 
         private_keys = self.gpg.list_keys(True)
@@ -350,8 +350,8 @@ class GPG(YomboLibrary):
         gpg_keys = yield self.gpg.list_keys(keyid)
         keys = self._format_list_keys(gpg_keys)
 
-        print "keys: %s" % type(keys)
-        print "keys: %s" % keys
+        print("keys: %s" % type(keys))
+        print("keys: %s" % keys)
 
         data = keys[format(newkey)]
         data['publickey'] = asciiArmoredPublicKey
@@ -450,7 +450,7 @@ class GPG(YomboLibrary):
         Signs in_text and returns the signature.
         """
         #cache the gpg/pgp key locally.
-        if type(in_text) is unicode or type(in_text) is str:
+        if type(in_text) is str or type(in_text) is str:
             try:
                 signed = self.gpg.sign(in_text, keyid=self.mykeyid(), clearsign=asciiarmor)
                 return signed.data
@@ -462,7 +462,7 @@ class GPG(YomboLibrary):
         """
         Verifys a signature. Returns the data if valid, otherwise False.
         """
-        if type(in_text) is unicode and in_text.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
+        if type(in_text) is str and in_text.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
             try:
                 verified = self.gpg.verify(in_text)
                 if verified.status == "signature valid":

@@ -26,6 +26,8 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
+import collections
+from functools import reduce
 
 logger = get_logger('library.devicetypes')
 
@@ -138,7 +140,7 @@ class DeviceTypes(YomboLibrary):
         :return: A list of device types IDs. 
         :rtype: list
         """
-        return self.device_types.keys()
+        return list(self.device_types.keys())
 
     def items(self):
         """
@@ -147,19 +149,19 @@ class DeviceTypes(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.device_types.items()
+        return list(self.device_types.items())
 
     def iteritems(self):
-        return self.device_types.iteritems()
+        return iter(self.device_types.items())
 
     def iterkeys(self):
-        return self.device_types.iterkeys()
+        return iter(self.device_types.keys())
 
     def itervalues(self):
-        return self.device_types.itervalues()
+        return iter(self.device_types.values())
 
     def values(self):
-        return self.device_types.values()
+        return list(self.device_types.values())
 
     def _init_(self):
         """
@@ -224,7 +226,7 @@ class DeviceTypes(YomboLibrary):
             module_root = __import__(item[0], globals(), locals(), [], 0)
             module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
             klass = getattr(module_tail, item[1])
-            if not callable(klass):
+            if not isinstance(klass, collections.Callable):
                 logger.warn("Unable to load device platform '{name}', it's not callable.", name=item[1])
                 continue
             self.platforms[item_key] = klass
@@ -336,7 +338,7 @@ class DeviceTypes(YomboLibrary):
                     return item
                 else:
                     raise KeyError("Device type not found: %s" % device_type_requested)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (device_type_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
@@ -400,7 +402,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         results = {}
-        for item_id, item in self.device_types.iteritems():
+        for item_id, item in self.device_types.items():
             if item.public <= 1:
                 results[item_id] = item
         return results
@@ -412,7 +414,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         results = {}
-        for item_id, item in self.device_types.iteritems():
+        for item_id, item in self.device_types.items():
             if item.public == 2:
                 results[item_id] = item
         return results
@@ -427,7 +429,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         try:
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
                 elif key in ['status']:
@@ -475,7 +477,7 @@ class DeviceTypes(YomboLibrary):
         """
 
         try:
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
                 elif key in ['status']:
@@ -854,9 +856,9 @@ class DeviceType(object):
         return d
 
     def __getitem__(self, key):
-        print 'devicetype __getitem__: ', key
-        print 'devicetype repsonse __getitem__: ', getattr(self, key)
-        print 'devicetype repsonse __getitem__: ', type(getattr(self, key))
+        print('devicetype __getitem__: ', key)
+        print('devicetype repsonse __getitem__: ', getattr(self, key))
+        print('devicetype repsonse __getitem__: ', type(getattr(self, key)))
         return getattr(self, key)
 
     def get_devices(self):
@@ -884,7 +886,7 @@ class DeviceType(object):
                 return devices
             else:
                 return {}
-        except YomboWarning, e:
+        except YomboWarning as e:
             raise KeyError('Get devices had problems: %s' % e)
 
     def get_modules(self, return_value='id'):
@@ -893,9 +895,9 @@ class DeviceType(object):
         :return:
         """
         if return_value == 'id':
-            return self.registered_modules.keys()
+            return list(self.registered_modules.keys())
         elif return_value == 'label':
-            return self.registered_modules.values()
+            return list(self.registered_modules.values())
         else:
             raise YomboWarning("get_modules requires either 'id' or 'label'")
 

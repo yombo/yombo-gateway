@@ -11,7 +11,7 @@ RATIO_SEPARATORS = 3.5
 RATIO_GUARDS = 12
 
 try:
-    StrType = basestring
+    StrType = str
 except NameError:
     StrType = str
 

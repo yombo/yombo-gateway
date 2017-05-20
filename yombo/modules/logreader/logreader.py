@@ -70,7 +70,7 @@ class LogReader(YomboModule):
             self.fileReader = FileReader(self, filename=self.fileName, callback=self.newContent)
             self.fileReader.start()
             self.isRunning = True
-        except YomboFileError, e:
+        except YomboFileError as e:
             self.fileReader = None
             logger.warn("Error with FileReader: %s" % e)
 

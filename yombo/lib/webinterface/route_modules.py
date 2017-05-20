@@ -196,7 +196,7 @@ def route_modules(webapp):
                 module = webinterface._Modules.get(module_id)
                 # module = webinterface._Modules[module_id]
             except Exception as e:
-                print "Module find errr: %s" % e
+                print("Module find errr: %s" % e)
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue( webinterface.redirect(request, '/modules/index'))
 
@@ -206,7 +206,7 @@ def route_modules(webapp):
             # print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
             device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
             module_variables = module._ModuleVariables
-            print "module_variables: %s" % module_variables
+            print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
@@ -224,7 +224,7 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules.get(module_id)
                 # module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
@@ -298,7 +298,7 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules.get(module_id)
                 # module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))
@@ -330,7 +330,7 @@ def route_modules(webapp):
             module = webinterface._Modules.get(module_id)
             try:
                 module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))
@@ -406,7 +406,7 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules.get(module_id)
                 # module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
@@ -428,7 +428,7 @@ def route_modules(webapp):
         def page_modules_enable_post(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))
@@ -479,7 +479,7 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules.get(module_id)
                 # module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
@@ -502,7 +502,7 @@ def route_modules(webapp):
         def page_modules_remove_post(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules[module_id]
-            except Exception, e:
+            except Exception as e:
                 # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))

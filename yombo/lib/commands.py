@@ -123,7 +123,7 @@ class Commands(YomboLibrary):
         :return: A list of command IDs. 
         :rtype: list
         """
-        return self.commands.keys()
+        return list(self.commands.keys())
 
     def items(self):
         """
@@ -132,19 +132,19 @@ class Commands(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.commands.items()
+        return list(self.commands.items())
 
     def iteritems(self):
-        return self.commands.iteritems()
+        return iter(self.commands.items())
 
     def iterkeys(self):
-        return self.commands.iterkeys()
+        return iter(self.commands.keys())
 
     def itervalues(self):
-        return self.commands.itervalues()
+        return iter(self.commands.values())
 
     def values(self):
-        return self.commands.values()
+        return list(self.commands.values())
 
     def _init_(self):
         """
@@ -305,7 +305,7 @@ class Commands(YomboLibrary):
                     return item
                 else:
                     raise KeyError("Command not found: %s" % command_requested)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
@@ -341,7 +341,7 @@ class Commands(YomboLibrary):
         :rtype: list of objects
         """
         results = {}
-        for command_id, command in self.commands.iteritems():
+        for command_id, command in self.commands.items():
             if command.public <= 1:
                 results[command_id] = command
         return results
@@ -353,7 +353,7 @@ class Commands(YomboLibrary):
         :return:
         """
         results = {}
-        for command_id, command in self.commands.iteritems():
+        for command_id, command in self.commands.items():
             if command.public == 2:
                 results[command_id] = command
         return results

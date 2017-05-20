@@ -39,7 +39,7 @@ import os
 import shutil
 import time
 import zipfile
-from itertools import izip
+
 
 from pprint import pprint
 
@@ -134,7 +134,7 @@ class DownloadModules(YomboLibrary):
                 data = {}
 
                 if module.install_branch == 'production' and module.installed_version != module.prod_version:
-                    print "version compare: %s != %s" % (module.installed_version, module.prod_version)
+                    print("version compare: %s != %s" % (module.installed_version, module.prod_version))
                     data = {'download_uri'    : str(clouduri + module.prod_version + ".zip"),
                             'zip_file'   : self.download_path + modulelabel + "_" + module.prod_version + ".zip",
                             'type'      : "prod_version",

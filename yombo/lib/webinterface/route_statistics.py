@@ -23,7 +23,7 @@ def route_statistics(webapp):
         def page_statistics_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             device_commands = device.available_commands()
@@ -40,7 +40,7 @@ def route_statistics(webapp):
         def page_statistics_edit(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices.get(device_id)
-            except Exception, e:
+            except Exception as e:
                 # print "device find errr: %s" % e
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/devices/index')

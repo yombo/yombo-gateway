@@ -111,7 +111,7 @@ def route_configs(webapp):
                         valid_submit = False
                     else:
                         webinterface._Configs.set('webinterface', 'nonsecure_port', new_port)
-            except Exception, e:
+            except Exception as e:
                 valid_submit = False
                 webinterface.add_alert("Invalid webinterface non_secure port: %s" % e)
 
@@ -134,7 +134,7 @@ def route_configs(webapp):
                         valid_submit = False
                     else:
                         webinterface._Configs.set('webinterface', 'secure_port', new_port)
-            except Exception, e:
+            except Exception as e:
                 valid_submit = False
                 webinterface.add_alert("Invalid webinterface secure port: %s" % e)
 
@@ -162,7 +162,7 @@ def route_configs(webapp):
             try:
                 webinterface._Configs.set('localization', 'degrees', request.args.get('localization_degrees')[0])
             except:
-                print "can't save degrees"
+                print("can't save degrees")
                 pass
 
             configs = webinterface._Configs.get("*", "*")

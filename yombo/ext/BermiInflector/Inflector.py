@@ -6,7 +6,8 @@
 # See the end of this file for the free software, open source license (BSD-style).
 
 #import re
-from Rules.English import English
+from .Rules.English import English
+import collections
 #from yombo.ext.Rules.Spanish import Spanish
 
 class Inflector :
@@ -18,7 +19,7 @@ class Inflector :
     """
     
     def __init__( self, Inflector = English ) :
-        assert callable(Inflector), "Inflector should be a callable obj"
+        assert isinstance(Inflector, collections.Callable), "Inflector should be a callable obj"
         self.Inflector = apply(Inflector);
         
     def pluralize(self, word) :

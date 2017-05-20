@@ -15,10 +15,10 @@ class ValidationFailure(object):
         self.__dict__.update(args)
 
     def __repr__(self):
-        return u'ValidationFailure(func={func}, args={args})'.format(
+        return 'ValidationFailure(func={func}, args={args})'.format(
             func=self.func.__name__,
             args=dict(
-                [(k, v) for (k, v) in self.__dict__.items() if k != 'func']
+                [(k, v) for (k, v) in list(self.__dict__.items()) if k != 'func']
             )
         )
 
@@ -31,7 +31,7 @@ class ValidationFailure(object):
     def __bool__(self):
         return False
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
 
 
@@ -44,7 +44,7 @@ def func_args_as_dict(func, args, kwargs):
         OrderedDict.fromkeys(
             itertools.chain(
                 inspect.getargspec(func)[0],
-                kwargs.keys()
+                list(kwargs.keys())
             )
         )
     )

@@ -1,15 +1,27 @@
-hbmqtt; python_version > '3.1'
-Twisted; python_version = '2.7'
+hbmqtt; python_version > '3.3'
+Twisted; python_version > '3.3'
+parsedatetime
+netifaces
 python-gnupg
 gnupg
 service_identity
-parsedatetime
-psutil
-jinja2
-klein
-pytest
-netifaces
 netaddr
-docutils
+klein
 markdown
+pika
+pyopenssl
+pycrypto
+ephem
+jinja2
+docutils
+
+# treq reqs:
+incremental
+requests >= 2.1.0
+six
+Twisted[tls] >= 16.4.0
+attrs
+
+psutil
+pytest
 arrow

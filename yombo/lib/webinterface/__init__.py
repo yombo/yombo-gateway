@@ -15,7 +15,7 @@ from collections import OrderedDict
 from os import path, listdir, mkdir
 from os.path import dirname, abspath
 from time import strftime, localtime, time
-from urlparse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse
 from operator import itemgetter
 import jinja2
 from klein import Klein
@@ -619,7 +619,7 @@ class WebInterface(YomboLibrary):
                 temp_dict[level1] = item['priority1']
 
         temp_strings = yield yombo.utils.global_invoke_all('_webinterface_add_routes_')
-        for component, options in temp_strings.iteritems():
+        for component, options in temp_strings.items():
             if 'nav_side' in options:
                 for new_nav in options['nav_side']:
                     if new_nav['label1'] in temp_dict:
@@ -676,7 +676,7 @@ class WebInterface(YomboLibrary):
             type = 'session'
 
         show_alerts = OrderedDict()
-        for keyid in self.alerts.keys():
+        for keyid in list(self.alerts.keys()):
             if self.alerts[keyid]['type'] == type:
                 show_alerts[keyid] = self.alerts[keyid]
                 if type == 'session':
@@ -892,12 +892,12 @@ class WebInterface(YomboLibrary):
         return File(self._current_dir + "/lib/webinterface/static/dist")
 
     def display_pin_console(self):
-        print "###########################################################"
-        print "#                                                         #"
+        print("###########################################################")
+        print("#                                                         #")
         if self._op_mode != 'run':
-            print "# The Yombo Gateway website is running in                 #"
-            print "# configuration only mode.                                #"
-            print "#                                                         #"
+            print("# The Yombo Gateway website is running in                 #")
+            print("# configuration only mode.                                #")
+            print("#                                                         #")
 
         dns_fqdn = self._Configs.get('dns', 'fqdn', None, False)
         if dns_fqdn is None:
@@ -907,29 +907,29 @@ class WebInterface(YomboLibrary):
             local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure())
             internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure())
             external = "https://%s:%s" % (external_hostname, self.wi_port_secure())
-            print "# The gateway can be accessed from the following urls:    #"
-            print "#                                                         #"
-            print "# On local machine:                                       #"
-            print "#  %-54s #" % local
-            print "#                                                         #"
-            print "# On local network:                                       #"
-            print "#  %-54s #" % internal
-            print "#                                                         #"
-            print "# From external network (check port forwarding):          #"
-            print "#  %-54s #" % external
+            print("# The gateway can be accessed from the following urls:    #")
+            print("#                                                         #")
+            print("# On local machine:                                       #")
+            print("#  %-54s #" % local)
+            print("#                                                         #")
+            print("# On local network:                                       #")
+            print("#  %-54s #" % internal)
+            print("#                                                         #")
+            print("# From external network (check port forwarding):          #")
+            print("#  %-54s #" % external)
         else:
             website_url = "http://%s" % dns_fqdn
-            print "# The gateway can be accessed from the following url:     #"
-            print "#                                                         #"
-            print "# From anywhere:                                          #"
-            print "#  %-54s #" % website_url
+            print("# The gateway can be accessed from the following url:     #")
+            print("#                                                         #")
+            print("# From anywhere:                                          #")
+            print("#  %-54s #" % website_url)
 
-        print "#                                                         #"
-        print "#                                                         #"
-        print "# Web Interface access pin code:                          #"
-        print "#  %-25s                              #" % self.auth_pin()
-        print "#                                                         #"
-        print "###########################################################"
+        print("#                                                         #")
+        print("#                                                         #")
+        print("# Web Interface access pin code:                          #")
+        print("#  %-25s                              #" % self.auth_pin())
+        print("#                                                         #")
+        print("###########################################################")
 
     @inlineCallbacks
     def get_api(webinterface, request, method, path, data=None):
@@ -999,7 +999,7 @@ class WebInterface(YomboLibrary):
             style = 'link'
         elif style == 'select':
             items = []
-            for select_text, select_url in data.iteritems():
+            for select_text, select_url in data.items():
                 selected = ''
                 if select_url.startswith("$"):
                     selected = 'selected'

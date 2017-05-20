@@ -23,13 +23,13 @@ if not path.exists('dist/js'):
 
 
 def do_cat(inputs, output):
-    print "Saving to %s..." % output
+    print("Saving to %s..." % output)
     with open(output, 'w') as outfile:
         for fname in inputs:
-            print "...%s" % fname
+            print("...%s" % fname)
             with open(fname) as infile:
                 outfile.write(infile.read())
-    print ""
+    print("")
 
 
 def copytree(src, dst, symlinks=False, ignore=None):

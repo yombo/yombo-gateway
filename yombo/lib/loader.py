@@ -33,7 +33,6 @@ Stops components in the following phases. Modules first, then libraries.
 :license: LICENSE for details.
 """
 # Import python libraries
-import sys
 import traceback
 from re import search as ReSearch
 from collections import OrderedDict
@@ -43,6 +42,8 @@ from collections import OrderedDict
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 from twisted.internet import reactor
 from twisted.web import client
+import collections
+from functools import reduce
 client._HTTP11ClientFactory.noisy = False
 
 # Import Yombo libraries
@@ -67,7 +68,7 @@ HARD_LOAD["Startup"] = {'operation_mode':'all'}
 HARD_LOAD["AMQP"] = {'operation_mode':'run'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
-HARD_LOAD["Automation"] = {'operation_mode':'all'}
+# HARD_LOAD["Automation"] = {'operation_mode':'all'}
 HARD_LOAD["CronTab"] = {'operation_mode':'all'}
 HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_LOAD["Times"] = {'operation_mode':'all'}
@@ -207,7 +208,7 @@ class Loader(YomboLibrary, object):
         #     return
         logger.debug("Calling load functions of libraries.")
         self.run_phase = "libraries_load"
-        for name, config in HARD_LOAD.iteritems():
+        for name, config in HARD_LOAD.items():
             # print "sigint: %s" % self.sigint
             if self.sigint:
                 return
@@ -225,7 +226,7 @@ class Loader(YomboLibrary, object):
         self.run_phase = "libraries_start"
 
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
-        for name, config in HARD_LOAD.iteritems():
+        for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             self._log_loader('debug', name, 'library', 'start', 'About to call _start_.')
@@ -239,7 +240,7 @@ class Loader(YomboLibrary, object):
 
         yield self._moduleLibrary.import_modules()
 
-        for name, config in HARD_LOAD.iteritems():
+        for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             self._log_loader('debug', name, 'library', 'started', 'About to call _started_.')
@@ -258,7 +259,7 @@ class Loader(YomboLibrary, object):
         })
         logger.info("Yombo Gateway started.")
 
-        for name, config in HARD_LOAD.iteritems():
+        for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             self._log_loader('debug', name, 'library', 'started', 'About to call _modules_started_.')
@@ -315,7 +316,7 @@ class Loader(YomboLibrary, object):
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
         logger.debug("Importing server libraries.")
-        for name, config in HARD_LOAD.iteritems():
+        for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             HARD_LOAD[name]['__init__'] = 'Starting'
@@ -325,7 +326,7 @@ class Loader(YomboLibrary, object):
 
         logger.debug("Calling init functions of libraries.")
         self.run_phase = "libraries_init"
-        for name, config in HARD_LOAD.iteritems():
+        for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             if self.check_operation_mode(config['operation_mode']) is False:
@@ -361,7 +362,7 @@ class Loader(YomboLibrary, object):
             library._Tasks = self.loadedLibraries['tasks']
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']
-            if hasattr(library, '_init_') and callable(library._init_) \
+            if hasattr(library, '_init_') and isinstance(library._init_, collections.Callable) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = yield maybeDeferred(library._init_)
                 self._log_loader('debug', name, 'library', 'init', 'Finished to call _init_.')
@@ -401,7 +402,7 @@ class Loader(YomboLibrary, object):
                 return True
             return False
 
-        if isinstance(allowed, basestring):  # we have a string
+        if isinstance(allowed, str):  # we have a string
             return check_operation_mode_inside(allowed, op_mode)
         else: # we have something else
             for item in allowed:
@@ -433,7 +434,7 @@ class Loader(YomboLibrary, object):
         if hasattr(library, hook):
             method = getattr(library, hook)
             self._log_loader('debug', requested_library, 'library', 'library_invoke', 'About to call: %s' % hook)
-            if callable(method):
+            if isinstance(method, collections.Callable):
                 if library._Name not in self.hook_counts:
                     self.hook_counts[library._Name] = {}
                 if hook not in self.hook_counts:
@@ -468,12 +469,12 @@ class Loader(YomboLibrary, object):
         if 'components' in kwargs:
             to_process = kwargs['components']
         else:
-            for library_name, library in self.loadedLibraries.iteritems():
+            for library_name, library in self.loadedLibraries.items():
 #                print "library %s" % library
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
 
-        for library_name, library in self.loadedLibraries.iteritems():
+        for library_name, library in self.loadedLibraries.items():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
             try:
                 result = yield self.library_invoke(library_name, hook, called_by=called_by, **kwargs)
@@ -502,8 +503,9 @@ class Loader(YomboLibrary, object):
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
             raise YomboCritical("Library or Module not found: %s", pathName)
         try:
-            # print "pymodulename: %s" % pymodulename
+            print("pymodulename: %s" % pymodulename)
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
+            print("pymodulename done: %s" % pymodulename)
         except ImportError as detail:
             self._log_loader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("--------==(Error: Library or Module not found)==--------")
@@ -513,18 +515,20 @@ class Loader(YomboLibrary, object):
             logger.error("--------------------------------------------------------")
             raise ImportError("Cannot import module, not found.")
 
+        print("done importing...")
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
         # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
         klass = getattr(module_tail, pyclassname)
         # print "klass: %s  " % klass
 
         # Put the component into various lists for mgmt
-        if not callable(klass):
+        if not isinstance(klass, collections.Callable):
             logger.warn("Unable to start class '{classname}', it's not callable.", classname=pyclassname)
             raise ImportError("Unable to start class '%s', it's not callable."  % pyclassname)
 
         try:
             # Instantiate the class
+            logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
             moduleinst = klass()  # start the class, only libraries get the loader
             if componentType == 'library':
                 if componentName.lower() == 'modules':
@@ -539,7 +543,7 @@ class Loader(YomboLibrary, object):
                 self.loadedComponents["yombo.gateway.modules." + str(componentName.lower())] = moduleinst
                 return moduleinst, componentName.lower()
 
-        except YomboCritical, e:
+        except YomboCritical as e:
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             logger.debug("{e}", e=e)
             logger.debug("@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
@@ -552,7 +556,7 @@ class Loader(YomboLibrary, object):
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
-        for name, config in HARD_UNLOAD.iteritems():
+        for name, config in HARD_UNLOAD.items():
             if self.check_operation_mode(config['operation_mode']):
                 HARD_UNLOAD[name]['_stop_'] = 'Running'
                 libraryName = name.lower()
@@ -562,7 +566,7 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_UNLOAD[name]['_stop_'] = False
 
-        for name, config in HARD_UNLOAD.iteritems():
+        for name, config in HARD_UNLOAD.items():
             if self.check_operation_mode(config['operation_mode']):
                 HARD_UNLOAD[name]['_unload_'] = 'Running'
                 libraryName = name.lower()
@@ -606,14 +610,14 @@ class Loader(YomboLibrary, object):
         if component_type == 'library':
             if component_name not in self.loadedLibraries:
                 logger.info("Library not found: {loadedLibraries}", loadedLibraries=loadedLibraries)
-                print(self.loadedLibraries)
+                print((self.loadedLibraries))
                 raise YomboWarning("Cannot library name.")
 
             if isinstance(component_function, list):
                 if hasattr(self.loadedLibraries[component_name], component_function[0]):
                     remote_attribute = getattr(self.loadedLibraries[component_name], component_function[0]) # the dictionary
                     if component_function[1] in remote_attribute:
-                        if not callable(remote_attribute[component_function[1]]): # the key should be callable.
+                        if not isinstance(remote_attribute[component_function[1]], collections.Callable): # the key should be callable.
                             logger.info(
                                 "Could not find callable library function by name: '{component_type} :: {component_name} :: (list) {component_function}'",
                                 component_type=component_type, component_name=component_name, component_function=component_function)
@@ -624,7 +628,7 @@ class Loader(YomboLibrary, object):
             else:
                 if hasattr(self.loadedLibraries[component_name], component_function):
                     method = getattr(self.loadedLibraries[component_name], component_function)
-                    if not callable(method):
+                    if not isinstance(method, collections.Callable):
                         logger.info(
                             "Could not find callable modoule function by name: '{component_type} :: {component_name} :: {component_function}'",
                             component_type=component_type, component_name=component_name, component_function=component_function)
@@ -639,7 +643,7 @@ class Loader(YomboLibrary, object):
             if hasattr(modules._modulesByName[component_name], component_function[0]):
                 remote_attribute = getattr(modules._modulesByName[component_name], component_function[0])
                 if component_function[1] in remote_attribute:
-                    if not callable(remote_attribute[component_function[1]]):  # the key should be callable.
+                    if not isinstance(remote_attribute[component_function[1]], collections.Callable):  # the key should be callable.
                         logger.info(
                             "Could not find callable module function by name: '{component_type} :: {component_name} :: (list){component_function}'",
                             component_type=component_type, component_name=component_name,
@@ -651,7 +655,7 @@ class Loader(YomboLibrary, object):
             else:
                 if hasattr(modules._modulesByName[component_name], component_function):
                     method = getattr(modules._modulesByName[component_name], component_function)
-                    if not callable(method):
+                    if not isinstance(method, collections.Callable):
                         logger.info(
                             "Could not find callable module function by name: '{component_type} :: {component_name} :: {component_function}'",
                             component_type=component_type, component_name=component_name,

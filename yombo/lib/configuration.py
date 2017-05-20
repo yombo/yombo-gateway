@@ -55,10 +55,10 @@ can simply implement the hook: _configuration_set_:
 :license: LICENSE for details.
 """
 # Import python libraries
-import ConfigParser
+import configparser
 import hashlib
 from time import time, localtime, strftime
-import cPickle
+import pickle
 from shutil import move, copy2 as copyfile
 import os
 from datetime import datetime
@@ -184,7 +184,7 @@ class Configuration(YomboLibrary):
         :return: A list of configurations defined. 
         :rtype: list
         """
-        return self.__yombocommands.keys()
+        return list(self.__yombocommands.keys())
 
     def items(self):
         """
@@ -193,19 +193,19 @@ class Configuration(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.__yombocommands.items()
+        return list(self.__yombocommands.items())
 
     def iteritems(self):
-        return self.__yombocommands.iteritems()
+        return iter(self.__yombocommands.items())
 
     def iterkeys(self):
-        return self.__yombocommands.iterkeys()
+        return iter(self.__yombocommands.keys())
 
     def itervalues(self):
-        return self.__yombocommands.itervalues()
+        return iter(self.__yombocommands.values())
 
     def values(self):
-        return self.__yombocommands.values()
+        return list(self.__yombocommands.values())
 
     def _init_(self):
         """
@@ -225,7 +225,7 @@ class Configuration(YomboLibrary):
             if os.path.isfile('yombo.ini') is False:
                 try:
                     os.remove('yombo.ini')
-                except Exception, e:
+                except Exception as e:
                     logger.error("'yombo.ini' file exists, but it's not a file and it can't be deleted!")
                     reactor.stop()
                     return
@@ -244,7 +244,7 @@ class Configuration(YomboLibrary):
         self.last_yombo_ini_read = self.read_yombo_ini()
 
         try:
-            config_parser = ConfigParser.SafeConfigParser()
+            config_parser = configparser.SafeConfigParser()
             fp = open('usr/etc/yombo.ini.info')
             config_parser.readfp(fp)
             fp.close()
@@ -255,11 +255,11 @@ class Configuration(YomboLibrary):
                 for option in config_parser.options(section):
                     if option not in self.configs[section]:
                         continue
-                    values = cPickle.loads(config_parser.get(section, option))
+                    values = pickle.loads(config_parser.get(section, option))
                     self.configs[section][option] = dict_merge(self.configs[section][option], values)
-        except IOError, e:
+        except IOError as e:
             logger.warn("CAUGHT IOError!!!!!!!!!!!!!!!!!!  In reading meta: {error}", error=e)
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  IN saving. ")
         # print self.configs
 
@@ -344,7 +344,7 @@ class Configuration(YomboLibrary):
         self.save(True)
 
     def read_yombo_ini(self, update_self=True):
-        config_parser = ConfigParser.SafeConfigParser()
+        config_parser = configparser.SafeConfigParser()
 
         temp = {}
         try:
@@ -383,7 +383,7 @@ class Configuration(YomboLibrary):
             self.loading_yombo_ini = False
             return False
             # return
-        except ConfigParser.NoSectionError, e:
+        except configparser.NoSectionError as e:
             self._Atoms.set('configuration.yombo_ini.found', False)
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
             return False
@@ -479,18 +479,18 @@ class Configuration(YomboLibrary):
 
                 # first parse sections to make sure each section has a value!
                 configs = {}
-                for section, options in self.configs.iteritems():
+                for section, options in self.configs.items():
                     if section == 'zz_configmetadata':
                         continue
                     if section not in configs:
                         configs[section] = {}
-                    for item, data in options.iteritems():
+                    for item, data in options.items():
                         if 'value' not in data:  # incase it's documented, but not used. Usually bad doco.
                             continue
                         configs[section][item] = data['value']
 
                 #now we save the sections and the items...with i18n comments!
-                for section, options in configs.iteritems():
+                for section, options in configs.items():
                     i18n_label = _('config_section', "%s" % section)
                     if i18n_label != "%s" % section:
                         config_file.write("# %s: %s\n" % (section, i18n_label))
@@ -499,7 +499,7 @@ class Configuration(YomboLibrary):
                     config_file.write("[%s]\n" % section)
 
                     try:
-                        for item, data in options.iteritems():
+                        for item, data in options.items():
                             i18n_label = _('config_item', "%s:%s" % (section, item))
                             if i18n_label != "%s:%s" % (section, item):
                                 config_file.write("# %s: %s\n" % (item, i18n_label))
@@ -512,10 +512,10 @@ class Configuration(YomboLibrary):
 
                 config_file.close()
 
-                Config = ConfigParser.ConfigParser()
-                for section, options in self.configs.iteritems():
+                Config = configparser.ConfigParser()
+                for section, options in self.configs.items():
                     Config.add_section(section)
-                    for item, data in options.iteritems():
+                    for item, data in options.items():
                         temp = self.configs[section][item].copy()
                         # if 'reads' in temp:
                         #     del temp['reads']
@@ -525,7 +525,7 @@ class Configuration(YomboLibrary):
                         #     del temp['writes']
                         if 'value' in temp:
                             del temp['value']
-                        Config.set(section, item, cPickle.dumps(temp) )
+                        Config.set(section, item, pickle.dumps(temp) )
                     if len(Config.options(section)) == 0:  # Don't save empty sections.
                         Config.remove_section(section)
 
@@ -594,15 +594,15 @@ class Configuration(YomboLibrary):
         """
         config_details = yield global_invoke_all('_configuration_details_')
 
-        for component, details in config_details.iteritems():
+        for component, details in config_details.items():
             if details is None:
                 continue
             for list in details:
 #                logger.warn("For module {component}, adding details: {list}", component=component, list=list)
                 self.configs_details = dict_merge(self.configs_details, list)
 
-        for section, options in self.configs.iteritems():
-            for option, keys in options.iteritems():
+        for section, options in self.configs.items():
+            for option, keys in options.items():
                 try:
                     self.configs[section][option]['details'] = self.configs_details[section][option]
                 except:
@@ -703,10 +703,10 @@ class Configuration(YomboLibrary):
 
         if section == "*":  # Get all sections and options.
             results = {}
-            for section, options in self.configs.iteritems():
+            for section, options in self.configs.items():
                 if section not in results:
                     results[section] = {}
-                for option, data in options.iteritems():
+                for option, data in options.items():
                     results[section][option] = self.configs[section][option]['value']
             return results
 
@@ -714,7 +714,7 @@ class Configuration(YomboLibrary):
             if option == "*":
                 if len(self.configs[section]) > 0:
                     results = {}
-                    for key, data in self.configs[section].iteritems():
+                    for key, data in self.configs[section].items():
                         if 'value' in data:
                             results[key] = data['value']
                             data['reads'] += 1

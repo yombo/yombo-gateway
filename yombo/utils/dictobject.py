@@ -35,8 +35,8 @@ class DictObject(dict):
     def __delattr__(self, key):
         try:
             del self[key]
-        except KeyError, k:
-            raise AttributeError, k
+        except KeyError as k:
+            raise AttributeError(k)
 
     def get(self, key, default=None):
         if key in self:

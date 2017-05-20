@@ -10,7 +10,7 @@ This implements the "/panel" sub-route of the web interface.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
 
-from __future__ import division
+
 from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -38,7 +38,7 @@ def route_panel(webapp):
         @require_auth()
         @run_first()
         def page_panel_index(webinterface, request, session):
-            print request.requestHeaders
+            print(request.requestHeaders)
             page = webinterface.get_template(request, webinterface._dir + 'pages/panel/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),

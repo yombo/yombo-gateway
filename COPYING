@@ -179,7 +179,7 @@ Comment: https://github.com/benjaminp/six commit hash:3280aa8617b649a701705e4119
 Files: yombo/ext/treq/*
 Copyright: (c) 2012-2014 David Reid
 License: This is the MIT license.
-Comment: https://github.com/jameshilliard/treq commit hash:e74966545f3ea6e99ea6d763aa1b174c2bf709a6
+Comment: https://github.com/jameshilliard/treq commit hash:de46d53c99edc79f93efb8a76e1b8857ccc86a63
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
   in the Software without restriction, including without limitation the rights

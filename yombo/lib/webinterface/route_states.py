@@ -32,7 +32,7 @@ def route_states(webapp):
         def page_states_details(webinterface, request, session, state_name):
             try:
                 state = webinterface._States.get(state_name, full=True)
-            except Exception, e:
+            except Exception as e:
                 webinterface.add_alert('State Name was not found.  %s' % state_name, 'warning')
                 redirect = webinterface.redirect(request, '/states/index')
                 returnValue(redirect)

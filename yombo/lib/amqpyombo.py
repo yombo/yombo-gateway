@@ -1,7 +1,7 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-This library is responsible for handling configuration and controll messages with the Yombo servers. It requests
+This library is responsible for handling configuration and control messages with the Yombo servers. It requests
 configurations and directs them to the configuration handler. It also directs any control messages to the control
 handler.
 
@@ -15,7 +15,8 @@ This library utilizes the amqp library to handle the low level handling.
 This connection should be maintained 100% of the time. This allows control messages to be recieved by your devices
 or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
-.. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor. Perhaps disconnect and reconnect to another server? -Mitch
+.. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor.
+   Perhaps disconnect and reconnect to another server? -Mitch
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
@@ -26,7 +27,7 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 """
 
 # Import python libraries
-from __future__ import division
+
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -48,6 +49,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string, random_int
+import collections
 try:  # Prefer full version of msgpack, but we also ship a limited version with Yombo.
     import msgpack
 except ImportError:
@@ -81,7 +83,7 @@ class AMQPYombo(YomboLibrary):
 
         self.amqp = None  # holds our pointer for out amqp connection.
         self._getAllConfigsLoggerLoop = None
-        self.sendLocalInformationLoop = None  # used to periodically send yombo servers updated information
+        self.send_local_information_loop = None  # used to periodically send yombo servers updated information
 
         self.controlHandler = AmqpControlHandler(self)
         self.configHandler = AmqpConfigHandler(self)
@@ -111,7 +113,7 @@ class AMQPYombo(YomboLibrary):
     @inlineCallbacks
     def connect(self):
         """
-        Connect to Yombo AMQP server.
+        Connect to Yombo amqp server.
 
         :return:
         """
@@ -135,7 +137,7 @@ class AMQPYombo(YomboLibrary):
             else:
                 amqp_host = "amqp.yombo.net"
 
-        # get a new AMPQ instance and connect.
+        # get a new amqp instance and connect.
         if self.amqp is None:
             self.amqp = yield self._AMQP.new(hostname=amqp_host,
                                              port=amqp_port,
@@ -188,11 +190,11 @@ class AMQPYombo(YomboLibrary):
         """
         self._States.set('amqp.amqpyombo.state', True)
 
-        if self.sendLocalInformationLoop is None:
-            self.sendLocalInformationLoop = LoopingCall(self.sendLocalInformation)
+        if self.send_local_information_loop is None:
+            self.send_local_information_loop = LoopingCall(self.send_local_information)
 
-        if self.sendLocalInformationLoop.running is False:
-            self.sendLocalInformationLoop.start(random_int(60 * 60 * 4,
+        if self.send_local_information_loop.running is False:
+            self.send_local_information_loop.start(random_int(60 * 60 * 4,
                                                            .2))  # Sends various information, helps Yombo cloud know we are alive and where to find us.
 
         if self.request_configs is False:
@@ -207,7 +209,7 @@ class AMQPYombo(YomboLibrary):
         # logger.info("amqpyombo yombo disconnected: {state}", state=self._States.get('amqp.amqpyombo.state'))
         # If we have at least connected once, then we don't toss errors.  We just wait for reconnection...
 
-        if self._States.get('amqp.amqpyombo.state') == False:
+        if self._States.get('amqp.amqpyombo.state') is False:
             logger.error(
                 "Unable to connect. This may be due to multiple connections or bad gateway hash. See: http://g2.yombo.net/noconnect")
             self._Loader.sigint = True
@@ -216,10 +218,10 @@ class AMQPYombo(YomboLibrary):
             return
 
         self._States.set('amqp.amqpyombo.state', False)
-        if self.sendLocalInformationLoop is not None and self.sendLocalInformationLoop.running:
-            self.sendLocalInformationLoop.stop()
+        if self.send_local_information_loop is not None and self.send_local_information_loop.running:
+            self.send_local_information_loop.stop()
 
-    def sendLocalInformation(self):
+    def send_local_information(self):
         """
         Say hello, send some information about us. What we use these IP addresses for:
 
@@ -323,6 +325,12 @@ class AMQPYombo(YomboLibrary):
         :type source: str
         :param destination: Value of the 'destination' field.
         :type destination: str
+        :param header_type: Type of header. Usually one of: request, response
+        :type header_type: str
+        :param headers: Extra headers
+        :type headers: dict
+        :param body: The part that will become the body, or payload, of the message.
+        :type body: str, dict, list
         :param callback: A pointer to the function to return results to. This function will receive 4 arguments:
           sendInfo (Dict) - Various details of the sent packet. deliver (Dict) - Deliver fields as returned by Pika.
           props (Pika Object) - Message properties, includes headers. msg (dict) - The actual content of the message.
@@ -388,7 +396,6 @@ class AMQPYombo(YomboLibrary):
         """
         Publishes a message. Use generate_message(), generate_message_request, or generate_message_response to
         create the message.
-        :param message:
         :return:
         """
         if 'callback' in kwargs:
@@ -494,10 +501,9 @@ class AMQPYombo(YomboLibrary):
             if properties.correlation_id not in self.amqp.send_correlation_ids:
                 logger.debug("{correlation_id} not in list of ids: {send_correlation_ids} ",
                              correlation_id=properties.correlation_id,
-                             send_correlation_ids=self.amqp.send_correlation_ids.keys())
+                             send_correlation_ids=list(self.amqp.send_correlation_ids.keys()))
                 self._Statistics.increment("lib.amqpyombo.received.discarded.nocorrelation", bucket_size=15, anon=True)
-                raise YomboWarning("Received request {correlation_id}, but never asked for it. Discarding",
-                                   correlation_id=properties.correlation_id)
+                raise YomboWarning("Received request %s, but never asked for it. Discarding" % properties.correlation_id)
         else:
             self._Statistics.increment("lib.amqpyombo.received.discarded.unknown_msg_type", bucket_size=15, anon=True)
             raise YomboWarning("Unknown message type recieved.")
@@ -506,7 +512,7 @@ class AMQPYombo(YomboLibrary):
 
         # if we are here.. we have a valid message....
         if correlation_info is not None and 'amqpyombo_callback' in correlation_info and \
-                correlation_info['amqpyombo_callback'] and callable(correlation_info['amqpyombo_callback']):
+                correlation_info['amqpyombo_callback'] and isinstance(correlation_info['amqpyombo_callback'], collections.Callable):
             correlation_info['amqpyombo_callback'](msg=msg, properties=properties, deliver=deliver,
                                                    correlation_info=correlation_info, **kwargs)
         received_message_info['meta'] = msg_meta
@@ -521,7 +527,7 @@ class AMQPYombo(YomboLibrary):
                                                 correlation_info=correlation_info, sent_message_info=sent_message_info,
                                                 received_message_info=received_message_info, **kwargs)
 
-            except Exception, e:
+            except Exception as e:
                 logger.error("--------==(Error: in response processing     )==--------")
                 logger.error("--------------------------------------------------------")
                 logger.error("{error}", error=sys.exc_info())
@@ -541,7 +547,7 @@ class AMQPYombo(YomboLibrary):
                                                  correlation_info=correlation_info, sent_message_info=sent_message_info,
                                                  received_message_info=received_message_info, **kwargs)
 
-            except Exception, e:
+            except Exception as e:
                 logger.error("--------==(Error: in response processing     )==--------")
                 logger.error("--------------------------------------------------------")
                 logger.error("{error}", error=sys.exc_info())
@@ -561,7 +567,7 @@ class AMQPYombo(YomboLibrary):
         """
         try:
             json_object = json.loads(myjson)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 
@@ -574,7 +580,7 @@ class AMQPYombo(YomboLibrary):
         """
         try:
             json_object = msgpack.loads(mymsgpack)
-        except ValueError, e:
+        except ValueError as e:
             return False
         return True
 

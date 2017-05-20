@@ -31,7 +31,7 @@ class InteractionBase(object):
         """
         Encode the given string if necessary for printing to logs.
         """
-        if isinstance(s, unicode):
+        if isinstance(s, str):
             return s.encode(encoding)
         return str(s)
 
@@ -160,7 +160,7 @@ class InteractionBase(object):
         """
         Convert C{{'name': value}} to an insert "values" string like C{"(%s,%s,%s)"}.
         """
-        return "(" + ",".join(["%s" for _ in vals.items()]) + ")"
+        return "(" + ",".join(["%s" for _ in list(vals.items())]) + ")"
 
 
     def insert(self, tablename, vals, txn=None, prefix=None):
@@ -180,7 +180,7 @@ class InteractionBase(object):
         params = self.insertArgsToString(vals)
         colnames = ""
         if len(vals) > 0:
-            ecolnames = self.escapeColNames(vals.keys())
+            ecolnames = self.escapeColNames(list(vals.keys()))
             colnames = "(" + ",".join(ecolnames) + ")"
             params = "VALUES %s" % params
 
@@ -191,11 +191,11 @@ class InteractionBase(object):
 
         # if we have a transaction use it
         if txn is not None:
-            self.executeTxn(txn, q, vals.values())
+            self.executeTxn(txn, q, list(vals.values()))
             return self.getLastInsertID(txn)
 
         def _insert(txn, q, vals):
-            self.executeTxn(txn, q, vals.values())
+            self.executeTxn(txn, q, list(vals.values()))
             return self.getLastInsertID(txn)
         return self.runInteraction(_insert, q, vals)
 
@@ -208,7 +208,7 @@ class InteractionBase(object):
 
         @return: A C{List} of string escaped column names.
         """
-        return map(lambda x: "`%s`" % x, colnames)
+        return ["`%s`" % x for x in colnames]
 
 
     def insertMany(self, tablename, vals):
@@ -222,11 +222,11 @@ class InteractionBase(object):
 
         @return: A C{Deferred}.
         """
-        colnames = ",".join(self.escapeColNames(vals[0].keys()))
+        colnames = ",".join(self.escapeColNames(list(vals[0].keys())))
         params = ",".join([self.insertArgsToString(val) for val in vals])
         args = []
         for val in vals:
-            args = args + val.values()
+            args = args + list(val.values())
         q = "INSERT INTO %s (%s) VALUES %s" % (tablename, colnames, params)
         return self.executeOperation(q, args)
 
@@ -299,18 +299,18 @@ class InteractionBase(object):
 
         # if we have a transaction use it
         if txn is not None:
-            self.executeTxn(txn, q, vals.values())
+            self.executeTxn(txn, q, list(vals.values()))
             return self.getLastInsertID(txn)
 
         def _update(txn, q, vals):
-            self.executeTxn(txn, q, vals.values())
+            self.executeTxn(txn, q, list(vals.values()))
             return self.getLastInsertID(txn)
         return self.runInteraction(_update, q, vals)
 
 
 
         def _update(txn, q, vals):
-            self.executeTxn(txn, q, vals.values())
+            self.executeTxn(txn, q, list(vals.values()))
             return self.getLastInsertID(txn)
         return self.runInteraction(_update, q, vals)
 
@@ -409,7 +409,7 @@ class InteractionBase(object):
         def _dorefreshObj(newobj):
             if obj is None:
                 raise CannotRefreshError("Can't refresh object if id not longer exists.")
-            for key in newobj.keys():
+            for key in list(newobj.keys()):
                 setattr(obj, key, newobj[key])
         return self.select(obj.tablename(), obj._rowid).addCallback(_dorefreshObj)
 
@@ -440,9 +440,9 @@ class InteractionBase(object):
 
         @return: A tuple of the form C{('name = %s, othername = %s, ...', argvalues)}.
         """
-        colnames = self.escapeColNames(args.keys())
+        colnames = self.escapeColNames(list(args.keys()))
         setstring = ",".join([key + " = %s" for key in colnames])
-        return (setstring, args.values())
+        return (setstring, list(args.values()))
 
 
     def count(self, tablename, where=None):

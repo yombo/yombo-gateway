@@ -30,14 +30,14 @@ class LookupDict(dict):
     def get_key(self, value):
         """find the key as a list given a value"""
         if type(value) == type(dict()):
-            items = [item[0] for item in self.items() if item[1][value.items()[0][0]] == value.items()[0][1]]
+            items = [item[0] for item in list(self.items()) if item[1][list(value.items())[0][0]] == list(value.items())[0][1]]
         else:
-            items = [item[0] for item in self.items() if item[1] == value]
+            items = [item[0] for item in list(self.items()) if item[1] == value]
         return items[0]
 
     def get_keys(self, value):
         """find the key(s) as a list given a value"""
-        return [item[0] for item in self.items() if item[1] == value]
+        return [item[0] for item in list(self.items()) if item[1] == value]
 
     def get_value(self, key):
         """find the value given a key"""

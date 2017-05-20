@@ -26,7 +26,7 @@ This script starts the Yombo Gateway service.
 OPTIONS:
    -d        Run in daemon (service) mode. Called by init script.
    -h        Show this message
-   -l file   Change log file location     
+   -l file   Change log file location
    -p file   Change pid file location
    -t file   Change tac file location (rarely used)
    -P        Enable profiling to profile.out

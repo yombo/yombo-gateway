@@ -275,7 +275,7 @@ class Sessions(object):
         # session_delete_time = int(time()) - self.config.max_session
         # idle_delete_time = int(time()) - self.config.max_idle
         # max_session_no_auth_time = int(time()) - self.config.max_session_no_auth
-        for session_id in self.active_sessions.keys():
+        for session_id in list(self.active_sessions.keys()):
             if self.active_sessions[session_id].check_valid() is False or self.active_sessions[session_id].is_valid is False:
                 del self.active_sessions[session_id]
                 yield self.localdb.delete_session(session_id)
@@ -303,7 +303,7 @@ class Sessions(object):
 
         if close_deferred:
             yield sleep(0.1)
-            print "done with saving sessions....."
+            print("done with saving sessions.....")
             self.unload_deferred.callback(1)
 
 class Session(object):

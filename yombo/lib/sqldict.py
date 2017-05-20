@@ -39,7 +39,7 @@ requires the serializer and unserializer to be set inside the get() request.
 :license: LICENSE for details.
 """
 # Import python libraries
-import cPickle
+import pickle
 from sqlite3 import Binary as sqlite3Binary
 
 from yombo.ext.six import string_types
@@ -133,13 +133,13 @@ class SQLDict(YomboLibrary):
         :param save_all: If true, save all the SQL Dictionaries
         :return:
         """
-        for name, di in self._dictionaries.iteritems():
+        for name, di in self._dictionaries.items():
             if di['dirty'] or save_all:
                 # logger.info("save_sql_dict {name} ", name=name)
                 # logger.info("save_sql_dict {ser} ", ser=di['dict']._SQLDictionary__serializer)
 #                logger.warn("save_sql_dict 3 {di}", di=di)
                 safe_data = {}  # Sometimes wierd datatype's happen...  Not good.
-                for key, item in di['dict'].iteritems():
+                for key, item in di['dict'].items():
 
                     if di['dict']._SQLDictionary__serializer is not None:
                         try:
@@ -153,7 +153,7 @@ class SQLDict(YomboLibrary):
                 # logger.info("save_sql_dict 4 {di}", di=safe_data)
 
                 # logger.info("save_sql_dict {safe_data} ", safe_data=safe_data)
-                save_data = sqlite3Binary(cPickle.dumps(safe_data, cPickle.HIGHEST_PROTOCOL))
+                save_data = sqlite3Binary(pickle.dumps(safe_data, pickle.HIGHEST_PROTOCOL))
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
                         di['dict_name'], save_data)
 #                print "in save_sql_dict - returned from saving data into sql"
@@ -233,9 +233,9 @@ class SQLDictionary(dict):
             returnValue(None)
 
         result_data = str(results[0]['dict_data'])
-        items = cPickle.loads(result_data)
+        items = pickle.loads(result_data)
 
-        for key, value in items.iteritems():
+        for key, value in items.items():
             if self.__unserializer is not None:
                 try:
                     value = self.__unserializer(value)

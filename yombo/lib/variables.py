@@ -11,7 +11,7 @@ A library to get variables in various formats. Also used to send updates to Yomb
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import print_function
+
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -208,7 +208,7 @@ class Variables(YomboLibrary):
                 #     if data['name']
 
             field['values'] = []
-            for data_id, data in field['data'].iteritems():
+            for data_id, data in field['data'].items():
                 field['values'].append(data['value'])
 
     # @memoize_ttl(10)
@@ -222,8 +222,8 @@ class Variables(YomboLibrary):
         """
         # print("merge_variable_data. Groups: %s" % groups)
         # print("merge_variable_data. new_data_items: %s" % new_data_items)
-        for group_name, group in groups.iteritems():
-            for field_name, field in group['fields'].iteritems():
+        for group_name, group in groups.items():
+            for field_name, field in group['fields'].items():
                 # print("111 %s" % field )
                 found_field_id = None
                 found_field_key = None
@@ -237,7 +237,7 @@ class Variables(YomboLibrary):
                     new_data_item = new_data_items[found_field_key]
                     # print("222 new_data: %s" % new_data_item)
                     # print("222 field['id']: %s" % field['id'])
-                    for new_data_id, new_data in new_data_item.iteritems():
+                    for new_data_id, new_data in new_data_item.items():
                         # print("newdata: %s" % new_data)
                         final_value = ""
                         if isinstance(new_data, dict):
@@ -265,7 +265,7 @@ class Variables(YomboLibrary):
                     #     if data['name']
 
                 field['values'] = []
-                for data_id, data in field['data'].iteritems():
+                for data_id, data in field['data'].items():
                     field['values'].append(data['value'])
 
         # print("merge_variable_data. groups_done: %s" % groups)
@@ -291,8 +291,8 @@ class Variables(YomboLibrary):
         results = new_data_items.copy()
         # print("extract_variables_from_web_data1: %s" % data)
 
-        for field_id, data in results.iteritems():
-            for data_id, value in data.iteritems():
+        for field_id, data in results.items():
+            for data_id, value in data.items():
                 final_value = ""
                 if isinstance(value, dict):
                     if value['input'] == '-----ENCRYPTED DATA-----':

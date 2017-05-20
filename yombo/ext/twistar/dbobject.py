@@ -70,16 +70,16 @@ class DBObject(Validator):
         return len(self.__dict__)
 
     def has_key(self, k):
-        return self.__dict__.has_key(k)
+        return k in self.__dict__
 
     def keys(self):
-        return self.__dict__.keys()
+        return list(self.__dict__.keys())
 
     def values(self):
-        return self.__dict__.values()
+        return list(self.__dict__.values())
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     def __cmp__(self, dict):
         return cmp(self.__dict__, dict)
@@ -121,7 +121,7 @@ class DBObject(Validator):
         @param kwargs: A C{dict} whose keys will be turned into properties and whose values
         will then be assigned to those properties.
         """
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
 
@@ -338,7 +338,7 @@ class DBObject(Validator):
         """
         if len(relations) == 0:
             klass = object.__getattribute__(self, "__class__")
-            allrelations = klass.RELATIONSHIP_CACHE.keys()
+            allrelations = list(klass.RELATIONSHIP_CACHE.keys())
             if len(allrelations) == 0:
                 return defer.succeed({})
             return self.loadRelations(*allrelations)
@@ -384,7 +384,7 @@ class DBObject(Validator):
         Initialize the cache of relationship objects for this class.
         """
         klass.RELATIONSHIP_CACHE = {}
-        for rtype in Relationship.TYPES.keys():
+        for rtype in list(Relationship.TYPES.keys()):
             for relation in getattr(klass, rtype):
                 klass.addRelation(relation, rtype)
 

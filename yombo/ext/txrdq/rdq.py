@@ -249,7 +249,7 @@ class ResizableDispatchQueue(object):
         self.paused = False
         self.width = width
 
-    def next(self):
+    def __next__(self):
         """
         Return the next job to be processed, unless we are currenly
         narrowing the queue, in which case we raise C{StopIteration}.
@@ -335,7 +335,7 @@ class ResizableDispatchQueue(object):
                 actualIncrement = increment - self.pendingStops
                 if actualIncrement >= 0:
                     self.pendingStops = 0
-                    for i in xrange(actualIncrement):
+                    for i in range(actualIncrement):
                         self._pool.add(self._coop.coiterate(self))
                     self._currentWidth += actualIncrement
                 else:

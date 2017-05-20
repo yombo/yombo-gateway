@@ -106,7 +106,7 @@ class Notifications(YomboLibrary):
             return False
 
     def iteritems(self, start=None, stop=None):
-        return self.notifications.iteritems()
+        return iter(self.notifications.items())
 
     def _init_(self):
         """
@@ -139,7 +139,7 @@ class Notifications(YomboLibrary):
 
     def get_important(self):
         items = {}
-        for notification_id, notification in self.notifications.iteritems():
+        for notification_id, notification in self.notifications.items():
             if notification.priority in ('high', 'urgent'):
                 items[notification_id] = notification
         return items
@@ -150,7 +150,7 @@ class Notifications(YomboLibrary):
         :return:
         """
         cur_time = time()
-        for id, notice in self.notifications.iteritems():
+        for id, notice in self.notifications.items():
             if notice.expire == "Never":
                 continue
             if cur_time > notice.expire:
@@ -159,7 +159,7 @@ class Notifications(YomboLibrary):
 
     def check_always_show_count(self):
         self.always_show_count = 0
-        for id, notif in self.notifications.iteritems():
+        for id, notif in self.notifications.items():
             if notif.always_show:
                 self.always_show_count += 1
 
@@ -282,7 +282,7 @@ class Notifications(YomboLibrary):
             del self.notifications[notice_id]
         except:
             pass
-        print "delete notice_id: %s" % notice_id
+        print("delete notice_id: %s" % notice_id)
         # self._LocalDB.delete_notification(notice_id)
         self.check_always_show_count()
 
@@ -363,7 +363,7 @@ class Notification:
         :param notice:
         :return:
         """
-        for key, value in notice.iteritems():
+        for key, value in notice.items():
             if key == 'id':
                 continue
             setattr(self, key, value)

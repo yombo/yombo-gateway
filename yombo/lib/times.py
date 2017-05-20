@@ -830,7 +830,7 @@ class Times(YomboLibrary, object):
                 return dt
             except (ephem.AlwaysUpError,ephem.NeverUpError):
                 if (observer.date < save_date - 365) or (observer.date > save_date + 365):
-                    print 'Could not find daylight bounds, last checked date ', observer.date, ', first checked ', save_date,' - year checked day by day.'
+                    print('Could not find daylight bounds, last checked date ', observer.date, ', first checked ', save_date,' - year checked day by day.')
                     raise #It is not possible to found setting or rising
                 continue
 
@@ -846,7 +846,7 @@ class Times(YomboLibrary, object):
         """
         #        self.call_arr = []
         self.call_dict = {}
-        from thread import allocate_lock
+        from _thread import allocate_lock
         self.mutex = allocate_lock()
         self.uniq = 1
         self.show_messages = True
@@ -855,14 +855,14 @@ class Times(YomboLibrary, object):
             coef = time.time()
             self.mutex.acquire()
             if (self.show_messages):
-                print 'calling reactor.callLater (', a, b, c, ')'
+                print('calling reactor.callLater (', a, b, c, ')')
             #            self.call_arr.append((a,b,c))
-            if (self.call_dict.has_key(a+coef)):
+            if (a+coef in self.call_dict):
                 self.call_dict[a+coef] = self.call_dict[a+coef] + [(float(a+coef),b,c,self.uniq)]
             else:
                 self.call_dict[a+coef] = [(float(a+coef),b,c,self.uniq)]
             if (self.show_messages):
-                print ('calling in %s:%s:%s.%s - ' % (int(a/60/60),int(a/60)%60,int(a)%60,int(a*1000)%1000)), datetime.utcnow() + timedelta(seconds=a)
+                print(('calling in %s:%s:%s.%s - ' % (int(a/60/60),int(a/60)%60,int(a)%60,int(a*1000)%1000)), datetime.utcnow() + timedelta(seconds=a))
             self.uniq = self.uniq + 1
             self.mutex.release()
 
@@ -915,7 +915,7 @@ class Times(YomboLibrary, object):
         setattr(self, 'send_event_hook', self.send_event_hook_old)
 
     def run_inner_tests_chk_year(self, set_olddt, set_newdt, lat, lon):
-        print '************check year: lat = %s, lon = %s *********************' % (lat,lon)
+        print('************check year: lat = %s, lon = %s *********************' % (lat,lon))
 
         globals()['time'] = lambda:t
         self.obs.lat = lat
@@ -932,29 +932,29 @@ class Times(YomboLibrary, object):
         t = CalTimegm (midnight_utc.timetuple())
 
         err = 0
-        print 'Year check results (. - ok, X - should be day but night, x - should be night):[', midnight_utc,']',
+        print('Year check results (. - ok, X - should be day but night, x - should be night):[', midnight_utc,']', end=' ')
         for i in range (0,366): #check night is night and day is day
             #midnight
             self._CalcDayNight()
-            if (self.isNight): print '.',
+            if (self.isNight): print('.', end=' ')
             else:
-                print 'x',
+                print('x', end=' ')
                 err = err + 1
             t = t + 60*60*12
             #midday
             self._CalcDayNight()
-            if (self.isDay): print '.',
+            if (self.isDay): print('.', end=' ')
             else:
-                print 'X',
+                print('X', end=' ')
                 err = err + 1
             t = t + 60*60*12
 
-        print 'Errors:', err
+        print('Errors:', err)
 
         # parameters: latm lon, date that day, twilight begin time, sunrise, sunset, twilight end time
     def table_check(self,lat,lon,dt,twb,psr,nss,twe,msg,sun_hor='0'):
-        print 'checking table times for ', msg
-        print 'lat = %s, lon = %s, dt = %s, twb = %s, psr = %s, nss = %s, twe = %s, horizon correction = %s' % (lat,lon,dt,twb,psr,nss,twe,sun_hor)
+        print('checking table times for ', msg)
+        print('lat = %s, lon = %s, dt = %s, twb = %s, psr = %s, nss = %s, twe = %s, horizon correction = %s' % (lat,lon,dt,twb,psr,nss,twe,sun_hor))
         d = lambda x:datetime.strptime(x,'%Y/%m/%d %H:%M:%S')
         t = CalTimegm(d(dt).timetuple())
         globals()['time'] = lambda:t
@@ -983,26 +983,26 @@ class Times(YomboLibrary, object):
 
         assert (abs(err_sr) < 120), "time skew is more than 2 minutes for sunrise (%s)" % msg
         assert (abs(err_twb) < 120), "time skew is more than 2 minutes for twilight start (%s)" % msg
-        print 'table check passed'
+        print('table check passed')
         self.obs.pressure = 1010
         self.obsTwilight.pressure = 1010
         self.obs.horizon='0'
         self.obs.temp = 15
         self.obsTwilight.temp = 15
     def run_inner_tests(self):
-        print self.obs
-        print self.obsTwilight
-        print 'time.time()', time.time()
-        print 'sr', self.sunrise()
-        print 'ss', self.sunset()
-        print 'srt', self.sunrise_twilight()
-        print 'sst', self.sunset_twilight()
+        print(self.obs)
+        print(self.obsTwilight)
+        print('time.time()', time.time())
+        print('sr', self.sunrise())
+        print('ss', self.sunset())
+        print('srt', self.sunrise_twilight())
+        print('sst', self.sunset_twilight())
         assert (self.sunrise()>time.time()),"next rise after current time"
         assert (self.sunset()>time.time()),"next set after current time"
         assert (self.sunrise_twilight()>time.time()),"next twilight rise after current time"
         assert (self.sunset_twilight()>time.time()),"next twilight set after current time"
 
-        print '************Year check midnights********************'
+        print('************Year check midnights********************')
         old_time=globals()['time']
         old_datetime = globals()['datetime']
         class DateTime(datetime):
@@ -1017,16 +1017,16 @@ class Times(YomboLibrary, object):
         globals()['datetime'] = DateTime
         globals()['time'] = lambda:t
 
-        print '************adding day*********************'
+        print('************adding day*********************')
 
         globals()['datetime'] = old_datetime
         t = CalTimegm (datetime.utcnow().timetuple()) + 24*60*60
         globals()['datetime'] = DateTime
-        print 'time.time()', time.time()
-        print 'sr', self.sunrise()
-        print 'ss', self.sunset()
-        print 'srt', self.sunrise_twilight()
-        print 'sst', self.sunset_twilight()
+        print('time.time()', time.time())
+        print('sr', self.sunrise())
+        print('ss', self.sunset())
+        print('srt', self.sunrise_twilight())
+        print('sst', self.sunset_twilight())
 
         def _set_dt(dt):
             globals()['datetime'] = dt
@@ -1052,12 +1052,12 @@ class Times(YomboLibrary, object):
 
         globals()['time'] = lambda:t #renew closure
 
-        print '************table check********************'
+        print('************table check********************')
 
         self.table_check('33.8','-84.4','2009/09/06 17:00:00','2009/09/06 10:50:00','2009/09/06 11:15:00','2009/09/06 23:56:00','2009/09/07 00:21:00','Atlanta','-0:34')
         #        self.table_check('68.95','33.1','2013/08/12 12:00:00','2013/08/11 22:18:13','2013/08/12 00:44:48','2013/08/12 19:03:14','2013/08/12 21:10:48','Murmansk','-0:50')
 
-        print '************callLater check********************'
+        print('************callLater check********************')
 
         self.obs.lat = '33.8'
         self.obs.lon = '-84.4'
@@ -1095,12 +1095,12 @@ class Times(YomboLibrary, object):
             self.mutex.acquire()
             #print "On %s iteration there are %s later calls" % (i, len(self.call_dict))
             def prnDict():
-                for s in self.call_dict.keys():
-                    print 'dict[%s]:' % datetime.fromtimestamp(s)
+                for s in list(self.call_dict.keys()):
+                    print('dict[%s]:' % datetime.fromtimestamp(s))
                     c_l = self.call_dict[s]
                     for (a,b,c,d) in c_l:
                         #print 'check ', c
-                        print "%s --- func = %s, param = %s" % (d,b,c)
+                        print("%s --- func = %s, param = %s" % (d,b,c))
             #prnDict()
             assert (len(self.call_dict) > 0), 'no more laterCalls on %s iteration' % i
             t_corr_l = list(self.call_dict.keys())
@@ -1109,7 +1109,7 @@ class Times(YomboLibrary, object):
             #check dict (there should not be fully duplicate events (or should?))
             to_call_list = []
             #print 'dict check: ', t_corr_l
-            for s in self.call_dict.keys():
+            for s in list(self.call_dict.keys()):
                 #print 'check second = %s' % s
                 c_l = self.call_dict[s]
                 to_call_list = to_call_list + c_l
@@ -1132,10 +1132,10 @@ class Times(YomboLibrary, object):
             t = old_t
 
         ya = self.year_array
-        print "Year table:"
-        print " 0-23 - hour number (utc); for each hour events(sent messages) are shown: R/L - Dark/Light, N/D - Night/Day, W/w - Twilight/NotTwilight, A/a - Dawn/NotDawn, U/u - Dusk/NotDusk."
-        print " Upper left corner of table is current hour. "
-        print "0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23"
+        print("Year table:")
+        print(" 0-23 - hour number (utc); for each hour events(sent messages) are shown: R/L - Dark/Light, N/D - Night/Day, W/w - Twilight/NotTwilight, A/a - Dawn/NotDawn, U/u - Dusk/NotDusk.")
+        print(" Upper left corner of table is current hour. ")
+        print("0     1     2     3     4     5     6     7     8     9    10    11    12    13    14    15    16    17    18    19    20    21    22    23")
         rc = [0]*10
         for li in [ya[i:i+24] for i in range(0,len(ya),24)]:
             for c in li:
@@ -1165,11 +1165,11 @@ class Times(YomboLibrary, object):
                 elif (c & 256) > 0 : l = l + 'U'
                 elif (c & 512) > 0 : l = l + 'u'
                 else: l = l + ' '
-                print "%s"%l,
-            print
+                print("%s"%l, end=' ')
+            print()
 
-        print 'indeces in result count: 0-Dark,1-Light,2-Night,3-Day,4-Twilight,5-NotTwi,6-Dawn,7-NotDawn,8-Dusk,9-NotDusk'
-        print 'result count = ', rc
+        print('indeces in result count: 0-Dark,1-Light,2-Night,3-Day,4-Twilight,5-NotTwi,6-Dawn,7-NotDawn,8-Dusk,9-NotDusk')
+        print('result count = ', rc)
         globals()['time']=old_time
         globals()['datetime'] = old_datetime
         self.finish_tests() #revert reactor.callLater patch

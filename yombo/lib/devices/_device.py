@@ -14,8 +14,8 @@ The device class is responsible for managing a single device.
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import print_function
-from __future__ import absolute_import
+
+
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -95,16 +95,16 @@ class Device(object):
         return len(self.__dict__)
 
     def has_key(self, k):
-        return self.__dict__.has_key(k)
+        return k in self.__dict__
 
     def keys(self):
-        return self.__dict__.keys()
+        return list(self.__dict__.keys())
 
     def values(self):
-        return self.__dict__.values()
+        return list(self.__dict__.values())
 
     def items(self):
-        return self.__dict__.items()
+        return list(self.__dict__.items())
 
     def __cmp__(self, dict):
         return cmp(self.__dict__, dict)
@@ -264,9 +264,9 @@ class Device(object):
             if device['energy_map'] is not None:
                 # create an energy map from a dictionary
                 energy_map_final = {}
-                for percent, rate in device['energy_map'].iteritems():
+                for percent, rate in device['energy_map'].items():
                     energy_map_final[string_to_number(percent)] = string_to_number(rate)
-                energy_map_final = OrderedDict(sorted(energy_map_final.items(), key=lambda (x, y): float(x)))
+                energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
                 self.energy_map = energy_map_final
             else:
                 self.energy_map = None
@@ -541,7 +541,7 @@ class Device(object):
         }
         device_command.set_sent()
         results = yield global_invoke_all('_device_command_', called_by=self, **items)
-        for component, result in results.iteritems():
+        for component, result in results.items():
             if result is True:
                 device_command.set_received(message="Received by: %s" % component)
         self._Parent._Statistics.increment("lib.devices.commands_sent", anon=True)
@@ -877,7 +877,7 @@ class Device(object):
                     return True
                 else:
                     return False
-            except YomboWarning, e:
+            except YomboWarning as e:
                 return False
                 # raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
 
@@ -960,7 +960,7 @@ class Device(object):
         if self.energy_map == None:
             return [0, self.energy_type]  # if no map is found, we always return 0
 
-        items = self.energy_map.items()
+        items = list(self.energy_map.items())
         for i in range(0, len(self.energy_map) - 1):
             if items[i][0] <= machine_status <= items[i + 1][0]:
                 # print "translate(key, items[counter][0], items[counter+1][0], items[counter][1], items[counter+1][1])"

@@ -1,1 +1,1 @@
-from automationexample import AutomationExample
+from .automationexample import AutomationExample

@@ -1,10 +1,10 @@
 """Implementation of HjsonDecoder
 """
-from __future__ import absolute_import
+
 import re
 import sys
 import struct
-from .compat import fromhex, b, u, text_type, binary_type, PY3, unichr
+from .compat import fromhex, b, u, text_type, binary_type, PY3, chr
 from .scanner import HjsonDecodeError
 
 # NOTE (3.1.0): HjsonDecodeError may still be imported from this module for
@@ -29,7 +29,7 @@ WHITESPACE = ' \t\n\r'
 NUMBER_RE = re.compile(r'[\t ]*(-?(?:0|[1-9]\d*))(\.\d+)?([eE][-+]?\d+)?[\t ]*')
 STRINGCHUNK = re.compile(r'(.*?)(["\\\x00-\x1f])', FLAGS)
 BACKSLASH = {
-    '"': u('"'), '\\': u('\u005c'), '/': u('/'),
+    '"': u('"'), '\\': u('\\u005c'), '/': u('/'),
     'b': u('\b'), 'f': u('\f'), 'n': u('\n'), 'r': u('\r'), 't': u('\t'),
 }
 
@@ -161,7 +161,7 @@ def scanstring(s, end, encoding=None, strict=True,
                         uni = 0x10000 + (((uni - 0xd800) << 10) |
                                          (uni2 - 0xdc00))
                         end += 6
-            char = unichr(uni)
+            char = chr(uni)
         # Append the unescaped character
         _append(char)
     return _join(chunks), end

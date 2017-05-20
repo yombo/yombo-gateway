@@ -14,7 +14,7 @@ The device class is responsible for managing a single device.
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import print_function
+
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:

@@ -10,7 +10,7 @@ Various function decorators.
 from functools import wraps
 from time import time
 from hashlib import sha256
-import cPickle
+import pickle
 
 # Import Yombo libraries
 from yombo.core.log import get_logger
@@ -104,7 +104,7 @@ class memoize_ttl(object):
     def __call__(self, f):
         def wrapped_f(*args, **kwargs):
             now = time()
-            the_hash = (args, sha256(cPickle.dumps(kwargs)).hexdigest())
+            the_hash = (args, sha256(pickle.dumps(kwargs)).hexdigest())
             try:
                 value, last_update = self.cache[the_hash]
                 if self.ttl > 0 and now - last_update > self.ttl:

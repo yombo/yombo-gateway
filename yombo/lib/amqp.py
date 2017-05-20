@@ -27,9 +27,6 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqp.py>`_
 """
 # Import python libraries
-from __future__ import division
-
-import yombo.ext.umsgpack as msgpack
 import pika
 from collections import deque
 from hashlib import sha1
@@ -48,6 +45,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string
+import collections
 
 logger = get_logger('library.amqp')
 
@@ -68,7 +66,7 @@ class AMQP(YomboLibrary):
     def _unload_(self):
         self._local_log("debug", "AMQP::_unload_")
         # print "amqp - removing all clients.."
-        for client_id, client in self.client_connections.iteritems():
+        for client_id, client in self.client_connections.items():
             # print "amqp-clinet: %s" % client_id
             if client.is_connected:
                 try:
@@ -134,11 +132,11 @@ class AMQP(YomboLibrary):
         return output
 
     def clean_message_ids(self):
-        for correlation_id in self.message_correlations.keys():
+        for correlation_id in list(self.message_correlations.keys()):
             if self.message_correlations[correlation_id]['correlation_time'] < (time() - (60*10)):
                 del self.message_correlations[correlation_id]
 
-        for msg_id in self.messages_processed.keys():
+        for msg_id in list(self.messages_processed.keys()):
             if self.messages_processed[msg_id]['msg_time'] < (time() - (60*5)):
                     del self.messages_processed[msg_id]
 
@@ -197,15 +195,15 @@ class AMQP(YomboLibrary):
             raise YomboWarning("New AMQP client must have use_ssl set as True or False..", 200, 'new', 'AMQP')
 
         if connected_callback is not None:
-            if callable(connected_callback) is False:
+            if isinstance(connected_callback, collections.Callable) is False:
                 raise YomboWarning("If incoming_callback is set, it must be be callable.")
 
         if disconnected_callback is not None:
-            if callable(disconnected_callback) is False:
+            if isinstance(disconnected_callback, collections.Callable) is False:
                 raise YomboWarning("If incoming_callback is set, it must be be callable.")
 
         if error_callback is not None:
-            if callable(error_callback) is False:
+            if isinstance(error_callback, collections.Callable) is False:
                 raise YomboWarning("If error_callback is set, it must be be callable.")
 
         self.client_connections[client_id] = AMQPClient(self, client_id, hostname, port, virtual_host, username,
@@ -411,13 +409,13 @@ class AMQPClient(object):
     def subscribe(self, queue_name, incoming_callback, error_callback=None, queue_no_ack=False, persistent=True):
         self._local_log("debug", "AMQPClient::subscribe", "queue_name: %s" % queue_name)
 
-        if callable(incoming_callback) is False:
+        if isinstance(incoming_callback, collections.Callable) is False:
             raise YomboWarning(
                     "AMQP Client:{%s} - incoming_callback must be callabled." % self.client_id,
                     203, 'subscribe', 'AMQPClient')
 
         if error_callback is not None:
-            if callable(error_callback) is False:
+            if isinstance(error_callback, collections.Callable) is False:
                 # print "Error_callback - %s" % error_callback
                 raise YomboWarning(
                       "AMQP Client:{%s} - If error_callback is set, it must be be callable" % self.client_id,
@@ -441,7 +439,7 @@ class AMQPClient(object):
         # self._local_log("debug", "AMQPClient::send_amqp_message", "Message: %s" % kwargs)
         callback = kwargs.get('callback', None)
         if callback is not None:
-            if callable(callback) is False:
+            if isinstance(callback, collections.Callable) is False:
                 raise YomboWarning(
                         "AMQP Client{:%s} - If callback is set, it must be be callable." % self.client_id,
                         200, 'publish', 'AMQPClient')
@@ -620,7 +618,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                         callback_name = None
                         callback_function = None
                         callback = None
-            elif callable(callback) is False:
+            elif isinstance(callback, collections.Callable) is False:
                 raise YomboWarning(
                         "AMQP Client:%s - If callback is set, it must be be callable." % self.client_id,
                         201, 'publish', 'AMQPClient')
@@ -732,19 +730,19 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         Called by the protocol when the connection closes.
         :return:
         """
-        for item_key, item in self.exchanges.iteritems():
+        for item_key, item in self.exchanges.items():
             if item['register_persist']:
                 self.exchanges[item_key]['registered'] = False
 
-        for item_key, item in self.queues.iteritems():
+        for item_key, item in self.queues.items():
             if item['register_persist']:
                 self.queues[item_key]['registered'] = False
 
-        for item_key, item in self.exchange_queue_bindings.iteritems():
+        for item_key, item in self.exchange_queue_bindings.items():
             if item['register_persist']:
                 self.exchange_queue_bindings[item_key]['registered'] = False
 
-        for item_key, item in self.consumers.iteritems():
+        for item_key, item in self.consumers.items():
             if item['subscribed']:
                 self.consumers[item_key]['subscribed'] = False
 
@@ -831,7 +829,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         # self._local_log("debug", "PikaProtocol::do_register_exchanges")
         # logger.debug("Do_register_exchanges, todo: {exchanges}", exchanges=self.factory.exchanges)
-        for exchange_name in self.factory.exchanges.keys():
+        for exchange_name in list(self.factory.exchanges.keys()):
             fields = self.factory.exchanges[exchange_name]
             # print "do_register_exchanges, fields: %s" % fields
             if fields['registered'] is False:
@@ -847,7 +845,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         Performs the actual registration of queues.
         """
         self._local_log("debug", "PikaProtocol::do_register_queues")
-        for queue_name in self.factory.queues.keys():
+        for queue_name in list(self.factory.queues.keys()):
             fields = self.factory.queues[queue_name]
             if fields['registered'] is False:
                 yield self.channel.queue_declare(queue=fields['queue_name'], durable=fields['queue_durable'],
@@ -862,7 +860,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         Performs the actual registration of exchange_queue_bindings.
         """
         self._local_log("debug", "PikaProtocol::do_register_exchange_queue_binds")
-        for eqb_name in self.factory.exchange_queue_bindings.keys():
+        for eqb_name in list(self.factory.exchange_queue_bindings.keys()):
             fields = self.factory.exchange_queue_bindings[eqb_name]
             if fields['registered'] is False:
                 yield self.channel.queue_bind(exchange=fields['exchange_name'],
@@ -878,7 +876,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         Performs the actual binding of the queue to the AMQP channel.
         """
         self._local_log("debug", "PikaProtocol::do_register_consumer")
-        for queue_name in self.factory.consumers.keys():
+        for queue_name in list(self.factory.consumers.keys()):
             fields = self.factory.consumers[queue_name]
             if fields['subscribed'] is False:
                 (queue, consumer_tag,) = yield self.channel.basic_consume(queue=queue_name,
@@ -1039,7 +1037,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         already_calledback = False
         if correlation_info is not None:
             if correlation_info['callback'] is not None:
-                if callable(correlation_info['callback']) is True:
+                if isinstance(correlation_info['callback'], collections.Callable) is True:
                     logger.warn("calling message callback, not incoming queue callback")
                     already_calledback = True
                     messsage_callback = correlation_info['callback']

@@ -170,7 +170,7 @@ class States(YomboLibrary, object):
         :return: A list of states defined. 
         :rtype: list
         """
-        return self.__States.keys()
+        return list(self.__States.keys())
 
     def items(self):
         """
@@ -179,19 +179,19 @@ class States(YomboLibrary, object):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.__States.items()
+        return list(self.__States.items())
 
     def iteritems(self):
-        return self.__States.iteritems()
+        return iter(self.__States.items())
 
     def iterkeys(self):
-        return self.__States.iterkeys()
+        return iter(self.__States.keys())
 
     def itervalues(self):
-        return self.__States.itervalues()
+        return iter(self.__States.values())
 
     def values(self):
-        return self.__States.values()
+        return list(self.__States.values())
 
     def _init_(self):
         self.automation = self._Libraries['automation']
@@ -594,7 +594,7 @@ class States(YomboLibrary, object):
                                       'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
                                   )
 
-            for key in data.keys():
+            for key in list(data.keys()):
                 if key not in ('value', 'value_type', 'request_id'):
                     self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
                           str('invalid (%s): json contents can only contain value, value_type and request_id' %

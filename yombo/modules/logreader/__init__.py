@@ -1,1 +1,1 @@
-from logreader import LogReader
+from .logreader import LogReader

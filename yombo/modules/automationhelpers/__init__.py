@@ -1,1 +1,1 @@
-from automationhelpers import AutomationHelpers
+from .automationhelpers import AutomationHelpers

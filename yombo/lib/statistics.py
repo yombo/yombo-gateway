@@ -80,7 +80,7 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import division
+
 from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -258,9 +258,9 @@ class Statistics(YomboLibrary):
             return
 
         stat_lifetimes = yield global_invoke_all('_statistics_lifetimes_', called_by=self)
-        for moduleName, item in stat_lifetimes.iteritems():
+        for moduleName, item in stat_lifetimes.items():
             if isinstance(item, dict):
-                for bucket_name, lifetime in item.iteritems():
+                for bucket_name, lifetime in item.items():
                     self.add_bucket_lifetime(bucket_name, lifetime)
 
     def add_bucket_lifetime(self, bucket_name, values):
@@ -642,9 +642,9 @@ class Statistics(YomboLibrary):
             return
 
         to_save = []
-        for bucket_time in self._counters.keys():
+        for bucket_time in list(self._counters.keys()):
             # print "starting save _counters"
-            for bucket_name in self._counters[bucket_time].keys():
+            for bucket_name in list(self._counters[bucket_time].keys()):
                 current_bucket = self._counters[bucket_time][bucket_name]
                 current_bucket_time = self._get_bucket_time('count', bucket_name=bucket_name)
                 if full or bucket_time < (current_bucket_time['time']):
@@ -669,8 +669,8 @@ class Statistics(YomboLibrary):
                 del self._counters[bucket_time]
 
 
-        for bucket_time in self._averages.keys():
-            for bucket_name in self._averages[bucket_time].keys():
+        for bucket_time in list(self._averages.keys()):
+            for bucket_name in list(self._averages[bucket_time].keys()):
                 current_bucket = self._averages[bucket_time][bucket_name]
                 current_bucket_time = self._get_bucket_time('average', bucket_name=bucket_name)
                 if full or bucket_time < (current_bucket_time['time']):
@@ -707,8 +707,8 @@ class Statistics(YomboLibrary):
             if len(self._averages[bucket_time]) == 0:
                 del self._averages[bucket_time]
 
-        for bucket_time in self._datapoints.keys():
-            for bucket_name in self._datapoints[bucket_time].keys():
+        for bucket_time in list(self._datapoints.keys()):
+            for bucket_name in list(self._datapoints[bucket_time].keys()):
                 current_bucket = self._datapoints[bucket_time][bucket_name]
                 od = OrderedDict()
                 od['bucket_time'] = current_bucket['time']
@@ -817,7 +817,7 @@ class Statistics(YomboLibrary):
         # print "find bucket time for: %s" % bucket_name
         def make_regex(bucket_lifetimes):
             thelist = {}
-            for filter, data in bucket_lifetimes.iteritems():
+            for filter, data in bucket_lifetimes.items():
                 thelist[filter] = re.compile(filter.replace('#', '.*').replace('$', '\$').replace('+', '[/\$\s\w\d]+'))
             return thelist
 
@@ -849,7 +849,7 @@ class Statistics(YomboLibrary):
 
         # get all possible matching filters
         filters = []
-        for filter, regex in regexs.iteritems():
+        for filter, regex in regexs.items():
             result = regex.match(bucket_name)
             if result is not None:
                 filters.append(filter)

@@ -27,6 +27,8 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all, global_invoke_libraries, global_invoke_modules
+import collections
+from functools import reduce
 logger = get_logger('library.inputtypes')
 
 BASE_VALIDATORS = [
@@ -152,7 +154,7 @@ class InputTypes(YomboLibrary):
         :return: A list of input type IDs. 
         :rtype: list
         """
-        return self.input_types.keys()
+        return list(self.input_types.keys())
 
     def items(self):
         """
@@ -161,19 +163,19 @@ class InputTypes(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.input_types.items()
+        return list(self.input_types.items())
 
     def iteritems(self):
-        return self.input_types.iteritems()
+        return iter(self.input_types.items())
 
     def iterkeys(self):
-        return self.input_types.iterkeys()
+        return iter(self.input_types.keys())
 
     def itervalues(self):
-        return self.input_types.itervalues()
+        return iter(self.input_types.values())
 
     def values(self):
-        return self.input_types.values()
+        return list(self.input_types.values())
 
     def _init_(self):
         """
@@ -239,7 +241,7 @@ class InputTypes(YomboLibrary):
             module_root = __import__(item[0], globals(), locals(), [], 0)
             module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
             klass = getattr(module_tail, item[1])
-            if not callable(klass):
+            if not isinstance(klass, collections.Callable):
                 logger.warn("Unable to start validator '{name}', it's not callable.", name=item[1])
                 continue
             self.validators[item_key] = klass(self)
@@ -372,7 +374,7 @@ class InputTypes(YomboLibrary):
                     return item
                 else:
                     raise KeyError("Input type not found: %s" % input_type_requested)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (input_type_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
@@ -400,7 +402,7 @@ class InputTypes(YomboLibrary):
         :return:
         """
         try:
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
                 elif key in ['status']:
@@ -447,7 +449,7 @@ class InputTypes(YomboLibrary):
         :return:
         """
         try:
-            for key in data.keys():
+            for key in list(data.keys()):
                 if data[key] == "":
                     data[key] = None
                 elif key in ['status']:

@@ -11,13 +11,13 @@ class SQLiteDBConfig(InteractionBase):
 
 
     def updateArgsToString(self, args):
-        colnames = self.escapeColNames(args.keys())
+        colnames = self.escapeColNames(list(args.keys()))
         setstring = ",".join([key + " = ?" for key in colnames])
-        return (setstring, args.values())
+        return (setstring, list(args.values()))
 
 
     def insertArgsToString(self, vals):
-        return "(" + ",".join(["?" for _ in vals.items()]) + ")"
+        return "(" + ",".join(["?" for _ in list(vals.items())]) + ")"
 
 
     # retarded sqlite can't handle multiple row inserts

@@ -7,8 +7,8 @@ Various utilities used to perform common functions to help speed development.
 :license: See LICENSE for details.
 """
 # Import python libraries
-from __future__ import division
-from __future__ import print_function
+
+
 
 try:
     import fcntl
@@ -103,7 +103,7 @@ def pattern_search(look_for, items):
     regex = re.compile(look_for.replace('#', '.*').replace('$', '\$').replace('+', '[/\$\s\w\d]+'))
     out_list = []
     if isinstance(items, dict):
-        for item, data in items.iteritems():
+        for item, data in items.items():
             result = regex.match(item)
             if result is not None:
                 out_list.append(item)
@@ -292,7 +292,7 @@ def dict_find_key(symbol_dic, val):
     :return: The key of dictionary dic given the value
     :rtype: any valid dict key type
     """
-    return [k for k, v in symbol_dic.iteritems() if v == val][0]
+    return [k for k, v in symbol_dic.items() if v == val][0]
 
 
 def dict_has_value(dictionary, keys, value):
@@ -420,7 +420,7 @@ def dict_merge(original, changes):
             }
         }
     """
-    for key, value in original.iteritems():
+    for key, value in original.items():
         if key not in changes:
             changes[key] = value
         elif isinstance(value, dict):
@@ -574,7 +574,7 @@ def search_instance(arguments, haystack, allowed_keys, limiter, operation):
         limiter = .10
 
     attrs = []
-    for attr, value in arguments.iteritems():
+    for attr, value in arguments.items():
         if attr in allowed_keys:
             attrs.append(
                 {
@@ -643,7 +643,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     key_list = []
     sorted_list = None
 
-    for item_id, item in haystack.iteritems():
+    for item_id, item in haystack.items():
         # print "checking item: %s" % item
         if status_value is not None:
             if getattr(item, status_field) != status_value:
@@ -721,7 +721,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
 
 
 def get_method_definition_level(meth):
-    for cls in inspect.getmro(meth.im_class):
+    for cls in inspect.getmro(meth.__self__.__class__):
         if meth.__name__ in cls.__dict__: return str(cls)
     return None
 
@@ -743,7 +743,7 @@ def get_local_network_info(ethernet_name = None):
         myiface = gws['default'][netifaces.AF_INET][1]
 
     gws = netifaces.gateways()
-    gateway_v4 = gws['default'].values()[0][0]
+    gateway_v4 = list(gws['default'].values())[0][0]
 
     addrs = netifaces.ifaddresses(myiface)
     # {2: [{'addr': '192.168.1.150',
@@ -941,10 +941,10 @@ def random_string(**kwargs):
         random_string.randomStuff = random.SystemRandom()
 
     if letters is None:
-        lst = [random_string.randomStuff.choice(string.ascii_letters + string.digits) for n in xrange(length)]
+        lst = [random_string.randomStuff.choice(string.ascii_letters + string.digits) for n in range(length)]
         return "".join(lst)
     else:
-        lst = [random_string.randomStuff.choice(letters) for n in xrange(length)]
+        lst = [random_string.randomStuff.choice(letters) for n in range(length)]
         return "".join(lst)
 
 def random_int(middle, percent, **kwargs):

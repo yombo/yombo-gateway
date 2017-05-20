@@ -34,7 +34,7 @@ False
 import base64
 import hashlib
 import hmac
-import six
+from . import six
 import struct
 import time
 

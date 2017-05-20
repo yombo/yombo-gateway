@@ -24,6 +24,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.module import YomboModule
 from yombo.core.log import get_logger
 from yombo.utils import is_string_bool
+import collections
 
 logger = get_logger("library.automationhelper")
 
@@ -84,7 +85,7 @@ class AutomationHelpers(YomboModule):
         """
         if action['platform'] == 'call_function':
             if 'component_callback' in action:
-                if not callable(action['component_callback']):
+                if not isinstance(action['component_callback'], collections.Callable):
                     logger.warn("Rule '{rule_name}' is not callable by reference: 'component_callback': {callback}", rule_name=rule['name'], callback=action['component_callback'])
                     return False
                 else:
@@ -96,7 +97,7 @@ class AutomationHelpers(YomboModule):
                             return False
                         if hasattr(self._Libraries[action['component_name']], action['component_function']):
                             method = getattr(self._Libraries[action['component_name']], action['component_function'])
-                            if not callable(method):
+                            if not isinstance(method, collections.Callable):
                                 logger.warn("Rule '{rule_name}' is not callable by name: 'component_type, component_name, component_function'", rule_name=rule['name'])
                                 return False
                             else:
@@ -106,7 +107,7 @@ class AutomationHelpers(YomboModule):
                             return False
                         if hasattr(self._Modules[action['component_name']], action['component_function']):
                             method = getattr(self._Modules[action['component_name']], action['component_function'])
-                            if not callable(method):
+                            if not isinstance(method, collections.Callable):
                                 logger.warn("Rule '{rule_name}' is not callable by name: 'component_type, component_name, component_function'", rule_name=rule['name'])
                                 return False
                             else:
@@ -135,7 +136,7 @@ class AutomationHelpers(YomboModule):
         """
         method = action['_my_callback']
 
-        if callable(method):
+        if isinstance(method, collections.Callable):
             if 'arguments' in action:
                 return method(**action['arguments'])
             else:

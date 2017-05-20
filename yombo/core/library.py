@@ -19,6 +19,7 @@ class YomboLibrary:
     """
 
     def __init__(self):
+        print("hey from lib core")
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 

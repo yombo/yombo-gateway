@@ -70,7 +70,7 @@ def uniquenessOf(obj, names, kwargs):
     message = kwargs.get('message', "is not unique.")
 
     def handle(results):
-        for propname, value in results.items():
+        for propname, value in list(results.items()):
             if value is not None:
                 obj.errors.add(propname, message)
     ds = {}
@@ -226,7 +226,7 @@ class Errors(dict):
         Returns C{True} if there are any errors associated with any properties,
         C{False} otherwise.
         """
-        for value in self.itervalues():
+        for value in self.values():
             if len(value) > 0:
                 return False
         return True
@@ -249,7 +249,7 @@ class Errors(dict):
         Return all errors as a single string.
         """
         s = []
-        for values in self.itervalues():
+        for values in self.values():
             for value in values:
                 s.append(value)
         if len(s) == 0:
@@ -261,4 +261,4 @@ class Errors(dict):
         """
         Get the sum of all errors for all properties.
         """
-        return sum([len(value) for value in self.itervalues()])
+        return sum([len(value) for value in self.values()])

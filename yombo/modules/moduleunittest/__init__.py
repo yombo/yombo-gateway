@@ -1,1 +1,1 @@
-from moduleunittest import ModuleUnitTest
+from .moduleunittest import ModuleUnitTest

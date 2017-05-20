@@ -26,7 +26,7 @@ needs to return several things:
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import print_function
+
 
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -58,6 +58,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import save_file, read_file, global_invoke_modules, global_invoke_libraries, random_int
 from yombo.utils.dictobject import DictObject
+import collections
 
 logger = get_logger('library.sslcerts')
 
@@ -130,7 +131,7 @@ class SSLCerts(YomboLibrary):
         if self.check_if_certs_need_update_loop is not None and self.check_if_certs_need_update_loop.running:
             self.check_if_certs_need_update_loop.stop()
 
-        for sslname, cert in self.managed_certs.iteritems():
+        for sslname, cert in self.managed_certs.items():
             cert.stop()
 
     def check_if_certs_need_update(self):
@@ -138,7 +139,7 @@ class SSLCerts(YomboLibrary):
         Called periodically to see if any certs need to be updated. Once a day is enough, we have 30 days to get this
         done.
         """
-        for sslname, cert in self.managed_certs.iteritems():
+        for sslname, cert in self.managed_certs.items():
             cert.check_if_rotate_needed()
 
     @inlineCallbacks
@@ -160,11 +161,11 @@ class SSLCerts(YomboLibrary):
         :param sslcerts: 
         :return: 
         """
-        for component_name, item in sslcerts.iteritems():
+        for component_name, item in sslcerts.items():
             # print("mod started, from: %s item: %s" % (component_name, item))
             try:
                 item = self.check_csr_input(item)  # Clean up module developers input.
-            except YomboWarning, e:
+            except YomboWarning as e:
                 logger.warn("Cannot add cert from hook: %s" % e)
                 continue
             # print("sslcerts: item: %s" % item)
@@ -664,7 +665,7 @@ class SSLCert(object):
             logger.warn("Asked to update the requester or new cert, but current cert isn't valid!")
             return
 
-        if self.update_callback is not None and callable(self.update_callback):
+        if self.update_callback is not None and isinstance(self.update_callback, collections.Callable):
             method = self.update_callback
         elif self.update_callback_type is not None and \
                self.update_callback_component is not None and \
@@ -673,7 +674,7 @@ class SSLCert(object):
                 method = self._ParentLibrary._Loader.find_function(self.update_callback_type,
                            self.update_callback_component,
                            self.update_callback_function)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 logger.warn("Invalid update_callback information provided: %s" % e)
 
         if method is not None:
@@ -1043,7 +1044,7 @@ class SSLCert(object):
         :return:
         """
         self.manage_requested = True
-        for key, value in attributes.iteritems():
+        for key, value in attributes.items():
             if hasattr(self, key):
                 setattr(self, key, value)
 

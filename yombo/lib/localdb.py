@@ -26,7 +26,7 @@ except ImportError:
     import json
 import base64
 import zlib
-import cPickle
+import pickle
 from sqlite3 import Binary as sqlite3Binary
 import sys
 import inspect
@@ -254,8 +254,10 @@ class LocalDB(YomboLibrary):
         self.schema_version = 0
         try:
             results = yield Schema_Version.find(where=['table_name = ?', 'core'])
+            print("db schema results: %s"%results)
             self.schema_version = results[0].version
-        except:
+        except Exception as e:
+            logger.info("Promblem with database: %s" % e)
             logger.info("Creating new database file.")
 
         start_schema_version = self.schema_version
@@ -266,7 +268,7 @@ class LocalDB(YomboLibrary):
             self.dbconfig.update("schema_version", {'table_name': 'core', 'version': z})
             results = yield Schema_Version.all()
 
-        chmod('usr/etc/yombo.db', 0600)
+        chmod('usr/etc/yombo.db', 0o600)
 
         yield self._load_db_model()
 
@@ -776,7 +778,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def save_session(self, session_id, session_data, created, last_access, updated):
-        print "save_session: %s" % session_data
+        print("save_session: %s" % session_data)
         args = {
             'id': session_id,
             'session_data': session_data,
@@ -1160,7 +1162,7 @@ ORDER BY id desc"""
 
         :return:
         """
-        data['task_arguments'] = sqlite3Binary(cPickle.dumps(data['task_arguments'], cPickle.HIGHEST_PROTOCOL))
+        data['task_arguments'] = sqlite3Binary(pickle.dumps(data['task_arguments'], pickle.HIGHEST_PROTOCOL))
         if len(data['task_arguments']) > 3000:
             data['task_arguments'] = base64.encodestring(zlib.compress(data['task_arguments'], 5))
 
@@ -1320,7 +1322,7 @@ ORDER BY id desc"""
         :return: Available variable data nested inside the fields as 'data'.
         :rtype: list
         """
-        print "lbdb: %s" % dictToWhere(kwargs)
+        print("lbdb: %s" % dictToWhere(kwargs))
         records = yield VariableGroupFieldView.find(
             where=dictToWhere(kwargs),
             orderby='group_weight ASC, field_weight ASC')

@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from yombo.lib.devices._device import Device
 
 class Light(Device):

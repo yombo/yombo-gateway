@@ -125,7 +125,7 @@ class Nodes(YomboLibrary):
         :return: A list of device type IDs. 
         :rtype: list
         """
-        return self.nodes.keys()
+        return list(self.nodes.keys())
 
     def items(self):
         """
@@ -134,19 +134,19 @@ class Nodes(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.nodes.items()
+        return list(self.nodes.items())
 
     def iteritems(self):
-        return self.nodes.iteritems()
+        return iter(self.nodes.items())
 
     def iterkeys(self):
-        return self.nodes.iterkeys()
+        return iter(self.nodes.keys())
 
     def itervalues(self):
-        return self.nodes.itervalues()
+        return iter(self.nodes.values())
 
     def values(self):
-        return self.nodes.values()
+        return list(self.nodes.values())
 
     def _init_(self):
         """

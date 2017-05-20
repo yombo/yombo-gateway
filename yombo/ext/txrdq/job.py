@@ -143,7 +143,7 @@ class Job(object):
         waiting watchers.  If the job was cancelled, its completion details
         have already been set (by self.cancel, below).
         """
-        print "failed... %s" % failure
+        print("failed... %s" % failure)
         if self.state != self.CANCELLED:
             assert self.state == self.UNDERWAY
             self.stopTime = time.time()

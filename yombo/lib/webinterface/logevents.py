@@ -77,10 +77,10 @@ class LogEvents(YomboLibrary):
         :return:
         """
         cur_time = int(time())
-        for id, notice in self.notifications.iteritems():
-            print "cur : expired = %s : %s" % (cur_time, notice.expire)
+        for id, notice in self.notifications.items():
+            print("cur : expired = %s : %s" % (cur_time, notice.expire))
             if cur_time > notice.expire:
-                print "deleting notice: %s" % notice.title
+                print("deleting notice: %s" % notice.title)
                 del self.notifications[id]
         self._LocalDB.delete_expired_notifications()
 
@@ -140,7 +140,7 @@ class LogEvents(YomboLibrary):
         :type record: dict
         :returns: Pointer to new notice. Only used during unittest
         """
-        print "adding notice1: %s" % notice
+        print("adding notice1: %s" % notice)
         if 'id' not in notice:
             notice['id'] = random_string(length=16)
         if 'type' not in notice:

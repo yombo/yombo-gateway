@@ -28,6 +28,7 @@ from yombo.ext.txrdq.rdq import ResizableDispatchQueue
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+import collections
 
 logger = get_logger('library.queue')
 
@@ -47,7 +48,7 @@ class Queue(YomboLibrary):
         to_stop = []
         logger.info("Stopping queues. Waiting for in-flight jobs to finish.")
         try:
-            for name, queue in self.queues.iteritems():
+            for name, queue in self.queues.items():
                 to_stop.append(queue.stop())
                 if queue.stopped is True:
                     continue
@@ -90,7 +91,7 @@ class Queue(YomboLibrary):
             raise YomboWarning("'name' already exists in Queues.")
         if width is None:
             width = 1
-        if callable(worker_callback) is False:
+        if isinstance(worker_callback, collections.Callable) is False:
             raise YomboWarning("Invalid callable from queues.new...")
 
         self.queues[name] = ResizableDispatchQueue(worker_callback, width, size, name=name, save_on_exit=save_on_exit)

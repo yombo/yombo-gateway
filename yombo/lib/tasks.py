@@ -63,7 +63,7 @@ class Tasks(YomboLibrary):
             try:
                 component = getattr(self, task['task_component'])
             except:
-                print "Component not found: %s" % task['task_component']
+                print("Component not found: %s" % task['task_component'])
                 continue
 
             try:
@@ -74,7 +74,7 @@ class Tasks(YomboLibrary):
                 else:
                     method(task)
             except:
-                print "Component cannot process tasks: %s" % task['task_component']
+                print("Component cannot process tasks: %s" % task['task_component'])
                 continue
 
             if task['run_once'] == 1:

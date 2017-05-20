@@ -7,7 +7,7 @@ from twisted.logger   import (
     Logger, LogLevel, globalLogBeginner, textFileLogObserver,
     FilteringLogObserver, LogLevelFilterPredicate)
 
-from mqtt.client.factory import MQTTFactory
+from .mqtt.client.factory import MQTTFactory
 
 # ----------------
 # Global variables

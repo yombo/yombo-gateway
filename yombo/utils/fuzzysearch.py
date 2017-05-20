@@ -210,7 +210,7 @@ class FuzzySearch(dict):
             
             # return a list of the top 5 key matches on failure.
             key_list[curRatio] = {'key': key, 'value': self._dict_getitem(key), 'ratio': curRatio}
-            sorted_list = self.take(5, sorted(key_list.iteritems(), key=operator.itemgetter(0), reverse=True))
+            sorted_list = self.take(5, sorted(iter(key_list.items()), key=operator.itemgetter(0), reverse=True))
 
         limiter = None
         if limiter_override is not None:

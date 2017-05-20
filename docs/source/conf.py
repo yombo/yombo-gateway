@@ -55,8 +55,8 @@ index_doc = 'index'
 
 
 # General information about the project.
-project = u'Yombo Gateway'
-copyright = u'2012-2017, Mitch Schwenk'
+project = 'Yombo Gateway'
+copyright = '2012-2017, Mitch Schwenk'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -267,8 +267,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Yombo_Gateway.tex', u'Yombo\\_Gateway Documentation',
-   u'Mitch Schwenk', 'manual'),
+  ('index', 'Yombo_Gateway.tex', 'Yombo\\_Gateway Documentation',
+   'Mitch Schwenk', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -297,8 +297,8 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'yombo_gateway', u'Yombo_Gateway Documentation',
-     [u'Mitch Schwenk'], 1)
+    ('index', 'yombo_gateway', 'Yombo_Gateway Documentation',
+     ['Mitch Schwenk'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -311,8 +311,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Yombo_Gateway', u'Yombo_Gateway Documentation',
-   u'Mitch Schwenk', 'Yombo_Gateway', 'One line description of project.',
+  ('index', 'Yombo_Gateway', 'Yombo_Gateway Documentation',
+   'Mitch Schwenk', 'Yombo_Gateway', 'One line description of project.',
    'Miscellaneous'),
 ]
 

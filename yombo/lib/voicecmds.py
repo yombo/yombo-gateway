@@ -187,7 +187,7 @@ class VoiceCmds(YomboLibrary):
         :return: A list of voice commands defined. 
         :rtype: list
         """
-        return self.__yombocommands.keys()
+        return list(self.__yombocommands.keys())
 
     def items(self):
         """
@@ -196,19 +196,19 @@ class VoiceCmds(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.__yombocommands.items()
+        return list(self.__yombocommands.items())
 
     def iteritems(self):
-        return self.__yombocommands.iteritems()
+        return iter(self.__yombocommands.items())
 
     def iterkeys(self):
-        return self.__yombocommands.iterkeys()
+        return iter(self.__yombocommands.keys())
 
     def itervalues(self):
-        return self.__yombocommands.itervalues()
+        return iter(self.__yombocommands.values())
 
     def values(self):
-        return self.__yombocommands.values()
+        return list(self.__yombocommands.values())
 
     def _init_(self):
         """
@@ -243,7 +243,7 @@ class VoiceCmds(YomboLibrary):
         voicecommands_to_add = yield global_invoke_all('_voicecmds_add_')
 #        logger.info("voicecommands_to_add: {voice_cmds}", voice_cmds=voicecommands_to_add)
 
-        for componentName, voice_cmds in voicecommands_to_add.iteritems():
+        for componentName, voice_cmds in voicecommands_to_add.items():
             if voice_cmds is None:
                 continue
             for list in voice_cmds:
@@ -256,7 +256,7 @@ class VoiceCmds(YomboLibrary):
         :return:
         """
         results = {}
-        for voice, voice_id in self.voice_command_strings.iteritems():
+        for voice, voice_id in self.voice_command_strings.items():
             results[voice] = self.voice_command_data[voice_id]
         return results
 
@@ -317,7 +317,7 @@ class VoiceCmds(YomboLibrary):
         try:
             tag_re = re.compile('(%s.*?%s)' % (re.escape('['), re.escape(']')))
             string_parts = tag_re.split(voice_string)
-            string_parts = filter(None, string_parts) # remove empty bits
+            string_parts = [_f for _f in string_parts if _f] # remove empty bits
 
             device_obj = None
             if device is not None:

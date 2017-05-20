@@ -17,8 +17,8 @@ Also calls module hooks as requested by other libraries and modules.
 :license: LICENSE for details.
 """
 # Import python libraries
-from __future__ import absolute_import
-import ConfigParser
+
+import configparser
 import sys
 import traceback
 from time import time
@@ -36,6 +36,7 @@ from yombo.utils import search_instance, do_search_instance, dict_merge
 from yombo.utils.decorators import memoize_ttl
 
 from yombo.utils.maxdict import MaxDict
+import collections
 
 logger = get_logger('library.modules')
 
@@ -169,7 +170,7 @@ class Modules(YomboLibrary):
         :return: A list of module IDs. 
         :rtype: list
         """
-        return self.modules.keys()
+        return list(self.modules.keys())
 
     def items(self):
         """
@@ -178,19 +179,19 @@ class Modules(YomboLibrary):
         :return: A list of tuples.
         :rtype: list
         """
-        return self.modules.items()
+        return list(self.modules.items())
 
     def iteritems(self):
-        return self.modules.iteritems()
+        return iter(self.modules.items())
 
     def iterkeys(self):
-        return self.modules.iterkeys()
+        return iter(self.modules.keys())
 
     def itervalues(self):
-        return self.modules.itervalues()
+        return iter(self.modules.values())
 
     def values(self):
-        return self.modules.values()
+        return list(self.modules.values())
 
     def _init_(self):
         """
@@ -280,7 +281,7 @@ class Modules(YomboLibrary):
         self._Loader.library_invoke_all("_module_stop_", called_by=self)
         self.module_invoke_all("_stop_")
 
-        keys = self.modules.keys()
+        keys = list(self.modules.keys())
         self._Loader.library_invoke_all("_module_unload_", called_by=self)
         for module_id in keys:
             module = self.modules[module_id]
@@ -303,7 +304,7 @@ class Modules(YomboLibrary):
         logger.debug("Building raw module list start.")
         try:
             fp = open("localmodules.ini")
-            ini = ConfigParser.SafeConfigParser()
+            ini = configparser.SafeConfigParser()
             ini.optionxform=str
             ini.readfp(fp)
             for section in ini.sections():
@@ -424,11 +425,12 @@ class Modules(YomboLibrary):
                 # print("done importing variables frmom localmodule.ini")
 #            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
             fp.close()
-        except IOError as (errno, strerror):
+        except IOError as xxx_todo_changeme:
+            (errno, strerror) = xxx_todo_changeme.args
             logger.debug("localmodule.ini error: I/O error({errornumber}): {error}", errornumber=errno, error=strerror)
 
         # Local system modules.
-        for module_name, data in SYSTEM_MODULES.iteritems():
+        for module_name, data in SYSTEM_MODULES.items():
             # print data
             if self._Configs.get('system_modules', data['machine_label'], 'enabled') != 'enabled':
                 continue
@@ -450,12 +452,12 @@ class Modules(YomboLibrary):
 
     def do_import_modules(self):
         # logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
-        for module_id, module in self._rawModulesList.iteritems():
+        for module_id, module in self._rawModulesList.items():
             pathName = "yombo.modules.%s" % module['machine_label']
             # print "loading: %s" % pathName
             try:
                 module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
-            except ImportError, e:
+            except ImportError as e:
                 continue
             except:
                 logger.error("--------==(Error: Loading Module)==--------")
@@ -514,7 +516,7 @@ class Modules(YomboLibrary):
         """
         module_init_deferred = []
 
-        for module_id, module in self.modules.iteritems():
+        for module_id, module in self.modules.items():
             self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
 
             # Get variables, and merge with any local variable settings
@@ -656,7 +658,7 @@ class Modules(YomboLibrary):
         self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
         if hasattr(module, hook):
             method = getattr(module, hook)
-            if callable(method):
+            if isinstance(method, collections.Callable):
                 if module._Name not in self.hook_counts:
                     self.hook_counts[module._Name] = {}
                 if hook not in self.hook_counts[module._Name]:
@@ -688,7 +690,7 @@ class Modules(YomboLibrary):
                 #     logger.error("--------------------------------------------------------")
                 #     logger.error("Error message: {e}", e=e)
                 #     logger.error("--------------------------------------------------------")
-                except Exception, e:
+                except Exception as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     logger.error("------==(ERROR During {hook} of module: {name})==-------", hook=hook, name=module._FullName)
                     logger.error("1:: {e}", e=sys.exc_info())
@@ -713,7 +715,7 @@ class Modules(YomboLibrary):
         if full_name == None:
             full_name = False
         results = {}
-        for module_id, module in self.modules.iteritems():
+        for module_id, module in self.modules.items():
             if int(module._status) != 1:
                 continue
 
@@ -808,7 +810,7 @@ class Modules(YomboLibrary):
                     return item
                 else:
                     raise KeyError("Module not found: %s" % module_requested)
-            except YomboWarning, e:
+            except YomboWarning as e:
                 raise KeyError('Searched for %s, but found had problems: %s' % (module_requested, e))
 
     def search(self, _limiter=None, _operation=None, **kwargs):
@@ -820,7 +822,7 @@ class Modules(YomboLibrary):
         :param status: Deafult: 1 - The status of the module to check for.
         :return: 
         """
-        for attr, value in kwargs.iteritems():
+        for attr, value in kwargs.items():
             if "_%s" % attr in self.module_search_attributes:
                 kwargs[attr]['field'] = "_%s" % attr
 
@@ -915,10 +917,10 @@ class Modules(YomboLibrary):
         if 'variable_data' in data:
             # print("adding variable data...")
             variable_data = data['variable_data']
-            for field_id, var_data in variable_data.iteritems():
+            for field_id, var_data in variable_data.items():
                 # print("field_id: %s" % field_id)
                 # print("var_data: %s" % var_data)
-                for data_id, value in var_data.iteritems():
+                for data_id, value in var_data.items():
                     # print("data_id: %s" % data_id)
                     if data_id.startswith('new_'):
                         # print("data_id starts with new...")

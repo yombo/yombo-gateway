@@ -40,10 +40,10 @@ if not os.path.exists('usr/opt'):
 
 # ensure only our user can read these directories, along with out group. Allows a
 # backup group to be assigned for backup purposes.
-os.chmod('usr/etc', 0770)
-os.chmod('usr/etc/gpg', 0770)
-os.chmod('usr/etc/certs', 0770)
-os.chmod('usr/bak', 0770)
+os.chmod('usr/etc', 0o770)
+os.chmod('usr/etc/gpg', 0o770)
+os.chmod('usr/etc/certs', 0o770)
+os.chmod('usr/bak', 0o770)
 
 try:
     from yombo.core.gwservice import GWService
