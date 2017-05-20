@@ -47,10 +47,12 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-from time import time
+from __future__ import absolute_import
+from __future__ import print_function
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet import reactor
 
 # Import 3rd-party libs
 import yombo.ext.hjson as hjson
@@ -111,8 +113,7 @@ class Automation(YomboLibrary):
             with yombo.utils.fopen('automation.txt', 'r') as fp_:
                 temp_rules = hjson.loads(fp_.read())
                 self._rulesRaw = msgpack.loads(msgpack.dumps(temp_rules))  # remove ordered dict.
-#                print "hjosn: %s" % hjson.loads(self._rulesRaw)
-                logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
+                # logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
         except Exception, e:
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
@@ -121,6 +122,7 @@ class Automation(YomboLibrary):
                 for rule in self._rulesRaw['rules']:
                     rule['source'] = 'hsjon'
 
+    @inlineCallbacks
     def _modules_prestarted_(self, **kwargs):
         """
         This function is called before the _start_ function of all modules is called.
@@ -179,20 +181,20 @@ class Automation(YomboLibrary):
 
         """
         automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
-        logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
+        # logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
         for component_name, item in automation_sources.iteritems():
             for vals in item:
                 vals['platform_source'] = component_name
                 self.sources[vals['platform']] = vals
-#        logger.debug("sources: {sources}", sources=self.sources)
+        # logger.debug("sources: {sources}", sources=self.sources)
 
         automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
-        logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
+        # logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
         for component_name, item in automation_filters.iteritems():
             for vals in item:
                 vals['platform_source'] = component_name
                 self.filters[vals['platform']] = vals
-#        logger.debug("filters: {filters}", filters=self.filters)
+        # logger.debug("filters: {filters}", filters=self.filters)
 
         automation_actions = yield yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
@@ -203,12 +205,9 @@ class Automation(YomboLibrary):
 
         callback_rules = yield yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
         for component_name, component_rules in callback_rules.iteritems():
-            # print "Merging 1: %s" % rules['rules']
-            # print "Merging 2: %s" % self._rulesRaw['rules']
             for rule in component_rules['rules']:
                 rule['source'] = 'callbacks:%s' % component_name
                 self._rulesRaw['rules'].append(rule)
-            # print "Results: %s" % self._rulesRaw
 
         # logger.debug("rulesRaw: {rawrules}", rawrules=pprint(self._rulesRaw))
         if 'rules' not in self._rulesRaw:
@@ -222,7 +221,7 @@ class Automation(YomboLibrary):
                     rule['description'] = ''
             self.add_rule(rule)
 
-        logger.debug("All active rules: {rules}", rules=self.rules)
+        # logger.debug("All active rules: {rules}", rules=self.rules)
         for source, functions in self.sources.iteritems():
             if 'startup_trigger_callback' in functions:
                 functions['startup_trigger_callback']()
@@ -236,7 +235,7 @@ class Automation(YomboLibrary):
         :param delay: String - A string to be parsed into epoch time in the future.
         :return: Float in seconds in the future.
         """
-        seconds = (float(yombo.utils.epoch_from_string(delay)) - float(time()))
+        seconds = (float(yombo.utils.epoch_from_string(delay, True)))
         if seconds <0:
             raise YomboWarning("get_action_delay on accepts delays in the future, not the past.", 'get_action_delay', 'automationhelpers')
         return seconds
@@ -271,11 +270,12 @@ class Automation(YomboLibrary):
                         rule=rule, required=REQUIRED_RULE_FIELDS)
             return False  # Doesn't have all required fields.
 
+        # logger.debug("about to check trigger.")
         if 'trigger' in rule:
             if rule['trigger']['source']['platform'] not in self.sources:
                 logger.info("Platform ({platform}) doesn't exist as a trigger.",
                         platform=rule['trigger']['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
-            return False
+                return False
             if not all(section in rule['trigger'] for section in REQUIRED_TRIGGER_FIELDS):
                 logger.info("Rule:'{rule}' Doesn't have required trigger fields, has: ({trigger})  Required:{required}",
                             rule=rule['name'], trigger=rule['trigger'], required=REQUIRED_RULE_FIELDS)
@@ -289,6 +289,7 @@ class Automation(YomboLibrary):
                             rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_FILTER_FIELDS)
                 return False  # Doesn't have all required fields.
 
+        # logger.debug("Rule is good past trigger checks.")
         if 'condition' in rule:
             for item in range(len(rule['condition'])):
                 if not all(section in rule['condition'][item] for section in REQUIRED_CONDITION_FIELDS):
@@ -312,7 +313,7 @@ class Automation(YomboLibrary):
                                 platform=rule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
                     return False
 
-
+        # logger.debug("Rule is good past condition checks.")
         for item in range(len(rule['action'])):
             # Global settings
 
@@ -375,8 +376,10 @@ class Automation(YomboLibrary):
                     logger.warn("Warning: {e}", e=e)
                     return False
 
-#            logger.debug("Passed adding rule condition check.... {rule}", rule=rule)
+            # logger.debug("Passed adding rule condition check.... {rule}", rule=rule)
+            logger.debug("about to add triggers....")
             if 'trigger' in rule:
+                logger.debug("about to add triggers....now")
                 add_trigger_callback_function = self.sources[rule['trigger']['source']['platform']]['add_trigger_callback']
                 add_trigger_callback_function(rule, condition_callback=self.automation_check_conditions)
 
@@ -514,10 +517,10 @@ class Automation(YomboLibrary):
         :param new_value: New value to track
         :return:
         """
-#        logger.warn("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@checking : {new_value}", new_value=new_value)
-#        logger.warn("tracked_label: {tracked_label}", tracked_label=platform_label)
-#        logger.warn("tracked_key: {tracked_key}", tracked_key=tracked_key)
-#        logger.warn("trackers: {tracker}", tracker=self.tracker)
+        # logger.warn("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@checking : {new_value}", new_value=new_value)
+        # logger.warn("tracked_label: {tracked_label}", tracked_label=platform_label)
+        # logger.warn("tracked_key: {tracked_key}", tracked_key=tracked_key)
+        # logger.debug("trackers: {tracker}", tracker=self.tracker)
         if platform_label not in self.tracker:
             logger.debug("platform_label ({platform_label}) not in self.tracker. Skipping rule.", platform_label=platform_label)
             return False
@@ -530,22 +533,42 @@ class Automation(YomboLibrary):
             return False
         logger.debug("found rule IDs {rule_ids}", rule_ids=rule_ids)
 
-        # We now have at least one trigger. Check the filters and return any rule IDs.
-        rules_should_fire = []
+        # We now have at least one trigger. Gather a list of rule id's that have permitted conditions.
+        fired_rules = {}
         for item in range(len(rule_ids)):
             rule_id = rule_ids[item]['rule_id']
             rule = self.rules[rule_id]
-            try:
-                result = self.automation_check_filter(rule_id, rule['trigger'], new_value)
-                if result:
-                    rules_should_fire.append(rule_id)
-            except YomboAutomationWarning:
-                pass
+            if 'filter' in rule['trigger']:
+                try:
+                    trigger_filter_valid = self.automation_check_filter(rule_id, rule['trigger'], new_value)
+                except YomboAutomationWarning as e:
+                    fired_rules[rule_id] = "Trigger filter failed with error: %s" % e
+                    continue
+            else:
+                trigger_filter_valid = True
 
-        for item in range(len(rules_should_fire)):
-            self.automation_check_conditions(rules_should_fire[item])
+            if trigger_filter_valid is False:
+                fired_rules[rule_id] = "Trigger filter is false."
+                continue
+            else:
+                try:
+                    condition_filter_valid = self.automation_check_conditions(rule_id)
+                except YomboAutomationWarning as e:
+                    fired_rules[rule_id] = "Condition filter failed with error: %s" % e
+                    continue
 
-        return True
+            if condition_filter_valid is False:
+                fired_rules[rule_id] = "Condition filter failed with error."
+                continue
+            else:
+                try:
+                    fired_rules[rule_id] = self.automation_action(rule_id)
+                except YomboAutomationWarning as e:
+                    fired_rules[rule_id] = "Do automation action failed with error: %s" % e
+                    continue
+
+        logger.debug("Fired Rules from trigger check: {rules}", rules=fired_rules)
+        return fired_rules
 
     def get_available_items(self, **kwargs):
         platform = kwargs['platform']
@@ -569,7 +592,7 @@ class Automation(YomboLibrary):
 
         :return:
         """
-        logger.debug("doing automation_check_conditions on rule_id: {rule}", rule=rule_id)
+        logger.debug("doing automation_check_conditions on rule: {rule}", rule=self.rules[rule_id]['name'])
         condition_type = 'and'
 
         rule = self.rules[rule_id]
@@ -578,33 +601,33 @@ class Automation(YomboLibrary):
 
         condition_results = []
 #        logger.warn("rule: {rule}", rule=rule)
-        is_valid = True
         if 'condition' in rule:
             condition = rule['condition']
-#            print "testing conditons: %s" % condition
+            # print("testing conditons: %s" % condition)
             for item in range(len(condition)):
                 # get value(s)
                 get_value_callback_function = self.sources[condition[item]['source']['platform']]['get_value_callback']
                 value = get_value_callback_function(rule, condition[item])
 
                 # check value(s)
-                try:
-                    result = self.automation_check_filter(rule_id, condition[item], value)
- #                   print "result of condition check filter: %s" % result
-                    condition_results.append(result)
-                except YomboAutomationWarning:
-                    pass
+                result = self.automation_check_filter(rule_id, condition[item], value)
 
-            if condition_type == 'and':
-                is_valid = all(condition_results)
-            else:
-                is_valid = any(condition_results)
+                if condition_type == 'and':
+                    if result is False:
+                        return False
+
+                condition_results.append(result)
+
+            is_valid = any(condition_results)
+        else:
+            is_valid = True
 
         if is_valid:
             logger.debug("Condition check passed for: {rule}", rule=self.rules[rule_id]['name'])
-            return self.automation_action(rule_id)
+            return True
         else:
             logger.debug("Condition check failed for: {rule}", rule=self.rules[rule_id]['name'])
+            return False
 
     def automation_action(self, rule_id):
         """
@@ -614,24 +637,30 @@ class Automation(YomboLibrary):
         :return:
         """
         rule = self.rules[rule_id]
-#        print "running rule_id: %s" % rule_id
+        delay = 0
+        logger.debug("Performing actions on rule: {name}", name=rule['name'])
         for item in range(len(rule['action'])):
-            options = {}
+            logger.debug("running rule action:: {name}", name=rule['action'][item]['platform'])
             if 'delay' in rule['action'][item]:
                 try:
-                    options['delay'] = self.get_action_delay(rule['action'][item]['delay'])
+                    delay = self.get_action_delay(rule['action'][item]['delay'])
                 except Exception, e:
                     logger.error("Error parsing 'delay' within action. Cannot perform action: {e}", e=e)
                     raise YomboWarning("Error parsing 'delay' within action. Cannot perform action. (%s)" % rule['action'][item]['delay'],
                                    301, 'devices_validate_action_callback', 'lib.devices')
 
 
-            logger.debug("Action options: {options}", options=options)
-#            print "running rule: %s" % rule['action'][item]
+            # print("rule has delay: %s" % delay)
             platform = rule['action'][item]['platform']
             do_action_callback_function = self.actions[platform]['do_action_callback']
-            do_action_callback_function(rule, rule['action'][item], options, **rule['action'][item]['arguments'])
-            self._Statistics.increment("lib.automation.rules.fired", bucket_time=15, anon=True)
+            if delay > 0:
+                # print "called with delay"
+                reactor.callLater(delay, do_action_callback_function, rule, rule['action'][item], **rule['action'][item]['arguments'])
+                self._Statistics.increment("lib.automation.rules.fire_delayed", bucket_size=15, anon=True)
+            else:
+                # print "called withOUT delay"
+                do_action_callback_function(rule, rule['action'][item], **rule['action'][item]['arguments'])
+                self._Statistics.increment("lib.automation.rules.fired", bucket_size=15, anon=True)
         return
 
 
