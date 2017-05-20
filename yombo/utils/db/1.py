@@ -21,34 +21,34 @@ def upgrade(Registry, **kwargs):
 
     # Defines the commands table. Lists all possible commands a local or remote gateway can perform.
     table = """CREATE TABLE `categories` (
-     `id`            TEXT NOT NULL, /* commandUUID */
-     `parent_id` TEXT NOT NULL,
-     `category_type` TEXT NOT NULL,
-     `machine_label` TEXT NOT NULL,
-     `label`         TEXT NOT NULL,
-     `description`   TEXT,
-     `status`        INTEGER NOT NULL,
-     `created`       INTEGER NOT NULL,
-     `updated`       INTEGER NOT NULL,
-     PRIMARY KEY(id) );"""
+        `id`            TEXT NOT NULL, /* commandUUID */
+        `parent_id` TEXT NOT NULL,
+        `category_type` TEXT NOT NULL,
+        `machine_label` TEXT NOT NULL,
+        `label`         TEXT NOT NULL,
+        `description`   TEXT,
+        `status`        INTEGER NOT NULL,
+        `created`       INTEGER NOT NULL,
+        `updated`       INTEGER NOT NULL,
+        PRIMARY KEY(id) );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('categories', 'id', unique=True))
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS categoires_type_machine_label_IDX ON categories (machine_label, category_type)")
 
     # Defines the commands table. Lists all possible commands a local or remote gateway can perform.
     table = """CREATE TABLE `commands` (
-     `id`            TEXT NOT NULL, /* commandUUID */
-     `machine_label` TEXT NOT NULL,
-     `voice_cmd`     TEXT,
-     `label`         TEXT NOT NULL,
-     `description`   TEXT,
-     `always_load`   INTEGER DEFAULT 0,
-     `public`        INTEGER NOT NULL,
-     `status`        INTEGER NOT NULL,
-     `created`       INTEGER NOT NULL,
-     `updated_srv`   INTEGER DEFAULT 0,
-     `updated`       INTEGER NOT NULL,
-     PRIMARY KEY(id) );"""
+        `id`            TEXT NOT NULL, /* commandUUID */
+        `machine_label` TEXT NOT NULL,
+        `voice_cmd`     TEXT,
+        `label`         TEXT NOT NULL,
+        `description`   TEXT,
+        `always_load`   INTEGER DEFAULT 0,
+        `public`        INTEGER NOT NULL,
+        `status`        INTEGER NOT NULL,
+        `created`       INTEGER NOT NULL,
+        `updated_srv`   INTEGER DEFAULT 0,
+        `updated`       INTEGER NOT NULL,
+        PRIMARY KEY(id) );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('commands', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('commands', 'machine_label', unique=True))
@@ -56,31 +56,30 @@ def upgrade(Registry, **kwargs):
 
     # Defines the devices table. Lists all possible devices for local gateway and related remote gateways.
     table = """CREATE TABLE `devices` (
-     `id`              TEXT NOT NULL,
-     `gateway_id`      TEXT NOT NULL,
-     `device_type_id`  TEXT NOT NULL,
-     `machine_label`   TEXT NOT NULL,
-     `label`           TEXT NOT NULL,
-     `description`     TEXT,
-     `statistic_label` TEXT,
-     `statistic_lifetime` INTEGER DEFAULT 0,
-     `notes`           TEXT,
-     `platform`        TEXT,
-     `attributes`      TEXT,
-     `voice_cmd`       TEXT,
-     `voice_cmd_order` TEXT,
-     `voice_cmd_src`   TEXT,
-     `energy_type`     TEXT,
-     `energy_tracker_source` TEXT,
-     `energy_tracker_device` TEXT,
-     `energy_map`      TEXT,
-     `pin_code`        TEXT,
-     `pin_required`    INTEGER NOT NULL,
-     `pin_timeout`     INTEGER DEFAULT 0,
-     `status`          INTEGER NOT NULL,
-     `created`         INTEGER NOT NULL,
-     `updated_srv`     INTEGER DEFAULT 0,
-     `updated`         INTEGER NOT NULL,
+        `id`              TEXT NOT NULL,
+        `gateway_id`      TEXT NOT NULL,
+        `device_type_id`  TEXT NOT NULL,
+        `machine_label`   TEXT NOT NULL,
+        `label`           TEXT NOT NULL,
+        `description`     TEXT,
+        `statistic_label` TEXT,
+        `statistic_lifetime` INTEGER DEFAULT 0,
+        `notes`           TEXT,
+        `attributes`      TEXT,
+        `voice_cmd`       TEXT,
+        `voice_cmd_order` TEXT,
+        `voice_cmd_src`   TEXT,
+        `energy_type`     TEXT,
+        `energy_tracker_source` TEXT,
+        `energy_tracker_device` TEXT,
+        `energy_map`      TEXT,
+        `pin_code`        TEXT,
+        `pin_required`    INTEGER NOT NULL,
+        `pin_timeout`     INTEGER DEFAULT 0,
+        `status`          INTEGER NOT NULL,
+        `created`         INTEGER NOT NULL,
+        `updated_srv`     INTEGER DEFAULT 0,
+        `updated`         INTEGER NOT NULL,
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
@@ -90,61 +89,89 @@ def upgrade(Registry, **kwargs):
 
     # All possible inputs for a given device type/command/input.
     table = """CREATE TABLE `device_command_inputs` (
-         `id`             TEXT NOT NULL,
-         `device_type_id` TEXT NOT NULL,
-         `command_id`     TEXT NOT NULL,
-         `input_type_id`  TEXT NOT NULL,
-         `live_update`    INTEGER NOT NULL,
-         `value_required` INTEGER NOT NULL,
-         `value_max`      INTEGER NOT NULL,
-         `value_min`      INTEGER NOT NULL,
-         `value_casing`   TEXT NOT NULL,
-         `encryption`     TEXT NOT NULL,
-         `notes`          TEXT,
-         `always_load`    INTEGER DEFAULT 0,
-         `updated`        INTEGER NOT NULL,
-         `created`        INTEGER NOT NULL,
-         UNIQUE (device_type_id, command_id, input_type_id) ON CONFLICT IGNORE);"""
+        `id`             TEXT NOT NULL,
+        `device_type_id` TEXT NOT NULL,
+        `command_id`     TEXT NOT NULL,
+        `input_type_id`  TEXT NOT NULL,
+        `live_update`    INTEGER NOT NULL,
+        `value_required` INTEGER NOT NULL,
+        `value_max`      INTEGER NOT NULL,
+        `value_min`      INTEGER NOT NULL,
+        `value_casing`   TEXT NOT NULL,
+        `encryption`     TEXT NOT NULL,
+        `notes`          TEXT,
+        `always_load`    INTEGER DEFAULT 0,
+        `updated`        INTEGER NOT NULL,
+        `created`        INTEGER NOT NULL,
+        UNIQUE (device_type_id, command_id, input_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_command_inputs', 'device_type_id'))
 
+    #  Defines the device command table to store command history and various info.
+    table = """CREATE TABLE `device_command` (
+        `request_id`       TEXT NOT NULL,
+        `device_id`        TEXT NOT NULL,
+        `command_id`       TEXT NOT NULL,
+        `inputs`           TEXT,
+        `created_time`     FLOAT NOT NULL,
+        `sent_time`        FLOAT,
+        `received_time`    FLOAT,
+        `pending_time`     FLOAT,
+        `finished_time`    FLOAT,
+        `not_before_time`  FLOAT,
+        `not_after_time`   FLOAT,
+        `history`          TEXT NOT NULL,
+        `status`           TEXT NOT NULL,
+        `requested_by`     TEXT,
+        `uploaded`         INTEGER NOT NULL DEFAULT 0,
+        `uploadable`       INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
+        );"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('device_command', 'request_id', unique=True))
+    # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_time, not_after_time)")
+    # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_time, not_after_time)")
+    yield Registry.DBPOOL.runQuery(create_index('device_command', 'finished_time'))
+    # yield Registry.DBPOOL.runQuery(create_index('device_status', 'status'))
+
     #  Defines the device status table. Stores device status information.
     table = """CREATE TABLE `device_status` (
-     `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `device_id`            TEXT NOT NULL, /* device_id */
-     `set_time`             REAL NOT NULL,
-     `energy_usage`         INTEGER NOT NULL,
-     `energy_type`          TEXT,
-     `human_status`         TEXT NOT NULL,
-     `human_message`        TEXT NOT NULL,
-     `last_command`         TEXT,
-     `machine_status`       TEXT NOT NULL,
-     `machine_status_extra` TEXT,
-     `requested_by`         TEXT NOT NULL,
-     `reported_by`          TEXT NOT NULL,
-     `uploaded`             INTEGER NOT NULL DEFAULT 0,
-     `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
-     );"""
+        `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `device_id`            TEXT NOT NULL, /* device_id */
+        `set_time`             REAL NOT NULL,
+        `energy_usage`         INTEGER NOT NULL,
+        `energy_type`          TEXT,
+        `human_status`         TEXT NOT NULL,
+        `human_message`        TEXT NOT NULL,
+        `last_command`         TEXT,
+        `machine_status`       TEXT NOT NULL,
+        `machine_status_extra` TEXT,
+        `requested_by`         TEXT NOT NULL,
+        `reported_by`          TEXT NOT NULL,
+        'request_id'           TEXT,
+        `uploaded`             INTEGER NOT NULL DEFAULT 0,
+        `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
+        );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_status', 'device_id'))
     yield Registry.DBPOOL.runQuery(create_index('device_status', 'uploaded'))
 
     # Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
     table = """CREATE TABLE `device_types` (
-     `id`            TEXT NOT NULL,
-     `machine_label` TEXT NOT NULL,
-     `label`         TEXT NOT NULL,
-     `description`   TEXT,
-     `category_id`   TEXT,
-     `public`        INTEGER,
-     `status`        INTEGER,
-     `always_load`   INTEGER DEFAULT 0,
-     `created`       INTEGER,
-     `updated_srv`   INTEGER DEFAULT 0,
-     `updated`       INTEGER,
-      UNIQUE (label) ON CONFLICT IGNORE,
-      UNIQUE (machine_label) ON CONFLICT IGNORE,
-      PRIMARY KEY(id) ON CONFLICT IGNORE);"""
+        `id`            TEXT NOT NULL,
+        `machine_label` TEXT NOT NULL,
+        `label`         TEXT NOT NULL,
+        `description`   TEXT,
+        `category_id`   TEXT,
+        `platform`      TEXT,
+        `public`        INTEGER,
+        `status`        INTEGER,
+        `always_load`   INTEGER DEFAULT 0,
+        `created`       INTEGER,
+        `updated_srv`   INTEGER DEFAULT 0,
+        `updated`       INTEGER,
+        UNIQUE (label) ON CONFLICT IGNORE,
+        UNIQUE (machine_label) ON CONFLICT IGNORE,
+        PRIMARY KEY(id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
 #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_label_idx ON device_types (label) ON CONFLICT IGNORE")
@@ -153,11 +180,11 @@ def upgrade(Registry, **kwargs):
 
     # All possible commands for a given device type. For examples, appliances are on and off.
     table = """CREATE TABLE `device_type_commands` (
-         `id`             TEXT NOT NULL,
-         `device_type_id` TEXT NOT NULL,
-         `command_id`     TEXT NOT NULL,
-         `created`        INTEGER NOT NULL,
-         UNIQUE (device_type_id, command_id) ON CONFLICT IGNORE);"""
+        `id`             TEXT NOT NULL,
+        `device_type_id` TEXT NOT NULL,
+        `command_id`     TEXT NOT NULL,
+        `created`        INTEGER NOT NULL,
+        UNIQUE (device_type_id, command_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('device_type_commands', 'device_type_id'))
     # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
@@ -165,98 +192,98 @@ def upgrade(Registry, **kwargs):
 
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
-     `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `notes`       TEXT,
-     `endpoint`    TEXT NOT NULL,
-     `keyid` TEXT NOT NULL,
-     `fingerprint` TEXT NOT NULL,
-     `length`      INTEGER NOT NULL,
-     `expires`     INTEGER NOT NULL,
-     `publickey`   TEXT NOT NULL,
-     `have_private` INTEGER NOT NULL,
-     `created`     INTEGER NOT NULL
-     );"""
+        `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `notes`       TEXT,
+        `endpoint`    TEXT NOT NULL,
+        `keyid` TEXT NOT NULL,
+        `fingerprint` TEXT NOT NULL,
+        `length`      INTEGER NOT NULL,
+        `expires`     INTEGER NOT NULL,
+        `publickey`   TEXT NOT NULL,
+        `have_private` INTEGER NOT NULL,
+        `created`     INTEGER NOT NULL
+        );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'endpoint'))
     yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
 
     # Device types defines the features of a device. For example, all X10 appliances or Insteon Lamps.
     table = """CREATE TABLE `input_types` (
-     `id`            TEXT NOT NULL,
-     `category_id`   TEXT NOT NULL,
-     `machine_label` TEXT NOT NULL,
-     `label`         TEXT NOT NULL,
-     `description`   TEXT,
-     `input_regex`   TEXT,
-     `public`        INTEGER,
-     `always_load`   INTEGER DEFAULT 0,
-     `status`        INTEGER,
-     `created`       INTEGER,
-     `updated_srv`   INTEGER DEFAULT 0,
-     `updated`       INTEGER,
-      UNIQUE (label) ON CONFLICT IGNORE,
-      UNIQUE (machine_label) ON CONFLICT IGNORE,
-      PRIMARY KEY(id) ON CONFLICT IGNORE);"""
+        `id`            TEXT NOT NULL,
+        `category_id`   TEXT NOT NULL,
+        `machine_label` TEXT NOT NULL,
+        `label`         TEXT NOT NULL,
+        `description`   TEXT,
+        `input_regex`   TEXT,
+        `public`        INTEGER,
+        `always_load`   INTEGER DEFAULT 0,
+        `status`        INTEGER,
+        `created`       INTEGER,
+        `updated_srv`   INTEGER DEFAULT 0,
+        `updated`       INTEGER,
+        UNIQUE (label) ON CONFLICT IGNORE,
+        UNIQUE (machine_label) ON CONFLICT IGNORE,
+        PRIMARY KEY(id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
 
     # To be completed
     table = """CREATE TABLE `logs` (
-     `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `type`         TEXT NOT NULL, /* system, user, etc */
-     `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
-     `source`       TEXT NOT NULL, /* where this message was created */
-     `message`      TEXT, /* Message data */
-     `meta`         TEXT, /* Any extra meta data. JSON format */
-     `created`      INTEGER NOT NULL);"""
+        `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `type`         TEXT NOT NULL, /* system, user, etc */
+        `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
+        `source`       TEXT NOT NULL, /* where this message was created */
+        `message`      TEXT, /* Message data */
+        `meta`         TEXT, /* Any extra meta data. JSON format */
+        `created`      INTEGER NOT NULL);"""
 
     # Defines the config table for the local gateway.
     table = """CREATE TABLE `meta` (
-         `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-         `meta_key`  TEXT NOT NULL,
-         `meta_value`   TEXT NOT NULL,
-         `created`       INTEGER NOT NULL,
-         `updated`      INTEGER NOT NULL);"""
+        `id`           INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `meta_key`  TEXT NOT NULL,
+        `meta_value`   TEXT NOT NULL,
+        `created`       INTEGER NOT NULL,
+        `updated`      INTEGER NOT NULL);"""
     #    yield Registry.DBPOOL.runQuery(table)
     #    yield Registry.DBPOOL.runQuery(create_index('meta', 'meta_key'))
     #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS configs_config_key_config_key_IDX ON configs (config_path, config_key)")
 
     # Stores module information
     table = """CREATE TABLE `modules` (
-     `id`             TEXT NOT NULL, /* moduleUUID */
-     `gateway_id`     TEXT NOT NULL,
-     `machine_label`  TEXT NOT NULL,
-     `module_type`    TEXT NOT NULL,
-     `label`          TEXT NOT NULL,
-     `short_description`       TEXT,
-     `description`             TEXT,
-     `description_formatting`  TEXT,
-     `see_also`           TEXT,
-     `repository_link`    TEXT,
-     `issue_tracker_link` TEXT,
-     `install_count`  INTEGER DEFAULT 0,
-     `doc_link`       TEXT,
-     `git_link`       TEXT,
-     `install_branch` TEXT NOT NULL,
-     `prod_branch`    TEXT NOT NULL,
-     `dev_branch`     TEXT,
-     `prod_version`   TEXT,
-     `dev_version`    TEXT,
-     `public`         INTEGER NOT NULL,
-     `status`         INTEGER NOT NULL, /* disabled, enabled, deleted */
-     `created`        INTEGER NOT NULL,
-     `updated_srv`    INTEGER DEFAULT 0,
-     `updated`        INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+        `id`             TEXT NOT NULL, /* moduleUUID */
+        `gateway_id`     TEXT NOT NULL,
+        `machine_label`  TEXT NOT NULL,
+        `module_type`    TEXT NOT NULL,
+        `label`          TEXT NOT NULL,
+        `short_description`       TEXT,
+        `description`             TEXT,
+        `description_formatting`  TEXT,
+        `see_also`           TEXT,
+        `repository_link`    TEXT,
+        `issue_tracker_link` TEXT,
+        `install_count`  INTEGER DEFAULT 0,
+        `doc_link`       TEXT,
+        `git_link`       TEXT,
+        `install_branch` TEXT NOT NULL,
+        `prod_branch`    TEXT NOT NULL,
+        `dev_branch`     TEXT,
+        `prod_version`   TEXT,
+        `dev_version`    TEXT,
+        `public`         INTEGER NOT NULL,
+        `status`         INTEGER NOT NULL, /* disabled, enabled, deleted */
+        `created`        INTEGER NOT NULL,
+        `updated_srv`    INTEGER DEFAULT 0,
+        `updated`        INTEGER NOT NULL,
+        PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('modules', 'machine_label'))
 
     # All possible device types for a module
     table = """CREATE TABLE `module_device_types` (
-         `id`             TEXT NOT NULL,
-         `module_id`      TEXT NOT NULL,
-         `device_type_id` TEXT NOT NULL,
-         `created`        INTEGER NOT NULL,
-         UNIQUE (module_id, device_type_id) ON CONFLICT IGNORE);"""
+        `id`             TEXT NOT NULL,
+        `module_id`      TEXT NOT NULL,
+        `device_type_id` TEXT NOT NULL,
+        `created`        INTEGER NOT NULL,
+        UNIQUE (module_id, device_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS module_device_types_module_dt_id_idx ON module_device_types (module_id, device_type_id)")
     # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
@@ -264,11 +291,11 @@ def upgrade(Registry, **kwargs):
 
     # Tracks what versions of a module is installed, when it was installed, and last checked for new version.
     table = """CREATE TABLE `module_installed` (
-     `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `module_id`         TEXT NOT NULL, /* module.id */
-     `installed_version` TEXT NOT NULL,
-     `install_time`      INTEGER NOT NULL,
-     `last_check`        INTEGER NOT NULL);"""
+        `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `module_id`         TEXT NOT NULL, /* module.id */
+        `installed_version` TEXT NOT NULL,
+        `install_time`      INTEGER NOT NULL,
+        `last_check`        INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('module_installed', 'module_id'))
 
@@ -280,78 +307,78 @@ def upgrade(Registry, **kwargs):
 
     #  Defines the statistics data table. Stores node items.
     table = """CREATE TABLE `nodes` (
-     `id`             TEXT NOT NULL,
-     `parent_id`      TEXT NOT NULL,
-     `gateway_id`     TEXT NOT NULL,
-     `node_type`      TEXT NOT NULL,
-     `weight`         INTEGER NOT NULL,
-     `machine_label`  TEXT NOT NULL,
-     `gw_always_load` INTEGER NOT NULL,
-     `destination`  TEXT NOT NULL,
-     `data`           BLOB,
-     `data_type`      TEXT NOT NULL,
-     `status`         INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
-     `updated`        INTEGER NOT NULL,
-     `created`        INTEGER NOT NULL );"""
+        `id`             TEXT NOT NULL,
+        `parent_id`      TEXT NOT NULL,
+        `gateway_id`     TEXT NOT NULL,
+        `node_type`      TEXT NOT NULL,
+        `weight`         INTEGER NOT NULL,
+        `machine_label`  TEXT NOT NULL,
+        `gw_always_load` INTEGER NOT NULL,
+        `destination`  TEXT NOT NULL,
+        `data`           BLOB,
+        `data_type`      TEXT NOT NULL,
+        `status`         INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
+        `updated`        INTEGER NOT NULL,
+        `created`        INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('nodes', 'id'))
     yield Registry.DBPOOL.runQuery(create_index('nodes', 'parent_id'))
 
     #  Defines the statistics data table. Stores statistics.
     table = """CREATE TABLE `notifications` (
-     `id`           TEXT NOT NULL,
-     `type`         TEXT NOT NULL, /* system, user, etc */
-     `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
-     `source`       TEXT NOT NULL, /* where this message was created */
-     `expire`       INTEGER NOT NULL, /* timestamp when msg should expire */
-     `always_show`  INTEGER NOT NULL, /* If notification should always show until user clears it. */
-     `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
-     `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
-     `acknowledged_time`       INTEGER, /* Timestemp when msg was ack'd by the user. */
-     `title`        TEXT, /* Message data */
-     `message`      TEXT, /* Message data */
-     `meta`         TEXT, /* Any extra meta data. JSON format */
-     `created`      INTEGER NOT NULL);"""
+        `id`           TEXT NOT NULL,
+        `type`         TEXT NOT NULL, /* system, user, etc */
+        `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
+        `source`       TEXT NOT NULL, /* where this message was created */
+        `expire`       INTEGER NOT NULL, /* timestamp when msg should expire */
+        `always_show`  INTEGER NOT NULL, /* If notification should always show until user clears it. */
+        `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
+        `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
+        `acknowledged_time`       INTEGER, /* Timestemp when msg was ack'd by the user. */
+        `title`        TEXT, /* Message data */
+        `message`      TEXT, /* Message data */
+        `meta`         TEXT, /* Any extra meta data. JSON format */
+        `created`      INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('notifications', 'id'))
 
     # Defines the SQL Dict table. Used by the :class:`SQLDict` class to maintain persistent dictionaries.
     table = """CREATE TABLE `sqldict` (
-     `id`        INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `component` TEXT NOT NULL,
-     `dict_name` INTEGER NOT NULL,
-     `dict_data` BLOB,
-     `created`   INTEGER NOT NULL,
-     `updated`   INTEGER NOT NULL);"""
+        `id`        INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `component` TEXT NOT NULL,
+        `dict_name` INTEGER NOT NULL,
+        `dict_data` BLOB,
+        `created`   INTEGER NOT NULL,
+        `updated`   INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'dict_name'))
     yield Registry.DBPOOL.runQuery(create_index('sqldict', 'component'))
 
     # Defines the tables used to store state information.
     table = """CREATE TABLE `states` (
-     `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `name`    TEXT NOT NULL,
-     `value_type` TEXT,
-     `value`   INTEGER NOT NULL,
-     `live`   INTEGER NOT NULL,
-     `created` INTEGER NOT NULL);"""
+        `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `name`    TEXT NOT NULL,
+        `value_type` TEXT,
+        `value`   INTEGER NOT NULL,
+        `live`   INTEGER NOT NULL,
+        `created` INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('states', 'name'))
     yield Registry.DBPOOL.runQuery(create_index('states', 'created'))
 
     #  Defines the statistics data table. Stores statistics.
     table = """CREATE TABLE `statistics` (
-     `id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `bucket_time`         DECIMAL(13,3) NOT NULL,
-     `bucket_size`         INTEGER NOT NULL,
-     `bucket_type`         TEXT NOT NULL,
-     `bucket_name`         TEXT NOT NULL,
-     `bucket_value`        REAL NOT NULL,
-     `bucket_average_data` TEXT,
-     `anon`                INTEGER NOT NULL DEFAULT 0, /* anon data */
-     `uploaded`            INTEGER NOT NULL DEFAULT 0,
-     `finished`            INTEGER NOT NULL DEFAULT 0,
-     `updated`             INTEGER NOT NULL);"""
+        `id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `bucket_time`         DECIMAL(13,3) NOT NULL,
+        `bucket_size`         INTEGER NOT NULL,
+        `bucket_type`         TEXT NOT NULL,
+        `bucket_name`         TEXT NOT NULL,
+        `bucket_value`        REAL NOT NULL,
+        `bucket_average_data` TEXT,
+        `anon`                INTEGER NOT NULL DEFAULT 0, /* anon data */
+        `uploaded`            INTEGER NOT NULL DEFAULT 0,
+        `finished`            INTEGER NOT NULL DEFAULT 0,
+        `updated`             INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('statistics', 'bucket_type'))
     yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS table_b_t_IDX ON statistics (bucket_name, bucket_type, bucket_time)")
@@ -359,37 +386,37 @@ def upgrade(Registry, **kwargs):
 
     # Used by the tasks library to start various tasks.
     table = """CREATE TABLE `tasks` (
-     `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-     `run_section`    INTEGER NOT NULL,
-     `run_once`       INTEGER,
-     `run_interval`   INTEGER,
-     `task_component` TEXT NOT NULL,
-     `task_name`      TEXT NOT NULL,
-     `task_arguments` BLOB,
-     `source`         TEXT NOT NULL,
-     `created`        INTEGER NOT NULL
-     );"""
+        `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `run_section`    INTEGER NOT NULL,
+        `run_once`       INTEGER,
+        `run_interval`   INTEGER,
+        `task_component` TEXT NOT NULL,
+        `task_name`      TEXT NOT NULL,
+        `task_arguments` BLOB,
+        `source`         TEXT NOT NULL,
+        `created`        INTEGER NOT NULL
+        );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('tasks', 'id'))
 
     table = """CREATE TABLE `users` (
-     `id`         TEXT NOT NULL,
-     `gateway_id` TEXT NOT NULL,
-     `user_id`    TEXT NOT NULL,
-     `email`      TEXT NOT NULL,
-     `updated`    INTEGER NOT NULL,
-     `created`    INTEGER NOT NULL );"""
+        `id`         TEXT NOT NULL,
+        `gateway_id` TEXT NOT NULL,
+        `user_id`    TEXT NOT NULL,
+        `email`      TEXT NOT NULL,
+        `updated`    INTEGER NOT NULL,
+        `created`    INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('users', 'id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('users', 'email'))
 
     table = """CREATE TABLE `user_permission` (
-     `id`            TEXT NOT NULL,
-     `user_id`       TEXT NOT NULL,
-     `gateway_id`    TEXT NOT NULL,
-     `permission_id` TEXT NOT NULL,
-     `updated`       INTEGER NOT NULL,
-     `created`       INTEGER NOT NULL,
+        `id`            TEXT NOT NULL,
+        `user_id`       TEXT NOT NULL,
+        `gateway_id`    TEXT NOT NULL,
+        `permission_id` TEXT NOT NULL,
+        `updated`       INTEGER NOT NULL,
+        `created`       INTEGER NOT NULL,
     CONSTRAINT fk_user_permission
         FOREIGN KEY (user_id)
         REFERENCES users(id)
@@ -399,21 +426,21 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('user_permission', 'id', unique=True))
 
     table = """CREATE TABLE `permissions` (
-     `id`         TEXT NOT NULL,
-     `gateway_id` TEXT NOT NULL,
-     `updated`    INTEGER NOT NULL,
-     `created`    INTEGER NOT NULL );"""
+        `id`         TEXT NOT NULL,
+        `gateway_id` TEXT NOT NULL,
+        `updated`    INTEGER NOT NULL,
+        `created`    INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('permissions', 'id', unique=True))
 
     # Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information
     table = """CREATE TABLE `webinterface_sessions` (
-     `id`           TEXT NOT NULL, /* moduleUUID */
-     `session_data` TEXT NOT NULL,
-     `created`      INTEGER NOT NULL,
-     `last_access`     INTEGER NOT NULL,
-     `updated`      INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+        `id`           TEXT NOT NULL, /* moduleUUID */
+        `session_data` TEXT NOT NULL,
+        `created`      INTEGER NOT NULL,
+        `last_access`     INTEGER NOT NULL,
+        `updated`      INTEGER NOT NULL,
+        PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'created'))
     yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'updated'))
@@ -421,84 +448,59 @@ def upgrade(Registry, **kwargs):
 
     # The following three tables and following views manages the variables set for devices and modules.
     table = """CREATE TABLE `variable_groups` (
-     `id`                  TEXT NOT NULL, /* group_id */
-     `group_relation_id`         TEXT NOT NULL,
-     `group_relation_type`       TEXT NOT NULL,
-     `group_machine_label` TEXT NOT NULL,
-     `group_label`         TEXT NOT NULL,
-     `group_description`   TEXT NOT NULL,
-     `group_weight`        INTEGER DEFAULT 0,
-     `status`              INTEGER NOT NULL, /* disabled, enabled, deleted */
-     `updated_srv`         INTEGER DEFAULT 0,
-     `updated`             INTEGER NOT NULL,
-     `created`             INTEGER NOT NULL,
-     PRIMARY KEY(id));"""
+        `id`                  TEXT NOT NULL, /* group_id */
+        `group_relation_id`         TEXT NOT NULL,
+        `group_relation_type`       TEXT NOT NULL,
+        `group_machine_label` TEXT NOT NULL,
+        `group_label`         TEXT NOT NULL,
+        `group_description`   TEXT NOT NULL,
+        `group_weight`        INTEGER DEFAULT 0,
+        `status`              INTEGER NOT NULL, /* disabled, enabled, deleted */
+        `updated_srv`         INTEGER DEFAULT 0,
+        `updated`             INTEGER NOT NULL,
+        `created`             INTEGER NOT NULL,
+        PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_groups_relation_id_type_idx ON variable_groups (group_relation_id, group_relation_type, group_machine_label)")
 
     table = """CREATE TABLE `variable_fields` (
-     `id`                  TEXT NOT NULL, /* field_id */
-     `group_id`            TEXT NOT NULL,
-     `field_machine_label` TEXT NOT NULL,
-     `field_label`         TEXT NOT NULL,
-     `field_description`   TEXT NOT NULL,
-     `field_help_text`     TEXT NOT NULL,
-     `field_weight`        INTEGER DEFAULT 0,
-     `value_required`      INTEGER NOT NULL,
-     `value_max`           INTEGER,
-     `value_min`           INTEGER,
-     `value_casing`        TEXT NOT NULL,
-     `encryption`          TEXT NOT NULL,
-     `input_type_id`       TEXT NOT NULL,
-     `default_value`       TEXT NOT NULL,
-     `multiple`            INTEGER NOT NULL,
-     `updated_srv`         INTEGER DEFAULT 0,
-     `updated`             INTEGER NOT NULL,
-     `created`             INTEGER NOT NULL);"""
+        `id`                  TEXT NOT NULL, /* field_id */
+        `group_id`            TEXT NOT NULL,
+        `field_machine_label` TEXT NOT NULL,
+        `field_label`         TEXT NOT NULL,
+        `field_description`   TEXT NOT NULL,
+        `field_help_text`     TEXT NOT NULL,
+        `field_weight`        INTEGER DEFAULT 0,
+        `value_required`      INTEGER NOT NULL,
+        `value_max`           INTEGER,
+        `value_min`           INTEGER,
+        `value_casing`        TEXT NOT NULL,
+        `encryption`          TEXT NOT NULL,
+        `input_type_id`       TEXT NOT NULL,
+        `default_value`       TEXT NOT NULL,
+        `multiple`            INTEGER NOT NULL,
+        `updated_srv`         INTEGER DEFAULT 0,
+        `updated`             INTEGER NOT NULL,
+        `created`             INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('variable_fields', 'group_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_types_machine_label_idx ON device_types (machine_label) ON CONFLICT IGNORE")
 
     table = """CREATE TABLE `variable_data` (
-     `id`            TEXT NOT NULL,  /* field_id */
-     `gateway_id`    TEXT DEFAULT 0,
-     `field_id`      TEXT NOT NULL,
-     `data_relation_id`   TEXT NOT NULL,
-     `data_relation_type` TEXT NOT NULL,
-     `data`          TEXT NOT NULL,
-     `data_weight`   INTEGER DEFAULT 0,
-     `updated_srv`   INTEGER DEFAULT 0,
-     `updated`       INTEGER NOT NULL,
-     `created`       INTEGER NOT NULL,
-     PRIMARY KEY(id))
-     ;"""
+        `id`            TEXT NOT NULL,  /* field_id */
+        `gateway_id`    TEXT DEFAULT 0,
+        `field_id`      TEXT NOT NULL,
+        `data_relation_id`   TEXT NOT NULL,
+        `data_relation_type` TEXT NOT NULL,
+        `data`          TEXT NOT NULL,
+        `data_weight`   INTEGER DEFAULT 0,
+        `updated_srv`   INTEGER DEFAULT 0,
+        `updated`       INTEGER NOT NULL,
+        `created`       INTEGER NOT NULL,
+        PRIMARY KEY(id))
+        ;"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS variable_data_id_type_idx ON variable_data (field_id, data_relation_id, data_relation_type)")
-
-    ## Create view for easily consuming the above tables during gateway startup
-    # view = """CREATE VIEW variables_view AS
-    # SELECT modules.*, module_installed.installed_version, module_installed. install_time, module_installed.last_check
-    # FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
-    # yield Registry.DBPOOL.runQuery(view)
-
-
-    # Stores variables for modules and devices. Variables are set by the server, and read here. Not a two-way sync (yet?).
-    # table = """CREATE TABLE `variables` (
-    #  `id`      TEXT NOT NULL, /* field_id */
-    #  `variable_type` TEXT NOT NULL,
-    #  `variable_id`    TEXT NOT NULL,
-    #  `foreign_id`    TEXT NOT NULL,
-    #  `weight`        INTEGER DEFAULT 0,
-    #  `data_weight`   INTEGER DEFAULT 0,
-    #  `machine_label` TEXT NOT NULL,
-    #  `label`         TEXT NOT NULL,
-    #  `value`         TEXT NOT NULL,
-    #  `updated_srv`   INTEGER NOT NULL DEFAULT 0,
-    #  `updated`       INTEGER NOT NULL,
-    #  `created` INTEGER NOT NULL,
-    #  PRIMARY KEY(id));"""
-    # yield Registry.DBPOOL.runQuery(table)
-    # yield Registry.DBPOOL.runQuery("CREATE  INDEX IF NOT EXISTS variables_foreign_id_variable_type_idx ON variables (variable_type, foreign_id)")
 
     ## Create triggers ##
     # trigger = """CREATE TRIGGER delete_device_status
