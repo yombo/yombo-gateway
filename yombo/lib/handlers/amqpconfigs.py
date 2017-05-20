@@ -127,7 +127,6 @@ class AmqpConfigHandler(YomboLibrary):
                     'machine_label': 'machine_label',
                     'label': 'label',
                     'notes': 'notes',
-                    'platform': 'platform',
                     'attributes': 'attributes',
                     'description': 'description',
                     'gateway_id': 'gateway_id',
@@ -191,6 +190,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'map': {
                     'id': 'id',
                     'category_id': 'category_id',
+                    'platform': 'platform',
                     'machine_label': 'machine_label',
                     'label': 'label',
                     'description': 'description',
