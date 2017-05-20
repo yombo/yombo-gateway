@@ -29,6 +29,13 @@ from yombo.utils import search_instance, do_search_instance, global_invoke_all
 
 logger = get_logger('library.devicetypes')
 
+BASE_PLATFORMS = [
+    ['yombo.lib.devices._device', 'Device'],
+    ['yombo.lib.devices.appliance', 'Appliance'],
+    ['yombo.lib.devices.light', 'Light'],
+    ['yombo.lib.devices.relay', 'Relay'],
+]
+
 
 class DeviceTypes(YomboLibrary):
     """
@@ -162,6 +169,7 @@ class DeviceTypes(YomboLibrary):
         self.device_types = {}
         self.device_type_search_attributes = ['device_type_id', 'input_type_id', 'category_id', 'label', 'machine_label', 'description',
             'status', 'always_load', 'public']
+        self.platforms = {}
 
     def _load_(self):
         """
@@ -172,6 +180,12 @@ class DeviceTypes(YomboLibrary):
         self.load_deferred = Deferred()
         self._load_device_types_from_database()
         return self.load_deferred
+
+    @inlineCallbacks
+    def _started_(self):
+        self.load_platforms(BASE_PLATFORMS)
+        platforms = yield global_invoke_all('_device_platforms_', called_by=self)
+        self.load_platforms(platforms)
 
     def _stop_(self):
         """
@@ -194,6 +208,26 @@ class DeviceTypes(YomboLibrary):
         for device_type in device_types:
             yield self.import_device_types(device_type)
         self.load_deferred.callback(10)
+
+    def load_platforms(self, platforms):
+        """
+        Load the platforms and prep them for usage.
+
+        :param platforms: 
+        :return: 
+        """
+        for item in platforms:
+            item_key = item[1].lower()
+            if item_key.startswith('_'):
+                item_key = item_key[1:]
+
+            module_root = __import__(item[0], globals(), locals(), [], 0)
+            module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
+            klass = getattr(module_tail, item[1])
+            if not callable(klass):
+                logger.warn("Unable to load device platform '{name}', it's not callable.", name=item[1])
+                continue
+            self.platforms[item_key] = klass
 
     @inlineCallbacks
     def import_device_types(self, device_type, test_device_type=False):
@@ -764,6 +798,7 @@ class DeviceType(object):
 
         # the below are setup during update_attributes()
         self.category_id = None
+        self.platform = 'device'
         self.machine_label = None
         self.label = None
         self.description = None
@@ -790,6 +825,11 @@ class DeviceType(object):
         self.status = device_type['status']
         self.created = device_type['created']
         self.updated = device_type['updated']
+        if 'platform' in device_type:
+            if device_type["platform"] is None or device_type["platform"] == "":
+                self.platform = "device"
+            else:
+                self.platform = device_type["platform"]
 
     def _init_(self):
         """
