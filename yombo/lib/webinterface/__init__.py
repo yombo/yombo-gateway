@@ -713,7 +713,7 @@ class WebInterface(YomboLibrary):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
 
         return page.render(alerts=self.get_alerts(),
-                           delay_commands = self._Devices.delay_queue_active,
+                           delay_commands = self._Devices.device_commands,
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices'].devices,
                            modules=self._Libraries['modules'].modules,
