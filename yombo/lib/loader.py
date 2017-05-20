@@ -235,6 +235,9 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_start_'] = True
             else:
                 HARD_LOAD[name]['_start_'] = False
+            self._log_loader('debug', name, 'library', 'load', 'Finished call to _start_.')
+
+        yield self._moduleLibrary.import_modules()
 
         for name, config in HARD_LOAD.iteritems():
             if self.sigint:
@@ -254,6 +257,17 @@ class Loader(YomboLibrary, object):
             'always_show': False,
         })
         logger.info("Yombo Gateway started.")
+
+        for name, config in HARD_LOAD.iteritems():
+            if self.sigint:
+                return
+            self._log_loader('debug', name, 'library', 'started', 'About to call _modules_started_.')
+            if self.check_operation_mode(config['operation_mode']):
+                libraryName =  name.lower()
+                yield self.library_invoke(libraryName, "_modules_started_", self)
+                HARD_LOAD[name]['_started_'] = True
+            else:
+                HARD_LOAD[name]['_started_'] = False
 
     @inlineCallbacks
     def unload(self):
