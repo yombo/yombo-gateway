@@ -89,6 +89,13 @@ class DeviceCommandInput(DBObject):
     BELONGSTO = ['devices']
 
 
+class DeviceCommand(DBObject):
+    TABLENAME = 'device_command'
+    BELONGSTO = ['devices']
+    def afterInit(self):
+        if self.request_id is not None:
+            self._rowid = self.request_id
+
 class DeviceStatus(DBObject):
     TABLENAME = 'device_status'
     BELONGSTO = ['devices']
@@ -98,16 +105,9 @@ class DeviceType(DBObject):
     TABLENAME = 'device_types'
 
 
-# HABTM = [dict(name='commands', join_table='command_device_types')]
-
-#    BELONGSTO = ['devices']
-
 class DeviceTypeCommand(DBObject):
     TABLENAME = 'device_type_commands'
 
-
-# class DeviceTypeModules(DBObject):
-#     TABLENAME='device_type_modules'
 
 class GpgKey(DBObject):
     TABLENAME = 'gpg_keys'
@@ -407,43 +407,93 @@ class LocalDB(YomboLibrary):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
         records = yield self.dbconfig.select('device_status',
-                                             select='device_id, set_time, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable',
+                                             select='device_id, set_time, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, request_id, uploaded, uploadable',
                                              where=['device_id = ?', id], orderby='set_time', limit=limit)
         for index in range(len(records)):
-            records[index]['machine_status_extra'] = json.loads(str(records[index]['machine_status_extra']))
+            machine_status_extra = records[index]['machine_status_extra']
+            if machine_status_extra is None:
+                records[index]['machine_status_extra'] = None
+            else:
+                records[index]['machine_status_extra'] = json.loads(machine_status_extra)
+
             records[index]['requested_by'] = json.loads(str(records[index]['requested_by']))
         returnValue(records)
 
     @inlineCallbacks
     def save_device_status(self, device_id, **kwargs):
-        set_time = kwargs.get('set_time', time())
-        energy_usage = kwargs['energy_usage']
-        energy_type = kwargs['energy_type']
         machine_status = kwargs['machine_status']
-        human_status = kwargs.get('human_status', machine_status)
-        human_message = kwargs.get('human_message', machine_status)
-        last_command = kwargs.get('last_command', machine_status)
-        machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',', ':'))
-        requested_by = json.dumps(kwargs.get('requested_by', ''), separators=(',', ':'))
-        reported_by = kwargs.get('uploaded', 'Unknown')
-        uploaded = kwargs.get('uploaded', 0)
-        uploadable = kwargs.get('uploadable', 0)
-
-        yield DeviceStatus(
+        if kwargs['machine_status_extra'] is None :
+            machine_status_extra = None
+        else:
+            machine_status_extra = json.dumps(kwargs['machine_status_extra'], separators=(',', ':'))
+        results = yield DeviceStatus(
             device_id=device_id,
-            set_time=set_time,
-            energy_usage=energy_usage,
-            energy_type=energy_type,
-            human_status=human_status,
-            human_message=human_message,
-            last_command=last_command,
+            set_time=kwargs.get('set_time', time()),
+            energy_usage=kwargs['energy_usage'],
+            energy_type=kwargs['energy_type'],
+            human_status=kwargs.get('human_status', machine_status),
+            human_message=kwargs.get('human_message', machine_status),
+            last_command=kwargs.get('last_command', machine_status),
             machine_status=machine_status,
             machine_status_extra=machine_status_extra,
-            uploaded=uploaded,
-            requested_by=requested_by,
-            reported_by=reported_by,
-            uploadable=uploadable,
+            requested_by=json.dumps(kwargs.get('requested_by', {}), separators=(',', ':')),
+            reported_by=kwargs.get('uploaded', 'Unknown'),
+            uploaded=kwargs.get('uploaded', 0),
+            uploadable=kwargs.get('uploadable', 0),
         ).save()
+        returnValue(results)
+
+    @inlineCallbacks
+    def get_device_commands(self, where):
+        records = yield DeviceCommand.find(where=dictToWhere(where))
+        DCs = []
+        for record in records:
+            DC =  record.__dict__
+            del DC['errors']
+            del DC['_rowid']
+            DC['_source'] = "database"
+            DC['history'] = json.loads(DC['history'])
+            DC['requested_by'] = json.loads(DC['requested_by'])
+            DCs.append(DC)
+        returnValue(DCs)
+
+    @inlineCallbacks
+    def save_device_command(self, DC):
+        if DC.inputs is None:
+            inputs = None
+        else:
+            inputs = json.dumps(DC.inputs, separators=(',', ':'))
+
+        # existing = yield self.get_device_commands({'request_id':DC.request_id })
+        # if len(existing) > 0:  # .find() doesn't like request_id being the ID column
+        #     device_command = existing[0]
+        # else:
+        #     device_command = None
+        device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
+        if len(device_command_results) == 0:
+            device_command = DeviceCommand()
+        else:
+            device_command = device_command_results[0]
+        device_command.request_id=DC.request_id
+        device_command.device_id=DC.device.device_id
+        device_command.command_id=DC.command.command_id
+        device_command.inputs=inputs
+        device_command.created_time=DC.created_time
+        device_command.sent_time=DC.sent_time
+        device_command.received_time=DC.received_time
+        device_command.pending_time=DC.pending_time
+        device_command.finished_time=DC.finished_time
+        device_command.not_before_time=DC.not_before_time
+        device_command.not_after_time=DC.not_after_time
+        device_command.history=json.dumps(DC.history, separators=(',', ':'))
+        device_command.status=DC.status
+        device_command.requested_by=json.dumps(DC.requested_by, separators=(',', ':'))
+        device_command.uploaded=0
+        device_command.uploadable=0
+
+        results = yield device_command.save()
+        returnValue(results)
+
 
     #############################
     ###    Device Types     #####
@@ -546,7 +596,6 @@ class LocalDB(YomboLibrary):
             records = yield Modules.find(where=['status = ? OR status = ?', 1, 0])
         else:
             records = yield Modules.all()
-
         returnValue(records)
 
     @inlineCallbacks
