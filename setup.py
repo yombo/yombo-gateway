@@ -103,7 +103,7 @@ PY_MODULES = Y_CORE + Y_LIB
 # )
 
 if __name__ == "__main__":
-    print Y_LIB
+    print(Y_LIB)
 
     setup(
         name=NAME,
