@@ -618,6 +618,7 @@ class States(YomboLibrary, object):
 
         True - Rules fired, fale - no rules fired.
         """
+        # logger.debug("check_trigger. {key} = {value}", key=key, value=value)
         if self._loaded:
             results = self.automation.triggers_check('states', key, value)
             # results = self.automation.triggers_check('states', key, value)
@@ -745,4 +746,5 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
+        logger.debug("Automation rule fired. Setting:  {name} = {value}", name=action['name'], value=action['value'])
         return self.set(action['name'], action['value'])
