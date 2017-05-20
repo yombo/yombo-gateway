@@ -30,28 +30,28 @@ from yombo.utils import search_instance, do_search_instance, global_invoke_all, 
 logger = get_logger('library.inputtypes')
 
 BASE_VALIDATORS = [
-        ['yombo.lib.inputtypes.any', '_Any'],
-        ['yombo.lib.inputtypes.email', 'Email'],
-        ['yombo.lib.inputtypes.float', '_Float'],
-        ['yombo.lib.inputtypes.integer', 'Integer'],
-        ['yombo.lib.inputtypes.ip_address', 'IP_Address'],
-        ['yombo.lib.inputtypes.ip_address', 'IP_Address_Public'],
-        ['yombo.lib.inputtypes.ip_address', 'IP_Address_Private'],
-        ['yombo.lib.inputtypes.ip_address', 'IPv4_Address'],
-        ['yombo.lib.inputtypes.ip_address', 'IPv4_Address_Public'],
-        ['yombo.lib.inputtypes.ip_address', 'IPv4_Address_Private'],
-        ['yombo.lib.inputtypes.ip_address', 'IPv6_Address'],
-        ['yombo.lib.inputtypes.ip_address', 'IPv6_Address_Public'],
-        ['yombo.lib.inputtypes.ip_address', 'IPv6_Address_Private'],
-        ['yombo.lib.inputtypes.latin_alphabet', 'Latin_Alphabet'],
-        ['yombo.lib.inputtypes.latin_alphanumeric', 'Latin_Alphanumeric'],
-        ['yombo.lib.inputtypes.none', '_None'],
-        ['yombo.lib.inputtypes.password', 'Password'],
-        ['yombo.lib.inputtypes.percent', 'Percent'],
-        ['yombo.lib.inputtypes.string', 'String'],
-        ['yombo.lib.inputtypes.voice_command', 'Voice_Command'],
-        ['yombo.lib.inputtypes.yombo_command', 'Yombo_Command'],
-        ['yombo.lib.inputtypes.yombo_device', 'Yombo_Device'],
+    ['yombo.lib.inputtypes.any', '_Any'],
+    ['yombo.lib.inputtypes.email', 'Email'],
+    ['yombo.lib.inputtypes.float', '_Float'],
+    ['yombo.lib.inputtypes.integer', 'Integer'],
+    ['yombo.lib.inputtypes.ip_address', 'IP_Address'],
+    ['yombo.lib.inputtypes.ip_address', 'IP_Address_Public'],
+    ['yombo.lib.inputtypes.ip_address', 'IP_Address_Private'],
+    ['yombo.lib.inputtypes.ip_address', 'IPv4_Address'],
+    ['yombo.lib.inputtypes.ip_address', 'IPv4_Address_Public'],
+    ['yombo.lib.inputtypes.ip_address', 'IPv4_Address_Private'],
+    ['yombo.lib.inputtypes.ip_address', 'IPv6_Address'],
+    ['yombo.lib.inputtypes.ip_address', 'IPv6_Address_Public'],
+    ['yombo.lib.inputtypes.ip_address', 'IPv6_Address_Private'],
+    ['yombo.lib.inputtypes.latin_alphabet', 'Latin_Alphabet'],
+    ['yombo.lib.inputtypes.latin_alphanumeric', 'Latin_Alphanumeric'],
+    ['yombo.lib.inputtypes.none', '_None'],
+    ['yombo.lib.inputtypes.password', 'Password'],
+    ['yombo.lib.inputtypes.percent', 'Percent'],
+    ['yombo.lib.inputtypes.string', 'String'],
+    ['yombo.lib.inputtypes.voice_command', 'Voice_Command'],
+    ['yombo.lib.inputtypes.yombo_command', 'Yombo_Command'],
+    ['yombo.lib.inputtypes.yombo_device', 'Yombo_Device'],
 ]
 
 class InputTypes(YomboLibrary):
@@ -241,7 +241,7 @@ class InputTypes(YomboLibrary):
             klass = getattr(module_tail, item[1])
             if not callable(klass):
                 logger.warn("Unable to start validator '{name}', it's not callable.", name=item[1])
-                raise ImportError("Unable to start validator '%s', it's not callable." % item[1])
+                continue
             self.validators[item_key] = klass(self)
 
             input_type.validate = partial(self.validators[item_key].validate)
