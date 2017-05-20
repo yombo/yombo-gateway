@@ -1,5 +1,9 @@
 from functools import wraps
 from time import time
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 
@@ -8,6 +12,18 @@ from yombo.utils import get_local_network_info, ip_address_in_network
 
 from yombo.core.log import get_logger
 logger = get_logger('library.webinterface.auth')
+
+def return_api(request, message=None, status=None):
+    if status is None:
+        status = 401
+    request.setResponseCode(status)
+    if message is None:
+        message = "Not authorized"
+    return json.dumps({
+        'status': status,
+        'message': message,
+        'redirect': "/?",
+    })
 
 
 def get_session(roles=None, *args, **kwargs):
@@ -109,7 +125,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         results = yield call(f, webinterface, request, session, *a, **kw)
                         returnValue(results)
                         # return call(f, webinterface, request, session, *a, **kw)
-
+            if 'api' in kwargs and kwargs['api']:
+                returnValue(return_api(request))
             page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
             # print "require_auth..session: %s" % session
             returnValue(page.render(alerts=webinterface.get_alerts()))
