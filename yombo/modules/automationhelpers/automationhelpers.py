@@ -23,7 +23,7 @@ import operator
 from yombo.core.exceptions import YomboWarning
 from yombo.core.module import YomboModule
 from yombo.core.log import get_logger
-from yombo.utils import is_string_bool, epoch_from_string
+from yombo.utils import is_string_bool
 
 logger = get_logger("library.automationhelper")
 
@@ -141,7 +141,7 @@ class AutomationHelpers(YomboModule):
             else:
                 return method()
         else:
-            print "method not callable: %s" % method
+            logger.warn("method not callable: {method}", method=method)
         return
 
     def _automation_filter_list_(self, **kwargs):
@@ -202,14 +202,9 @@ class AutomationHelpers(YomboModule):
         :param kwargs: None
         :return:
         """
-        logger.debug("Checking filter: {filter}", filter=portion['filter'])
         filter_value = portion['filter']['value']
-        try:
-            trigger_value = is_string_bool(filter_value)
-        except YomboWarning:
-            pass
 
-#        logger.debug("Checking new = old: {new_value} = {trigger_value}", new_value=new_value, trigger_value=trigger_value)
+        # logger.debug("Checking new = old: {new_value} = {filter_value}", new_value=new_value, filter_value=filter_value)
 
         if 'operator' in portion['filter']:
             op_func = ops[portion['filter']['operator']]
@@ -217,5 +212,11 @@ class AutomationHelpers(YomboModule):
         else:
             if new_value == filter_value:
                 return True
-            return False
+            else:
+                try:
+                    if is_string_bool(new_value) == is_string_bool(filter_value):
+                        return True
+                except:
+                    return False
+        return False
 
