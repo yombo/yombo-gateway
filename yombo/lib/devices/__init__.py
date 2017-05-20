@@ -61,8 +61,6 @@ except ImportError:
     import json
 
 from hashlib import sha1
-import copy
-from collections import deque, namedtuple
 from time import time
 from collections import OrderedDict
 
@@ -70,17 +68,16 @@ from collections import OrderedDict
 import yombo.ext.six as six
 
 # Import twisted libraries
-from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from ._device import Device
-from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboWarning, YomboHookStopProcessing
+from ._device_command import Device_Command
+from yombo.core.exceptions import YomboDeviceError, YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, split, global_invoke_all, string_to_number, search_instance, do_search_instance
-from yombo.utils.maxdict import MaxDict
-from yombo.lib.commands import Command  # used only to determine class type
+from yombo.utils import split, global_invoke_all, search_instance, do_search_instance, random_int, get_public_gw_id
 logger = get_logger('library.devices')
 
 
@@ -217,50 +214,52 @@ class Devices(YomboLibrary):
         self._AutomationLibrary = self._Loader.loadedLibraries['automation']
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
 
-        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.devices = {}
         self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label', 'description',
             'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
             'created', 'updated', 'updated_srv']
 
         self.gwid = self._Configs.get("core", "gwid")
-        # self._save_status_loop = None
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
-        self.delay_queue_active = {}
-        self.delay_queue_unique = {}  # allows us to only create delayed commands for unique instances.
+        self.device_commands = {}  # tracks commands being sent to devices. Also tracks if a command is delayed
+        self.device_commands_persistent = {}  # tracks if a request should update any existing commands. For example
+        self.clean_device_commands_loop = None
+        # the automation system can always request the same command to be performed but ensure only one is
+          # is n the queue between restarts.
 
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
         self.processing_commands = False
 
-    def _load_(self):
+    @inlineCallbacks
+    def _started_(self):
         """
         Loads devices from the database and imports them.
         :return: 
         """
-        self.load_deferred = Deferred()
-        self._load_devices_from_database()
-        return self.load_deferred
+        yield self._load_devices_from_database()
+        yield self._load_device_commands()
 
-    def _start_(self):
-        """
-        Tells the system we are in run mode. Also, connects to MQTT broker to listen for device commands.
-        :return: 
-        """
+        self.clean_device_commands_loop = LoopingCall(self.clean_device_commands)
+        self.clean_device_commands_loop.start(random_int(3600, .15))
+
         if self._Atoms['loader.operation_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
-    def _stop_(self):
+    def _modules_started_(self):
+        for request_id, device_command in self.device_commands.iteritems():
+            device_command.start()
+
+    def _unload_(self):
         """
-        Cleans up any pending deferreds.
-        
+        Save any device commands that need to be saved.
         :return: 
         """
-        if self.load_deferred is not None and self.load_deferred.called is False:
-            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+        for request_id, device_command in self.device_commands.iteritems():
+            device_command.save_to_db(True)
 
     def _reload_(self):
         return self._load_()
@@ -293,7 +292,7 @@ class Devices(YomboLibrary):
         database and we need to refresh existing devices.
         """
         devices = yield self._LocalDB.get_devices()
-        logger.debug("Loading devices:::: {devices}", devices=devices)
+        # logger.debug("Loading devices:::: {devices}", devices=devices)
         if len(devices) > 0:
             for record in devices:
                 record = record.__dict__
@@ -301,7 +300,6 @@ class Devices(YomboLibrary):
                     record['energy_map'] = json.loads(str(record['energy_map']))
                 logger.debug("Loading device: {record}", record=record)
                 yield self.import_device(record)
-        yield self._load_delay_queue()
 
     def sorted(self, key=None):
         """
@@ -317,7 +315,7 @@ class Devices(YomboLibrary):
         return OrderedDict(sorted(self.devices.iteritems(), key=lambda i: i[1][key]))
 
     @inlineCallbacks
-    def import_device(self, device, test_device=None):  # load ore re-load if there was an update.
+    def import_device(self, device, test_device=None):  # load or re-load if there was an update.
         """
         Add a new device to memory or update an existing device.
 
@@ -337,14 +335,38 @@ class Devices(YomboLibrary):
         if test_device is None:
             test_device = False
 
-
         device_id = device["id"]
         if device_id not in self.devices:
             import_state = 'new'
             global_invoke_all('_device_before_load_',
                               **{'device': device})
-            self.devices[device_id] = Device(device, self)
-        if device_id not in self.devices:
+            device_type = self._DeviceTypes[device['device_type_id']]
+
+            if device_type.platform is None or device_type.platform == "":
+                device_type.platform = 'device'
+            class_names = device_type.platform.lower()
+
+            class_names = "".join(class_names.split())  # we don't like spaces
+            class_names = class_names.split(',')
+
+            # logger.debug("Loading device ({device}), platforms: {platforms}",
+            #             device=device['label'],
+            #             platforms=class_names)
+
+            class_set = False
+            for class_name in class_names:
+                if class_name in self._DeviceTypes.platforms:
+                    klass = self._DeviceTypes.platforms[class_name]
+                    class_set = True
+            if class_set is False:
+                klass = self._DeviceTypes.platforms['device']
+                logger.warn("Using base device class for device '{label}' cannot find any of these requested classes: {class_names}",
+                            label=device['label'],
+                            class_names=class_names)
+
+            self.devices[device_id] = klass(device, self)
+
+        else:
             import_state = 'update'
             global_invoke_all('_device_before_update_',
                               **{'device': device})
@@ -371,32 +393,35 @@ class Devices(YomboLibrary):
         #            returnValue(self.devices[device_id])
 
     @inlineCallbacks
-    def _load_delay_queue(self):
-        self.delay_queue_storage = yield self._Libraries['SQLDict'].get(self, 'delay_queue')
-        # Now check to existing delayed messages.  If not too old, send otherwise delete them.  If time is in
-        # future, setup a new reactor to send in future.
-        for request_id in self.delay_queue_storage.keys():
-            logger.info("module_started: delayQueue: {delay}", delay=self.delay_queue_storage[request_id])
-            if self.delay_queue_storage[request_id]['unique_hash'] is not None:
-                self.delay_queue_unique[self.delay_queue_storage[request_id]['unique_hash']] = request_id
-            if request_id in self.delay_queue_active:
-                logger.debug("Message already scheduled for delivery later. Possible from an automation rule. Skipping.")
-                continue
-            request = self.delay_queue_storage[request_id]
-            # print("loading delayed command: %s" % request)
-            if float(request['not_before']) < time(): # if delay message time has past, maybe process it.
-                if time() - float(request['not_before']) > float(request['max_delay']):
-                    # we're too late, just delete it.
-                    del self.delay_queue_storage[request_id]
-                    continue
-                else:
-                    # we're good, lets hydrate the request and send it.
-                    self.command(request['device_id'], request['command_id'], request['kwargs'])
+    def _load_device_commands(self):
+        where = {
+            'finished_time': None,
+        }
 
-            else: # Still good, but still in the future. Set them up.
-                self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
-                                max_delay=request['max_delay'], **request['kwargs'])
-        self.load_deferred.callback(10)
+        device_commands = yield self._LocalDB.get_device_commands(where)
+        for device_command in device_commands:
+            self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
+        returnValue(None)
+
+    @inlineCallbacks
+    def clean_device_commands(self):
+        """
+        Remove old device command requests.
+        :return: 
+        """
+        cur_time = time()
+        for request_id in self.device_commands.keys():
+            device_command = self.device_commands[request_id]
+            if device_command.finished_time > cur_time - (60*45):  # keep 45 minutes worth.
+                yield device_command.save_to_db()
+                del self.device_commands[request_id]
+
+        # This is split up to incase a new request_id was created....
+        for persistent_request_id in self.device_commands_persistent.keys():
+            request_id = self.device_commands_persistent[persistent_request_id]
+            if request_id not in self.device_commands:
+                del self.device_commands_persistent[persistent_request_id]
+
 
     def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, input=None, **kwargs):
         """
@@ -974,7 +999,8 @@ class Devices(YomboLibrary):
         :return:
         """
         return [
-            { 'platform': 'devices',
+            {
+              'platform': 'devices',
               'platform_description': 'Allows devices to be used as triggers for rules or macros.',
               'validate_source_callback': self.devices_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.devices_add_trigger_callback,  # function to call to add a trigger
@@ -1013,6 +1039,7 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
+        logger.error("triggers_add")
         self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointers'].device_id)
 
     def devices_get_value_callback(self, rule, portion, **kwargs):
@@ -1090,7 +1117,7 @@ class Devices(YomboLibrary):
             raise YomboWarning("For platform 'devices' as an 'action', must have 'device' and can be either device ID, device machine_label, or device label.",
                                105, 'devices_validate_action_callback', 'lib.devices')
 
-    def devices_do_action_callback(self, rule, action, options=None, **kwargs):
+    def devices_do_action_callback(self, rule, action, **kwargs):
         """
         A callback to perform an action.
 
@@ -1099,26 +1126,22 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        if options is None:
-            options = {}
-        logger.debug("firing device rule: {rule}", rule=rule)
-        logger.debug("rule options: {options}", options=options)
+        logger.info("firing device rule: {rule}", rule=rule['name'])
         for device in action['device_pointers']:
-            delay = None
-            if 'delay' in options and options['delay'] is not None:
-                logger.debug("setting up a delayed command for {seconds} seconds in the future.", seconds=options['delay'])
-                delay=options['delay']
-
-                if 'max_delay' in options:
-                    max_delay=options['max_delay']
-                else:
-                    max_delay=60  # allow up to 60 seconds to pass...
-            else:
-                delay = None
-                max_delay = None
-
-            unique_hash = sha1('automation' + rule['name'] + action['command'] + device.machine_label).hexdigest()
-            device.command(cmd=action['command'], delay=delay, max_delay=max_delay, **{'unique_hash': unique_hash})
+            logger.info("Doing command '{command}' to device: {device}", command=action['command'], device=device.label)
+            persistent_request_id = sha1('automation' + rule['name'] + action['command'] + device.machine_label).hexdigest()
+            try:
+                requested_by = {
+                    'user_id': 'Automation rule: %s' % rule['name'],
+                    'component': 'yombo.gateway.lib.devices',
+                    'gateway': get_public_gw_id()
+                }
+                device.command(cmd=action['command'],
+                               requested_by=requested_by,
+                               persistent_request_id=persistent_request_id,
+                               **kwargs)
+            except YomboWarning as e:
+                logger.warn("Unable to process device automation rule: {e}", e=e)
 
 
 

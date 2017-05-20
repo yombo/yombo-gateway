@@ -15,6 +15,7 @@ The device class is responsible for managing a single device.
 """
 # Import python libraries
 from __future__ import print_function
+from __future__ import absolute_import
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -29,16 +30,16 @@ from collections import OrderedDict
 import yombo.ext.six as six
 
 # Import twisted libraries
-from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboPinCodeError, YomboDeviceError, YomboWarning
+from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, split, global_invoke_all, string_to_number, do_search_instance
 from yombo.utils.maxdict import MaxDict
 from yombo.lib.commands import Command  # used only to determine class type
-from ._device_request import Device_Request
+from ._device_command import Device_Command
 
 logger = get_logger('library.devices.device')
 
@@ -146,10 +147,14 @@ class Device(object):
         # logger.debug("New device - info: {device}", device=device)
 
         self.StatusTuple = namedtuple('Status',
-                                      "device_id, set_time, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, uploaded, uploadable")
-        self.Command = namedtuple('Command', "time, cmduuid, requested_by")
+                                      "device_id, set_time, energy_usage, energy_type, human_status, human_message, "
+                                      "last_command, machine_status, machine_status_extra, requested_by, "
+                                      "reported_by, request_id, uploaded, uploadable")
 
-        self.do_command_requests = MaxDict(300, {})
+        self.CommandTuple = namedtuple('Command',
+                                       "set_time, command_id, requested_by, reported_by, request_id, uploaded, "
+                                       "uploadable")
+
         self.call_before_command = []
         self.call_after_command = []
 
@@ -173,7 +178,6 @@ class Device(object):
         self.voice_cmd_order = None
         self.statistic_label = None
         self.statistic_lifetime = None
-        self.platform = None
         self.status = None
         self.created = None
         self.updated = None
@@ -238,10 +242,8 @@ class Device(object):
             self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
         if 'statistic_lifetime' in device:
             self.statistic_lifetime = device["statistic_lifetime"]  # 'myhome.groundfloor.kitchen'
-        if 'platform' in device:
-            self.platform = device["platform"]
         if 'attributes' in device:
-            self.set_attributes(device["platform"])
+            self.set_attributes(device["attributes"])
         if 'status' in device:
             self.status = int(device["status"])
         if 'created' in device:
@@ -306,18 +308,18 @@ class Device(object):
         If a device is toggleable, return True. It's toggleable if a device only has two commands.
         :return: 
         """
-        if self.TOGGLE_COMMANDS is False or self.TOGGLE_COMMANDS is None:
-            return self._Parent._Commands['toggle']
 
-        if isinstance(self.TOGGLE_COMMANDS, list):
-            if len(self.TOGGLE_COMMANDS) == 2:
-                last_command_id = self.last_command[0]['machine_id']
-                for command_id in self.TOGGLE_COMMANDS:
-                    if command_id == last_command_id:
-                        continue
-                    return self._Parent._Commands[command_id]
-
-        return self._Parent._Commands['toggle']
+        if isinstance(self.TOGGLE_COMMANDS, list) and len(self.TOGGLE_COMMANDS) == 2:
+            if self.last_command[0].command_id is None:
+                raise YomboWarning("Device cannot be toggled, device is in unknown state.")
+            last_command_id = self.last_command[0].command_id
+            for command_id in self.TOGGLE_COMMANDS:
+                if command_id == last_command_id:
+                    continue
+                return self._Parent._Commands[command_id]
+        else:
+            raise YomboWarning(
+                "Device cannot be toggled, it's not enabled for this device.")
 
     def available_commands(self):
         """
@@ -344,11 +346,12 @@ class Device(object):
                 'voice_cmd_order': str(self.voice_cmd_order),
                 'created': int(self.created),
                 'updated': int(self.updated),
+                'last_command': copy.copy(self.last_command),
                 'status_history': copy.copy(self.status_history),
                 }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None,
-                inputs=None, **kwargs):
+                inputs=None, not_after=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -356,14 +359,14 @@ class Device(object):
         If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
         hook call.
 
-        :raises YomboDeviceError: Raised when:
+        :raises YomboWarning: Raised when:
 
-            - cmd doesn't exist
             - delay or max_delay is not a float or int.
 
         :raises YomboPinCodeError: Raised when:
 
             - pin is required but not recieved one.
+            - cmd doesn't exist
 
         :param cmd: Command ID or Label to send.
         :type cmd: str
@@ -388,15 +391,22 @@ class Device(object):
         if self.status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
 
+        if self.pin_required == 1:
+            if pin is None:
+                raise YomboPinCodeError("'pin' is required, but missing.")
+            else:
+                if self.pin_code != pin:
+                    raise YomboPinCodeError("'pin' supplied is incorrect.")
+        device_command = {
+            "device": self,
+        }
         if isinstance(cmd, Command):
-            cmdobj = cmd
+            command = cmd
         else:
-            cmdobj = self._Parent._Commands.get(cmd)
-
-        if cmdobj.machine_label == 'toggle':
-            cmdobj = self.get_toggle_command()
-
-        cmd = cmdobj.machine_label
+            command = self._Parent._Commands.get(cmd)
+        if command.machine_label == 'toggle':
+            command = self.get_toggle_command()
+        device_command['command'] = command
 
         # logger.debug("device::command kwargs: {kwargs}", kwargs=kwargs)
         # logger.debug("device::command requested_by: {requested_by}", requested_by=requested_by)
@@ -406,136 +416,107 @@ class Device(object):
                 'component': 'Unknown',
                 'gateway': 'Unknown'
             }
+        device_command['requested_by'] = requested_by
 
-        if self.pin_required == 1:
-            if pin is None:
-                raise YomboPinCodeError("'pin' is required, but missing.")
-            else:
-                if self.pin_code != pin:
-                    raise YomboPinCodeError("'pin' supplied is incorrect.")
-
-        if str(cmdobj.command_id) not in self.available_commands():
+        if str(command.command_id) not in self.available_commands():
             logger.warn("Requested command: {cmduuid}, but only have: {ihave}",
-                        cmduuid=cmdobj.command_id, ihave=self.available_commands())
-            raise YomboDeviceError("Invalid command requested for device.", errorno=103)
+                        cmduuid=command.command_id, ihave=self.available_commands())
+            raise YomboWarning("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
-        if 'unique_hash' in kwargs:
-            unique_hash = kwargs['unique_hash']
-            del kwargs['unique_hash']
-        else:
-            unique_hash = None
-        if unique_hash in self._Parent.delay_queue_unique:
-            request_id = self._Parent.delay_queue_unique[unique_hash]
+        device_command['created_time'] = cur_time
+
+        persistent_request_id = kwargs.get('persistent_request_id', None)
+        device_command['persistent_request_id'] = persistent_request_id
+
+        if persistent_request_id in self._Parent.device_commands_persistent:
+            previous_request_id = self._Parent.device_commands_persistent[persistent_request_id]
+            if previous_request_id in self._Parent.device_commands:
+                logger.debug("found a previous persistent request. Canceling it and creating a new one.")
+                self._Parent.device_commands[previous_request_id].set_finished(status="superseded", message="Replacement request created.")
         elif request_id is None:
             request_id = random_string(length=16)  # print("in device command: rquest_id 2: %s" % request_id)
 
-        self.do_command_requests[request_id] = Device_Request(
-            {
-                'request_id': request_id,  # not as redundant as you may think!
-                'sent_time': None,
-                'command': cmdobj,
-                'history': [],  # contains any notes about the status. Errors, etc.
-                'inputs': inputs,
-                'requested_by': requested_by,
-            },
-            self
-        )
+        device_command['request_id'] = request_id
 
         if delay is not None or not_before is not None:  # if we have a delay, make sure we have required items
-            if max_delay is None:
-                raise YomboDeviceError("'max_delay' Is required when delay or not_before is set!")
-            if isinstance(max_delay, six.integer_types) or isinstance(max_delay, float):
-                if max_delay < 0:
-                    raise YomboDeviceError("'max_delay' should be positive only.")
+            if max_delay is None and not_after is None:
+                logger.warn("max_delay and not_after missing when calling with delay or not_before. Setting to 60 seconds.")
+                max_delay = 60
+            if max_delay is not None and not_after is not None:
+                raise YomboWarning("'max_delay' and 'not_after' cannot be set at the same time.")
 
-        if not_before is not None:
-            if isinstance(not_before, six.integer_types) or isinstance(not_before, float):
+            # Determine when to call the command
+            if not_before is not None:
+                if isinstance(not_before, six.string_types):
+                    try:
+                        not_before = float(not_before)
+                    except:
+                        raise YomboWarning("'not_before' time should be epoch second in the future as an int, float, or parsable string.")
+                # if isinstance(not_before, six.integer_types) or isinstance(not_before, float):
                 if not_before < cur_time:
-                    raise YomboDeviceError("'not_before' time should be epoch second in the future, not the past.")
+                    raise YomboWarning("'not_before' time should be epoch second in the future, not the past. Got: %s" % not_before)
+                device_command['not_before_time'] = not_before
 
-                when = not_before - time()
-                if request_id not in self._Parent.delay_queue_storage:  # condition incase it's a reload
-                    self._Parent.delay_queue_storage[request_id] = {
-                        'command_id': cmdobj.command_id,
-                        'device_id': self.device_id,
-                        'not_before': not_before,
-                        'max_delay': max_delay,
-                        'unique_hash': unique_hash,
-                        'request_id': request_id,
-                        'inputs': inputs,
-                        'kwargs': kwargs,
-                    }
-                self._Parent.delay_queue_active[request_id] = {
-                    'command': cmdobj,
-                    'device': self,
-                    'not_before': not_before,
-                    'max_delay': max_delay,
-                    'unique_hash': unique_hash,
-                    'kwargs': kwargs,
-                    'request_id': request_id,
-                    'inputs': inputs,
-                    'reactor': None,
-                }
-                self._Parent.delay_queue_active[request_id]['reactor'] = reactor.callLater(when,
-                                                                                                   self.do_command_delayed,
-                                                                                                   request_id)
-                self.do_command_requests[request_id].set_status('delayed')
-            else:
-                raise YomboDeviceError("not_before' must be a float or int.")
-
-        elif delay is not None:
-            # print("delay = %s" % delay)
-            if isinstance(delay, six.integer_types) or isinstance(delay, float):
+            elif delay is not None:
+                if isinstance(delay, six.string_types):
+                    try:
+                        delay = float(delay)
+                    except:
+                        raise YomboWarning("'delay' time must be an int, float, or parsable string. Got: %s" % delay)
+                # if isinstance(not_before, six.integer_types) or isinstance(not_before, float):
                 if delay < 0:
-                    raise YomboDeviceError("'delay' should be positive only.")
+                    raise YomboWarning("'not_before' time should be epoch second in the future, not the past.")
+                device_command['not_before_time'] = cur_time + delay
 
-                when = time() + delay
-                if request_id not in self._Parent.delay_queue_storage:  # condition incase it's a reload
-                    self._Parent.delay_queue_storage[request_id] = {
-                        'command_id': cmdobj.command_id,
-                        'device_id': self.device_id,
-                        'not_before': when,
-                        'max_delay': max_delay,
-                        'unique_hash': unique_hash,
-                        'kwargs': kwargs,
-                        'inputs': inputs,
-                        'request_id': request_id,
-                    }
-                self._Parent.delay_queue_active[request_id] = {
-                    'command': cmdobj,
-                    'device': self,
-                    'not_before': when,
-                    'max_delay': max_delay,
-                    'unique_hash': unique_hash,
-                    'kwargs': kwargs,
-                    'request_id': request_id,
-                    'inputs': inputs,
-                    'reactor': None,
-                }
-                self._Parent.delay_queue_active[request_id]['reactor'] = reactor.callLater(delay,
-                                                                                                   self.do_command_delayed,
-                                                                                                   request_id)
-                self.do_command_requests[request_id].set_status('delayed')
-            else:
-                raise YomboDeviceError("'not_before' must be a float or int.")
+            # determine how late the command can be run. This happens is the gateway was turned off
+            if not_after is not None:
+                if isinstance(not_after, six.string_types):
+                    try:
+                        not_after = float(not_after)
+                    except:
+                        raise YomboWarning("'not_after' time should be epoch second in the future after not_before as an int, float, or parsable string.")
+                if isinstance(not_after, six.integer_types) or isinstance(not_after, float):
+                    if not_after < device_command['not_before_time']:
+                        raise YomboWarning("'not_after' must occur after 'not_before (or current time + delay)")
+                device_command['not_after_time'] = not_after
+            elif max_delay is not None:
+                # todo: try to convert if it's not. Make a util helper for this, occurs a lot!
+                if isinstance(max_delay, six.string_types):
+                    try:
+                        max_delay = float(max_delay)
+                    except:
+                        raise YomboWarning("'max_delay' time should be an int, float, or parsable string.")
+                if isinstance(max_delay, six.integer_types) or isinstance(max_delay, float):
+                    if max_delay < 0:
+                        raise YomboWarning("'max_delay' must be positive only.")
+                device_command['not_after_time'] = device_command['not_before_time'] + max_delay
 
-        else:
-            kwargs['request_id'] = request_id
-            self.do_command_hook(cmdobj, **kwargs)
+        device_command['params'] = kwargs.get('params', None)
+        device_command['inputs'] = inputs
+
+        self.last_command.appendleft({
+            'command_id': command.command_id,
+            'machine_label': command.machine_label,
+            'label': command.label,
+            'request_id': request_id,
+        })
+        self._Parent.device_commands[request_id] = Device_Command(device_command, self._Parent)
+
         return request_id
+    #
+    # @inlineCallbacks
+    # def do_command_delayed(self, request_id):
+    #     self._Parent.device_commands[request_id].set_sent_time()
+    #     request = self._Parent.delay_queue_active[request_id]
+    #     # request['kwargs']['request_id'] = request_id
+    #     request['kwargs']['request_id'] = request_id
+    #     yield self.do_command_hook(request['command'], **request['kwargs'])
+    #     del self._Parent.delay_queue_storage[request_id]
+    #     del self._Parent.delay_queue_active[request_id]
 
     @inlineCallbacks
-    def do_command_delayed(self, request_id):
-        self.do_command_requests[request_id].set_sent_time()
-        request = self._Parent.delay_queue_active[request_id]
-        # request['kwargs']['request_id'] = request_id
-        request['kwargs']['request_id'] = request_id
-        yield self.do_command_hook(request['command'], **request['kwargs'])
-        del self._Parent.delay_queue_storage[request_id]
-        del self._Parent.delay_queue_active[request_id]
-
-    def do_command_hook(self, cmdobj, **kwargs):
+    def do_command_hook(self, device_command):
         """
         Performs the actual sending of a device command. This calls the hook "_device_command_". Any modules that
         have implemented this hook can monitor or act on the hook.
@@ -548,15 +529,21 @@ class Device(object):
         * _devices_command_ : Sends kwargs: *device*, the device object and *command*. This receiver will be
           responsible for obtaining whatever information it needs to complete the action being requested.
 
-        :param request_id:
-        :param cmdobj:
-        :param kwargs:
+        :param device_command: device_command instance with all our required values.
         :return:
         """
-        kwargs['command'] = cmdobj
-        kwargs['device'] = self
-        self.do_command_requests[kwargs['request_id']].set_sent_time()
-        global_invoke_all('_device_command_', called_by=self, **kwargs)
+        items = {
+            'command': device_command.command,
+            'device': self,
+            'inputs': device_command.inputs,
+            'request_id': device_command.request_id,
+            'device_command': device_command,
+        }
+        device_command.set_sent()
+        results = yield global_invoke_all('_device_command_', called_by=self, **items)
+        for component, result in results.iteritems():
+            if result is True:
+                device_command.set_received(message="Received by: %s" % component)
         self._Parent._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def device_command_received(self, request_id, **kwargs):
@@ -566,10 +553,9 @@ class Device(object):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id].set_received_time()
-        if 'message' in kwargs:
-            self.do_command_requests[request_id].set_message(kwargs['message'])
-        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
+        message = kwargs.get('message', None)
+        self._Parent.device_commands[request_id].set_received(message=message)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
 
     def device_command_pending(self, request_id, **kwargs):
         """
@@ -579,10 +565,9 @@ class Device(object):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id].set_pending_time()
-        if 'message' in kwargs:
-            self.do_command_requests[request_id].set_message(kwargs['message'])
-        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
+        message = kwargs.get('message', None)
+        self._Parent.device_commands[request_id].set_pending(message=message)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
 
     def device_command_failed(self, request_id, **kwargs):
         """
@@ -593,12 +578,12 @@ class Device(object):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id].set_failed_time()
-        if 'message' in kwargs:
-            logger.warn('Device ({label}) command failed: {message}', label=self.label, message=kwargs['message'])
-            self.do_command_requests[request_id].set_message(kwargs['message'])
-        # print("self.do_command_requests[request_id]: %s" % self.do_command_requests[request_id])
-        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
+        message = kwargs.get('message', None)
+        self._Parent.device_commands[request_id].set_failed(message=message)
+
+        if message is not None:
+            logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
 
     def device_command_done(self, request_id, **kwargs):
         """
@@ -609,10 +594,9 @@ class Device(object):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        self.do_command_requests[request_id].set_finished_time()
-        if 'message' in kwargs:
-            self.do_command_requests[request_id].set_message(kwargs['message'])
-        global_invoke_all('_device_command_status_', called_by=self, request=self.do_command_requests[request_id])
+        message = kwargs.get('message', None)
+        self._Parent.device_commands[request_id].set_finished(message=message)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
 
     def get_request(self, request_id):
         """
@@ -622,7 +606,7 @@ class Device(object):
         :param request_id: A request id returned from a 'command()' call. 
         :return: Device_Request instance
         """
-        return self.do_command_requests[request_id]
+        return self._Parent.device_commands[request_id]
 
     def energy_translate(self, value, leftMin, leftMax, rightMin, rightMax):
         """
@@ -652,12 +636,21 @@ class Device(object):
         """
         return self.status_history[history]
 
+    def get_last_command(self, history=0):
+        """
+        Gets the last command information.
+
+        :param history: How far back to go. 0 = previoius, 1 - the one before that, etc.
+        :return:
+        """
+        return self.last_command[history]
+
     def set_status(self, **kwargs):
         """
         Usually called by the device's command/logic module to set/update the
         device status. This can also be called externally as needed.
 
-        :raises YomboDeviceError: Raised when:
+        :raises YomboWarning: Raised when:
 
             - If no valid status sent in. Errorno: 120
             - If statusExtra was set, but not a dictionary. Errorno: 121
@@ -686,7 +679,7 @@ class Device(object):
         """
         machine_status = None
         if 'machine_status' not in kwargs:
-            raise YomboDeviceError("set_status was called without a real machine_status!", errorno=120)
+            raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
 
         human_status = kwargs.get('human_status', machine_status)
         human_message = kwargs.get('human_message', machine_status)
@@ -696,16 +689,21 @@ class Device(object):
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
 
-        requested_by = {
+        requested_by_default = {
             'user_id': 'Unknown',
             'component': 'Unknown',
             'gateway': 'Unknown'
         }
 
-        if "requested_by" in kwargs:
+        if "request_id" in kwargs and kwargs['request_id'] in self._Parent.device_commands:
+            request_id = kwargs['request_id']
+            requested_by = self._Parent.device_commands[request_id].requested_by
+            kwargs['command'] = self._Parent.device_commands[request_id].command
+        elif "requested_by" in kwargs:
+            request_id = None
             requested_by = kwargs['requested_by']
             if isinstance(requested_by, dict) is False:
-                kwargs['requested_by'] = requested_by
+                kwargs['requested_by'] = requested_by_default
             else:
                 if 'user_id' not in requested_by:
                     requested_by['user_id'] = 'Unknown'
@@ -713,14 +711,13 @@ class Device(object):
                     requested_by['component'] = 'Unknown'
                 if 'gateway' not in requested_by:
                     requested_by['gateway'] = 'Unknown'
-
-        if "request_id" in kwargs and kwargs['request_id'] in self.do_command_requests:
-            requested_by = self.do_command_requests[kwargs['request_id']].requested_by
-            kwargs['command'] = self.do_command_requests[kwargs['request_id']].command
-
+        else:
+            request_id = None
+            requested_by = requested_by_default
         kwargs['requested_by'] = requested_by
 
         reported_by = kwargs.get('reported_by', 'Unknown')
+
         kwargs['reported_by'] = reported_by
 
         message = {
@@ -738,24 +735,20 @@ class Device(object):
 
         if 'command' in kwargs:
             command = kwargs['command']
-            self.last_command.appendleft({
-                'command_id': command.command_id,
-                'machine_label': command.machine_label,
-                'label': command.label,
-                })
             command_machine_label = command.machine_label
             message['last_command'] = command.machine_label
             message['command_machine_label'] = command.machine_label
             message['command_label'] = command.label
             message['command_id'] = command.command_id
-            last_command = command.machine_label
+            energy_usage, energy_type = self.energy_calc(command=command,
+                                                         machine_status=machine_status,
+                                                         machine_status_extra=machine_status_extra,
+                                                         )
         else:
             command_machine_label = machine_status
-
-        energy_usage, energy_type = self.energy_calc(command=command,
-                                                     machine_status=machine_status,
-                                                     machine_status_extra=machine_status_extra,
-                                                     )
+            energy_usage, energy_type = self.energy_calc(machine_status=machine_status,
+                                                         machine_status_extra=machine_status_extra,
+                                                         )
 
         message['energy_usage'] = energy_usage
         message['energy_type'] = energy_type
@@ -765,7 +758,7 @@ class Device(object):
             self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
 
         new_status = self.StatusTuple(self.device_id, set_time, energy_usage, energy_type, human_status, human_message, command_machine_label,
-                                      machine_status, machine_status_extra, requested_by, reported_by, uploaded,
+                                      machine_status, machine_status_extra, requested_by, request_id, reported_by, uploaded,
                                       uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
@@ -836,15 +829,16 @@ class Device(object):
                 'component': 'Unknown',
                 'gateway': 'Unknown'
             }
-            self.status_history.append(
+            self.status_history.appendleft(
                 self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown', 'Unknown status for device', None, None, {},
-                                 requested_by, 'Unknown', 0, 1))
+                                 requested_by, None, 'Unknown', 0, 1))
         else:
             for record in records:
                 self.status_history.appendleft(
                     self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['energy_type'],
                                      record['human_status'], record['human_message'], record['last_command'],
                                      record['machine_status'], record['machine_status_extra'], record['requested_by'],
+                                     record['request_id'],
                                      record['reported_by'], record['uploaded'], record['uploadable']))
                 #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,     energy_type,      human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
 
