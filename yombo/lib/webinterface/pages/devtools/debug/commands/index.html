@@ -24,7 +24,7 @@
                                             <th>Label</th><th>Description</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for command_id, command in commands.iteritems() %}
+                                    <tbody>{% for command_id, command in commands.items() %}
                                          <tr>
                                              <td><a href="/devtools/debug/commands/{{ command_id }}/details">{{ command.label }}</a></td>
                                              <td>{{ command.description }}</td>

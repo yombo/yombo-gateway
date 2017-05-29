@@ -238,7 +238,7 @@ class Atoms(YomboLibrary):
     def values(self):
         return list(self.__Atoms.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Sets up the atom library and files basic atoms values about the system.
 
@@ -254,12 +254,12 @@ class Atoms(YomboLibrary):
         self.set('loader.operation_mode', 'run')
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         self.library_state = 2
         self.set('running_since', time())
         self._loaded = True
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         self.library_state = 3
 
     def get_atoms(self):
@@ -327,8 +327,10 @@ class Atoms(YomboLibrary):
         already_set = False
         if self.library_state >= 2:  # but only if we are not during init.
             try:
-                atom_changes = yield yombo.utils.global_invoke_all('_atoms_preset_',
-                                        **{'keys': key, 'value': value, 'new': key in self.__Atoms})
+                atom_changes = yield yombo.utils.global_invoke_all(
+                    '_atoms_preset_',
+                    called_by = self,
+                    **{'keys': key, 'value': value, 'new': key in self.__Atoms})
             except YomboHookStopProcessing as e:
                 logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                                state=key, resource=e.by_who)
@@ -348,7 +350,9 @@ class Atoms(YomboLibrary):
         if self.library_state >= 2:  # but only if we are not during init.
             # Call any hooks
             try:
-                state_changes = yield yombo.utils.global_invoke_all('_atoms_set_', **{'key': key, 'value': value})
+                state_changes = yield yombo.utils.global_invoke_all('_atoms_set_',
+                                                                    called_by=self,
+                                                                    **{'key': key, 'value': value})
             except YomboHookStopProcessing:
                 pass
 

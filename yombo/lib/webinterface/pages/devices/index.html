@@ -78,7 +78,7 @@
                                                     <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.iteritems() if device.status == 1 %}
+                                            <tbody>{% for deviceID, device in devices.items() if device.status == 1 %}
                                                  <tr>
                                                     <td>
                                                         <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
@@ -109,7 +109,7 @@
                                                     <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.iteritems() if device.status == 0 %}
+                                            <tbody>{% for deviceID, device in devices.items() if device.status == 0 %}
                                                  <tr>
                                                     <td>
                                                         <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
@@ -140,7 +140,7 @@
                                                     <th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.iteritems() if device.status == 2 %}
+                                            <tbody>{% for deviceID, device in devices.items() if device.status == 2 %}
                                                  <tr>
                                                     <td>
                                                         <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>

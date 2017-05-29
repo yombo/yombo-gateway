@@ -146,7 +146,7 @@ class Commands(YomboLibrary):
     def values(self):
         return list(self.commands.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Setups up the basic framework.
         
@@ -157,7 +157,7 @@ class Commands(YomboLibrary):
         self.command_search_attributes = ['command_id', 'label', 'machine_label', 'description', 'always_load',
             'voice_cmd', 'cmd', 'status']
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Loads commands from the database and imports them.
         """
@@ -165,14 +165,14 @@ class Commands(YomboLibrary):
         self.load_deferred = Deferred()
         return self.load_deferred
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
         """
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _clear_(self):
+    def _clear_(self, **kwargs):
         """
         Clear all devices. Should only be called by the loader module
         during a reconfiguration event. B{Do not call this function!}
@@ -215,21 +215,16 @@ class Commands(YomboLibrary):
         """
         logger.debug("command: {command}", command=command)
 
-        global_invoke_all('_command_before_import_',
-                      **{'command': command})
+        global_invoke_all('_command_before_import_', called_by=self, **{'command': command})
         command_id = command["id"]
         if command_id not in self.commands:
-            global_invoke_all('_command_before_load_',
-                              **{'command': command})
+            global_invoke_all('_command_before_load_', called_by=self, **{'command': command})
             self.commands[command_id] = Command(command)
-            global_invoke_all('_command_loaded_',
-                          **{'command': self.commands[command_id]})
+            global_invoke_all('_command_loaded_', called_by=self, **{'command': self.commands[command_id]})
         elif command_id not in self.commands:
-            global_invoke_all('_command_before_update_',
-                              **{'command': command})
+            global_invoke_all('_command_before_update_', called_by=self, **{'command': command})
             self.commands[command_id].update_attributes(command)
-            global_invoke_all('_command_updated_',
-                          **{'command': self.commands[command_id]})
+            global_invoke_all('_command_updated_', called_by=self, **{'command': self.commands[command_id]})
 
         if command['voice_cmd'] is not None:
             self.__yombocommandsByVoice[command['voice_cmd']] = self.commands[command_id]

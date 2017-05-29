@@ -19,7 +19,7 @@
 <div class="row">
     <div class="col-lg-12">
         <table class="table table-striped">
-            {%- for device_id, device in devices.iteritems() %}
+            {%- for device_id, device in devices.items() %}
                 <tr>
                 <td width="60%" style="vertical-align:middle;"><h4>{{ device.label }}</h4><small id="value_{{device.machine_label}}">{{device.status_history[0].human_message}}</small></td>
                 <td style="vertical-align:middle;"></td>
@@ -120,7 +120,7 @@
             }
 //			console.log("handleDeviceMQTT: " + device);
             switch (device) {
-            {%- for device_id, device in devices.iteritems() %}
+            {%- for device_id, device in devices.items() %}
                 case '{{device.machine_label}}':
 //					console.log("got {{device.machine_label}}");
                     $('#value_{{device.machine_label}}').html(payload.human_message);

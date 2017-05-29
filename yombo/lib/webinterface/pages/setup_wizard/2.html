@@ -37,7 +37,7 @@
                                         <select name="gateway-id" required class="selectpicker show-tick" title="Select...">
                                             <option value="new" style="background: #e6f7ff; color: #000;"{% if selected_gateway == 'new' %} selected{% endif %}>Create New</option>
                                             <option data-divider="true"></option>
-                                            {% for id, gateway in available_gateways.iteritems() -%}
+                                            {% for id, gateway in available_gateways.items() -%}
                                             <option value="{{ gateway.id }}"{% if selected_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
                                             {%- endfor %}
                                         </select>

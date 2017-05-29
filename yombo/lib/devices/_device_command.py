@@ -81,7 +81,7 @@ class Device_Command(object):
             self.dirty = False
 
         if start is None or start is True:
-            self.start()
+            reactor.callLater(0.001, self.start)
 
     def start(self):
         if self.not_before_time is not None:

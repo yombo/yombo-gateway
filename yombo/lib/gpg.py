@@ -41,12 +41,12 @@ class GPG(YomboLibrary):
     """
     Manage all GPG functions.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Get the GnuPG subsystem up and loaded.
         """
-        self.gwid = self._Configs.get("core", "gwid")
-        self.gwuuid = self._Configs.get("core", "gwuuid")
+        self.gwid = self._Configs.get2("core", "gwid")
+        self.gwuuid = self._Configs.get2("core", "gwuuid")
         self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
         self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
 
@@ -61,26 +61,26 @@ class GPG(YomboLibrary):
         return self.initDefer
 
 #    @inlineCallbacks
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Get the root cert from database and make sure it's in our public keyring.
         """
         self._AMQPLibrary = self._Libraries['AMQPYombo']
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         self.remote_get_root_key()
         pass
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
         pass
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Do nothing
         """
@@ -88,23 +88,23 @@ class GPG(YomboLibrary):
 
     def _done_init(self):
         self.initDefer.callback(10)
-
-    def _configuration_set_(self, **kwargs):
-        """
-        Receive configuruation updates and adjust as needed.
-
-        :param kwargs: section, option(key), value
-        :return:
-        """
-        section = kwargs['section']
-        option = kwargs['option']
-        value = kwargs['value']
-
-        if section == 'core':
-            if option == 'gwid':
-                self.gwid = value
-            if option == 'gwuuid':
-                self.gwuuid = value
+    #
+    # def _configuration_set_(self, **kwargs):
+    #     """
+    #     Receive configuruation updates and adjust as needed.
+    #
+    #     :param kwargs: section, option(key), value
+    #     :return:
+    #     """
+    #     section = kwargs['section']
+    #     option = kwargs['option']
+    #     value = kwargs['value']
+    #
+    #     if section == 'core':
+    #         if option == 'gwid':
+    #             self.gwid = value
+    #         if option == 'gwuuid':
+    #             self.gwuuid = value
 
     ##########################
     #### Key management  #####
@@ -318,9 +318,9 @@ class GPG(YomboLibrary):
         again.
         """
         input_data = self.gpg.gen_key_input(
-            name_email=self.gwuuid + "@yombo.net",
+            name_email=self.gwuuid() + "@yombo.net",
             name_real="Yombo Gateway",
-            name_comment="gw_" + self.gwuuid,
+            name_comment="gw_" + self.gwuuid(),
             key_type='RSA',
             key_length=2048,
             expire_date='5y')

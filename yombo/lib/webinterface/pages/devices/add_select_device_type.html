@@ -53,7 +53,7 @@
                         <h2>Select Device Type&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h2>
                         <p></p>
                         <select name="device_type_id" id="device_type_id" required class="selectpicker show-tick" title="Select...">
-                            {% for id, devicetype in device_types.iteritems() -%}
+                            {% for id, devicetype in device_types.items() -%}
                             <option value="/devices/add/{{ id }}">{{ devicetype.label }}</option>
                             {%- endfor %}
                         </select>

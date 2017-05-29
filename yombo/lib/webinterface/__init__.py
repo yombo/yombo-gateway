@@ -34,6 +34,7 @@ from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.task import LoopingCall
 
 # Import 3rd party libraries
 from yombo.ext.expiringdict import ExpiringDict
@@ -299,13 +300,70 @@ notification_priority_map_css = {
     'low': 'info',
     'normal': 'info',
     'high': 'warning',
-    'urent': 'danger'
+    'urent': 'danger',
 }
 
 
 class NotFound(Exception):
     pass
 
+class Yombo_Site(Site):
+
+    def setup_queue(self, webinterface):
+        self.save_queue_loop = LoopingCall(self.save_queue)
+        self.save_queue_loop.start(8.7, False)
+
+        self.log_queue = []
+
+        self.webinterface = webinterface
+        self.db_save_log = self.webinterface._LocalDb.webinterface_save_logs
+        # self.log_queue = webinterface._Queue.new('library.webinterface.site.log', self.save_queue)
+
+    def _escape(self, s):
+        """
+        Return a string like python repr, but always escaped as if surrounding
+        quotes were double quotes.
+        @param s: The string to escape.
+        @type s: L{bytes} or L{unicode}
+        @return: An escaped string.
+        @rtype: L{unicode}
+        """
+        if not isinstance(s, bytes):
+            s = s.encode("ascii")
+
+        r = repr(s)
+        if not isinstance(r, str):
+            r = r.decode("ascii")
+        if r.startswith(u"b"):
+            r = r[1:]
+        if r.startswith(u"'"):
+            return r[1:-1].replace(u'"', u'\\"').replace(u"\\'", u"'")
+        return r[1:-1]
+
+    def log(self, request):
+        od = OrderedDict({
+            'request_time': time(),
+            'request_protocol': request.clientproto.decode(),
+            'referrer': self._escape(request.getHeader(b"referer") or b"-"),
+            'agent': self._escape(request.getHeader(b"user-agent") or b"-"),
+            'ip': request.getClientIP(),
+            'hostname': request.getRequestHostname().decode(),
+            'method': request.method.decode(),
+            'path': request.path,
+            'secure': request.isSecure(),
+            'response_code': request.code,
+            'response_size': request.sentLength,
+            'uploadable': 1,
+            'uploaded': 0,
+        })
+
+        self.log_queue.append(od)
+
+    def save_queue(self):
+        if len(self.log_queue) > 0:
+            queue = self.log_queue
+            self.log_queue = []
+            self.db_save_log(queue)
 
 class WebInterface(YomboLibrary):
     """
@@ -316,7 +374,7 @@ class WebInterface(YomboLibrary):
     visits = 0
     alerts = OrderedDict()
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         self.starting = True
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:
@@ -370,11 +428,11 @@ class WebInterface(YomboLibrary):
     #     self.webapp.templates.globals['_'] = _  # i18n
 
     @inlineCallbacks
-    def _load_(self):
+    def _load_(self, **kwargs):
         if hasattr(self, 'sessions'):
             yield self.sessions.init()
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         if hasattr(self, 'sessions') is False:
             return
         if not self.enabled:
@@ -387,7 +445,9 @@ class WebInterface(YomboLibrary):
         self.auth_pin_type = self._Configs.get2('webinterface', 'auth_pin_type', 'pin')
         self.auth_pin_required = self._Configs.get2('webinterface', 'auth_pin_required', True)
 
-        self.web_factory = Site(self.webapp.resource(), None, logPath='/dev/null')
+        # self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath='/dev/null')
+        self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath=None)
+        self.web_factory.setup_queue(self)
         self.web_factory.noisy = False  # turn off Starting/stopping message
 #        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
@@ -530,12 +590,14 @@ class WebInterface(YomboLibrary):
         logger.warn("Got updated SSL Cert!  Thanks.")
         pass
 
-    def _started_(self):
+    def _started_(self, **kwargs):
         # if self._op_mode != 'run':
         self._display_pin_console_time = int(time())
         self.display_pin_console()
 
-    def _unload_(self):
+    @inlineCallbacks
+    def _unload_(self, **kwargs):
+        yield self.web_factory.save_queue()
         return self.sessions._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
@@ -618,7 +680,7 @@ class WebInterface(YomboLibrary):
             if level1 not in newlist:
                 temp_dict[level1] = item['priority1']
 
-        temp_strings = yield yombo.utils.global_invoke_all('_webinterface_add_routes_')
+        temp_strings = yield yombo.utils.global_invoke_all('_webinterface_add_routes_', called_by=self)
         for component, options in temp_strings.items():
             if 'nav_side' in options:
                 for new_nav in options['nav_side']:
@@ -755,9 +817,20 @@ class WebInterface(YomboLibrary):
     @run_first()
     @inlineCallbacks
     def page_login_user_post(self, request):
+        print("rquest.args: %s"  % request.args)
+        if 'g-recaptcha-response' not in request.args:
+            self.add_alert('Captcha Missing', 'warning')
+            return self.login_redirect(request)
+        if 'email' not in request.args:
+            self.add_alert('Email Missing', 'warning')
+            return self.login_redirect(request)
+        if 'password' not in request.args:
+            self.add_alert('Password Missing', 'warning')
+            return self.login_redirect(request)
         submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
+        print("submitted_email: %s" % submitted_email)
         # if submitted_pin.isalnum() is False:
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
@@ -768,18 +841,21 @@ class WebInterface(YomboLibrary):
                 self.add_alert('Email address not allowed to access gateway.', 'warning')
                 #            self.sessions.load(request)
                 page = self.get_template(request, self._dir + 'pages/login_user.html')
-                returnValue(page.render(alerts=self.get_alerts(),
-                                        )
-                            )
+                return page.render(alerts=self.get_alerts())
 
-        results = yield self.api.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
+        results = yield self._YomboAPI.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
         if (results['code'] == 200):
             login = results['content']['response']['login']
+            print("login was good...")
 
 #        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
             session = yield self.sessions.load(request)
             if session is False:
+                print("created session")
                 session = self.sessions.create(request)
+            else:
+                session.delete('login_redirect')
+                print("existing session")
 
             session['auth'] = True
             session['auth_id'] = submitted_email
@@ -787,27 +863,27 @@ class WebInterface(YomboLibrary):
             session['yomboapi_session'] = login['session']
             session['yomboapi_login_key'] = login['login_key']
             request.received_cookies[self.sessions.config.cookie_session] = session['id']
+            print("session saved...")
 
             if self._op_mode == 'firstrun':
-                self.api.save_system_login_key(login['login_key'])
-                self.api.save_system_session(login['session'])
+                self._YomboAPI.save_system_login_key(login['login_key'])
+                self._YomboAPI.save_system_session(login['session'])
+            return self.login_redirect(request, session)
         else:
 
             self.add_alert(results['content']['message'], 'warning')
 #            self.sessions.load(request)
             page = self.get_template(request, self._dir + 'pages/login_user.html')
-            returnValue(page.render(alerts=self.get_alerts(),
-                               )
-                       )
+            return page.render(alerts=self.get_alerts())
 
-        login_redirect = "/?"
-        if 'login_redirect' in session:
-            login_redirect = session['login_redirect']
-            if login_redirect is None:
-                login_redirect = "/?"
-            session.delete('login_redirect')
-
-        returnValue(self.redirect(request, login_redirect))
+    def login_redirect(self, request, session=None, location=None):
+        print("login_redirect:")
+        if session is not None and 'login_redirect' in session:
+            location = session['login_redirect']
+        if location is None:
+            location = "/?"
+        print("login_redirect: %s" % location)
+        return self.redirect(request, location)
 
     @webapp.route('/login/pin', methods=['POST'])
     @run_first()
@@ -1012,7 +1088,7 @@ class WebInterface(YomboLibrary):
                 })
             data = items
 
-        hash = sha256(str(url) + str(text) + str(show) + str(style) + json.dumps(data)).hexdigest()
+        hash = sha256(str(str(url) + str(text) + str(show) + str(style) + json.dumps(data)).encode()).hexdigest()
         breadcrumb = {
             'hash': hash,
             'url': url,

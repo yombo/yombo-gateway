@@ -56,8 +56,8 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
-HARD_LOAD["Notifications"] = {'operation_mode':'all'}
 HARD_LOAD["Queue"] = {'operation_mode':'all'}
+HARD_LOAD["Notifications"] = {'operation_mode':'all'}
 HARD_LOAD["LocalDB"] = {'operation_mode':'all'}
 HARD_LOAD["SQLDict"] = {'operation_mode':'all'}
 HARD_LOAD["Atoms"] = {'operation_mode':'all'}
@@ -68,7 +68,7 @@ HARD_LOAD["Startup"] = {'operation_mode':'all'}
 HARD_LOAD["AMQP"] = {'operation_mode':'run'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
-# HARD_LOAD["Automation"] = {'operation_mode':'all'}
+HARD_LOAD["Automation"] = {'operation_mode':'all'}
 HARD_LOAD["CronTab"] = {'operation_mode':'all'}
 HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_LOAD["Times"] = {'operation_mode':'all'}
@@ -216,7 +216,7 @@ class Loader(YomboLibrary, object):
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
-                yield self.library_invoke(libraryName, "_load_", self)
+                yield self.library_invoke(libraryName, "_load_", called_by=self)
                 HARD_LOAD[name]['_load_'] = True
             else:
                 HARD_LOAD[name]['_load_'] = False
@@ -232,7 +232,7 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'start', 'About to call _start_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
-                yield self.library_invoke(libraryName, "_start_", self)
+                yield self.library_invoke(libraryName, "_start_", called_by=self)
                 HARD_LOAD[name]['_start_'] = True
             else:
                 HARD_LOAD[name]['_start_'] = False
@@ -246,7 +246,7 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'started', 'About to call _started_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
-                yield self.library_invoke(libraryName, "_started_", self)
+                yield self.library_invoke(libraryName, "_started_", called_by=self)
                 HARD_LOAD[name]['_started_'] = True
             else:
                 HARD_LOAD[name]['_started_'] = False
@@ -265,7 +265,7 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'started', 'About to call _modules_started_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
-                yield self.library_invoke(libraryName, "_modules_started_", self)
+                yield self.library_invoke(libraryName, "_modules_started_", called_by=self)
                 HARD_LOAD[name]['_started_'] = True
             else:
                 HARD_LOAD[name]['_started_'] = False
@@ -310,12 +310,17 @@ class Loader(YomboLibrary, object):
         logit = func = getattr(logger, level)
         logit("Loader: {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
+    def import_libraries_failure(self, failure):
+        logger.error("Got failure during import of library: {failure}", failure=failure)
+
     @inlineCallbacks
     def import_libraries(self):
         """
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
         logger.debug("Importing server libraries.")
+        # d = Deferred()
+        # d.callback(1)
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -333,7 +338,7 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_init_'] = False
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
-            self._log_loader('debug', name, 'library', 'init', 'About to call _init_.')
+            # self._log_loader('debug', name, 'library', 'init', 'About to call _init_.')
 
             component = name.lower()
             library = self.loadedLibraries[component]
@@ -364,8 +369,15 @@ class Loader(YomboLibrary, object):
             library._Variables = self.loadedLibraries['variables']
             if hasattr(library, '_init_') and isinstance(library._init_, collections.Callable) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
-                d = yield maybeDeferred(library._init_)
-                self._log_loader('debug', name, 'library', 'init', 'Finished to call _init_.')
+                d = Deferred()
+                d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'About to call _init_.'))
+                d.addCallback(lambda ignored: maybeDeferred(library._init_))
+                d.addErrback(self.import_libraries_failure)
+                # d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'Done with call _init_.'))
+                d.callback(1)
+                yield d
+                # d.addCallback(maybeDeferred, library._init_)
+                # self._log_loader('debug', name, 'library', 'init', 'Finished to call _init_.')
                 # try:
                 #     d = yield maybeDeferred(library._init_, self)
                 # except YomboCritical, e:
@@ -409,17 +421,23 @@ class Loader(YomboLibrary, object):
                 if check_operation_mode_inside(item, op_mode):
                     return True
 
+    def library_invoke_failure(self, failure, requested_library, hook_name):
+        logger.error("Got failure during library invoke for hook ({requested_library}::{hook_name}): {failure}",
+                     requested_library=requested_library,
+                     hook_name=hook_name,
+                     failure=failure)
+
     @inlineCallbacks
-    def library_invoke(self, requested_library, hook, called_by=None, **kwargs):
+    def library_invoke(self, requested_library, hook, **kwargs):
         """
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
         if requested_library not in self.loadedLibraries:
-            returnValue(None)
-        if called_by is not None:
-            called_by = called_by._FullName
-        else:
-            called_by = 'Unknown'
+            raise YomboWarning('Requested library is missing: %s' % requested_library)
+
+        if 'called_by' not in kwargs:
+            raise YomboWarning("Unable to call hook '%s:%s', missing 'call_by' named argument." % (requested_library, hook))
+        calling_component = kwargs['called_by']
 
         cache_key = requested_library + hook
         if cache_key in self._invoke_list_cache:
@@ -433,7 +451,6 @@ class Loader(YomboLibrary, object):
             hook = library._Name.lower() + "_" + hook
         if hasattr(library, hook):
             method = getattr(library, hook)
-            self._log_loader('debug', requested_library, 'library', 'library_invoke', 'About to call: %s' % hook)
             if isinstance(method, collections.Callable):
                 if library._Name not in self.hook_counts:
                     self.hook_counts[library._Name] = {}
@@ -441,18 +458,25 @@ class Loader(YomboLibrary, object):
                     self.hook_counts[library._Name][hook] = {'Total Count': {'count': 0}}
                 # print "hook counts: %s" % self.hook_counts
                 # print "hook counts: %s" % self.hook_counts[library._Name][hook]
-                if called_by not in self.hook_counts[library._Name][hook]:
-                    self.hook_counts[library._Name][hook][called_by] = {'count': 0}
-                self.hook_counts[library._Name][hook][called_by]['count'] = self.hook_counts[library._Name][hook][called_by]['count'] + 1
+                if calling_component not in self.hook_counts[library._Name][hook]:
+                    self.hook_counts[library._Name][hook][calling_component] = {'count': 0}
+                self.hook_counts[library._Name][hook][calling_component]['count'] = self.hook_counts[library._Name][hook][calling_component]['count'] + 1
                 self.hook_counts[library._Name][hook]['Total Count']['count'] = self.hook_counts[library._Name][hook]['Total Count']['count'] + 1
                 self._invoke_list_cache[cache_key] = True
-                # print "call start: %s" % method
-                results = yield maybeDeferred(method, **kwargs)
-                # print "call end: %s" % method
-                self._log_loader('debug', requested_library, 'library', 'library_invoke', 'Finished with call: %s' % hook)
-                returnValue(results)
+
+                try:
+                    d = Deferred()
+                    d.addCallback(lambda ignored: self._log_loader('debug', library._Name, 'library', hook,
+                                                                   'About to call _init_.'))
+                    d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
+                    d.addErrback(self.library_invoke_failure, requested_library, hook)
+                    d.callback(1)
+                    results = yield d
+                    return results
+                except RuntimeWarning as e:
+                    pass
             else:
-                logger.warn("Cache library hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+                logger.debug("Cache library hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
                 logger.debug("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
                 raise YomboWarning("Hook is not callable: %s" % hook)
         else:
@@ -460,7 +484,7 @@ class Loader(YomboLibrary, object):
             self._invoke_list_cache[cache_key] = False
 
     @inlineCallbacks
-    def library_invoke_all(self, hook, fullName=False, called_by=None, **kwargs):
+    def library_invoke_all(self, hook, fullName=False, **kwargs):
         """
         Calls library_invoke for all loaded libraries.
         """
@@ -477,7 +501,7 @@ class Loader(YomboLibrary, object):
         for library_name, library in self.loadedLibraries.items():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
             try:
-                result = yield self.library_invoke(library_name, hook, called_by=called_by, **kwargs)
+                result = yield self.library_invoke(library_name, hook, **kwargs)
                 if result is None:
                     continue
                 results[library._FullName] = result
@@ -503,9 +527,7 @@ class Loader(YomboLibrary, object):
             logger.error("Library or Module not found: {pathName}", pathName=pathName)
             raise YomboCritical("Library or Module not found: %s", pathName)
         try:
-            print("pymodulename: %s" % pymodulename)
             module_root = __import__(pymodulename, globals(), locals(), [], 0)
-            print("pymodulename done: %s" % pymodulename)
         except ImportError as detail:
             self._log_loader('error', componentName, componentType, 'import', 'Not found. Path: %s' % pathName)
             logger.error("--------==(Error: Library or Module not found)==--------")
@@ -515,7 +537,6 @@ class Loader(YomboLibrary, object):
             logger.error("--------------------------------------------------------")
             raise ImportError("Cannot import module, not found.")
 
-        print("done importing...")
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
         # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
         klass = getattr(module_tail, pyclassname)
@@ -528,7 +549,7 @@ class Loader(YomboLibrary, object):
 
         try:
             # Instantiate the class
-            logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
+            # logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
             moduleinst = klass()  # start the class, only libraries get the loader
             if componentType == 'library':
                 if componentName.lower() == 'modules':
@@ -610,7 +631,7 @@ class Loader(YomboLibrary, object):
         if component_type == 'library':
             if component_name not in self.loadedLibraries:
                 logger.info("Library not found: {loadedLibraries}", loadedLibraries=loadedLibraries)
-                print((self.loadedLibraries))
+                # print((self.loadedLibraries))
                 raise YomboWarning("Cannot library name.")
 
             if isinstance(component_function, list):

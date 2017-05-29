@@ -19,30 +19,29 @@ class YomboLibrary:
     """
 
     def __init__(self):
-        print("hey from lib core")
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Called when a library should start running its process
         operations. 
         """
         pass
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Called when a library can now send requests externally.
         """
         pass
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Called when a library is about to be stopped..then unloaded.
         """
         pass
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Called when a library is about to be unloaded. 
         """

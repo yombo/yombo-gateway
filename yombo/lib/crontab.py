@@ -69,7 +69,7 @@ from yombo.utils import random_string
 from yombo.core.exceptions import YomboWarning, YomboCronTabError
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
+from yombo.utils import search_instance, do_search_instance
 
 logger = get_logger('library.crontab')
 
@@ -209,7 +209,7 @@ class CronTab(YomboLibrary):
     def values(self):
         return list(self.cron_tasks.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Setups up the basic framework.
 
@@ -221,7 +221,7 @@ class CronTab(YomboLibrary):
         self.check_cron_tabs_loop = None  # a simple loop that checks all cron tabs to see if they need to run.
         self.check_cron_tabs_loop = LoopingCall(self.check_cron_tabs)
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Start the looping call to check for cron every minute.
         """
@@ -231,7 +231,7 @@ class CronTab(YomboLibrary):
 
         reactor.callLater(cron_start, self.start_cron_loop)
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Simply stop the cron tab from running.
         """

@@ -37,7 +37,7 @@
 {% macro select_device(devices, item, field, name, id, value) -%}
     <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{name}}" id="{{id}}">
         <option value="" data-subtext="No device selected">None</option>
-    {%- for device_id, device in devices.iteritems() %}
+    {%- for device_id, device in devices.items() %}
         <option value="{{device_id}}"{% if value == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.label}}</option>
     {%- endfor %}
     </select>
@@ -54,7 +54,7 @@
 
 {% macro edit_item_variables(items, item, input_types, variables) -%}
     {%- if variables|length != 0 -%}
-        {%- for group_name, group in variables.iteritems() %}
+        {%- for group_name, group in variables.items() %}
         <div class="panel panel-default">
             <div class="panel-heading">
                 <h4>{{ group.group_label }}</h4>
@@ -68,7 +68,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for field_name, field in group.fields.iteritems() %}
+                    {% for field_name, field in group.fields.items() %}
                     <tr>
                         <td><b>{{ field.field_label }}</b>
                             {%- if field.field_help_text|length > 0 %}
@@ -79,7 +79,7 @@
                             <br>{{ field.field_description }}
                         </td>
                         <td>{%- if field.data|length > 0 %}
-                            {%- for data_id, data in field.data.iteritems() %}
+                            {%- for data_id, data in field.data.items() %}
                             {{form_input_type(items, item, input_types, field, "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]", "vars[" ~ field.id ~ "][" ~ data_id ~ "][input]",  data.value|display_encrypted)}}
                              <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data.id }}][orig]" value="{{ data.value }}">
                             {%- endfor %}

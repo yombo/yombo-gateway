@@ -2,12 +2,15 @@
 Base module for interfacing with databases.
 """
 
+from __future__ import absolute_import
 from twisted.python import log
 from twisted.internet import defer
 
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.exceptions import ImaginaryTableError, CannotRefreshError
 from yombo.ext.twistar.utils import joinWheres
+from six.moves import range
+
 
 class InteractionBase(object):
     """
@@ -27,15 +30,6 @@ class InteractionBase(object):
         self.txn = None
 
 
-    def logEncode(self, s, encoding='utf-8'):
-        """
-        Encode the given string if necessary for printing to logs.
-        """
-        if isinstance(s, str):
-            return s.encode(encoding)
-        return str(s)
-
-
     def log(self, query, args, kwargs):
         """
         Log the query and any args or kwargs using C{twisted.python.log.msg} if
@@ -45,7 +39,7 @@ class InteractionBase(object):
             return
         log.msg("TWISTAR query: %s" % query)
         if len(args) > 0:
-            log.msg("TWISTAR args: %s" % ",".join(map(self.logEncode, *args)))
+            log.msg("TWISTAR args: %s" % ",".join(args))
         elif len(kwargs) > 0:
             log.msg("TWISTAR kargs: %s" % str(kwargs))
 
@@ -160,7 +154,7 @@ class InteractionBase(object):
         """
         Convert C{{'name': value}} to an insert "values" string like C{"(%s,%s,%s)"}.
         """
-        return "(" + ",".join(["%s" for _ in list(vals.items())]) + ")"
+        return "(" + ",".join(["%s" for _ in vals.items()]) + ")"
 
 
     def insert(self, tablename, vals, txn=None, prefix=None):
@@ -180,7 +174,7 @@ class InteractionBase(object):
         params = self.insertArgsToString(vals)
         colnames = ""
         if len(vals) > 0:
-            ecolnames = self.escapeColNames(list(vals.keys()))
+            ecolnames = self.escapeColNames(vals.keys())
             colnames = "(" + ",".join(ecolnames) + ")"
             params = "VALUES %s" % params
 
@@ -222,7 +216,7 @@ class InteractionBase(object):
 
         @return: A C{Deferred}.
         """
-        colnames = ",".join(self.escapeColNames(list(vals[0].keys())))
+        colnames = ",".join(self.escapeColNames(vals[0].keys()))
         params = ",".join([self.insertArgsToString(val) for val in vals])
         args = []
         for val in vals:
@@ -256,16 +250,8 @@ class InteractionBase(object):
             q += " WHERE " + wherestr
         return self.executeOperation(q, args)
 
-    def truncate(self, tablename):
-        """
-        Truncate the given tablename.
 
-        @return: A C{Deferred}.
-        """
-        q = "TRUNCATE TABLE %s" % tablename
-        return self.executeOperation(q, [])
-
-    def update(self, tablename, vals, where=None, txn=None, limit=None):
+    def update(self, tablename, args, where=None, txn=None, limit=None):
         """
         Update a row into the given table.
 
@@ -284,38 +270,18 @@ class InteractionBase(object):
 
         @return: A C{Deferred}
         """
-        setstring, vals = self.updateArgsToString(vals)
+        setstring, args = self.updateArgsToString(args)
         q = "UPDATE %s " % tablename + " SET " + setstring
         if where is not None:
             wherestr, whereargs = self.whereToString(where)
             q += " WHERE " + wherestr
-            vals += whereargs
+            args += whereargs
         if limit is not None:
             q += " LIMIT " + str(limit)
 
         if txn is not None:
-            return self.executeTxn(txn, q, vals)
-        return self.executeOperation(q, vals)
-
-        # if we have a transaction use it
-        if txn is not None:
-            self.executeTxn(txn, q, list(vals.values()))
-            return self.getLastInsertID(txn)
-
-        def _update(txn, q, vals):
-            self.executeTxn(txn, q, list(vals.values()))
-            return self.getLastInsertID(txn)
-        return self.runInteraction(_update, q, vals)
-
-
-
-        def _update(txn, q, vals):
-            self.executeTxn(txn, q, list(vals.values()))
-            return self.getLastInsertID(txn)
-        return self.runInteraction(_update, q, vals)
-
-
-
+            return self.executeTxn(txn, q, args)
+        return self.executeOperation(q, args)
 
 
     def valuesToHash(self, txn, values, tablename, cacheable=True):
@@ -342,6 +308,7 @@ class InteractionBase(object):
             h[colname] = values[index]
         return h
 
+
     def getSchema(self, tablename, txn=None):
         """
         Get the schema (in the form of a list of column names) for
@@ -349,11 +316,10 @@ class InteractionBase(object):
         """
         if tablename not in Registry.SCHEMAS and txn is not None:
             try:
-                self.executeTxn(txn, "SELECT rowid as _rowid, * FROM %s LIMIT 1" % tablename)
+                self.executeTxn(txn, "SELECT * FROM %s LIMIT 1" % tablename)
             except Exception:
                 raise ImaginaryTableError("Table %s does not exist." % tablename)
             Registry.SCHEMAS[tablename] = [row[0] for row in txn.description]
-#        print Registry.SCHEMAS[tablename]
         return Registry.SCHEMAS.get(tablename, [])
 
 
@@ -375,9 +341,9 @@ class InteractionBase(object):
             cols = self.getSchema(tablename, txn)
             if len(cols) == 0:
                 raise ImaginaryTableError("Table %s does not exist." % tablename)
-            vals = obj.toHash(cols, includeBlank=self.__class__.includeBlankInInsert, exclude=['_rowid'])
+            vals = obj.toHash(cols, includeBlank=self.__class__.includeBlankInInsert, exclude=['id'])
             self.insert(tablename, vals, txn)
-            obj._rowid = self.getLastInsertID(txn)
+            obj.id = self.getLastInsertID(txn)
             return obj
 
         return self.runInteraction(_doinsert)
@@ -394,8 +360,8 @@ class InteractionBase(object):
             tablename = klass.tablename()
             cols = self.getSchema(tablename, txn)
 
-            vals = obj.toHash(cols, includeBlank=True, exclude=['_rowid'])
-            return self.update(tablename, vals, where=['rowid = ?', obj._rowid], txn=txn)
+            vals = obj.toHash(cols, includeBlank=True, exclude=['id'])
+            return self.update(tablename, vals, where=['id = ?', obj.id], txn=txn)
         # We don't want to return the cursor - so add a blank callback returning the obj
         return self.runInteraction(_doupdate).addCallback(lambda _: obj)
 
@@ -409,9 +375,9 @@ class InteractionBase(object):
         def _dorefreshObj(newobj):
             if obj is None:
                 raise CannotRefreshError("Can't refresh object if id not longer exists.")
-            for key in list(newobj.keys()):
+            for key in newobj.keys():
                 setattr(obj, key, newobj[key])
-        return self.select(obj.tablename(), obj._rowid).addCallback(_dorefreshObj)
+        return self.select(obj.tablename(), obj.id).addCallback(_dorefreshObj)
 
 
     def whereToString(self, where):

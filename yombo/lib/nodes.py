@@ -148,7 +148,7 @@ class Nodes(YomboLibrary):
     def values(self):
         return list(self.nodes.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -206,21 +206,16 @@ class Nodes(YomboLibrary):
         """
         logger.debug("node: {node}", node=node)
 
-        global_invoke_all('_nodes_before_import_',
-                      **{'node': node})
+        global_invoke_all('_nodes_before_import_', called_by=self, **{'node': node})
         node_id = node["id"]
         if node_id not in self.nodes:
-            global_invoke_all('_node_before_load_',
-                              **{'node': node})
+            global_invoke_all('_node_before_load_', called_by=self, **{'node': node})
             self.nodes[node_id] = Node(node)
-            global_invoke_all('_node_loaded_',
-                          **{'node': self.nodes[node_id]})
+            global_invoke_all('_node_loaded_', called_by=self, **{'node': self.nodes[node_id]})
         elif node_id not in self.nodes:
-            global_invoke_all('_node_before_update_',
-                              **{'node': node})
+            global_invoke_all('_node_before_update_', called_by=self, **{'node': node})
             self.nodes[node_id].update_attributes(node)
-            global_invoke_all('_node_updated_',
-                          **{'node': self.nodes[node_id]})
+            global_invoke_all('_node_updated_', called_by=self, **{'node': self.nodes[node_id]})
 
     def get_all(self):
         """

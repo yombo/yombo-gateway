@@ -43,7 +43,6 @@ from time import time
 from socket import gethostname
 
 # Import 3rd-party libs
-#import yombo.ext.six as six
 
 # Import twisted libraries
 from twisted.internet import threads
@@ -71,7 +70,7 @@ class SSLCerts(YomboLibrary):
     managed_certs = {}
 
     @inlineCallbacks
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         On startup, various libraries will need certs (webinterface, MQTT) will need at least a basic cert.
         This module loads previously created certs. Then, after things settle, it will request new certs
@@ -115,7 +114,7 @@ class SSLCerts(YomboLibrary):
         sslcerts = yield global_invoke_libraries('_sslcerts_', called_by=self)
         self._add_sslcerts(sslcerts)
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Starts the loop to save data to SQL every so often.
         :return:
@@ -123,7 +122,7 @@ class SSLCerts(YomboLibrary):
         self.check_if_certs_need_update_loop = LoopingCall(self.check_if_certs_need_update)
         self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict', 'save_interval',random_int(60*60*24, .1), False))
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Simply stop any loops, tell all the certs to save themselves to disk as a backup.
         :return:
@@ -143,7 +142,7 @@ class SSLCerts(YomboLibrary):
             cert.check_if_rotate_needed()
 
     @inlineCallbacks
-    def _modules_inited_(self):
+    def _modules_inited_(self, **kwargs):
         """
         Called before the modules have their preload called, after their _init_.
 
@@ -168,7 +167,6 @@ class SSLCerts(YomboLibrary):
             except YomboWarning as e:
                 logger.warn("Cannot add cert from hook: %s" % e)
                 continue
-            # print("sslcerts: item: %s" % item)
             if item['sslname'] in self.managed_certs:
                 self.managed_certs[item['sslname']].update_attributes(item)
             else:
@@ -526,8 +524,6 @@ class SSLCert(object):
         self._Name = 'SSLCerts.SSLCert'
         self._ParentLibrary = _ParentLibrary
 
-        # print("sslcert: %s" % sslcert)
-
         self.sslname = sslcert.sslname
         self.cn = sslcert.cn
         self.sans = sslcert.sans
@@ -606,14 +602,12 @@ class SSLCert(object):
                     self.key_current is None or \
                     self.current_expires is None or \
                     self.current_expires < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
-                # print("aaaaa")
                 # print("self.current_is_valid: (should be not True): %s" % self.current_is_valid)
                 # print("self.key_current: (should be None): %s" % self.key_current)
                 # print("self.current_expires: (should be not NOne): %s" % self.current_expires)
                 # print("int(time() + (30 * 24 * 60 * 60)): (should be less then above number): %s" % int(time() + (30 * 24 * 60 * 60)))
                 self.generate_new_csr(submit=True)
             else: # just generate the CSR, no need to sign just yet.  Too soon.
-                # print("bbbbb")
                 self.generate_new_csr(submit=False)
         # 2) If next is valid, then lets rotate into current, doesn't matter if current is good, expired, etc. Just use the next cert.
         elif self.next_is_valid is True:
@@ -623,10 +617,8 @@ class SSLCert(object):
                     self.key_current is None or \
                     self.current_expires is None or \
                     self.current_expires < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
-                # print("cccc")
                 self.generate_new_csr(submit=True)
             else:
-                # print("ddddd")
                 self.generate_new_csr(submit=False)
         # 3) Next cert might be half generated, half signed, maybe waited to be signed, etc. Lets inspect.
         elif self.next_is_valid is False:
@@ -634,13 +626,10 @@ class SSLCert(object):
                     self.key_current is None or \
                     self.current_expires is None or \
                     self.current_expires < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
-                # print("eeeee")
                 # print("self.current_is_valid: (should be not True): %s" % self.current_is_valid)
                 # print("self.key_current: (should be None): %s" % self.key_current)
                 # print("self.current_expires: (should be not NOne): %s" % self.current_expires)
                 # print("int(time() + (30 * 24 * 60 * 60)): (should be less then above number): %s" % int(time() + (30 * 24 * 60 * 60)))
-                # if self.next_submitted < int(time() - (60*60)):
-                #     print("cccccccccccccc")
                 self.submit_csr()
         else:
             raise YomboWarning("next_is_valid is in an unknowns state.")
@@ -750,7 +739,7 @@ class SSLCert(object):
                     if os.path.exists('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label)):
                         if getattr(self, "csr_%s" % label) is None:
                             csr = read_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label))
-                            if sha256(csr).hexdigest() == meta['csr']:
+                            if sha256(str(csr).encode('utf-8')).hexdigest() == meta['csr']:
                                 csr_read = True
                             else:
                                 logger.warn("Appears that the file system has bad meta signatures (csr). Purging.")
@@ -765,7 +754,7 @@ class SSLCert(object):
                         # print("setting cert!!!")
                         cert = read_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label))
                         cert_read = True
-                        if sha256(cert).hexdigest() != meta['cert']:
+                        if sha256(str(cert).encode('utf-8')).hexdigest() != meta['cert']:
                             logger.warn("Appears that the file system has bad meta signatures (cert). Purging.")
                             for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
@@ -778,7 +767,7 @@ class SSLCert(object):
                         # print("setting chain!!!")
                         chain = read_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label))
                         chain_read = True
-                        if sha256(chain).hexdigest() != meta['chain']:
+                        if sha256(str(chain).encode('utf-8')).hexdigest() != meta['chain']:
                             logger.warn("Appears that the file system has bad meta signatures (chain). Purging.")
                             for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
@@ -790,7 +779,7 @@ class SSLCert(object):
                     if os.path.exists('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label)):
                         key = read_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label))
                         key_read = True
-                        if sha256(key).hexdigest() != meta['key']:
+                        if sha256(str(key).encode('utf-8')).hexdigest() != meta['key']:
                             logger.warn("Appears that the file system has bad meta signatures (key). Purging.")
                             for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
@@ -798,6 +787,12 @@ class SSLCert(object):
                             continue
 
                 logger.debug("Reading meta file for cert: {label}", label=label)
+
+                def return_int(input):
+                    try:
+                        return int(input)
+                    except Exception as e:
+                        return input
 
                 if csr_read:
                     setattr(self, "csr_%s" % label, csr)
@@ -807,10 +802,10 @@ class SSLCert(object):
                     setattr(self, "chain_%s" % label, chain)
                 if key_read:
                     setattr(self, "key_%s" % label, key)
-                setattr(self, "%s_expires" % label, meta['expires'])
-                setattr(self, "%s_created" % label, meta['created'])
-                setattr(self, "%s_signed" % label, meta['signed'])
-                setattr(self, "%s_submitted" % label, meta['submitted'])
+                setattr(self, "%s_expires" % label, return_int(meta['expires']))
+                setattr(self, "%s_created" % label, return_int(meta['created']))
+                setattr(self, "%s_signed" % label, return_int(meta['signed']))
+                setattr(self, "%s_submitted" % label, return_int(meta['submitted']))
                 setattr(self, "%s_needs" % label, None)
 
                 self.check_is_valid(label)
@@ -877,7 +872,7 @@ class SSLCert(object):
                 if os.path.exists(file):
                     os.remove(file)
             else:
-                meta['cert'] = sha256(getattr(self, "cert_%s" % label)).hexdigest()
+                meta['cert'] = sha256(str(getattr(self, "cert_%s" % label)).encode('utf-8')).hexdigest()
                 save_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label),  getattr(self, "cert_%s" % label))
 
             if getattr(self, "chain_%s" % label) is None:
@@ -886,7 +881,7 @@ class SSLCert(object):
                 if os.path.exists(file):
                     os.remove(file)
             else:
-                meta['chain'] = sha256(getattr(self, "chain_%s" % label)).hexdigest()
+                meta['chain'] = sha256(str(getattr(self, "chain_%s" % label)).encode('utf-8')).hexdigest()
                 save_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label), getattr(self, "chain_%s" % label))
 
             if getattr(self, "key_%s" % label) is None:
@@ -895,7 +890,7 @@ class SSLCert(object):
                 if os.path.exists(file):
                     os.remove(file)
             else:
-                meta['key'] = sha256(getattr(self, "key_%s" % label)).hexdigest()
+                meta['key'] = sha256(str(getattr(self, "key_%s" % label)).encode('utf-8')).hexdigest()
                 save_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label), getattr(self, "key_%s" % label))
 
             if label == 'next':
@@ -905,7 +900,7 @@ class SSLCert(object):
                     if os.path.exists(file):
                         os.remove(file)
                 else:
-                    meta['csr'] = sha256(getattr(self, "csr_%s" % label)).hexdigest()
+                    meta['csr'] = sha256(str(getattr(self, "csr_%s" % label)).encode('utf-8')).hexdigest()
                     save_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label), getattr(self, "csr_%s" % label))
 
             save_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label), json.dumps(meta, separators=(',',':')))

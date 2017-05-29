@@ -97,7 +97,7 @@ class MQTT(YomboLibrary):
     """
     client_enabled = True
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Builds the configuration and password files. Also starts the MQTT broker if enabled.
 
@@ -125,7 +125,7 @@ class MQTT(YomboLibrary):
         if not self.server_enabled:
             return
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         if self.server_enabled is False:
             logger.info("Embedded MQTT Disabled.")
             return
@@ -215,7 +215,7 @@ class MQTT(YomboLibrary):
         # nasty hack..  TODO: remove nasty sleep hack
         return sleep(0.2)
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Just connect with a local client. Can later be used to send messages as needed.
         :return:
@@ -223,7 +223,7 @@ class MQTT(YomboLibrary):
         self.mqtt_local_client = self.new()  # System connection to send messages.
         # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Stops the client connections and shuts down the MQTT server.
         :return:
@@ -242,10 +242,10 @@ class MQTT(YomboLibrary):
                 pass
         return sleep(0.1)
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         self.mqtt_server.shutdown()
 
-    #def _unload_(self):
+    #def _unload_(self, **kwargs):
         #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
 
     def _webinterface_add_routes_(self, **kwargs):

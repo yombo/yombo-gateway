@@ -25,7 +25,7 @@ from random import randint
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 from yombo.ext.expiringdict import ExpiringDict
 
@@ -109,25 +109,32 @@ class Sessions(object):
         """
         cookie_session = self.config.cookie_session
         cookies = request.received_cookies
+        logger.debug("has_session is looking for cookie: {cookie_session}", cookie_session=cookie_session)
+        logger.debug("has_session found cookies: {cookies}", cookies=cookies)
+
         if cookie_session in cookies:
             session_id = cookies[cookie_session]
+            logger.debug("has_session found session_id: {session_id}", session_id=session_id)
             if self.validate_session_id(session_id) is False:
                 raise YomboWarning("Invalid session id.")
             if session_id in self.active_sessions:
-                returnValue(True)
+                return True
             else:
+                logger.debug("has_session is looking in database for session...")
                 db_session = yield self.localdb.get_session(session_id)
                 if db_session is None:
-                    returnValue(False)
+                    return False
                 # logger.debug("has_session - found in DB! {db_session}", db_session=db_session)
                 self.active_sessions[db_session.id] = Session(self)
                 self.active_sessions[db_session.id].load(json.loads(db_session.session_data))
-                returnValue(True)
-        returnValue(False)
+                return True
+        return False
 
     def get_cookie_domain(self, request):
-        fqdn = self._Configs.get("dns", 'fqdn', "", None)
-        host = "%s" % request.getRequestHostname();
+        fqdn = self._Configs.get("dns", 'fqdn', None, False)
+        host = "%s" % request.getRequestHostname().decode();
+        # print("get_cookie_domain...fqdn: %s" % fqdn)
+        # print("get_cookie_domain...host: %s" % host)
 
         if fqdn is None:
             return host
@@ -165,10 +172,8 @@ class Sessions(object):
             session_id = cookies[cookie_session]
             if self.validate_session_id(session_id) is False:
                 raise YomboWarning("Invalid session id.")
-            # return self.active_sessions[session_id]
-            returnValue(self.active_sessions[session_id])
-        returnValue(False)
-        # return False
+            return self.active_sessions[session_id]
+        return False
 
     def create(self, request):
         """

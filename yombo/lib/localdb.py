@@ -205,6 +205,8 @@ class VariableGroupFieldDataView(DBObject):
 class Sessions(DBObject):
     TABLENAME = 'webinterface_sessions'
 
+class WebinterfaceLogs(DBObject):
+    TABLENAME = 'webinterface_logs'
 
 #### Views ####
 
@@ -237,7 +239,7 @@ class LocalDB(YomboLibrary):
     """
 
     @inlineCallbacks
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
@@ -254,10 +256,9 @@ class LocalDB(YomboLibrary):
         self.schema_version = 0
         try:
             results = yield Schema_Version.find(where=['table_name = ?', 'core'])
-            print("db schema results: %s"%results)
             self.schema_version = results[0].version
         except Exception as e:
-            logger.info("Promblem with database: %s" % e)
+            logger.debug("Promblem with database: %s" % e)
             logger.info("Creating new database file.")
 
         start_schema_version = self.schema_version
@@ -271,9 +272,6 @@ class LocalDB(YomboLibrary):
         chmod('usr/etc/yombo.db', 0o600)
 
         yield self._load_db_model()
-
-    def _start_(self):
-        pass
 
     def get_model_class(self, class_name):
         return globals()[class_name]()
@@ -925,7 +923,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         if len(records) == 1:
             try:
                 before = len(records[0]['dict_data'])
-                records[0]['dict_data'] = zlib.decompress(base64.decodestring(records[0]['dict_data']))
+                records[0]['dict_data'] = zlib.decompress(base64.decodebytes(records[0]['dict_data']))
                 logger.debug("SQLDict Compression. With: {withcompress}, Without: {without}",
                              without=len(records[0]['dict_data']), withcompress=before)
             except:
@@ -1322,7 +1320,7 @@ ORDER BY id desc"""
         :return: Available variable data nested inside the fields as 'data'.
         :rtype: list
         """
-        print("lbdb: %s" % dictToWhere(kwargs))
+        # print("lbdb: %s" % dictToWhere(kwargs))
         records = yield VariableGroupFieldView.find(
             where=dictToWhere(kwargs),
             orderby='group_weight ASC, field_weight ASC')
@@ -1480,6 +1478,14 @@ ORDER BY id desc"""
                 commands.append(record.command_id)
 
         returnValue(commands)
+
+    ################################
+    ###   Webinterface logs    #####
+    ################################
+    @inlineCallbacks
+    def webinterface_save_logs(self, logs):
+        yield self.dbconfig.insertMany('webinterface_logs', logs)
+
 
     @inlineCallbacks
     def delete(self, table, where=None):

@@ -3,10 +3,8 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+import six
 from time import time
-
-# Import external libraries
-import yombo.ext.six as six
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue

@@ -176,7 +176,7 @@
                                     </thead>
                                 <tbody>
                                 {% if device.energy_map is not none -%}
-                                    {% for start_value, energy_usage in device.energy_map.iteritems() %}
+                                    {% for start_value, energy_usage in device.energy_map.items() %}
                                      <tr>
                                         <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value * 100 }}"></td>
                                         <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>

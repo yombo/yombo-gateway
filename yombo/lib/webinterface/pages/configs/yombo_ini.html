@@ -43,8 +43,8 @@
                                             <th data-priority="1">Commands</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for section, items in configs.iteritems() %}
-                                           {% for item, data in items.iteritems() %}
+                                    <tbody>{% for section, items in configs.items() %}
+                                           {% for item, data in items.items() %}
                                          <tr>
                                             <td>{{ section }}</td>
                                             <td>{{ item }}</td>

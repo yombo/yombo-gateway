@@ -150,33 +150,33 @@ class YomboModule:
         return "%s:%s" % (self._label, self._module_id)
 
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.
         """
         pass
 
-    def _load_yombo_internal_(self):
+    def _load_yombo_internal_(self, **kwargs):
         """
         Load some internal items.
         """
         self._devices = partial(self._Modules.module_devices, self._module_id)
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Phase 3 of 3 for statup - Called when this module should start processing and is
         now able to send messages to other components.
         """
         pass
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Phase 1 of 2 for shutdown - Stop sending messages, but can still accept incomming
         messages for processing.
         """
         pass
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Phase 2 of 2 for shutdown - By the time this is called, no messages will be sent
         to this module. Close all connections/items. Once this function ends, it's

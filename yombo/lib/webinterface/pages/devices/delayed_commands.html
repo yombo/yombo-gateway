@@ -31,7 +31,7 @@
                                             <th>Arguments</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for request_id, data in delayed_commands.iteritems() %}
+                                    <tbody>{% for request_id, data in delayed_commands.items() %}
                                         <tr>
                                             <td>{{ request_id }}</td>
                                             <td>{{ data.device.label }}</td>

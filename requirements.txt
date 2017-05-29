@@ -14,6 +14,13 @@ pycrypto
 ephem
 jinja2
 docutils
+msgpack-python
+six
+hashids
+pyserial
+python_dateutil
+hjson
+decorator
 
 # treq reqs:
 incremental
@@ -22,6 +29,6 @@ six
 Twisted[tls] >= 16.4.0
 attrs
 
-psutil
-pytest
-arrow
+#psutil
+#pytest
+#arrow

@@ -10,13 +10,7 @@ Manages interactions with api.yombo.net
 :license: LICENSE for details.
 """
 # Import python libraries
-
-import yombo.ext.umsgpack as msgpack
-
-try: # python 2/3
-    from urllib.parse import quote as parse
-except ImportError:
-    from urllib import parse
+import msgpack
 from hashlib import sha1
 
 try: import simplejson as json
@@ -27,13 +21,15 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from twisted.web.client import Agent
 from twisted.internet import reactor
 
-import yombo.ext.treq as treq
+# import yombo.ext.treq as treq
+import treq
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
+from yombo.utils import bytes_to_unicode, unicode_to_bytes
 
 logger = get_logger('library.yomboapi')
 
@@ -41,7 +37,7 @@ class YomboAPI(YomboLibrary):
 
     # contentType = None
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         self.custom_agent = Agent(reactor, connectTimeout=20)
         self.contentType = self._Configs.get('yomboapi', 'contenttype', 'application/json', False)  # TODO: Msgpack later
         self.base_url = self._Configs.get('yomboapi', 'baseurl', "https://api.yombo.net/api", False)
@@ -65,9 +61,7 @@ class YomboAPI(YomboLibrary):
             self.validate_system_login()
             return self.init_defer
 
-    # def _load_(self):
-
-    def _start_(self):
+    def _start_(self, **kwargs):
         # print "system_session status: %s" % self.system_session
         # print "system_login_key status: %s" % self.system_login_key
         pass
@@ -314,11 +308,12 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
-        credentials = { 'username':username, 'password':password}
+        print("asdfasdfasdf111111111111111111111111111111111111111111111111111")
+        # credentials = { 'username':username, 'password':password}
         results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
-        logger.debug("$$$3 REsults from API login creds: {results}", results=results)
+        logger.info("$$$3 REsults from API login creds: {results}", results=results)
 
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def gateways(self, session_info=None):
@@ -340,8 +335,8 @@ class YomboAPI(YomboLibrary):
         if session is not None:
             headers['Authorization'] = 'Bearer %s' % session
 
-        for k, v in headers.items():
-            headers[k] = v.encode('utf-8')
+        # for k, v in headers.items():
+        #     headers[k] = v.encode('utf-8')
         return headers
 
     def errorHandler(self,result):
@@ -370,18 +365,19 @@ class YomboAPI(YomboLibrary):
         headers = self.make_headers(session)
 
         if data is not None:
-            data = json.dumps(data)
+            data = json.dumps(data).encode()
 
         if method == 'GET':
-            results = yield self.__get(path, headers, data)
+            results = yield self._get(path, headers, data)
         elif method == 'POST':
-            results = yield self.__post(path, headers, data)
+            print ("yapi post calling")
+            results = yield self._post(path, headers, data)
         elif method == 'PATCH':
-            results = yield self.__patch(path, headers, data)
+            results = yield self._patch(path, headers, data)
         elif method == 'PUT':
-            results = yield self.__put(path, headers, data)
+            results = yield self._put(path, headers, data)
         elif method == 'DELETE':
-            results = yield self.__delete(path, headers, data)
+            results = yield self._delete(path, headers, data)
         else:
             raise Exception("Bad request type?? %s: %s" % (method, path) )
 
@@ -389,7 +385,7 @@ class YomboAPI(YomboLibrary):
         returnValue(results)
 
     @inlineCallbacks
-    def __get(self, path, headers, args=None):
+    def _get(self, path, headers, args=None):
         path = path
         # response = yield treq.get(path, params=args, agent=self.custom_agent, headers=headers)
         response = yield treq.get(path, headers=headers, params=args)
@@ -399,46 +395,52 @@ class YomboAPI(YomboLibrary):
         returnValue(final_response)
 
     @inlineCallbacks
-    def __patch(self, path, headers, data):
+    def _patch(self, path, headers, data):
         response = yield treq.patch(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         returnValue(final_response)
 
     @inlineCallbacks
-    def __post(self, path, headers, data):
+    def _post(self, path, headers, data):
+        print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
+
         response = yield treq.post(path, data=data, agent=self.custom_agent, headers=headers)
+        print("ccccc")
         content = yield treq.content(response)
+        print("dddd")
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
+        print("dddd: %s" % final_response)
         returnValue(final_response)
 
     @inlineCallbacks
-    def __put(self, path, headers, data):
+    def _put(self, path, headers, data):
         response = yield treq.put(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         returnValue(final_response)
 
     @inlineCallbacks
-    def __delete(self, path, headers, args={}):
+    def _delete(self, path, headers, args={}):
         response = yield treq.delete(path, params=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         returnValue(final_response)
-
-    def __encode(self, data):
-        return json.dumps(data)
+    #
+    # def __encode(self, data):
+    #     return json.dumps(data)
 
     def response_headers(self, response):
         data = {}
-        for key, value in response.headers._rawHeaders.items():
+        raw_headers = bytes_to_unicode(response.headers._rawHeaders)
+        for key, value in raw_headers.items():
             data[key.lower()] = value
         return data
 
     def decode_results(self, content, headers, code, phrase):
         # print "raw headers: %s" % response.headers
         # print "decoded headers: %s" % headers
-        # print "headers: %s" % headers['content-type'][0]
+        # print("decode_results headers: %s" % headers)
 
         content_type = headers['content-type'][0]
 

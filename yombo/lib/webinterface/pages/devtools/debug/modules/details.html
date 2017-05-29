@@ -39,7 +39,7 @@
                                 {%- endfor %}
                                 </ul>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Hooks Called: </label><br>
-                                {% for hook_name, count in module._hooks_called.iteritems() %}
+                                {% for hook_name, count in module._hooks_called.items() %}
                                 {{ hook_name }}: {{ count }}<br>
                                 {%- endfor %}
                             </div>

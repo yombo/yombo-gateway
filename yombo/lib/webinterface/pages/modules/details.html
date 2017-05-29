@@ -165,11 +165,11 @@
                                             <th>Field Label</th><th>Values</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for field_label, variable in module_variables.iteritems() %}
+                                    <tbody>{% for field_label, variable in module_variables.items() %}
                                          <tr>
                                             <td> {{ variable.field_label }}</td>
                                             <td><table class="table table-striped table-bordered table-hover">
-                                                <tbody>{% for data_id, data in variable.data.iteritems() %}
+                                                <tbody>{% for data_id, data in variable.data.items() %}
                                                 <tr>
                                                     <td>{{ data.value }}</td>
                                                 </tr>

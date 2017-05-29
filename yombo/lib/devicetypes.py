@@ -163,7 +163,7 @@ class DeviceTypes(YomboLibrary):
     def values(self):
         return list(self.device_types.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Sets up basic attributes.
         """
@@ -173,7 +173,7 @@ class DeviceTypes(YomboLibrary):
             'status', 'always_load', 'public']
         self.platforms = {}
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Loads device types from the database and imports them.
         
@@ -184,12 +184,12 @@ class DeviceTypes(YomboLibrary):
         return self.load_deferred
 
     @inlineCallbacks
-    def _started_(self):
+    def _started_(self, **kwargs):
         self.load_platforms(BASE_PLATFORMS)
         platforms = yield global_invoke_all('_device_platforms_', called_by=self)
         self.load_platforms(platforms)
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
         """
@@ -251,23 +251,22 @@ class DeviceTypes(YomboLibrary):
         """
         logger.debug("device_type: {device_type}", device_type=device_type)
 
-        global_invoke_all('_device_types_before_import_',
-                      **{'device_type': device_type})
+        global_invoke_all('_device_types_before_import_', called_by=self, **{'device_type': device_type})
         device_type_id = device_type["id"]
         if device_type_id not in self.device_types:
-            global_invoke_all('_device_type_before_load_',
-                              **{'device_type': device_type})
+            global_invoke_all('_device_type_before_load_', called_by=self, **{'device_type': device_type})
             self.device_types[device_type_id] = DeviceType(device_type, self)
             yield self.device_types[device_type_id]._init_()
             global_invoke_all('_device_type_loaded_',
-                          **{'device_type': self.device_types[device_type_id]})
+                              called_by=self,
+                              **{'device_type': self.device_types[device_type_id]})
         elif device_type_id not in self.device_types:
-            global_invoke_all('_device_type_before_update_',
-                              **{'device_type': device_type})
+            global_invoke_all('_device_type_before_update_', called_by=self, **{'device_type': device_type})
             self.device_types[device_type_id].update_attributes(device_type)
             yield self.device_types[device_type_id]._init_()
             global_invoke_all('_device_type_updated_',
-                          **{'device_type': self.device_types[device_type_id]})
+                              called_by=self,
+                              **{'device_type': self.device_types[device_type_id]})
 
     def get(self, device_type_requested, limiter=None, status=None):
         """

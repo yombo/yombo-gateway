@@ -64,9 +64,6 @@ from hashlib import sha1
 from time import time
 from collections import OrderedDict
 
-# Import 3rd-party libs
-import yombo.ext.six as six
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import LoopingCall
@@ -207,7 +204,7 @@ class Devices(YomboLibrary):
     def values(self):
         return list(self.devices.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Sets up basic attributes.
         """
@@ -233,7 +230,7 @@ class Devices(YomboLibrary):
         self.processing_commands = False
 
     @inlineCallbacks
-    def _started_(self):
+    def _started_(self, **kwargs):
         """
         Loads devices from the database and imports them.
         :return: 
@@ -249,11 +246,11 @@ class Devices(YomboLibrary):
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
-    def _modules_started_(self):
+    def _modules_started_(self, **kwargs):
         for request_id, device_command in self.device_commands.items():
             device_command.start()
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Save any device commands that need to be saved.
         :return: 
@@ -264,7 +261,7 @@ class Devices(YomboLibrary):
     def _reload_(self):
         return self._load_()
 
-    def _modules_prestarted_(self):
+    def _modules_prestarted_(self, **kwargs):
         """
         On start, sends all queued messages. Then, check delayed messages for any messages that were missed. Send
         old messages and prepare future messages to run.
@@ -338,8 +335,7 @@ class Devices(YomboLibrary):
         device_id = device["id"]
         if device_id not in self.devices:
             import_state = 'new'
-            global_invoke_all('_device_before_load_',
-                              **{'device': device})
+            global_invoke_all('_device_before_load_', called_by=self, **{'device': device})
             device_type = self._DeviceTypes[device['device_type_id']]
 
             if device_type.platform is None or device_type.platform == "":
@@ -368,8 +364,7 @@ class Devices(YomboLibrary):
 
         else:
             import_state = 'update'
-            global_invoke_all('_device_before_update_',
-                              **{'device': device})
+            global_invoke_all('_device_before_update_', called_by=self, **{'device': device})
             self.devices[device_id].update_attributes(device)
 
         yield self.devices[device_id]._init_()
@@ -384,11 +379,9 @@ class Devices(YomboLibrary):
         # logger.debug("_add_device: {device}", device=device)
 
         if import_state == 'new':
-            global_invoke_all('_device_loaded_',
-                          **{'device': self.devices[device_id]})
+            global_invoke_all('_device_loaded_', called_by=self, **{'device': self.devices[device_id]})
         elif import_state == 'update':
-            global_invoke_all('_device_updated_',
-                              **{'device': self.devices[device_id]})
+            global_invoke_all('_device_updated_', called_by=self, **{'device': self.devices[device_id]})
         # if test_device:
         #            returnValue(self.devices[device_id])
 
@@ -759,7 +752,7 @@ class Devices(YomboLibrary):
                             'msg': "Couldn't add device variables",
                             'apimsg': var_data_results['content']['message'],
                             'apimsghtml': var_data_results['content']['html_message'],
-                            'device_id': device_id
+                            'device_id': device_id,
                         }
                         returnValue(results)
         # print("var_data_results: %s" % var_data_results)
@@ -881,7 +874,7 @@ class Devices(YomboLibrary):
             'msg': "Device edited.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_edit', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('devices_edit', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
         returnValue(results)
 
     @inlineCallbacks
@@ -917,7 +910,7 @@ class Devices(YomboLibrary):
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_disabled', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('devices_disabled', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
         returnValue(results)
 
     @inlineCallbacks
@@ -953,7 +946,7 @@ class Devices(YomboLibrary):
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_disabled', **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('devices_disabled', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
         returnValue(results)
 
     def update_device(self, record, test_device=False):

@@ -52,7 +52,7 @@ class Localize(YomboLibrary):
     """
     MSGCTXT_GLUE = "\004"
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
 
         try:
@@ -278,7 +278,7 @@ class Localize(YomboLibrary):
                 msgkey2 = msgctxt + self.MSGCTXT_GLUE + msgid2
             else:
                 msgkey2 = msgid2
-            translation = translator.ungettext(msgkey1, msgkey2, num)
+            translation = translator.ngettext(msgkey1, msgkey2, num)
             if translation == msgctxt + self.MSGCTXT_GLUE + msgid1:
                 return msgid1.format(num=num)
             elif translation == msgctxt + self.MSGCTXT_GLUE + msgid2:
@@ -287,13 +287,13 @@ class Localize(YomboLibrary):
                 return translation
         else:
             if msgctxt is None:
-                translation = translator.ugettext(msgkey1)
+                translation = translator.gettext(msgkey1)
                 if translation == msgid1:
                     return msgid1
                 else:
                     return translation
             else:
-                translation = translator.ugettext(msgkey1)
+                translation = translator.gettext(msgkey1)
                 if translation == msgctxt + self.MSGCTXT_GLUE + msgid1:
                     return msgid1
                 else:
@@ -386,7 +386,7 @@ class Localize(YomboLibrary):
         # print "requested languages: %s" % languages
 
         translator = self.get_translator(languages)
-        return translator.ugettext
+        return translator.gettext
 
     def get_ungettext(self, languages):
         """
@@ -399,7 +399,7 @@ class Localize(YomboLibrary):
         # print "requested languages: %s" % languages
 
         translator = self.get_translator(languages)
-        return translator.ungettext
+        return translator.ngettext
 
     def parse_accept_language(self, accept_language):
         """

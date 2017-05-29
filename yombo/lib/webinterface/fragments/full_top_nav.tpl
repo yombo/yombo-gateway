@@ -25,7 +25,7 @@
 	                    </a>
 	                    <ul class="dropdown-menu dropdown-alerts">
 						{% if misc_wi_data.notifications|length > 0 %}
-							{% for id, notice in misc_wi_data.notifications.notifications[:6].iteritems() %}
+							{% for id, notice in misc_wi_data.notifications.notifications[:6].items() %}
 								<li>
 									<a href="/notifications/{{ id }}/details">
 										<div>

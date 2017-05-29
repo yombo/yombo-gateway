@@ -85,7 +85,7 @@
                                             <th data-priority="1">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for fingerprint, key in gpg_keys.iteritems() %}
+                                    <tbody>{% for fingerprint, key in gpg_keys.items() %}
                                          <tr>
                                              <td>{{ key.notes }}</td>
                                              <td>{{ key.length }}</td>

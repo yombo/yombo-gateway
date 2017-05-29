@@ -54,7 +54,7 @@ class AMQP(YomboLibrary):
     """
     Base, or root class that manages all AMQP connections.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         self.client_connections = {}
         self.messages_processed = None  # Track incoming and outgoing messages. Meta data only.
         self.message_correlations = None  # Track various bits of information for sent correlation_ids.
@@ -63,7 +63,7 @@ class AMQP(YomboLibrary):
         self.load_meta_data()
         return self.init_deferred
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         self._local_log("debug", "AMQP::_unload_")
         # print "amqp - removing all clients.."
         for client_id, client in self.client_connections.items():
@@ -76,11 +76,11 @@ class AMQP(YomboLibrary):
                 except:
                     pass
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         self.clean_message_ids_loop = LoopingCall(self.clean_message_ids)
         self.clean_message_ids_loop.start(36)
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
 
@@ -118,7 +118,7 @@ class AMQP(YomboLibrary):
 
     def message_correlations_unserializer(self, correlation):
         output = correlation.copy()
-
+        # print("output: %s" % output)
         if output['callback_component_type'] is not None and \
             output['callback_component_type_name'] is not None and \
             output['callback_component_type_function'] is not None:

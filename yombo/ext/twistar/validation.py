@@ -2,6 +2,7 @@
 Package providing validation support for L{DBObject}s.
 """
 
+from __future__ import absolute_import
 from twisted.internet import defer
 from yombo.ext.BermiInflector.Inflector import Inflector
 from yombo.ext.twistar.utils import joinWheres, deferredDict
@@ -70,7 +71,7 @@ def uniquenessOf(obj, names, kwargs):
     message = kwargs.get('message', "is not unique.")
 
     def handle(results):
-        for propname, value in list(results.items()):
+        for propname, value in results.items():
             if value is not None:
                 obj.errors.add(propname, message)
     ds = {}

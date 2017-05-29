@@ -27,30 +27,30 @@ class Tasks(YomboLibrary):
     Performs various tasks at startup.
 
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         self.loop_tasks = {}
 
         self.init_deffered = Deferred()
         self.check_tasks('init', self.init_deffered)
         return self.init_deffered
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         self.load_deferred = Deferred()
         self.check_tasks('load', self.load_deferred)
         return self.load_deferred
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         self.start_deferred = Deferred()
         self.check_tasks('start', self.start_deferred)
         return self.start_deferred
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
             self.stop_deferred = Deferred()
             self.check_tasks('stop', self.stop_deferred)
             return self.stop_deferred
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         if hasattr(self, 'self._LocalDB'):  # incase loading got stuck somewhere.
             self.unload_deferred = Deferred()
             self.check_tasks('load', self.unload_deferred)

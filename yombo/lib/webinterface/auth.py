@@ -8,7 +8,7 @@ except ImportError:
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import get_local_network_info, ip_address_in_network
+from yombo.utils import get_local_network_info, ip_address_in_network, bytes_to_unicode
 
 from yombo.core.log import get_logger
 logger = get_logger('library.webinterface.auth')
@@ -40,8 +40,36 @@ def get_session(roles=None, *args, **kwargs):
 
     return deco
 
-def require_auth(roles=None, login_redirect=None, *args, **kwargs):
+def update_request(webinterface, request):
+    """
+    Does some basic conversions for us...
+    :param request: 
+    :return: 
+    """
+    request.received_cookies = bytes_to_unicode(request.received_cookies)
+    request.args = bytes_to_unicode(request.args)
+    webinterface.webapp.templates.globals['_'] = webinterface.i18n(request)
+    request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    request.setHeader('Expires', '0')
 
+
+def run_first(*args, **kwargs):
+    def call(f, *args, **kwargs):
+        return f(*args, **kwargs)
+
+    def deco(f):
+        @wraps(f)
+        def wrapped_f(webinterface, request, *a, **kw):
+            update_request(webinterface, request)
+            # request._ = webinterface.i18n(request)
+            # if hasattr(request, 'breadcrumb') is False:
+            #     request.breadcrumb = []
+            #     webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
+            return call(f, webinterface, request, *a, **kw)
+        return wrapped_f
+    return deco
+
+def require_auth(roles=None, login_redirect=None, *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -49,8 +77,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
         @wraps(f)
         @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
-            request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-            request.setHeader('Expires', '0')
+            update_request(webinterface, request)
             # print "auth wrapped_f roles: %s" % roles
             # print "auth wrapped_f request: %s" % request.received_cookies
             # print "auth wrapped_f request: %s" % type(request)
@@ -141,8 +168,7 @@ def require_auth_pin(*args, **kwargs):
     def deco(f):
         @wraps(f)
         def wrapped_f(webinterface, request, *a, **kw):
-            request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
-            request.setHeader('Expires', '0')
+            update_request(webinterface, request)
             # print "auth wrapped_f request: %s" % request.received_cookies
             # print "auth wrapped_f request: %s" % type(request)
 
@@ -168,22 +194,6 @@ def require_auth_pin(*args, **kwargs):
                 return page.render(alerts=webinterface.get_alerts(),
                                data=webinterface.data)
 
-            return call(f, webinterface, request, *a, **kw)
-        return wrapped_f
-    return deco
-
-def run_first(*args, **kwargs):
-    def call(f, *args, **kwargs):
-        return f(*args, **kwargs)
-
-    def deco(f):
-        @wraps(f)
-        def wrapped_f(webinterface, request, *a, **kw):
-            webinterface.webapp.templates.globals['_'] = webinterface.i18n(request)
-            # request._ = webinterface.i18n(request)
-            # if hasattr(request, 'breadcrumb') is False:
-            #     request.breadcrumb = []
-            #     webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
             return call(f, webinterface, request, *a, **kw)
         return wrapped_f
     return deco

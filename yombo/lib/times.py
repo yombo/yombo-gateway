@@ -231,25 +231,25 @@ class Times(YomboLibrary, object):
             self._States.set('next.moonset', int(round(val)), 'epoch')
             self.__moonSet = val
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Nothing to do.
         """
         pass
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Nothing to do.
         """
         pass
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Nothing to do.
         """
         pass
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Nothing to do.
         """
@@ -533,7 +533,7 @@ class Times(YomboLibrary, object):
 
         """
         try:
-            state_changes = global_invoke_all('_time_event_', **{'value': event_msg})
+            state_changes = global_invoke_all('_time_event_', called_by=self, **{'value': event_msg})
         except YomboHookStopProcessing:
             logger.warning("Stopping processing 'send_event_hook' due to YomboHookStopProcessing exception.")
             return

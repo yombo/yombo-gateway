@@ -193,7 +193,7 @@ class States(YomboLibrary, object):
     def values(self):
         return list(self.__States.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         self.automation = self._Libraries['automation']
 
         self.__States = {}
@@ -205,10 +205,10 @@ class States(YomboLibrary, object):
         self.automation_startup_check = []
         return self.init_deferred
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         self._loaded = True
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         self.clean_states_loop = LoopingCall(self.clean_states_table)
         self.clean_states_loop.start(random_int(60*60*6, .05))  # clean the database every 6 hours.
 
@@ -219,7 +219,7 @@ class States(YomboLibrary, object):
             self.mqtt.subscribe("yombo/states/+/set")
             self.mqtt.subscribe("yombo/states/+/set/+")
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 

@@ -19,10 +19,10 @@ class AutomationExample(YomboModule):
     """
     This module adds a couple rules and toggles
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         logger.info("Output from translation: {out}", out=_('automationexample','demo.automationexample')) # demo of using i18n...
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         # in 3 seconds from now, change the state - test the trigger
 #        reactor.callLater(3, self.set_low)
         pass
@@ -157,7 +157,7 @@ class AutomationExample(YomboModule):
             ]
         }
         
-    def _start_(self):
+    def _start_(self, **kwargs):
         logger.info("States: Is Light: {times_light}", times_light=self._States['is.light'])
         logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
         self._States['demo.automationexample'] = 1
@@ -179,8 +179,8 @@ class AutomationExample(YomboModule):
         self.set_high()
         #reactor.callLater(5, self.set_high)
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         pass
     
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         pass

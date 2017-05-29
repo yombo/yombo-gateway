@@ -28,7 +28,7 @@ class Startup(YomboLibrary):
     Checks to make sure basic configurations are valid and other start-up operations.
     """
 #    @inlineCallbacks
-    def _init_(self,):
+    def _init_(self, **kwargs):
         if self._Loader.operation_mode != None:  # will know if firstrun already or yombo.ini is missing.
             return
         need_config = False

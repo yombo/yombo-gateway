@@ -25,6 +25,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 from time import time
+from itertools import islice
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -53,28 +54,44 @@ class SlicableOrderedDict(OrderedDict):
     def __getitem__(self, k):
         if not isinstance(k, slice):
             return OrderedDict.__getitem__(self, k)
-        x = SlicableOrderedDict()
-        for idx, key in enumerate(self.keys()):
-            if k.start <= idx < k.stop:
-                x[key] = self[key]
-        return x
+        return SlicableOrderedDict(islice(self.items(), k.start, k.stop))
+
+    # def __getitem__(self, k):
+    #     if not isinstance(k, slice):
+    #         return OrderedDict.__getitem__(self, k)
+    #     x = SlicableOrderedDict()
+    #     print("SlicableOrderedDict...k: %s" % k)
+    #     for idx, key in enumerate(self.keys()):
+    #         print("SlicableOrderedDict...idex: %s" % idx)
+    #         if k.start <= idx < k.stop:
+    #             x[key] = self[key]
+    #     return x
 
     def prepend(self, key, value, dict_setitem=dict.__setitem__):
+        """
+        Add an element to the front of the dictionary.
+        :param key: 
+        :param value: 
+        :param dict_setitem: 
+        :return: 
+        """
+        self.update({key: value})
+        self.move_to_end(key, last=False)
 
-        root = self._OrderedDict__root
-        first = root[1]
-
-        if key in self:
-            link = self._OrderedDict__map[key]
-            link_prev, link_next, _ = link
-            link_prev[1] = link_next
-            link_next[0] = link_prev
-            link[0] = root
-            link[1] = first
-            root[1] = first[0] = link
-        else:
-            root[1] = first[0] = self._OrderedDict__map[key] = [root, first, key]
-            dict_setitem(self, key, value)
+        # root = self._OrderedDict__root
+        # first = root[1]
+        #
+        # if key in self:
+        #     link = self._OrderedDict__map[key]
+        #     link_prev, link_next, _ = link
+        #     link_prev[1] = link_next
+        #     link_next[0] = link_prev
+        #     link[0] = root
+        #     link[1] = first
+        #     root[1] = first[0] = link
+        # else:
+        #     root[1] = first[0] = self._OrderedDict__map[key] = [root, first, key]
+        #     dict_setitem(self, key, value)
 
 class Notifications(YomboLibrary):
     """
@@ -108,7 +125,7 @@ class Notifications(YomboLibrary):
     def iteritems(self, start=None, stop=None):
         return iter(self.notifications.items())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Setups up the basic framework.
         """
@@ -117,24 +134,17 @@ class Notifications(YomboLibrary):
         self.always_show_count = 0
         # return self.init_deferred
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False))
         self.load_notifications()
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         if self.init_deferred is not None and self.init_deferred.called is False:
             self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
-    def _clear_(self):
-        """
-        Clear all devices. Should only be called by the loader module
-        during a reconfiguration event. B{Do not call this function!}
-        """
-        self.notifications.clear()
-
     def _reload_(self):
-        self._clear_()
+        self.notifications.clear()
         self.load_notifications()
 
     def get_important(self):
@@ -150,10 +160,10 @@ class Notifications(YomboLibrary):
         :return:
         """
         cur_time = time()
-        for id, notice in self.notifications.items():
-            if notice.expire == "Never":
+        for id in list(self.notifications.keys()):
+            if self.notifications[id].expire == "Never":
                 continue
-            if cur_time > notice.expire:
+            if cur_time > self.notifications[id].expire:
                 del self.notifications[id]
         self._LocalDB.delete_expired_notifications()
 
@@ -265,7 +275,7 @@ class Notifications(YomboLibrary):
             self.notifications.prepend(notice['id'], Notification(self, notice))
         else:
             self.notifications.prepend(notice['id'], Notification(self, notice))
-            # self.notifications = OrderedDict(sorted(self.notifications.iteritems(), key=lambda x: x[1]['created']))
+            # self.notifications = OrderedDict(sorted(self.notifications.items(), key=lambda x: x[1]['created']))
             pass
         if from_db is None:
             self.check_always_show_count()

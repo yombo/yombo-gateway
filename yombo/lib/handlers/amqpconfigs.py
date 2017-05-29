@@ -19,9 +19,9 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import zlib
-from time import time
+import msgpack
 import sys
+from time import time
 import traceback
 
 # Import twisted libraries
@@ -29,16 +29,11 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import defer, reactor
 from twisted.internet.task import LoopingCall
 
-# Import 3rd party extensions
-from yombo.ext.expiringdict import ExpiringDict
-import yombo.ext.six as six
-
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, dict_has_key
-import yombo.ext.umsgpack as msgpack
+from yombo.utils import random_string, dict_has_key, bytes_to_unicode
 
 logger = get_logger('library.handler.amqpconfigs')
 
@@ -548,7 +543,7 @@ class AmqpConfigHandler(YomboLibrary):
             raise YomboWarning("Configuration item '%s' not configured." % properties.headers['config_item'])
             #                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
         self.__process_queue[random_string(length=10)] = {
-            'msg': msg,
+            'msg': bytes_to_unicode(msg),
             'headers': properties.headers,
             }
         # print "got type: %s" % properties.headers['config_item']
@@ -573,7 +568,8 @@ class AmqpConfigHandler(YomboLibrary):
             self.processing_queue = True
             for key in list(self.__process_queue):
                 queue = self.__process_queue[key]
-                # print "headers: %s" % queue['headers']
+                # print("msg: %s" % queue['msg'])
+                # print("headers: %s" % queue['headers'])
                 self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
                 yield self.process_config(queue['msg'], queue['headers']['config_item'], queue['headers']['config_type'])
                 del self.__process_queue[key]

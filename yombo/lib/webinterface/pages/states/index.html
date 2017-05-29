@@ -28,7 +28,7 @@
                                             <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for state_name, state in states.iteritems() %}
+                                    <tbody>{% for state_name, state in states.items() %}
                                          <tr>
                                             <td><a href="/states/{{ state_name }}/details">{{ state_name }}</a></td>
                                              <td>{{ state['value_human'] }}</td>

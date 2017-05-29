@@ -1,8 +1,7 @@
 """
 Code relating to the base L{DBObject} object.
-
-This module has been modified by Yombo to support database ID columns that are not autoincrement.
 """
+from __future__ import absolute_import
 from twisted.internet import defer
 
 from yombo.ext.twistar.registry import Registry
@@ -12,6 +11,7 @@ from yombo.ext.twistar.utils import createInstances, deferredDict, dictToWhere, 
 from yombo.ext.twistar.validation import Validator, Errors
 
 from yombo.ext.BermiInflector.Inflector import Inflector
+import six
 
 
 class DBObject(Validator):
@@ -58,39 +58,6 @@ class DBObject(Validator):
     # it will be of the form {'othername': <BelongsTo instance>, 'anothername': <HasMany instance>}
     RELATIONSHIP_CACHE = None
 
-    #the following were added to support the object being accessed as a dictionary too.
-    ## <start dict emulation>
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __repr__(self):
-        return repr(self.__dict__)
-
-    def __len__(self):
-        return len(self.__dict__)
-
-    def has_key(self, k):
-        return k in self.__dict__
-
-    def keys(self):
-        return list(self.__dict__.keys())
-
-    def values(self):
-        return list(self.__dict__.values())
-
-    def items(self):
-        return list(self.__dict__.items())
-
-    def __cmp__(self, dict):
-        return cmp(self.__dict__, dict)
-
-    def __contains__(self, item):
-        return item in self.__dict__
-
-    def __iter__(self):
-        return iter(self.__dict__)
-    ##  <end dict emulation>
-
     def __init__(self, **kwargs):
         """
         Constructor.  DO NOT OVERWRITE.  Use the L{DBObject.afterInit} method.
@@ -101,10 +68,10 @@ class DBObject(Validator):
         @see: L{DBObject.afterInit}
         """
         if "id" in kwargs:
-            self._rowid = kwargs['id']
+            self.id = kwargs['id']
         else:
-            self._rowid = None
-        self.id = None
+            self.id = None
+        # self.id = None
         self._deleted = False
         self.errors = Errors()
         self.updateAttrs(kwargs)
@@ -121,7 +88,7 @@ class DBObject(Validator):
         @param kwargs: A C{dict} whose keys will be turned into properties and whose values
         will then be assigned to those properties.
         """
-        for k, v in kwargs.items():
+        for k, v in six.iteritems(kwargs):
             setattr(self, k, v)
 
 
@@ -138,13 +105,11 @@ class DBObject(Validator):
         """
         if self._deleted:
             raise DBObjectSaveError("Cannot save a previously deleted object.")
-#        print "111"
+
         def _save(isValid):
-            if self._rowid is None and isValid:
-                # print "create"
+            if self.id is None and isValid:
                 return self._create()
             elif isValid:
-                # print "update"
                 return self._update()
             return self
         return self.isValid().addCallback(_save)
@@ -303,10 +268,10 @@ class DBObject(Validator):
         """
 
         def _delete(result):
-            oldid = self._rowid
-            self._rowid = None
+            oldid = self.id
+            self.id = None
             self._deleted = True
-            return self.__class__.deleteAll(where=["rowid = ?", oldid])
+            return self.__class__.deleteAll(where=["id = ?", oldid])
 
         def _deleteOnSuccess(result):
             if result is False:
@@ -384,7 +349,7 @@ class DBObject(Validator):
         Initialize the cache of relationship objects for this class.
         """
         klass.RELATIONSHIP_CACHE = {}
-        for rtype in list(Relationship.TYPES.keys()):
+        for rtype in Relationship.TYPES.keys():
             for relation in getattr(klass, rtype):
                 klass.addRelation(relation, rtype)
 
@@ -569,7 +534,7 @@ class DBObject(Validator):
         @return: A boolean.
         """
         eqclass = self.__class__.__name__ == other.__class__.__name__
-        eqid = hasattr(other, '_rowid') and self._rowid == other._rowid
+        eqid = hasattr(other, 'id') and self.id == other.id
         return eqclass and eqid
 
 

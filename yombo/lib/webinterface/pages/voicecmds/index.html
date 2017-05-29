@@ -30,7 +30,7 @@
                                             <th>Command</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for voice_string, data in voicecmds.iteritems() %}
+                                    <tbody>{% for voice_string, data in voicecmds.items() %}
                                         <tr>
                                             <td>{{ voice_string }}</td>
                                             <td>{{ data.device.label }}</td>

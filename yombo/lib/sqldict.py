@@ -39,10 +39,8 @@ requires the serializer and unserializer to be set inside the get() request.
 :license: LICENSE for details.
 """
 # Import python libraries
-import pickle
+import msgpack
 from sqlite3 import Binary as sqlite3Binary
-
-from yombo.ext.six import string_types
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -69,7 +67,7 @@ class SQLDict(YomboLibrary):
         self.unload_defer = None
         self._saveSQLDictLoop = None
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Starts the loop to save data to SQL every so often.
         :return:
@@ -77,7 +75,7 @@ class SQLDict(YomboLibrary):
         self._saveSQLDictLoop = LoopingCall(self.save_sql_dict)
         self._saveSQLDictLoop.start(self._Configs.get('sqldict', 'save_interval', 60, False))
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         When gateway stops, we stop the save interval timer. Will be saved in _unload_.
         :return:
@@ -86,7 +84,7 @@ class SQLDict(YomboLibrary):
             self._saveSQLDictLoop.stop()
 
     @inlineCallbacks
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Save any data to disk (sql).
         :return: A deferred. Will be called once save is complete.
@@ -102,7 +100,7 @@ class SQLDict(YomboLibrary):
         yield the results of this call.
         :return: Deferred, eventually a dictionary
         """
-        if isinstance(owner_object, string_types):
+        if isinstance(owner_object, str):
             component_name = owner_object.lower()
         else:
             component_name = str(owner_object._FullName.lower())
@@ -153,7 +151,7 @@ class SQLDict(YomboLibrary):
                 # logger.info("save_sql_dict 4 {di}", di=safe_data)
 
                 # logger.info("save_sql_dict {safe_data} ", safe_data=safe_data)
-                save_data = sqlite3Binary(pickle.dumps(safe_data, pickle.HIGHEST_PROTOCOL))
+                save_data = msgpack.packb(safe_data, use_bin_type=True)
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
                         di['dict_name'], save_data)
 #                print "in save_sql_dict - returned from saving data into sql"
@@ -232,8 +230,8 @@ class SQLDictionary(dict):
         if len(results) != 1:
             returnValue(None)
 
-        result_data = str(results[0]['dict_data'])
-        items = pickle.loads(result_data)
+        items = msgpack.unpackb(results[0]['dict_data'], encoding='utf-8')
+        # print("sqldict results: %s" % items)
 
         for key, value in items.items():
             if self.__unserializer is not None:

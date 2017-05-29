@@ -26,7 +26,7 @@
                                             <th>Name</th><th>Description</th><th>Load Source</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for moduleID, module in modules.iteritems() %}
+                                    <tbody>{% for moduleID, module in modules.items() %}
                                          <tr>
                                              <td><a href="/devtools/debug/modules/{{ moduleID }}/details">{{ module._Name }}</a></td>
                                              <td>{{ module._short_description }}</td>

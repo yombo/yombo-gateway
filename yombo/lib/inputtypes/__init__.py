@@ -26,7 +26,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all, global_invoke_libraries, global_invoke_modules
+from yombo.utils import search_instance, do_search_instance, global_invoke_all, global_invoke_libraries
 import collections
 from functools import reduce
 logger = get_logger('library.inputtypes')
@@ -177,7 +177,7 @@ class InputTypes(YomboLibrary):
     def values(self):
         return list(self.input_types.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
@@ -189,7 +189,7 @@ class InputTypes(YomboLibrary):
 
         self.validators = {}
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Loads all input types from DB to various arrays for quick lookup.
         """
@@ -198,13 +198,17 @@ class InputTypes(YomboLibrary):
         return self.load_deferred
 
     @inlineCallbacks
-    def _start_(self):
+    def _start_(self, **kwargs):
+        # print("IT-Start")
         self.load_validators(BASE_VALIDATORS)
+        # print("IT-Start2")
 
         validators = yield global_invoke_libraries('_input_type_validators_', called_by=self)
+        # print("IT-Start3")
         self.load_validators(validators)
+        # print("IT-Start4")
 
-    def _stop_(self):
+    def _stop_(self, kwargs):
         """
         Cleans up any pending deferreds.
         """
@@ -212,7 +216,7 @@ class InputTypes(YomboLibrary):
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     @inlineCallbacks
-    def _modules_inited_(self):
+    def _modules_inited_(self, **kwargs):
         """
         Called before the modules have their preload called, after their _init_.
 
@@ -228,6 +232,7 @@ class InputTypes(YomboLibrary):
         :param validators: 
         :return: 
         """
+        # print("IT-load_validators")
         for item in validators:
             item_key = item[1].lower()
             if item_key.startswith('_'):
@@ -237,10 +242,14 @@ class InputTypes(YomboLibrary):
             except:
                 # print "Skipping validator due to input type not being loaded: %s" % item_key
                 continue
+            # print("IT-load_validators10: %s" % item[0])
 
             module_root = __import__(item[0], globals(), locals(), [], 0)
+            # print("IT-load_validators20")
             module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
+            # print("IT-load_validators21")
             klass = getattr(module_tail, item[1])
+            # print("IT-load_validators40")
             if not isinstance(klass, collections.Callable):
                 logger.warn("Unable to start validator '{name}', it's not callable.", name=item[1])
                 continue
@@ -282,21 +291,18 @@ class InputTypes(YomboLibrary):
         """
         logger.debug("input_type: {input_type}", input_type=input_type)
 
-        global_invoke_all('_input_types_before_import_',
-                      **{'input_type': input_type})
+        global_invoke_all('_input_types_before_import_', called_by=self, **{'input_type': input_type})
         input_type_id = input_type["id"]
         if input_type_id not in self.input_types:
-            global_invoke_all('_input_type_before_load_',
-                              **{'input_type': input_type})
+            # global_invoke_all('_input_type_before_load_',
+            #                   **{'input_type': input_type})
             self.input_types[input_type_id] = InputType(self, input_type)
-            global_invoke_all('_input_type_loaded_',
-                          **{'input_type': self.input_types[input_type_id]})
+            # global_invoke_all('_input_type_loaded_',
+            #               **{'input_type': self.input_types[input_type_id]})
         elif input_type_id not in self.input_types:
-            global_invoke_all('_input_type_before_update_',
-                              **{'input_type': input_type})
+            global_invoke_all('_input_type_before_update_', called_by=self, **{'input_type': input_type})
             self.input_types[input_type_id].update_attributes(input_type)
-            global_invoke_all('_input_type_updated_',
-                          **{'input_type': self.input_types[input_type_id]})
+            global_invoke_all('_input_type_updated_', called_by=self, **{'input_type': self.input_types[input_type_id]})
 
     def get_all(self):
         """

@@ -22,11 +22,11 @@ import configparser
 import sys
 import traceback
 from time import time
-import hashlib
+from hashlib import md5
 from functools import partial
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboCritical
@@ -193,7 +193,7 @@ class Modules(YomboLibrary):
     def values(self):
         return list(self.modules.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
@@ -281,9 +281,8 @@ class Modules(YomboLibrary):
         self._Loader.library_invoke_all("_module_stop_", called_by=self)
         self.module_invoke_all("_stop_")
 
-        keys = list(self.modules.keys())
         self._Loader.library_invoke_all("_module_unload_", called_by=self)
-        for module_id in keys:
+        for module_id in self.modules.keys():
             module = self.modules[module_id]
             if int(module._status) != 1:
                 continue
@@ -365,7 +364,7 @@ class Modules(YomboLibrary):
                 else:
                     mod_doc_link = ""
 
-                newUUID = hashlib.md5(mod_machine_label).hexdigest()
+                newUUID = md5(str(mod_machine_label).encode()).hexdigest()
                 self._rawModulesList[newUUID] = {
                   'id': newUUID, # module_id
                   'gateway_id': 'local',
@@ -505,9 +504,16 @@ class Modules(YomboLibrary):
             data_relation_id=data_relation_id)
 
         if module_name in self._localModuleVars:
-            returnValue(dict_merge(variables, self._localModuleVars[module_name]))
+            return dict_merge(variables, self._localModuleVars[module_name])
 
-        returnValue(variables)
+        return variables
+
+    def module_invoke_failure(self, failure, hook_name):
+        logger.warn("---==(failure during module invoke for hook ({hook_name})==----", hook_name=hook_name)
+        logger.warn("--------------------------------------------------------")
+        logger.warn("{failure}", failure=failure)
+        logger.warn("--------------------------------------------------------")
+        raise RuntimeError("failure during module invoke for hook: %s" % failure)
 
     @inlineCallbacks
     def module_init_invoke(self):
@@ -517,27 +523,12 @@ class Modules(YomboLibrary):
         module_init_deferred = []
 
         for module_id, module in self.modules.items():
-            self.modules_invoke_log('debug', module._FullName, 'module', 'init', 'About to call _init_.')
-
-            # Get variables, and merge with any local variable settings
-            # print "getting vars for module: %s" % module_id
-            # print "getting vars: %s "% module_variables
-            # module._ModuleVariables_get_live = self._Variables.get_variable_fields_data_callable(
-            #     data_relation_type='module',
-            #     data_relation_id=module_id)
-            #
-
-            # module._ModuleVariables = partial(
-            #     self.get_module_variables,
-            #     module._Name,
-            #     'module',
-            #     module_id,
-            # )
-
-            module._ModuleVariables = yield self.get_module_variables(module._Name,
-                                                                      'module',
-                                                                      module_id,
-                                                                      )
+            logger.debug("Starting module_init_invoke for module: {module}", module=module)
+            module._ModuleVariables = yield self.get_module_variables(
+                module._Name,
+                'module',
+                module_id,
+                )
 
             module._ModuleDevices = partial(
                 self.module_devices,
@@ -549,8 +540,6 @@ class Modules(YomboLibrary):
                 module_id,
             )
 
-
-            # if yombo.utils.get_method_definition_level(module._init_) != 'yombo.core.module.YomboModule':
             module._ModuleType = self._rawModulesList[module_id]['module_type']
 
             module._Atoms = self._Loader.loadedLibraries['atoms']
@@ -560,7 +549,10 @@ class Modules(YomboLibrary):
             module._Commands = self._Loader.loadedLibraries['commands']
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
+            module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
+            module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._GPG = self._Loader.loadedLibraries['gpg']
+            module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
             module._Libraries = self._Loader.loadedLibraries
             module._Libraries = self._Loader.loadedLibraries
             module._Localize = self._Loader.loadedLibraries['localize']
@@ -579,10 +571,6 @@ class Modules(YomboLibrary):
             module._Variables = self._Loader.loadedLibraries['variables']
             module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
 
-            module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-            module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
-            module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
-
             module._hooks_called['_init_'] = 0
             if int(module._status) != 1:
                 continue
@@ -593,69 +581,47 @@ class Modules(YomboLibrary):
                 if module_device_type.id in module._DeviceTypes:
                     self.modules[module_id]._device_types.append(module_device_type.id)
 
-#                module_init_deferred.append(maybeDeferred(module._init_))
-#                continue
-#             d = yield maybeDeferred(module._init_)
             try:
-                # exc_info = sys.exc_info()
-#                module_init_deferred.append(maybeDeferred(module._init_))
-                d = yield maybeDeferred(module._init_)
-                module._hooks_called['_init_'] = 1
-#                    d.errback(self.SomeError)
-#                    yield d
-            except YomboCritical as e:
-                logger.error("---==(Critical Server Error in _init_ function for module: {name})==----", name=module._FullName)
-                logger.error("--------------------------------------------------------")
-                logger.error("Error message: {e}", e=e)
-                logger.error("--------------------------------------------------------")
-                e.exit()
-            except Exception:
-                logger.error("-------==(Error in init function for module: {name})==---------", name=module._FullName)
-                logger.error("1:: {e}", e=sys.exc_info())
-                logger.error("---------------==(Traceback)==--------------------------")
-                logger.error("3{e}", e=traceback.format_exc())
-                logger.error("--------------------------------------------------------")
-                # except:
-                #     exc_type, exc_value, exc_traceback = sys.exc_info()
-                #     logger.error("------==(ERROR During _init_ of module: {module})==-------", module=module._FullName)
-                #     logger.error("1:: {e}", e=sys.exc_info())
-                #     logger.error("---------------==(Traceback)==--------------------------")
-                #     logger.error("{e}", e=traceback.print_exc(file=sys.stdout))
-                #     logger.error("--------------------------------------------------------")
-                #     logger.error("{e}", e=traceback.print_exc())
-                #     logger.error("--------------------------------------------------------")
-                #     logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                #               limit=5, file=sys.stdout)))
-                #     logger.error("--------------------------------------------------------")
-#        logger.debug("!!!!!!!!!!!!!!!!!!!!!1 About to yield while waiting for module_init's to be done!")
-#        yield DeferredList(module_init_deferred)
-#        logger.debug("!!!!!!!!!!!!!!!!!!!!!2 Done yielding for while waiting for module_init's to be done!")
-
-    def SomeError(self, error):
-        logger.error("Received an error: {error}", error=error)
+                d = Deferred()
+                d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', '_init_', 'About to call _init_.'))
+                d.addCallback(lambda ignored: maybeDeferred(module._init_))
+                d.addErrback(self.module_invoke_failure, '_init_')
+                d.callback(1)
+                yield d
+                self.hooks_called[module._Name + ":_init"] = {
+                    'module': module._Name,
+                    'hook': "_init_",
+                    'time': int(time()),
+                    'called_by': "yombo.lib.modules",
+                }
+            except RuntimeWarning as e:
+                pass
 
     @inlineCallbacks
-    def module_invoke(self, requestedModule, hook, called_by=None, **kwargs):
+    def module_invoke(self, requested_module, hook, **kwargs):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
         """
-        if called_by is not None:
-            called_by = called_by._FullName
-        else:
-            called_by = 'Unknown'
-        cache_key = requestedModule + hook
+        if requested_module not in self:
+            raise YomboWarning('Requested library is missing: %s' % requested_module)
+
+        if 'called_by' not in kwargs:
+            raise YomboWarning("Unable to call hook '%s:%s', missing 'called_by' named argument." % (requested_module, hook))
+        calling_component = kwargs['called_by']
+
+        cache_key = requested_module + hook
         if cache_key in self._invoke_list_cache:
             if self._invoke_list_cache[cache_key] is False:
                 return  # skip. We already know function doesn't exist.
-        module = self.get(requestedModule)
+        module = self.get(requested_module)
         if module._Name == 'yombo.core.module.YomboModule':
             self._invoke_list_cache[cache_key] is False
             # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
-            returnValue(None)
+            return None
             # raise YomboWarning("Cannot call YomboModule hooks")
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = module._Name.lower() + "_" + hook
-        self.modules_invoke_log('debug', requestedModule, 'module', hook, 'About to call.')
+        self.modules_invoke_log('debug', requested_module, 'module', hook, 'About to call.')
         if hasattr(module, hook):
             method = getattr(module, hook)
             if isinstance(method, collections.Callable):
@@ -663,55 +629,68 @@ class Modules(YomboLibrary):
                     self.hook_counts[module._Name] = {}
                 if hook not in self.hook_counts[module._Name]:
                     self.hook_counts[module._Name][hook] = {'Total Count': {'count': 0}}
-                # print "hook counts: %s" % self.hook_counts
-                # print "hook counts: %s" % self.hook_counts[library._Name][hook]
-                if called_by not in self.hook_counts[module._Name][hook]:
-                    self.hook_counts[module._Name][hook][called_by] = {'count': 0}
-                self.hook_counts[module._Name][hook][called_by]['count'] = self.hook_counts[module._Name][hook][called_by]['count'] + 1
+                if calling_component not in self.hook_counts[module._Name][hook]:
+                    self.hook_counts[module._Name][hook][calling_component] = {'count': 0}
+                self.hook_counts[module._Name][hook][calling_component]['count'] = self.hook_counts[module._Name][hook][calling_component]['count'] + 1
                 self.hook_counts[module._Name][hook]['Total Count']['count'] = self.hook_counts[module._Name][hook]['Total Count']['count'] + 1
-                self.hooks_called[int(time())] = {
-                    'module': module._Name,
-                    'hook': hook,
-                    'called_by': called_by,
-                }
 
                 try:
-#                    results = yield maybeDeferred(method, **kwargs)
-                    self._invoke_list_cache[cache_key] = True
-                    if hook not in module._hooks_called:
-                        module._hooks_called[hook] = 1
-                    else:
-                        module._hooks_called[hook] += 1
-                    results = yield maybeDeferred(method, **kwargs)
-                    returnValue(results)
-                    # return method(**kwargs)
-                # except Exception, e:
-                #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
-                #     logger.error("--------------------------------------------------------")
-                #     logger.error("Error message: {e}", e=e)
-                #     logger.error("--------------------------------------------------------")
-                except Exception as e:
-                    exc_type, exc_value, exc_traceback = sys.exc_info()
-                    logger.error("------==(ERROR During {hook} of module: {name})==-------", hook=hook, name=module._FullName)
-                    logger.error("1:: {e}", e=sys.exc_info())
-                    logger.error("---------------==(Traceback)==--------------------------")
-                    logger.error("{e}", e=traceback.print_exc())
-                    logger.error("--------------------------------------------------------")
-                    # logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-                    #           limit=10, file=sys.stdout)))
-                    # logger.error("--------------------------------------------------------")
+                    d = Deferred()
+                    d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call _init_.'))
+                    d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
+                    d.addErrback(self.module_invoke_failure, hook)
+                    d.callback(1)
+                    results = yield d
+                    self.hooks_called[module._Name + ":" + hook] = {
+                        'module': module._Name,
+                        'hook': hook,
+                        'time': int(time()),
+                        'called_by': calling_component,
+                    }
+                    return results
+                except RuntimeWarning as e:
+                    pass
+
+#                 try:
+# #                    results = yield maybeDeferred(method, **kwargs)
+#                     self._invoke_list_cache[cache_key] = True
+#                     if hook not in module._hooks_called:
+#                         module._hooks_called[hook] = 1
+#                     else:
+#                         module._hooks_called[hook] += 1
+#                     results = yield maybeDeferred(method, **kwargs)
+#                     returnValue(results)
+#                     # return method(**kwargs)
+#                 # except Exception, e:
+#                 #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
+#                 #     logger.error("--------------------------------------------------------")
+#                 #     logger.error("Error message: {e}", e=e)
+#                 #     logger.error("--------------------------------------------------------")
+#                 except Exception as e:
+#                     exc_type, exc_value, exc_traceback = sys.exc_info()
+#                     logger.error("------==(ERROR During {hook} of module: {name})==-------", hook=hook, name=module._FullName)
+#                     logger.error("1:: {e}", e=sys.exc_info())
+#                     logger.error("---------------==(Traceback)==--------------------------")
+#                     logger.error("{e}", e=traceback.print_exc())
+#                     logger.error("--------------------------------------------------------")
+#                     # logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
+#                     #           limit=10, file=sys.stdout)))
+#                     # logger.error("--------------------------------------------------------")
             else:
-                logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
+                pass
+                # logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
         else:
             self._invoke_list_cache[cache_key] = False
             # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
 
     @inlineCallbacks
-    def module_invoke_all(self, hook, full_name=None, called_by=None, **kwargs):
+    def module_invoke_all(self, hook, full_name=None, **kwargs):
         """
         Calls module_invoke for all loaded modules.
         """
-        logger.debug("in module_invoke_all: hook: {hook}", hook=hook)
+        logger.debug("in module_invoke_all: fullname={full_name}   hook: {hook}.",
+                     full_name=full_name, hook=hook)
+        # logger.debug("in module_invoke_all: kwargs={kwargs}", kwargs=kwargs)
         if full_name == None:
             full_name = False
         results = {}
@@ -721,9 +700,9 @@ class Modules(YomboLibrary):
 
             label = module._FullName.lower() if full_name else module._Name.lower()
             try:
-                 result = yield self.module_invoke(module._Name, hook, called_by=called_by, **kwargs)
-                 if result is not None:
-                     results[label] = result
+                result = yield self.module_invoke(module._Name, hook, **kwargs)
+                if result is not None:
+                    results[label] = result
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:
@@ -800,7 +779,7 @@ class Modules(YomboLibrary):
                 }
             ]
             try:
-                logger.debug("Get is about to call search...: %s" % module_requested)
+                # logger.debug("Get is about to call search...: %s" % module_requested)
                 found, key, item, ratio, others = do_search_instance(attrs, self.modules,
                                                                      self.module_search_attributes,
                                                                      limiter=limiter,

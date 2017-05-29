@@ -29,7 +29,7 @@
                                 {% if device_type.commands|length == 0 %}
                                 <li>None</li>
                                 {% else %}
-                                {% for command_id, command in device_type.commands.iteritems() %}
+                                {% for command_id, command in device_type.commands.items() %}
                                 <li><a href="/devtools/config/commands/{{command_id}}/details">{{ command.label }}</a></li>
                                 {% endfor %}
                                 {% endif %}
@@ -37,7 +37,7 @@
                                 {% if device_type.registered_devices|length == 0 %}
                                 <li>None</li>
                                 {% else %}
-                                {% for device_id, device in device_type.registered_devices.iteritems() %}
+                                {% for device_id, device in device_type.registered_devices.items() %}
                                 <li><a href="/devices/{{device_id}}/details">{{ device.label }}</a></li>
                                 {% endfor %}
                                 {% endif %}
@@ -45,7 +45,7 @@
                                 {% if device_type.registered_modules|length == 0 %}
                                 <li>None</li>
                                 {% else %}
-                                {% for module_id, module in device_type.registered_modules.iteritems() %}
+                                {% for module_id, module in device_type.registered_modules.items() %}
                                 <li><a href="/modules/{{module_id}}/details">{{ module._label }}</a></li>
                                 {% endfor %}
                                 {% endif %}

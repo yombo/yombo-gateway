@@ -26,18 +26,13 @@ from collections import deque, namedtuple
 from time import time
 from collections import OrderedDict
 
-# Import 3rd-party libs
-import yombo.ext.six as six
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, split, global_invoke_all, string_to_number, do_search_instance
-from yombo.utils.maxdict import MaxDict
+from yombo.utils import random_string, global_invoke_all, string_to_number, do_search_instance
 from yombo.lib.commands import Command  # used only to determine class type
 from ._device_command import Device_Command
 
@@ -192,7 +187,7 @@ class Device(object):
         self.update_attributes(device)
 
     @inlineCallbacks
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Performs items that require deferreds.
 
@@ -272,7 +267,7 @@ class Device(object):
                 self.energy_map = None
 
         if self.device_is_new is True:
-            global_invoke_all('_device_updated_', **{'device': self})
+            global_invoke_all('_device_updated_', called_by=self, **{'device': self})
 
             # if 'variable_data' in device:
             # print("device.update_attributes: new: %s: " % device['variable_data'])
@@ -290,7 +285,7 @@ class Device(object):
         if replace is None:
             replace = True
 
-        if isinstance(new_attributes, six.string_types) is False:
+        if isinstance(new_attributes, str) is False:
             return False
         new_attributes = "".join(new_attributes.split())  # we don't like spaces
         attributes = new_attributes.split(',')
@@ -435,7 +430,7 @@ class Device(object):
                 logger.debug("found a previous persistent request. Canceling it and creating a new one.")
                 self._Parent.device_commands[previous_request_id].set_finished(status="superseded", message="Replacement request created.")
         elif request_id is None:
-            request_id = random_string(length=16)  # print("in device command: rquest_id 2: %s" % request_id)
+            request_id = random_string(length=18)  # print("in device command: rquest_id 2: %s" % request_id)
 
         device_command['request_id'] = request_id
 
@@ -448,46 +443,46 @@ class Device(object):
 
             # Determine when to call the command
             if not_before is not None:
-                if isinstance(not_before, six.string_types):
+                if isinstance(not_before, str):
                     try:
                         not_before = float(not_before)
                     except:
                         raise YomboWarning("'not_before' time should be epoch second in the future as an int, float, or parsable string.")
-                # if isinstance(not_before, six.integer_types) or isinstance(not_before, float):
+                # if isinstance(not_before, int) or isinstance(not_before, float):
                 if not_before < cur_time:
                     raise YomboWarning("'not_before' time should be epoch second in the future, not the past. Got: %s" % not_before)
                 device_command['not_before_time'] = not_before
 
             elif delay is not None:
-                if isinstance(delay, six.string_types):
+                if isinstance(delay, str):
                     try:
                         delay = float(delay)
                     except:
                         raise YomboWarning("'delay' time must be an int, float, or parsable string. Got: %s" % delay)
-                # if isinstance(not_before, six.integer_types) or isinstance(not_before, float):
+                # if isinstance(not_before, int) or isinstance(not_before, float):
                 if delay < 0:
                     raise YomboWarning("'not_before' time should be epoch second in the future, not the past.")
                 device_command['not_before_time'] = cur_time + delay
 
             # determine how late the command can be run. This happens is the gateway was turned off
             if not_after is not None:
-                if isinstance(not_after, six.string_types):
+                if isinstance(not_after, str):
                     try:
                         not_after = float(not_after)
                     except:
                         raise YomboWarning("'not_after' time should be epoch second in the future after not_before as an int, float, or parsable string.")
-                if isinstance(not_after, six.integer_types) or isinstance(not_after, float):
+                if isinstance(not_after, int) or isinstance(not_after, float):
                     if not_after < device_command['not_before_time']:
                         raise YomboWarning("'not_after' must occur after 'not_before (or current time + delay)")
                 device_command['not_after_time'] = not_after
             elif max_delay is not None:
                 # todo: try to convert if it's not. Make a util helper for this, occurs a lot!
-                if isinstance(max_delay, six.string_types):
+                if isinstance(max_delay, str):
                     try:
                         max_delay = float(max_delay)
                     except:
                         raise YomboWarning("'max_delay' time should be an int, float, or parsable string.")
-                if isinstance(max_delay, six.integer_types) or isinstance(max_delay, float):
+                if isinstance(max_delay, int) or isinstance(max_delay, float):
                     if max_delay < 0:
                         raise YomboWarning("'max_delay' must be positive only.")
                 device_command['not_after_time'] = device_command['not_before_time'] + max_delay
@@ -538,9 +533,12 @@ class Device(object):
             'inputs': device_command.inputs,
             'request_id': device_command.request_id,
             'device_command': device_command,
+            'called_by': self,
         }
         device_command.set_sent()
-        results = yield global_invoke_all('_device_command_', called_by=self, **items)
+        logger.info("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
+        # print(self._Parent.device_commands)
+        results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
             if result is True:
                 device_command.set_received(message="Received by: %s" % component)
@@ -762,7 +760,7 @@ class Device(object):
                                       uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
-            self._Parent._LocalDB.save_device_status(**new_status.__dict__)
+            self._Parent._LocalDB.save_device_status(**new_status._asdict())
         self._Parent.check_trigger(self.device_id, new_status)
 
         self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
@@ -898,7 +896,7 @@ class Device(object):
         """
         # print("deleting device.....")
         self._Parent._LocalDB.set_device_status(self.device_id, 2)
-        global_invoke_all('_device_deleted_', **{'device': self})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('_device_deleted_', called_by=self, **{'device': self})  # call hook "devices_delete" when deleting a device.
         self.status = 2
 
     def enable(self):
@@ -908,7 +906,7 @@ class Device(object):
         :return:
         """
         self._Parent._LocalDB.set_device_status(self.device_id, 1)
-        global_invoke_all('_device_enabled_', **{'device': self})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('_device_enabled_', called_by=self, **{'device': self})  # call hook "devices_delete" when deleting a device.
         self.status = 1
 
     def disable(self):
@@ -918,7 +916,7 @@ class Device(object):
         :return:
         """
         self._Parent._LocalDB.set_device_status(self.device_id, 0)
-        global_invoke_all('_device_disabled_', **{'device': self})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('_device_disabled_', called_by=self, **{'device': self})  # call hook "devices_delete" when deleting a device.
         self.status = 0
 
     ####################################################

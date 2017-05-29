@@ -62,21 +62,21 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    {% for name, details in source_platforms.iteritems() %}
+                                    {% for name, details in source_platforms.items() %}
                                         <tr>
                                             <td>Source</td>
                                             <td>{{ name }}</td>
                                             <td>{{ details.description }}</td>
                                         </tr>
                                     {% endfor %}
-                                    {% for name, details in filter_platforms.iteritems() %}
+                                    {% for name, details in filter_platforms.items() %}
                                         <tr>
                                             <td>Filter</td>
                                             <td>{{ name }}</td>
                                             <td>{{ details.description }}</td>
                                         </tr>
                                     {% endfor %}
-                                    {% for name, details in action_platforms.iteritems() %}
+                                    {% for name, details in action_platforms.items() %}
                                         <tr>
                                             <td>Action</td>
                                             <td>{{ name }}</td>

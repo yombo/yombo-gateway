@@ -18,6 +18,7 @@ _trial_temp
 /ENV
 test.py
 *.bak
+.python-version
 
 # Yombo Stuff #
 ###############

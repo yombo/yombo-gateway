@@ -7,9 +7,6 @@ Various utilities used to perform common functions to help speed development.
 :license: See LICENSE for details.
 """
 # Import python libraries
-
-
-
 try:
     import fcntl
     HAS_FCNTL = True
@@ -20,23 +17,24 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import inspect
-import random
-import string
-import sys
-import re
+
+import binascii
 from datetime import datetime
+from difflib import SequenceMatcher
+import inspect
 import parsedatetime.parsedatetime as pdt
-from struct import pack as struct_pack, unpack as struct_unpack
-from socket import inet_aton, inet_ntoa
 import math
-from time import strftime, localtime, time
+import msgpack
 import netifaces
 import netaddr
-import socket
-import binascii
 import os
-from difflib import SequenceMatcher
+import random
+import re
+import socket
+import string
+from struct import pack as struct_pack, unpack as struct_unpack
+import sys
+from time import strftime, localtime, time
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -45,9 +43,7 @@ from twisted.internet import reactor
 # Import 3rd-party libs
 #from yombo.core.exceptions import YomboWarning
 from yombo.utils.decorators import memoize_, memoize_ttl
-import yombo.ext.six as six
 from yombo.ext.hashids import Hashids
-import yombo.ext.umsgpack as msgpack
 
 # from yombo.lib.modules import Modules  # used only to determine class type
 from yombo.core.log import get_logger
@@ -231,7 +227,7 @@ def clean_kwargs(**kwargs):
     """
     data = {}
     start = kwargs.get('start', '__')
-    for key, val in six.iteritems(kwargs):
+    for key, val in kwargs.items():
         if not key.startswith(start):
             data[key] = val
     return data
@@ -243,10 +239,47 @@ def clean_dict(dictionary, **kwargs):
     """
     data = {}
     start = kwargs.get('start', '_')
-    for key, val in six.iteritems(dictionary):
+    for key, val in dictionary.items():
         if not key.startswith(start):
             data[key] = val
     return data
+
+
+def bytes_to_unicode(input):
+    """
+    Converts strings, lists, and dictionarys to unicde. Handles nested items too. Non-strings are untouched.
+    Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
+
+    :param input: Convert strings to unicode.
+    :type input: dict, list, str
+    :return: 
+    """
+    if isinstance(input, dict):
+        return dict((bytes_to_unicode(key), bytes_to_unicode(value)) for key, value in input.items())
+    elif isinstance(input, list):
+        return [bytes_to_unicode(element) for element in input]
+    elif isinstance(input, bytes):
+        return input.decode()
+    else:
+        return input
+
+
+def unicode_to_bytes(input):
+    """
+    Converts strings, lists, and dictionarys to strings. Handles nested items too. Non-strings are untouched.
+    Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
+
+    :param input: 
+    :return: 
+    """
+    if isinstance(input, dict):
+        return dict((unicode_to_bytes(key), unicode_to_bytes(value)) for key, value in input.items())
+    elif isinstance(input, list):
+        return [unicode_to_bytes(element) for element in input]
+    elif isinstance(input, str):
+        return input.encode()
+    else:
+        return input
 
 
 def dict_has_key(dictionary, keys):
@@ -512,6 +545,8 @@ def read_file(filename, mode = None):
     A quick function to read data from a file. Defaults to read only 'r'.
 
     Don't use this for saving large files.
+    
+    THIS IS BLOCKING! TODO: find a non-blocking version....
 
     :param filename: Full path to save to.
     :param mode: File open mode, default to 'r'.
@@ -519,8 +554,8 @@ def read_file(filename, mode = None):
     """
     if mode is None:
         mode = 'r'
-    f = fopen(filename, mode)
-    return f.read()
+    return open(filename, mode).read()
+
 
 def file_last_modified(path_to_file):
     return os.path.getmtime(path_to_file)
@@ -873,7 +908,7 @@ def subnetwork_to_ip_range(subnetwork):
 
     raise ValueError("invalid subnetwork")
 
-
+@inlineCallbacks
 def get_external_ip_address_v4():
     """
     Get the IP address of this machine as seen from the outside world.  THis
@@ -900,19 +935,20 @@ def get_external_ip_address_v4():
     :return: An ip address
     :rtype: string
     """
-    import urllib3
-    urllib3.disable_warnings()  # just getting client IP address from outside view. Not a big issue here.
-    http = urllib3.PoolManager()
-    r = http.request("GET", "https://yombo.net/tools/clientip.php")
-    return r.data.strip()
+    import treq
+
+#    response = yield treq.get("https://yombo.net/tools/clientip.php") # fails check on older systems due to wildcard
+    response = yield treq.get("https://api.ipify.org")
+    content = yield treq.content(response)
+    return content.decode().strip()
 
 
 def ip_address_to_int(address):
-    return struct_unpack("!I", inet_aton(address))[0]
+    return struct_unpack("!I", socket.inet_aton(address))[0]
 
 
 def int_to_ip_address(address):
-    return inet_ntoa(struct_pack("!I", address))
+    return socket.inet_ntoa(struct_pack("!I", address))
 
 
 def random_string(**kwargs):
@@ -1177,7 +1213,7 @@ def is_string_bool(value=None):
 
     :param value: String of either "true" or "false" (case insensitive), returns bool or raises YomboWarning.
     """
-    if isinstance(value, six.string_types):
+    if isinstance(value, str):
         if str(value).lower() == 'true':
             return True
         elif str(value).lower() == 'false':
@@ -1202,13 +1238,13 @@ def is_true_false(input, only_bool=False):
     """
     if isinstance(input, bool):
             return input
-    elif isinstance(input, six.string_types):
+    elif isinstance(input, str):
         input = input.lower()
         if input in ("true", "1", "open", "on", "running"):
             return True
         if input in ("false", "0", "closed", "off", "stopped"):
             return False
-    elif isinstance(input, six.integer_types):
+    elif isinstance(input, int):
             if input == 1:
                 return True
             elif input == 0:

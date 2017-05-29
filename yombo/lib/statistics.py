@@ -130,7 +130,7 @@ class Statistics(YomboLibrary):
         'lib.atoms.#': {'size': 60, 'lifetime': 180},
     }
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Brings the library module online. Responsible for setting up framework for storing statistics.
         :param loader: Loader library.
@@ -162,11 +162,11 @@ class Statistics(YomboLibrary):
 
         return self.init_deferred
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         # self.uploadDataLoop.start(5, False) # for testing...
         self.uploadDataLoop.start(21557, False) # about every 6 hours
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Saves statistics data to database.
         :return: A deferred that the shutdown functions use to wait on.
@@ -896,11 +896,11 @@ class Statistics(YomboLibrary):
     @inlineCallbacks
     def upload_statistics_complete(self, msg=None, properties=None, **kwargs):
         # print "upload_statistics_complete got properties: %s" % properties
-        # print "upload_statistics_complete got message: %s" % msg
-        if len(msg['stats_completed']):
+        print("upload_statistics_complete got message: %s" % msg)
+        if 'stats_completed' in msg and len(msg['stats_completed']) > 0:
             yield self._LocalDB.set_uploaded_statistics(2, msg['stats_completed'])
-        if len(msg['stats_completed']):
+        if 'stats_failed' in msg and len(msg['stats_failed']) > 0:
             yield self._LocalDB.set_uploaded_statistics(-1, msg['stats_failed'])
 
-        if self.last_upload_count > 1800: # if we upload a lot of stats last time, maybe we have more to upload.
-            reactor.callLater(10, self._upload_statistics)  # get the system a few seconds to chill
+        if self.last_upload_count > 1900: # if we upload a lot of stats last time, maybe we have more to upload.
+            reactor.callLater(36, self._upload_statistics)  # give the system a few seconds to chill

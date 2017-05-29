@@ -2,10 +2,12 @@
 General catchall for functions that don't make sense as methods.
 """
 
+from __future__ import absolute_import
 from twisted.internet import defer, threads, reactor
 
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.exceptions import TransactionError
+from six.moves import range
 from functools import reduce
 
 

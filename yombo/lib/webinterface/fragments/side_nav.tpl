@@ -19,7 +19,7 @@
                         <li>
                             <a href="/?"><i class="fa fa-home fa-fw"></i> <span class="side-menu-title">Home</span></a>
                         </li>
-        {%- for priority1, items in misc_wi_data.nav_side.iteritems() -%}
+        {%- for priority1, items in misc_wi_data.nav_side.items() -%}
             {% set printed_nested_header = False -%}
             {% if items|length > 1 %}
 						<li>

@@ -53,12 +53,12 @@
                                         </tr>
                                     </thead>
 
-                                    <tbody>{% for component_name, component in hooks_called.iteritems() %}
-                                            {% for hook_name, called_by in component.iteritems() %}
+                                    <tbody>{% for component_name, component in hooks_called.items() %}
+                                            {% for hook_name, called_by in component.items() %}
                                         <tr>
                                             <td>{{ component_name }}</td>
                                             <td>{{ hook_name }}</td>
-                                            <td>{% for caller, data in called_by.iteritems() -%}
+                                            <td>{% for caller, data in called_by.items() -%}
                                                 {%- if caller != 'Total Count' -%}
                                                     {{ caller }} = {{ data['count'] }}
                                                 {%- endif -%}

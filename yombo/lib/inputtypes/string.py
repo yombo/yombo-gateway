@@ -1,5 +1,3 @@
-from yombo.ext.six import string_types
-
 from yombo.lib.inputtypes._input_type import Input_Type
 
 
@@ -16,7 +14,7 @@ class String(Input_Type):
         else:
             max = self.MAX
 
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             length = len(value)
             if min is not None and length < min:
                 raise AssertionError("Password is too short.")

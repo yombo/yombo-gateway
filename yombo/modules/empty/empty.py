@@ -19,7 +19,7 @@ class Empty(YomboModule):
 
     All methods (functions) defined below are optional.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Init the module.  Don't use __init__ as that will override the
         setup functions of the base YomboModule class.
@@ -32,7 +32,7 @@ class Empty(YomboModule):
         """
         pass
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         After this phase, module should be able to
         processing incoming messages.
@@ -78,7 +78,7 @@ class Empty(YomboModule):
         logger.debug("yombo.modules.empty.loaded() has been called.")
     
         
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Assume all other modules are loaded, we can start
         sending messages to other modules.  Here, is where we enable or turn on
@@ -96,7 +96,7 @@ class Empty(YomboModule):
         logger.info("Is Night: {night}", night=self._States['is.night'])
         logger.info("Mars Next Rise: {mars_rise}", mars_rise=self._Times.item_rise(dayOffset=1, item='Mars'))
     
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Stop sending messages.  Other components are unable to receive
         messages.  Queue up or pause functionality.
@@ -107,7 +107,7 @@ class Empty(YomboModule):
         """
         pass
     
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Called just before the gateway is about to shutdown
         or reload all the modules.  Should assume gateway is going down.

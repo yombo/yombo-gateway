@@ -1,11 +1,7 @@
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
+from collections import OrderedDict
 import inspect
 import itertools
 
-import six
 from decorator import decorator
 
 
@@ -49,7 +45,7 @@ def func_args_as_dict(func, args, kwargs):
         )
     )
     return OrderedDict(
-        list(six.moves.zip(arg_names, args)) +
+        list(zip(arg_names, args)) +
         list(kwargs.items())
     )
 

@@ -34,7 +34,7 @@ class Variables(YomboLibrary):
     """
     Various variable tools.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.

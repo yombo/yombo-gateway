@@ -37,13 +37,13 @@ class Queue(YomboLibrary):
     Allows libraries and modules to implement a FIFO queue with various features. See 
     `Queues @ command Development <https://yombo.net/docs/modules/queues/>`_ for full usage.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Track all the queue created so we can gracefully shut them down.
         """
         self.queues = {}
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         self.unload_deferred = Deferred()
         to_stop = []
         logger.info("Stopping queues. Waiting for in-flight jobs to finish.")

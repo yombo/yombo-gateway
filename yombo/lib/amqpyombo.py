@@ -12,7 +12,7 @@ This library utilizes the amqp library to handle the low level handling.
    This library is not intended to be accessed by developers or users. These functions, variables,
    and classes **should not** be accessed directly by modules. These are documented here for completeness.
 
-This connection should be maintained 100% of the time. This allows control messages to be recieved by your devices
+This connection should be maintained 100% of the time. This allows control messages to be received by your devices
 or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
 .. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor.
@@ -33,27 +33,25 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 import zlib
-from time import time
+import collections
+import msgpack
+import six
 import sys
+from time import time
 import traceback
+
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import 3rd party extensions
-import yombo.ext.six as six
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string, random_int
-import collections
-try:  # Prefer full version of msgpack, but we also ship a limited version with Yombo.
-    import msgpack
-except ImportError:
-    import yombo.ext.umsgpack as msgpack
 
 # Handlers for processing various messages.
 from yombo.lib.handlers.amqpcontrol import AmqpControlHandler
@@ -70,7 +68,7 @@ class AMQPYombo(YomboLibrary):
     Handles interactions with Yombo servers through the AMQP library.
     """
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Loads various variables and calls :py:meth:connect() when it's ready.
 
@@ -93,21 +91,20 @@ class AMQPYombo(YomboLibrary):
         self.connect()
         return self.init_deferred
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Called by the Yombo system when it's time to shutdown. This in turn calls the disconnect.
         :return:
         """
 
-        def _stop_(self):
-            if self.init_deferred is not None and self.init_deferred.called is False:
-                self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
+        if self.init_deferred is not None and self.init_deferred.called is False:
+            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
 
         self.configHandler._stop_()
         self.controlHandler._stop_()
         self.disconnect()  # will be cleaned up by amqp library anyways, but it's good to be nice.
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         self.amqp.disconnect()
 
     @inlineCallbacks
@@ -193,9 +190,9 @@ class AMQPYombo(YomboLibrary):
         if self.send_local_information_loop is None:
             self.send_local_information_loop = LoopingCall(self.send_local_information)
 
+        # Sends various information, helps Yombo cloud know we are alive and where to find us.
         if self.send_local_information_loop.running is False:
-            self.send_local_information_loop.start(random_int(60 * 60 * 4,
-                                                           .2))  # Sends various information, helps Yombo cloud know we are alive and where to find us.
+            self.send_local_information_loop.start(random_int(60 * 60 * 4,.2))
 
         if self.request_configs is False:
             self.request_configs = True
@@ -260,8 +257,9 @@ class AMQPYombo(YomboLibrary):
         requestmsg['properties']['headers']['response_type'] = 'system'
         self.amqp.publish(**requestmsg)
 
-    def receive_local_information(self, deliver, props, msg, queue):
-        # print "########################################################### receive_local_information"
+    def receive_local_information(self, msg=None, properties=None, correlation_info=None,
+                                  send_message_info=None, receied_message_info=None, **kwargs):
+        print("########################################################### receive_local_information")
         pass
 
     def generate_message_response(self, properties, exchange_name, source, destination, headers, body):
@@ -341,6 +339,7 @@ class AMQPYombo(YomboLibrary):
         :return: A dictionary that can be directly returned to Yombo Gateways via AMQP
         :rtype: dict
         """
+        # print("body: %s" % body)
         request_msg = {
             "exchange_name": exchange_name,
             "routing_key": '*',
@@ -506,7 +505,7 @@ class AMQPYombo(YomboLibrary):
                 raise YomboWarning("Received request %s, but never asked for it. Discarding" % properties.correlation_id)
         else:
             self._Statistics.increment("lib.amqpyombo.received.discarded.unknown_msg_type", bucket_size=15, anon=True)
-            raise YomboWarning("Unknown message type recieved.")
+            raise YomboWarning("Unknown message type received.")
 
         # self._local_log("debug", "PikaProtocol::receive_item4")
 
@@ -571,15 +570,15 @@ class AMQPYombo(YomboLibrary):
             return False
         return True
 
-    def is_msgpack(self, mymsgpack):
+    def is_msgpack(self, message):
         """
         Helper function to determine if data is msgpack or not.
 
-        :param mymsgpack:
+        :param message:
         :return:
         """
         try:
-            json_object = msgpack.loads(mymsgpack)
+            json_object = msgpack.loads(message)
         except ValueError as e:
             return False
         return True

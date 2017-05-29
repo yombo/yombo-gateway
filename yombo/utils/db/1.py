@@ -445,6 +445,24 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'created'))
     yield Registry.DBPOOL.runQuery(create_index('webinterface_sessions', 'updated'))
 
+    # Used by the tasks library to start various tasks.
+    table = """CREATE TABLE `webinterface_logs` (
+        `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `request_time`      INTEGER,
+        `request_protocol`  TEXT NOT NULL,
+        `referrer`          TEXT NOT NULL,
+        `agent`             TEXT NOT NULL,
+        `ip`                INTEGER NOT NULL,
+        `hostname`          TEXT NOT NULL,
+        `method`            TEXT NOT NULL,
+        `path`              TEXT NOT NULL,
+        `secure`            BOOL NOT NULL,
+        `response_code`     INTEGER NOT NULL,
+        `response_size`     INTEGER NOT NULL,
+        `uploadable`        INTEGER DEFAULT 1,
+        `uploaded`          INTEGER DEFAULT 0
+        );"""
+    yield Registry.DBPOOL.runQuery(table)
 
     # The following three tables and following views manages the variables set for devices and modules.
     table = """CREATE TABLE `variable_groups` (

@@ -58,8 +58,9 @@ can simply implement the hook: _configuration_set_:
 import configparser
 import hashlib
 from time import time, localtime, strftime
-import pickle
-from shutil import move, copy2 as copyfile
+import msgpack
+from base64 import b64encode, b64decode
+from shutil import copy2 as copyfile
 import os
 from datetime import datetime
 import sys
@@ -81,7 +82,7 @@ from yombo.core.exceptions import YomboWarning, InvalidArgumentError
 from yombo.utils import get_external_ip_address_v4, get_local_network_info
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import dict_merge, global_invoke_all, is_string_bool, fopen, file_last_modified, dict_diff
+from yombo.utils import dict_merge, global_invoke_all, is_string_bool
 
 logger = get_logger('library.configuration')
 
@@ -207,7 +208,8 @@ class Configuration(YomboLibrary):
     def values(self):
         return list(self.__yombocommands.values())
 
-    def _init_(self):
+    @inlineCallbacks
+    def _init_(self, **kwargs):
         """
         Open the yombo.ini file for reading.
 
@@ -243,25 +245,26 @@ class Configuration(YomboLibrary):
         self.loading_yombo_ini = True
         self.last_yombo_ini_read = self.read_yombo_ini()
 
+        logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
-            config_parser = configparser.SafeConfigParser()
-            fp = open('usr/etc/yombo.ini.info')
-            config_parser.readfp(fp)
-            fp.close()
-
+            config_parser = configparser.ConfigParser()
+            config_parser.read('usr/etc/yombo.ini.info')
+            logger.debug("yombo.ini.info file read into memory.")
             for section in config_parser.sections():
                 if section not in self.configs:
                     continue
                 for option in config_parser.options(section):
                     if option not in self.configs[section]:
                         continue
-                    values = pickle.loads(config_parser.get(section, option))
+                    values = msgpack.loads(b64decode(config_parser.get(section, option)))
                     self.configs[section][option] = dict_merge(self.configs[section][option], values)
         except IOError as e:
             logger.warn("CAUGHT IOError!!!!!!!!!!!!!!!!!!  In reading meta: {error}", error=e)
         except configparser.NoSectionError:
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  IN saving. ")
         # print self.configs
+
+        logger.debug("done parsing yombo.ini.info")
 
         #setup some defaults if we are new....
         self.get('core', 'gwid', None)
@@ -277,11 +280,13 @@ class Configuration(YomboLibrary):
             self.set('local', 'deletedevicehistory', False)
 
         if self.get('core', 'externalipaddress_v4', False, False) is False or self.get('core', 'externalipaddresstime', False, False) is False:
-            self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
+            ipv4_external = yield get_external_ip_address_v4()
+            self.set("core", "externalipaddress_v4", ipv4_external)
             self.set("core", "externalipaddresstime", int(time()))
         else:
             if int(self.configs['core']['externalipaddresstime']['value']) < (int(time()) - 3600):
-                self.set("core", "externalipaddress_v4", get_external_ip_address_v4())
+                ipv4_external = yield get_external_ip_address_v4()
+                self.set("core", "externalipaddress_v4", ipv4_external)
                 self.set("core", "externalipaddresstime", int(time()))
             #            print "didn't find external ip address"
 
@@ -318,10 +323,10 @@ class Configuration(YomboLibrary):
             self.set('core', 'setup_stage', 'first_run')
         self.loading_yombo_ini = False
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         self._loaded = True
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Define some default configuration items.
         :return:
@@ -329,14 +334,14 @@ class Configuration(YomboLibrary):
         self.set('misc', 'tempurature_display', 'f')
         self.set('misc', 'length_display', 'imperial')  # will we ever get to metric?
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
             self.periodic_save_yombo_ini.stop()
 
         # if self.periodic_load_yombo_ini is not None and self.periodic_load_yombo_ini.running:
         #     self.periodic_load_yombo_ini.stop()
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
@@ -344,14 +349,10 @@ class Configuration(YomboLibrary):
         self.save(True)
 
     def read_yombo_ini(self, update_self=True):
-        config_parser = configparser.SafeConfigParser()
-
         temp = {}
         try:
-            fp = fopen('yombo.ini')
-            config_parser.readfp(fp)
-            fp.close()
-
+            config_parser = configparser.ConfigParser()
+            config_parser.read('yombo.ini')
             for section in config_parser.sections():
                 temp[section] = {}
 
@@ -525,7 +526,7 @@ class Configuration(YomboLibrary):
                         #     del temp['writes']
                         if 'value' in temp:
                             del temp['value']
-                        Config.set(section, item, pickle.dumps(temp) )
+                        Config.set(section, item, b64encode(msgpack.dumps(temp)).decode())
                     if len(Config.options(section)) == 0:  # Don't save empty sections.
                         Config.remove_section(section)
 
@@ -592,7 +593,7 @@ class Configuration(YomboLibrary):
                }]
 
         """
-        config_details = yield global_invoke_all('_configuration_details_')
+        config_details = yield global_invoke_all('_configuration_details_', called_by=self)
 
         for component, details in config_details.items():
             if details is None:
@@ -810,12 +811,13 @@ class Configuration(YomboLibrary):
         self.configs[section][option] = dict_merge(self.configs[section][option], {
                 'set_time': int(time()),
                 'value': value,
-                'hash': hashlib.sha224( str(value) ).hexdigest(),
+                'hash': hashlib.sha224( str(value).encode('utf-8') ).hexdigest(),
             })
         self.configs_dirty = True
         if self.loading_yombo_ini is False:
             self.configs[section][option]['writes'] += 1
-            yield global_invoke_all('_configuration_set_', **{'section':section, 'option': option, 'value': value, 'action': 'set'})
+            yield global_invoke_all('_configuration_set_', called_by=self,
+                                    **{'section':section, 'option': option, 'value': value, 'action': 'set'})
 
 
     def get_meta(self, section, option, meta_type='time'):
@@ -838,7 +840,8 @@ class Configuration(YomboLibrary):
             if option in self.configs[section]:
                 self.configs_dirty = True
                 del self.configs[section][option]
-                yield global_invoke_all('_configuration_set_', **{'section': section, 'option': option, 'value': None, 'action': 'delete'})
+                yield global_invoke_all('_configuration_set_', called_by=self,
+                                        **{'section': section, 'option': option, 'value': None, 'action': 'delete'})
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #

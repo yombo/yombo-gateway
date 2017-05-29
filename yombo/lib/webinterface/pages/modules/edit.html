@@ -94,7 +94,7 @@
                                                  <tr>
                                                     <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
                                                     <td>{%- if module_variables[field.field_machine_label]['data']|length > 0 -%}
-                                                             {%- for data_id, data in module_variables[field.field_machine_label]['data'].iteritems() %}
+                                                             {%- for data_id, data in module_variables[field.field_machine_label]['data'].items() %}
                                                                 <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}]" id="vars[{{ field.id }}][{{ data_id }}]['input']" value="{{data['value'] }}"
                                                                 {%- if field.required %} required{% endif -%}>
                                                                 <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}]" id="vars[{{ field.id }}][{{ data_id }}]['orig']" value="{{data['value'] }}">

@@ -210,7 +210,7 @@ class VoiceCmds(YomboLibrary):
     def values(self):
         return list(self.__yombocommands.values())
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Construct a new voice_cmds Instance
 
@@ -240,7 +240,7 @@ class VoiceCmds(YomboLibrary):
            def ModuleName_voice_cmds_load(self, **kwargs):
                return ['status']
         """
-        voicecommands_to_add = yield global_invoke_all('_voicecmds_add_')
+        voicecommands_to_add = yield global_invoke_all('_voicecmds_add_', called_by=self)
 #        logger.info("voicecommands_to_add: {voice_cmds}", voice_cmds=voicecommands_to_add)
 
         for componentName, voice_cmds in voicecommands_to_add.items():

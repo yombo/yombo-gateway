@@ -180,7 +180,7 @@ class LogEvents(YomboLibrary):
             self.notifications.prepend(notice['id'], Notification(notice))
         else:
             self.notifications[notice['id']] = Notification(notice)
-            # self.notifications = OrderedDict(sorted(self.notifications.iteritems(), key=lambda x: x[1]['created']))
+            # self.notifications = OrderedDict(sorted(self.notifications.items(), key=lambda x: x[1]['created']))
             pass
         return notice['id']
 

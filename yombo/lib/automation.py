@@ -47,16 +47,12 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-
-
+import msgpack
+import hjson
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import reactor
-
-# Import 3rd-party libs
-import yombo.ext.hjson as hjson
-import yombo.ext.umsgpack as msgpack
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboAutomationWarning, YomboWarning
@@ -87,7 +83,7 @@ class Automation(YomboLibrary):
     for additional automation rules defined by modules. It also implements various hooks so modules can extend the
     capabilites of the automation system.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Get the Automation library started. Setups various dictionarys to be used.
         :return: 
@@ -104,7 +100,7 @@ class Automation(YomboLibrary):
 
         # lets load the raw json and see if we can even parse anything.
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Loads the automation.txt file and processes any rules included.
         
@@ -185,30 +181,36 @@ class Automation(YomboLibrary):
         # logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
         for component_name, item in automation_sources.items():
             for vals in item:
-                vals['platform_source'] = component_name
-                self.sources[vals['platform']] = vals
+                if 'platform_source' in vals and 'platform' in vals:
+                    vals['platform_source'] = component_name
+                    self.sources[vals['platform']] = vals
         # logger.debug("sources: {sources}", sources=self.sources)
 
         automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
         # logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
         for component_name, item in automation_filters.items():
             for vals in item:
-                vals['platform_source'] = component_name
-                self.filters[vals['platform']] = vals
+                if 'platform_source' in vals and 'platform' in vals:
+                    vals['platform_source'] = component_name
+                    self.filters[vals['platform']] = vals
         # logger.debug("filters: {filters}", filters=self.filters)
 
         automation_actions = yield yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for component_name, item in automation_actions.items():
             for vals in item:
-                vals['platform_source'] = component_name
-                self.actions[vals['platform']] = vals
+                if 'platform_source' in vals and 'platform' in vals:
+                    vals['platform_source'] = component_name
+                    self.actions[vals['platform']] = vals
 
         callback_rules = yield yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
         for component_name, component_rules in callback_rules.items():
-            for rule in component_rules['rules']:
-                rule['source'] = 'callbacks:%s' % component_name
-                self._rulesRaw['rules'].append(rule)
+            if 'rules' in component_rules:
+                for rule in component_rules['rules']:
+                    rule['source'] = 'callbacks:%s' % component_name
+                    if 'rules' not in self._rulesRaw:
+                        self._rulesRaw['rules'] = []
+                    self._rulesRaw['rules'].append(rule)
 
         # logger.debug("rulesRaw: {rawrules}", rawrules=pprint(self._rulesRaw))
         if 'rules' not in self._rulesRaw:
@@ -237,8 +239,9 @@ class Automation(YomboLibrary):
         :return: Float in seconds in the future.
         """
         seconds = (float(yombo.utils.epoch_from_string(delay, True)))
-        if seconds <0:
-            raise YomboWarning("get_action_delay on accepts delays in the future, not the past.", 'get_action_delay', 'automationhelpers')
+        if seconds < 0:
+            raise YomboWarning("get_action_delay on accepts delays in the future, not the past.",
+                               200, 'get_action_delay', 'automationhelpers')
         return seconds
 
     def add_rule(self, rule):
@@ -253,7 +256,7 @@ class Automation(YomboLibrary):
         :return:
         """
         # make sure rule_id is unique. If it's a duplication, we will toss! make one if needed
-        rule_is = None
+        rule_id = None
         if 'rule_id' in rule:
             if rule['rule_id'] in self.rules:
                 logger.warn("Duplicate rule id found, dropping it.")

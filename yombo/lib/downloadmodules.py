@@ -71,7 +71,7 @@ class DownloadModules(YomboLibrary):
     MAX_VALUE = 50
     MAX_DOWNLOAD_CONCURRENT = 3  # config: misc:downloadmodulesconcurrent
 
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Gets the library setup and preconfigures some items.  Sets up the
         semaphore for queing downloads.
@@ -85,7 +85,7 @@ class DownloadModules(YomboLibrary):
         self.allDownloads = []   # to start deferreds
         self.mysemaphore = defer.DeferredSemaphore(self.maxDownloadConcurrent)  #used to queue deferreds
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Prepare the cloudfront download location, and :func:`checkModules`
         to see if any modules need to be downloaded.
@@ -102,7 +102,7 @@ class DownloadModules(YomboLibrary):
             
         return self.download_modules()
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         if self.download_list_deferred is not None and self.download_list_deferred.called is False:
             self.download_list_deferred.callback(1)  # if we don't check for this, we can't stop!
 
