@@ -316,7 +316,8 @@ class InteractionBase(object):
         """
         if tablename not in Registry.SCHEMAS and txn is not None:
             try:
-                self.executeTxn(txn, "SELECT * FROM %s LIMIT 1" % tablename)
+                self.executeTxn(txn, "SELECT rowid as _rowid, * FROM %s LIMIT 1" % tablename)
+                # self.executeTxn(txn, "SELECT * FROM %s LIMIT 1" % tablename)
             except Exception:
                 raise ImaginaryTableError("Table %s does not exist." % tablename)
             Registry.SCHEMAS[tablename] = [row[0] for row in txn.description]
@@ -341,9 +342,9 @@ class InteractionBase(object):
             cols = self.getSchema(tablename, txn)
             if len(cols) == 0:
                 raise ImaginaryTableError("Table %s does not exist." % tablename)
-            vals = obj.toHash(cols, includeBlank=self.__class__.includeBlankInInsert, exclude=['id'])
+            vals = obj.toHash(cols, includeBlank=self.__class__.includeBlankInInsert, exclude=['_rowid'])
             self.insert(tablename, vals, txn)
-            obj.id = self.getLastInsertID(txn)
+            obj._rowid = self.getLastInsertID(txn)
             return obj
 
         return self.runInteraction(_doinsert)
@@ -360,8 +361,8 @@ class InteractionBase(object):
             tablename = klass.tablename()
             cols = self.getSchema(tablename, txn)
 
-            vals = obj.toHash(cols, includeBlank=True, exclude=['id'])
-            return self.update(tablename, vals, where=['id = ?', obj.id], txn=txn)
+            vals = obj.toHash(cols, includeBlank=True, exclude=['_rowid'])
+            return self.update(tablename, vals, where=['rowid = ?', obj._rowid], txn=txn)
         # We don't want to return the cursor - so add a blank callback returning the obj
         return self.runInteraction(_doupdate).addCallback(lambda _: obj)
 
@@ -377,7 +378,7 @@ class InteractionBase(object):
                 raise CannotRefreshError("Can't refresh object if id not longer exists.")
             for key in newobj.keys():
                 setattr(obj, key, newobj[key])
-        return self.select(obj.tablename(), obj.id).addCallback(_dorefreshObj)
+        return self.select(obj.tablename(), obj._rowid).addCallback(_dorefreshObj)
 
 
     def whereToString(self, where):

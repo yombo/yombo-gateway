@@ -57,6 +57,7 @@ class DBObject(Validator):
     # the keys are the name and the values are classes representing the relationship
     # it will be of the form {'othername': <BelongsTo instance>, 'anothername': <HasMany instance>}
     RELATIONSHIP_CACHE = None
+    ID_FIELD = 'id'
 
     def __init__(self, **kwargs):
         """
@@ -67,10 +68,10 @@ class DBObject(Validator):
 
         @see: L{DBObject.afterInit}
         """
-        if "id" in kwargs:
-            self.id = kwargs['id']
+        if self.ID_FIELD in kwargs:
+            self._rowid = kwargs[self.ID_FIELD]
         else:
-            self.id = None
+            self._rowid = None
         # self.id = None
         self._deleted = False
         self.errors = Errors()
@@ -107,7 +108,7 @@ class DBObject(Validator):
             raise DBObjectSaveError("Cannot save a previously deleted object.")
 
         def _save(isValid):
-            if self.id is None and isValid:
+            if self._rowid is None and isValid:
                 return self._create()
             elif isValid:
                 return self._update()
@@ -268,10 +269,10 @@ class DBObject(Validator):
         """
 
         def _delete(result):
-            oldid = self.id
-            self.id = None
+            oldid = self._rowid
+            self._rowid = None
             self._deleted = True
-            return self.__class__.deleteAll(where=["id = ?", oldid])
+            return self.__class__.deleteAll(where=["rowid = ?", oldid])
 
         def _deleteOnSuccess(result):
             if result is False:
@@ -534,7 +535,7 @@ class DBObject(Validator):
         @return: A boolean.
         """
         eqclass = self.__class__.__name__ == other.__class__.__name__
-        eqid = hasattr(other, 'id') and self.id == other.id
+        eqid = hasattr(other, '_rowid') and self._rowid == other._rowid
         return eqclass and eqid
 
 
@@ -551,7 +552,7 @@ class DBObject(Validator):
 
 
     def __hash__(self):
-        return hash('%s.%d' % (type(self).__name__, self.id))
+        return hash('%s.%d' % (type(self).__name__, self._rowid))
 
 
     __repr__ = __str__
