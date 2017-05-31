@@ -52,7 +52,6 @@ def route_devices(webapp):
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_devices_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/index.html')
             webinterface.home_breadcrumb(request)
@@ -66,7 +65,6 @@ def route_devices(webapp):
 
         @webapp.route('/add')
         @require_auth()
-        @run_first()
         def page_devices_add_select_device_type_get(webinterface, request, session):
             # session['add_device'] = {
             #     'start': time(),
@@ -92,7 +90,6 @@ def route_devices(webapp):
         @webapp.route('/add/<string:device_type_id>', methods=['POST', 'GET'])
         @require_auth()
         @inlineCallbacks
-        @run_first()
         def page_devices_add_post(webinterface, request, session, device_type_id):
             try:
                 device_type = webinterface._DeviceTypes[device_type_id]
@@ -212,7 +209,6 @@ def route_devices(webapp):
 
         @webapp.route('/delayed_commands')
         @require_auth()
-        @run_first()
         def page_devices_delayed_commands(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delayed_commands.html')
             # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
@@ -225,7 +221,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/details')
         @require_auth()
-        @run_first()
         def page_devices_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -246,7 +241,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_device_delete_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -265,7 +259,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/delete', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_device_delete_post(webinterface, request, session, device_id):
             # print "in device delete post"
@@ -293,7 +286,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_device_disable_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -312,7 +304,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/disable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_device_disable_post(webinterface, request, session, device_id):
             try:
@@ -340,7 +331,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_device_enable_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -359,7 +349,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/enable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_device_enable_post(webinterface, request, session, device_id):
             try:
@@ -386,7 +375,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devices_edit_get(webinterface, request, session, device_id):
             try:
@@ -409,7 +397,6 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devices_edit_post(webinterface, request, session, device_id):
             try:

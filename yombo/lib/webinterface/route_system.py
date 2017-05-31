@@ -4,13 +4,11 @@ def route_system(webapp):
     with webapp.subroute("/system") as webapp:
         @webapp.route('/')
         @require_auth()
-        @run_first()
         def page_modules(webinterface, request, session):
             return webinterface.redirect(request, '/system/index')
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_system_index(webinterface, request, session):
             gwid = webinterface._Configs.get2('core', 'gwid')
             page = webinterface.get_template(request, webinterface._dir + 'pages/system/index.html')
@@ -20,7 +18,6 @@ def route_system(webapp):
 
         @webapp.route('/control')
         @require_auth()
-        @run_first()
         def page_system_control(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/system/control.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -28,13 +25,11 @@ def route_system(webapp):
 
         @webapp.route('/control/restart')
         @require_auth()
-        @run_first()
         def page_system_control_restart(webinterface, request, session):
             return webinterface.restart(request)
 
         @webapp.route('/control/shutdown')
         @require_auth()
-        @run_first()
         def page_system_control_shutdown(webinterface, request, session):
             return webinterface.shutdown(request)
 

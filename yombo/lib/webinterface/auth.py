@@ -52,20 +52,38 @@ def update_request(webinterface, request):
     request.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
     request.setHeader('Expires', '0')
 
-
 def run_first(*args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
     def deco(f):
         @wraps(f)
+        @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             # request._ = webinterface.i18n(request)
             # if hasattr(request, 'breadcrumb') is False:
             #     request.breadcrumb = []
             #     webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
-            return call(f, webinterface, request, *a, **kw)
+            # print("session: %s" % session.__dict__)
+
+            request.auth_id = None
+            try:
+                session = yield webinterface.sessions.load(request)
+            except YomboWarning as e:
+                logger.warn("Discarding request, appears to be malformed session id.")
+                page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                # print "require_auth..session: %s" % session
+                returnValue(page.render(alerts=webinterface.get_alerts()))
+
+            if session is not False:
+                if 'auth' in session:
+                    if session['auth'] is True:
+                        session.touch()
+                        request.auth_id = session['auth_id']
+
+            return call(f, webinterface, request, session, *a, **kw)
+            # return call(f, webinterface, request, *a, **kw)
         return wrapped_f
     return deco
 
@@ -115,7 +133,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             except YomboWarning as e:
                 logger.warn("Discarding request, appears to be malformed session id.")
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
-                # print "require_auth..session: %s" % session
                 returnValue(page.render(alerts=webinterface.get_alerts()))
 
             if login_redirect is not None:
@@ -125,7 +142,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                     except YomboWarning as e:
                         logger.warn("Discarding request, appears to be malformed request. Unable to create session.")
                         page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
-                        # print "require_auth..session: %s" % session
                         returnValue(page.render(alerts=webinterface.get_alerts()))
                     session['auth'] = False
                     session['auth_id'] = ''
@@ -149,6 +165,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         #     del session['login_redirect']
                         # except:
                         #     pass
+                        # print("session: %s" % session.__dict__)
+                        request.auth_id = session['auth_id']
                         results = yield call(f, webinterface, request, session, *a, **kw)
                         returnValue(results)
                         # return call(f, webinterface, request, session, *a, **kw)
@@ -185,6 +203,8 @@ def require_auth_pin(*args, **kwargs):
             # webinterface = a[0]
             # request = a[1]
             # session = "mysession"
+            request.auth_id = None
+
             if hasattr(request, 'breadcrumb') is False:
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb

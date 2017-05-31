@@ -159,8 +159,8 @@ class Device(object):
         else:
             self.test_device = test_device
 
-        self.last_command = deque({}, 30)
-        self.status_history = deque({}, 30)
+        self.last_command = deque({}, 50)
+        self.status_history = deque({}, 50)
         self.device_variables = {}
         self.device_type_id = None
         self.machine_label = None
@@ -536,7 +536,7 @@ class Device(object):
             'called_by': self,
         }
         device_command.set_sent()
-        logger.info("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
+        logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
         results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
@@ -664,7 +664,7 @@ class Device(object):
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
         """
-        # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
+        # logger.info("set_status called...: {kwargs}", kwargs=kwargs)
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
@@ -755,9 +755,9 @@ class Device(object):
             self._Parent._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
             self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
 
-        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, energy_type, human_status, human_message, command_machine_label,
-                                      machine_status, machine_status_extra, requested_by, request_id, reported_by, uploaded,
-                                      uploadable)
+        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, energy_type, human_status, human_message,
+                                      command_machine_label, machine_status, machine_status_extra, requested_by,
+                                      reported_by, request_id, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
             self._Parent._LocalDB.save_device_status(**new_status._asdict())
@@ -809,7 +809,7 @@ class Device(object):
         self._Parent._MessageLibrary.device_delay_list(self.device_id)
 
     @inlineCallbacks
-    def load_history(self, limit=None):
+    def load_history(self, limit=40):
         """
         Loads device history into the device instance. This method gets the data from the db and adds a callback
         to _do_load_history to actually set the values.
@@ -836,8 +836,7 @@ class Device(object):
                     self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['energy_type'],
                                      record['human_status'], record['human_message'], record['last_command'],
                                      record['machine_status'], record['machine_status_extra'], record['requested_by'],
-                                     record['request_id'],
-                                     record['reported_by'], record['uploaded'], record['uploadable']))
+                                     record['reported_by'], record['request_id'], record['uploaded'], record['uploadable']))
                 #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,     energy_type,      human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
 
                 # logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)

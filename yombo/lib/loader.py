@@ -257,7 +257,6 @@ class Loader(YomboLibrary, object):
             'persist': False,
             'always_show': False,
         })
-        logger.info("Yombo Gateway started.")
 
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -270,6 +269,8 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]['_started_'] = False
 
+        logger.info("Yombo Gateway started.")
+
     @inlineCallbacks
     def unload(self):
         """
@@ -280,7 +281,7 @@ class Loader(YomboLibrary, object):
         self.sigint = True  # it's 99.999% true - usually only shutdown due to this.
         if self._moduleLibrary is not None:
             yield self._moduleLibrary.unload_modules()
-        yield self.unload_components()
+        yield self.unload_libraries()
 
     def Times_i18n_atoms(self, **kwargs):
        return [
@@ -432,11 +433,12 @@ class Loader(YomboLibrary, object):
         """
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
+        requested_library = requested_library.lower()
         if requested_library not in self.loadedLibraries:
             raise YomboWarning('Requested library is missing: %s' % requested_library)
 
         if 'called_by' not in kwargs:
-            raise YomboWarning("Unable to call hook '%s:%s', missing 'call_by' named argument." % (requested_library, hook))
+            raise YomboWarning("Unable to call hook '%s:%s', missing 'called_by' named argument." % (requested_library, hook))
         calling_component = kwargs['called_by']
 
         cache_key = requested_library + hook
@@ -468,6 +470,7 @@ class Loader(YomboLibrary, object):
                     d = Deferred()
                     d.addCallback(lambda ignored: self._log_loader('debug', library._Name, 'library', hook,
                                                                    'About to call _init_.'))
+                    # print("calling %s:%s" % (library._Name, hook))
                     d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
                     d.addErrback(self.library_invoke_failure, requested_library, hook)
                     d.callback(1)
@@ -572,30 +575,20 @@ class Loader(YomboLibrary, object):
             raise
 
     @inlineCallbacks
-    def unload_components(self):
+    def unload_libraries(self):
         """
         Only called when server is doing shutdown. Stops controller, server control and server data..
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
         for name, config in HARD_UNLOAD.items():
             if self.check_operation_mode(config['operation_mode']):
-                HARD_UNLOAD[name]['_stop_'] = 'Running'
-                libraryName = name.lower()
                 logger.debug("stopping: {name}", name=name)
-                yield self.library_invoke(name, "_stop_")
-                HARD_UNLOAD[name]['_stop_'] = True
-            else:
-                HARD_UNLOAD[name]['_stop_'] = False
+                yield self.library_invoke(name, "_stop_", called_by=self)
 
         for name, config in HARD_UNLOAD.items():
             if self.check_operation_mode(config['operation_mode']):
-                HARD_UNLOAD[name]['_unload_'] = 'Running'
-                libraryName = name.lower()
                 logger.debug("_unload_: {name}", name=name)
-                yield self.library_invoke(name, "_unload_")
-                HARD_UNLOAD[name]['_unload_'] = True
-            else:
-                HARD_UNLOAD[name]['_unload_'] = False
+                yield self.library_invoke(name, "_unload_", called_by=self)
 
     def _handleError(self, err):
 #        logger.error("Error caught: %s", err.getErrorMessage())
@@ -631,7 +624,6 @@ class Loader(YomboLibrary, object):
         if component_type == 'library':
             if component_name not in self.loadedLibraries:
                 logger.info("Library not found: {loadedLibraries}", loadedLibraries=loadedLibraries)
-                # print((self.loadedLibraries))
                 raise YomboWarning("Cannot library name.")
 
             if isinstance(component_function, list):

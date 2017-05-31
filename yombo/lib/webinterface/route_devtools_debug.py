@@ -12,14 +12,12 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/')
         @require_auth()
-        @run_first()
         def page_devtools2(webinterface, request, session):
             return webinterface.redirect(request, '/devtools/debug/index')
 
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_devtools_debug(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/index.html')
             root_breadcrumb(webinterface, request)
@@ -28,7 +26,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/commands')
         @require_auth()
-        @run_first()
         def page_devtools_debug_commands(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/commands/index.html')
             root_breadcrumb(webinterface, request)
@@ -39,7 +36,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/commands/<string:command_id>/details')
         @require_auth()
-        @run_first()
         def page_devtools_debug_commands_details(webinterface, request, session, command_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/commands/details.html')
             command = webinterface._Commands.commands[command_id]
@@ -52,7 +48,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/device_types')
         @require_auth()
-        @run_first()
         def page_devtools_debug_device_type(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/device_types/index.html')
             root_breadcrumb(webinterface, request)
@@ -63,7 +58,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/device_types/<string:device_type_id>/details')
         @require_auth()
-        @run_first()
         def page_devtools_debug_device_type_details(webinterface, request, session, device_type_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/device_types/details.html')
             device_type = webinterface._DeviceTypes.device_types[device_type_id]
@@ -77,7 +71,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/hooks_called_libraries')
         @require_auth()
-        @run_first()
         def page_devtools_debug_hooks_called_libraries(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/hooks_called_libraries.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -86,7 +79,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/hooks_called_modules')
         @require_auth()
-        @run_first()
         def page_devtools_debug_hooks_called_modules(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/hooks_called_modules.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -95,7 +87,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/modules')
         @require_auth()
-        @run_first()
         def page_devtools_debug_modules(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/modules/index.html')
             root_breadcrumb(webinterface, request)
@@ -106,7 +97,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/modules/<string:module_id>/details')
         @require_auth()
-        @run_first()
         def page_devtools_debug_modules_details(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/modules/details.html')
             root_breadcrumb(webinterface, request)
@@ -121,7 +111,6 @@ def route_devtools_debug(webapp):
 
         @webapp.route('/statistic_bucket_lifetimes')
         @require_auth()
-        @run_first()
         def page_devtools_debug_statistic_bucket_lifetimes(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/statistic_bucket_lifetimes.html')
             return page.render(alerts=webinterface.get_alerts(),

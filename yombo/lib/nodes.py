@@ -166,7 +166,7 @@ class Nodes(YomboLibrary):
     #     Loads all nodes from DB to various arrays for quick lookup.
     #     """
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
         """

@@ -36,7 +36,6 @@ def route_panel(webapp):
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_panel_index(webinterface, request, session):
             print(request.requestHeaders)
             page = webinterface.get_template(request, webinterface._dir + 'pages/panel/index.html')

@@ -4,13 +4,11 @@ def route_automation(webapp):
     with webapp.subroute("/automation") as webapp:
         @webapp.route('/')
         @require_auth()
-        @run_first()
         def page_automation(webinterface, request, session):
             return webinterface.redirect(request, '/automation/index')
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_automation_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/index.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -20,7 +18,6 @@ def route_automation(webapp):
         
         @webapp.route('/<string:automation_id>/details')
         @require_auth()
-        @run_first()
         def page_automation_details(webinterface, request, session, automation_id):
             try:
                 device = webinterface._DevicesLibrary[automation_id]
@@ -35,7 +32,6 @@ def route_automation(webapp):
 
         @webapp.route('/platforms')
         @require_auth()
-        @run_first()
         def page_automation_platforms(webinterface, request, session):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/platforms.html')
@@ -51,7 +47,6 @@ def route_automation(webapp):
 
         @webapp.route('/add_rule')
         @require_auth()
-        @run_first()
         def page_automation_add_new(webinterface, request, session):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/add_rule.html')

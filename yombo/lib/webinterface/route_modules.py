@@ -34,13 +34,11 @@ def route_modules(webapp):
     with webapp.subroute("/modules") as webapp:
         @webapp.route('/')
         @require_auth()
-        @run_first()
         def page_modules(webinterface, request, session):
             return webinterface.redirect(request, '/modules/index')
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_modules_index(webinterface, request, session):
             """
             Show an index of modules configured on the Gateway.
@@ -58,7 +56,6 @@ def route_modules(webapp):
 
         @webapp.route('/server_index')
         @require_auth()
-        @run_first()
         def page_modules_server_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/server_index.html')
             webinterface.home_breadcrumb(request)
@@ -68,7 +65,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/server_details')
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -88,7 +84,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/add', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -124,7 +119,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/add', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_add_post(webinterface, request, session, module_id):
             json_output = json.loads(request.args.get('json_output')[0])
@@ -189,7 +183,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/details')
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
             try:
@@ -206,7 +199,7 @@ def route_modules(webapp):
             # print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
             device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
             module_variables = module._ModuleVariables
-            print("module_variables: %s" % module_variables)
+            # print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
@@ -219,7 +212,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_modules_disable_get(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules.get(module_id)
@@ -241,7 +233,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/disable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_disable_post(webinterface, request, session, module_id):
             try:
@@ -292,7 +283,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_edit_get(webinterface, request, session, module_id):
             try:
@@ -324,7 +314,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_edit_post(webinterface, request, session, module_id):
             module = webinterface._Modules.get(module_id)
@@ -401,7 +390,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_modules_enable_get(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules.get(module_id)
@@ -423,7 +411,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/enable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_enable_post(webinterface, request, session, module_id):
             try:
@@ -474,7 +461,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/remove', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_modules_remove_get(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules.get(module_id)
@@ -497,7 +483,6 @@ def route_modules(webapp):
 
         @webapp.route('/<string:module_id>/remove', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_modules_remove_post(webinterface, request, session, module_id):
             try:

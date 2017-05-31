@@ -4,13 +4,11 @@ def route_notices(webapp):
     with webapp.subroute("/notifications") as webapp:
         @webapp.route('/')
         @require_auth()
-        @run_first()
         def page_modules(webinterface, request, session):
             return webinterface.redirect(request, '/notifications/index')
 
         @webapp.route('/index')
         @require_auth()
-        @run_first()
         def page_notifications_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/index.html')
             return page.render(alerts=webinterface.get_alerts(),
@@ -18,7 +16,6 @@ def route_notices(webapp):
 
         @webapp.route('/<string:notification_id>/details')
         @require_auth()
-        @run_first()
         def page_notifications_details(webinterface, request, session, notification_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/details.html')
             try:
@@ -32,7 +29,6 @@ def route_notices(webapp):
 
         @webapp.route('/<string:notification_id>/delete')
         @require_auth()
-        @run_first()
         def page_notifications_edit(webinterface, request, session, module_id):
             page = webinterface.get_template(request, webinterface._dir + 'pages/notifications/delete.html')
             return page.render(alerts=webinterface.get_alerts(),

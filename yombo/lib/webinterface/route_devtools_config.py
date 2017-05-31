@@ -11,13 +11,11 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/')
         @require_auth()
-        @run_first()
         def page_devtools(webinterface, request, session):
             return webinterface.redirect(request, '/devtools/config/index')
 
         @webapp.route('/config/index')
         @require_auth()
-        @run_first()
         def page_devtools_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/index.html')
             root_breadcrumb(webinterface, request)
@@ -29,7 +27,6 @@ def route_devtools_config(webapp):
         ####################################
         @webapp.route('/config/commands/index')
         @require_auth()
-        @run_first()
         def page_devtools_commands_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/index.html')
             root_breadcrumb(webinterface, request)
@@ -39,7 +36,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/details', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_details_get(webinterface, request, session, command_id):
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
@@ -60,7 +56,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_delete_get(webinterface, request, session, command_id):
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
@@ -81,7 +76,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/delete', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_delete_post(webinterface, request, session, command_id):
             try:
@@ -122,7 +116,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_disable_get(webinterface, request, session, command_id):
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
@@ -143,7 +136,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/disable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_disable_post(webinterface, request, session, command_id):
             try:
@@ -184,7 +176,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_enable_get(webinterface, request, session, command_id):
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
@@ -205,7 +196,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/enable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_enable_post(webinterface, request, session, command_id):
             try:
@@ -246,7 +236,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/add', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_devtools_commands_add_get(webinterface, request, session):
             data = {
                 'voice_cmd': webinterface.request_get_default(request, 'voice_cmd', ""),
@@ -264,7 +253,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/add', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_add_post(webinterface, request, session):
             data = {
@@ -300,7 +288,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_edit_get(webinterface, request, session, command_id):
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
@@ -320,7 +307,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/commands/<string:command_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_commands_edit_post(webinterface, request, session, command_id):
             data = {
@@ -383,7 +369,6 @@ def route_devtools_config(webapp):
         ####################################
         @webapp.route('/config/device_types/index')
         @require_auth()
-        @run_first()
         def page_devtools_device_types_index_get(webinterface, request, session):
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/index.html')
@@ -395,7 +380,6 @@ def route_devtools_config(webapp):
         @webapp.route('/config/device_types/<string:device_type_id>/command/<string:command_id>/details',
                       methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_details_get(webinterface, request, session, device_type_id, command_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -433,7 +417,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/command/add_command', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_add_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -457,7 +440,6 @@ def route_devtools_config(webapp):
         @webapp.route('/config/device_types/<string:device_type_id>/command/<string:command_id>/add_command',
                       methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_add_do_get(webinterface, request, session, device_type_id, command_id):
             results = yield webinterface._DeviceTypes.dev_command_add(device_type_id, command_id)
@@ -497,7 +479,6 @@ def route_devtools_config(webapp):
         @webapp.route('/config/device_types/<string:device_type_id>/command/<string:command_id>/remove_command',
                       methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_remove_command_get(webinterface, request, session, device_type_id, command_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -528,7 +509,6 @@ def route_devtools_config(webapp):
         @webapp.route('/config/device_types/<string:device_type_id>/command/<string:command_id>/remove_command',
                       methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_remove_command_post(webinterface, request, session, device_type_id, command_id):
             try:
@@ -592,7 +572,6 @@ def route_devtools_config(webapp):
         @webapp.route('/config/device_types/<string:device_type_id>/command/<string:command_id>/add_input',
                       methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_add_input_get(webinterface, request, session, device_type_id,
                                                              command_id):
@@ -624,7 +603,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/add_input',
             methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_input_add_get(webinterface, request, session, device_type_id, command_id,
                                                              input_type_id):
@@ -675,7 +653,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/add_input',
             methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_input_add_post(webinterface, request, session, device_type_id,
                                                               command_id, input_type_id):
@@ -746,7 +723,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/details',
             methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_input_details_get(webinterface, request, session, device_type_id,
                                                                  command_id, input_type_id):
@@ -796,7 +772,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/edit_input',
             methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_input_edit_get(webinterface, request, session, device_type_id,
                                                               command_id, input_type_id):
@@ -853,7 +828,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/edit_input',
             methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_input_edit_post(webinterface, request, session, device_type_id,
                                                                command_id, input_type_id):
@@ -937,7 +911,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/remove_input',
             methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_delete_input_get(webinterface, request, session, device_type_id,
                                                                 command_id, input_type_id):
@@ -982,7 +955,6 @@ def route_devtools_config(webapp):
             '/config/device_types/<string:device_type_id>/command/<string:command_id>/input/<string:input_type_id>/remove_input',
             methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_command_delete_input_post(webinterface, request, session, device_type_id,
                                                                  command_id, input_type_id):
@@ -1045,7 +1017,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/details', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_details_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -1083,7 +1054,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_delete_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -1105,7 +1075,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/delete', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_delete_post(webinterface, request, session, device_type_id):
             try:
@@ -1153,7 +1122,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_disable_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -1177,7 +1145,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/disable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_disable_post(webinterface, request, session, device_type_id):
             try:
@@ -1222,7 +1189,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_enable_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -1244,7 +1210,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/enable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_enable_post(webinterface, request, session, device_type_id):
             try:
@@ -1289,7 +1254,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/add', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_add_get(webinterface, request, session):
             category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=device_type')
@@ -1315,7 +1279,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/add', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_add_post(webinterface, request, session):
             data = {
@@ -1358,7 +1321,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_edit_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -1383,7 +1345,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_edit_post(webinterface, request, session, device_type_id):
             data = {
@@ -1450,7 +1411,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/device_types/<string:device_type_id>/variables', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_device_types_variables_get(webinterface, request, session, device_type_id):
             device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
@@ -1476,7 +1436,6 @@ def route_devtools_config(webapp):
         ####################################
         @webapp.route('/config/input_types/index')
         @require_auth()
-        @run_first()
         def page_devtools_input_types_index_get(webinterface, request, session):
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/input_types/index.html')
@@ -1487,7 +1446,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/details', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_details_get(webinterface, request, session, input_type_id):
             input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
@@ -1518,7 +1476,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_delete_get(webinterface, request, session, input_type_id):
             input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
@@ -1540,7 +1497,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/delete', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_delete_post(webinterface, request, session, input_type_id):
             try:
@@ -1583,7 +1539,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_disable_get(webinterface, request, session, input_type_id):
             input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
@@ -1607,7 +1562,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/disable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_disable_post(webinterface, request, session, input_type_id):
             try:
@@ -1652,7 +1606,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_enable_get(webinterface, request, session, input_type_id):
             input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
@@ -1674,7 +1627,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/enable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_enable_post(webinterface, request, session, input_type_id):
             try:
@@ -1718,7 +1670,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/add', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_add_get(webinterface, request, session):
             category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=input_type')
@@ -1743,7 +1694,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/add', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_add_post(webinterface, request, session):
             data = {
@@ -1787,7 +1737,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_edit_get(webinterface, request, session, input_type_id):
             input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
@@ -1813,7 +1762,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/input_types/<string:input_type_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_input_types_edit_post(webinterface, request, session, input_type_id):
             data = {
@@ -1895,7 +1843,6 @@ def route_devtools_config(webapp):
         ####################################
         @webapp.route('/config/modules/index')
         @require_auth()
-        @run_first()
         def page_devtools_modules_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/modules/index.html')
             root_breadcrumb(webinterface, request)
@@ -1905,7 +1852,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/details', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_details_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET',
@@ -1926,7 +1872,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_delete_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -1947,7 +1892,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/delete', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_delete_post(webinterface, request, session, module_id):
             try:
@@ -1988,7 +1932,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_disable_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2004,7 +1947,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/disable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_disable_post(webinterface, request, session, module_id):
             try:
@@ -2046,7 +1988,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_enable_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2062,7 +2003,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/enable', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_enable_post(webinterface, request, session, module_id):
             try:
@@ -2093,7 +2033,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/add', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_devtools_modules_add_get(webinterface, request, session):
             data = {
                 'module_type': webinterface.request_get_default(request, 'module_type', ""),
@@ -2118,7 +2057,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/add', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_add_post(webinterface, request, session):
             data = {
@@ -2160,7 +2098,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_edit_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2178,7 +2115,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_edit_post(webinterface, request, session, module_id):
             results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2235,7 +2171,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/device_types/index', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_device_types_index_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2258,7 +2193,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/add', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_device_types_add_get(webinterface, request, session, module_id, device_type_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2287,7 +2221,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/add', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_device_types_add_post(webinterface, request, session, module_id, device_type_id):
             try:
@@ -2312,7 +2245,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/remove', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_device_types_remove_get(webinterface, request, session, module_id, device_type_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2342,7 +2274,6 @@ def route_devtools_config(webapp):
         @webapp.route('/config/modules/<string:module_id>/device_types/<string:device_type_id>/remove',
                       methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_device_types_remove_post(webinterface, request, session, module_id, device_type_id):
             try:
@@ -2367,7 +2298,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/modules/<string:module_id>/variables', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_modules_variables_get(webinterface, request, session, module_id):
             module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
@@ -2422,7 +2352,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/details', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_details_get(webinterface, request, session, group_id):
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
@@ -2457,7 +2386,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/add/<string:parent_id>/<string:parent_type>', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_add_get(webinterface, request, session, parent_id, parent_type):
             data = {
@@ -2482,7 +2410,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/add/<string:parent_id>/<string:parent_type>', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_add_post(webinterface, request, session, parent_id, parent_type):
             data = {
@@ -2530,7 +2457,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_edit_get(webinterface, request, session, group_id):
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
@@ -2553,7 +2479,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_edit_post(webinterface, request, session, group_id):
             data = {
@@ -2617,7 +2542,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/enable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_enable_get(webinterface, request, session, group_id):
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
@@ -2642,7 +2566,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/enable', methods=['post'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_enable_post(webinterface, request, session, group_id):
             try:
@@ -2703,7 +2626,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/disable', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_disable_get(webinterface, request, session, group_id):
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
@@ -2728,7 +2650,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/disable', methods=['post'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_disable_post(webinterface, request, session, group_id):
             try:
@@ -2789,7 +2710,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_delete_get(webinterface, request, session, group_id):
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
@@ -2814,7 +2734,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/delete', methods=['post'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_group_delete_post(webinterface, request, session, group_id):
             try:
@@ -2875,7 +2794,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/new_field', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_add_get(webinterface, request, session, group_id):
             data = {
@@ -2923,7 +2841,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/group/<string:group_id>/new_field', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_add_post(webinterface, request, session, group_id):
             group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
@@ -3015,7 +2932,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/field/<string:field_id>/delete', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_delete_get(webinterface, request, session, field_id):
             field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
@@ -3048,7 +2964,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/field/<string:field_id>/delete', methods=['post'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_delete_post(webinterface, request, session, field_id):
             try:
@@ -3117,7 +3032,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/field/<string:field_id>/details', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_details_get(webinterface, request, session, field_id):
             field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
@@ -3148,7 +3062,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/field/<string:field_id>/edit', methods=['GET'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_edit_get(webinterface, request, session, field_id):
             field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
@@ -3188,7 +3101,6 @@ def route_devtools_config(webapp):
 
         @webapp.route('/config/variables/field/<string:field_id>/edit', methods=['POST'])
         @require_auth()
-        @run_first()
         @inlineCallbacks
         def page_devtools_variables_field_edit_post(webinterface, request, session, field_id):
             field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)

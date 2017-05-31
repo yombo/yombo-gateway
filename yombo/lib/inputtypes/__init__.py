@@ -208,7 +208,7 @@ class InputTypes(YomboLibrary):
         self.load_validators(validators)
         # print("IT-Start4")
 
-    def _stop_(self, kwargs):
+    def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
         """

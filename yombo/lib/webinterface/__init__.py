@@ -309,15 +309,14 @@ class NotFound(Exception):
 
 class Yombo_Site(Site):
 
-    def setup_queue(self, webinterface):
-        self.save_queue_loop = LoopingCall(self.save_queue)
-        self.save_queue_loop.start(8.7, False)
+    def setup_log_queue(self, webinterface):
+        self.save_log_queue_loop = LoopingCall(self.save_log_queue)
+        self.save_log_queue_loop.start(8.7, False)
 
         self.log_queue = []
 
         self.webinterface = webinterface
         self.db_save_log = self.webinterface._LocalDb.webinterface_save_logs
-        # self.log_queue = webinterface._Queue.new('library.webinterface.site.log', self.save_queue)
 
     def _escape(self, s):
         """
@@ -341,15 +340,22 @@ class Yombo_Site(Site):
         return r[1:-1]
 
     def log(self, request):
+        ignored_extensions = ('.js', '.css', '.jpg', '.jpeg', '.gif', '.ico')
+        url_path = request.path.decode().strip()
+
+        if any(ext in url_path for ext in ignored_extensions):
+            return
+
+        # print("user: %s, %s" % (request.auth_id, )
         od = OrderedDict({
             'request_time': time(),
-            'request_protocol': request.clientproto.decode(),
-            'referrer': self._escape(request.getHeader(b"referer") or b"-"),
-            'agent': self._escape(request.getHeader(b"user-agent") or b"-"),
+            'request_protocol': request.clientproto.decode().strip(),
+            'referrer': self._escape(request.getHeader(b"referer") or b"-").strip(),
+            'agent': self._escape(request.getHeader(b"user-agent") or b"-").strip(),
             'ip': request.getClientIP(),
-            'hostname': request.getRequestHostname().decode(),
-            'method': request.method.decode(),
-            'path': request.path,
+            'hostname': request.getRequestHostname().decode().strip(),
+            'method': request.method.decode().strip(),
+            'path': url_path,
             'secure': request.isSecure(),
             'response_code': request.code,
             'response_size': request.sentLength,
@@ -359,7 +365,7 @@ class Yombo_Site(Site):
 
         self.log_queue.append(od)
 
-    def save_queue(self):
+    def save_log_queue(self):
         if len(self.log_queue) > 0:
             queue = self.log_queue
             self.log_queue = []
@@ -447,7 +453,7 @@ class WebInterface(YomboLibrary):
 
         # self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath='/dev/null')
         self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath=None)
-        self.web_factory.setup_queue(self)
+        self.web_factory.setup_log_queue(self)
         self.web_factory.noisy = False  # turn off Starting/stopping message
 #        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
@@ -597,8 +603,8 @@ class WebInterface(YomboLibrary):
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
-        yield self.web_factory.save_queue()
-        return self.sessions._unload_()
+        yield self.web_factory.save_log_queue()
+        yield self.sessions._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
     #     return [{'webinterface': {
@@ -625,7 +631,6 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/<path:catchall>')
     @require_auth()
-    @run_first()
     def page_404(self, request, session, catchall):
         request.setResponseCode(404)
         page = self.get_template(request, self._dir + 'pages/404.html')
@@ -765,12 +770,10 @@ class WebInterface(YomboLibrary):
         return method(request, **kwargs)
 
     @webapp.route('/')
-    @run_first()
     def home(self, request):
         return self.check_op_mode(request, 'home')
 
     @require_auth()
-    @run_first()
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
 
@@ -783,7 +786,6 @@ class WebInterface(YomboLibrary):
                            )
 
     @require_auth()
-    @run_first()
     def config_home(self, request, session):
         # auth = self.require_auth(request)
         # if auth is not None:
@@ -792,12 +794,13 @@ class WebInterface(YomboLibrary):
         page = self.get_template(request, self._dir + 'config_pages/index.html')
         return page.render(alerts=self.get_alerts(),
                            )
-    def firstrun_home(self, request):
+    @run_first()
+    def firstrun_home(self, request, session):
         return self.redirect(request, '/setup_wizard/1')
 
     @webapp.route('/logout', methods=['GET'])
     @run_first()
-    def page_logout_get(self, request):
+    def page_logout_get(self, request, session):
         try:
             self.sessions.close_session(request)
         except:
@@ -808,15 +811,15 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/login/user', methods=['GET'])
     @require_auth_pin()
-    @run_first()
+    # @run_first()
     def page_login_user_get(self, request):
         return self.redirect(request, '/?')
 
     @webapp.route('/login/user', methods=['POST'])
     @require_auth_pin()
-    @run_first()
+    # @run_first()
     @inlineCallbacks
-    def page_login_user_post(self, request):
+    def page_login_user_post(self, request, session):
         print("rquest.args: %s"  % request.args)
         if 'g-recaptcha-response' not in request.args:
             self.add_alert('Captcha Missing', 'warning')
@@ -885,9 +888,15 @@ class WebInterface(YomboLibrary):
         print("login_redirect: %s" % location)
         return self.redirect(request, location)
 
+    @webapp.route('/login/pin', methods=['GET'])
+    # @require_auth()
+    @run_first()
+    def page_login_pin_get(self, request, session):
+        return self.redirect(request, '/?')
+
     @webapp.route('/login/pin', methods=['POST'])
     @run_first()
-    def page_login_pin_post(self, request):
+    def page_login_pin_post(self, request, session):
         submitted_pin = request.args.get('authpin')[0]
         valid_pin = False
         if submitted_pin.isalnum() is False:
@@ -925,12 +934,6 @@ class WebInterface(YomboLibrary):
 
         return self.home(request)
 
-    @webapp.route('/login/pin', methods=['GET'])
-    @require_auth()
-    @run_first()
-    def page_login_pin_get(self, request):
-        return self.redirect(request, '/?')
-
     def restart(self, request, message=None, redirect=None):
         if message is None:
             message = "Web interface requested restart."
@@ -963,7 +966,7 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/static/', branch=True)
     @run_first()
-    def static(self, request):
+    def static(self, request, session):
         request.setHeader('Cache-Control', 'max-age=%s' % randint(300, 420))
         return File(self._current_dir + "/lib/webinterface/static/dist")
 

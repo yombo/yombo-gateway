@@ -278,25 +278,28 @@ class Modules(YomboLibrary):
 
         :return:
         """
-        self._Loader.library_invoke_all("_module_stop_", called_by=self)
-        self.module_invoke_all("_stop_")
+        yield self._Loader.library_invoke_all("_modules_stop_", called_by=self)
+        yield self.module_invoke_all("_stop_")
+        yield self._Loader.library_invoke_all("_modules_stopped_", called_by=self)
 
-        self._Loader.library_invoke_all("_module_unload_", called_by=self)
+        yield self._Loader.library_invoke_all("_modules_unload_", called_by=self)
         for module_id in self.modules.keys():
             module = self.modules[module_id]
             if int(module._status) != 1:
                 continue
 
             try:
-                self.module_invoke(module._Name, "_unload_", called_by=self)
+                yield self.module_invoke(module._Name, "_unload_", called_by=self)
             except YomboWarning:
                 pass
             finally:
-                yield self._Loader.library_invoke_all("_module_unloaded_", called_by=self)
                 delete_component = module._FullName
-                self.del_imported_module(module_id, module._Name.lower())
-                if delete_component.lower() in self._Loader.loadedComponents:
-                    del self._Loader.loadedComponents[delete_component.lower()]
+                # self.del_imported_module(module_id, module._Name.lower())
+                # if delete_component.lower() in self._Loader.loadedComponents:
+                #     print("modules.unload_modules....4 finally 4")
+                #     # del self._Loader.loadedComponents[delete_component.lower()]
+                #     print("modules.unload_modules....4 finally 5")
+        yield self._Loader.library_invoke_all("_modules_unloaded_", called_by=self)
 
     @inlineCallbacks
     def build_raw_module_list(self):

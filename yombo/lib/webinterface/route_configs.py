@@ -9,13 +9,11 @@ def route_configs(webapp):
     with webapp.subroute("/configs") as webapp:
         @webapp.route('/')
         @require_auth()
-        @run_first()
         def page_configs(webinterface, request, session):
             return webinterface.redirect(request, '/configs/basic')
 
         @webapp.route('/basic', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_configs_basic_get(webinterface, request, session):
             configs = webinterface._Configs.get("*", "*")
 
@@ -28,7 +26,6 @@ def route_configs(webapp):
 
         @webapp.route('/basic', methods=['POST'])
         @require_auth(login_redirect="/configs/basic")
-        @run_first()
         def page_configs_basic_post(webinterface, request, session):
 
             valid_submit = True
@@ -174,7 +171,6 @@ def route_configs(webapp):
 
         @webapp.route('/dns', methods=['GET'])
         @require_auth()
-        @run_first()
         def page_configs_dns_get(webinterface, request, session):
             configs = webinterface._Configs.get("*", "*")
 
@@ -198,7 +194,6 @@ def route_configs(webapp):
 
         @webapp.route('/dns', methods=['POST'])
         @require_auth(login_redirect="/configs/basic")
-        @run_first()
         @inlineCallbacks
         def page_configs_dns_post(webinterface, request, session):
 
@@ -243,7 +238,6 @@ def route_configs(webapp):
 
         @webapp.route('/yombo_ini')
         @require_auth(login_redirect="/configs/yombo_ini")
-        @run_first()
         def page_configs_yombo_ini(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/yombo_ini.html')
             webinterface.home_breadcrumb(request)
@@ -254,7 +248,6 @@ def route_configs(webapp):
 
         @webapp.route('/gpg/index')
         @require_auth(login_redirect="/configs/gpg/index")
-        @run_first()
         @inlineCallbacks
         def page_gpg_keys_index(webinterface, request, session):
             db_keys = yield webinterface._LocalDb.get_gpg_key()
@@ -270,7 +263,6 @@ def route_configs(webapp):
 
         @webapp.route('/gpg/generate_key')
         @require_auth(login_redirect="/configs/gpg/generate_key")
-        @run_first()
         def page_gpg_keys_generate_key(webinterface, request, session):
             request_id = random_string(length=16)
     #        self._Libraries['gpg'].generate_key(request_id)
@@ -282,7 +274,6 @@ def route_configs(webapp):
 
         @webapp.route('/gpg/genrate_key_status')
         @require_auth(login_redirect="/configs/genrate_key_status")
-        @run_first()
         def page_gpg_keys_generate_key_status(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_status.html')
             return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(), getattr=getattr, type=type)

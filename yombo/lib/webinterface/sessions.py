@@ -274,7 +274,6 @@ class Sessions(object):
 
         Cleanup the stored sessions
         """
-        # print "active:sessions: %s" % self.active_sessions
         # logger.debug("clean_sessions()")
         count = 0
         # session_delete_time = int(time()) - self.config.max_session
@@ -293,7 +292,7 @@ class Sessions(object):
             # print "time: %s" % int(time() - (60*60*3))
             if session.is_dirty >= 200 or close_deferred is not None or session.data['last_access'] < int(time() - (60*60*3)):  # delete session from memory after 3 hours
                 if session.in_db:
-                    session.in_db = True
+                    # session.in_db = True
                     logger.debug("updating old db session record: {id}", id=session_id)
                     yield self.localdb.update_session(session_id, json.dumps(session.data), session.data['last_access'],
                                           session.data['updated'])
@@ -306,9 +305,8 @@ class Sessions(object):
                     logger.debug("Deleting session from memory: {session_id}", session_id=session_id)
                     del self.active_sessions[session_id]
 
-        if close_deferred:
+        if close_deferred is not None:
             yield sleep(0.1)
-            print("done with saving sessions.....")
             self.unload_deferred.callback(1)
 
 class Session(object):

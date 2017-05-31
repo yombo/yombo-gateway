@@ -92,9 +92,7 @@ class DeviceCommandInput(DBObject):
 class DeviceCommand(DBObject):
     TABLENAME = 'device_command'
     BELONGSTO = ['devices']
-    def afterInit(self):
-        if self.request_id is not None:
-            self._rowid = self.request_id
+    ID_FIELD = 'request_id'
 
 class DeviceStatus(DBObject):
     TABLENAME = 'device_status'
@@ -437,7 +435,7 @@ class LocalDB(YomboLibrary):
             machine_status=machine_status,
             machine_status_extra=machine_status_extra,
             requested_by=json.dumps(kwargs.get('requested_by', {}), separators=(',', ':')),
-            reported_by=kwargs.get('uploaded', 'Unknown'),
+            reported_by=kwargs.get('reported_by', 'Unknown'),
             uploaded=kwargs.get('uploaded', 0),
             uploadable=kwargs.get('uploadable', 0),
         ).save()
