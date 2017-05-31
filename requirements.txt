@@ -1,5 +1,5 @@
 hbmqtt; python_version > '3.3'
-Twisted; python_version > '3.3'
+Twisted; python_version > '3.6.0'
 parsedatetime
 netifaces
 python-gnupg
@@ -21,13 +21,7 @@ pyserial
 python_dateutil
 hjson
 decorator
-
-# treq reqs:
-incremental
-requests >= 2.1.0
-six
-Twisted[tls] >= 16.4.0
-attrs
+treq
 
 #psutil
 #pytest
