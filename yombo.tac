@@ -4,7 +4,7 @@
 """
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
-:copyright: Copyright 2012-2016 by Yombo.
+:copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
 import sys
@@ -13,7 +13,17 @@ import os
 stdoutbefore = getattr(sys.stdout, "encoding", None)
 stderrbefore = getattr(sys.stderr, "encoding", None)
 
-from twisted.application import internet, service, strports
+import asyncio
+import uvloop
+from asyncio.tasks import ensure_future
+from twisted.internet import asyncioreactor
+
+loop = uvloop.new_event_loop()
+asyncio.set_event_loop(loop)
+asyncioreactor.install(eventloop=loop)
+
+from twisted.internet import reactor
+from twisted.application import service
 
 #ensure that usr data directory exists
 if not os.path.exists('usr'):
@@ -38,12 +48,12 @@ if not os.path.exists('usr/log'):
 if not os.path.exists('usr/opt'):
     os.makedirs('usr/opt')
 
-# ensure only our user can read these directories, along with out group. Allows a
+# ensure only our user can read these directories. Allows a
 # backup group to be assigned for backup purposes.
-os.chmod('usr/etc', 0o770)
-os.chmod('usr/etc/gpg', 0o770)
-os.chmod('usr/etc/certs', 0o770)
-os.chmod('usr/bak', 0o770)
+os.chmod('usr/etc', 0o700)
+os.chmod('usr/etc/gpg', 0o700)
+os.chmod('usr/etc/certs', 0o700)
+os.chmod('usr/bak', 0o760)
 
 try:
     from yombo.core.gwservice import GWService
@@ -51,12 +61,9 @@ except ImportError:
     sys.path.append(os.path.join(os.getcwd(), ""))
     from yombo.core.gwservice import GWService
 
-from yombo.core.log import get_logger
-
-logger = get_logger('root.twistd')
-
 application = service.Application('yombo')
 
 service = GWService()
 service.setServiceParent(application)
 service.start()
+reactor.run()

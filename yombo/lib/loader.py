@@ -36,6 +36,8 @@ Stops components in the following phases. Modules first, then libraries.
 import traceback
 from re import search as ReSearch
 from collections import OrderedDict
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 # from signal import signal, SIGINT
 
 # Import twisted libraries
@@ -156,7 +158,7 @@ class Loader(YomboLibrary, object):
             raise YomboWarning("Loader could not find requested component: {%s}"
                                % component_requested, '101', '__getitem__', 'loader')
 
-    def __init__(self, testing=False):
+    def __init__(self, testing=False, loop=None):
         self.unittest = testing
         self._moduleLibrary = None
         YomboLibrary.__init__(self)
@@ -172,7 +174,6 @@ class Loader(YomboLibrary, object):
         self.hook_counts = OrderedDict()  # keep track of hook names, and how many times it's called.
         self.run_phase = None
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
-        # signal(SIGINT, self.shutdown2)
 
     def shutdown(self):
         """
@@ -201,8 +202,12 @@ class Loader(YomboLibrary, object):
         """
         logger.info("Importing libraries, this can take a few moments.")
         self.run_phase = "libraries_import"
+
+        # Get a reference to the asyncio event loop.
+        yield yombo.utils.sleep(0.01)  # kick the asyncio event loop
+        self.event_loop = asyncio.get_event_loop()
+
         yield self.import_libraries() # import and init all libraries
-        # returnValue(None)
 
         # if self.sigint:
         #     return
@@ -237,6 +242,7 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]['_start_'] = False
             self._log_loader('debug', name, 'library', 'load', 'Finished call to _start_.')
+
 
         yield self._moduleLibrary.import_modules()
 
@@ -282,6 +288,7 @@ class Loader(YomboLibrary, object):
         if self._moduleLibrary is not None:
             yield self._moduleLibrary.unload_modules()
         yield self.unload_libraries()
+        # self.loop.close()
 
     def Times_i18n_atoms(self, **kwargs):
        return [
@@ -343,6 +350,8 @@ class Loader(YomboLibrary, object):
 
             component = name.lower()
             library = self.loadedLibraries[component]
+            library._event_loop = self.event_loop
+
             library._AMQP = self.loadedLibraries['amqp']
             library._AMQPYombo = self.loadedLibraries['amqpyombo']
             library._Atoms = self.loadedLibraries['atoms']
