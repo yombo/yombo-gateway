@@ -32,10 +32,10 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string
+from yombo.utils import random_string, is_true_false
 
 logger = get_logger('library.notifications')
 
@@ -55,17 +55,6 @@ class SlicableOrderedDict(OrderedDict):
         if not isinstance(k, slice):
             return OrderedDict.__getitem__(self, k)
         return SlicableOrderedDict(islice(self.items(), k.start, k.stop))
-
-    # def __getitem__(self, k):
-    #     if not isinstance(k, slice):
-    #         return OrderedDict.__getitem__(self, k)
-    #     x = SlicableOrderedDict()
-    #     print("SlicableOrderedDict...k: %s" % k)
-    #     for idx, key in enumerate(self.keys()):
-    #         print("SlicableOrderedDict...idex: %s" % idx)
-    #         if k.start <= idx < k.stop:
-    #             x[key] = self[key]
-    #     return x
 
     def prepend(self, key, value, dict_setitem=dict.__setitem__):
         """
@@ -154,6 +143,13 @@ class Notifications(YomboLibrary):
                 items[notification_id] = notification
         return items
 
+    def get_unreadbadge_count(self):
+        count = 0
+        for notification_id, notification in self.notifications.items():
+            if notification.priority in ('high', 'urgent') and notification.acknowledged in (None, False):
+                count += 1
+        return count
+
     def check_expired(self):
         """
         Called by looping call to periodically purge expired notifications.
@@ -197,7 +193,7 @@ class Notifications(YomboLibrary):
         :return:
         """
         if notice_id not in self.notifications:
-            raise YomboWarning('Notification not found: %s' % notice_id)
+            raise KeyError('Notification not found: %s' % notice_id)
 
         if new_ack is None:
             new_ack = True
@@ -205,8 +201,6 @@ class Notifications(YomboLibrary):
         if ack_time is None:
             act_time = time()
         self.notifications[notice_id].set_ack(act_time, new_ack)
-
-        pass #TODO
 
     def add(self, notice, from_db=None, create_event=None):
         """
@@ -236,12 +230,18 @@ class Notifications(YomboLibrary):
             notice['source'] = ''
         if 'always_show' not in notice:
             notice['always_show'] = False
+        else:
+            notice['always_show'] = is_true_false(notice['always_show'])
         if 'always_show_allow_clear' not in notice:
             notice['always_show_allow_clear'] = True
+        else:
+            notice['always_show_allow_clear'] = is_true_false(notice['always_show_allow_clear'])
         if 'persist' not in notice:
             notice['persist'] = False
         if 'meta' not in notice:
             notice['meta'] = {}
+        if 'user' not in notice:
+            notice['user'] = None
 
         if notice['persist'] is True and 'always_show_allow_clear' is True:
             YomboWarning("New notification cannot have both 'persist' and 'always_show_allow_clear' set to true.")
@@ -250,7 +250,7 @@ class Notifications(YomboLibrary):
             if 'timeout' in notice:
                 notice['expire'] = time() + notice['timeout']
             else:
-                notice['expire'] = time() + 7200
+                notice['expire'] = time() + 60*60*24*30 # keep persistent notifications for 30 days.
         else:
             if notice['expire'] == None:
                 if notice['persist'] == True:
@@ -292,8 +292,7 @@ class Notifications(YomboLibrary):
             del self.notifications[notice_id]
         except:
             pass
-        print("delete notice_id: %s" % notice_id)
-        # self._LocalDB.delete_notification(notice_id)
+        self._LocalDB.delete_notification(notice_id)
         self.check_always_show_count()
 
     def get(self, notice_id, get_all=None):
@@ -327,13 +326,13 @@ class Notification:
     :ivar voice_cmd: The voice command of the command.
     """
 
-    def __init__(self, notification_library, notice):
+    def __init__(self, parent, notice):
         """
         Setup the notification object using information passed in.
         """
         logger.debug("notice info: {notice}", notice=notice)
 
-        self.notification_library = notification_library
+        self._Parent = parent
         self.notification_id = notice['id']
         self.type = notice['type']
         self.priority = notice['priority']
@@ -345,6 +344,7 @@ class Notification:
 
         self.acknowledged = notice['acknowledged']
         self.acknowledged_time = notice['acknowledged_time']
+        self.user = notice['user']
         self.title = notice['title']
         self.message = notice['message']
         self.meta = notice['meta']
@@ -363,8 +363,9 @@ class Notification:
     def set_ack(self, ack_time, new_ack):
         self.acknowledged = new_ack
         self.acknowledged_time = ack_time
-
-        self.notification_library._LocalDB.set_ack(self.notification_id, new_ack, ack_time)
+        if self.always_show_allow_clear is True:
+            self.always_show = False
+        self._Parent._LocalDB.update_notification(self)
 
     def update(self, notice):
         """
