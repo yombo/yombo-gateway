@@ -21,7 +21,9 @@ Implements MQTT. It does 2 things:
 
        # Subscribe to all topics of 'foor/bar/topic' and send them to:  self.mqtt_incoming
        self.my_mqtt.subscribe('foo/bar/topic')
-       self.my_mqtt.publish('for/bar/topic/status', 'on')  # publish a message
+       d = self.my_mqtt.publish('for/bar/topic/status', 'on')  # publish a message  # returns a deferred. Can be used to
+       # stack more commands or do something after the message has been published.
+
 
    def mqtt_incoming(self, topic, payload, qos, retain):
        print "topic: %s" % topic
@@ -306,7 +308,6 @@ class MQTT(YomboLibrary):
                     results = {'status':200, 'message': 'MQTT message sent successfully.'}
                     returnValue(json.dumps(results))
                 except Exception as e:
-                    # print("whathahtahthat %s" % e)
                     results = {'status':500, 'message': 'MQTT message count not be sent.'}
                     returnValue(json.dumps(results))
 
@@ -433,7 +434,7 @@ class MQTTClient(object):
         self.password = password
         self.ssl = ssl
         self.connected = False
-        self.mqtt_library = mqtt_library
+        self._Parent = mqtt_library
         self.client_id = client_id
 
         self.incoming_duplicates = deque([], 150)
@@ -441,8 +442,6 @@ class MQTTClient(object):
         self.mqtt_incoming_callback = mqtt_incoming_callback
         self.mqtt_connected_callback = mqtt_connected_callback
         self.mqtt_connection_lost_callback = mqtt_connection_lost_callback
-
-        self.send_queue = deque() # stores any received items like publish and subscribe until fully connected
 
         self.factory = MQTTTYomboFactory(profile=MQTTFactory.PUBLISHER | MQTTFactory.SUBSCRIBER)
         self.factory.noisy = False  # turn off Starting/stopping message
@@ -459,6 +458,9 @@ class MQTTClient(object):
         self.factory.will_retain = will_retain
         self.factory.version = version
         self.factory.keepalive = keepalive
+        self.queue = self._Parent._Queue.new('library.mqtt.%s' % client_id, self.process_queue)  # test calls to things that don't return deferred
+        self.queue.pause()  # pause this, and will resume it when we are connected.
+        self.republish_queue = []  # for items that are marked 'retain', this these will be replayed on reconnect.
 
         if ssl:
             self.my_reactor = reactor.connectSSL(server_hostname, server_port, self.factory,
@@ -466,8 +468,8 @@ class MQTTClient(object):
         else:
             self.my_reactor = reactor.connectTCP(server_hostname, server_port, self.factory)
 
-    @inlineCallbacks
-    def publish(self, topic, message, qos=0, retain=False):
+    # @inlineCallbacks
+    def publish(self, topic, message, qos=0, priority=10, retain=False, republish=False):
         """
         Publish a message.
 
@@ -476,13 +478,21 @@ class MQTTClient(object):
         :param qos: 0, 1, or 2. Default is 0.
         :return:
         """
-        # print("publishing (%s): %s" % (topic, message))
-        if self.connected:
-            yield self.factory.protocol.publish(topic=topic, message=message, qos=qos)
-            self.mqtt_library._Statistics.increment("lib.mqtt.client.publish", bucket_size=10, anon=True)
+        job = {
+            'type': 'publish',
+            'topic': topic,
+            'message': message,
+            'qos': qos,
+            'retain': retain,
+            'priority': priority,
+        }
+        if republish:
+            self.republish_queue.append(job)
+        else:
+            self.queue.put(job, priority=priority)
 
-    @inlineCallbacks
-    def subscribe(self, topic, qos=1):
+    # @inlineCallbacks
+    def subscribe(self, topic, qos=1, priority=-2, retain=False, republish=False):
         """
         Subscribe to a topic. Inlucde the topic like 'yombo/myfunky/something'
         :param topic: string or list of strings to subscribe to.
@@ -490,32 +500,35 @@ class MQTTClient(object):
         :param qos: See MQTT doco for information. We handle duplicates, no need for qos 2.
         :return:
         """
-        if self.connected:
-            yield self.factory.protocol.subscribe(topic, qos)
-            self.mqtt_library._Statistics.increment("lib.mqtt.client.subscribe", bucket_size=10, anon=True)
+        job = {
+            'type': 'subscribe',
+            'topic': topic,
+            'qos': qos,
+            'priority': priority,
+            }
+        if republish:
+            self.republish_queue.append(job)
         else:
-            self.send_queue.append({
-                'type': 'subscribe',
-                'topic': topic,
-                'qos': qos,
-            })
+            self.queue.put(job, priority=priority)
 
-    @inlineCallbacks
-    def unsubscribe(self, topic):
+    def unsubscribe(self, topic, qos=1, priority=-1, retain=False, republish=False):
         """
         Unsubscribe from a topic.
         :param topic:
         :return:
         """
-        if self.connected:
-            yield self.factory.protocol.unsubscribe(topic)
-            self.mqtt_library._Statistics.increment("lib.mqtt.client.unsubscribe", bucket_size=10, anon=True)
-        if self.connected:
-            self.send_queue.append({
-                'type': 'unsubscribe',
-            })
+        job = {
+            'type': 'unsubscribe',
+            'topic': topic,
+            'qos': qos,
+            'priority': priority,
+        }
+        if republish:
+            self.republish_queue.append(job)
+        else:
+            self.queue.put(job, priority=priority)
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def mqtt_connected(self):
         """
         Call when mqtt client is connected. Subscribes, unsubscribes, and publises any queued messages. Afterwards,
@@ -524,21 +537,24 @@ class MQTTClient(object):
         """
         # logger.debug("client ID connected: {client_id}", client_id=self.client_id)
         self.connected = True
-        while True:
-            try:
-                item = self.send_queue.popleft()
-                logger.debug("mqtt_connected. Item: {item}", item=item)
-                if item['type'] == 'subscribe':
-                    yield self.subscribe(item['topic'], item['qos'])
-                elif item['type'] == 'unsubscribe':
-                    yield self.unsubscribe(item['topic'])
-                if item['type'] == 'publish':
-                    yield self.publish(item['topic'], item['message'], qos=item['qos'], retain=item['retain'])
-            except IndexError:
-                break
+        for job in self.republish_queue:
+            self.queue.put(job, priority=job['priority'])
 
+        self.queue.resume()
         if self.mqtt_connected_callback:
             self.mqtt_connected_callback()
+
+    @inlineCallbacks
+    def process_queue(self, job):
+        # logger.debug("process_queue. job: {job}", job=job)
+        if job['type'] == 'subscribe':
+            yield self.factory.protocol.subscribe(job['topic'], job['qos'])
+        elif job['type'] == 'unsubscribe':
+            yield self.factory.protocol.unsubscribe(job['topic'])
+        elif job['type'] == 'publish':
+            yield self.factory.protocol.publish(job['topic'], job['message'], qos=job['qos'], retain=job['retain'])
+        else:
+            logger.warn("process_queue received unknown job request: %s" % job)
 
     def mqtt_incoming(self, topic, payload, qos, dup, retain, mqtt_msg_id):
         """
@@ -553,8 +569,6 @@ class MQTTClient(object):
         :return:
         """
         # print("mqtt_incoming - topic:%s, payload:%s, qos:%s, dup:%s, retain:%s, mqtt_msg_id:%s" % (topic, payload, qos, dup, retain, mqtt_msg_id))
-
-#        print("client ID incomin: %s" % self.client_id)
         if self.mqtt_incoming_callback:
             #  check if we already received this msg_id. This is why we don't need qos=2 for incoming, qos 1 is enough.
             if mqtt_msg_id is not None:
@@ -574,6 +588,7 @@ class MQTTClient(object):
         :param reason:
         :return:
         """
+        self.queue.pause()
         logger.info("Lost connection to HBMQTT Broker: {reason}", reason=reason)
         self.connected = False
         if self.mqtt_connection_lost_callback:
