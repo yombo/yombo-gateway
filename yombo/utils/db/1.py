@@ -93,6 +93,8 @@ def upgrade(Registry, **kwargs):
         `device_type_id` TEXT NOT NULL,
         `command_id`     TEXT NOT NULL,
         `input_type_id`  TEXT NOT NULL,
+        `label`          TEXT NOT NULL,
+        `machine_label`  TEXT NOT NULL,
         `live_update`    INTEGER NOT NULL,
         `value_required` INTEGER NOT NULL,
         `value_max`      INTEGER NOT NULL,
@@ -109,6 +111,7 @@ def upgrade(Registry, **kwargs):
 
     #  Defines the device command table to store command history and various info.
     table = """CREATE TABLE `device_command` (
+        `id`               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `request_id`       TEXT NOT NULL,
         `device_id`        TEXT NOT NULL,
         `command_id`       TEXT NOT NULL,
@@ -120,6 +123,7 @@ def upgrade(Registry, **kwargs):
         `finished_time`    FLOAT,
         `not_before_time`  FLOAT,
         `not_after_time`   FLOAT,
+        `command_status_received` INT NOT NULL DEFAULT 0,
         `history`          TEXT NOT NULL,
         `status`           TEXT NOT NULL,
         `requested_by`     TEXT,
@@ -330,11 +334,12 @@ def upgrade(Registry, **kwargs):
         `type`         TEXT NOT NULL, /* system, user, etc */
         `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
         `source`       TEXT NOT NULL, /* where this message was created */
-        `expire`       INTEGER NOT NULL, /* timestamp when msg should expire */
+        `expire`       INTEGER, /* timestamp when msg should expire */
         `always_show`  INTEGER NOT NULL, /* If notification should always show until user clears it. */
         `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
         `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
         `acknowledged_time`       INTEGER, /* Timestemp when msg was ack'd by the user. */
+        `user`         TEXT, /* Message data */
         `title`        TEXT, /* Message data */
         `message`      TEXT, /* Message data */
         `meta`         TEXT, /* Any extra meta data. JSON format */
