@@ -17,6 +17,8 @@ This library keeps track of what modules can access what device types, and what 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
+import inspect
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
@@ -294,6 +296,12 @@ class DeviceTypes(YomboLibrary):
         :return: Pointer to requested device type.
         :rtype: dict
         """
+        if inspect.isclass(device_type_requested):
+            if isinstance(device_type_requested, DeviceType):
+                return device_type_requested
+            else:
+                raise ValueError("Passed in an unknown object")
+
         if limiter is None:
             limiter = .89
 
@@ -418,6 +426,24 @@ class DeviceTypes(YomboLibrary):
                 results[item_id] = item
         return results
 
+    def validate_command_input(self, device_type_id, command_id, dtc_machine_label, value):
+        """
+        Validates an input value.
+        :param device_type_id:
+        :param command_id:
+        :param dtc_machine_label: 
+        :return:
+        """
+        if device_type_id not in self.device_types:
+            raise KeyError("Device Type Id not found.")
+        if command_id not in self.device_types[device_type_id].commands:
+            raise KeyError("Command ID not found in specified device type id.")
+        if dtc_machine_label not in self.device_types[device_type_id].commands[command_id]:
+            raise KeyError("machine label not found in specified command_id for the provided device type id.")
+
+        input_type_id = self.device_types[device_type_id].commands[command_id][dtc_machine_label]['input_type_id']
+        return self._InputTypes[input_type_id].validate(value)
+
     @inlineCallbacks
     def dev_device_type_add(self, data, **kwargs):
         """
@@ -449,7 +475,7 @@ class DeviceTypes(YomboLibrary):
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
         # print("dt_results: %s" % device_type_results)
 
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add device type",
@@ -497,7 +523,7 @@ class DeviceTypes(YomboLibrary):
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
         # print("module edit results: %s" % module_results)
 
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit device type",
@@ -524,7 +550,7 @@ class DeviceTypes(YomboLibrary):
         """
         device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id)
 
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete device type",
@@ -556,7 +582,7 @@ class DeviceTypes(YomboLibrary):
 
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
 
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable device type",
@@ -589,7 +615,7 @@ class DeviceTypes(YomboLibrary):
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
  #       print("disable device_type results: %s" % device_type_results)
 
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable device_type",
@@ -622,7 +648,7 @@ class DeviceTypes(YomboLibrary):
         }
 
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type_command', api_data)
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't associate command to device type",
@@ -653,6 +679,9 @@ class DeviceTypes(YomboLibrary):
             'device_type_id': device_type_id,
             'command_id': command_id,
             'input_type_id': input_type_id,
+            'machine_label': data['machine_label'],
+            'encryption': data['encryption'],
+            'value_casing': data['value_casing'],
             'live_update': data['live_update'],
             'value_required':  data['value_required'],
             'value_max':  data['value_max'],
@@ -661,7 +690,7 @@ class DeviceTypes(YomboLibrary):
         }
 
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_command_input', api_data)
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't associate input to device type command",
@@ -692,6 +721,9 @@ class DeviceTypes(YomboLibrary):
             # 'device_type_id': device_type_id,
             # 'command_id': command_id,
             # 'input_type_id': input_type_id,
+            'machine_label': data['machine_label'],
+            'encryption': data['encryption'],
+            'value_casing': data['value_casing'],
             'live_update': data['live_update'],
             'value_required':  data['value_required'],
             'value_max':  data['value_max'],
@@ -702,7 +734,7 @@ class DeviceTypes(YomboLibrary):
         }
 
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_command_input/%s/%s/%s' % (device_type_id, command_id, input_type_id), api_data)
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't update device type command input.",
@@ -729,7 +761,7 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_command_input/%s/%s/%s' % (device_type_id, command_id, input_type_id))
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't remove input from device type command",
@@ -757,7 +789,7 @@ class DeviceTypes(YomboLibrary):
         """
         device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (device_type_id, command_id))
 
-        if device_type_results['code'] != 200:
+        if device_type_results['code'] > 299:
             # print "device_type_results: %s" % device_type_results
             results = {
                 'status': 'failed',
@@ -832,27 +864,36 @@ class DeviceType(object):
             else:
                 self.platform = device_type["platform"]
 
+    @inlineCallbacks
     def _init_(self):
         """
         Loads available commands from the database. This should only be called when a device type is loaded,
         notification that device type has been updated, or when device type commands have changed.
 
         """
-        def set_commands(command_ids, self):
-            self.commands.clear()
-            logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
-            for command_id in command_ids:
-                self.commands[command_id] = self._DeviceTypes._Commands[command_id]
-
-        def gotException(failure):
-           logger.warn("Exception 1: {failure}", failure=failure)
-           return 100  # squash exception, use 0 as value for next stage
-
-        d = self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
-        d.addErrback(gotException)
-        d.addCallback(set_commands, self)
-        d.addErrback(gotException)
-        return d
+        command_ids = yield self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
+        self.commands.clear()
+        logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
+        for command_id in command_ids:
+            self.commands[command_id] = {
+                'command': self._DeviceTypes._Commands[command_id],
+                'inputs': {}
+            }
+            inputs = yield self._DeviceTypes._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
+            for input in inputs:
+                self.commands[command_id]['inputs'][input.machine_label] = {
+                    'input_type_id': input.input_type_id,
+                    'machine_label': input.machine_label,
+                    'live_update': input.live_update,
+                    'value_required': input.value_required,
+                    'value_max': input.value_max,
+                    'value_min': input.value_min,
+                    'value_casing': input.value_casing,
+                    'encryption': input.encryption,
+                    'notes': input.notes,
+                    'updated': input.updated,
+                    'created': input.created,
+                }
 
     def __getitem__(self, key):
         print('devicetype __getitem__: ', key)
