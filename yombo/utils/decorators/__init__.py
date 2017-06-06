@@ -11,12 +11,31 @@ from functools import wraps
 from time import time
 from hashlib import sha256
 import pickle
+import warnings
+import functools
 
 # Import Yombo libraries
 from yombo.core.log import get_logger
 import yombo.utils
 
 logger = get_logger('utils.utils')
+
+def deprecated(func):
+    """
+    This is a decorator which can be used to mark functions
+    as deprecated. It will result in a warning being emmitted
+    when the function is used.
+    Found: https://stackoverflow.com/questions/2536307/decorators-in-the-python-standard-lib-deprecated-specifically
+    """
+
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        warnings.simplefilter('always', DeprecationWarning) #turn off filter
+        warnings.warn("Call to deprecated function {}.".format(func.__name__), category=DeprecationWarning, stacklevel=2)
+        warnings.simplefilter('default', DeprecationWarning) #reset filter
+        return func(*args, **kwargs)
+
+    return new_func
 
 def static_var(varname, value):
     """

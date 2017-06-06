@@ -32,7 +32,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, string_to_number, do_search_instance
+from yombo.utils import random_string, global_invoke_all, do_search_instance
 from yombo.lib.commands import Command  # used only to determine class type
 from ._device_command import Device_Command
 
@@ -260,7 +260,7 @@ class Device(object):
                 # create an energy map from a dictionary
                 energy_map_final = {}
                 for percent, rate in device['energy_map'].items():
-                    energy_map_final[string_to_number(percent)] = string_to_number(rate)
+                    energy_map_final[self._Validate.number(percent)] = self._Validate.number(rate)
                 energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
                 self.energy_map = energy_map_final
             else:

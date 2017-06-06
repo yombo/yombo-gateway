@@ -23,6 +23,9 @@ hjson
 decorator
 treq
 uvloop
+voluptuous
+unidecode
+pytz
 
 #psutil
 #pytest

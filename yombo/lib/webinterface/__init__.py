@@ -1100,7 +1100,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
         self.webapp.templates.filters['public_to_string'] = yombo.utils.public_to_string
         self.webapp.templates.filters['epoch_to_human'] = yombo.utils.epoch_to_string
-        self.webapp.templates.filters['epoch_to_pretty_date'] = yombo.utils.pretty_date # yesterday, 5 minutes ago, etc.
+        self.webapp.templates.filters['epoch_to_pretty_date'] = self._Times.get_age # yesterday, 5 minutes ago, etc.
         self.webapp.templates.filters['format_markdown'] = self.format_markdown
         self.webapp.templates.filters['hide_none'] = self.dispay_hide_none
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted

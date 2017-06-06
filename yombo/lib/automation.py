@@ -238,7 +238,7 @@ class Automation(YomboLibrary):
         :param delay: String - A string to be parsed into epoch time in the future.
         :return: Float in seconds in the future.
         """
-        seconds = (float(yombo.utils.epoch_from_string(delay, True)))
+        seconds = (float(self._Times.yombo.utils.epoch_from_string(delay, True)))
         if seconds < 0:
             raise YomboWarning("get_action_delay on accepts delays in the future, not the past.",
                                200, 'get_action_delay', 'automationhelpers')

@@ -35,6 +35,8 @@ from calendar import timegm as CalTimegm
 from datetime import datetime, timedelta
 import parsedatetime as pdt
 import time
+from typing import Any
+import pytz
 
 # Import twisted libraries
 from twisted.internet import reactor
@@ -255,6 +257,392 @@ class Times(YomboLibrary, object):
         """
         pass
 
+    #############################
+    # Misc helper functions
+    #############################
+
+    def get_age(self, time: Any) -> str:
+        """
+        Get a datetime object or a int() Epoch timestamp and return a
+        pretty string like 'an hour ago', 'Yesterday', '3 months ago',
+        'just now', etc
+
+        Make sure date is not in the past, or else it won't work.
+
+        Modified from: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
+        """
+
+        from datetime import datetime
+        now = datetime.now()
+        if type(time) is float:
+            time = int(round(time))
+        if type(time) is int:
+            diff = now - datetime.fromtimestamp(time)
+        elif isinstance(time, datetime):
+            diff = now - time
+        elif not time:
+            # print "using current time..."
+            diff = now - now
+        second_diff = diff.seconds
+        day_diff = diff.days
+
+        if day_diff < 0:
+            return ''
+
+        if day_diff == 0:
+            if second_diff < 10:
+                return "just now"
+            if second_diff < 60:
+                time_count = second_diff
+                time_ago = "seconds ago"
+                return "%s %s" % (time_count, time_ago)
+            if second_diff < 120:
+                return "a minute ago"
+            if second_diff < 3600:
+                time_count = second_diff // 60
+                time_ago = "minutes ago"
+                if time_count == 1:
+                    time_ago = "minute ago"
+                return "%s %s" % (time_count, time_ago)
+            if second_diff < 7200:
+                return "an hour ago"
+            if second_diff < 86400:
+                return str(second_diff // 3600) + " hours ago"
+        if day_diff == 1:
+            return "Yesterday"
+        if day_diff < 7:
+            time_count = day_diff
+            time_ago = "days ago"
+            if time_count == 1:
+                time_ago = "day ago"
+            return "%s %s" % (time_count, time_ago)
+        if day_diff < 60:
+            time_count = day_diff // 7
+            time_ago = "weeks ago"
+            if time_count == 1:
+                time_ago = "week ago"
+            return "%s %s" % (time_count, time_ago)
+        if day_diff < 365:
+            time_count = day_diff // 30
+            time_ago = "months ago"
+            if time_count == 1:
+                time_ago = "month ago"
+            return "%s %s" % (time_count, time_ago)
+        return str(day_diff // 365) + " years ago"
+
+    @static_var("calendar", pdt.Calendar())
+    def time_from_string(self, time_string: str, source_time = None) -> tuple:
+        """
+        Using the parsedatetime library, use human terms to get various dates and times. This method
+        returns epoch times UTC, but does consider the system local time zone and daylight savings times.
+
+        Also, check out :py:meth:`get_next_time() <get_next_time>` if you want the next a specific time of
+        day occurs.
+
+        .. code-block:: python
+
+            a_time = self._Times.get_time('tomorrow 10pm')
+            a_time = self._Times.get_time('1 hour ago')
+
+        :param time_string: A human time to convert to epoch, considering local timezone.
+        :type time_string: str
+        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
+        :rtype: tuple
+        """
+        if source_time is None:
+            source_time = datetime.fromtimestamp(time.time())
+        time_struct, what = self.time_from_string.calendar.parse(time_string, source_time)
+
+        dt = None
+
+        # what was returned (see http://code-bear.com/code/parsedatetime/docs/)
+        # 0 = failed to parse
+        # 1 = date (with current time, as a struct_time)
+        # 2 = time (with current date, as a struct_time)
+        # 3 = datetime
+        if what in (1, 2, 3):
+            # result is struct_time
+            dt = datetime(*time_struct[:6])
+        elif what == 3:
+            # result is a datetime
+            dt = time_struct
+        return (int(dt.strftime('%s')), dt)
+
+    @static_var("calendar", pdt.Calendar())
+    def get_next_time(self, some_time):
+        """
+        This is used when trying to get the next time it's a specific time. If it's passed for today, it
+        prepends 'tomorrow' to the request to get tomorrow's specific time.
+
+        .. code-block:: python
+
+            a_time = self._Times.get_next_time('1:15pm')
+
+        :param some_time: A human time to convert to epoch, considering local timezone.
+        :type some_time: str
+        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
+        :rtype: tuple
+        """
+        a_time = self.get_time(some_time)
+        if a_time[0] < time.time():
+            a_time = self.get_time("tomorrow " + some_time)
+        return a_time
+
+    def get_time_zone(time_zone_str: str):
+        """
+        Get time zone from string. Return None if unable to determine.
+
+        Async friendly.
+        :param time_zone_str: String to get timezone from.
+        :return: pytz timezone.
+        :rtype: timezone
+        """
+        try:
+            return pytz.timezone(time_zone_str)
+        except pytz.exceptions.UnknownTimeZoneError:
+            return None
+
+    def day_of_week(self, year, month, day):
+        """
+        Get the day of the week.
+        From: http://stackoverflow.com/questions/9847213/which-day-of-week-given-a-date-python
+
+        :param year: Any year after 1700
+        :type year: int
+        :param month: The month
+        :type month: int
+        :param day: The day
+        :type day: int
+        :return: Day of the week in english.
+        :rtype: str
+        """
+        offset = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+        week = ['Sunday',
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday']
+        afterFeb = 1
+        if month > 2: afterFeb = 0
+        aux = year - 1700 - afterFeb
+        # dayOfWeek for 1700/1/1 = 5, Friday
+        dayOfWeek = 5
+        # partial sum of days betweem current date and 1700/1/1
+        dayOfWeek += (aux + afterFeb) * 365
+        # leap year correction
+        dayOfWeek += aux / 4 - aux / 100 + (aux + 100) / 400
+        # sum monthly and day offsets
+        dayOfWeek += offset[month - 1] + (day - 1)
+        dayOfWeek %= 7
+        return dayOfWeek, week[dayOfWeek]
+
+    def next_twilight(self):
+        """
+        Returns the times of the next twilight. If it's currently twilight, then start will be "0".
+        """
+        self.obs.date = datetime.utcnow()
+        self.obsTwilight.date = datetime.utcnow()
+        if self.isDay:
+            end = self._next_setting(self.obsTwilight, ephem.Sun(), use_center=True)
+            start = self._next_setting(self.obs, ephem.Sun())
+        else:
+            # if it actually is night (between twilight observer setting and rising)
+            if self._previous_rising(self.obsTwilight, ephem.Sun(), use_center=True) < self._previous_setting(
+                    self.obsTwilight, ephem.Sun(), use_center=True):
+                start = self._next_rising(self.obsTwilight, ephem.Sun(), use_center=True)
+                end = self._next_rising(self.obs, ephem.Sun())
+            else:  # twilight remains
+                start = 0
+                end = min(self._next_setting(self.obsTwilight, ephem.Sun(), use_center=True),
+                          self._next_rising(self.obs, ephem.Sun()))
+        if self.isTwilight == True:
+            start = 0
+        return {'start': self._timegm(start), 'end': self._timegm(end)}
+
+    def item_visible(self, **kwargs):
+        """
+        Returns a true if the given item is above the horizon.
+
+        **Usage**:
+
+        .. code-block:: python
+
+            saturn_visible = self._Times.item_visible(item='Saturn') # Is Saturn above the horizon? (True/False)
+
+        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
+        :param item: The device UUID or device label to search for.
+        :type item: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
+        """
+        if 'item' not in kwargs:
+            raise InvalidArgumentError("Missing 'item' argument.")
+        item = kwargs['item']
+
+        try:
+            obj = getattr(ephem, item)
+        except AttributeError:
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+        self.obs.date = datetime.utcnow()
+
+        # if it is rised and not set, then it is visible
+        if self._previous_rising(self.obs, obj()) > self._previous_setting(self.obs, obj()):
+            return False
+        else:
+            return True
+
+    def item_rise(self, **kwargs):
+        """
+        Returns when an item rises.
+
+        **Usage**:
+
+        .. code-block:: python
+
+            mars_rise = self._Times.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Mars.
+
+        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
+        :param dayOffset: Default=0. How many days in future to find when item rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
+        :type dayOffset: int
+        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :type item: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
+        """
+        if 'item' not in kwargs:
+            raise InvalidArgumentError("Missing 'item' argument.")
+        item = kwargs['item']
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+
+        try:
+            obj = getattr(ephem, item)
+        except AttributeError:
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+        self.obs.date = datetime.utcnow() + timedelta(days=dayOffset)
+        temp = self._next_rising(self.obs, obj())
+        return self._timegm(temp)
+
+    def item_set(self, **kwargs):
+        """
+        Returns when an item sets.
+
+        **Usage**:
+
+        .. code-block:: python
+
+            pluto_set = self._Times.item_set(dayOffset=0, item='Pluto') # the NEXT (0) setting of Pluto.
+
+        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
+        :param dayOffset: Default=0. How many days in future to find when item sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
+        :type dayOffset: int
+        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :type item: string
+        :return: Pointer to array of all devices for requested device type
+        :rtype: dict
+        """
+        if 'item' not in kwargs:
+            raise InvalidArgumentError("Missing 'item' argument.")
+        item = kwargs['item']
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+
+        try:
+            obj = getattr(ephem, item)
+        except AttributeError:
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+        # we want the date part only, but date.today() isn't UTC.
+        dt = datetime.utcnow() + timedelta(days=dayOffset)
+        self.obs.date = dt
+        temp = self._next_setting(self.obs, obj())
+        return self._timegm(temp)
+
+    def sunrise(self, **kwargs):
+        """
+        Return sunrise, optionaly returns sunrise +/- # days. The offset of "0" would be
+        for the next sunrise.
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
+        :type dayOffset: int
+        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :type item: string
+        """
+        dayOffset = kwargs.get('dayOffset', 0)
+        return self.item_rise(dayOffset=dayOffset, item='Sun')
+
+    def sunset(self, **kwargs):
+        """
+        Return sunset, optionaly returns sunset +/- # days.
+
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
+        :type dayOffset: int
+        :param item: Default='Sun'. PyEphem item to search for and return results for.
+        :type item: string
+        """
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        return self.item_set(dayOffset=dayOffset, item='Sun')
+
+    def sunrise_twilight(self, **kwargs):
+        """
+        Return sunrise, optionally returns sunrise +/- # days.
+
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
+        :type dayOffset: int
+        :param item: Which item to return information on. Sun, Moon, Mars, Jupiter, etc.
+        :type item: string
+        """
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        item = 'Sun'
+        if 'item' in kwargs:
+            item = kwargs['item']
+
+        try:
+            obj = getattr(ephem, item)
+        except AttributeError:
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+        self.obsTwilight.date = datetime.utcnow() + timedelta(days=dayOffset)
+        temp = self._next_rising(self.obsTwilight, obj(), use_center=True)
+        return self._timegm(temp)
+
+    def sunset_twilight(self, **kwargs):
+        """
+        Return sunset, optionaly returns sunset +/- # days.
+
+        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
+        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
+        :type dayOffset: int
+        :param item: Which item to return information on. Sun, Moon, Mars, Jupiter, etc.
+        :type item: string
+        """
+        dayOffset = 0
+        if 'dayOffset' in kwargs:
+            dayOffset = kwargs['dayOffset']
+        item = 'Sun'
+        if 'item' in kwargs:
+            item = kwargs['item']
+
+        try:
+            obj = getattr(ephem, item)
+        except AttributeError:
+            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
+
+        # we want the date part only, but date.today() isn't UTC.
+        dt = datetime.utcnow() + timedelta(days=dayOffset)
+        self.obsTwilight.date = dt
+        temp = self._next_setting(self.obsTwilight, obj(), use_center=True)
+        return self._timegm(temp)
+
     def _setup_moon_events(self):
         """
         Setup events to be called when moon rise/set needs to change.
@@ -442,85 +830,6 @@ class Times(YomboLibrary, object):
         self.isDusk = False
         self.send_event_hook('now_not_dusk')
 
-    @static_var("calendar", pdt.Calendar())
-    def get_time(self, some_time):
-        """
-        Using the parsedatetime library, use human terms to get various dates and times. This method
-        returns epoch times UTC, but does consider the system local time zone and daylight savings times.
-
-        Also, check out :py:meth:`get_next_time() <get_next_time>` if you want the next a specific time of
-        day occurs.
-
-        .. code-block:: python
-
-            a_time = self._Times.get_time('tomorrow 10pm')
-            a_time = self._Times.get_time('1 hour ago')
-
-        :param some_time: A human time to convert to epoch, considering local timezone.
-        :type some_time: str
-        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
-        :rtype: tuple
-        """
-        now = datetime.fromtimestamp(time.time())
-        dt = self.get_time.calendar.parseDT(some_time, now)[0]
-
-        return (float(dt.strftime('%s')), dt)
-
-    @static_var("calendar", pdt.Calendar())
-    def get_next_time(self, some_time):
-        """
-        This is used when trying to get the next time it's a specific time. If it's passed for today, it
-        prepends 'tomorrow' to the request to get tomorrow's specific time.
-
-        .. code-block:: python
-
-            a_time = self._Times.get_next_time('1:15pm')
-
-        :param some_time: A human time to convert to epoch, considering local timezone.
-        :type some_time: str
-        :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
-        :rtype: tuple
-        """
-        a_time = self.get_time(some_time)
-        if a_time[0] < time.time():
-            a_time = self.get_time("tomorrow " + some_time)
-        return a_time
-
-    def day_of_week(self, year, month, day):
-        """
-        Get the day of the week.
-        From: http://stackoverflow.com/questions/9847213/which-day-of-week-given-a-date-python
-
-        :param year: Any year after 1700
-        :type year: int
-        :param month: The month
-        :type month: int
-        :param day: The day
-        :type day: int
-        :return: Day of the week in english.
-        :rtype: str
-        """
-        offset = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
-        week = ['Sunday',
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday']
-        afterFeb = 1
-        if month > 2: afterFeb = 0
-        aux = year - 1700 - afterFeb
-        # dayOfWeek for 1700/1/1 = 5, Friday
-        dayOfWeek = 5
-        # partial sum of days betweem current date and 1700/1/1
-        dayOfWeek += (aux + afterFeb) * 365
-        # leap year correction
-        dayOfWeek += aux / 4 - aux / 100 + (aux + 100) / 400
-        # sum monthly and day offsets
-        dayOfWeek += offset[month - 1] + (day - 1)
-        dayOfWeek %= 7
-        return dayOfWeek, week[dayOfWeek]
 
     def send_event_hook(self, event_msg):
         """
@@ -606,209 +915,6 @@ class Times(YomboLibrary, object):
             self.isDay = True
             self.isNight = False
 
-    def next_twilight(self):
-        """
-        Returns the times of the next twilight. If it's currently twilight, then start will be "0".
-        """
-        self.obs.date = datetime.utcnow()
-        self.obsTwilight.date = datetime.utcnow()
-        if self.isDay:
-            end = self._next_setting(self.obsTwilight,ephem.Sun(),use_center=True)
-            start = self._next_setting(self.obs,ephem.Sun())
-        else:
-            #if it actually is night (between twilight observer setting and rising)
-            if self._previous_rising(self.obsTwilight,ephem.Sun(),use_center=True) < self._previous_setting(self.obsTwilight,ephem.Sun(),use_center=True):
-                start = self._next_rising(self.obsTwilight,ephem.Sun(),use_center=True)
-                end = self._next_rising(self.obs,ephem.Sun())
-            else: #twilight remains
-                start = 0
-                end = min(self._next_setting(self.obsTwilight,ephem.Sun(),use_center=True),self._next_rising(self.obs,ephem.Sun()))
-        if  self.isTwilight == True:
-            start = 0
-        return {'start' : self._timegm(start), 'end' : self._timegm(end)}
-
-    def item_visible(self, **kwargs):
-        """
-        Returns a true if the given item is above the horizon.
-
-        **Usage**:
-
-        .. code-block:: python
-
-            saturn_visible = self._Times.item_visible(item='Saturn') # Is Saturn above the horizon? (True/False)
-
-        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
-        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
-        :param item: The device UUID or device label to search for.
-        :type item: string
-        :return: Pointer to array of all devices for requested device type
-        :rtype: dict
-        """
-        if 'item' not in kwargs:
-           raise InvalidArgumentError("Missing 'item' argument.")
-        item = kwargs['item']
-
-        try:
-            obj = getattr(ephem, item)
-        except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
-        self.obs.date = datetime.utcnow()
-
-        #if it is rised and not set, then it is visible
-        if self._previous_rising(self.obs,obj()) > self._previous_setting(self.obs,obj()):
-            return False
-        else:
-            return True
-
-    def item_rise(self, **kwargs):
-        """
-        Returns when an item rises.
-
-        **Usage**:
-
-        .. code-block:: python
-
-            mars_rise = self._Times.item_rise(dayOffset=1, item='Saturn') # the NEXT (1) rising of Mars.
-
-        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
-        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
-        :param dayOffset: Default=0. How many days in future to find when item rises. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
-        :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
-        :type item: string
-        :return: Pointer to array of all devices for requested device type
-        :rtype: dict
-        """
-        if 'item' not in kwargs:
-           raise InvalidArgumentError("Missing 'item' argument.")
-        item = kwargs['item']
-        dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-
-        try:
-            obj = getattr(ephem, item)
-        except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
-        self.obs.date = datetime.utcnow()+timedelta(days=dayOffset)
-        temp = self._next_rising(self.obs,obj())
-        return self._timegm (temp)
-    
-    def item_set(self, **kwargs):
-        """
-        Returns when an item sets.
-
-        **Usage**:
-
-        .. code-block:: python
-
-            pluto_set = self._Times.item_set(dayOffset=0, item='Pluto') # the NEXT (0) setting of Pluto.
-
-        :raises InvalidArgumentError: Raised if an argument is invalid or illegal.
-        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
-        :param dayOffset: Default=0. How many days in future to find when item sets. 0 = Today, 1=Tomorrow, etc, -1=Yesterday
-        :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
-        :type item: string
-        :return: Pointer to array of all devices for requested device type
-        :rtype: dict
-        """
-        if 'item' not in kwargs:
-           raise InvalidArgumentError("Missing 'item' argument.")
-        item = kwargs['item']
-        dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-
-        try:
-            obj = getattr(ephem, item)
-        except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
-        # we want the date part only, but date.today() isn't UTC.
-        dt = datetime.utcnow()+timedelta(days=dayOffset)
-        self.obs.date = dt
-        temp = self._next_setting(self.obs,obj())
-        return self._timegm(temp)
-
-    def sunrise(self, **kwargs):
-        """
-        Return sunrise, optionaly returns sunrise +/- # days. The offset of "0" would be
-        for the next sunrise.
-        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
-        :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
-        :type item: string
-        """
-        dayOffset = kwargs.get('dayOffset', 0)
-        return self.item_rise(dayOffset=dayOffset, item='Sun')
-
-    def sunset(self, **kwargs):
-        """
-        Return sunset, optionaly returns sunset +/- # days.
-
-        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today.
-        :type dayOffset: int
-        :param item: Default='Sun'. PyEphem item to search for and return results for.
-        :type item: string
-        """
-        dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-        return self.item_set(dayOffset=dayOffset, item='Sun')
-
-    def sunrise_twilight(self, **kwargs):
-        """
-        Return sunrise, optionally returns sunrise +/- # days.
-
-        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
-        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
-        :type dayOffset: int
-        :param item: Which item to return information on. Sun, Moon, Mars, Jupiter, etc.
-        :type item: string
-        """
-        dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-        item = 'Sun'
-        if 'item' in kwargs:
-            item = kwargs['item']
-
-        try:
-            obj = getattr(ephem, item)
-        except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
-        self.obsTwilight.date = datetime.utcnow()+timedelta(days=dayOffset)
-        temp = self._next_rising(self.obsTwilight,obj(),use_center=True)
-        return self._timegm(temp)
-
-    def sunset_twilight(self, **kwargs):
-        """
-        Return sunset, optionaly returns sunset +/- # days.
-
-        :raises AttributeError: Raised if PhPhem doesn't have the requested item.
-        :param dayOffset: Default=0. How many days to offset. 0 would be next, -1 is today's. But not always, on polar day this would be wrong
-        :type dayOffset: int
-        :param item: Which item to return information on. Sun, Moon, Mars, Jupiter, etc.
-        :type item: string
-        """
-        dayOffset = 0
-        if 'dayOffset' in kwargs:
-            dayOffset = kwargs['dayOffset']
-        item = 'Sun'
-        if 'item' in kwargs:
-            item = kwargs['item']
-
-        try:
-            obj = getattr(ephem, item)
-        except AttributeError:
-            raise AttributeError("PyEphem doesn't have requested item: %s" % item)
-
-        # we want the date part only, but date.today() isn't UTC.
-        dt = datetime.utcnow()+timedelta(days=dayOffset)
-        self.obsTwilight.date = dt
-        temp = self._next_setting(self.obsTwilight,obj(),use_center=True)
-        return self._timegm(temp)
-
     # These wrappers need for polar regions where day might be longer than 24 hours
     def _previous_rising(self, observer, item, use_center=False):
         return self._riset_wrapper(observer,'previous_rising',item,use_center=use_center)
@@ -836,6 +942,7 @@ class Times(YomboLibrary, object):
 
     def _timegm (self, dt):
         return CalTimegm(dt.tuple())
+
 
 #******************************************************************************************************
 #************************************ TESTS  **********************************************************

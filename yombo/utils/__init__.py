@@ -19,10 +19,8 @@ except ImportError:
     import json
 
 import binascii
-from datetime import datetime
 from difflib import SequenceMatcher
 import inspect
-import parsedatetime.parsedatetime as pdt
 import math
 import msgpack
 import netifaces
@@ -41,12 +39,10 @@ from twisted.internet.task import deferLater
 from twisted.internet import reactor
 
 # Import 3rd-party libs
-#from yombo.core.exceptions import YomboWarning
-from yombo.utils.decorators import memoize_, memoize_ttl
 from yombo.ext.hashids import Hashids
 
-# from yombo.lib.modules import Modules  # used only to determine class type
 from yombo.core.log import get_logger
+from yombo.utils.decorators import deprecated, memoize_ttl, memoize_
 
 logger = get_logger('utils.__init__')
 
@@ -176,53 +172,6 @@ def epoch_to_string(the_time, format_string=None):
     return strftime(format_string, localtime(the_time))
 
 
-def epoch_from_string( the_string , difference = None):
-    """
-    Receives a string and parses it into seconds. Some example strings:
-
-    * 1hour - Returns epoch time 1 hour ahead.
-    * 1h 3m -3s - Returns epoch 1 hour ahead, but add 3 minutes and subtract 3 seconds
-
-    Inspiration from here:
-    http://stackoverflow.com/questions/1810432/handling-the-different-results-from-parsedatetime
-
-    :param the_string: The string to parse
-    :type the_string: str
-    :param difference: Return is a difference in seconds from current epoch.
-    :type dict: bool
-    :return: Either epoch time the diference between the_string and epoch.
-    :rtype: float
-    """
-    if isinstance(the_string, int) or isinstance(the_string, float):
-        the_string = "%ss" % the_string
-    c = pdt.Calendar()
-    cur_time = time()
-    result, what = c.parse( the_string )
-
-    dt = None
-
-    # what was returned (see http://code-bear.com/code/parsedatetime/docs/)
-    # 0 = failed to parse
-    # 1 = date (with current time, as a struct_time)
-    # 2 = time (with current date, as a struct_time)
-    # 3 = datetime
-    if what in (1,2):
-        # result is struct_time
-        dt = datetime( *result[:6] )
-    elif what == 3:
-        # result is a datetime
-        dt = result
-
-    if dt is None:
-        # Failed to parse
-        raise YomboWarning("Cannot parse this string into a date: '"+the_string+"'", 101, "epoch_from_string", 'utils')
-
-    if difference is True:
-        return float(dt.strftime('%s'))-cur_time
-    else:
-        return float(dt.strftime('%s'))
-
-
 def convert_to_seconds(s):
     seconds_per_unit = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800}
     return int(s[:-1]) * seconds_per_unit[s[-1]]
@@ -236,14 +185,7 @@ def split(the_string, delimiter=','):
     :param delimiter: Default: , (commad).
     :return:
     """
-    return [x.strip() for x in the_string.split(',')]
-
-
-def string_to_number(input):
-    try:
-        return int(input)
-    except ValueError:
-        return float(input)
+    return [x.strip() for x in the_string.split(delimiter)]
 
 
 def clean_kwargs(**kwargs):
@@ -1033,73 +975,6 @@ def random_int(middle, percent, **kwargs):
 
 def human_alpabet():
     return "ABCDEFGHJKLMNPQRTSUVWXYZabcdefghkmnopqrstuvwxyz23456789"
-
-
-def pretty_date(time=False):
-    """
-    Source: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
-
-    Get a datetime object or a int() Epoch timestamp and return a
-    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
-    'just now', etc
-    """
-    from datetime import datetime
-    now = datetime.now()
-    if type(time) is float:
-        time = int(round(time))
-    if type(time) is int:
-        diff = now - datetime.fromtimestamp(time)
-    elif isinstance(time,datetime):
-        diff = now - time
-    elif not time:
-        # print "using current time..."
-        diff = now - now
-    second_diff = diff.seconds
-    day_diff = diff.days
-
-    if day_diff < 0:
-        return ''
-
-    if day_diff == 0:
-        if second_diff < 10:
-            return "just now"
-        if second_diff < 60:
-            time_count = second_diff
-            time_ago = "seconds ago"
-            return "%s %s" % (time_count, time_ago)
-        if second_diff < 120:
-            return "a minute ago"
-        if second_diff < 3600:
-            time_count = second_diff // 60
-            time_ago = "minutes ago"
-            if time_count == 1:
-                time_ago = "minute ago"
-            return "%s %s" % (time_count, time_ago)
-        if second_diff < 7200:
-            return "an hour ago"
-        if second_diff < 86400:
-            return str(second_diff // 3600) + " hours ago"
-    if day_diff == 1:
-        return "Yesterday"
-    if day_diff < 7:
-        time_count = day_diff
-        time_ago = "days ago"
-        if time_count == 1 :
-            time_ago = "day ago"
-        return "%s %s" % (time_count, time_ago)
-    if day_diff < 60:
-        time_count = day_diff // 7
-        time_ago = "weeks ago"
-        if time_count == 1 :
-            time_ago = "week ago"
-        return "%s %s" % (time_count, time_ago)
-    if day_diff < 365:
-        time_count = day_diff // 30
-        time_ago = "months ago"
-        if time_count == 1 :
-            time_ago = "month ago"
-        return "%s %s" % (time_count, time_ago)
-    return str(day_diff // 365) + " years ago"
 
 
 def generate_uuid(**kwargs):
