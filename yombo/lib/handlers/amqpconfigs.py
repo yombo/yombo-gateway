@@ -159,6 +159,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'device_type_id': 'device_type_id',
                     'command_id': 'command_id',
                     'input_type_id': 'input_type_id',
+                    'machine_label': 'machine_label',
+                    'label': 'label',
                     'live_update': 'live_update',
                     'value_required': 'value_required',
                     'value_max': 'value_max',
