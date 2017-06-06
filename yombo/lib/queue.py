@@ -15,7 +15,6 @@ This library implements a modified version of a queue developed by Terry Jones
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
 """
-import pickle
 import traceback
 
 # Import twisted libraries

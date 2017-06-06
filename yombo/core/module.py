@@ -149,7 +149,6 @@ class YomboModule:
         """
         return "%s:%s" % (self._label, self._module_id)
 
-
     def _init_(self, **kwargs):
         """
         Phase 1 of 3 for statup - configure basic variables, etc. Like __init__.
