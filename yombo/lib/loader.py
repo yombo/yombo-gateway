@@ -375,6 +375,7 @@ class Loader(YomboLibrary, object):
             library._States = self.loadedLibraries['states']
             library._Statistics = self.loadedLibraries['statistics']
             library._Tasks = self.loadedLibraries['tasks']
+            library._Times = self.loadedLibraries['times']
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']
             if hasattr(library, '_init_') and isinstance(library._init_, collections.Callable) \
