@@ -92,7 +92,7 @@ class DeviceCommandInput(DBObject):
 class DeviceCommand(DBObject):
     TABLENAME = 'device_command'
     BELONGSTO = ['devices']
-    ID_FIELD = 'request_id'
+
 
 class DeviceStatus(DBObject):
     TABLENAME = 'device_status'
@@ -147,7 +147,7 @@ class Node(DBObject):
     TABLENAME = 'nodes'
 
 
-class Notification(DBObject):
+class Notifications(DBObject):
     TABLENAME = 'notifications'
 
 
@@ -443,7 +443,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def get_device_commands(self, where):
-        records = yield DeviceCommand.find(where=dictToWhere(where))
+        records = yield DeviceCommand.find(where=dictToWhere(where), orderby='created_time DESC')
         DCs = []
         for record in records:
             DC =  record.__dict__
@@ -453,7 +453,7 @@ class LocalDB(YomboLibrary):
             DC['history'] = json.loads(DC['history'])
             DC['requested_by'] = json.loads(DC['requested_by'])
             DCs.append(DC)
-        returnValue(DCs)
+        return DCs
 
     @inlineCallbacks
     def save_device_command(self, DC):
@@ -462,35 +462,50 @@ class LocalDB(YomboLibrary):
         else:
             inputs = json.dumps(DC.inputs, separators=(',', ':'))
 
-        # existing = yield self.get_device_commands({'request_id':DC.request_id })
-        # if len(existing) > 0:  # .find() doesn't like request_id being the ID column
-        #     device_command = existing[0]
-        # else:
-        #     device_command = None
-        device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
-        if len(device_command_results) == 0:
+        if DC.id is None:
             device_command = DeviceCommand()
-        else:
-            device_command = device_command_results[0]
-        device_command.request_id=DC.request_id
-        device_command.device_id=DC.device.device_id
-        device_command.command_id=DC.command.command_id
-        device_command.inputs=inputs
-        device_command.created_time=DC.created_time
-        device_command.sent_time=DC.sent_time
-        device_command.received_time=DC.received_time
-        device_command.pending_time=DC.pending_time
-        device_command.finished_time=DC.finished_time
-        device_command.not_before_time=DC.not_before_time
-        device_command.not_after_time=DC.not_after_time
-        device_command.history=json.dumps(DC.history, separators=(',', ':'))
-        device_command.status=DC.status
-        device_command.requested_by=json.dumps(DC.requested_by, separators=(',', ':'))
-        device_command.uploaded=0
-        device_command.uploadable=0
+            device_command.command_status_received=DC.command_status_received
+            device_command.request_id=DC.request_id
+            device_command.device_id=DC.device.device_id
+            device_command.command_id=DC.command.command_id
+            device_command.inputs=inputs
+            device_command.created_time=DC.created_time
+            device_command.sent_time=DC.sent_time
+            device_command.received_time=DC.received_time
+            device_command.pending_time=DC.pending_time
+            device_command.finished_time=DC.finished_time
+            device_command.not_before_time=DC.not_before_time
+            device_command.not_after_time=DC.not_after_time
+            device_command.history=json.dumps(DC.history, separators=(',', ':'))
+            device_command.status=DC.status
+            device_command.requested_by=json.dumps(DC.requested_by, separators=(',', ':'))
+            device_command.uploaded=0
+            device_command.uploadable=0
+            results = yield device_command.save()
 
-        results = yield device_command.save()
-        returnValue(results)
+            device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
+            return device_command_results
+
+            return results
+        else:
+            args = {
+                'inputs': inputs,
+                'sent_time': DC.sent_time,
+                'received_time': DC.received_time,
+                'pending_time': DC.pending_time,
+                'finished_time': DC.finished_time,
+                'not_before_time': DC.not_before_time,
+                'not_after_time': DC.not_after_time,
+                'history': json.dumps(DC.history, separators=(',', ':')),
+                'status': DC.status,
+                'requested_by': json.dumps(DC.requested_by, separators=(',', ':')),
+                'command_status_received': DC.command_status_received,
+                # 'uploaded': DC.uploaded,
+                # 'uploadable': DC.uploadable,
+            }
+            results = yield self.dbconfig.update('device_command', args,
+                                                 where=['id = ?', DC.id])
+            return results
 
 
     #############################
@@ -519,6 +534,17 @@ class LocalDB(YomboLibrary):
     def get_device_type(self, id):
         records = yield DeviceType.find(where=['id = ?', id])
         returnValue(records)
+
+
+    ###########################################
+    ###    Device Type Command Inputs     #####
+    ###########################################
+    @inlineCallbacks
+    def device_type_command_inputs_get(self, device_type_id, command_id):
+        records = yield DeviceCommandInput.find(
+            where=['device_type_id = ? and command_id = ?', device_type_id, command_id])
+        return records
+
 
     #################
     ### GPG     #####
@@ -726,12 +752,12 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_notifications(self):
         cur_time = int(time())
-        records = yield Notification.find(where=['expire > ?', cur_time], orderby='created DESC')
+        records = yield Notifications.find(where=['expire > ?', cur_time], orderby='created DESC')
         returnValue(records)
 
     @inlineCallbacks
     def delete_notification(self, id):
-        records = yield Notification.delete(where=['id = ?', id])
+        records = yield Notifications.delete(where=['id = ?', id])
         returnValue(records)
 
     @inlineCallbacks
@@ -741,24 +767,49 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def add_notification(self, notice, **kwargs):
-        results = yield Notification(
-            id=notice['id'],
-            type=notice['type'],
-            priority=notice['priority'],
-            source=notice['source'],
-            expire=notice['expire'],
-            acknowledged=notice['acknowledged'],
-            title=notice['title'],
-            message=notice['message'],
-            meta=json.dumps(notice['meta'], separators=(',', ':')),
-            created=notice['created'],
-        ).save()
-        returnValue(results)
+        args = {
+            'id': notice['id'],
+            'type': notice['type'],
+            'priority': notice['priority'],
+            'source': notice['source'],
+            'expire': notice['expire'],
+            'always_show': notice['always_show'],
+            'always_show_allow_clear': notice['always_show_allow_clear'],
+            'acknowledged': notice['acknowledged'],
+            'acknowledged_time': notice['acknowledged_time'],
+            'user': notice['user'],
+            'title': notice['title'],
+            'message': notice['message'],
+            'meta': json.dumps(notice['meta'], separators=(',', ':')),
+            'created': notice['created'],
+        }
+        results = yield self.dbconfig.insert('notifications', args, None, 'OR IGNORE')
+        return results
 
     @inlineCallbacks
-    def set_ack(self, id, new_ack, ack_time):
-        records = yield self.dbconfig.update('notifications', {'acknowledged': new_ack, 'acknowledged_time': ack_time}, where=['id = ?', id])
-        returnValue(records)
+    def update_notification(self, notice, **kwargs):
+        args = {
+            'type': notice.type,
+            'priority': notice.priority,
+            'source': notice.source,
+            'expire': notice.expire,
+            'always_show': notice.always_show,
+            'always_show_allow_clear': notice.always_show_allow_clear,
+            'acknowledged': notice.acknowledged,
+            'acknowledged_time': notice.acknowledged_time,
+            'user': notice.user,
+            'title': notice.title,
+            'message': notice.message,
+            'meta': json.dumps(notice.meta, separators=(',', ':')),
+        }
+        print("saving notice: %s" %args)
+        results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
+        return results
+
+    # @inlineCallbacks
+    # def set_ack(self, id, new_ack, ack_time):
+    #     records = yield self.dbconfig.update('notifications', {'acknowledged': new_ack, 'acknowledged_time': ack_time}, where=['id = ?', id])
+    #     returnValue(records)
 
     #########################
     ###    Sessions     #####
