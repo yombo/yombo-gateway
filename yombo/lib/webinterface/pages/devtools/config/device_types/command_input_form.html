@@ -24,6 +24,18 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
 						<div class="form-group">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Machine Label: </label>
+                            <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
+                            {{ macros.modal("modalmachinelabel", 'Machine Label', '
+                            <p>A non-changing reference used as the key for the input when subbmitting commands.</p>
+                            ') }}
+                            <br>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="machine_label" id="machine_label" size="30" value="{{ command_input.machine_label }}">
+                            </div>
+						</div>
+
+						<div class="form-group">
                             <label style="margin-top: 0px; margin-bottom: 0px">Notes: </label>
                             <a href="#" data-toggle="modal" data-target="#modalnotes"><i class="fa fa-question fa-lg"></i></a>
                             {{ macros.modal("modalnotes", 'Notes', '
@@ -226,6 +238,10 @@
 
     $('form').validate({
         rules: {
+            notes: {
+                maxlength: 100,
+                required: true,
+            },
             notes: {
                 maxlength: 1024,
                 required: false,

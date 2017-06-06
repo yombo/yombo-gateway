@@ -18,7 +18,7 @@
 	                <!-- /.dropdown -->
 	                <li class="dropdown">
 	                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-						<span class="fa-stack fa-1x has-badge" data-count="{{misc_wi_data.notifications.get_important()|length}}">
+						<span class="fa-stack fa-1x has-badge" data-count="{{misc_wi_data.notifications.get_unreadbadge_count()}}">
 						  <i class="fa fa-bell fa-stack-1x"></i>
 						</span>&nbsp;
 						<i class="fa fa-caret-down"></i>

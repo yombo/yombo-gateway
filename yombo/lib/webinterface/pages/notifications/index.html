@@ -25,7 +25,7 @@
                 <th>Title</th><th>Message</th><th>Created</th><th>Expires</th>
             </tr>
         </thead>
-        <tbody>    {% for id, notice in misc_wi_data.notifications.items() %}
+        <tbody>    {% for id, notice in misc_wi_data.notifications.notifications.items() %}
 {{notice.priority}}
              <tr {% if notice.priority == 'high' -%}
         class="warning"

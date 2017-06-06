@@ -387,9 +387,10 @@ def route_devtools_config(webapp):
                 webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
 
-            device_command_input_results = yield webinterface._YomboAPI.request('GET',
-                                                                                '/v1/device_command_input?device_type_id=%s&command_id=%s' % (
-                                                                                device_type_id, command_id))
+            device_command_input_results = yield webinterface._YomboAPI.request(
+                'GET',
+                '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s' % (
+                device_type_id, command_id))
             if device_command_input_results['code'] != 200:
                 webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
@@ -406,8 +407,8 @@ def route_devtools_config(webapp):
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
-            device_type_id, command_id),
-                                        command_results['data']['label'])
+                    device_type_id, command_id),
+                command_results['data']['label'])
 
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     device_type=device_type_results['data'],
@@ -613,11 +614,11 @@ def route_devtools_config(webapp):
                 webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                             device_type_results['data']['label'])
                 webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
-                device_type_id, command_id),
-                                            "Command")
+                        device_type_id, command_id),
+                    "Command")
                 webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/add_input" % (
-                device_type_id, command_id),
-                                            "Associate input")
+                        device_type_id, command_id),
+                    "Associate input")
             else:
                 webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
 
@@ -630,19 +631,21 @@ def route_devtools_config(webapp):
             if input_type_results['code'] != 200:
                 webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/%s/details' % device_type_id))
+            else:
+                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/input/%s/add_input" % (
+                        device_type_id, command_id, input_type_id),
+                    input_type_results['data']['label'])
 
             data = {
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'live_update': webinterface.request_get_default(request, 'live_update', ""),
                 'notes': webinterface.request_get_default(request, 'notes', ""),
-                'value_required': webinterface.request_get_default(request, 'value_required', ""),
+                'value_required': webinterface.request_get_default(request, 'value_required', 0),
                 'value_min': webinterface.request_get_default(request, 'value_min', ""),
                 'value_max': webinterface.request_get_default(request, 'value_max', ""),
                 'value_casing': webinterface.request_get_default(request, 'value_casing', "none"),
                 'encryption': webinterface.request_get_default(request, 'encryption', "nosuggestion"),
             }
-            root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/add", "Add")
             returnValue(page_devtools_device_types_command_input_form(webinterface, request, session, 'add', data,
                                                                       device_type_results['data'],
                                                                       command_results['data'],
@@ -657,16 +660,17 @@ def route_devtools_config(webapp):
         def page_devtools_device_types_command_input_add_post(webinterface, request, session, device_type_id,
                                                               command_id, input_type_id):
             data = {
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'live_update': webinterface.request_get_default(request, 'live_update', ""),
                 'notes': webinterface.request_get_default(request, 'notes', ""),
-                'value_required': webinterface.request_get_default(request, 'value_required', ""),
+                'value_required': webinterface.request_get_default(request, 'value_required', 0),
                 'value_min': webinterface.request_get_default(request, 'value_min', ""),
                 'value_max': webinterface.request_get_default(request, 'value_max', ""),
                 'value_casing': webinterface.request_get_default(request, 'value_casing', "none"),
                 'encryption': webinterface.request_get_default(request, 'encryption', "nosuggestion"),
             }
 
-            results = yield webinterface._DeviceTypes.dev_command_input_edit(device_type_id, command_id, input_type_id,
+            results = yield webinterface._DeviceTypes.dev_command_input_add(device_type_id, command_id, input_type_id,
                                                                              data)
 
             command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
@@ -694,6 +698,7 @@ def route_devtools_config(webapp):
             else:
                 webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
 
+            print("results:status: %s" % results['status'])
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
                 returnValue(
@@ -740,11 +745,12 @@ def route_devtools_config(webapp):
             if input_type_results['code'] != 200:
                 webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/%s/details' % device_type_id))
-
-            device_command_input_results = yield webinterface._YomboAPI.request('GET',
-                                                                                '/v1/device_command_input?device_type_id=%s&command_id=%s&input_type_id=%s' % (
-                                                                                device_type_id, command_id,
-                                                                                input_type_id))
+            device_command_input_results = yield webinterface._YomboAPI.request(
+                'GET',
+                '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
+                device_type_id,
+                command_id,
+                input_type_id))
             if device_command_input_results['code'] != 200:
                 webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
@@ -790,15 +796,17 @@ def route_devtools_config(webapp):
                 webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/%s/details' % device_type_id))
 
-            device_command_input_results = yield webinterface._YomboAPI.request('GET',
-                                                                                '/v1/device_command_input?device_type_id=%s&command_id=%s&input_type_id=%s' % (
-                                                                                device_type_id, command_id,
-                                                                                input_type_id))
+            device_command_input_results = yield webinterface._YomboAPI.request(
+                'GET',
+                '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
+                device_type_id, command_id,
+                input_type_id))
             if device_command_input_results['code'] != 200:
                 webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
 
             data = {
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'live_update': webinterface.request_get_default(request, 'live_update', ""),
                 'notes': webinterface.request_get_default(request, 'notes', ""),
                 'value_required': webinterface.request_get_default(request, 'value_required', ""),
@@ -832,6 +840,7 @@ def route_devtools_config(webapp):
         def page_devtools_device_types_command_input_edit_post(webinterface, request, session, device_type_id,
                                                                command_id, input_type_id):
             data = {
+                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'live_update': webinterface.request_get_default(request, 'live_update', ""),
                 'notes': webinterface.request_get_default(request, 'notes', ""),
                 'value_required': webinterface.request_get_default(request, 'value_required', ""),
@@ -1256,7 +1265,7 @@ def route_devtools_config(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_add_get(webinterface, request, session):
-            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=device_type')
+            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
             if category_results['code'] != 200:
                 webinterface.add_alert(category_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
@@ -1295,7 +1304,7 @@ def route_devtools_config(webapp):
 
             if device_type_results['status'] == 'failed':
                 webinterface.add_alert(device_type_results['apimsghtml'], 'warning')
-                category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=device_type')
+                category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
                 if category_results['code'] != 200:
                     webinterface.add_alert(category_results['content']['html_message'], 'warning')
                     returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
@@ -1327,7 +1336,7 @@ def route_devtools_config(webapp):
             if device_type_results['code'] != 200:
                 webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
-            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=device_type')
+            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
             if category_results['code'] != 200:
                 webinterface.add_alert(category_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
@@ -1362,7 +1371,7 @@ def route_devtools_config(webapp):
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 
             if device_type_results['status'] == 'failed':
-                category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=device_type')
+                category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
                 if category_results['code'] != 200:
                     webinterface.add_alert(category_results['content']['html_message'], 'warning')
                     returnValue(webinterface.redirect(request, '/devtools/config/device_types/index'))
@@ -1672,7 +1681,7 @@ def route_devtools_config(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_input_types_add_get(webinterface, request, session):
-            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=input_type')
+            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=input_type')
             if category_results['code'] != 200:
                 webinterface.add_alert(category_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
@@ -1711,7 +1720,7 @@ def route_devtools_config(webapp):
             if input_type_results['status'] == 'failed':
                 webinterface.add_alert(input_type_results['apimsghtml'], 'warning')
                 category_results = yield webinterface._YomboAPI.request('GET',
-                                                                        '/v1/category?category_type=input_type')
+                                                                        '/v1/category?_filters[category_type]=input_type')
                 if category_results['code'] != 200:
                     webinterface.add_alert(category_results['content']['html_message'], 'warning')
                     returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
@@ -1744,7 +1753,7 @@ def route_devtools_config(webapp):
                 webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
 
-            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?category_type=input_type')
+            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=input_type')
             if category_results['code'] != 200:
                 webinterface.add_alert(category_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
@@ -1785,7 +1794,7 @@ def route_devtools_config(webapp):
                     returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
 
                 category_results = yield webinterface._YomboAPI.request('GET',
-                                                                        '/v1/category?category_type=input_type')
+                                                                        '/v1/category?_filters[category_type]=input_type')
                 if category_results['code'] != 200:
                     webinterface.add_alert(category_results['content']['html_message'], 'warning')
                     returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))

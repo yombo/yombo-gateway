@@ -66,19 +66,45 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <label>Available Commands</label> (Click to send command)
+                            <label>Available Commands</label> (Click to send command, long click for more details.)
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            {% for command in device.available_commands() %}
+                            {% for command_id in device.available_commands() %}
                             <label style="margin-top: 0px; margin-bottom: 0px">
-                                <a class="deviceCmd" data-doc_value="{{ commands[command].cmdUUID }}" href="/api/v1/devices/{{ device.device_id }}/command/{{ commands[command].command_id }}">{{ commands[command].label }}</a>
+                                <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/devices/{{ device.device_id }}/command/{{ command_id }}">{{ commands[command_id].label }}</a>
                             </label>&nbsp;&nbsp;
+                            <div class="modal fade" id="modal_cmd_{{command_id}}" tabindex="-1" role="dialog">
+                              <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <h4 class="modal-title">Command Details</h4>
+                                  </div>
+                                  <div class="modal-body">
+                                    <p>{{command_id}} zzzzzzzzzzz</p>
+                                    <p>{{device_types[device.device_type_id].commands[command_id]['inputs']}}</p>
+                                  <form>
+                                      {% for input_label, input in device_types[device.device_type_id].commands[command_id]['inputs'].items()%}
+                                      <input type="text" id="{{input_label}}" name="{{input_label}}" onmouseover="">
+                                      input_info: {{ input_info }}
+                                      {% endfor %}
+                                  </form>
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary">Send Command</button>
+                                  </div>
+                                </div><!-- /.modal-content -->
+                              </div><!-- /.modal-dialog -->
+                            </div><!-- /.modal -->
+
                             {%- endfor %}
                             {%- if device.can_toggle() %}
                             <label style="margin-top: 0px; margin-bottom: 0px">
                                 <!--<a class="deviceCmd" data-doc_value="{{ special_toggle }}" href="/api/v1/devices/{{ device.device_id }}/command/special__toggle">Toggle</a>-->
                             </label>&nbsp;&nbsp;
+
                             {%- endif %}
                         </div>
                     </div>
@@ -187,7 +213,7 @@
                                             <tbody>{% for history in device.status_history %}
                                                  <tr>
                                                     <td> {{ history.set_time|epoch_to_human }}</td>
-                                                    <td> {{ history.requested_by.component }}:{{ history.requested_by.user_id }}</td>
+                                                    <td> User: {{ history.requested_by.user_id }}<br> Component: {{ history.requested_by.component }}</td>
                                                     <td> {{ history.reported_by }}</td>
                                                     <td> {{ history.human_status }}</td>
                                                     <td> {{ history.energy_usage }}</td>
@@ -256,6 +282,7 @@
 {% block body_bottom %}
     <!-- Make the tables pretty -->
     <script>
+
 $('.deviceCmd').click(function (event){
      event.preventDefault();
      $.ajax({
@@ -294,6 +321,13 @@ $('.nav-tabs a').on('shown.bs.tab', function (e) {
     window.location.hash = e.target.hash;
     window.scrollTo(0, 0);
 })
+
+{% for command in device.available_commands() %}
+$("#{{commands[command].command_id}}").bind('mouseheld', function(e) {
+    console.log('Held {{commands[command].command_id}}', e);
+    $('#modal_cmd_{{commands[command].command_id}}').modal('show');
+})
+{%- endfor %}
 
 
     </script>

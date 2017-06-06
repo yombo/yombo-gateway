@@ -15,6 +15,7 @@ from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import epoch_to_string
 
 def return_good(request, message=None, payload=None, status=None):
+    request.setHeader('Content-Type', 'application/json')
     if status is None:
         status = 200
     request.setResponseCode(status)
@@ -22,13 +23,14 @@ def return_good(request, message=None, payload=None, status=None):
         payload = {}
     if message is None:
         message = "OK"
-    return {
+    return json.dumps({
         'status': status,
         'message': message,
         'payload': payload,
-    }
+    })
 
 def return_not_found(request, message=None, status=None):
+    request.setHeader('Content-Type', 'application/json')
     if status is None:
         status = 404
     request.setResponseCode(status)
@@ -40,6 +42,7 @@ def return_not_found(request, message=None, status=None):
     })
 
 def return_error(request, message=None, status=None):
+    request.setHeader('Content-Type', 'application/json')
     if status is 500:
         status = 401
     request.setResponseCode(status)
@@ -51,6 +54,7 @@ def return_error(request, message=None, status=None):
     })
 
 def return_unauthorized(request, message=None, status=None):
+    request.setHeader('Content-Type', 'application/json')
     if status is None:
         status = 401
     request.setResponseCode(status)
@@ -126,6 +130,15 @@ def route_api_v1(webapp):
         @require_auth()
         def api_v1_notifications_get(webinterface, request, session):
             return return_good(request, ''. webinterface.notifications.notifications)
+
+        @webapp.route('/notifications/<string:notification_id>/ack', methods=['GET'])
+        @require_auth()
+        def api_v1_notifications_ack_get(webinterface, request, session, notification_id):
+            try:
+                webinterface._Notifications.ack(notification_id)
+            except KeyError as e:
+                return return_not_found(request)
+            return return_good(request)
 
         @webapp.route('/web_notif', methods=['GET'])
         @require_auth()
@@ -330,7 +343,7 @@ def route_api_v1(webapp):
             request.setHeader('Content-Type', 'application/json')
             returnValue(json.dumps(data))
 
-        @webapp.route('/server/inputtypes/index', methods=['GET'])
+        @webapp.route('/server/input_type/index', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def api_v1_inputtypes_index(webinterface, request, session):

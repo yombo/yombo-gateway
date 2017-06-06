@@ -63,13 +63,13 @@
                                 <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
                                     <thead>
                                         <tr>
-                                            <th>Input Type Label</th><th>Machine<br>Label</th><th>Action</th>
+                                            <th>Machine<br>Label</th><th>Input Type</th><th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>{% for input in inputs %}
                                          <tr>
+                                             <td>{{ input.machine_label }}</td>
                                              <td><a href="/devtools/config/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/details">{{ input.input_type_label }}</a></td>
-                                             <td>{{ input.input_type_machine_label }}</td>
                                              <td>
                                                  <a class="btn btn-sm btn-success" href="/devtools/config/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/edit_input">Edit</a>
                                                  <a class="btn btn-sm btn-danger" href="/devtools/config/device_types/{{ device_type.id }}/command/{{ command.id }}/input/{{ input.input_type_id }}/remove_input">Remove</a>
