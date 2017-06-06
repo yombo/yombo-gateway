@@ -59,6 +59,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
+import msgpack
 
 from hashlib import sha1
 from time import time
@@ -192,9 +193,6 @@ class Devices(YomboLibrary):
         """
         return list(self.devices.items())
 
-    def iteritems(self):
-        return iter(self.devices.items())
-
     def iterkeys(self):
         return iter(self.devices.keys())
 
@@ -220,7 +218,7 @@ class Devices(YomboLibrary):
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
-        self.device_commands = {}  # tracks commands being sent to devices. Also tracks if a command is delayed
+        self.device_commands = OrderedDict()  # tracks commands being sent to devices. Also tracks if a command is delayed
         self.device_commands_persistent = {}  # tracks if a request should update any existing commands. For example
         self.clean_device_commands_loop = None
         # the automation system can always request the same command to be performed but ensure only one is
@@ -228,6 +226,9 @@ class Devices(YomboLibrary):
 
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
         self.processing_commands = False
+
+    def _start_(self, **kwargs):
+        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
 
     @inlineCallbacks
     def _started_(self, **kwargs):
@@ -242,7 +243,6 @@ class Devices(YomboLibrary):
         self.clean_device_commands_loop.start(random_int(3600, .15))
 
         if self._Atoms['loader.operation_mode'] == 'run':
-            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
@@ -390,7 +390,6 @@ class Devices(YomboLibrary):
         where = {
             'finished_time': None,
         }
-
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
             self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
@@ -405,9 +404,10 @@ class Devices(YomboLibrary):
         cur_time = time()
         for request_id in list(self.device_commands.keys()):
             device_command = self.device_commands[request_id]
-            if device_command.finished_time > cur_time - (60*45):  # keep 45 minutes worth.
-                yield device_command.save_to_db()
-                del self.device_commands[request_id]
+            if device_command.finished_time is not None:
+                if device_command.finished_time > cur_time - (60*45):  # keep 45 minutes worth.
+                    yield device_command.save_to_db()
+                    del self.device_commands[request_id]
 
         # This is split up to incase a new request_id was created....
         for persistent_request_id in list(self.device_commands_persistent.keys()):
@@ -416,7 +416,7 @@ class Devices(YomboLibrary):
                 del self.device_commands_persistent[persistent_request_id]
 
 
-    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, input=None, **kwargs):
+    def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, inputs=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -455,7 +455,7 @@ class Devices(YomboLibrary):
         :return: The request id.
         :rtype: str
         """
-        return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, **kwargs)
+        return self.get(device).command(cmd, pin, request_id, not_before, delay, max_delay, requested_by=requested_by, inputs=inputs, **kwargs)
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
@@ -478,8 +478,18 @@ class Devices(YomboLibrary):
         #  0       1       2       3        4
         # yombo/devices/DEVICEID/get|cmd/option
         parts = topic.split('/', 10)
-        logger.debug("Yombo Devices got this: {topic} / {parts}", topic=topic, parts=parts)
+        logger.info("Yombo Devices got this: {topic} : {parts}", topic=topic, parts=parts)
         payload = payload.lower().strip()
+        content_type = 'string'
+        try:
+            payload = json.loads(payload)
+            content_type = 'json'
+        except Exception as e:
+            try:
+                payload = msgpack.loads(payload)
+                content_type = 'msgpack'
+            except Exception as e:
+                pass
 
         try:
             device_label = self.get(parts[2].replace("_", " "))
@@ -487,29 +497,41 @@ class Devices(YomboLibrary):
         except YomboDeviceError as e:
             logger.info("Received MQTT request for a device that doesn't exist: %s" % parts[2])
             return
+
         if parts[3] == 'get':
             status = device.status_history[0]
 
-            if payload == '' or payload == 'all':
-                self.mqtt.publish('yombo/devices/%s/status' % device.machine_label, json.dumps(device.status_history[0]))
-            elif payload in status:
-                self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload), str(getattr(payload, status)))
+            if len(parts) == 5:
+                if payload == 'all':
+                    self.mqtt.publish('yombo/devices/%s/status' % device.machine_label, json.dumps(device.status_history[0]))
+                elif payload in status:
+                    self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload), str(getattr(payload, status)))
+            else:
+                self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+                                  json.dumps(device.status_history[0]))
 
-        # elif parts[3] == 'cmd':
-        #     try:
-        #         device.command(cmd=parts[4], reported_by='yombo.gateway.lib.devices.mqtt_incoming')
-        #
-        #     except Exception as e:
-        #         logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
-        #
-        #     if len(parts) > 5:
-        #         status = device.status_history[0]
-        #         if payload == '' or payload == 'all':
-        #             self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
-        #                               json.dumps(device.status_history[0]))
-        #         elif payload in status:
-        #             self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload),
-        #                               str(getattr(payload, status)))
+        elif parts[3] == 'cmd':
+            try:
+                requested_by = {
+                    'user_id': 'Unknown',
+                    'component': 'yombo.gateway.lib.devices.mqtt_incoming',
+                    'gateway': 'Unknown'
+                }
+                device.command(cmd=parts[4], reported_by='yombo.gateway.lib.devices.mqtt_incoming')
+            except Exception as e:
+                logger.warn("Device received invalid command request for command: %s  Reason: %s" % (parts[4], e))
+
+            if len(parts) == 6:
+                status = device.status_history[0]
+                if parts[4] == 'all':
+                    self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+                                      json.dumps(device.status_history[0]))
+                elif payload in status:
+                    self.mqtt.publish('yombo/devices/%s/status/%s' % (device.machine_label, payload),
+                                      str(getattr(payload, status)))
+            else:
+                self.mqtt.publish('yombo/devices/%s/status' % device.machine_label,
+                                  json.dumps(device.status_history[0]))
 
     def list_devices(self, field=None):
         """

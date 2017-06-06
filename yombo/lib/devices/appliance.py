@@ -1,8 +1,9 @@
 from yombo.lib.devices._device import Device
 
+
 class Appliance(Device):
     """
-    A generic light device.
+    A generic appliance device.
     """
 
     PLATFORM = "appliance"
@@ -13,6 +14,7 @@ class Appliance(Device):
     SUPPORT_COLOR = False
     SUPPORT_COLOR_MODE = None  # rgb....
     SUPPORT_PINGABLE = True
+    SUPPORT_POLLABLE = True
     SUPPORT_BROADCASTS_UPDATES = True
     SUPPORT_NUMBER_OF_STEPS = None
 

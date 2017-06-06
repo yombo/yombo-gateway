@@ -1,10 +1,9 @@
+from yombo.lib.devices.appliance import Appliance
 
 
-from yombo.lib.devices._device import Device
-
-class Relay(Device):
+class Relay(Appliance):
     """
-    A generic light device.
+    A generic relay device.
     """
 
     PLATFORM = "relay"

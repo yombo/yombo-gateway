@@ -298,6 +298,38 @@ class Device(object):
                     self.attributes.append(new_a)
             return True
 
+    def commands_pending(self, criteria = None, limit = None):
+        device_commands = self._Parent.device_commands
+        results = OrderedDict()
+        for id, DC in device_commands.items():
+            # print("DC: %s"  % DC.__dict__)
+            if criteria is None:
+                if DC.device.device_id == self.device_id:
+                    if DC.status in ('sent', 'received', 'pending'):
+                        results[id] = DC
+            else:
+                matches = True
+                for key, value in criteria.items():
+                    # print("commands_pending testing criteria: %s: %s" % (key, value))
+                    if hasattr(DC, key):
+                        test_value = getattr(DC, key)
+                        # print("test_value: %s" % test_value)
+                        if isinstance(value, list):
+                            print("got a list.. %s" % value)
+                            if test_value not in value:
+                                matches = False
+                                break
+                        else:
+                            if test_value != value:
+                                matches = False
+                                break
+                if matches:
+                    results[id] = DC
+
+            if limit is not None and len(results) == limit:
+                return results
+        return results
+
     def get_toggle_command(self):
         """
         If a device is toggleable, return True. It's toggleable if a device only has two commands.
@@ -414,8 +446,8 @@ class Device(object):
         device_command['requested_by'] = requested_by
 
         if str(command.command_id) not in self.available_commands():
-            logger.warn("Requested command: {cmduuid}, but only have: {ihave}",
-                        cmduuid=command.command_id, ihave=self.available_commands())
+            logger.warn("Requested command: {command_id}, but only have: {ihave}",
+                        command_id=command.command_id, ihave=self.available_commands())
             raise YomboWarning("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
@@ -488,6 +520,8 @@ class Device(object):
                 device_command['not_after_time'] = device_command['not_before_time'] + max_delay
 
         device_command['params'] = kwargs.get('params', None)
+        if inputs is None:
+            inputs = {}
         device_command['inputs'] = inputs
 
         self.last_command.appendleft({
@@ -497,18 +531,8 @@ class Device(object):
             'request_id': request_id,
         })
         self._Parent.device_commands[request_id] = Device_Command(device_command, self._Parent)
-
+        self._Parent.device_commands.move_to_end(request_id, last=False)  # move to the front.
         return request_id
-    #
-    # @inlineCallbacks
-    # def do_command_delayed(self, request_id):
-    #     self._Parent.device_commands[request_id].set_sent_time()
-    #     request = self._Parent.delay_queue_active[request_id]
-    #     # request['kwargs']['request_id'] = request_id
-    #     request['kwargs']['request_id'] = request_id
-    #     yield self.do_command_hook(request['command'], **request['kwargs'])
-    #     del self._Parent.delay_queue_storage[request_id]
-    #     del self._Parent.delay_queue_active[request_id]
 
     @inlineCallbacks
     def do_command_hook(self, device_command):
@@ -664,7 +688,7 @@ class Device(object):
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
         """
-        # logger.info("set_status called...: {kwargs}", kwargs=kwargs)
+        logger.info("set_status called...: {kwargs}", kwargs=kwargs)
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
@@ -732,7 +756,7 @@ class Device(object):
         }
 
         if 'command' in kwargs:
-            command = kwargs['command']
+            command = self._Parent._Commands[kwargs['command']]
             command_machine_label = command.machine_label
             message['last_command'] = command.machine_label
             message['command_machine_label'] = command.machine_label
@@ -763,7 +787,7 @@ class Device(object):
             self._Parent._LocalDB.save_device_status(**new_status._asdict())
         self._Parent.check_trigger(self.device_id, new_status)
 
-        self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
+        # self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
 
     def send_status(self, **kwargs):
         """
@@ -846,6 +870,10 @@ class Device(object):
         if command_requested in available_commands:
             return available_commands[command_requested]
         else:
+            commands = {}
+            print("available_commands: %s" % available_commands)
+            for command_id, data in available_commands.items():
+                commands[command_id] = data['command']
             attrs = [
                 {
                     'field': 'command_id',
@@ -865,7 +893,7 @@ class Device(object):
             ]
             try:
                 logger.debug("Get is about to call search...: %s" % command_requested)
-                found, key, item, ratio, others = do_search_instance(attrs, available_commands,
+                found, key, item, ratio, others = do_search_instance(attrs, commands,
                                                                      self._Parent._Commands.command_search_attributes,
                                                                      limiter=.89,
                                                                      operation="highest")
@@ -945,11 +973,8 @@ class Device(object):
         else:
             machine_status = self.status_history[0]['machine_status']
 
-        if machine_status < 0:
-            raise ValueError("Machine status must be at least 0.")
-
-        if machine_status > 1:
-            raise ValueError("Machine status must be less than 1.")
+        if machine_status is None:
+            raise ValueError("Machine status cannot be none.")
 
         if self.energy_tracker_source != 'calc':
             return [0, self.energy_type]

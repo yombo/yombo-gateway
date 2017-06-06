@@ -1,5 +1,5 @@
-
 from yombo.lib.devices._device import Device
+
 
 class Light(Device):
     """
@@ -14,6 +14,7 @@ class Light(Device):
     SUPPORT_COLOR = False
     SUPPORT_COLOR_MODE = None  # rgb....
     SUPPORT_PINGABLE = True
+    SUPPORT_POLLABLE = True
     SUPPORT_BROADCASTS_UPDATES = True
     SUPPORT_NUMBER_OF_STEPS = 4096
 

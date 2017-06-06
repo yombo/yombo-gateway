@@ -28,6 +28,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
+from yombo.utils import is_true_false
 from yombo.core.log import get_logger
 logger = get_logger('library.devices.device_command')
 
@@ -53,10 +54,14 @@ class Device_Command(object):
             self.device = data['device']
         elif 'device_id' in data:
             self.device = parent.get(data['device_id'])
+        else:
+            raise ValueError("Must have either device reference, or device_id")
         if 'command' in data:
             self.command = data['command']
         elif 'command_id' in data:
             self.command = parent._Commands.get(data['command_id'])
+        else:
+            raise ValueError("Must have either command reference, or command_id")
         self.inputs = data.get('inputs', None)
         if 'history' in data:
             self.history = data['history']
@@ -65,6 +70,7 @@ class Device_Command(object):
         self.requested_by = data['requested_by']
         self.status = 'new'
 
+        self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
         self.sent_time = data.get('sent_time', None)
         self.received_time = data.get('received_time', None)
@@ -74,16 +80,25 @@ class Device_Command(object):
         self.not_after_time = data.get('not_after_time', None)
         self.call_later = None
         self.created_time = data.get('created_time', time())
-        self.dirty = data.get('dirty', True)
+        self.dirty = is_true_false(data.get('dirty', True))
         self.source = data.get('_source', None)
 
         if self.source == 'database':
             self.dirty = False
+            self.id = data['id']
+        else:
+            self.id = None
 
         if start is None or start is True:
             reactor.callLater(0.001, self.start)
 
     def start(self):
+        if self.source == 'database' and self.status == 'sent':
+            logger.info(
+                "Discarding a device command message loaded from database it's already been sent.")
+            self.set_failed(finished_time=0);
+            return
+
         if self.not_before_time is not None:
             cur_time = time()
             if self.not_after_time < cur_time:
@@ -172,6 +187,7 @@ class Device_Command(object):
         if message is None:
             message = "System reported command failed."
         # message = "System reported command failed."
+        # message = "System reported command failed."
         self.set_finished(finished_time=finished_time, status='delay_expired', message=message)
 
     def set_status(self, status, message=None):
@@ -185,6 +201,10 @@ class Device_Command(object):
         self.dirty = True
         self.message = message
         self.history.append((time(), message))
+
+    def status_received(self):
+        self.command_status_received = True
+        self.set_message('status_received')
 
     @inlineCallbacks
     def save_to_db(self, forced = None):
@@ -209,6 +229,7 @@ class Device_Command(object):
             "finished_time": self.finished_time,
             "not_before_time": self.not_before_time,
             "not_after_time": self.not_after_time,
+            "command_status_received": self.command_status_received,
             "dirty": self.dirty,
         }
 
