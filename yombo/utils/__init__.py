@@ -1300,33 +1300,6 @@ def unit_convert(unit_type, unit_size):
     """
     return unit_converters[unit_type](unit_size)
 
-def is_json(myjson):
-    """
-    Helper function to determine if data is json or not.
-
-    :param myjson:
-    :return:
-    """
-    try:
-        json_object = json.loads(myjson)
-    except:
-        return False
-    return True
-
-
-def is_msgpack(mymsgpack):
-    """
-    Helper function to determine if data is msgpack or not.
-
-    :param mymsgpack:
-    :return:
-    """
-    try:
-        json_object = msgpack.loads(mymsgpack)
-    except:
-        return False
-    return True
-
 
 @memoize_
 def is_freebsd():

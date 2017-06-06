@@ -58,6 +58,7 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
+HARD_LOAD["Validate"] = {'operation_mode':'all'}
 HARD_LOAD["Queue"] = {'operation_mode':'all'}
 HARD_LOAD["Notifications"] = {'operation_mode':'all'}
 HARD_LOAD["LocalDB"] = {'operation_mode':'all'}

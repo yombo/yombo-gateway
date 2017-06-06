@@ -68,7 +68,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, is_json, random_string, random_int
+from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, random_string, random_int
 
 logger = get_logger("library.YomboStates")
 
@@ -532,13 +532,15 @@ class States(YomboLibrary, object):
             request_id = random_string(length=30)
 
             if len(payload) > 0:
-                if is_json(payload):
+                try:
+                    payload = json.loads(payload)
                     if 'request_id' in payload:
                         if len(payload['request_id']) > 100:
                             self.mqtt.publish('yombo/states/%s/get_response' % parts[2],
                                               str('MQTT Error: request id too long'))
                             return
-                        request_id in payload['request_id']
+                except Exception:
+                    pass
 
             if len(parts) == 4 or (len(parts) == 5 and payload == 'all'):
                 response = {
@@ -578,33 +580,37 @@ class States(YomboLibrary, object):
         elif parts[3] == 'set':
             request_id = random_string(length=30)
 
-            if not self.is_json(payload):
-                self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
-                                  str(
-                                      'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
-                                  )
+            try:
+                data = json.loads(payload)
+                if 'request_id' in data:
+                    request_id = data['request_id']
 
-            data = json.loads(payload)
-            if 'request_id' in data:
-                request_id = data['request_id']
-
-            if 'value' not in data:
-                self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
-                                  str(
-                                      'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
-                                  )
-
-            for key in list(data.keys()):
-                if key not in ('value', 'value_type', 'request_id'):
+                if 'value' not in data:
                     self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
-                          str('invalid (%s): json contents can only contain value, value_type and request_id' %
-                              request_id)
+                                      str(
+                                          'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
                                       )
 
-            if 'value_type' not in data:
-                data['value_type'] = None
+                for key in list(data.keys()):
+                    if key not in ('value', 'value_type', 'request_id'):
+                        self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
+                                          str(
+                                              'invalid (%s): json contents can only contain value, value_type and request_id' %
+                                              request_id)
+                                          )
 
-            self.set(requested_state, data['value'], value_type=data['value_type'], function=None, arguments=None)
+                if 'value_type' not in data:
+                    data['value_type'] = None
+
+                self.set(requested_state, data['value'], value_type=data['value_type'], function=None, arguments=None)
+                return
+            except Exception:
+                self.mqtt.publish('yombo/states/%s/set_response' % parts[2],
+                                  str(
+                                      'invalid (%s): Payload must contain json with these: value, value_type, and request_id' % request_id)
+                                  )
+                return
+
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #

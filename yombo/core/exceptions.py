@@ -65,6 +65,27 @@ class YomboWarning(YomboException):
         YomboException.__init__(self, message, errorno, component, name)
 
 
+class Invalid(YomboException):
+    """
+    Extends *Exception* - Invalid item.
+    """
+
+    def __init__(self, message, errorno=119, name="unknown", component="validate"):
+        """
+        Setup the YomboWarning and then pass everying to YomboException
+
+        :param message: The error message to log/display.
+        :type message: string
+        :param errorno: The error number to log/display.
+        :type errorno: int
+        :param name: Name of the library, component, or module rasing the exception.
+        :type name: string
+        :param component: What type of ojbect is calling: component, library, or module
+        :type component: string
+        """
+        YomboException.__init__(self, message, errorno, component, name)
+
+
 class YomboWarningCredentails(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used when api credentials are needed. Used in web interface, usually.

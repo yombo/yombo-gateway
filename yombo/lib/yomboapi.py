@@ -347,9 +347,8 @@ class YomboAPI(YomboLibrary):
         # print "base_url: %s" % self.base_url
         path = self.base_url + path
 
-        # print "%s: %s" % (method, path)
-        # print "data: %s" % data
-        # print "method: %s" % method
+        print("%s: %s" % (method, path))
+        print("data: %s" % data)
         # print "session: %s" % session
         # if session is False:
         #     session = None
@@ -444,30 +443,29 @@ class YomboAPI(YomboLibrary):
 
         content_type = headers['content-type'][0]
 
-        # print "######  content: %s" % content
+        print( "######  content: %s" % content)
         if content_type == 'application/json':
-            if self.is_json(content):
+            try:
                 content = json.loads(content)
                 content_type = "dict"
-            else:
+            except Exception:
                 raise YomboWarning("Receive yombo api response reported json, but isn't: %s" % content)
         elif content_type == 'application/msgpack':
-            if self.is_msgpack(content):
+            try:
                 content = msgpack.loads(content)
                 content_type = "dict"
-            else:
+                except Exception:
                 raise YomboWarning("Receive yombo api response reported msgpack, but isn't.")
         else:
-            if self.is_json(content):
+            try:
                 content = json.loads(content)
                 content_type = "dict"
-            elif self.is_msgpack(content):
-                content = msgpack.loads(content)
-                content_type = "dict"
-            else:
-                content_type = "string"
-
-        # print "!!!!!!!!!!!!!!content: %s" % content
+            except Exception:
+                try:
+                    content = msgpack.loads(content)
+                    content_type = "dict"
+                except Exception:
+                    content_type = "string"
 
         results = {
             'content': content,
@@ -483,28 +481,3 @@ class YomboAPI(YomboLibrary):
                 results['data'] = []
         return results
 
-    def is_json(self, myjson):
-        """
-        Helper function to determine if data is json or not.
-
-        :param myjson:
-        :return:
-        """
-        try:
-            json_object = json.loads(myjson)
-        except ValueError as e:
-            return False
-        return True
-
-    def is_msgpack(self, mymsgpack):
-        """
-        Helper function to determine if data is msgpack or not.
-
-        :param mymsgpack:
-        :return:
-        """
-        try:
-            json_object = msgpack.loads(mymsgpack)
-        except ValueError as e:
-            return False
-        return True

@@ -26,6 +26,8 @@ uvloop
 voluptuous
 unidecode
 pytz
+voluptuous
+unidecode
 
 #psutil
 #pytest

@@ -999,33 +999,6 @@ class AmqpConfigHandler(YomboLibrary):
         else:
             logger.info("Processing configuration, {count_pending} of {numer_requested}. Currently processing: {currently_processing}", currently_processing=currently_processing,  count_pending=self.inital_config_items_requested-count_pending, numer_requested=self.inital_config_items_requested)
 
-
-    def is_json(self, myjson):
-        """
-        Helper function to determine if data is json or not.
-
-        :param myjson:
-        :return:
-        """
-        try:
-            json_object = json.loads(myjson)
-        except ValueError as e:
-            return False
-        return True
-
-    def is_msgpack(self, mymsgpack):
-        """
-        Helper function to determine if data is msgpack or not.
-
-        :param mymsgpack:
-        :return:
-        """
-        try:
-            json_object = msgpack.loads(mymsgpack)
-        except ValueError as e:
-            return False
-        return True
-
     def _local_log(self, level, location, msg=""):
         logit = func = getattr(logger, level)
         logit("In {location} : {msg}", location=location, msg=msg)

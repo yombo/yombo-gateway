@@ -469,14 +469,14 @@ class AMQPYombo(YomboLibrary):
 
 
         if properties.content_type == 'application/json':
-            if self.is_json(msg):
+            try:
                 msg = json.loads(msg)
-            else:
+            except Exception:
                 raise YomboWarning("Receive msg reported json, but isn't: %s" % msg)
         elif properties.content_type == 'application/msgpack':
-            if self.is_msgpack(msg):
+            try:
                 msg = msgpack.loads(msg)
-            else:
+            except Exception:
                 raise YomboWarning("Received msg reported msgpack, but isn't: %s" % msg)
 
         # if a response, lets make sure it's something we asked for!
@@ -556,32 +556,6 @@ class AMQPYombo(YomboLibrary):
 
     def process_system(self, msg, properties):
         pass
-
-    def is_json(self, myjson):
-        """
-        Helper function to determine if data is json or not.
-
-        :param myjson:
-        :return:
-        """
-        try:
-            json_object = json.loads(myjson)
-        except ValueError as e:
-            return False
-        return True
-
-    def is_msgpack(self, message):
-        """
-        Helper function to determine if data is msgpack or not.
-
-        :param message:
-        :return:
-        """
-        try:
-            json_object = msgpack.loads(message)
-        except ValueError as e:
-            return False
-        return True
 
     def _local_log(self, level, location, msg=""):
         logit = func = getattr(logger, level)
