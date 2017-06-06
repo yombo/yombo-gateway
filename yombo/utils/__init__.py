@@ -53,6 +53,32 @@ logger = get_logger('utils.__init__')
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 
+def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
+    """
+    Used to translate one scale to another. For example, a light can have 255 steps, but
+    we want to display this in percent to a human. This function would return 50:
+    .. code-block:: python
+
+       human_status = translate_int_value(127.5, 0, 255, 0, 100)
+    
+    From: https://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
+    :param value: The value to translate
+    :param leftMin: The 'from' range, starting position.
+    :param leftMax: The 'from' range, ending position.
+    :param rightMin: The 'to' range, starting position.
+    :param rightMax: The 'to' range, ending position.
+    :return: 
+    """
+    # Figure out how 'wide' each range is
+    leftSpan = leftMax - leftMin
+    rightSpan = rightMax - rightMin
+
+    # Convert the left range into a 0-1 range (float)
+    valueScaled = float(value - leftMin) / float(leftSpan)
+
+    # Convert the 0-1 range into a value in the right range.
+    return rightMin + (valueScaled * rightSpan)
+
 def convert_temp(i_temp):
     """
     Convert a temperature from celsius to fahrenheit and back. Just input a number followed by C or F.
@@ -156,7 +182,6 @@ def epoch_from_string( the_string , difference = None):
 
     * 1hour - Returns epoch time 1 hour ahead.
     * 1h 3m -3s - Returns epoch 1 hour ahead, but add 3 minutes and subtract 3 seconds
-    *
 
     Inspiration from here:
     http://stackoverflow.com/questions/1810432/handling-the-different-results-from-parsedatetime
