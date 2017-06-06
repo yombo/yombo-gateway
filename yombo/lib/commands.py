@@ -15,6 +15,8 @@ The command (singular) class represents one command.
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
+import inspect
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
@@ -249,6 +251,7 @@ class Commands(YomboLibrary):
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.
+        :raises ValueError: When input value is invalid.
         :param command_requested: The command ID, label, and machine_label to search for.
         :type command_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
@@ -258,6 +261,12 @@ class Commands(YomboLibrary):
         :return: Pointer to requested command.
         :rtype: dict
         """
+        if inspect.isclass(command_requested):
+            if isinstance(command_requested, Command):
+                return command_requested
+            else:
+                raise ValueError("Passed in an unknown object")
+
         if limiter is None:
             limiter = .89
 
