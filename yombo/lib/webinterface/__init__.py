@@ -759,7 +759,6 @@ class WebInterface(YomboLibrary):
         request.redirect(redirect_path)
 
     def check_op_mode(self, request, router, **kwargs):
-#        print "op mode: %s" % self._op_mode
         if self._op_mode == 'config':
             method = getattr(self, 'config_'+ router)
             return method(request, **kwargs)
@@ -817,10 +816,9 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/login/user', methods=['POST'])
     @require_auth_pin()
-    # @run_first()
     @inlineCallbacks
-    def page_login_user_post(self, request, session):
-        print("rquest.args: %s"  % request.args)
+    def page_login_user_post(self, request):
+        # print("rquest.args: %s"  % request.args)
         if 'g-recaptcha-response' not in request.args:
             self.add_alert('Captcha Missing', 'warning')
             return self.login_redirect(request)
@@ -833,7 +831,7 @@ class WebInterface(YomboLibrary):
         submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
         submitted_email = request.args.get('email')[0]
         submitted_password = request.args.get('password')[0]
-        print("submitted_email: %s" % submitted_email)
+        # print("submitted_email: %s" % submitted_email)
         # if submitted_pin.isalnum() is False:
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
@@ -849,9 +847,8 @@ class WebInterface(YomboLibrary):
         results = yield self._YomboAPI.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
         if (results['code'] == 200):
             login = results['content']['response']['login']
-            print("login was good...")
+            # print("login was good...")
 
-#        if submitted_email == 'one' and submitted_password == '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b':
             session = yield self.sessions.load(request)
             if session is False:
                 print("created session")
@@ -866,30 +863,25 @@ class WebInterface(YomboLibrary):
             session['yomboapi_session'] = login['session']
             session['yomboapi_login_key'] = login['login_key']
             request.received_cookies[self.sessions.config.cookie_session] = session['id']
-            print("session saved...")
-
+            # print("session saved...")
             if self._op_mode == 'firstrun':
                 self._YomboAPI.save_system_login_key(login['login_key'])
                 self._YomboAPI.save_system_session(login['session'])
             return self.login_redirect(request, session)
         else:
-
             self.add_alert(results['content']['message'], 'warning')
-#            self.sessions.load(request)
             page = self.get_template(request, self._dir + 'pages/login_user.html')
             return page.render(alerts=self.get_alerts())
 
     def login_redirect(self, request, session=None, location=None):
-        print("login_redirect:")
         if session is not None and 'login_redirect' in session:
             location = session['login_redirect']
         if location is None:
             location = "/?"
-        print("login_redirect: %s" % location)
+        # print("login_redirect: %s" % location)
         return self.redirect(request, location)
 
     @webapp.route('/login/pin', methods=['GET'])
-    # @require_auth()
     @run_first()
     def page_login_pin_get(self, request, session):
         return self.redirect(request, '/?')

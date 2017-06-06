@@ -185,6 +185,7 @@ def require_auth_pin(*args, **kwargs):
 
     def deco(f):
         @wraps(f)
+        # @inlineCallbacks
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             # print "auth wrapped_f request: %s" % request.received_cookies
@@ -204,6 +205,20 @@ def require_auth_pin(*args, **kwargs):
             # request = a[1]
             # session = "mysession"
             request.auth_id = None
+            #
+            # try:
+            #     session = yield webinterface.sessions.load(request)
+            # except YomboWarning as e:
+            #     logger.warn("Discarding request, appears to be malformed session id.")
+            #     page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+            #     # print "require_auth..session: %s" % session
+            #     returnValue(page.render(alerts=webinterface.get_alerts()))
+            #
+            # if session is not False:
+            #     if 'auth' in session:
+            #         if session['auth'] is True:
+            #             session.touch()
+            #             request.auth_id = session['auth_id']
 
             if hasattr(request, 'breadcrumb') is False:
                 request.breadcrumb = []
