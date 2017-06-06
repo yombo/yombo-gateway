@@ -40,10 +40,9 @@ requires the serializer and unserializer to be set inside the get() request.
 """
 # Import python libraries
 import msgpack
-from sqlite3 import Binary as sqlite3Binary
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -106,7 +105,7 @@ class SQLDict(YomboLibrary):
             component_name = str(owner_object._FullName.lower())
         dict_name = str(dict_name)
         if component_name+":"+dict_name in self._dictionaries:
-            returnValue(self._dictionaries[component_name+":"+dict_name]['dict'])
+            return self._dictionaries[component_name+":"+dict_name]['dict']
 
         dict = SQLDictionary(self, component_name, dict_name, serializer, unserializer, max_length)
 #        print "SQLDict: about to load: %s" % dict_name
@@ -118,7 +117,7 @@ class SQLDict(YomboLibrary):
             'dict': dict,
             'dirty': False  # True if data needs to be saved.
             }
-        returnValue(dict)
+        return dict
 
     @inlineCallbacks
     def save_sql_dict(self, save_all=False):
@@ -157,20 +156,6 @@ class SQLDict(YomboLibrary):
 #                print "in save_sql_dict - returned from saving data into sql"
                 di['dirty'] = False
 
-# if self.unload_defer is not None:
-        #     self.unload_defer.callback(10)
-
-
-    # def _saveSQLDictDB(self):
-    #     if len(self._SQLDictUpdates):
-    #         logger.debug("Doing _saveSQLDictDB")
-    #         for module in self._SQLDictUpdates.keys():
-    #             for dictname in self._SQLDictUpdates[module]:g
-    #                 for key1 in self._SQLDictUpdates[module][dictname]:
-    #                     yield self._Libraries['localdb'].set_sql_dict(module,
-    #                             dictname, key1, self._SQLDictUpdates[module][dictname][key1])
-    #             del self._SQLDictUpdates[module]
-
 
 class SQLDictionary(dict):
     """
@@ -204,14 +189,10 @@ class SQLDictionary(dict):
         """
         super(SQLDictionary, self).__init__()
 
-
-
-        self._SQLDict = parent
-
-        self.__init = True  # only true when loaded, don't save what was just loaded.
+        self._Parent = parent
         self.__component_name = component_name
         self.__dict_name = dict_name
-        self.__init = False
+        self.__load = False
         self.__serializer = serializer
         self.__unserializer = unserializer
         self.__max_length = max_length
@@ -226,9 +207,9 @@ class SQLDictionary(dict):
     @inlineCallbacks
     def load(self):
         self.__load = True  # only true when loaded, don't save what was just loaded.
-        results = yield self._SQLDict._Libraries['localdb'].get_sql_dict(self.__component_name, self.__dict_name)
+        results = yield self._Parent._Libraries['localdb'].get_sql_dict(self.__component_name, self.__dict_name)
         if len(results) != 1:
-            returnValue(None)
+            return None
 
         items = msgpack.unpackb(results[0]['dict_data'], encoding='utf-8')
         # print("sqldict results: %s" % items)
@@ -268,17 +249,14 @@ class SQLDictionary(dict):
 
     def touch(self):
         if not self.__load:
-            self._SQLDict._dictionaries[self.__component_name+":"+self.__dict_name]['dirty'] = True
+            self._Parent._dictionaries[self.__component_name+":"+self.__dict_name]['dirty'] = True
 
     def _update_sql(self, key, value):
         """
         Update the database with new data. Use the loader library to handle this.
         """
-        if self.__init is True:
-            return True
-
-        self.touch()
-#        self.__loader.save_sql_dict(self.__component_name, self.__dict_name, key, pdata)
+        if self.__load is False:
+            self.touch()
 
     def setdefault(self, key, value=None):
         if key not in self:
