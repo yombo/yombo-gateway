@@ -203,6 +203,7 @@ class Modules(YomboLibrary):
         self.hooks_called = MaxDict(200, {})
         self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
             'short_description', 'description_formatting', '_public', '_status']
+        self.disabled_modules = {}
 
     @inlineCallbacks
     def import_modules(self):
@@ -242,26 +243,26 @@ class Modules(YomboLibrary):
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
-        yield self.module_invoke_all("_preload_yombo_internal_", called_by=self)
-        yield self.module_invoke_all("_preload_", called_by=self)
+        yield self.module_invoke_all("_preload_yombo_internal_", called_by=self, allow_disable=True)
+        yield self.module_invoke_all("_preload_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_preloaded_", called_by=self)
         # Load
-        yield self.module_invoke_all("_load_yombo_internal_", called_by=self)
-        yield self.module_invoke_all("_load_", called_by=self)
+        yield self.module_invoke_all("_load_yombo_internal_", called_by=self, allow_disable=True)
+        yield self.module_invoke_all("_load_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_loaded_", called_by=self)
 
         # Pre-Start
-        yield self.module_invoke_all("_prestart_yombo_internal_", called_by=self)
-        yield self.module_invoke_all("_prestart_", called_by=self)
+        yield self.module_invoke_all("_prestart_yombo_internal_", called_by=self, allow_disable=True)
+        yield self.module_invoke_all("_prestart_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_prestarted_", called_by=self)
 
         # Start
-        yield self.module_invoke_all("_start_yombo_internal_", called_by=self)
-        yield self.module_invoke_all("_start_", called_by=self)
+        yield self.module_invoke_all("_start_yombo_internal_", called_by=self, allow_disable=True)
+        yield self.module_invoke_all("_start_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_started_", called_by=self)
 
-        yield self.module_invoke_all("_started_yombo_internal_", called_by=self)
-        yield self.module_invoke_all("_started_", called_by=self)
+        yield self.module_invoke_all("_started_yombo_internal_", called_by=self, allow_disable=True)
+        yield self.module_invoke_all("_started_", called_by=self, allow_disable=True)
         yield self._Loader.library_invoke_all("_modules_start_finished_", called_by=self)
 
     @inlineCallbacks
@@ -600,6 +601,10 @@ class Modules(YomboLibrary):
                 }
             except RuntimeWarning as e:
                 pass
+            except Exception as e:
+                logger.warn("Disabling module '{module}' due to exception from hook (_init_): {e}",
+                            module=module._Name, e=e)
+                self.disabled_modules[module_id] = "Caught exception during call '_init_': %s" % e
 
     @inlineCallbacks
     def module_invoke(self, requested_module, hook, **kwargs):
@@ -652,34 +657,11 @@ class Modules(YomboLibrary):
                         'called_by': calling_component,
                     }
                     return results
-                except RuntimeWarning as e:
-                    pass
+                except Exception as e:
+                    logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
+                                module=module._Name, hook=hook, e=e)
+                    self.disabled_modules[module._module_id] = "Caught exception during call '%s': %s" % (e, hook)
 
-#                 try:
-# #                    results = yield maybeDeferred(method, **kwargs)
-#                     self._invoke_list_cache[cache_key] = True
-#                     if hook not in module._hooks_called:
-#                         module._hooks_called[hook] = 1
-#                     else:
-#                         module._hooks_called[hook] += 1
-#                     results = yield maybeDeferred(method, **kwargs)
-#                     returnValue(results)
-#                     # return method(**kwargs)
-#                 # except Exception, e:
-#                 #     logger.error("---==(Error in {hook} function for module: {name})==----", hook=hook, name=module._FullName)
-#                 #     logger.error("--------------------------------------------------------")
-#                 #     logger.error("Error message: {e}", e=e)
-#                 #     logger.error("--------------------------------------------------------")
-#                 except Exception as e:
-#                     exc_type, exc_value, exc_traceback = sys.exc_info()
-#                     logger.error("------==(ERROR During {hook} of module: {name})==-------", hook=hook, name=module._FullName)
-#                     logger.error("1:: {e}", e=sys.exc_info())
-#                     logger.error("---------------==(Traceback)==--------------------------")
-#                     logger.error("{e}", e=traceback.print_exc())
-#                     logger.error("--------------------------------------------------------")
-#                     # logger.error("{e}", e=repr(traceback.print_exception(exc_type, exc_value, exc_traceback,
-#                     #           limit=10, file=sys.stdout)))
-#                     # logger.error("--------------------------------------------------------")
             else:
                 pass
                 # logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
@@ -688,7 +670,7 @@ class Modules(YomboLibrary):
             # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
 
     @inlineCallbacks
-    def module_invoke_all(self, hook, full_name=None, **kwargs):
+    def module_invoke_all(self, hook, full_name=None, allow_disable=None, **kwargs):
         """
         Calls module_invoke for all loaded modules.
         """
@@ -699,6 +681,9 @@ class Modules(YomboLibrary):
             full_name = False
         results = {}
         for module_id, module in self.modules.items():
+            if module_id in self.disabled_modules:
+                continue
+
             if int(module._status) != 1:
                 continue
 
@@ -713,8 +698,12 @@ class Modules(YomboLibrary):
                 e.collected = results
                 e.by_who =  label
                 raise
+            except Exception as e:
+                logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
+                            module=module._Name, hook=hook, e=e)
+                self.disabled_modules[module_id] = "Caught exception during call '%s': %s" % (e, hook)
 
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def load_module_data(self):
@@ -839,10 +828,7 @@ class Modules(YomboLibrary):
                 return {}
 
         temp = {}
-        # print "dt..module_id: %s" % module_id
-        # print "dt..self._Modules.modules[module_id].device_types: %s" % self._Modules._moduleClasses[module_id].device_types
         for dt in self.module_device_types(module_id):
-            # print "self._DeviceTypes[dt].get_devices(): %s" % self._DeviceTypes[dt].get_devices()
             temp.update(self._DeviceTypes[dt].get_devices())
 
         return temp
