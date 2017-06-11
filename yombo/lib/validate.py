@@ -21,20 +21,14 @@ import msgpack
 from datetime import timedelta, datetime as datetime_sys
 import os
 import re
-from urllib.parse import urlparse
 from socket import _GLOBAL_DEFAULT_TIMEOUT
-import inspect
 from unicodedata import normalize
-
 from typing import Any, Union, TypeVar, Callable, Sequence, Dict
-
 import voluptuous as vol
-from unidecode import unidecode
 
-from yombo.lib.devices._device import Device
 
-from twisted.internet.defer import inlineCallbacks, Deferred
-from twisted.internet.task import LoopingCall
+# from twisted.internet.defer import inlineCallbacks, Deferred
+# from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.exceptions import Invalid
@@ -63,6 +57,9 @@ class Validate(YomboLibrary):
     Performs various tasks at startup.
 
     """
+    def _init_(self, **kwargs):
+        pass
+
     # Adapted from:
     # https://github.com/alecthomas/voluptuous/issues/115#issuecomment-144464666
     def has_at_least_one_key(self, *keys: str) -> Callable:
@@ -79,27 +76,7 @@ class Validate(YomboLibrary):
 
         return validate
 
-    def boolean(self, value: Any) -> bool:
-        """Validate and coerce a boolean value."""
-        if isinstance(value, str):
-            value = value.lower()
-            if value in ('1', 'true', 'yes', 'on', 'enable'):
-                return True
-            if value in ('0', 'false', 'no', 'off', 'disable'):
-                return False
-            raise Invalid('invalid boolean value {}'.format(value))
-        return bool(value)
-
-    def is_device(self, value: Device) -> Device:
-        """Validate that value is a real device."""
-        if inspect.isclass(value):
-            if isinstance(value, Device):
-                return value
-            else:
-                raise ValueError("Passed in an unknown object")
-        Invalid('invalid boolean value {}'.format(value))
-
-    def isdevice(self, value):
+    def is_device(self, value):
         """Validate that value is a real device."""
         try:
             os.stat(value)
@@ -219,36 +196,6 @@ class Validate(YomboLibrary):
             return slg
         raise Invalid('Unable to slugify {}'.format(value))
 
-    def string(self, value: Any) -> str:
-        """Coerce value to string, except for None."""
-        if value is not None:
-            return str(value)
-        raise Invalid('string value is None')
-
-    def integer(self, value: Any) -> str:
-        """Coerce value to integer"""
-        try:
-            return int(input)
-        except ValueError:
-            raise Invalid('Cannot convert to integer')
-
-    def as_float(self, value: Any) -> str:
-        """Coerce value to float"""
-        try:
-            return float(input)
-        except ValueError:
-            raise Invalid('Cannot convert to float')
-
-    def number(self, value: Any) -> str:
-        """Coerce value to integer if possible, otherwise to a float if possible."""
-        try:
-            return int(input)
-        except ValueError:
-            try:
-                return float(input)
-            except:
-                raise Invalid('Cannot convert to integer')
-
     def temperature_unit(self, value) -> str:
         """Validate and transform temperature unit."""
         value = str(value).upper()
@@ -305,15 +252,7 @@ class Validate(YomboLibrary):
             except Exception as _:
                 raise Invalid('Invalid socket timeout: {err}'.format(err=_))
 
-    # pylint: disable=no-value-for-parameter
-    def url(value: Any) -> str:
-        """Validate an URL."""
-        url_in = str(value)
 
-        if urlparse(url_in).scheme in ['http', 'https']:
-            return vol.Schema(vol.Url())(url_in)
-
-        raise Invalid('invalid url')
 
     def x10_address(value):
         """Validate an x10 address."""
