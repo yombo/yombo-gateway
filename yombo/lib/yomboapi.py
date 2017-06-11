@@ -454,7 +454,7 @@ class YomboAPI(YomboLibrary):
             try:
                 content = msgpack.loads(content)
                 content_type = "dict"
-                except Exception:
+            except Exception:
                 raise YomboWarning("Receive yombo api response reported msgpack, but isn't.")
         else:
             try:
