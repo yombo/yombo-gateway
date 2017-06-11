@@ -151,7 +151,7 @@ class Statistics(YomboLibrary):
         self.saveDataLoop = LoopingCall(self._save_statistics)
         self.saveDataLoop.start(self.time_between_saves, False)
 
-        self.uploadDataLoop = LoopingCall(self._upload_statistics)
+        self._upload_statistics_loop = LoopingCall(self._upload_statistics)
 
         self.unload_deferred = None
 
@@ -163,8 +163,8 @@ class Statistics(YomboLibrary):
         return self.init_deferred
 
     def _start_(self, **kwargs):
-        # self.uploadDataLoop.start(5, False) # for testing...
-        self.uploadDataLoop.start(21557, False) # about every 6 hours
+        # self._upload_statistics_loop.start(5, False) # for testing...
+        self._upload_statistics_loop.start(21557, False) # about every 6 hours
 
     def _stop_(self, **kwargs):
         """
