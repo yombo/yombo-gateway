@@ -49,6 +49,27 @@ logger = get_logger('utils.__init__')
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 
+def instance_properties(obj, startswith_filter=None, endwith_filter=None):
+    """
+    Get the attributes of an instance and return a dictionary.
+
+    Modified from: https://stackoverflow.com/questions/61517/python-dictionary-from-an-objects-fields
+    :param obj:
+    :return:
+    """
+    pr = {}
+    for name in dir(obj):
+        value = getattr(obj, name)
+        if not name.startswith('__') and not inspect.ismethod(value):
+            if startswith_filter is not None:
+                if name.startswith(startswith_filter) is False:
+                    continue
+            if endwith_filter is not None:
+                if name.endswith(endwith_filter) is False:
+                    continue
+            pr[name] = value
+    return pr
+
 def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
     """
     Used to translate one scale to another. For example, a light can have 255 steps, but
@@ -1265,9 +1286,13 @@ unit_converters = {
     'kg_lb': lambda x: x*2.20462262185,  # pounds
     'lb_kg': lambda x: x*0.45359237,  # pounds
     'f_c': lambda x: float((x - 32) * (5.0/9.0)),  # celsius
+    'f_f': lambda x: x,
     'c_f': lambda x: float((x * (9.0/5.0)) + 32),  # fahrenheit
+    'c_c': lambda x: x,
     'btu_kwh': lambda x: x*0.00029307107017,  # kilowatt-hour
+    'btu_btu': lambda x: x,
     'kwh_btu': lambda x: x*3412.14163312794,  # btu
+    'kwh_kwg': lambda x: x,
 }
 
 
