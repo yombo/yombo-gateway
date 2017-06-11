@@ -234,7 +234,7 @@ class Commands(YomboLibrary):
         # if test_command:
         #     return self.commands[command_id]
 
-    def get(self, command_requested, limiter=None, status=None):
+    def get(self, command_requested, limiter=None, status=None, command_list=None):
         """
         Looks for commands by it's id, label, and machine_label.
 
@@ -299,8 +299,12 @@ class Commands(YomboLibrary):
                 }
             ]
             try:
+                if command_list is not None:
+                    commands = command_list
+                else:
+                    commands = self.commands
                 logger.debug("Get is about to call search...: %s" % command_requested)
-                found, key, item, ratio, others = do_search_instance(attrs, self.commands,
+                found, key, item, ratio, others = do_search_instance(attrs, commands,
                                                                      self.command_search_attributes,
                                                                      limiter=limiter,
                                                                      operation="highest")
