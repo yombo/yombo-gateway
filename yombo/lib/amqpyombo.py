@@ -51,7 +51,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import percentage, random_string, random_int
+from yombo.utils import percentage, random_string, random_int, bytes_to_unicode
 
 # Handlers for processing various messages.
 from yombo.lib.handlers.amqpcontrol import AmqpControlHandler
@@ -470,12 +470,12 @@ class AMQPYombo(YomboLibrary):
 
         if properties.content_type == 'application/json':
             try:
-                msg = json.loads(msg)
+                msg = bytes_to_unicode(json.loads(msg))
             except Exception:
                 raise YomboWarning("Receive msg reported json, but isn't: %s" % msg)
         elif properties.content_type == 'application/msgpack':
             try:
-                msg = msgpack.loads(msg)
+                msg = bytes_to_unicode(msgpack.loads(msg))
             except Exception:
                 raise YomboWarning("Received msg reported msgpack, but isn't: %s" % msg)
 
