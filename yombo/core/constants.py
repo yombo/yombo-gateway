@@ -14,6 +14,5 @@ MISC_UNIT_SYSTEM_METRIC = 'metric'  # type: str
 MISC_UNIT_SYSTEM_IMPERIAL = 'imperial'  # type: str
 
 # Temperature attribute
-ATTR_TEMPERATURE = 'temperature'
 TEMP_CELSIUS = '°C'
 TEMP_FAHRENHEIT = '°F'
