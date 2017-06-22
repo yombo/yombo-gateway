@@ -173,7 +173,7 @@ class DeviceTypes(YomboLibrary):
         self.device_types = {}
         self.device_type_search_attributes = ['device_type_id', 'input_type_id', 'category_id', 'label', 'machine_label', 'description',
             'status', 'always_load', 'public']
-        self.platforms = {}
+        self.platforms = {}  # This is filled in lib.modules::do_import_modules
 
     def _load_(self, **kwargs):
         """
@@ -186,10 +186,11 @@ class DeviceTypes(YomboLibrary):
         return self.load_deferred
 
     @inlineCallbacks
-    def _started_(self, **kwargs):
+    def _start_(self, **kwargs):
         self.load_platforms(BASE_PLATFORMS)
         platforms = yield global_invoke_all('_device_platforms_', called_by=self)
-        self.load_platforms(platforms)
+        for component, item in platforms.items():
+            self.load_platforms(item)
 
     def _stop_(self, **kwargs):
         """
@@ -220,10 +221,12 @@ class DeviceTypes(YomboLibrary):
         :param platforms: 
         :return: 
         """
+        # print("platforms: %s" % platforms)
         for item in platforms:
             item_key = item[1].lower()
             if item_key.startswith('_'):
                 item_key = item_key[1:]
+            # print(" item_key2: %s" % type(item_key))
 
             module_root = __import__(item[0], globals(), locals(), [], 0)
             module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
@@ -438,10 +441,10 @@ class DeviceTypes(YomboLibrary):
             raise KeyError("Device Type Id not found.")
         if command_id not in self.device_types[device_type_id].commands:
             raise KeyError("Command ID not found in specified device type id.")
-        if dtc_machine_label not in self.device_types[device_type_id].commands[command_id]:
+        if dtc_machine_label not in self.device_types[device_type_id].commands[command_id]['inputs']:
             raise KeyError("machine label not found in specified command_id for the provided device type id.")
 
-        input_type_id = self.device_types[device_type_id].commands[command_id][dtc_machine_label]['input_type_id']
+        input_type_id = self.device_types[device_type_id].commands[command_id]['inputs'][dtc_machine_label]['input_type_id']
         return self._InputTypes[input_type_id].validate(value)
 
     @inlineCallbacks
@@ -575,7 +578,6 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        #        print "enabling device_type: %s" % device_type_id
         api_data = {
             'status': 1,
         }
@@ -607,13 +609,11 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-#        print "disabling device_type: %s" % device_type_id
         api_data = {
             'status': 0,
         }
 
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
- #       print("disable device_type results: %s" % device_type_results)
 
         if device_type_results['code'] > 299:
             results = {
@@ -641,7 +641,6 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        #        print "enabling device_type: %s" % device_type_id
         api_data = {
             'device_type_id': device_type_id,
             'command_id': command_id,
@@ -674,11 +673,11 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        #        print "enabling device_type: %s" % device_type_id
         api_data = {
             'device_type_id': device_type_id,
             'command_id': command_id,
             'input_type_id': input_type_id,
+            'label': data['label'],
             'machine_label': data['machine_label'],
             'encryption': data['encryption'],
             'value_casing': data['value_casing'],
@@ -716,11 +715,11 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        #        print "enabling device_type: %s" % device_type_id
         api_data = {
             # 'device_type_id': device_type_id,
             # 'command_id': command_id,
             # 'input_type_id': input_type_id,
+            'label': data['label'],
             'machine_label': data['machine_label'],
             'encryption': data['encryption'],
             'value_casing': data['value_casing'],
@@ -790,7 +789,6 @@ class DeviceTypes(YomboLibrary):
         device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (device_type_id, command_id))
 
         if device_type_results['code'] > 299:
-            # print "device_type_results: %s" % device_type_results
             results = {
                 'status': 'failed',
                 'msg': "Couldn't remove command from device type",
@@ -883,6 +881,9 @@ class DeviceType(object):
             for input in inputs:
                 self.commands[command_id]['inputs'][input.machine_label] = {
                     'input_type_id': input.input_type_id,
+                    'device_type_id': input.device_type_id,
+                    'command_id': input.command_id,
+                    'label': input.label,
                     'machine_label': input.machine_label,
                     'live_update': input.live_update,
                     'value_required': input.value_required,
@@ -896,9 +897,9 @@ class DeviceType(object):
                 }
 
     def __getitem__(self, key):
-        print('devicetype __getitem__: ', key)
-        print('devicetype repsonse __getitem__: ', getattr(self, key))
-        print('devicetype repsonse __getitem__: ', type(getattr(self, key)))
+        # print('devicetype __getitem__: ', key)
+        # print('devicetype repsonse __getitem__: ', getattr(self, key))
+        # print('devicetype repsonse __getitem__: ', type(getattr(self, key)))
         return getattr(self, key)
 
     def get_devices(self):
