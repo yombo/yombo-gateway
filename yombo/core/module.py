@@ -137,7 +137,8 @@ class YomboModule:
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 
     def _is_my_device(self, device):
-        if device.device_id in self._devices():
+        devices = self._devices()
+        if device.device_id in devices:
             return True
         else:
             return False
