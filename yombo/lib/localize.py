@@ -72,7 +72,7 @@ class Localize(YomboLibrary):
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
-    def display_temperature(self, i_temp, temp_type, o_decimals=None):
+    def display_temperature(self, in_temp, in_type, out_type,  out_decimals=None):
         """
         Convert a temperature input for display according to the system settings.
 
@@ -85,19 +85,24 @@ class Localize(YomboLibrary):
         :return: 
         """
         system_type = self.localization_degrees()[0].lower()
-        temp_type = temp_type[0].lower()
-        print("i_temp: %s" % i_temp)
-        print("temp_type: %s" % temp_type)
-        print("system_type: %s" % system_type)
+        in_type = in_type[0].lower()
+        out_type = out_type[0].lower()
+        # print("in_temp: %s" % in_temp)
+        # print("temp_type: %s" % temp_type)
+        # print("system_type: %s" % system_type)
 
-        if system_type != temp_type:
-            if temp_type == 'f':
-                i_temp = unit_convert('f_c', i_temp)
-            elif temp_type == 'c':
-                i_temp = unit_convert('c_f', i_temp)
+        if out_type == in_type:
+            return in_temp
+        converter = '%s_%s' % (in_type, out_type)
+        out_temp = unit_convert(converter, in_temp)
+
+        if out_decimals is None:
+            if out_type == 'c':
+                out_decimal = 1
             else:
-                raise YomboWarning("display_temperate received invalid incoming temperature type: %s" % temp_type)
-        if o_decimals is not None:
+                out_decimals = 0
+
+        if out_decimals >= 0:
             return "{0:.{1}f}".format(i_temp, o_decimals)
         else:
             return i_temp
