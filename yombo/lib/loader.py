@@ -37,14 +37,13 @@ import traceback
 from re import search as ReSearch
 from collections import OrderedDict
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+import collections
 # from signal import signal, SIGINT
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 from twisted.internet import reactor
 from twisted.web import client
-import collections
 from functools import reduce
 client._HTTP11ClientFactory.noisy = False
 
@@ -71,7 +70,6 @@ HARD_LOAD["Startup"] = {'operation_mode':'all'}
 HARD_LOAD["AMQP"] = {'operation_mode':'run'}
 HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
 HARD_LOAD["GPG"] = {'operation_mode':'all'}
-HARD_LOAD["Automation"] = {'operation_mode':'all'}
 HARD_LOAD["CronTab"] = {'operation_mode':'all'}
 HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
 HARD_LOAD["Times"] = {'operation_mode':'all'}
@@ -81,6 +79,7 @@ HARD_LOAD["InputTypes"] = {'operation_mode':'all'}
 HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
 HARD_LOAD["Variables"] = {'operation_mode':'all'}
 HARD_LOAD["Devices"] = {'operation_mode':'all'}
+HARD_LOAD["Automation"] = {'operation_mode':'all'}
 HARD_LOAD["Modules"] = {'operation_mode':'all'}
 HARD_LOAD["Localize"] = {'operation_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
@@ -214,11 +213,25 @@ class Loader(YomboLibrary, object):
         #     return
         logger.debug("Calling load functions of libraries.")
         self.run_phase = "libraries_load"
+
+        yield self._moduleLibrary.import_modules()
+        for name, config in HARD_LOAD.items():
+            if self.sigint:
+                return
+            self._log_loader('debug', name, 'library', 'modules_imported', 'About to call _modules_imported_.')
+            if self.check_operation_mode(config['operation_mode']):
+                libraryName =  name.lower()
+                yield self.library_invoke(libraryName, "_modules_imported_", called_by=self)
+                HARD_LOAD[name]['_modules_imported_'] = True
+            else:
+                HARD_LOAD[name]['_modules_imported_'] = False
+            self._log_loader('debug', name, 'library', 'modules_imported', 'Finished call to _modules_imported_.')
+
         for name, config in HARD_LOAD.items():
             # print "sigint: %s" % self.sigint
             if self.sigint:
                 return
-            self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
+            # self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
             if self.check_operation_mode(config['operation_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
@@ -231,6 +244,8 @@ class Loader(YomboLibrary, object):
         self._moduleLibrary = self.loadedLibraries['modules']
         self.run_phase = "libraries_start"
 
+        yield self._moduleLibrary.init_modules()
+
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -242,10 +257,9 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_start_'] = True
             else:
                 HARD_LOAD[name]['_start_'] = False
-            self._log_loader('debug', name, 'library', 'load', 'Finished call to _start_.')
+            self._log_loader('debug', name, 'library', '_start_', 'Finished call to _start_.')
 
-
-        yield self._moduleLibrary.import_modules()
+        yield self._moduleLibrary.load_modules()  #includes load & start
 
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -258,7 +272,6 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]['_started_'] = False
 
-        yield self._moduleLibrary.load_modules()
         self.loadedLibraries['notifications'].add({'title': 'System started',
             'message': 'System successfully started.', 'timeout': 300, 'source': 'Yombo Gateway System',
             'persist': False,
@@ -268,7 +281,7 @@ class Loader(YomboLibrary, object):
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
-            self._log_loader('debug', name, 'library', 'started', 'About to call _modules_started_.')
+            self._log_loader('debug', name, 'library', '_modules_started_', 'About to call _modules_started_.')
             if self.check_operation_mode(config['operation_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_modules_started_", called_by=self)
@@ -480,7 +493,7 @@ class Loader(YomboLibrary, object):
                 try:
                     d = Deferred()
                     d.addCallback(lambda ignored: self._log_loader('debug', library._Name, 'library', hook,
-                                                                   'About to call _init_.'))
+                                                                   'About to call %s' % hook))
                     # print("calling %s:%s" % (library._Name, hook))
                     d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
                     d.addErrback(self.library_invoke_failure, requested_library, hook)
