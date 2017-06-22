@@ -1,5 +1,5 @@
 from yombo.ext.ipy import IP
-from yombo.lib.inputtypes._input_type import Input_Type
+from yombo.lib.inputtypes.input_type import Input_Type
 
 class IP_Address(Input_Type):
 

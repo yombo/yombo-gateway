@@ -7,7 +7,7 @@ import types
 from yombo.core.log import get_logger
 logger = get_logger('library.inputtypes.validator')
 
-class Validator(object):
+class Input_Type(object):
     """
     A class to manage a single input type.
     :ivar input_type_id: (string) The unique ID.
