@@ -100,7 +100,7 @@ class Automation(YomboLibrary):
 
         # lets load the raw json and see if we can even parse anything.
 
-    def _start_(self, **kwargs):
+    def _load_(self, **kwargs):
         """
         Loads the automation.txt file and processes any rules included.
         
@@ -109,8 +109,8 @@ class Automation(YomboLibrary):
         try:
             with yombo.utils.fopen('automation.txt', 'r') as fp_:
                 temp_rules = hjson.loads(fp_.read())
-                self._rulesRaw = msgpack.loads(msgpack.dumps(temp_rules))  # remove ordered dict.
-                # logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
+                self._rulesRaw = yombo.utils.bytes_to_unicode(msgpack.loads(msgpack.dumps(temp_rules)))  # remove ordered dict.
+                logger.debug("automation.txt rules RAW: {rules}", rules=self._rulesRaw)
         except Exception as e:
             logger.warn("Simple automation is unable to parse 'automation.txt' file: %s." % e)
             self._rulesRaw = {}
@@ -120,7 +120,7 @@ class Automation(YomboLibrary):
                     rule['source'] = 'hsjon'
 
     @inlineCallbacks
-    def _modules_prestarted_(self, **kwargs):
+    def _start_(self, **kwargs):
         """
         This function is called before the _start_ function of all modules is called.
 
@@ -178,19 +178,19 @@ class Automation(YomboLibrary):
 
         """
         automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
-        # logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
+        logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
         for component_name, item in automation_sources.items():
             for vals in item:
-                if 'platform_source' in vals and 'platform' in vals:
+                if 'platform' in vals:
                     vals['platform_source'] = component_name
                     self.sources[vals['platform']] = vals
-        # logger.debug("sources: {sources}", sources=self.sources)
+        logger.debug("sources: {sources}", sources=self.sources)
 
         automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
         # logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
         for component_name, item in automation_filters.items():
             for vals in item:
-                if 'platform_source' in vals and 'platform' in vals:
+                if 'platform' in vals:
                     vals['platform_source'] = component_name
                     self.filters[vals['platform']] = vals
         # logger.debug("filters: {filters}", filters=self.filters)
@@ -199,7 +199,7 @@ class Automation(YomboLibrary):
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for component_name, item in automation_actions.items():
             for vals in item:
-                if 'platform_source' in vals and 'platform' in vals:
+                if 'platform' in vals:
                     vals['platform_source'] = component_name
                     self.actions[vals['platform']] = vals
 
@@ -220,14 +220,24 @@ class Automation(YomboLibrary):
         for rule in self._rulesRaw['rules']:
             if 'run_on_start' in rule:
                 rule['run_on_start'] = yombo.utils.is_true_false(rule['run_on_start'])
+            else:
+                rule['run_on_start'] = True
             if 'description' not in rule:
                     rule['description'] = ''
             self.add_rule(rule)
 
         # logger.debug("All active rules: {rules}", rules=self.rules)
-        for source, functions in self.sources.items():
-            if 'startup_trigger_callback' in functions:
-                functions['startup_trigger_callback']()
+
+    def _started_(self, **kwargs):
+        # for source, functions in self.sources.items():
+        #     if 'startup_trigger_callback' in functions:
+        #         functions['startup_trigger_callback']()
+        #
+
+        for platform in self.sources:
+            if 'startup_trigger_callback' in self.sources[platform]:
+                startup_trigger_callback = self.sources[platform]['startup_trigger_callback']
+                startup_trigger_callback()
 
     def get_action_delay(self, delay):
         """
@@ -508,7 +518,6 @@ class Automation(YomboLibrary):
             'rule_id': rule_id,
         })
 
-    # 'atoms', 'is_light', False
     def triggers_check(self, platform_label, tracked_key, new_value):
         """
         Modules and libraries can call this to check for any triggers on a dictionary. If a trigger matches, any
@@ -524,7 +533,7 @@ class Automation(YomboLibrary):
         # logger.warn("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@checking : {new_value}", new_value=new_value)
         # logger.warn("tracked_label: {tracked_label}", tracked_label=platform_label)
         # logger.warn("tracked_key: {tracked_key}", tracked_key=tracked_key)
-        # logger.debug("trackers: {tracker}", tracker=self.tracker)
+        logger.debug("trackers: {tracker}", tracker=self.tracker)
         if platform_label not in self.tracker:
             logger.debug("platform_label ({platform_label}) not in self.tracker. Skipping rule.", platform_label=platform_label)
             return False
@@ -588,6 +597,7 @@ class Automation(YomboLibrary):
         if not portion['filter']['platform'] in self.filters:
             raise YomboAutomationWarning("No filter platform: %s" % portion['filter']['platform'], 100, 'automation_check_filter', 'automation')
         run_filter_callback_function = self.filters[portion['filter']['platform']]['run_filter_callback']
+        print("run_filter_callback_function: %s" % run_filter_callback_function)
         return run_filter_callback_function(self.rules[rule_id], portion, new_value)
 
     def automation_check_conditions(self, rule_id):
