@@ -686,6 +686,7 @@ class States(YomboLibrary, object):
         :return:
         """
         for name in self.automation_startup_check:
+            print("states_startup_trigger_callback, checking: %s" % name)
             if name in self.__States:
                 self.check_trigger(name, self.__States[name]['value'])
 

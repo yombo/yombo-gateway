@@ -61,11 +61,6 @@ class YomboAPI(YomboLibrary):
             self.validate_system_login()
             return self.init_defer
 
-    def _start_(self, **kwargs):
-        # print "system_session status: %s" % self.system_session
-        # print "system_login_key status: %s" % self.system_login_key
-        pass
-
     @inlineCallbacks
     def gateway_index(self, session=None):
         results = yield self.request("GET", "/v1/gateway", None, session)
@@ -74,7 +69,6 @@ class YomboAPI(YomboLibrary):
         elif results['code'] == 404:
             raise YomboWarning("Server cannot get gateways")
         else:
-            # print "results: %s" % results
             if results['content']['message'] == "Invalid Token.":
                 raise YomboWarningCredentails("URI: '%s' requires credentials." % results['content']['response']['uri'])
             raise YomboWarning("Unknown error: %s" % results['content'])
@@ -132,18 +126,12 @@ class YomboAPI(YomboLibrary):
     # Below are the core help functions
 
     def save_system_session(self, session):
-        # print "api save_system_session0: %s" % session
         self.system_session = session
-        # print "api save_system_session1: %s" % session
         self._Configs.set('yomboapi', 'auth_session', session)  # to be encrypted with gpg later
-        # print "api save_system_session2: %s" % session
 
     def save_system_login_key(self, login_key):
-        # print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@api save_system_login_key: %s" % login_key
         self.system_login_key = login_key
-        # print "api save_system_login_key1: %s" % login_key
         self._Configs.set('yomboapi', 'login_key', login_key)  # to be encrypted with gpg later
-        # print "api save_system_login_key2: %s" % login_key
 
     def select_session(self, session_id=None, session_key=None):
         if session_id is None or session_key is None:
@@ -183,8 +171,6 @@ class YomboAPI(YomboLibrary):
             returnValue(False)
 
         if self.system_session is None and self.system_login_key is None:
-            # print "validate_system_login: self.system_session: %s" % self.system_session
-            # print "validate_system_login: self.system_login_key: %s" % self.system_login_key
             logger.warn("No saved system session information and no login_key. Disabling automated system changes.")
             self._States.set('yomboapi.valid_system_session', False)
             self.valid_system_session = False
@@ -219,7 +205,6 @@ class YomboAPI(YomboLibrary):
         else:  # if invalid, try to get one with the login key!
             if self.valid_login_key:
                 results = yield self.user_login_with_key(self.system_login_key)
-                # print "reslts: %s" % results
                 if results is not False:
                     self._Configs.set('yomboapi', 'auth_session', results['session'])  # to be encrypted with gpg later
                     self.system_session = results['session']
@@ -308,7 +293,6 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
-        print("asdfasdfasdf111111111111111111111111111111111111111111111111111")
         # credentials = { 'username':username, 'password':password}
         results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
         logger.info("$$$3 REsults from API login creds: {results}", results=results)
@@ -344,12 +328,10 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def request(self, method, path, data=None, session=None):
-        # print "base_url: %s" % self.base_url
         path = self.base_url + path
 
-        print("%s: %s" % (method, path))
-        print("data: %s" % data)
-        # print "session: %s" % session
+        # print("%s: %s" % (method, path))
+        # print("data: %s" % data)
         # if session is False:
         #     session = None
         if session is None:
@@ -360,7 +342,6 @@ class YomboAPI(YomboLibrary):
         if session is False:
             session = None
         results = None
-        # print "session2: %s" % session
         headers = self.make_headers(session)
 
         if data is not None:
@@ -369,7 +350,6 @@ class YomboAPI(YomboLibrary):
         if method == 'GET':
             results = yield self._get(path, headers, data)
         elif method == 'POST':
-            print ("yapi post calling")
             results = yield self._post(path, headers, data)
         elif method == 'PATCH':
             results = yield self._patch(path, headers, data)
@@ -380,7 +360,6 @@ class YomboAPI(YomboLibrary):
         else:
             raise Exception("Bad request type?? %s: %s" % (method, path) )
 
-        # print "request api results: %s" % results
         returnValue(results)
 
     @inlineCallbacks
@@ -402,14 +381,12 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def _post(self, path, headers, data):
-        print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
+        # print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
 
         response = yield treq.post(path, data=data, agent=self.custom_agent, headers=headers)
-        print("ccccc")
         content = yield treq.content(response)
-        print("dddd")
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        print("dddd: %s" % final_response)
+        # print("dddd: %s" % final_response)
         returnValue(final_response)
 
     @inlineCallbacks
@@ -437,13 +414,11 @@ class YomboAPI(YomboLibrary):
         return data
 
     def decode_results(self, content, headers, code, phrase):
-        # print "raw headers: %s" % response.headers
-        # print "decoded headers: %s" % headers
         # print("decode_results headers: %s" % headers)
 
         content_type = headers['content-type'][0]
 
-        print( "######  content: %s" % content)
+        # print( "######  content: %s" % content)
         if content_type == 'application/json':
             try:
                 content = json.loads(content)

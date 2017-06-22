@@ -86,18 +86,14 @@ class SQLDict(YomboLibrary):
     def _unload_(self, **kwargs):
         """
         Save any data to disk (sql).
-        :return: A deferred. Will be called once save is complete.
         """
         yield self.save_sql_dict(True)
-        # self.unload_defer = Deferred()
-        # return self.unload_defer
 
     @inlineCallbacks
     def get(self, owner_object, dict_name, serializer=None, unserializer=None, max_length=None):
         """
         Used to get or create a new SQL backed dictionary. You method must be decorated with @inlineCallbacks and then
         yield the results of this call.
-        :return: Deferred, eventually a dictionary
         """
         if isinstance(owner_object, str):
             component_name = owner_object.lower()
