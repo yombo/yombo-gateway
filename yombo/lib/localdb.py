@@ -47,7 +47,7 @@ from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
 from yombo.utils import clean_dict
 
-logger = get_logger('lib.sqlitedb')
+logger = get_logger('lib.localdb')
 
 LATEST_SCHEMA_VERSION = 1
 
@@ -1351,10 +1351,27 @@ ORDER BY id desc"""
                 'relation_id': record.data_relation_id,
                 'relation_type': record.data_relation_type,
             }
-            data['value'] = yield self._GPG.decrypt(record.data)
+            value = yield self._GPG.decrypt(record.data)
+            # validate the value is valid input
+            try:  # lets be gentle for now.  Try to validate and corerce.
+                data['value'] = self._InputTypes.check(
+                    variables[record.field_machine_label]['input_type_id'],
+                    value,
+                    casing=variables[record.field_machine_label]['value_casing'],
+                    required=variables[record.field_machine_label]['value_required'],
+                    min=variables[record.field_machine_label]['value_min'],
+                    max=variables[record.field_machine_label]['value_max'],
+                    default=variables[record.field_machine_label]['default_value'],
+                )
+            except Exception as e:
+                logger.warn("Variable doesn't validate: {label}   Value:{value}.  Reason: {e}",
+                            label=variables[record.field_machine_label]['field_label'],
+                            value=value,
+                            e=e)
+                data['value'] = value
+
             data['value_display'] = yield self._GPG.display_encrypted(record.data)
             data['value_orig'] = record.data
-
             variables[record.field_machine_label]['data'][record.data_id] = data
             variables[record.field_machine_label]['values'].append(data['value'])
             variables[record.field_machine_label]['values_display'].append(data['value_display'])
