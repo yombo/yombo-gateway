@@ -47,6 +47,7 @@ $('.alert').bind('closed.bs.alert', function () {
         $.get('/api/v1/notifications/'+id+'/ack');
 });
 
+// Function handles long-click on items.
 (function($) {
     function startTrigger(e,data) {
         var $elem = $(this);
@@ -60,7 +61,6 @@ $('.alert').bind('closed.bs.alert', function () {
         clearTimeout($elem.data('mouseheld_timeout'));
     }
 
-
     var mouseheld = $.event.special.mouseheld = {
         setup: function(data) {
             var $this = $(this);
@@ -72,7 +72,7 @@ $('.alert').bind('closed.bs.alert', function () {
             $this.unbind('mousedown', startTrigger);
             $this.unbind('mouseleave mouseup', stopTrigger);
         },
-        time: 300 // default to 750ms
+        time: 250 // default to 750ms
     };
 })(jQuery);
 

@@ -12,7 +12,7 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
- {% if device.status == 0 %}
+ {% if device.enabled_status == 0 %}
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-red">
@@ -28,7 +28,7 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
- {% elif device.status == 2  %}
+ {% elif device.enabled_status == 2  %}
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-red">
@@ -75,9 +75,9 @@
                             <br>
                             <div class="input-group">
                                 <select class="form-control" tabindex="3" name="status" id="status" placeholder="Mark device as enabled, disabled, or deleted.">
-                                    <option value="enabled"{% if device.status == 1 %} selected{% endif %}>Enabled</option>
-                                    <option value="disabled"{% if device.status == 0 %} selected{% endif %}>Disabled</option>
-                                    <option value="deleted"{% if device.status == 2 %} selected{% endif %}>Deleted</option>
+                                    <option value="enabled"{% if device.enabled_status == 1 %} selected{% endif %}>Enabled</option>
+                                    <option value="disabled"{% if device.enabled_status == 0 %} selected{% endif %}>Disabled</option>
+                                    <option value="deleted"{% if device.enabled_status == 2 %} selected{% endif %}>Deleted</option>
                                 </select>
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
@@ -121,6 +121,7 @@
                                 historical data.</p>
                             ") }}
                             <br>
+                            <div class="input-group">
                                 <input type="text" tabindex="5" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="0, 180, 365..." value="{{ device.statistic_lifetime|hide_none }}">
                             </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Energy Type: </label>

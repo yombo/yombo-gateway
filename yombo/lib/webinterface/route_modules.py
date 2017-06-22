@@ -82,7 +82,7 @@ def route_modules(webapp):
                                     modules=webinterface._Modules.modules,
                                     ))
 
-        @webapp.route('/<string:module_id>/add', methods=['GET'])
+        @webapp.route('/<string:module_id>/add', methods=['POST', 'GET'])
         @require_auth()
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
@@ -91,21 +91,76 @@ def route_modules(webapp):
                 webinterface.add_alert(module_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/modules/index'))
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
-            data = {
-                'status': 1,
-                'module_id': module_results['data']['id'],
-                'install_branch': module_results['data']['prod_branch'],
-                'variable_data': {},
-            }
+            ok_to_save = True
 
-            variable_groups = {}
-            for group in module_results['data']['variable_groups']:
-                variable_groups[group['id']] = group
-            for field in module_results['data']['variable_fields']:
-                if 'fields' not in variable_groups[field['group_id']]:
-                    variable_groups[field['group_id']]['fields'] = {}
-                variable_groups[field['group_id']]['fields'][field['id']] = field
+            if 'json_output' in request.args:
+                json_output = request.args.get('json_output', [{}])[0]
+                json_output = json.loads(json_output)
+                data = {
+                    'status': json_output['status'],
+                    'module_id': json_output['module_id'],
+                    'install_branch': json_output['install_branch'],
+                }
+                if 'first_time' in json_output:
+                    ok_to_save = False
+            else:
+                data = {
+                    'status': 1,
+                    'module_id': module_results['data']['id'],
+                    'install_branch': module_results['data']['prod_branch'],
+                    'variable_data': {},
+                }
+                json_output = {}
+                ok_to_save = False
+
+            variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
+
+            if ok_to_save:
+                # print "jsonoutput = %s" % json_output
+                if 'vars' in json_output:
+                    variable_data = yield webinterface._Variables.extract_variables_from_web_data(
+                        json_output.get('vars', {}))
+                    data['variable_data'] = variable_data
+
+                results = yield webinterface._Modules.add_module(data)
+                if results['status'] == 'success':
+
+                    webinterface._Notifications.add({'title': 'Restart Required',
+                                                     'message': 'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                                     'source': 'Web Interface',
+                                                     'persist': False,
+                                                     'priority': 'high',
+                                                     'always_show': True,
+                                                     'always_show_allow_clear': False,
+                                                     'id': 'reboot_required',
+                                                     })
+
+                    page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+                    webinterface.add_alert("Module configuratiuon updated. A restart is required to take affect.")
+                    msg={
+                        'header': 'Module Added',
+                        'label': 'Module added successfully',
+                        'description': '',
+                    }
+                    return page.render(alerts=webinterface.get_alerts(), msg=msg)
+                else:
+                    # print "failed to submit new module: %s" % results
+                    webinterface.add_alert(results['apimsghtml'], 'warning')
+                    variable_groups = yield webinterface._Variables.get_variable_groups_fields(
+                        group_relation_type='device_type',
+                        group_relation_id='device_type_id',
+                    )
+            else:
+                variable_groups = {}
+                for group in module_results['data']['variable_groups']:
+                    variable_groups[group['id']] = group
+                for field in module_results['data']['variable_fields']:
+                    if 'fields' not in variable_groups[field['group_id']]:
+                        variable_groups[field['group_id']]['fields'] = {}
+                    variable_groups[field['group_id']]['fields'][field['id']] = field
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
+
 
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -114,72 +169,76 @@ def route_modules(webapp):
                                     server_module=module_results['data'],
                                     variable_groups=variable_groups,
                                     input_types=webinterface._InputTypes.input_types,
-                                    module_data={},
+                                    module_data=data,
                                     ))
 
-        @webapp.route('/<string:module_id>/add', methods=['POST'])
-        @require_auth()
-        @inlineCallbacks
-        def page_modules_add_post(webinterface, request, session, module_id):
-            json_output = json.loads(request.args.get('json_output')[0])
-
-            data = {
-                'status': json_output['status'],
-                'module_id': json_output['module_id'],
-                'install_branch': json_output['install_branch'],
-            }
-            # print "jsonoutput = %s" % json_output
-            if 'vars' in json_output:
-                variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
-                data['variable_data'] = variable_data
-
-            results = yield webinterface._Modules.add_module(data)
-            if results['status'] == 'failed':
-                # print "failed to submit new module: %s" % results
-                webinterface.add_alert(results['apimsghtml'], 'warning')
-
-                device_variables = yield webinterface._Variables.get_variable_groups_fields(
-                    group_relation_type='device_type',
-                    group_relation_id=device_type_id,
-                )
-
-                if device['variable_data'] is not None:
-                    device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
-                        device_variables,
-                        json_output.get('vars', {})
-                    )
-
-                results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-                page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
-                                        server_module=results['data'],
-                                        input_types=webinterface._InputTypes.input_types,
-                                        module_data=data,
-                                        ))
-
-            msg = {
-                'header': 'Module Added',
-                'label': 'Module configuration updated successfully',
-                'description': '',
-            }
-
-            webinterface._Notifications.add({'title': 'Restart Required',
-                                             'message': 'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-                                             'source': 'Web Interface',
-                                             'persist': False,
-                                             'priority': 'high',
-                                             'always_show': True,
-                                             'always_show_allow_clear': False,
-                                             'id': 'reboot_required',
-                                             })
-
-            page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    ))
-
-            webinterface.add_alert("Module configuratiuon updated. A restart is required to take affect.", 'warning')
-            returnValue(webinterface.redirect(request, '/modules/index'))
+        # @webapp.route('/<string:module_id>/add', methods=['POST'])
+        # @require_auth()
+        # @inlineCallbacks
+        # def page_modules_add_post(webinterface, request, session, module_id):
+        #     json_output = json.loads(request.args.get('json_output')[0])
+        #
+        #     data = {
+        #         'status': json_output['status'],
+        #         'module_id': json_output['module_id'],
+        #         'install_branch': json_output['install_branch'],
+        #     }
+        #     # print "jsonoutput = %s" % json_output
+        #     if 'vars' in json_output:
+        #         variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
+        #         data['variable_data'] = variable_data
+        #
+        #     results = yield webinterface._Modules.add_module(data)
+        #     if results['status'] == 'failed':
+        #         module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+        #         if module_results['code'] != 200:
+        #             webinterface.add_alert(module_results['content']['html_message'], 'warning')
+        #             returnValue(webinterface.redirect(request, '/modules/index'))
+        #
+        #         # print "failed to submit new module: %s" % results
+        #         webinterface.add_alert(results['apimsghtml'], 'warning')
+        #         module_variables = yield webinterface._Variables.get_variable_groups_fields(
+        #             group_relation_type='device_type',
+        #             group_relation_id='device_type_id',
+        #         )
+        #
+        #         if device['variable_data'] is not None:
+        #             device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
+        #                 device_variables,
+        #                 json_output.get('vars', {})
+        #             )
+        #
+        #         results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+        #         page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
+        #         returnValue(page.render(alerts=webinterface.get_alerts(),
+        #                                 server_module=results['data'],
+        #                                 input_types=webinterface._InputTypes.input_types,
+        #                                 module_data=data,
+        #                                 ))
+        #
+        #     msg = {
+        #         'header': 'Module Added',
+        #         'label': 'Module configuration updated successfully',
+        #         'description': '',
+        #     }
+        #
+        #     webinterface._Notifications.add({'title': 'Restart Required',
+        #                                      'message': 'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+        #                                      'source': 'Web Interface',
+        #                                      'persist': False,
+        #                                      'priority': 'high',
+        #                                      'always_show': True,
+        #                                      'always_show_allow_clear': False,
+        #                                      'id': 'reboot_required',
+        #                                      })
+        #
+        #     page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
+        #     returnValue(page.render(alerts=webinterface.get_alerts(),
+        #                             msg=msg,
+        #                             ))
+        #
+        #     webinterface.add_alert("Module configuratiuon updated. A restart is required to take affect.", 'warning')
+        #     returnValue(webinterface.redirect(request, '/modules/index'))
 
         @webapp.route('/<string:module_id>/details')
         @require_auth()

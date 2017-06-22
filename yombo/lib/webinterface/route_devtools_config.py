@@ -637,6 +637,7 @@ def route_devtools_config(webapp):
                     input_type_results['data']['label'])
 
             data = {
+                'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'live_update': webinterface.request_get_default(request, 'live_update', ""),
                 'notes': webinterface.request_get_default(request, 'notes', ""),
@@ -660,6 +661,7 @@ def route_devtools_config(webapp):
         def page_devtools_device_types_command_input_add_post(webinterface, request, session, device_type_id,
                                                               command_id, input_type_id):
             data = {
+                'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'live_update': webinterface.request_get_default(request, 'live_update', ""),
                 'notes': webinterface.request_get_default(request, 'notes', ""),
@@ -3054,6 +3056,11 @@ def route_devtools_config(webapp):
                 webinterface.add_alert(group_results['content']['html_message'], 'warning')
                 returnValue(webinterface.redirect(request, '/modules/%s/variables' % field_id))
 
+            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % field_results['data']['input_type_id'])
+            if input_type_results['code'] != 200:
+                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
+                returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
+
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request,
@@ -3065,7 +3072,8 @@ def route_devtools_config(webapp):
                                              webinterface._dir + 'pages/devtools/config/variables/field_details.html')
             returnValue(page.render(alerts=webinterface.get_alerts(),
                                     var_group=group_results['data'],
-                                    var_field=field_results['data']
+                                    var_field=field_results['data'],
+                                    input_type=input_type_results['data']
                                     )
                         )
 

@@ -21,9 +21,9 @@
         <table class="table table-striped">
             {%- for device_id, device in devices.items() %}
                 <tr>
-                <td width="60%" style="vertical-align:middle;"><h4>{{ device.label }}</h4><small id="value_{{device.machine_label}}">{{device.status_history[0].human_message}}</small></td>
+                <td width="60%" style="vertical-align:middle;"><h4>{{ device.label }}</h4><small id="value_{{device.machine_label}}">{{device.status_all.human_message}}</small></td>
                 <td style="vertical-align:middle;"></td>
-                <td width="30%" style="vertical-align:middle;"><h4>&nbsp;<span id="{{device.machine_label}}" class="label label-success"">{{device.status_history[0].human_status}}</span></h4></td>
+                <td width="30%" style="vertical-align:middle;"><h4>&nbsp;<span id="{{device.machine_label}}" class="label label-success"">{{device.status_all.human_status}}</span></h4></td>
                 </tr>
             {% endfor %}
         </table>

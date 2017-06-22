@@ -12,7 +12,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 
-from yombo.utils import epoch_to_string
+from yombo.utils import epoch_to_string, bytes_to_unicode
 
 def return_good(request, message=None, payload=None, status=None):
     request.setHeader('Content-Type', 'application/json')
@@ -101,11 +101,15 @@ def route_api_v1(webapp):
             request.setHeader('Content-Type', 'application/json')
             return json.dumps(a)
 
-        @webapp.route('/devices/<string:device_id>/command/<string:command_id>', methods=['GET'])
+        @webapp.route('/devices/<string:device_id>/command/<string:command_id>', methods=['GET', 'POST'])
         @require_auth(api=True)
-        def ajax_devices_command_get(webinterface, request, session, device_id, command_id):
+        def ajax_devices_command_get_post(webinterface, request, session, device_id, command_id):
+            json_output = bytes_to_unicode(request.args.get('json_output', ["{}"])[0])
+            print("json_output  %s" % json_output)
+            print("json_output type: %s" % type(json_output))
+            json_output = json.loads(json_output)
+            inputs = json_output.get('inputs', {})
 
-            # return return_unauthorized(request)
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
@@ -118,7 +122,8 @@ def route_api_v1(webapp):
                         'user_id': session['auth_id'],
                         'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
                         'gateway': webinterface.gwid
-                    }
+                    },
+                    inputs=inputs,
                     )
                 a = return_good(request, 'Command executed.')
                 request.setHeader('Content-Type', 'application/json')

@@ -203,7 +203,7 @@ def route_devices(webapp):
                                     device=device,
                                     devices=webinterface._Devices.devices,
                                     device_variables=device_variables,
-                                    device_types=webinterface._DeviceTypes,
+                                    device_type=device_type,
                                     commands=webinterface._Commands,
                                     input_types=webinterface._InputTypes.input_types,
                                     ))

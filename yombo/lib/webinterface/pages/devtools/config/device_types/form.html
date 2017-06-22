@@ -97,7 +97,7 @@
                             ') }}
                             <br>
                             <div class="input-group">
-                                <input tabindex=5" type="text" class="form-control" name="label" id="label" size="30" placeholder="zwave_light, light, device" value="{{ device_type.platform|hide_none }}" required>
+                                <input tabindex=5" type="text" class="form-control" name="platform" id="platform" size="30" placeholder="zwave_light, light, device" value="{{ device_type.platform|hide_none }}" required>
                             </div>
 						</div>
 
@@ -139,7 +139,7 @@
                             </div>
 						</div>
                         <a class="btn btn-md btn-danger" href="/devtools/config/device_types/{{ device_type.id }}/details">Cancel</a>
-                        <button type="submit" class="btn btn-success">Save Input for Command</button>
+                        <button type="submit" class="btn btn-success">Save Device Type</button>
 
                         </div>
                     </div>

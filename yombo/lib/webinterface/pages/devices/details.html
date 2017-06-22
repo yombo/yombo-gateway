@@ -6,15 +6,15 @@
                 <div class="col-lg-12">
                     <h1 class="page-header"><a class="success" href="/devices/index">
   </a> Device Information<br>
- {% if device.status == 0 %}
+ {% if device.enabled_status == 0 %}
                     <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
                     <a class="btn btn-md btn-success" href="/devices/{{device.device_id}}/enable">Enable Device</a>
                     <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
- {% elif device.status == 1  %}
+ {% elif device.enabled_status == 1  %}
                     <a class="btn btn-md btn-primary" href="/devices/{{device.device_id}}/edit">Edit Device</a>
                     <a class="btn btn-md btn-warning" href="/devices/{{device.device_id}}/disable">Disable Device</a>
                     <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/delete">Delete Device</a>
- {% elif device.status == 2  %}
+ {% elif device.enabled_status == 2  %}
                     <a class="btn btn-md btn-danger" href="/devices/{{device.device_id}}/enable">Enable Device</a>
  {% endif %}
                         </h1>
@@ -22,7 +22,7 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
- {% if device.status == 0 %}
+ {% if device.enabled_status == 0 %}
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-red">
@@ -38,7 +38,7 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
- {% elif device.status == 2  %}
+ {% elif device.enabled_status == 2  %}
             <div class="row">
                 <div class="col-lg-12">
                     <div class="panel panel-default panel-red">
@@ -81,19 +81,23 @@
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                     <h4 class="modal-title">Command Details</h4>
                                   </div>
+                                  <form id="form-cmd-{{command_id}}" action="/api/v1/devices/{{ device.device_id }}/command/{{ command_id }}" method="POST">
                                   <div class="modal-body">
-                                    <p>{{command_id}} zzzzzzzzzzz</p>
-                                    <p>{{device_types[device.device_type_id].commands[command_id]['inputs']}}</p>
-                                  <form>
-                                      {% for input_label, input in device_types[device.device_type_id].commands[command_id]['inputs'].items()%}
-                                      <input type="text" id="{{input_label}}" name="{{input_label}}" onmouseover="">
-                                      input_info: {{ input_info }}
-                                      {% endfor %}
-                                  </form>
+                                        <fieldset>
+                                          {% for input_label, input in device_types[device.device_type_id].commands[command_id]['inputs'].items()%}
+                                            <label style="margin-top: 5px; margin-bottom: 0px">{{input.label}}</label><br>
+                                            {{ input.notes }}<br>
+                                            <div class="input-group">
+                                            <input type="text" id="inputs[{{input.machine_label}}]" name="inputs[{{input.machine_label}}]" {%if input.value_required%} required{%endif%}>
+                                                <hr>
+                                            </div>
+                                          {% endfor %}
+                                        </fieldset>
                                   </div>
                                   <div class="modal-footer">
-                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                    <button type="button" class="btn btn-primary">Send Command</button>
+                                      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                      <button type="submit" id="btn-form-cmd-{{command_id}}" class="btn btn-primary">Submit</button>
+                                    </form>
                                   </div>
                                 </div><!-- /.modal-content -->
                               </div><!-- /.modal-dialog -->
@@ -135,7 +139,7 @@
                                         <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                                         {{ device.description }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
-                                        {{ device.status|status_to_string }}<br>
+                                        {{ device.enabled_status|status_to_string }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
                                         {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
@@ -145,8 +149,11 @@
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
                                         {{ device.statistic_lifetime }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
-                                        {{ device.PLATFORM }}<br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Attributes: </label><br>
+                                        {{ device.PLATFORM }}{% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Features: </label><br>
+                                        {% for feature, value in device.features.items() if value|string != 'False' %}
+                                        {{feature}}{{ "," if not loop.last }}
+                                        {% endfor %}
                                         {{ device.attributes }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Energy Type: </label><br>
                                         {{ device.energy_type }}<br>
@@ -180,14 +187,17 @@
                                     </div>
                                     <!-- /.panel-heading -->
                                     <div class="panel-body">
+                                        {% if device.status_history|length == 0 %} No status data available.
+                                        {% else %}
                                         <label style="margin-top: 0px; margin-bottom: 0px">Human: </label><br>
-                                        {{ device.status_history[0].human_status }}<br>
+                                        {{ device.status_all.human_status }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Current Energy Usage: </label><br>
-                                        {{ device.status_history[0].energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
+                                        {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
-                                        {{ device.status_history[0].machine_status }}<br>
+                                        {{ device.status_all.machine_status }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Extra: </label><br>
-                                        {{ device.status_history[0].machine_status_extra }}<br>
+                                        {{ device.status_all.machine_status_extra }}<br>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 <!-- /.panel-body -->
@@ -280,6 +290,8 @@
 {% endblock %}
 
 {% block body_bottom %}
+<script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
+
     <!-- Make the tables pretty -->
     <script>
 
@@ -309,6 +321,26 @@ $('.deviceCmd').click(function (event){
      return false; //for good measure
 });
 
+// Submit field for command modal input fields.
+$(function() {
+    $('form[data-async]').on('submit', function(event) {
+        var $form = $(this);
+        var $target = $($form.attr('data-target'));
+
+        $.ajax({
+            type: $form.attr('method'),
+            url: $form.attr('action'),
+            data: $form.serialize(),
+
+            success: function(data, status) {
+                $target.html(data);
+            }
+        });
+
+        event.preventDefault();
+    });
+});
+
 // Javascript to enable link to tab
 var hash = document.location.hash;
 var prefix = "tab_";
@@ -322,12 +354,46 @@ $('.nav-tabs a').on('shown.bs.tab', function (e) {
     window.scrollTo(0, 0);
 })
 
+$(document).ready(function () {
 {% for command in device.available_commands() %}
-$("#{{commands[command].command_id}}").bind('mouseheld', function(e) {
-    console.log('Held {{commands[command].command_id}}', e);
-    $('#modal_cmd_{{commands[command].command_id}}').modal('show');
-})
+    $("#{{commands[command].command_id}}").bind('mouseheld', function(e) {
+        console.log('Held {{commands[command].command_id}}', e);
+        $('#modal_cmd_{{commands[command].command_id}}').modal('show');
+    });
+
+    // Send input data to AJAX / API
+    $("#form-cmd-{{commands[command].command_id}}").on('submit', function(e) {
+        var $form = $(this).closest("form");
+        var formURL = $form.attr("action");
+        var rawData = $('#form-cmd-{{commands[command].command_id}}').serializeJSON();
+        var jsonData = JSON.stringify(rawData);
+
+        $('<input />').attr('type', 'hidden')
+          .attr('name', "json_output")
+          .attr('value', jsonData)
+          .appendTo('#form-cmd-{{commands[command].command_id}}');
+
+        var postData = $form.serializeArray();
+        $(this.json_output).remove();
+        $.ajax({
+            url: formURL,
+            type: "POST",
+            data: postData,
+            success: function(data, textStatus, jqXHR) {
+                $('#contact_dialog .modal-header .modal-title').html("Result");
+                $('#contact_dialog .modal-body').html(data);
+                $("#modal_cmd_{{command_id}}").remove();
+            },
+            error: function(jqXHR, status, error) {
+                console.log(status + ": " + error);
+            }
+        });
+        e.preventDefault();
+    });
+
+
 {%- endfor %}
+});
 
 
     </script>
