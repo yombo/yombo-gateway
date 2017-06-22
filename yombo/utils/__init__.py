@@ -166,12 +166,13 @@ def status_to_string(status):
 
 
 def public_to_string(pubic_value):
+    pubic_value = int(pubic_value)
     if pubic_value == 0:
         return 'Private'
     elif pubic_value == 1:
         return 'Public Pending'
     elif pubic_value == 2:
-        return 'Private'
+        return 'Public'
     else:
         return 'Unknown'
 
@@ -625,9 +626,9 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     :type oepration: list of dictionaries
     :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
     """
-    # logger.debug("in do_search_instance...attributes: {attributes}", attributes=attributes)
-    # logger.debug("in do_search_instance...haystack: {haystack}", haystack=haystack)
-    # logger.debug("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
+    # logger.info("in do_search_instance...attributes: {attributes}", attributes=attributes)
+    # logger.info("in do_search_instance...haystack: {haystack}", haystack=haystack)
+    # logger.info("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
 
     if limiter is None:
         limiter = .89
@@ -717,6 +718,9 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             sorted_list)
     else:
         if best_key is None:
+            # logger.info("in do_search_instance...attributes: {attributes}", attributes=attributes)
+            # logger.info("in do_search_instance...haystack: {haystack}", haystack=haystack)
+            # logger.info("in do_search_instance...allowed_keys: {allowed_keys}", allowed_keys=allowed_keys)
             raise KeyError("No items found above the cut off limit.")
         return (
             best_ratio >= best_limiter,  # the part that does the actual check.
@@ -1161,9 +1165,9 @@ def is_true_false(input, only_bool=False):
             return input
     elif isinstance(input, str):
         input = input.lower()
-        if input in ("true", "1", "open", "on", "running"):
+        if input in (1, "true", "1", "open", "on", "running"):
             return True
-        if input in ("false", "0", "closed", "off", "stopped"):
+        if input in (0, "false", "0", "closed", "off", "stopped"):
             return False
     elif isinstance(input, int):
             if input == 1:
