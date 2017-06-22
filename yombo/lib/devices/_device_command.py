@@ -109,9 +109,9 @@ class Device_Command(object):
             else:
                 when = self.not_before_time - cur_time
                 if when < 0:
-                    self.device.do_command_hook(self)
+                    self.device._do_command_hook(self)
                 else:
-                    self.call_later = reactor.callLater(when, self.device.do_command_hook, self)
+                    self.call_later = reactor.callLater(when, self.device._do_command_hook, self)
                     self.set_status('delayed')
                 return True
         else:
@@ -119,7 +119,7 @@ class Device_Command(object):
                 logger.info("Discarding a device command message loaded from database because it's not meant to be called later.")
                 self.set_failed(finished_time = 0);
             else:
-                self.device.do_command_hook(self)
+                self.device._do_command_hook(self)
                 return True
 
     def last_message(self):

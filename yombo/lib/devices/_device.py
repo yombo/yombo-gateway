@@ -14,8 +14,6 @@ The device class is responsible for managing a single device.
 :license: LICENSE for details.
 """
 # Import python libraries
-
-
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -25,17 +23,17 @@ import copy
 from collections import deque, namedtuple
 from time import time
 from collections import OrderedDict
+import collections
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, do_search_instance
+from yombo.utils import random_string, global_invoke_all, do_search_instance, instance_properties
 from yombo.lib.commands import Command  # used only to determine class type
 from ._device_command import Device_Command
-
 logger = get_logger('library.devices.device')
 
 class Device(object):
@@ -60,17 +58,22 @@ class Device(object):
     """
 
     PLATFORM = "device"
+    SUB_PLATFORM = None
+    TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
-    SUPPORT_BRIGHTNESS = False
-    SUPPORT_ALL_ON = False
-    SUPPORT_ALL_OFF = False
-    SUPPORT_COLOR = False
-    SUPPORT_COLOR_MODE = None  # rgb....
-    SUPPORT_PINGABLE = False
-    SUPPORT_BROADCASTS_UPDATES = False
-    SUPPORT_NUMBER_OF_STEPS = 4096
+    # Features this device can support
+    FEATURES = {
+        'all_on': False,
+        'all_off': False,
+        'pingable': True,
+        'pollable': True,
+        'sends_updates': True
+    }
 
-    TOGGLE_COMMANDS = None  # Put two command machine_labels in a list to enable toggling.
+    STATUS_EXTRA = {
+        'mode': ('auto', 'on', 'off'),
+        'running': ('auto', 'on', 'off'),
+    }
 
     def __str__(self):
         """
@@ -100,9 +103,6 @@ class Device(object):
 
     def items(self):
         return list(self.__dict__.items())
-
-    def __cmp__(self, dict):
-        return cmp(self.__dict__, dict)
 
     def __contains__(self, item):
         return item in self.__dict__
@@ -141,12 +141,12 @@ class Device(object):
         self._Parent = _Parent
         # logger.debug("New device - info: {device}", device=device)
 
-        self.StatusTuple = namedtuple('Status',
+        self.StatusTuple = namedtuple('StatusTuple',
                                       "device_id, set_time, energy_usage, energy_type, human_status, human_message, "
                                       "last_command, machine_status, machine_status_extra, requested_by, "
                                       "reported_by, request_id, uploaded, uploadable")
 
-        self.CommandTuple = namedtuple('Command',
+        self.CommandTuple = namedtuple('CommandTuple',
                                        "set_time, command_id, requested_by, reported_by, request_id, uploaded, "
                                        "uploadable")
 
@@ -162,6 +162,8 @@ class Device(object):
         self.last_command = deque({}, 50)
         self.status_history = deque({}, 50)
         self.device_variables = {}
+
+        #The following items are set from the databsae or AMQP service.
         self.device_type_id = None
         self.machine_label = None
         self.label = None
@@ -173,7 +175,7 @@ class Device(object):
         self.voice_cmd_order = None
         self.statistic_label = None
         self.statistic_lifetime = None
-        self.status = None
+        self.enabled_status = None  # not to be confused for device state. see status_history
         self.created = None
         self.updated = None
         self.updated_srv = None
@@ -181,8 +183,6 @@ class Device(object):
         self.energy_tracker_source = None
         self.energy_map = None
         self.energy_type = None
-        self.attributes = []
-
         self.device_is_new = True
         self.update_attributes(device)
 
@@ -198,17 +198,22 @@ class Device(object):
             data_relation_type='device',
             data_relation_id=self.device_id
         )
+
         yield self._Parent._DeviceTypes.ensure_loaded(self.device_type_id)
 
         if self.test_device is False and self.device_is_new is True:
             self.device_is_new = False
             yield self.load_history(35)
 
+    def _start_(self):
+        pass
+
     def update_attributes(self, device):
         """
-        Sets various values from a device dictionary. This can be called when either new or
-        when updating.
+        Sets various values from a device dictionary. This can be called when the device is first being setup or
+        when being updated by the AMQP service.
 
+        This does not set any device state or status attributes.
         :param device: 
         :return: 
         """
@@ -237,10 +242,8 @@ class Device(object):
             self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
         if 'statistic_lifetime' in device:
             self.statistic_lifetime = device["statistic_lifetime"]  # 'myhome.groundfloor.kitchen'
-        if 'attributes' in device:
-            self.set_attributes(device["attributes"])
         if 'status' in device:
-            self.status = int(device["status"])
+            self.enabled_status = int(device["status"])
         if 'created' in device:
             self.created = int(device["created"])
         if 'updated' in device:
@@ -260,7 +263,7 @@ class Device(object):
                 # create an energy map from a dictionary
                 energy_map_final = {}
                 for percent, rate in device['energy_map'].items():
-                    energy_map_final[self._Validate.number(percent)] = self._Validate.number(rate)
+                    energy_map_final[self._Parent._InputTypes.check('percent', percent)] = self._Parent._InputTypes.check('number' , rate)
                 energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
                 self.energy_map = energy_map_final
             else:
@@ -272,31 +275,6 @@ class Device(object):
             # if 'variable_data' in device:
             # print("device.update_attributes: new: %s: " % device['variable_data'])
             # print("device.update_attributes: existing %s: " % self.device_variables)
-
-    def set_attributes(self, new_attributes, replace=None):
-        """
-        Set device attributes. New attributes should be a string seperated by
-        commas.
-        
-        :param new_attributes: 
-        :param replace: 
-        :return: 
-        """
-        if replace is None:
-            replace = True
-
-        if isinstance(new_attributes, str) is False:
-            return False
-        new_attributes = "".join(new_attributes.split())  # we don't like spaces
-        attributes = new_attributes.split(',')
-        if replace is True:
-            self.attributes = attributes
-            return True
-        else:
-            for new_a in new_attributes:
-                if new_a not in self.attributes:
-                    self.attributes.append(new_a)
-            return True
 
     def commands_pending(self, criteria = None, limit = None):
         device_commands = self._Parent.device_commands
@@ -315,7 +293,7 @@ class Device(object):
                         test_value = getattr(DC, key)
                         # print("test_value: %s" % test_value)
                         if isinstance(value, list):
-                            print("got a list.. %s" % value)
+                            # print("got a list.. %s" % value)
                             if test_value not in value:
                                 matches = False
                                 break
@@ -330,30 +308,20 @@ class Device(object):
                 return results
         return results
 
-    def get_toggle_command(self):
-        """
-        If a device is toggleable, return True. It's toggleable if a device only has two commands.
-        :return: 
-        """
-
-        if isinstance(self.TOGGLE_COMMANDS, list) and len(self.TOGGLE_COMMANDS) == 2:
-            if self.last_command[0].command_id is None:
-                raise YomboWarning("Device cannot be toggled, device is in unknown state.")
-            last_command_id = self.last_command[0].command_id
-            for command_id in self.TOGGLE_COMMANDS:
-                if command_id == last_command_id:
-                    continue
-                return self._Parent._Commands[command_id]
-        else:
-            raise YomboWarning(
-                "Device cannot be toggled, it's not enabled for this device.")
-
     def available_commands(self):
         """
         Returns available commands for the current device.
         :return: 
         """
         return self._Parent._DeviceTypes.device_type_commands(self.device_type_id)
+
+    def in_available_commands(self, command):
+        """
+        Checks if a command label, machine_label, or command_id is a possible command for the given device.
+        :param command: 
+        :return: 
+        """
+        self.commands.get(command, command_list=self.available_commands())
 
     def dump(self):
         """
@@ -415,7 +383,7 @@ class Device(object):
         :return: The request id.
         :rtype: str
         """
-        if self.status != 1:
+        if self.enabled_status != 1:
             raise YomboWarning("Device cannot be used, it's not enabled.")
 
         if self.pin_required == 1:
@@ -522,6 +490,15 @@ class Device(object):
         device_command['params'] = kwargs.get('params', None)
         if inputs is None:
             inputs = {}
+        else:
+            for input_label, input_value in inputs.items():
+                # print("checking input: %s (%s)" % (input_label, type(input_label)))
+                try:
+                    inputs[input_label] = self._Parent._DeviceTypes.validate_command_input(self.device_type_id, command.command_id, input_label, input_value)
+                    # print("checking input: %s (%s)" % (input_label, type(input_label)))
+                except Exception as e:
+                    # print("error checking input value: %s" % e)
+                    pass
         device_command['inputs'] = inputs
 
         self.last_command.appendleft({
@@ -535,7 +512,7 @@ class Device(object):
         return request_id
 
     @inlineCallbacks
-    def do_command_hook(self, device_command):
+    def _do_command_hook(self, device_command):
         """
         Performs the actual sending of a device command. This calls the hook "_device_command_". Any modules that
         have implemented this hook can monitor or act on the hook.
@@ -622,7 +599,7 @@ class Device(object):
 
     def get_request(self, request_id):
         """
-        Returns a request instance for a provide request_id.
+        Returns a request instance for a provided request_id.
 
         :raises KeyError: When an invalid request_id is requested.        
         :param request_id: A request id returned from a 'command()' call. 
@@ -689,6 +666,8 @@ class Device(object):
               message; atypical.
         """
         logger.info("set_status called...: {kwargs}", kwargs=kwargs)
+        kwargs = self.set_status_process(**kwargs)
+
         self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
@@ -706,7 +685,7 @@ class Device(object):
         human_status = kwargs.get('human_status', machine_status)
         human_message = kwargs.get('human_message', machine_status)
         machine_status = kwargs['machine_status']
-        machine_status_extra = kwargs.get('machine_status_extra', None)
+        machine_status_extra = kwargs.get('machine_status_extra', {})
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 0)
         set_time = time()
@@ -845,16 +824,7 @@ class Device(object):
             limit = False
 
         records = yield self._Parent._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=limit)
-        if len(records) == 0:
-            requested_by = {
-                'user_id': 'Unknown',
-                'component': 'Unknown',
-                'gateway': 'Unknown'
-            }
-            self.status_history.appendleft(
-                self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown', 'Unknown status for device', None, None, {},
-                                 requested_by, None, 'Unknown', 0, 1))
-        else:
+        if len(records) > 0:
             for record in records:
                 self.status_history.appendleft(
                     self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['energy_type'],
@@ -871,7 +841,7 @@ class Device(object):
             return available_commands[command_requested]
         else:
             commands = {}
-            print("available_commands: %s" % available_commands)
+            # print("available_commands: %s" % available_commands)
             for command_id, data in available_commands.items():
                 commands[command_id] = data['command']
             attrs = [
@@ -915,40 +885,224 @@ class Device(object):
     #
     #     # global_invoke_all('_devices_update_', **{'id': record['id']})  # call hook "device_update" when adding a new device.
 
-    def delete(self):
+    def delete(self, called_by_parent=None):
         """
         Called when the device should delete itself.
 
         :return: 
         """
-        # print("deleting device.....")
+        if called_by_parent is not True:
+            self._Parent.delete_device(self.device_id, True)
         self._Parent._LocalDB.set_device_status(self.device_id, 2)
         global_invoke_all('_device_deleted_', called_by=self, **{'device': self})  # call hook "devices_delete" when deleting a device.
-        self.status = 2
+        self.enabled_status = 2
 
-    def enable(self):
+    def enable(self, called_by_parent=None):
         """
         Called when the device should delete itself.
 
         :return:
         """
+        if called_by_parent is not True:
+            self._Parent.enable_device(self.device_id, True)
         self._Parent._LocalDB.set_device_status(self.device_id, 1)
         global_invoke_all('_device_enabled_', called_by=self, **{'device': self})  # call hook "devices_delete" when deleting a device.
-        self.status = 1
+        self.enabled_status = 1
 
-    def disable(self):
+    def disable(self, called_by_parent=None):
         """
         Called when the device should delete itself.
 
         :return:
         """
+        if called_by_parent is not True:
+            self._Parent.disable_device(self.device_id, True)
         self._Parent._LocalDB.set_device_status(self.device_id, 0)
         global_invoke_all('_device_disabled_', called_by=self, **{'device': self})  # call hook "devices_delete" when deleting a device.
-        self.status = 0
+        self.enabled_status = 0
+
+    def add_features(self, features):
+        for feature in features:
+            self.FEATURES[feature[0]] = feature[1]
+
+    def delete_features(self, features):
+        if isinstance(features, list):
+            for feature in features:
+                del self.FEATURES[feature[0]]
+        else:
+            del self.FEATURES[features]
+
+    def add_status_extra_allow(self, status, values):
+        if status in self.STATUS_EXTRA:
+            if isinstance(self.STATUS_EXTRA[status], list) is False:
+                logger.info("Converting status_extra to a list: {status}", status=status)
+                self.STATUS_EXTRA[status] = ()
+        if isinstance(values, list):
+            for value in values:
+                self.STATUS_EXTRA[status].append(value)
+        else:
+            self.STATUS_EXTRA[status].append(values)
+
+    def add_status_extra_any(self, items):
+        for item in items:
+            self.STATUS_EXTRA[item] = True
+
+    def delete_status_extra(self, items):
+        if isinstance(items, list):
+            for item in items:
+                del self.FEATURES[item]
+        else:
+            del self.FEATURES[items]
+
 
     ####################################################
-    # The functions below here are meant to be overridden by child classes.
+    # The functions and properties below here are meant to be overridden by child classes.
     ####################################################
+
+    @property
+    def should_poll(self) -> bool:
+        """
+        Return True if the device needs to be polled to get current status.
+        False if devices push status updates.
+        
+        In most cases, the module handling the device will automatically poll the device periodically. For these
+        devices and for devices that don't send updates or are not polled, should return True.
+        """
+        return True
+
+
+    @property
+    def current_mode(self):
+        """
+        Return the address of the device.
+        """
+        if 'mode' in self.status_history[0].machine_status:
+            return self.status_history[0].machine_status['mode']
+        return None
+
+    @property
+    def status(self):
+        """
+        Return the address of the device.
+        """
+        # self.StatusTuple = namedtuple('StatusTuple',
+        #                               "device_id, set_time, energy_usage, energy_type, human_status, human_message, "
+        #                               "last_command, machine_status, machine_status_extra, requested_by, "
+        #                               "reported_by, request_id, uploaded, uploadable")
+
+        print("load history (%s): %s" % (self.label, len(self.status_history)))
+        if len(self.status_history) == 0:
+            return None
+        return self.status_history[0].status
+
+    @property
+    def status_all(self):
+        """
+        Return the address of the device.
+        """
+        if len(self.status_history) == 0:
+            requested_by = {
+                'user_id': 'Unknown',
+                'component': 'Unknown',
+                'gateway': 'Unknown'
+
+            }
+            return self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown',
+                                    'Unknown status for device', None,
+                                    None, {},
+                                    requested_by, None, 'Unknown', 0, 1)
+
+        return self.status_history[0]
+
+    @property
+    def unit_of_measurement(self):
+        """
+        Return the unit of measurement of this device, if any.
+        """
+        return None
+
+    @property
+    def icon(self):
+        """
+        Return the icon to use in the frontend, if any.
+        """
+        return None
+
+    @property
+    def icon_on_click(self):
+        """
+        Return the icon to use when icon is clicked, if any.
+        """
+        return None
+
+    @property
+    def device_picture(self):
+        """
+        Return the device picture to use in the frontend, if any.
+        """
+        return None
+
+    @property
+    def hidden(self) -> bool:
+        """
+        Return True if the device should be hidden from UIs.
+        """
+        return False
+
+    @property
+    def features(self) -> list:
+        """
+        Return a list of features this device supports.
+        """
+        features = {}
+        for feature, value in self.FEATURES.items():
+            if value is not False:
+                features[feature] = value
+        return features
+
+    def get_toggle_command(self):
+        """
+        If a device is toggleable, return True. It's toggleable if a device only has two commands.
+        :return: 
+        """
+        if self.can_toggle():
+            if self.last_command[0].command_id is None:
+                raise YomboWarning("Device cannot be toggled, device is in unknown state.")
+            last_command_id = self.last_command[0].command_id
+            for command_id in self.TOGGLE_COMMANDS:
+                if command_id == last_command_id:
+                    continue
+                return self._Parent._Commands[command_id]
+        raise YomboWarning("Device cannot be toggled, it's not enabled for this device.")
+
+    def set_status_process(self, **kwargs):
+        """
+        A place for modules to process any status updates. Make any last minute changes before it's saves and
+        distributed.
+
+        :param kwargs:
+        :return:
+        """
+        if len(self.status_history) == 0:
+            previous_extra = {}
+        else:
+            previous_extra = self.status_history[0].machine_status_extra
+
+        if isinstance(previous_extra, dict) is False:
+            previous_extra = {}
+
+        new_extra = kwargs.get('machine_status_extra', {})
+        for key, value in new_extra.items():
+            previous_extra['key'] = value
+
+        kwargs['machine_status_extra'] = previous_extra
+        return kwargs
+
+    def available_STATUS_MODES_values(self):
+        return instance_properties(self, startswith_filter='STATUS_MODES_')
+
+    def available_status_extra_attributes(self):
+        return instance_properties(self, startswith_filter='STATUS_EXTRA_')
 
     def energy_calc(self, **kwargs):
         """
@@ -998,14 +1152,11 @@ class Device(object):
         If a device is toggleable, return True. It's toggleable if a device only has two commands.
         :return:
         """
-        if self.TOGGLE_COMMANDS is False:
+        if isinstance(self.TOGGLE_COMMANDS, list) is False:
             return False
-
-        available_commands = self.available_commands()
-        if len(available_commands) == 2:
+        if len(self.TOGGLE_COMMANDS) == 2:
             return True
-        else:
-            return False
+        return False
 
     def is_dimmable(self):
         return self.SUPPORT_BRIGHTNESS
@@ -1021,3 +1172,21 @@ class Device(object):
 
     def toggle(self):
         return self.command('toggle')
+
+    def turn_on(self, cmd, **kwargs):
+        for item in ('on', 'open'):
+            try:
+                command = self.in_available_commands('on')
+                return self.command(command, **kwargs)
+            except Exception:
+                pass
+        raise YomboWarning("Unable to turn on device. Device doesn't have any of these commands: on, open")
+
+    def turn_off(self, cmd, **kwargs):
+        for item in ('off', 'close'):
+            try:
+                command = self.in_available_commands('on')
+                return self.command(command, **kwargs)
+            except Exception:
+                pass
+        raise YomboWarning("Unable to turn off device. Device doesn't have any of these commands: off, close")
