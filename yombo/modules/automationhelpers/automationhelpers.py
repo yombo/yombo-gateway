@@ -23,7 +23,7 @@ import operator
 from yombo.core.exceptions import YomboWarning
 from yombo.core.module import YomboModule
 from yombo.core.log import get_logger
-from yombo.utils import is_string_bool
+from yombo.utils import is_true_false
 import collections
 
 logger = get_logger("library.automationhelper")
@@ -205,17 +205,27 @@ class AutomationHelpers(YomboModule):
         """
         filter_value = portion['filter']['value']
 
-        # logger.debug("Checking new = old: {new_value} = {filter_value}", new_value=new_value, filter_value=filter_value)
-
+        print("checking rule name filter: %s" % rule['name'])
         if 'operator' in portion['filter']:
             op_func = ops[portion['filter']['operator']]
+            logger.info("Filter has operator: {operator}  Calling function: {op_func}",
+                         operator=operator,
+                         op_func=op_func)
             return op_func(new_value, filter_value)
         else:
+            logger.info("Checking new = filter: {new_value} = {filter_value}",
+                         new_value=new_value,
+                         filter_value=filter_value)
             if new_value == filter_value:
                 return True
             else:
                 try:
-                    if is_string_bool(new_value) == is_string_bool(filter_value):
+                    print("trying is_true_false bpooll!!!!!!!!!!!!!!!!!!!!!!!")
+                    logger.info("Checking new = old: {new_value} = {filter_value}",
+                                new_value=is_true_false(new_value),
+                                filter_value=is_true_false(filter_value))
+                    if is_true_false(new_value) == is_true_false(filter_value):
+                        print("tested bpooll!!!!!!!!!!!!!!!!!!!!!!!  and found it!!!")
                         return True
                 except:
                     return False

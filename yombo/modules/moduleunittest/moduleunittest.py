@@ -24,7 +24,7 @@ class ModuleUnitTest(YomboModule):
     """
     ModuleUnitTest
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         """
 
@@ -53,7 +53,7 @@ class ModuleUnitTest(YomboModule):
         self.display_results_loop = LoopingCall(self.display_results)
 
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         After this phase, module should be able to
         processing incoming messages.
@@ -105,7 +105,7 @@ class ModuleUnitTest(YomboModule):
         # self.devices[2]= self.libraries['Devices']._addDevice(record, True)
         # self.libraries['Devices'].yombodevices['02zZzZzZzZzZzZzZzZzZzZzZ'].available_commands = deviceCmds
         
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Assume all other modules are loaded, we can start
         sending messages to other modules.  Here, is where we enable or turn on
@@ -124,6 +124,16 @@ class ModuleUnitTest(YomboModule):
         self.test_nodes()
         self.test_states()
         self.test_queues()
+        # self.test_times()
+
+    def test_times(self):
+        cur_time = int(time.time())
+        print("one hour ago get_time: %s" % self._Times.time_from_string("-1 hour")[0])
+        print("1h 3m -3s get_time: %s" % self._Times.time_from_string("1h 3m -3s")[0])
+        print("tomorrow 10pm get_time: %s" % self._Times.time_from_string("tomorrow 10pm")[0])
+        print("1 hour ago get_time): %s" % self._Times.time_from_string("1 hour ago")[0])
+        print("10:20:30: %s" % self._Times.time_from_string("10:20:30")[0])
+
 
     def test_crontab(self):
         """
@@ -349,28 +359,5 @@ class ModuleUnitTest(YomboModule):
 # #        self.outMessages = {}
 #         msg = self.devices[1].getMessage(self, cmdobj=self.available_commands['open'])
 #         self.outMessages[msg.msgUUID] = self.outMsg(time.time(), self.devices[1].device_id, msg)
-
-
-    def _stop_(self):
-        """
-        Stop sending messages.  Other components are unable to receive
-        messages.  Queue up or pause functionality.
-        """
-        pass
-
-    def _unload_(self):
-        """
-        Called just before the gateway is about to shutdown
-        or reload all the modules.  Should assume gateway is going down.
-        """
-        pass
-
-    def message(self, message):
-        """
-        Incomming Yombo Messages from the gateway or remote sources will
-        be sent here.
-        """
-        logger.info("we go something:%s" % message.dump())
-        pass
 
 
