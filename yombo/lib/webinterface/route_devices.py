@@ -208,16 +208,36 @@ def route_devices(webapp):
                                     input_types=webinterface._InputTypes.input_types,
                                     ))
 
-        @webapp.route('/delayed_commands')
+        @webapp.route('/device_commands')
         @require_auth()
-        def page_devices_delayed_commands(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delayed_commands.html')
+        def page_devices_device_commands(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device_commands.html')
             # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
-            webinterface.add_breadcrumb(request, "/devices/delayed_commands", "Delayed Commands")
+            webinterface.add_breadcrumb(request, "/devices/delayed_commands", "Device Commands")
             return page.render(alerts=webinterface.get_alerts(),
-                               delayed_commands=webinterface._Devices.delay_queue_active,
+                               device_commands=webinterface._Devices.device_commands,
+                               )
+
+        @webapp.route('/device_commands/<string:device_command_id>/details')
+        @require_auth()
+        def page_devices_device_commands_details(webinterface, request, session, device_command_id):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devices/device_command_details.html')
+            # print "delayed queue active: %s" % webinterface._Devices.delay_queue_active
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/devices/index", "Devices")
+            webinterface.add_breadcrumb(request, "/devices/device_commands", "Device Commands")
+            webinterface.add_breadcrumb(request, "/devices/device_commands", "Request")
+            try:
+                command = webinterface._Devices.device_commands[device_command_id]
+            except Exception as e:
+                print("e: %s" % e)
+                webinterface.add_alert("Cannot find requested id.")
+                returnValue(webinterface.redirect(request, '/devices/device_commands'))
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               command=command,
                                )
 
         @webapp.route('/<string:device_id>/details')

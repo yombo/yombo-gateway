@@ -154,11 +154,11 @@ nav_side_menu = [
     },
     {
         'label1': 'Info',
-        'label2': 'Delayed Commands',
+        'label2': 'Device Commands',
         'priority1': 1000,
         'priority2': 2500,
         'icon': 'fa fa-info fa-fw',
-        'url': '/devices/delayed_commands',
+        'url': '/devices/device_commands',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -438,7 +438,7 @@ class WebInterface(YomboLibrary):
         if hasattr(self, 'sessions'):
             yield self.sessions.init()
 
-    def _start_(self, **kwargs):
+    # def _start_(self, **kwargs):
         if hasattr(self, 'sessions') is False:
             return
         if not self.enabled:
@@ -775,9 +775,9 @@ class WebInterface(YomboLibrary):
     @require_auth()
     def run_home(self, request, session):
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
-
+        delayed_device_commands = self._Devices.get_delayed_commands()
         return page.render(alerts=self.get_alerts(),
-                           delay_commands = self._Devices.device_commands,
+                           device_commands_delayed = delayed_device_commands,
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices'].devices,
                            modules=self._Libraries['modules'].modules,

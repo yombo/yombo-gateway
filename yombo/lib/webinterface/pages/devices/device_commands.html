@@ -4,10 +4,9 @@
 {% block content %}
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">Delayed commands for devices</h1>
-                    Shows any pending or delayed commands. Typically used by automation rules, macros, or modules
-                    to send a command to a device at a future time.
-                    <p></p>
+                    <h1 class="page-header">Command requests for devices</h1>
+                    Shows commands sent to devices, includes delayed, failed, and pending requests. <strong>Click
+                    on the device name for details about the command request.</strong>
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -16,32 +15,150 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            Future device commands
+                            Device Commands
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                           <div class="dataTable_wrapper">
-                                <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-example">
-                                    <thead>
-                                        <tr>
-                                            <th>Request ID</th>
-                                            <th>Device</th>
-                                            <th>Command</th>
-                                            <th>Planned Execution Time</th>
-                                            <th>Arguments</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>{% for request_id, data in delayed_commands.items() %}
-                                        <tr>
-                                            <td>{{ request_id }}</td>
-                                            <td>{{ data.device.label }}</td>
-                                            <td>{{ data.command.label }}</td>
-                                            <td>{{ data.not_before|epoch_to_human }}</td>
-                                            <td>{{ data.kwargs }}</td>
-                                        </tr>{% endfor %}
-                                    </tbody>
-                                </table>
+
+                            <div class="devices devices-tabs" role="tabpanel" data-example-id="togglable-tabs">
+                              <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
+                                <li role="presentation" class="active bg-success">
+                                  <a href="#delayed" id="delayed-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
+                                    <span class="text-success">Delayed</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-success" id="tab-done">
+                                  <a href="#done" role="tab" id="done-tab" data-toggle="tab" aria-controls="profile">
+                                    <span class="text-success">Done</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-warning" id="tab-pending">
+                                  <a href="#pending" role="tab" id="pending-tab" data-toggle="tab" aria-controls="profile">
+                                    <span class="text-warning">Pending</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-danger" id="tab-failed">
+                                  <a href="#failed" role="tab" id="failed-tab" data-toggle="tab" aria-controls="profile">
+                                    <span class="text-danger">Failed</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-warning" id="tab-others">
+                                  <a href="#others" role="tab" id="others-tab" data-toggle="tab" aria-controls="profile">
+                                    <span class="text-warning">Others</span>
+                                  </a>
+                                </li>
+                              </ul>
+                              <div id="myTabContent" class="tab-content">
+                                <div role="tabpanel" class="tab-pane fade in active" id="delayed" aria-labelledby="home-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-delayed">
+                                            <thead>
+                                                <tr>
+                                                    <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for request_id, command in device_commands.items()
+                                            if command.status == 'delayed' %}
+                                                 <tr>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td>{{ command.command.label }}</td>
+                                                    <td>{{ command.status }}</td>
+                                                    <td>{{ command.requested_by.user_id }}</td>
+                                                    <td>{{ command.created_time|epoch_to_human }}</td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane fade" id="pending" aria-labelledby="profile-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-pending">
+                                            <thead>
+                                                <tr>
+                                                    <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for request_id, command in device_commands.items()
+                                            if command.status in ('new', 'sent', 'received', 'pending') %}
+                                                 <tr>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td>{{ command.command.label }}</td>
+                                                    <td>{{ command.status }}</td>
+                                                    <td>{{ command.requested_by.user_id }}</td>
+                                                    <td>{{ command.created_time|epoch_to_human }}</td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane fade" id="failed" aria-labelledby="dropdown1-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-failed">
+                                            <thead>
+                                                <tr>
+                                                    <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for request_id, command in device_commands.items()
+                                            if command.status in ('failed', 'delay_expired') %}
+                                                 <tr>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td>{{ command.command.label }}</td>
+                                                    <td>{{ command.status }}</td>
+                                                    <td>{{ command.requested_by.user_id }}</td>
+                                                    <td>{{ command.created_time|epoch_to_human }}</td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane fade" id="done" aria-labelledby="dropdown1-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-failed">
+                                            <thead>
+                                                <tr>
+                                                    <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for request_id, command in device_commands.items()
+                                            if command.status in ('done') %}
+                                                 <tr>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td>{{ command.command.label }}</td>
+                                                    <td>{{ command.status }}</td>
+                                                    <td>{{ command.requested_by.user_id }}</td>
+                                                    <td>{{ command.created_time|epoch_to_human }}</td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
+                                <div role="tabpanel" class="tab-pane fade" id="others" aria-labelledby="dropdown1-tab">
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-failed">
+                                            <thead>
+                                                <tr>
+                                                    <th>Device</th><th>Command</th><th>Status</th><th>Requested By</th><th>Created</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for request_id, command in device_commands.items()
+                                            if command.status not in ('delayed', 'new', 'sent', 'received', 'pending',
+                                                'failed', 'delay_expired', 'done') %}
+                                                 <tr>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td>{{ command.command.label }}</td>
+                                                    <td>{{ command.status }}</td>
+                                                    <td>{{ command.requested_by.user_id }}</td>
+                                                    <td>{{ command.created_time|epoch_to_human }}</td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
+
+                              </div>
                             </div>
+
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -63,6 +180,19 @@
                 iDisplayLength: 50
         });
     });
+    // Javascript to enable link to tab
+var hash = document.location.hash;
+var prefix = "tab_";
+if (hash) {
+    $('.nav-tabs a[href="'+hash.replace(prefix,"")+'"]').tab('show');
+}
+
+// Change hash for page-reload
+$('.nav-tabs a').on('shown.bs.tab', function (e) {
+    window.location.hash = e.target.hash;
+    window.scrollTo(0, 0);
+})
+
     </script>
 {% endblock %}
 
