@@ -220,10 +220,9 @@ class Devices(YomboLibrary):
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
         self.device_commands = OrderedDict()  # tracks commands being sent to devices. Also tracks if a command is delayed
-        self.device_commands_persistent = {}  # tracks if a request should update any existing commands. For example
-        self.clean_device_commands_loop = None
-        # the automation system can always request the same command to be performed but ensure only one is
+          # the automation system can always request the same command to be performed but ensure only one is
           # is n the queue between restarts.
+        self.clean_device_commands_loop = None
 
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
         self.processing_commands = False
@@ -419,12 +418,17 @@ class Devices(YomboLibrary):
                     yield device_command.save_to_db()
                     del self.device_commands[request_id]
 
-        # This is split up to incase a new request_id was created....
-        for persistent_request_id in list(self.device_commands_persistent.keys()):
-            request_id = self.device_commands_persistent[persistent_request_id]
-            if request_id not in self.device_commands:
-                del self.device_commands_persistent[persistent_request_id]
+    def get_delayed_commands(self):
+        """
+        Returns only device commands that are delayed.
 
+        :return: 
+        """
+        items = {}
+        for request_id, device_command in self.device_commands.items():
+            if device_command.status == 'delayed':
+                items[request_id] = device_command
+        return items
 
     def command(self, device, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None, inputs=None, **kwargs):
         """
@@ -1080,7 +1084,7 @@ class Devices(YomboLibrary):
         """
         logger.error("triggers_add")
         if 'run_on_start' in rule:
-            if rule['run_on_start'] is True:
+            if rule['run_on_start'] is True and rule['trigger']['source']['device_pointers'].device_id not in self.automation_startup_check:
                 self.automation_startup_check.append(rule['trigger']['source']['device_pointers'].device_id)
 
         self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointers'].device_id)
@@ -1091,9 +1095,11 @@ class Devices(YomboLibrary):
 
         :return:
         """
+        logger.warn("devices_startup_trigger_callback: %s" % self.automation_startup_check)
         for name in self.automation_startup_check:
             if name in self.devices:
-                self.check_trigger(name, self.device[name].status)
+                logger.info("devices_startup_trigger_callback - name: %s" % name)
+                self.check_trigger(name, self.devices[name].status_all)
 
     def devices_get_value_callback(self, rule, portion, **kwargs):
         """

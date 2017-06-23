@@ -68,14 +68,15 @@ class Device_Command(object):
         else:
             self.history = []
         self.requested_by = data['requested_by']
-        self.status = 'new'
+        self.status = data.get('status', 'new')
 
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
-        self.sent_time = data.get('sent_time', None)
-        self.received_time = data.get('received_time', None)
-        self.pending_time = data.get('pending_time', None)
-        self.finished_time = data.get('finished_time', None)
+        self.broadcast_time = data.get('broadcast_time', None)  # time when command was sent through hooks.
+        self.sent_time = data.get('sent_time', None)  # when a module or receiver sent the command to final end-point
+        self.received_time = data.get('received_time', None)  # when the command was received by the final end-point
+        self.pending_time = data.get('pending_time', None)  # if command takes a while to process time, this is the timestamp of last update
+        self.finished_time = data.get('finished_time', None)  # when the command is finished and end-point has changed state
         self.not_before_time = data.get('not_before_time', None)
         self.not_after_time = data.get('not_after_time', None)
         self.call_later = None
@@ -87,16 +88,23 @@ class Device_Command(object):
             self.dirty = False
             self.id = data['id']
         else:
+            self.history.append((self.created_time, self.status, 'Created.'))
             self.id = None
 
+        self._started = False
         if start is None or start is True:
+            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! going to call start in 1ms: %s" % self.request_id)
             reactor.callLater(0.001, self.start)
 
     def start(self):
+        if self._started is True:
+            return
+        self._started = True
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  start called: %s" % self.request_id)
         if self.source == 'database' and self.status == 'sent':
             logger.info(
                 "Discarding a device command message loaded from database it's already been sent.")
-            self.set_failed(finished_time=0);
+            self.set_failed(message="111");
             return
 
         if self.not_before_time is not None:
@@ -117,13 +125,23 @@ class Device_Command(object):
         else:
             if self.source == 'database':  # Nothing should be loaded from the database that not a delayed command.
                 logger.info("Discarding a device command message loaded from database because it's not meant to be called later.")
-                self.set_failed(finished_time = 0);
+                self.set_failed(message="222");
             else:
                 self.device._do_command_hook(self)
                 return True
 
     def last_message(self):
         return self.history[0]
+
+    def set_broadcast(self, broadcast_time=None, message=None):
+        self.dirty = True
+        if broadcast_time is None:
+            broadcast_time = time()
+        self.broadcast_time = broadcast_time
+        self.status = 'broadcast'
+        if message is None:
+            message='Command broadcasted to hooks.'
+        self.history.append((broadcast_time, self.status, message))
 
     def set_sent(self, sent_time=None, message=None):
         self.dirty = True
@@ -132,8 +150,8 @@ class Device_Command(object):
         self.sent_time = sent_time
         self.status = 'sent'
         if message is None:
-            message='command sent'
-        self.history.append((sent_time, message))
+            message='Command sent to device or processing sub-system.'
+        self.history.append((sent_time, self.status, message))
 
     def set_received(self, received_time=None, message=None):
         self.dirty = True
@@ -142,8 +160,8 @@ class Device_Command(object):
         self.received_time = received_time
         self.status = 'received'
         if message is None:
-            message='command received by the controlling sub-system'
-        self.history.append((received_time, message))
+            message='Command received by the device or processing sub-system.'
+        self.history.append((received_time, self.status, message))
 
     def set_pending(self, pending_time=None, message=None):
         self.dirty = True
@@ -152,8 +170,14 @@ class Device_Command(object):
         self.pending_time = pending_time
         self.status = 'pending'
         if message is None:
-            message='command pending processing by the controlling sub-system'
-        self.history.append((pending_time, message))
+            message='Command processing or being completed by the device or processing sub-system.'
+        if self.set_sent is None:
+            self.set_sent = pending_time
+            self.history.append((pending_time, 'sent', 'Command sent to device or processing sub-system. Back filled by pending action.'))
+        if self.received_time is None:
+            self.received_time = pending_time
+            self.history.append((pending_time, 'received', 'Command received by the device or processing sub-system. Back filled by pending action.'))
+        self.history.append((pending_time, self.status, message))
 
     def set_finished(self, finished_time=None, status=None, message=None):
         self.dirty = True
@@ -163,7 +187,10 @@ class Device_Command(object):
         if status is None:
             status = 'done'
         self.status = status
-        self.history.append((finished_time, status))
+        if self.set_sent is None:
+            self.set_sent = finished_time
+            self.history.append((finished_time, 'sent', 'Command sent to device or processing sub-system. Back filled by finished action.'))
+        self.history.append((finished_time, self.status, status))
         if message is not None:
             self.set_message(message)
 
@@ -186,31 +213,37 @@ class Device_Command(object):
     def set_delay_expired(self, finished_time=None, message=None):
         if message is None:
             message = "System reported command failed."
-        # message = "System reported command failed."
-        # message = "System reported command failed."
         self.set_finished(finished_time=finished_time, status='delay_expired', message=message)
 
     def set_status(self, status, message=None):
         self.dirty = True
         self.status = status
-        self.history.append((time(), status))
+        self.history.append((time(), self.status, status))
         if message is not None:
             self.set_message(message)
 
     def set_message(self, message):
         self.dirty = True
         self.message = message
-        self.history.append((time(), message))
+        self.history.append((time(), self.status, message))
 
     def status_received(self):
         self.command_status_received = True
         self.set_message('status_received')
+
+    def cancel(self, finished_time=None, status=None, message=None):
+        if status is None:
+            status = 'canceled'
+        self.set_finished(finished_time, status, message)
 
     @inlineCallbacks
     def save_to_db(self, forced = None):
         if self.dirty or forced is True:
             results = yield self._Parent._LocalDB.save_device_command(self)
             self.dirty = False
+
+    def __str__(self):
+        return "Device command for '%s': %s" % (self.device.label, self.command.label)
 
     def __repr__(self):
         return {

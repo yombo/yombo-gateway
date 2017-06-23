@@ -424,12 +424,12 @@ class Device(object):
         persistent_request_id = kwargs.get('persistent_request_id', None)
         device_command['persistent_request_id'] = persistent_request_id
 
-        if persistent_request_id in self._Parent.device_commands_persistent:
-            previous_request_id = self._Parent.device_commands_persistent[persistent_request_id]
-            if previous_request_id in self._Parent.device_commands:
-                logger.debug("found a previous persistent request. Canceling it and creating a new one.")
-                self._Parent.device_commands[previous_request_id].set_finished(status="superseded", message="Replacement request created.")
-        elif request_id is None:
+        if persistent_request_id is not None:  # cancel any previous device requests for this persistent id.
+            for search_request_id, search_device_command in self._Parent.device_commands.items():
+                if search_device_command.persistent_request_id == persistent_request_id:
+                    search_device_command.cancel(message="This device command was superseded by a new persistent request.")
+
+        if request_id is None:
             request_id = random_string(length=18)  # print("in device command: rquest_id 2: %s" % request_id)
 
         device_command['request_id'] = request_id
@@ -536,14 +536,47 @@ class Device(object):
             'device_command': device_command,
             'called_by': self,
         }
-        device_command.set_sent()
-        logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
+        device_command.set_broadcast()
+        logger.error("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
         results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
             if result is True:
                 device_command.set_received(message="Received by: %s" % component)
         self._Parent._Statistics.increment("lib.devices.commands_sent", anon=True)
+
+    def device_command_processing(self, request_id, **kwargs):
+        """
+        A shortcut to calling device_comamnd_sent and device_command_received together.
+
+        :param request_id: The request_id provided by the _device_command_ hook.
+        :return:
+        """
+        message = kwargs.get('message', None)
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_sent(message=message)
+            device_command.set_received(message=message)
+        else:
+            return
+
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+
+    def device_command_sent(self, request_id, **kwargs):
+        """
+        Called by any module that has sent the command to an end-point.
+
+        :param request_id: The request_id provided by the _device_command_ hook.
+        :return:
+        """
+        message = kwargs.get('message', None)
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_sent(message=message)
+        else:
+            return
+
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
 
     def device_command_received(self, request_id, **kwargs):
         """
@@ -553,8 +586,13 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
-        self._Parent.device_commands[request_id].set_received(message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_received(message=message)
+        else:
+            return
+
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
 
     def device_command_pending(self, request_id, **kwargs):
         """
@@ -565,8 +603,15 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_pending(message=message)
+        else:
+            return
+
+        message = kwargs.get('message', None)
         self._Parent.device_commands[request_id].set_pending(message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
 
     def device_command_failed(self, request_id, **kwargs):
         """
@@ -578,11 +623,35 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
-        self._Parent.device_commands[request_id].set_failed(message=message)
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_failed(message=message)
+        else:
+            return
 
         if message is not None:
             logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+
+    def device_command_cancel(self, request_id, **kwargs):
+        """
+        Cancel a device command request. Cannot guarentee this will happen. Unable to cancel if statu is 'done' or
+        'failed'.
+
+        :param request_id: The request_id provided by the _device_command_ hook.
+        :return:
+        """
+        status = kwargs.get('status', None)
+        message = kwargs.get('message', None)
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.cancel(status=status, message=message)
+        else:
+            return
+
+        if message is not None:
+            logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
+        global_invoke_all('_device_command_cancel_', called_by=self, device_command=device_command)
 
     def device_command_done(self, request_id, **kwargs):
         """
@@ -594,8 +663,13 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
-        self._Parent.device_commands[request_id].set_finished(message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=self._Parent.device_commands[request_id])
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_finished(message=message)
+        else:
+            return
+
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
 
     def get_request(self, request_id):
         """
@@ -993,7 +1067,7 @@ class Device(object):
         print("load history (%s): %s" % (self.label, len(self.status_history)))
         if len(self.status_history) == 0:
             return None
-        return self.status_history[0].status
+        return self.status_history[0].machine_status
 
     @property
     def status_all(self):
@@ -1008,8 +1082,7 @@ class Device(object):
 
             }
             return self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown',
-                                    'Unknown status for device', None,
-                                    None, {},
+                                    'Unknown status for device', None, None, {},
                                     requested_by, None, 'Unknown', 0, 1)
 
         return self.status_history[0]

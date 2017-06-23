@@ -470,6 +470,7 @@ class LocalDB(YomboLibrary):
             device_command.command_id=DC.command.command_id
             device_command.inputs=inputs
             device_command.created_time=DC.created_time
+            device_command.broadcast_time=DC.broadcast_time
             device_command.sent_time=DC.sent_time
             device_command.received_time=DC.received_time
             device_command.pending_time=DC.pending_time
@@ -490,6 +491,7 @@ class LocalDB(YomboLibrary):
         else:
             args = {
                 'inputs': inputs,
+                'created_time': DC.created_time,
                 'sent_time': DC.sent_time,
                 'received_time': DC.received_time,
                 'pending_time': DC.pending_time,

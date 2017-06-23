@@ -117,6 +117,7 @@ def upgrade(Registry, **kwargs):
         `command_id`       TEXT NOT NULL,
         `inputs`           TEXT,
         `created_time`     FLOAT NOT NULL,
+        `broadcast_time`   FLOAT NOT NULL,
         `sent_time`        FLOAT,
         `received_time`    FLOAT,
         `pending_time`     FLOAT,
