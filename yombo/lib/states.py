@@ -675,7 +675,7 @@ class States(YomboLibrary, object):
         :return:
         """
         if 'run_on_start' in rule:
-            if rule['run_on_start'] is True:
+            if rule['run_on_start'] is True and rule['trigger']['source']['name'] not in self.automation_startup_check:
                 self.automation_startup_check.append(rule['trigger']['source']['name'])
         self.automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
 
@@ -685,9 +685,10 @@ class States(YomboLibrary, object):
 
         :return:
         """
+        logger.warn("states_startup_trigger_callback: %s" % self.automation_startup_check)
         for name in self.automation_startup_check:
-            print("states_startup_trigger_callback, checking: %s" % name)
             if name in self.__States:
+                logger.info("states_startup_trigger_callback - name: %s" % name)
                 self.check_trigger(name, self.__States[name]['value'])
 
     def states_get_value_callback(self, rule, portion, **kwargs):

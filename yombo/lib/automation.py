@@ -233,9 +233,10 @@ class Automation(YomboLibrary):
         #     if 'startup_trigger_callback' in functions:
         #         functions['startup_trigger_callback']()
         #
-
+        print("######################  doing rules startup_trigger_callbacks.")
         for platform in self.sources:
             if 'startup_trigger_callback' in self.sources[platform]:
+                print("startup_trigger_callbacks: %s" % platform)
                 startup_trigger_callback = self.sources[platform]['startup_trigger_callback']
                 startup_trigger_callback()
 

@@ -253,6 +253,7 @@ class Atoms(YomboLibrary):
         self._loaded = False
         self.set('loader.operation_mode', 'run')
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
+        self.automation_startup_check = []
 
     def _load_(self, **kwargs):
         self.library_state = 2
@@ -446,6 +447,7 @@ class Atoms(YomboLibrary):
               'description': 'Allows atoms to be used as a source (trigger).',
               'validate_source_callback': self.atoms_validate_source_callback,  # function to call to validate a trigger
               'add_trigger_callback': self.atoms_add_trigger_callback,  # function to call to add a trigger
+              'startup_trigger_callback': self.atoms_startup_trigger_callback,  # function to call to check all triggers
               'get_value_callback': self.atoms_get_value_callback,  # get a value
               'field_details': [
                   {
@@ -485,7 +487,21 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
+        if 'run_on_start' in rule:
+            if rule['run_on_start'] is True and rule['trigger']['source']['name'] not in self.automation_startup_check:
+                self.automation_startup_check.append(rule['trigger']['source']['name'])
+
         self._Automation.triggers_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
+
+    def atoms_startup_trigger_callback(self):
+        """
+        Called when automation rules are active. Check for any automation rules that are marked with run_on_start
+
+        :return:
+        """
+        for name in self.automation_startup_check:
+            if name in self.__Atoms:
+                self.check_trigger(name, self.__Atoms[name])
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """
