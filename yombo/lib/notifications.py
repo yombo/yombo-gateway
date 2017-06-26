@@ -223,7 +223,7 @@ class Notifications(YomboLibrary):
                 return notice['id']
 
         if 'type' not in notice:
-            notice['type'] = 'system'
+            notice['type'] = 'notice'
         if 'priority' not in notice:
             notice['priority'] = 'normal'
         if 'source' not in notice:
@@ -272,11 +272,9 @@ class Notifications(YomboLibrary):
         logger.debug("notice: {notice}", notice=notice)
         if from_db is None and notice['persist'] is True:
             self._LocalDB.add_notification(notice)
-            self.notifications.prepend(notice['id'], Notification(self, notice))
-        else:
-            self.notifications.prepend(notice['id'], Notification(self, notice))
-            # self.notifications = OrderedDict(sorted(self.notifications.items(), key=lambda x: x[1]['created']))
-            pass
+
+        self.notifications.prepend(notice['id'], Notification(self, notice))
+
         if from_db is None:
             self.check_always_show_count()
         return notice['id']
@@ -314,6 +312,17 @@ class Notifications(YomboLibrary):
             return self.notifications[notice_id]
         else:
             raise YomboWarning('Notification not found: %s' % notice_id)
+
+    @inlineCallbacks
+    def select(self, criteria):
+        """
+        Select notifications based on various criteria.
+
+        :param criteria: A dictionary containing field names and expected values.
+        :return: List of dictionaries.
+        """
+        results = yield self._LocalDB.select_notifications(criteria)
+        return results
 
 
 class Notification:
