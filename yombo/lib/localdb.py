@@ -46,7 +46,7 @@ from twisted.internet.defer import inlineCallbacks, returnValue
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import clean_dict
+from yombo.utils import clean_dict, instance_properties
 
 logger = get_logger('lib.localdb')
 
@@ -810,7 +810,11 @@ class LocalDB(YomboLibrary):
     def select_notifications(self, where):
         find_where = dictToWhere(where)
         records = yield Notifications.find(where=find_where)
-        returnValue(records)
+        items = []
+        for record in records:
+            items.append(instance_properties(record, '_'))
+
+        return items
 
     # @inlineCallbacks
     # def set_ack(self, id, new_ack, ack_time):
