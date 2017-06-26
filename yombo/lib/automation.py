@@ -47,9 +47,9 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
-import msgpack
 import hjson
-
+import msgpack
+from time import time
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import reactor
@@ -64,8 +64,8 @@ import collections
 logger = get_logger("library.automation")
 
 
-# REQUIRED_RULE_FIELDS = ['trigger', 'action', 'name']
-REQUIRED_RULE_FIELDS = ['action']
+REQUIRED_RULE_FIELDS = ['action', 'name']
+# REQUIRED_RULE_FIELDS = ['action']
 REQUIRED_TRIGGER_FIELDS = ['source']
 REQUIRED_CONDITION_FIELDS = ['source', 'filter']
 REQUIRED_ACTION_FIELDS = ['platform']
@@ -177,6 +177,7 @@ class Automation(YomboLibrary):
         For "automation_rules_list" hook, see the :ref:`Automation Example <automationexample>` example module.
 
         """
+        # Collect a list of automation source platforms.
         automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
         logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
         for component_name, item in automation_sources.items():
@@ -186,6 +187,7 @@ class Automation(YomboLibrary):
                     self.sources[vals['platform']] = vals
         logger.debug("sources: {sources}", sources=self.sources)
 
+        # Collect a list of automation filter platforms.
         automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
         # logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
         for component_name, item in automation_filters.items():
@@ -195,6 +197,7 @@ class Automation(YomboLibrary):
                     self.filters[vals['platform']] = vals
         # logger.debug("filters: {filters}", filters=self.filters)
 
+        # Collect a list of automation action platforms.
         automation_actions = yield yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for component_name, item in automation_actions.items():
@@ -203,6 +206,7 @@ class Automation(YomboLibrary):
                     vals['platform_source'] = component_name
                     self.actions[vals['platform']] = vals
 
+        # Collect a list of automation items, usually from user's custom modules.
         callback_rules = yield yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
         for component_name, component_rules in callback_rules.items():
             if 'rules' in component_rules:
@@ -217,6 +221,7 @@ class Automation(YomboLibrary):
             logger.warn("No automation rules found.")
             returnValue(None)
 
+        # Iterate through the incoming rules, validate, and then enable the rule.
         for rule in self._rulesRaw['rules']:
             if 'run_on_start' in rule:
                 rule['run_on_start'] = yombo.utils.is_true_false(rule['run_on_start'])
@@ -229,11 +234,13 @@ class Automation(YomboLibrary):
         # logger.debug("All active rules: {rules}", rules=self.rules)
 
     def _started_(self, **kwargs):
-        # for source, functions in self.sources.items():
-        #     if 'startup_trigger_callback' in functions:
-        #         functions['startup_trigger_callback']()
-        #
-        print("######################  doing rules startup_trigger_callbacks.")
+        """
+        When the system is fully started, iterate through rules and check if they need to be fired.
+        Every platform is responsible for enabling this support.
+
+        :param kwargs: 
+        :return: 
+        """
         for platform in self.sources:
             if 'startup_trigger_callback' in self.sources[platform]:
                 print("startup_trigger_callbacks: %s" % platform)
@@ -249,28 +256,25 @@ class Automation(YomboLibrary):
         :param delay: String - A string to be parsed into epoch time in the future.
         :return: Float in seconds in the future.
         """
-        seconds = (float(self._Times.yombo.utils.epoch_from_string(delay, True)))
+        seconds, date_time = self._Times.time_from_string(delay)
         if seconds < 0:
             raise YomboWarning("get_action_delay on accepts delays in the future, not the past.",
                                200, 'get_action_delay', 'automationhelpers')
-        return seconds
+        return seconds - time()
 
     def add_rule(self, rule):
         """
-        Internal function, adds a rule to the self.rules. Do not add rules directly, they must be validated before
-        so less validation can happen during run time.
+        Function to validate and add rules to current list of enabled rules. 
 
-        To add rules, use 'automation.txt' file or hook_automation_rules_list within a module.
-
-        :param rule: A dictionary containing the rule to add
+        :param rule: A dictionary containing the rule to add. Must have 'trigger' and 'action', with an
+          optional 'filter' section.
         :type rule: dict
         :return:
         """
-        # make sure rule_id is unique. If it's a duplication, we will toss! make one if needed
-        rule_id = None
+        # make sure rule_id is unique. If it's a duplicate, we will toss!
         if 'rule_id' in rule:
             if rule['rule_id'] in self.rules:
-                logger.warn("Duplicate rule id found, dropping it.")
+                logger.warn("Duplicate rule id found, dropping it: {rule_id}", rule_id=rule['rule_id'])
                 return False
             else:
                 rule_id = rule['rule_id']
@@ -279,30 +283,36 @@ class Automation(YomboLibrary):
             rule_id = rule['rule_id']
 
         # First pass - do basic checks
-        logger.debug("About to add rule: {rule}", rule=rule)
         if not all(section in rule for section in REQUIRED_RULE_FIELDS):
             logger.info("Rule doesn't have required trigger fields, skipping: {required}",
-                        rule=rule, required=REQUIRED_RULE_FIELDS)
+                        required=REQUIRED_RULE_FIELDS)
             return False  # Doesn't have all required fields.
 
+        # logger.debug("About to add rule: {rule}", rule=rule)
+
         # logger.debug("about to check trigger.")
-        if 'trigger' in rule:
+        if 'trigger' in rule:  # if not supplied, this becomes a macro.
+            rule['type'] = 'rule'
             if rule['trigger']['source']['platform'] not in self.sources:
                 logger.info("Platform ({platform}) doesn't exist as a trigger.",
-                        platform=rule['trigger']['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                        platform=rule['trigger']['source']['platform'], rule=rule)
                 return False
             if not all(section in rule['trigger'] for section in REQUIRED_TRIGGER_FIELDS):
                 logger.info("Rule:'{rule}' Doesn't have required trigger fields, has: ({trigger})  Required:{required}",
-                            rule=rule['name'], trigger=rule['trigger'], required=REQUIRED_RULE_FIELDS)
+                            rule=rule['name'], trigger=rule['trigger'])
                 return False  # Doesn't have all required fields.
             if not all(section in rule['trigger']['source'] for section in REQUIRED_SOURCE_FIELDS):
                 logger.info("Rule:'{rule}' Doesn't have required trigger source fields: ({trigger}) Required:{required}",
                             rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_SOURCE_FIELDS)
                 return False  # Doesn't have all required fields.
+
+            # TODO: make 'filter' within the trigger optional.
             if not all(section in rule['trigger']['filter'] for section in REQUIRED_FILTER_FIELDS):
                 logger.info("Rule:'{rule}' Doesn't have required trigger filter fields: ({trigger})  Required:{required}",
                             rule=rule['name'], trigger=rule['trigger']['source'], required=REQUIRED_FILTER_FIELDS)
                 return False  # Doesn't have all required fields.
+        else:
+            rule['type'] = 'macro'
 
         # logger.debug("Rule is good past trigger checks.")
         if 'condition' in rule:
@@ -313,7 +323,7 @@ class Automation(YomboLibrary):
                     return False
                 if rule['condition'][item]['source']['platform'] not in self.sources:
                     logger.info("Platform ({platform}) doesn't exist as a source:({rule}) {required}",
-                                platform=rule['condition'][item]['source']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                                platform=rule['condition'][item]['source']['platform'], rule=rule)
                     return False
                 if not all(section in rule['condition'][item]['source'] for section in REQUIRED_SOURCE_FIELDS):
                     logger.info("Rule:'{rule}' Doesn't have required condition source fields, has: ({condition})  Required:{required}",
@@ -325,7 +335,7 @@ class Automation(YomboLibrary):
                     return False
                 if rule['condition'][item]['filter']['platform'] not in self.filters:
                     logger.info("Platform ({platform}) doesn't exist as a filter: ({rule}) {required}",
-                                platform=rule['condition'][item]['filter']['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                                platform=rule['condition'][item]['filter']['platform'], rule=rule)
                     return False
 
         # logger.debug("Rule is good past condition checks.")
@@ -349,7 +359,7 @@ class Automation(YomboLibrary):
                 return False
             if rule['action'][item]['platform'] not in self.actions:
                 logger.info("Platform ({platform}) doesn't exist as an action.  ({rule})",
-                            platform=rule['action'][item]['platform'], rule=rule, required=REQUIRED_RULE_FIELDS)
+                            platform=rule['action'][item]['platform'], rule=rule)
                 return False
 
 
@@ -422,7 +432,7 @@ class Automation(YomboLibrary):
 
     def _check_source_platform(self, rule, portion, trigger_required=False):
         """
-        Help function to add_rule. It checks to make sure a any 'source': {'platform': 'platform_name'} exists. It
+        Helper function to add_rule. It checks to make sure a any 'source': {'platform': 'platform_name'} exists. It
         tests against self.sources that was gathered from various modules and modules using hooks.
 
         :param rule: the rule
@@ -484,8 +494,8 @@ class Automation(YomboLibrary):
 
     def triggers_add(self, rule_id, platform_label, tracked_key):
         """
-        A public function that modules and libraries can use to trigger rules. Used to track simple dictionary
-        type items or things that can be contained in a dictionary.
+        A public function that modules and libraries can optionally use to trigger rules. Used to track simple
+        dictionary type items or things that can be contained in a dictionary.
 
         See the :py:mod:`devices <yombo.lib.devices>` library for best example and documentation.
 
@@ -509,7 +519,7 @@ class Automation(YomboLibrary):
         :param tracked_key: An immutable key to monitor. Usually a dictionary key.
         :return:
         """
-#        logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@adding ruleid: {rule}", rule=rule_id)
+        logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ triggers_add() ruleid: {rule}", rule=rule_id)
         if platform_label not in self.tracker:
             self.tracker[platform_label] = {}
         if tracked_key not in self.tracker[platform_label]:
@@ -521,6 +531,9 @@ class Automation(YomboLibrary):
 
     def triggers_check(self, platform_label, tracked_key, new_value):
         """
+        If modules or libraries used triggers_add() above, they should call this function with their platform
+        label, the key, and the new value. This will fire fules if new_value 
+
         Modules and libraries can call this to check for any triggers on a dictionary. If a trigger matches, any
         defined rules for a given trigger will fire.
 
@@ -531,10 +544,11 @@ class Automation(YomboLibrary):
         :param new_value: New value to track
         :return:
         """
-        # logger.warn("1@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@checking : {new_value}", new_value=new_value)
-        # logger.warn("tracked_label: {tracked_label}", tracked_label=platform_label)
-        # logger.warn("tracked_key: {tracked_key}", tracked_key=tracked_key)
-        logger.debug("trackers: {tracker}", tracker=self.tracker)
+        logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@triggers_check({platform_label}, {tracked_key}, {new_value})",
+                    platform_label=platform_label,
+                    tracked_key=tracked_key,
+                    new_value=new_value)
+        logger.warn("trackers: {tracker}", tracker=self.tracker)
         if platform_label not in self.tracker:
             logger.debug("platform_label ({platform_label}) not in self.tracker. Skipping rule.", platform_label=platform_label)
             return False
@@ -659,21 +673,22 @@ class Automation(YomboLibrary):
             if 'delay' in rule['action'][item]:
                 try:
                     delay = self.get_action_delay(rule['action'][item]['delay'])
+                    print("rule has delay: %s" % delay)
                 except Exception as e:
                     logger.error("Error parsing 'delay' within action. Cannot perform action: {e}", e=e)
                     raise YomboWarning("Error parsing 'delay' within action. Cannot perform action. (%s)" % rule['action'][item]['delay'],
                                    301, 'devices_validate_action_callback', 'lib.devices')
 
 
-            # print("rule has delay: %s" % delay)
             platform = rule['action'][item]['platform']
             do_action_callback_function = self.actions[platform]['do_action_callback']
+            print("do_action_callback_function: %s" % do_action_callback_function)
             if delay > 0:
-                # print "called with delay"
+                print("called with delay")
                 reactor.callLater(delay, do_action_callback_function, rule, rule['action'][item], **rule['action'][item]['arguments'])
                 self._Statistics.increment("lib.automation.rules.fire_delayed", bucket_size=15, anon=True)
             else:
-                # print "called withOUT delay"
+                print("called withOUT delay")
                 do_action_callback_function(rule, rule['action'][item], **rule['action'][item]['arguments'])
                 self._Statistics.increment("lib.automation.rules.fired", bucket_size=15, anon=True)
         return
