@@ -32,6 +32,7 @@ import sys
 import inspect
 from os import chmod
 from collections import OrderedDict
+
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.utils import dictToWhere
@@ -482,12 +483,7 @@ class LocalDB(YomboLibrary):
             device_command.requested_by=json.dumps(DC.requested_by, separators=(',', ':'))
             device_command.uploaded=0
             device_command.uploadable=0
-            results = yield device_command.save()
-
-            device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
-            return device_command_results
-
-            return results
+            yield device_command.save()
         else:
             args = {
                 'inputs': inputs,
@@ -505,9 +501,11 @@ class LocalDB(YomboLibrary):
                 # 'uploaded': DC.uploaded,
                 # 'uploadable': DC.uploadable,
             }
-            results = yield self.dbconfig.update('device_command', args,
+            yield self.dbconfig.update('device_command', args,
                                                  where=['id = ?', DC.id])
-            return results
+
+        device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
+        return device_command_results[0]
 
 
     #############################
@@ -807,6 +805,12 @@ class LocalDB(YomboLibrary):
         print("saving notice: %s" %args)
         results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
         return results
+
+    @inlineCallbacks
+    def select_notifications(self, where):
+        find_where = dictToWhere(where)
+        records = yield Notifications.find(where=find_where)
+        returnValue(records)
 
     # @inlineCallbacks
     # def set_ack(self, id, new_ack, ack_time):
