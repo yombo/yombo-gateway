@@ -369,6 +369,7 @@ class Loader(YomboLibrary, object):
             library._AMQP = self.loadedLibraries['amqp']
             library._AMQPYombo = self.loadedLibraries['amqpyombo']
             library._Atoms = self.loadedLibraries['atoms']
+            library._Automation = self.loadedLibraries['automation']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._Devices = self.loadedLibraries['devices']
