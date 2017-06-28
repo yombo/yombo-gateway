@@ -194,8 +194,6 @@ class States(YomboLibrary, object):
         return list(self.__States.values())
 
     def _init_(self, **kwargs):
-        self.automation = self._Libraries['automation']
-
         self.__States = {}
         self._loaded = False
 
@@ -328,7 +326,7 @@ class States(YomboLibrary, object):
         :type full: bool
         :return: Value of state
         """
-        logger.debug('states:get: {key} = {value}', key=key)
+        # logger.debug('states:get: {key} = {value}', key=key)
 
         self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
 
@@ -375,6 +373,7 @@ class States(YomboLibrary, object):
         :param arguments: kwarg (arguments) to send to function.
         :return: Value of state
         """
+        # logger.debug("Saving state: {key} = {value}", key=key, value=value)
         if key in self.__States:
             is_new = True
             # If state is already set to value, we don't do anything.
@@ -624,10 +623,9 @@ class States(YomboLibrary, object):
 
         True - Rules fired, fale - no rules fired.
         """
-        # logger.debug("check_trigger. {key} = {value}", key=key, value=value)
+        logger.debug("check_trigger. {key} = {value}", key=key, value=value)
         if self._loaded:
-            results = self.automation.triggers_check('states', key, value)
-            # results = self.automation.triggers_check('states', key, value)
+            results = self._Automation.triggers_check('states', key, value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -677,7 +675,7 @@ class States(YomboLibrary, object):
         if 'run_on_start' in rule:
             if rule['run_on_start'] is True and rule['trigger']['source']['name'] not in self.automation_startup_check:
                 self.automation_startup_check.append(rule['trigger']['source']['name'])
-        self.automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
+        self._Automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
 
     def states_startup_trigger_callback(self):
         """
