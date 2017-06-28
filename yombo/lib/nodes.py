@@ -632,7 +632,7 @@ class Node:
         :return: 
         """
         self.parent_id = node['parent_id']
-        self.gateway_id = node['node_type']
+        self.gateway_id = node['gateway_id']
         self.node_type = node['node_type']
         self.weight = node['weight']
         self.machine_label = node['machine_label']
