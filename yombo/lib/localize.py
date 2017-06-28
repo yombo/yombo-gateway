@@ -65,14 +65,14 @@ class Localize(YomboLibrary):
         if 'en' not in self.hashes:
             self.hashes['en'] = ''
 
-        self.localization_degrees = self._Configs.get2("localization", "degrees", "fahrenheit")
+        self.localization_degrees = self._Configs.get2("localization", "degrees", "f")
 
         self.files = {}
         self.locale_files = abspath('.') + "/usr/locale/"
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
-    def display_temperature(self, in_temp, in_type, out_type,  out_decimals=None):
+    def display_temperature(self, in_temp, in_type, out_type=None,  out_decimals=None):
         """
         Convert a temperature input for display according to the system settings.
 
@@ -84,9 +84,12 @@ class Localize(YomboLibrary):
         :type o_decimals: int
         :return: 
         """
-        system_type = self.localization_degrees()[0].lower()
+        if out_type is None:
+            out_type = self.localization_degrees()[0].lower()
+        else:
+            out_type = out_type[0].lower()
+
         in_type = in_type[0].lower()
-        out_type = out_type[0].lower()
         # print("in_temp: %s" % in_temp)
         # print("temp_type: %s" % temp_type)
         # print("system_type: %s" % system_type)
@@ -98,14 +101,14 @@ class Localize(YomboLibrary):
 
         if out_decimals is None:
             if out_type == 'c':
-                out_decimal = 1
+                out_decimals = 1
             else:
                 out_decimals = 0
 
         if out_decimals >= 0:
-            return "{0:.{1}f}".format(i_temp, o_decimals)
+            return "{0:.{1}f}".format(out_temp, out_decimals)
         else:
-            return i_temp
+            return out_temp
 
     def _modules_created_(self, **kwargs):
         """
