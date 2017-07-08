@@ -17,7 +17,7 @@ It's important to note that any module within the Yombo system will have access 
 """
 
 # Import python libraries
-import gnupg
+import yombo.ext.gnupg as gnupg
 # import os
 from subprocess import Popen, PIPE
 import base64
@@ -54,7 +54,7 @@ class GPG(YomboLibrary):
         self._key_generation_status = {}
 
         self.initDefer = Deferred()
-        self.gpg = gnupg.GPG(homedir="usr/etc/gpg")
+        self.gpg = gnupg.GPG(gnupghome="usr/etc/gpg")
         logger.debug("syncing gpg keys into db")
         self.sync_keyring_to_db()
         self._done_init()
@@ -436,7 +436,6 @@ class GPG(YomboLibrary):
         elif in_text.startswith('-----BEGIN PGP MESSAGE-----'):
             try:
                 output = yield threads.deferToThread(self._gpg_decrypt, in_text)
-                # out = self.gpg.decrypt(in_text)
                 returnValue(output.data)
             except Exception as e:
                 raise YomboWarning("Unable to decrypt string. Reason: {e}", e)
