@@ -132,6 +132,9 @@ class AMQP(YomboLibrary):
         return output
 
     def clean_message_ids(self):
+        """
+        Clean up the tracking dictionaries for messages sent and messages processed.
+        """
         for correlation_id in list(self.message_correlations.keys()):
             if self.message_correlations[correlation_id]['correlation_time'] < (time() - (60*10)):
                 del self.message_correlations[correlation_id]
@@ -145,7 +148,7 @@ class AMQP(YomboLibrary):
         logit("In {location} : {msg}", location=location, msg=msg)
 
     def new(self, hostname=None, port=5671, virtual_host=None, username=None, password=None, use_ssl=True,
-            connected_callback=None, disconnected_callback=None, error_callback=None, client_id=None, keepalive=1800,
+            connected_callback=None, disconnected_callback=None, error_callback=None, client_id=None, keepalive=600,
             prefetch_count=10, critical=False):
         """
         Creates a new :py:class:AMQPClient instance. It will not auto-connect, just simply call the connect method
@@ -166,7 +169,7 @@ class AMQP(YomboLibrary):
         :param disconnected_callback: method - If you want a function called when disconnected from server.
         :param error_callback: method - A function to call if something goes wrong.
         :param client_id: String (default - random) - A client id to use for logging.
-        :param keepalive: Int (default 1800) - How many seconds a ping should be performed if there's not recent
+        :param keepalive: Int (default 600) - How many seconds a ping should be performed if there's not recent
           traffic.
         :param prefetch_count: Int (default 10) - How many outstanding messages the client should have at any
           given time.
@@ -235,7 +238,7 @@ class AMQPClient(object):
         :param connected_callback: method - If you want a function called when connected to server.
         :param disconnected_callback: method - If you want a function called when disconnected from server.
         :param error_callback: method - A function to call if something goes wrong.
-        :param keepalive: Int (default 1800) - How many seconds a ping should be performed if there's not recent
+        :param keepalive: Int (default 600) - How many seconds a ping should be performed if there's not recent
           traffic.
         :param prefetch_count: Int (default 10) - How many outstanding messages the client should have at any
           given time.
@@ -332,13 +335,12 @@ class AMQPClient(object):
         self.pika_factory.stopTrying()
         self.pika_factory.close()
 
-    def disconnected(self, reason):
+    def disconnected(self, reconnect=True):
         """
         Function is called when the Gateway is disconnected from the AMQP service.
         """
         logger.info("AMQP Client {client_id} disconnected. Will usually auto-reconnected.", client_id=self.client_id)
         self.is_connected = False
-        self._disconnecting = False
         if self.disconnected_callback:
             self.disconnected_callback()
 
@@ -482,7 +484,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         # DO NOT CHANGE THESE!  Mitch Schwenk @ yombo.net
         # Reconnect sort-of fast, but random. ~25 second max wait
         # This is set incase a server reboots, don't DDOS the servers!
-        self.initialDelay = 0.2
+        self.initialDelay = 0.7
         self.jitter = 0.2
         self.factor = 1.82503912
         self.maxDelay = 25 # this puts retrys around 17-26 seconds
@@ -708,6 +710,8 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         Called by PikaProtocol when connected.
         :return:
         """
+        print("pika factory connected")
+
         self.AMQPProtocol.do_register_queues()
         self.AMQPProtocol.do_register_exchanges()
         self.AMQPProtocol.do_register_exchange_queue_bindings()
@@ -749,13 +753,17 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         self.AMQPClient.disconnected('unknown')
 
     def clientConnectionLost(self, connector, reason):
+        print("pika factory clientConnectionLost 1. Reason: %s" % reason.value)
         if self.AMQPClient.is_connected and str(reason.value) != "Connection was closed cleanly.":
             logger.warn("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason.value)
+        print("pika factory clientConnectionLost 2")
         # self.AMQPClient.disconnected('lost')
+        print("pika factory clientConnectionLost 3")
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
+        print("pika factory clientConnectionLost 4")
 
     def clientConnectionFailed(self, connector, reason):
-        logger.debug("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
+        logger.info("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
         # self.AMQPClient.disconnected('failed')
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
@@ -793,21 +801,30 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         self.connection = connection
         self.channel = yield connection.channel()
 
-        def close_connection(channel, replyCode, replyText):
-            if replyCode == 403:
-                logger.warn("AMQP access denied to login. Usually this happens when there is more then one instance of the same gateway running.")
-            if replyCode == 404:
-                logger.debug("close_channel: %s : %s" % (replyCode, replyText))
-            if replyCode != 200:
-                logger.info("close_channel: %s : %s" % (replyCode, replyText))
-                connection.close()
-            self.factory.disconnected()
-        self.channel.add_on_close_callback(close_connection)
-
         yield self.channel.basic_qos(prefetch_count=self.factory.AMQPClient.prefetch_count)
+        self.channel.add_on_close_callback(self.on_connection_closed)
         # logger.debug("Setting AMQP connected to true.")
         self._connected = True
         self.factory.connected()
+
+    def on_connection_closed(self, channel, replyCode, replyText):
+        """
+        This method is invoked by pika when the connection to RabbitMQ is
+        closed unexpectedly. Since it is unexpected, we will reconnect to
+        RabbitMQ if it disconnects.
+
+        :param pika.connection.Connection connection: The closed connection obj
+        :param int reply_code: The server provided reply_code if given
+        :param str reply_text: The server provided reply_text if given
+        """
+        if replyCode == 403:
+            logger.warn("AMQP access denied to login. Usually this happens when there is more then one instance of the same gateway running.")
+        if replyCode == 404:
+            logger.debug("close_channel: %s : %s" % (replyCode, replyText))
+        if replyCode != 200:
+            logger.info("close_channel: %s : %s" % (replyCode, replyText))
+            # self.channel.close()
+        self.factory.disconnected()
 
     # def close(self):
     #     """
@@ -1067,8 +1084,9 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         """
         # if error.value == ""
         # if
-        if error.value[0] == 200:
-            return
+        print("receive_item_err: %s" % error)
+        # if error.value[0] == 200:
+        #     return
         self._local_log("debug", "PikaProtocol::receive_item_err", "Error: %s" % error.__dict__)
 
     def _basic_ack(self, tossaway, channel, tag):
