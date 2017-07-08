@@ -330,8 +330,7 @@ class YomboAPI(YomboLibrary):
     def request(self, method, path, data=None, session=None):
         path = self.base_url + path
 
-        # print("%s: %s" % (method, path))
-        # print("data: %s" % data)
+        logger.debug("{method}: {path}", method=method, path=path)
         # if session is False:
         #     session = None
         if session is None:
@@ -346,6 +345,7 @@ class YomboAPI(YomboLibrary):
 
         if data is not None:
             data = json.dumps(data).encode()
+        logger.debug("yombo api request data: {data}", data=data)
 
         if method == 'GET':
             results = yield self._get(path, headers, data)
@@ -368,7 +368,7 @@ class YomboAPI(YomboLibrary):
         # response = yield treq.get(path, params=args, agent=self.custom_agent, headers=headers)
         response = yield treq.get(path, headers=headers, params=args)
         content = yield treq.content(response)
-        logger.debug("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
+        # logger.debug("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         returnValue(final_response)
 

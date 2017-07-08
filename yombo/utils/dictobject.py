@@ -1,7 +1,7 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
-A dictionary that can be access as either an object or dictionary.
+A dictionary that can be access as either an object or dictionary, it's seed is a dictionary.
 
 **Usage**:
 
