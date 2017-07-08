@@ -70,7 +70,7 @@ from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, random_string, random_int
 
-logger = get_logger("library.YomboStates")
+logger = get_logger("library.states")
 
 class States(YomboLibrary, object):
     """
@@ -683,10 +683,10 @@ class States(YomboLibrary, object):
 
         :return:
         """
-        logger.warn("states_startup_trigger_callback: %s" % self.automation_startup_check)
+        logger.debug("states_startup_trigger_callback: %s" % self.automation_startup_check)
         for name in self.automation_startup_check:
             if name in self.__States:
-                logger.info("states_startup_trigger_callback - name: %s" % name)
+                logger.debug("states_startup_trigger_callback - name: %s" % name)
                 self.check_trigger(name, self.__States[name]['value'])
 
     def states_get_value_callback(self, rule, portion, **kwargs):
