@@ -114,7 +114,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             # request = a[1]
             # session = "mysession"
 
-            # print "request:url: %s" % request.path
             host = request.getHeader('host')
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])

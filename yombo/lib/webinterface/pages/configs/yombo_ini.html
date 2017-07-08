@@ -76,7 +76,11 @@
         $('#dataTables-example').DataTable({
                 responsive: true,
                 paging: true,
-                iDisplayLength: 50
+                iDisplayLength: 50,
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 3, 4, 5, 6, 7 ] }
+                    ]
+
         });
     });
     </script>

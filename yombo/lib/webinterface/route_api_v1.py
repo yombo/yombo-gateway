@@ -105,8 +105,8 @@ def route_api_v1(webapp):
         @require_auth(api=True)
         def ajax_devices_command_get_post(webinterface, request, session, device_id, command_id):
             json_output = bytes_to_unicode(request.args.get('json_output', ["{}"])[0])
-            print("json_output  %s" % json_output)
-            print("json_output type: %s" % type(json_output))
+            # print("json_output  %s" % json_output)
+            # print("json_output type: %s" % type(json_output))
             json_output = json.loads(json_output)
             inputs = json_output.get('inputs', {})
 

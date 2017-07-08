@@ -133,9 +133,12 @@
                                     <!-- /.panel-heading -->
                                     <div class="panel-body">
                                         <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
-                                        {{ device.label }}<br>
+                                        {{ device.label }} <br>
+                                        <i>Effective:</i> {{ locations[device.area_id].label }} {{device.label}}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
                                         {{ device.machine_label }}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Location: </label><br>
+                                        {{ locations[device.location_id].label }} -> {{ locations[device.area_id].label }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                                         {{ device.description }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
@@ -169,7 +172,7 @@
                                             </thead>
                                             <tbody>{% for start_value, energy_usage in device.energy_map.items() %}
                                                  <tr>
-                                                    <td>{{ start_value*100 }}%</td>
+                                                    <td>{{ start_value*100 }}% </td>
                                                     <td>{{ energy_usage }}</td>
                                         </label>&nbsp;&nbsp;</td>
                                                  </tr>{% endfor %}

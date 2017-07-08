@@ -1,0 +1,98 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <form method="post" id="devicelocationedit">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        <a class="success" href="/device_locations/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        {{ header_label}}</h1>
+                    <hr>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Basic Information</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Type: </label>
+                            <div class="input-group">
+                                <select tabindex="1" required class="selectpicker show-tick form-control" name="location_type" id="status" placeholder="">
+                                    <option value="area"{% if device_location.location_type == 'area' %} selected{% endif %}>Area</option>
+                                    <option value="location"{% if device_location.location_type == 'location' %} selected{% endif %}>Location</option>
+                                </select>
+                            </div>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Label: </label>
+                                <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a> <br>
+                                {{ macros.modal("modallabel", 'Machine label', "
+                                <p>A label and machine label to uniquely identify this location.</p>
+                                <p>Location Examples:</p>
+                                <ul>
+                                    <li>Label - machine_label</li>
+                                    <li>Main House - house</li>
+                                    <li>Shed - shed</li>
+                                    <li>Pool House - pool_house</li>
+                                </ul>
+                                <p>Area Examples:</p>
+                                <ul>
+                                    <li>Living Room - living_room</li>
+                                    <li>Kitchen - kitchen</li>
+                                    <li>Front Door - front_door</li>
+                                </ul>
+                                ") }}
+                            <div class="input-group">
+                                <input tabindex="2" type="text" class="form-control" name="label" id="label" size="15" placeholder="'Shed', 'Main House'" value="{{ device_location.label|hide_none }}" autofocus required>
+                            </div>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label>
+                            <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a> <br>
+                            <div class="input-group">
+                                <input tabindex="3" type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'house', 'shed', 'pool_house'" value="{{ device_location.machine_label|hide_none }}" required>
+                            </div>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                            <div class="input-group">
+                                <input tabindex="4" type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of location." value="{{ device_location.description|hide_none }}">
+                            </div>
+
+                            <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label>
+                            <div class="input-group">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <input type="hidden" name="json_output" id="json_output" value="">
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">Submit Device Location Information</button>
+                    </form>
+                </div>
+            </div>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+    <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
+    <script>
+        $("#moduleedit").submit(function(event) {
+//            event.preventDefault();
+
+            var rawData = $('#moduleedit').serializeJSON();
+            var formData = JSON.stringify(rawData);
+            console.log(formData);
+            $('#json_output').val(formData)
+//            console.log(formData);
+        });
+    </script>
+
+{% endblock %}

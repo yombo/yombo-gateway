@@ -62,7 +62,11 @@ No notifications.
                 responsive: true,
                 paging: true,
                 iDisplayLength: 50,
-                order: [[ 2, "desc"], [0, "desc"]]
+                order: [[ 2, "desc"], [0, "desc"]],
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 2, 3 ] }
+                    ]
+
         });
     });
     </script>

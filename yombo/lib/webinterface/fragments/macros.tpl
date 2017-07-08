@@ -34,20 +34,29 @@
 </div>
 {%- endmacro %}
 
-{% macro select_device(devices, item, field, name, id, value) -%}
-    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{name}}" id="{{id}}">
-        <option value="" data-subtext="No device selected">None</option>
-    {%- for device_id, device in devices.items() %}
-        <option value="{{device_id}}"{% if value == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.label}}</option>
+{% macro form_select_state(states, input_name, input_id, selected_item) -%}
+    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
+        <option value="" data-subtext="No state selected">None</option>
+    {%- for state_id, state in states.items() %}
+        <option value="{{state_id}}"{% if selected_item == state_id %} selected{% endif %} data-subtext="{{state['value_human']}}">{{state_id}}</option>
     {%- endfor %}
     </select>
 {%- endmacro %}
 
-{% macro form_input_type(items, item, input_types, field, name, id, value="") -%}
+{% macro form_select_device(devices, input_name, input_id, selected_item) -%}
+    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
+        <option value="" data-subtext="No device selected">None</option>
+    {%- for device_id, device in devices.items() %}
+        <option value="{{device_id}}"{% if selected_item == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.label}}</option>
+    {%- endfor %}
+    </select>
+{%- endmacro %}
+
+{% macro form_input_type(items, item, input_types, field, input_name, input_id, value="") -%}
     {%- if input_types[field.input_type_id].machine_label == "yombo_device" %}
-    {{select_device(items, item, field, name, id, value)}}
+    {{form_select_device(items, input_name, input_id, value)}}
     {%- else -%}
-    <input type="text" class="form-control" name="{{name}}" id="{{id}}" value="{{value}}"
+    <input type="text" class="form-control" name="{{input_name}}" id="{{input_id}}" value="{{value}}"
     {%- if field.required %} required{% endif %}>
     {%- endif -%}
 {%- endmacro %}

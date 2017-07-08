@@ -17,7 +17,6 @@ Responsible for adding, removing, and updating devices that are used by the gate
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
 
-
 from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -37,9 +36,9 @@ def add_devices_breadcrumb(webinterface, request, device_id):
     urls = OrderedDict()
     for select_device_id, select_device in webinterface._Devices.sorted().items():
         if select_device.device_id == device_id:
-            urls[select_device.label] = "$/devices/%s/details" % select_device_id
+            urls[select_device.area_label] = "$/devices/%s/details" % select_device_id
         else:
-            urls[select_device.label] = "/devices/%s/details" % select_device_id
+            urls[select_device.area_label] = "/devices/%s/details" % select_device_id
 
     webinterface.add_breadcrumb(request, style='select', data=urls)
 
@@ -61,7 +60,8 @@ def route_devices(webapp):
                 devices=webinterface._Libraries['devices'].devices,
                 devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
-                )
+                locations=webinterface._DeviceLocations.device_locations,
+            )
 
         @webapp.route('/add')
         @require_auth()
@@ -78,12 +78,11 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
             device_types = webinterface._DeviceTypes.device_types
-            # device_types_sorted = sorted(device_types, key=lambda x: device_types[x].label)
-            device_types_sorted = sorted(device_types, key=lambda x: device_types[x].label)
+            device_types_sorted = OrderedDict(sorted(device_types.items(), key=lambda x: x[1].label))
 
             return page.render(
                 alerts=webinterface.get_alerts(),
-                device_types = device_types,
+                device_types = device_types_sorted,
             )
 
 
@@ -114,7 +113,11 @@ def route_devices(webapp):
                     if request.args.get('pin_code')[0] == "":
                         webinterface.add_alert('Device requires a pin code, but none was set.', 'warning')
                         returnValue(webinterface.redirect(request, '/devices'))
+            except Exception as e:
+                logger.warn("Processing 'pin_required': {e}", e=e)
+                pin_required = 0
 
+            try:
                 start_percent = json_output.get('start_percent', None)
                 energy_usage = json_output.get('energy_usage', None)
                 energy_map = {}
@@ -128,13 +131,13 @@ def route_devices(webapp):
                     ok_to_save = False
 
                 energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y: float(x_y[0])))
-
-
             except Exception as e:
                 logger.warn("Error while processing device add_details: {e}", e=e)
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
             device = {
+                'location_id': json_output.get('location_id', ""),
+                'area_id': json_output.get('area_id', ""),
                 'machine_label': json_output.get('machine_label', ""),
                 'label': json_output.get('label', ""),
                 'description': json_output.get('description', ""),
@@ -148,6 +151,9 @@ def route_devices(webapp):
                 'energy_type': json_output.get('energy_type', ""),
                 'energy_map': energy_map,
                 'variable_data': variable_data,
+                'voice_cmd': None,
+                # 'voice_cmd_order': None,
+                # 'voice_cmd_src': None,
             }
 
             if ok_to_save:
@@ -155,7 +161,7 @@ def route_devices(webapp):
                     results = yield webinterface._Devices.add_device(device)
                 except YomboWarning as e:
                     webinterface.add_alert("Cannot add device, reason: %s" % e.message)
-                    returnValue(webinterface.redirect(request, '/devices'))
+                    return webinterface.redirect(request, '/devices')
 
                 if results['status'] == 'success':
                     msg = {
@@ -175,9 +181,9 @@ def route_devices(webapp):
                                                      })
 
                     page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-                    returnValue(page.render(alerts=webinterface.get_alerts(),
-                                            msg=msg,
-                                            ))
+                    return page.render(alerts=webinterface.get_alerts(),
+                                       msg=msg,
+                                       )
                 else:
                     webinterface.add_alert("%s: %s" % (results['msg'], results['apimsghtml']))
                     device['device_id'] = results['device_id']
@@ -199,14 +205,16 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Details")
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    device=device,
-                                    devices=webinterface._Devices.devices,
-                                    device_variables=device_variables,
-                                    device_type=device_type,
-                                    commands=webinterface._Commands,
-                                    input_types=webinterface._InputTypes.input_types,
-                                    ))
+            return page.render(alerts=webinterface.get_alerts(),
+                               device=device,
+                               devices=webinterface._Devices.devices,
+                               device_variables=device_variables,
+                               device_type=device_type,
+                               commands=webinterface._Commands,
+                               input_types=webinterface._InputTypes.input_types,
+                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               states=webinterface._States.get("#")
+                               )
 
         @webapp.route('/device_commands')
         @require_auth()
@@ -258,6 +266,8 @@ def route_devices(webapp):
                                device_variables=device_variables,
                                device_types=webinterface._DeviceTypes,
                                commands=webinterface._Commands,
+                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               states=webinterface._States.get("#")
                                )
 
         @webapp.route('/<string:device_id>/delete', methods=['GET'])
@@ -276,6 +286,8 @@ def route_devices(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
+                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               states=webinterface._States.get("#")
                                )
 
         @webapp.route('/<string:device_id>/delete', methods=['POST'])
@@ -287,15 +299,17 @@ def route_devices(webapp):
                 device = webinterface._Devices[device_id]
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
             confirm = request.args.get('confirm')[0]
             if confirm != "delete":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delete.html')
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the device.', 'warning')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
+                return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
                                    devicetypes=webinterface._DeviceTypes,
-                                   ))
+                                   locations=webinterface._DeviceLocations.device_locations_sorted,
+                                   states=webinterface._States.get("#")
+                                   )
 
             device_results = yield webinterface._Devices.delete_device(device.device_id)
             if device_results['status'] == 'failed':
@@ -398,15 +412,22 @@ def route_devices(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_get(webinterface, request, session, device_id):
-            try:
-                device = webinterface._Devices.get(device_id)
-            except Exception as e:
-                webinterface.add_alert('Device ID was not found.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+            device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id)
+            if device_api_results['code'] != 200:
+                webinterface.add_alert(device_api_results['content']['html_message'], 'warning')
+                return webinterface.redirect(request, '/devices/index')
+            device = device_api_results['data']
+            device['device_id'] = device['id']
+            del device['id']
+            new_map = {}
+            for key, value in device['energy_map'].items():
+                new_map[float(key)] = float(value)
+            device['energy_map'] = new_map
 
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
-            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+            webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id,
+                                        webinterface._DeviceLocations.get_device_label(device['area_id'], device['label']))
             webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
             page = yield page_devices_edit_form(
                 webinterface,
@@ -414,17 +435,18 @@ def route_devices(webapp):
                 session,
                 device
             )
-            returnValue(page)
+            return page
 
         @webapp.route('/<string:device_id>/edit', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_post(webinterface, request, session, device_id):
-            try:
-                device = webinterface._Devices.get(device_id)
-            except Exception as e:
-                webinterface.add_alert('Device ID was not found.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+            # device_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id)
+            # if device_results['code'] != 200:
+            #     webinterface.add_alert(device_results['content']['html_message'], 'warning')
+            #     return webinterface.redirect(request, '/devices/index')
+            device = webinterface._Devices.devices[device_id]
+
             status = request.args.get('status')[0]
             if status == 'disabled':
                 status = 0
@@ -434,7 +456,7 @@ def route_devices(webapp):
                 status = 2
             else:
                 webinterface.add_alert('Device status was set to an illegal value.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
+                return webinterface.redirect(request, '/devices/%s/edit' % device_id)
 
             pin_required = request.args.get('pin_required')[0]
             if pin_required == 'disabled':
@@ -443,10 +465,10 @@ def route_devices(webapp):
                 pin_required = 1
                 if request.args.get('pin_code')[0] == "":
                     webinterface.add_alert('Device requires a pin code, but none was set.', 'warning')
-                    returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
+                    return webinterface.redirect(request, '/devices/%s/edit' % device_id)
             else:
                 webinterface.add_alert('Device pin required was set to an illegal value.', 'warning')
-                returnValue(webinterface.redirect(request, '/devices/%s/edit' % device_id))
+                return webinterface.redirect(request, '/devices/%s/edit' % device_id)
 
             start_percent = request.args.get('start_percent')
             energy_usage = request.args.get('energy_usage')
@@ -460,9 +482,11 @@ def route_devices(webapp):
             energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y1: float(x_y1[0])))
             json_output = json.loads(request.args.get('json_output')[0])
 
-            # print "energy usage: %s " % map
+            print("energy_map: %s " % energy_map)
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             data = {
+                'location_id': request.args.get('location_id')[0],
+                'area_id': request.args.get('area_id')[0],
                 'machine_label': request.args.get('machine_label')[0],
                 'label': request.args.get('label')[0],
                 'description': request.args.get('description')[0],
@@ -475,19 +499,30 @@ def route_devices(webapp):
                 'energy_type': request.args.get('energy_type')[0],
                 'energy_map': energy_map,
                 'variable_data':  variable_data,
+                'voice_cmd': None,
+                # 'voice_cmd_order': None,
+                # 'voice_cmd_src': None,
             }
 
-            results = yield webinterface._Devices.edit_device(device_id, data)
+            try:
+                results = yield webinterface._Devices.edit_device(device_id, data)
+            except YomboWarning as e:
+                results = {
+                    'status': 'failed',
+                    'apimsghtml': e,
+                }
 
             if results['status'] == 'failed':
 
                 data['device_type_id'] = device.device_type_id
-                data['device_id'] = device.device_id
+                data['device_id'] = device_id
                 webinterface.add_alert(results['apimsghtml'], 'warning')
 
                 webinterface.home_breadcrumb(request)
                 webinterface.add_breadcrumb(request, "/devices/index", "Devices")
-                webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id, device.label)
+                webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id,
+                                            webinterface._DeviceLocations.get_device_label(device['area_id'],
+                                                                                           device['label']))
                 webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
                 page = yield page_devices_edit_form(
                     webinterface,
@@ -496,30 +531,32 @@ def route_devices(webapp):
                     data,
                     json_output['vars']
                 )
-                returnValue(page)
+                return page
 
-            returnValue(webinterface.redirect(request, '/devices/%s/details' % device_id))
+            return webinterface.redirect(request, '/devices/%s/details' % device_id)
 
         @inlineCallbacks
         def page_devices_edit_form(webinterface, request, session, device, variable_data=None):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
-            device_variables = yield webinterface._Variables.get_variable_groups_fields_data(
+            # device_variables = device.device_variables
+            print("device: %s" % device)
+            device_variables = yield webinterface._Variables.get_variable_groups_fields(
                 group_relation_type='device_type',
-                group_relation_id=device['device_type_id'],
-                data_relation_type='device',
-                data_relation_id=device['device_id'],
+                group_relation_id=device['device_type_id']
             )
 
             if variable_data is not None:
                 device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
-                    device_variables,
-                    variable_data
-                )
-            returnValue(page.render(alerts=webinterface.get_alerts(),
-                                    device=device,
-                                    devices=webinterface._Devices.devices,
-                                    device_variables=device_variables,
-                                    commands=webinterface._Commands,
-                                    input_types=webinterface._InputTypes.input_types,
-                                    )
-                        )
+                                         device_variables,
+                                         variable_data
+                                         )
+
+            return page.render(alerts=webinterface.get_alerts(),
+                               device=device,
+                               devices=webinterface._Devices.devices,
+                               device_variables=device_variables,
+                               commands=webinterface._Commands,
+                               input_types=webinterface._InputTypes.input_types,
+                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               states=webinterface._States.get("#")
+                               )

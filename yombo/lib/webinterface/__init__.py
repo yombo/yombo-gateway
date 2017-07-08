@@ -55,6 +55,7 @@ from yombo.lib.webinterface.route_automation import route_automation
 from yombo.lib.webinterface.route_api_v1 import route_api_v1
 from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
+from yombo.lib.webinterface.route_device_locations import route_device_locations
 from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
 from yombo.lib.webinterface.route_devtools_config import route_devtools_config
 from yombo.lib.webinterface.route_modules import route_modules
@@ -89,6 +90,16 @@ nav_side_menu = [
         'icon': 'fa fa-wifi fa-fw',
         'url': '/devices/index',
         'tooltip': 'Show Devices',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'Device Locations',
+        'label2': 'Device Locationss',
+        'priority1': 310,
+        'priority2': 500,
+        'icon': 'fa fa-map-marker fa-fw',
+        'url': '/device_locations/index',
+        'tooltip': 'Show Device Locations',
         'opmode': 'run',
     },
     {
@@ -340,13 +351,12 @@ class Yombo_Site(Site):
         return r[1:-1]
 
     def log(self, request):
-        ignored_extensions = ('.js', '.css', '.jpg', '.jpeg', '.gif', '.ico')
+        ignored_extensions = ('.js', '.css', '.jpg', '.jpeg', '.gif', '.ico', '.woff2', '.map')
         url_path = request.path.decode().strip()
 
-        if any(ext in url_path for ext in ignored_extensions):
+        if any(url_path.endswith(ext) for ext in ignored_extensions):
             return
 
-        # print("user: %s, %s" % (request.auth_id, )
         od = OrderedDict({
             'request_time': time(),
             'request_protocol': request.clientproto.decode().strip(),
@@ -409,6 +419,7 @@ class WebInterface(YomboLibrary):
         route_api_v1(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
+        route_device_locations(self.webapp)
         route_devtools_debug(self.webapp)
         route_devtools_config(self.webapp)
         route_modules(self.webapp)
@@ -1109,6 +1120,9 @@ class WebInterface(YomboLibrary):
     def dispay_hide_none(self, input):
         if input is None:
             return ""
+        if isinstance(input, str):
+            if input.lower() == "none":
+                return ""
         return input
 
     def WebInterface_configuration_set(self, **kwargs):

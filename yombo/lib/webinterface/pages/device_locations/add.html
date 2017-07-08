@@ -1,0 +1,108 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/select_css.tpl' %}{% endblock %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <form method="post" id="moduleedit">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Add Module: {{ server_module.label }}
+                    </h1>
+                    {{ server_module.short_description }}
+                    <hr>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Setup detail for module: {{ server_module.label }}</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Install Version: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalinstallverion"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalinstallverion", 'Install Version', "
+                                <p>Select the version of the module to install and use. Typically, you can select from \"production\", and if
+                                    the module developer has specified, you can select \"development\".</p>
+                                <p>Production is usually selected, unless there is a need to test bleeding edge features of a module.
+                                </p>
+                                ") }}
+                                <br>
+                            <div class="input-group">
+                                <select required class="selectpicker show-tick form-control" name="install_branch" id="install_branch" placeholder="">
+                                    <option value="production" selected>Production</option>
+                                    {%- if server_module.dev_branch != "" %}
+                                        <option data-divider="true"></option>
+                                        <option value="development">Development (High risk)</option>
+                                    {%- endif %}
+                                </select>
+                            </div>
+
+                            <label style="margin-top: 15px; margin-bottom: 0px">Status: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalstatus"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalstatus", 'Status', "
+                                <p>Enable or disable the module from running.</p>
+                                </p>
+                                ") }}
+                                <br>
+                            <div class="input-group">
+                                <select required class="selectpicker show-tick form-control" name="status" id="status" placeholder="">
+                                    <option value="0" >Disabled</option>
+                                    <option value="1" selected>Enabled</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>Module Variables</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+{{macros.edit_item_variables({}, server_module, input_types, variable_groups)}}
+                        </div>
+                    </div>
+                    <!-- /.panel-body -->
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12">
+                    <input type="hidden" name="module_id" id="module_id" value="{{ server_module.id }}">
+                    <input type="hidden" name="json_output" id="json_output" value="">
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">Submit New Module</button>
+                    </form>
+                </div>
+            </div>
+            <!-- /.row -->
+{% endblock %}
+
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+    <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
+    <script>
+        $("#moduleedit").submit(function(event) {
+//            event.preventDefault();
+
+            var rawData = $('#moduleedit').serializeJSON();
+            var formData = JSON.stringify(rawData);
+            console.log(formData);
+            $('#json_output').val(formData)
+//            console.log(formData);
+        });
+    </script>
+
+{% endblock %}
