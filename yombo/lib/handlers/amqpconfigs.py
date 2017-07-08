@@ -119,6 +119,8 @@ class AmqpConfigHandler(YomboLibrary):
                 'purgeable': True,
                 'map': {
                     'id': 'id',
+                    'area_id': 'area_id',
+                    'location_id': 'location_id',
                     'machine_label': 'machine_label',
                     'label': 'label',
                     'notes': 'notes',
@@ -169,6 +171,28 @@ class AmqpConfigHandler(YomboLibrary):
                     'encryption': 'encryption',
                     'notes': 'notes',
                     'always_load': 'always_load',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
+
+            'gateway_device_locations': {
+                'dbclass': "DeviceLocation",
+                'table': "device_locations",
+                'library': None,
+                'functions': {
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'purgeable': False,
+                'map': {
+                    'id': 'id',
+                    'machine_label': 'machine_label',
+                    'label': 'label',
+                    'description': 'description',
+                    'public': 'public',
+                    'status': 'status',
                     'created_at': 'created',
                     'updated_at': 'updated',
                 }
@@ -592,8 +616,8 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         self.processing = True
-        # print "processing config.... %s" % config_item
-        # print "processing msg.... %s" % msg
+        # print("processing config.... %s" % config_item)
+        # print("processing msg.... %s" % msg)
         if msg['code'] != 200:
             logger.warn("Configuration for configuration '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
             self._remove_full_download_dueue("get_" + config_item)
@@ -662,7 +686,16 @@ class AmqpConfigHandler(YomboLibrary):
                         value=int(value)
                     elif table_meta[config_data['map'][key]]['type'] == "REAL":
                         value=float(value)
-                    new_data[config_data['map'][key]] = value
+                    if key == 'energy_map':
+                        try:
+                            new_data[config_data['map'][key]] = json.dumps(value)
+                            if isinstance(new_data[config_data['map'][key]], dict) is False:
+                                new_data[config_data['map'][key]] = '{"0.0":0,"1.0":0}'
+                        except Exception as e:
+                            new_data[config_data['map'][key]] = '{"0.0":0,"1.0":0}'
+                    else:
+                        new_data[config_data['map'][key]] = value
+
                 else:
                     new_data[key] = value
             return new_data
@@ -863,6 +896,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_categories",
             "get_gateway_commands",
             "get_gateway_devices", # Includes device variable groups/fields/data
+            "get_gateway_device_locations", # Includes device variable groups/fields/data
             "get_gateway_device_types",
             "get_gateway_modules", # Includes module variable groups/fields/data
 
@@ -872,7 +906,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_users",
             "get_gateway_dns_name",
 
-            "get_gateway_nodes",  # Includes module variable groups/fields/data
+            # "get_gateway_nodes",  # Includes module variable groups/fields/data
 
             # "get_gateway_input_types",
             # "get_gateway_configs",
