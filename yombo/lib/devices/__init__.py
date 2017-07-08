@@ -213,7 +213,7 @@ class Devices(YomboLibrary):
         self.devices = {}
         self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label', 'description',
             'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
-            'created', 'updated', 'updated_srv']
+            'created', 'updated', 'updated_srv', 'location_id', 'area_id']
 
         self.gwid = self._Configs.get("core", "gwid")
 
@@ -293,11 +293,17 @@ class Devices(YomboLibrary):
         if len(devices) > 0:
             for record in devices:
                 record = record.__dict__
-                if record['energy_map'] is not None:
-                    record['energy_map'] = json.loads(str(record['energy_map']))
+                if record['energy_map'] is None:
+                    record['energy_map'] = '{"0.0":0,"1.0":0}'
+                record['energy_map'] = json.loads(str(record['energy_map']))
+                new_map = {}
+                for key, value in record['energy_map'].items():
+                    new_map[float(key)] = float(value)
+                record['energy_map'] = new_map
                 logger.debug("Loading device: {record}", record=record)
                 yield self.import_device(record)
 
+        # print("devices: %s" % self.devices )
         for device_id, device in self.devices.items():
             d = Deferred()
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
@@ -309,7 +315,7 @@ class Devices(YomboLibrary):
 
     def sorted(self, key=None):
         """
-        Returns an OrderedDict, sorted by key.  If key is not set, then default is 'label'.
+        Returns an OrderedDict, sorted by key.  If key is not set, then default is 'area_label'.
 
         :param key: Attribute contained in a device to sort by.
         :type key: str
@@ -317,8 +323,8 @@ class Devices(YomboLibrary):
         :rtype: OrderedDict
         """
         if key is None:
-            key = 'label'
-        return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: i[1][key]))
+            key = 'area_label'
+        return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
 
     def import_device(self, device, test_device=None):  # load or re-load if there was an update.
         """
@@ -337,6 +343,8 @@ class Devices(YomboLibrary):
         """
         if test_device is None:
             test_device = False
+
+        # logger.debug("loading device into memory: {device}", device=device)
 
         device_id = device["id"]
         if device_id not in self.devices:
@@ -689,9 +697,9 @@ class Devices(YomboLibrary):
             return results
 
         for key, value in data.items():
-            if key == 'energy_map':
-                api_data['energy_map'] = json.dumps(data['energy_map'], separators=(',',':'))
-            else:
+        #     if key == 'energy_map':
+        #         api_data['energy_map'] = json.dumps(data['energy_map'], separators=(',',':'))
+        #     else:
                 api_data[key] = data[key]
 
         try:
@@ -740,6 +748,10 @@ class Devices(YomboLibrary):
             'msg': "Device added.",
             'device_id': device_results['data']['id']
         }
+        device = device_results['data']
+        device['created'] = device['created_at']
+        device['updated'] = device['updated_at']
+        self.import_device(device)
         return results
 
     #todo: convert to use a deferred semaphore
@@ -846,8 +858,9 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
+        logger.warn("edit_device date: {data}", data=data)
         if device_id not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'edit_device', 'Devices')
+            raise YomboWarning("device_id doesn't exist. Nothing to edit.", 300, 'edit_device', 'Devices')
 
         device = self.devices[device_id]
 
@@ -872,15 +885,17 @@ class Devices(YomboLibrary):
 
         api_data = {}
         for key, value in data.items():
-            # print("key (%s) is of type: %s" % (key, type(value)))
-            if isinstance(value, str) and len(value) > 0 and hasattr(device, key):
-                if key == 'energy_map':
-                    api_data['energy_map'] = json.dumps(value, separators=(',',':'))
-                    # print("energy map json: %s" % json.dumps(value, separators=(',',':')))
-                else:
-                    api_data[key] = value
+            print("key (%s) is of type: %s" % (key, type(value)))
+            if hasattr(device, key):
+                if isinstance(value, str) and len(value) == 0 :
+                    # if key == 'energy_map':
+                    #     api_data['energy_map'] = json.dumps(value, separators=(',',':'))
+                    #     # print("energy map json: %s" % json.dumps(value, separators=(',',':')))
+                    # else:
+                    continue
+                api_data[key] = value
 
-        # print("send this data to api: %s" % api_data)
+        print("send this data to api: %s" % api_data)
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
         # print("got this data from api: %s" % device_results)
         if device_results['code'] > 299:
@@ -907,6 +922,7 @@ class Devices(YomboLibrary):
 
         if called_from_device is not True:
             device.update_attributes(data)
+            device.save_to_db()
 
         results = {
             'status': 'success',
@@ -1082,7 +1098,7 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        logger.error("triggers_add")
+        logger.debug("devices_add_trigger_callback")
         if 'run_on_start' in rule:
             if rule['run_on_start'] is True and rule['trigger']['source']['device_pointers'].device_id not in self.automation_startup_check:
                 self.automation_startup_check.append(rule['trigger']['source']['device_pointers'].device_id)
@@ -1095,10 +1111,10 @@ class Devices(YomboLibrary):
 
         :return:
         """
-        logger.warn("devices_startup_trigger_callback: %s" % self.automation_startup_check)
+        logger.debug("devices_startup_trigger_callback: %s" % self.automation_startup_check)
         for name in self.automation_startup_check:
             if name in self.devices:
-                logger.info("devices_startup_trigger_callback - name: %s" % name)
+                logger.debug("devices_startup_trigger_callback - name: %s" % name)
                 self.check_trigger(name, self.devices[name].status_all)
 
     def devices_get_value_callback(self, rule, portion, **kwargs):
@@ -1185,9 +1201,9 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        logger.info("firing device rule: {rule}", rule=rule['name'])
+        logger.debug("devices_do_action_callback: firing device rule: {rule}", rule=rule['name'])
         for device in action['device_pointers']:
-            logger.info("Doing command '{command}' to device: {device}", command=action['command'], device=device.label)
+            logger.debug("devices_do_action_callback: Doing command '{command}' to device: {device}", command=action['command'], device=device.label)
             persistent_request_id = sha1(str('automation' + rule['name'] + action['command'] + device.machine_label).encode()).hexdigest()
             try:
                 requested_by = {

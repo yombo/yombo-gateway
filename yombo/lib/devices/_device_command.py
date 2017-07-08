@@ -93,18 +93,16 @@ class Device_Command(object):
 
         self._started = False
         if start is None or start is True:
-            print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! going to call start in 1ms: %s" % self.request_id)
             reactor.callLater(0.001, self.start)
 
     def start(self):
         if self._started is True:
             return
         self._started = True
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  start called: %s" % self.request_id)
         if self.source == 'database' and self.status == 'sent':
-            logger.info(
+            logger.debug(
                 "Discarding a device command message loaded from database it's already been sent.")
-            self.set_failed(message="111");
+            self.set_sent()
             return
 
         if self.not_before_time is not None:
@@ -124,8 +122,8 @@ class Device_Command(object):
                 return True
         else:
             if self.source == 'database':  # Nothing should be loaded from the database that not a delayed command.
-                logger.info("Discarding a device command message loaded from database because it's not meant to be called later.")
-                self.set_failed(message="222");
+                logger.debug("Discarding a device command message loaded from database because it's not meant to be called later.")
+                self.set_failed(message="Was loaded from database, but not meant to be called later.");
             else:
                 self.device._do_command_hook(self)
                 return True
@@ -241,6 +239,7 @@ class Device_Command(object):
         if self.dirty or forced is True:
             results = yield self._Parent._LocalDB.save_device_command(self)
             self.dirty = False
+            self.id = results.id
 
     def __str__(self):
         return "Device command for '%s': %s" % (self.device.label, self.command.label)

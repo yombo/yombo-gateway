@@ -165,6 +165,8 @@ class Device(object):
 
         #The following items are set from the databsae or AMQP service.
         self.device_type_id = None
+        self.location_id = None
+        self.area_id = None
         self.machine_label = None
         self.label = None
         self.description = None
@@ -195,7 +197,8 @@ class Device(object):
         """
         # print("getting device variables for: %s" % self.device_id)
         self.device_variables = yield self._Parent._Variables.get_variable_fields_data(
-            data_relation_type='device',
+            group_relation_type='device_type',
+            group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
         )
 
@@ -219,6 +222,10 @@ class Device(object):
         """
         if 'device_type_id' in device:
             self.device_type_id = device["device_type_id"]
+        if 'location_id' in device:
+            self.location_id = device["location_id"]
+        if 'area_id' in device:
+            self.area_id = device["area_id"]
         if 'machine_label' in device:
             self.machine_label = device["machine_label"]
         if 'label' in device:
@@ -262,6 +269,9 @@ class Device(object):
             if device['energy_map'] is not None:
                 # create an energy map from a dictionary
                 energy_map_final = {}
+                if isinstance(device['energy_map'], dict) is False:
+                    device['energy_map'] = {"0.0":0,"1.0":0}
+
                 for percent, rate in device['energy_map'].items():
                     energy_map_final[self._Parent._InputTypes.check('percent', percent)] = self._Parent._InputTypes.check('number' , rate)
                 energy_map_final = OrderedDict(sorted(list(energy_map_final.items()), key=lambda x_y: float(x_y[0])))
@@ -272,9 +282,13 @@ class Device(object):
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', called_by=self, **{'device': self})
 
-            # if 'variable_data' in device:
-            # print("device.update_attributes: new: %s: " % device['variable_data'])
-            # print("device.update_attributes: existing %s: " % self.device_variables)
+    def save_to_db(self):
+        self._Parent._LocalDB.update_device(self)
+
+    @inlineCallbacks
+    def get_variable_fields(self):
+        variable_fields = self._Parent._DeviceTypes[self.device_type_id].get_variable_fields()
+        return variable_fields
 
     def commands_pending(self, criteria = None, limit = None):
         device_commands = self._Parent.device_commands
@@ -537,7 +551,7 @@ class Device(object):
             'called_by': self,
         }
         device_command.set_broadcast()
-        logger.error("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
+        # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
         results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
@@ -739,7 +753,7 @@ class Device(object):
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
         """
-        logger.info("set_status called...: {kwargs}", kwargs=kwargs)
+        # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         kwargs = self.set_status_process(**kwargs)
 
         self._set_status(**kwargs)
@@ -757,7 +771,7 @@ class Device(object):
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
 
         human_status = kwargs.get('human_status', machine_status)
-        human_message = kwargs.get('human_message', machine_status)
+        human_message = kwargs.get('human_message', human_status)
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', {})
         uploaded = kwargs.get('uploaded', 0)
@@ -1034,6 +1048,63 @@ class Device(object):
     ####################################################
 
     @property
+    def area(self) -> str:
+        locations = self._Parent._DeviceLocations.device_locations
+        area = ""
+        if self.area_id in locations:
+            area = locations[self.area_id].label
+            if area.lower() == "none":
+                return ""
+            else:
+                return area
+        else:
+            return ""
+
+    @property
+    def location(self) -> str:
+        locations = self._Parent._DeviceLocations.device_locations
+        area = ""
+        if self.area_id in locations:
+            location = locations[self.location_id].label
+            if location.lower() == "none":
+                return ""
+            else:
+                return location
+        else:
+            return ""
+
+    @property
+    def area_label(self) -> str:
+        locations = self._Parent._DeviceLocations.device_locations
+        area = ""
+        if self.area_id in locations:
+            area = locations[self.area_id].label
+            if area.lower() == "none":
+                area = ""
+            else:
+                area = area + " "
+        return "%s%s" % (area, self.label)
+
+    @property
+    def full_label(self) -> str:
+        locations = self._Parent._DeviceLocations.device_locations
+        location = ""
+        area = ""
+        if self.location_id in locations:
+            location = locations[self.location_id].label
+            if location.lower() == "none":
+                location = ""
+            else:
+                location = location + " "
+        if self.area_id in locations:
+            area = locations[self.area_id].label
+            if area.lower() == "none":
+                area = ""
+            else:
+                area = area + " "
+        return "%s%s%s" % (location, area, self.label)
+
+    @property
     def should_poll(self) -> bool:
         """
         Return True if the device needs to be polled to get current status.
@@ -1064,7 +1135,7 @@ class Device(object):
         #                               "last_command, machine_status, machine_status_extra, requested_by, "
         #                               "reported_by, request_id, uploaded, uploadable")
 
-        print("load history (%s): %s" % (self.label, len(self.status_history)))
+        # print("load history (%s): %s" % (self.label, len(self.status_history)))
         if len(self.status_history) == 0:
             return None
         return self.status_history[0].machine_status
