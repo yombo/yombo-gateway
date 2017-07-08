@@ -23,6 +23,7 @@ import inspect
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
+from yombo.utils.decorators import memoize_ttl
 from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
@@ -895,6 +896,19 @@ class DeviceType(object):
                     'updated': input.updated,
                     'created': input.created,
                 }
+
+    @inlineCallbacks
+#    @memoize_ttl(5)
+    def get_variable_fields(self):
+        """
+        Get variable groups and fields from the database.
+        :return: Dictionary of dicts containing variable fields.
+        """
+        variables = yield self._Parent._Variables.get_variable_fields_data(
+            group_relation_type='device',
+            group_relation_id=self.device_type_id
+        )
+        return variables
 
     def __getitem__(self, key):
         # print('devicetype __getitem__: ', key)
