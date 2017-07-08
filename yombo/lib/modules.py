@@ -530,10 +530,15 @@ class Modules(YomboLibrary):
             )
 
     @inlineCallbacks
-    def get_module_variables(self, module_name, data_relation_type, data_relation_id):
+    def get_module_variables(self, module_name, module_id):
         variables = yield self._Variables.get_variable_fields_data(
-            data_relation_type=data_relation_type,
-            data_relation_id=data_relation_id)
+            group_relation_type='module',
+            group_relation_id=module_id,
+            data_relation_id=module_id,
+        )
+            #
+            # data_relation_type=data_relation_type,
+            # data_relation_id=data_relation_id)
 
         if module_name in self._localModuleVars:
             return dict_merge(variables, self._localModuleVars[module_name])
@@ -567,7 +572,6 @@ class Modules(YomboLibrary):
             logger.debug("Starting module_init_invoke for module: {module}", module=module)
             module._ModuleVariables = yield self.get_module_variables(
                 module._Name,
-                'module',
                 module_id,
                 )
 
@@ -586,6 +590,7 @@ class Modules(YomboLibrary):
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
+            module._DeviceLocations = self._Loader.loadedLibraries['devicelocations']  # Basically, all devices
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
