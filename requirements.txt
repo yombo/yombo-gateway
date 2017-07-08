@@ -28,6 +28,10 @@ unidecode
 pytz
 voluptuous
 unidecode
+pydispatcher
+cython
+wheel
+python_openzwave
 
 #psutil
 #pytest
