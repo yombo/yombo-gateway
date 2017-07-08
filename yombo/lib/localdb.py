@@ -91,9 +91,12 @@ class DeviceCommandInput(DBObject):
 
 
 class DeviceCommand(DBObject):
-    TABLENAME = 'device_command'
+    TABLENAME = 'device_commands'
     BELONGSTO = ['devices']
 
+class DeviceLocation(DBObject):
+    TABLENAME = 'device_locations'
+    BELONGSTO = ['devices']
 
 class DeviceStatus(DBObject):
     TABLENAME = 'device_status'
@@ -387,6 +390,52 @@ class LocalDB(YomboLibrary):
             returnValue(records)
 
     @inlineCallbacks
+    def insert_device(self, data, **kwargs):
+        device_location = DeviceLocation()
+        device_location.id = data['id']
+        device_location.location_type = data['location_type']
+        device_location.label = data['label']
+        device_location.machine_label = data['machine_label']
+        device_location.description = data.get('description', None)
+        device_location.created = data['created']
+        device_location.updated = data['updated']
+        yield device_location.save()
+
+    @inlineCallbacks
+    def update_device(self, device, **kwargs):
+        args = {
+            'device_type_id': device.device_type_id,
+            'location_id': device.location_id,
+            'area_id': device.area_id,
+            'machine_label': device.machine_label,
+            'label': device.label,
+            'description': device.description,
+            'pin_required': device.pin_required,
+            'pin_code': device.pin_code,
+            'pin_timeout': device.pin_timeout,
+            'voice_cmd': device.voice_cmd,
+            'voice_cmd_order': device.voice_cmd_order,
+            'statistic_label': device.statistic_label,
+            'statistic_lifetime': device.statistic_lifetime,
+            'status': device.enabled_status,
+            'created': device.updated,
+            'updated': device.updated,
+            'energy_tracker_device': device.energy_tracker_device,
+            'energy_tracker_source': device.energy_tracker_source,
+            'energy_map': json.dumps(device.energy_map),
+        }
+        results = yield self.dbconfig.update('devices', args, where=['id = ?', device.device_id])
+        return results
+
+    @inlineCallbacks
+    def delete_device(self, id, **kwargs):
+        args = {
+            'status': 2,
+        }
+        results = yield self.dbconfig.update('devices', args, where=['id = ?', device.device_id])
+        return results
+
+    @inlineCallbacks
     def set_device_status(self, device_id, status=1):
         # device = yield Device.findBy(id=device_id)
 
@@ -501,7 +550,7 @@ class LocalDB(YomboLibrary):
                 # 'uploaded': DC.uploaded,
                 # 'uploadable': DC.uploadable,
             }
-            yield self.dbconfig.update('device_command', args,
+            yield self.dbconfig.update('device_commands', args,
                                                  where=['id = ?', DC.id])
 
         device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
@@ -534,6 +583,49 @@ class LocalDB(YomboLibrary):
     def get_device_type(self, id):
         records = yield DeviceType.find(where=['id = ?', id])
         returnValue(records)
+
+    #################################
+    ###    Device Locations     #####
+    #################################
+
+    @inlineCallbacks
+    def get_device_locations(self, where=None):
+        if where is not None:
+            find_where = dictToWhere(where)
+            records = yield DeviceLocation.find(where=find_where)
+        else:
+            records = yield DeviceLocation.find(orderby='label')
+        return records
+
+    @inlineCallbacks
+    def insert_device_locations(self, data, **kwargs):
+        device_location = DeviceLocation()
+        device_location.id = data['id']
+        device_location.location_type = data['location_type']
+        device_location.label = data['label']
+        device_location.machine_label = data['machine_label']
+        device_location.description = data.get('description', None)
+        device_location.created = data['created']
+        device_location.updated = data['updated']
+        yield device_location.save()
+
+    @inlineCallbacks
+    def update_device_locations(self, device_location, **kwargs):
+        args = {
+            'location_type': device_location.location_type,
+            'label': device_location.label,
+            'machine_label': device_location.machine_label,
+            'description': device_location.description,
+            'updated': device_location.updated,
+        }
+        # print("saving notice update_device_locations: %s" % args)
+        results = yield self.dbconfig.update('device_locations', args, where=['id = ?', device_location.device_location_id])
+        return results
+
+    @inlineCallbacks
+    def delete_device_locations(self, id, **kwargs):
+        results = yield self.dbconfig.delete('device_locations', where=['id = ?', id])
+        return results
 
 
     ###########################################
@@ -802,7 +894,7 @@ class LocalDB(YomboLibrary):
             'message': notice.message,
             'meta': json.dumps(notice.meta, separators=(',', ':')),
         }
-        print("saving notice: %s" %args)
+        # print("saving notice: %s" %args)
         results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
         return results
 
@@ -835,7 +927,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def save_session(self, session_id, session_data, created, last_access, updated):
-        print("save_session: %s" % session_data)
+        # print("save_session: %s" % session_data)
         args = {
             'id': session_id,
             'session_data': session_data,
@@ -1315,7 +1407,7 @@ ORDER BY id desc"""
         returnValue(records)
 
     @inlineCallbacks
-    def get_variable_fields_data(self,  **kwargs):
+    def get_variable_fields_data(self, data_relation_id=None, **kwargs):
         """
         Gets fields an associated data. Named arguments are used to crate the WHERE statement.
 
@@ -1328,6 +1420,10 @@ ORDER BY id desc"""
         # print "get_variable_data records: %s" % records
         variables = OrderedDict()
         for record in records:
+            if data_relation_id is not None:
+                if record.data_relation_id not in (None, data_relation_id):
+                    continue
+
             if record.field_machine_label not in variables:
                 variables[record.field_machine_label] = {
                     'id': record.field_id,
@@ -1361,26 +1457,32 @@ ORDER BY id desc"""
                 'relation_id': record.data_relation_id,
                 'relation_type': record.data_relation_type,
             }
-            value = yield self._GPG.decrypt(record.data)
-            # validate the value is valid input
-            try:  # lets be gentle for now.  Try to validate and corerce.
-                data['value'] = self._InputTypes.check(
-                    variables[record.field_machine_label]['input_type_id'],
-                    value,
-                    casing=variables[record.field_machine_label]['value_casing'],
-                    required=variables[record.field_machine_label]['value_required'],
-                    min=variables[record.field_machine_label]['value_min'],
-                    max=variables[record.field_machine_label]['value_max'],
-                    default=variables[record.field_machine_label]['default_value'],
-                )
-            except Exception as e:
-                logger.warn("Variable doesn't validate: {label}   Value:{value}.  Reason: {e}",
-                            label=variables[record.field_machine_label]['field_label'],
-                            value=value,
-                            e=e)
-                data['value'] = value
+            if record.data is not None:
+                value = yield self._GPG.decrypt(record.data)
+                try:  # lets be gentle for now.  Try to validate and corerce.
+                    # validate the value is valid input
+                    data['value'] = self._InputTypes.check(
+                        variables[record.field_machine_label]['input_type_id'],
+                        value,
+                        casing=variables[record.field_machine_label]['value_casing'],
+                        required=variables[record.field_machine_label]['value_required'],
+                        min=variables[record.field_machine_label]['value_min'],
+                        max=variables[record.field_machine_label]['value_max'],
+                        default=variables[record.field_machine_label]['default_value'],
+                    )
+                except Exception as e:
+                    logger.warn("Variable doesn't validate ({input_type_id}): {label}   Value:{value}    Reason: {e}",
+                                label=variables[record.field_machine_label]['field_label'],
+                                value=value,
+                                input_type_id=variables[record.field_machine_label]['input_type_id'],
+                                e=e)
+                    data['value'] = value
 
-            data['value_display'] = yield self._GPG.display_encrypted(record.data)
+                data['value_display'] = yield self._GPG.display_encrypted(record.data)
+            else:
+                data['value'] = None
+                data['value_display'] = ""
+
             data['value_orig'] = record.data
             variables[record.field_machine_label]['data'][record.data_id] = data
             variables[record.field_machine_label]['values'].append(data['value'])
@@ -1441,7 +1543,7 @@ ORDER BY id desc"""
         returnValue(variables)
 
     @inlineCallbacks
-    def get_variable_groups_fields_data(self, **kwargs):
+    def get_variable_groups_fields_data(self, data_relation_id=None, **kwargs):
         """
         Gets groups with nested fields, with nested data. Named arguments are used to crate the WHERE statement.
 
@@ -1453,6 +1555,10 @@ ORDER BY id desc"""
             orderby='group_weight ASC, field_weight ASC, data_weight ASC')
         variables = OrderedDict()
         for record in records:
+            if data_relation_id is not None:
+                if record.data_relation_id not in (None, data_relation_id):
+                    continue
+
             if record.group_machine_label not in variables:
                 variables[record.group_machine_label] = {
                     'id': record.group_id,
@@ -1497,8 +1603,29 @@ ORDER BY id desc"""
                 'relation_id': record.data_relation_id,
                 'relation_type': record.data_relation_type,
             }
-            data['value'] = yield self._GPG.decrypt(record.data)
-            data['value_display'] = yield self._GPG.display_encrypted(record.data)
+            if record.data is not None:
+                value = yield self._GPG.decrypt(record.data)
+                try:  # lets be gentle for now.  Try to validate and corerce.
+                    # validate the value is valid input
+                    data['value'] = self._InputTypes.check(
+                        variables[record.field_machine_label]['input_type_id'],
+                        value,
+                        casing=variables[record.field_machine_label]['value_casing'],
+                        required=variables[record.field_machine_label]['value_required'],
+                        min=variables[record.field_machine_label]['value_min'],
+                        max=variables[record.field_machine_label]['value_max'],
+                        default=variables[record.field_machine_label]['default_value'],
+                    )
+                except Exception as e:  # for now, just pass
+                    logger.debug("Variable doesn't validate: {label}   Value:{value}.  Reason: {e}",
+                                label=variables[record.field_machine_label]['field_label'],
+                                value=value,
+                                e=e)
+                    data['value'] = value
+                data['value_display'] = yield self._GPG.display_encrypted(record.data)
+            else:
+                data['value'] = None
+                data['value_display'] = ""
             data['value_orig'] = record.data
 
             variables[record.group_machine_label]['fields'][record.field_machine_label]['data'][record.data_id] = data
