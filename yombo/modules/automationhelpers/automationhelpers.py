@@ -205,28 +205,29 @@ class AutomationHelpers(YomboModule):
         """
         filter_value = portion['filter']['value']
 
-        print("checking rule name filter: %s" % rule['name'])
+        logger.debug("basic_values_run_filter_callback rule name: {name}", name=rule['name'])
+        logger.info("Checking new = filter: {new_value} = {filter_value}",
+                    new_value=new_value,
+                    filter_value=filter_value)
+        logger.info("Checking as bools: {new_value} = {filter_value}",
+                    new_value=is_true_false(new_value),
+                    filter_value=is_true_false(filter_value))
+
         if 'operator' in portion['filter']:
             op_func = ops[portion['filter']['operator']]
-            logger.info("Filter has operator: {operator}  Calling function: {op_func}",
-                         operator=operator,
-                         op_func=op_func)
-            return op_func(new_value, filter_value)
         else:
-            logger.info("Checking new = filter: {new_value} = {filter_value}",
-                         new_value=new_value,
-                         filter_value=filter_value)
+            op_func = ops['==']
+
+        if op_func(new_value, filter_value):
+            return True
+        else:
             if new_value == filter_value:
                 return True
             else:
                 try:
-                    print("trying is_true_false bpooll!!!!!!!!!!!!!!!!!!!!!!!")
-                    logger.info("Checking new = old: {new_value} = {filter_value}",
-                                new_value=is_true_false(new_value),
-                                filter_value=is_true_false(filter_value))
-                    if is_true_false(new_value) == is_true_false(filter_value):
-                        print("tested bpooll!!!!!!!!!!!!!!!!!!!!!!!  and found it!!!")
-                        return True
+                    logger.debug("basic_values_run_filter_callback - checking if values match as a bool")
+                    logger.debug("basic_values_run_filter_callback as bool: {result}", result=op_func(is_true_false(new_value), is_true_false(filter_value)))
+                    return op_func(is_true_false(new_value), is_true_false(filter_value))
                 except:
                     return False
         return False

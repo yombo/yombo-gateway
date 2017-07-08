@@ -243,7 +243,7 @@ class Automation(YomboLibrary):
         """
         for platform in self.sources:
             if 'startup_trigger_callback' in self.sources[platform]:
-                print("startup_trigger_callbacks: %s" % platform)
+                logger.debug("startup_trigger_callbacks: {platform}", platform=platform)
                 startup_trigger_callback = self.sources[platform]['startup_trigger_callback']
                 startup_trigger_callback()
 
@@ -519,7 +519,6 @@ class Automation(YomboLibrary):
         :param tracked_key: An immutable key to monitor. Usually a dictionary key.
         :return:
         """
-        logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ triggers_add() ruleid: {rule}", rule=rule_id)
         if platform_label not in self.tracker:
             self.tracker[platform_label] = {}
         if tracked_key not in self.tracker[platform_label]:
@@ -544,11 +543,11 @@ class Automation(YomboLibrary):
         :param new_value: New value to track
         :return:
         """
-        logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@triggers_check({platform_label}, {tracked_key}, {new_value})",
-                    platform_label=platform_label,
-                    tracked_key=tracked_key,
-                    new_value=new_value)
-        logger.warn("trackers: {tracker}", tracker=self.tracker)
+        # logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@triggers_check({platform_label}, {tracked_key}, {new_value})",
+        #             platform_label=platform_label,
+        #             tracked_key=tracked_key,
+        #             new_value=new_value)
+        logger.debug("trackers: {tracker}", tracker=self.tracker)
         if platform_label not in self.tracker:
             logger.debug("platform_label ({platform_label}) not in self.tracker. Skipping rule.", platform_label=platform_label)
             return False
@@ -612,7 +611,7 @@ class Automation(YomboLibrary):
         if not portion['filter']['platform'] in self.filters:
             raise YomboAutomationWarning("No filter platform: %s" % portion['filter']['platform'], 100, 'automation_check_filter', 'automation')
         run_filter_callback_function = self.filters[portion['filter']['platform']]['run_filter_callback']
-        print("run_filter_callback_function: %s" % run_filter_callback_function)
+        logger.debug("run_filter_callback_function: {run_filter_callback_function}", run_filter_callback_function=run_filter_callback_function)
         return run_filter_callback_function(self.rules[rule_id], portion, new_value)
 
     def automation_check_conditions(self, rule_id):
@@ -673,7 +672,7 @@ class Automation(YomboLibrary):
             if 'delay' in rule['action'][item]:
                 try:
                     delay = self.get_action_delay(rule['action'][item]['delay'])
-                    print("rule has delay: %s" % delay)
+                    logger.debug("rule has delay: {delay}", delay=delay)
                 except Exception as e:
                     logger.error("Error parsing 'delay' within action. Cannot perform action: {e}", e=e)
                     raise YomboWarning("Error parsing 'delay' within action. Cannot perform action. (%s)" % rule['action'][item]['delay'],
@@ -682,13 +681,13 @@ class Automation(YomboLibrary):
 
             platform = rule['action'][item]['platform']
             do_action_callback_function = self.actions[platform]['do_action_callback']
-            print("do_action_callback_function: %s" % do_action_callback_function)
+            logger.debug("do_action_callback_function: {do_action_callback_function}", do_action_callback_function=do_action_callback_function)
             if delay > 0:
-                print("called with delay")
+                logger.debug("called with delay")
                 reactor.callLater(delay, do_action_callback_function, rule, rule['action'][item], **rule['action'][item]['arguments'])
                 self._Statistics.increment("lib.automation.rules.fire_delayed", bucket_size=15, anon=True)
             else:
-                print("called withOUT delay")
+                logger.debug("called withOUT delay")
                 do_action_callback_function(rule, rule['action'][item], **rule['action'][item]['arguments'])
                 self._Statistics.increment("lib.automation.rules.fired", bucket_size=15, anon=True)
         return
