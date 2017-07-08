@@ -94,6 +94,7 @@ class Times(YomboLibrary, object):
         self._setup_next_twilight_events() # needs to be called before setupNextDawnDuskEvent
         self._setup_next_dawn_dusk_event()
         self._setup_moon_events()
+        self._setup_weekday_events()
         self.is_now_init = False
 
     @property
@@ -195,6 +196,33 @@ class Times(YomboLibrary, object):
         self._States.set('is.dusk', val, 'bool')
         self.__isDusk = val
         self._Statistics.datapoint("lib.times.is_dusk", is_one_zero(val))
+
+    @property
+    def isWeekend(self):
+        return self.__isWeekend
+
+    @isWeekend.setter
+    def isWeekend(self, val):
+        self._States.set('is.weekend', val, 'bool')
+        self.__isWeekend = val
+
+    @property
+    def isWeekday(self):
+        return self.__isWeekday
+
+    @isWeekday.setter
+    def isWeekday(self, val):
+        self._States.set('is.weekday', val, 'bool')
+        self.__isWeekday = val
+
+    @property
+    def dayofweek(self):
+        return self.__day_of_week
+
+    @dayofweek.setter
+    def dayofweek(self, val):
+        self._States.set('day_of_week', val, 'string')
+        self.__day_of_week = val
 
     @property
     def nextDay(self):
@@ -444,8 +472,8 @@ class Times(YomboLibrary, object):
 
         .. code-block:: python
 
-            a_time = self._Times.get_time('tomorrow 10pm')
-            a_time = self._Times.get_time('1 hour ago')
+            a_time = self._Times.time_from_string('tomorrow 10pm')
+            a_time = self._Times.time_from_string('1 hour ago')
 
         :param time_string: A human time to convert to epoch, considering local timezone.
         :type time_string: str
@@ -490,9 +518,9 @@ class Times(YomboLibrary, object):
         :return: A tuple. First item is EPOCH in seconds, second a datetime instance.
         :rtype: tuple
         """
-        a_time = self.get_time(some_time)
+        a_time = self.time_from_string(some_time)
         if a_time[0] < time.time():
-            a_time = self.get_time("tomorrow " + some_time)
+            a_time = self.time_from_string("tomorrow " + some_time)
         return a_time
 
     def get_time_zone(time_zone_str: str):
@@ -930,6 +958,33 @@ class Times(YomboLibrary, object):
                 reactor.callLater(secsSet+2, self._setup_next_dawn_dusk_event)
         logger.debug("Start next twilight in: rise begins {secsRise} (set begins {secSet}), stop next twilight: rise ends {secsRiseEnd} (set ends {secSetEnd})",
                      secsRise=secsRise, secsSet=secsSet, secsRiseEnd=secsRiseEnd, secsSetEnd=secsSetEnd)
+
+    def _setup_weekday_events(self):
+        """
+        Sets "is.weekday" and "is.weekend" states. Also setups up "day_of_week" for mon-sun.
+        """
+        day_map = {
+            0: 'monday',
+            1: 'tuesday',
+            2: 'wednesday',
+            3: 'thursday',
+            4: 'friday',
+            5: 'saturday',
+            6: 'sunday',
+        }
+
+        day_number = datetime.today().weekday()
+
+        if day_number < 5:
+            self.isWeekday = True
+            self.isWeekend = False
+        else:
+            self.isWeekday = False
+            self.isWeekend = True
+
+        self.dayofweek = day_map[day_number]
+
+        reactor.callLater(self.time_from_string('12:00am')[0] - time.time(), self._setup_weekday_events)
 
     def _send_now_night(self):
         """
