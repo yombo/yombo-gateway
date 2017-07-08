@@ -59,6 +59,8 @@ def upgrade(Registry, **kwargs):
         `id`              TEXT NOT NULL,
         `gateway_id`      TEXT NOT NULL,
         `device_type_id`  TEXT NOT NULL,
+        `location_id`     TEXT NOT NULL,
+        `area_id`         TEXT NOT NULL,
         `machine_label`   TEXT NOT NULL,
         `label`           TEXT NOT NULL,
         `description`     TEXT,
@@ -110,7 +112,7 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('device_command_inputs', 'device_type_id'))
 
     #  Defines the device command table to store command history and various info.
-    table = """CREATE TABLE `device_command` (
+    table = """CREATE TABLE `device_commands` (
         `id`               INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `request_id`       TEXT NOT NULL,
         `device_id`        TEXT NOT NULL,
@@ -132,11 +134,25 @@ def upgrade(Registry, **kwargs):
         `uploadable`       INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_command', 'request_id', unique=True))
+    yield Registry.DBPOOL.runQuery(create_index('device_commands', 'request_id', unique=True))
     # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_time, not_after_time)")
     # yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS device_command_id_nottimes_idx ON device_command (device_id, not_before_time, not_after_time)")
-    yield Registry.DBPOOL.runQuery(create_index('device_command', 'finished_time'))
+    yield Registry.DBPOOL.runQuery(create_index('device_commands', 'finished_time'))
     # yield Registry.DBPOOL.runQuery(create_index('device_status', 'status'))
+
+    # All possible inputs for a given device type/command/input.
+    table = """CREATE TABLE `device_locations` (
+        `id`             TEXT NOT NULL,
+        `location_type`  TEXT NOT NULL,
+        `machine_label`  TEXT NOT NULL,
+        `label`          TEXT NOT NULL,
+        `description`    TEXT,
+        `updated`        INTEGER NOT NULL,
+        `created`        INTEGER NOT NULL);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('device_locations', 'id'))
+    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_locations_machinelabel_idx ON device_locations (location_type, machine_label)")
+    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_locations_label_idx ON device_locations (location_type, label)")
 
     #  Defines the device status table. Stores device status information.
     table = """CREATE TABLE `device_status` (
@@ -290,7 +306,7 @@ def upgrade(Registry, **kwargs):
         `created`        INTEGER NOT NULL,
         UNIQUE (module_id, device_type_id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS module_device_types_module_dt_id_idx ON module_device_types (module_id, device_type_id)")
+    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS module_device_types_module_dt_id_idx ON module_device_types (module_id, device_type_id)")
     # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
@@ -303,12 +319,6 @@ def upgrade(Registry, **kwargs):
         `last_check`        INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('module_installed', 'module_id'))
-
-    ## Create view for modules ##
-    view = """CREATE VIEW modules_view AS
-    SELECT modules.*, module_installed.installed_version, module_installed. install_time, module_installed.last_check
-    FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
-    yield Registry.DBPOOL.runQuery(view)
 
     #  Defines the statistics data table. Stores node items.
     table = """CREATE TABLE `nodes` (
@@ -577,14 +587,23 @@ def upgrade(Registry, **kwargs):
     END"""
     yield Registry.DBPOOL.runQuery(trigger)
 
-
+    ##################
     ## Create views ##
+    ##################
+
+
     view = """CREATE VIEW devices_view AS
     SELECT devices.*, device_types.machine_label AS device_type_machine_label, categories.machine_label as category_machine_label
     FROM devices
     JOIN device_types ON devices.device_type_id = device_types.id
     JOIN categories ON device_types.category_id = categories.id
     """
+    yield Registry.DBPOOL.runQuery(view)
+
+    ## Create view for modules ##
+    view = """CREATE VIEW modules_view AS
+    SELECT modules.*, module_installed.installed_version, module_installed. install_time, module_installed.last_check
+    FROM modules LEFT OUTER JOIN module_installed ON modules.id = module_installed.module_id"""
     yield Registry.DBPOOL.runQuery(view)
 
     ## Create views ##
@@ -596,15 +615,20 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(view)
 
     view = """CREATE VIEW variable_field_data_view AS
-    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.data_relation_id,
-    variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
+    SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id,
+    variable_data.data_relation_id, variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
     variable_data.updated as data_updated, variable_data.created as data_created, variable_fields.field_machine_label,
     variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight,
-    variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value, variable_fields.field_help_text,
-    variable_fields.value_required, variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing,
-    variable_fields.multiple, variable_fields.created as field_created, variable_fields.updated as field_updated
-    FROM variable_data
-    JOIN variable_fields ON variable_data.field_id = variable_fields.id"""
+    variable_fields.encryption, variable_fields.input_type_id, variable_fields. default_value,
+    variable_fields.field_help_text, variable_fields.value_required, variable_fields.value_min,
+    variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
+    variable_fields.created as field_created, variable_fields.updated as field_updated,
+    variable_groups.group_label, variable_groups.group_machine_label, variable_groups.id as group_id,
+    variable_groups.group_relation_type, variable_groups.group_relation_id,
+    variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
+    FROM variable_fields
+    LEFT OUTER JOIN variable_data ON variable_data.field_id = variable_fields.id
+    JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
     yield Registry.DBPOOL.runQuery(view)
 
     view = """CREATE VIEW variable_group_field_view AS
@@ -623,15 +647,17 @@ def upgrade(Registry, **kwargs):
     view = """CREATE VIEW variable_group_field_data_view AS
     SELECT variable_data.id as data_id, variable_data.gateway_id, variable_data.field_id, variable_data.data_relation_id,
     variable_data.data_relation_type, variable_data.data, variable_data.data_weight,
-    variable_data.updated as data_updated, variable_data.created as data_created, variable_fields.field_machine_label,
-    variable_fields.field_label, variable_fields.field_description, variable_fields.field_weight, variable_fields.encryption,
-    variable_fields.input_type_id, variable_fields. default_value, variable_fields.field_help_text, variable_fields.value_required,
+    variable_data.updated as data_updated, variable_data.created as data_created,
+    variable_fields.field_machine_label, variable_fields.field_label, variable_fields.field_description,
+    variable_fields.field_weight, variable_fields.encryption, variable_fields.input_type_id,
+    variable_fields. default_value, variable_fields.field_help_text, variable_fields.value_required,
     variable_fields.value_min, variable_fields.value_max,variable_fields.value_casing, variable_fields.multiple,
-    variable_fields.created as field_created, variable_fields.updated as field_updated, variable_groups.id as group_id,
-    variable_groups.group_label, variable_groups.group_machine_label, variable_groups.group_relation_type, variable_groups.group_relation_id,
+    variable_fields.created as field_created, variable_fields.updated as field_updated,
+    variable_groups.id as group_id, variable_groups.group_label, variable_groups.group_machine_label,
+    variable_groups.group_relation_type, variable_groups.group_relation_id,
     variable_groups.group_description, variable_groups.group_weight, variable_groups.status as group_status
-    FROM variable_data
-    JOIN variable_fields ON variable_data.field_id = variable_fields.id
+    FROM variable_fields
+    LEFT OUTER JOIN variable_data ON variable_data.field_id = variable_fields.id
     JOIN variable_groups ON variable_fields.group_id = variable_groups.id"""
     yield Registry.DBPOOL.runQuery(view)
 
