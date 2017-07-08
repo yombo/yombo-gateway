@@ -146,6 +146,14 @@ class _String(Input_Type):
         return value
 
 
+class Filename(_String):
+    MIN = 1
+    MAX = 256
+
+    def validate(self, value, **kwargs):
+        return super(Filename, self).validate(value, **kwargs)
+
+
 class Password(_String):
     MIN = 3
     MAX = 64

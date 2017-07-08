@@ -38,6 +38,7 @@ BASE_VALIDATORS = [
     ['yombo.lib.inputtypes.automation_addresses', 'X10_Unit'],
     ['yombo.lib.inputtypes.automation_addresses', 'Insteon_Address'],
     ['yombo.lib.inputtypes.basic_addresses', 'Email'],
+    ['yombo.lib.inputtypes.basic_addresses', 'URI'],
     ['yombo.lib.inputtypes.basic_addresses', 'URL'],
     ['yombo.lib.inputtypes.basic_types', '_Any'],
     ['yombo.lib.inputtypes.basic_types', '_Bool'],

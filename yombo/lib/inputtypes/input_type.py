@@ -155,4 +155,4 @@ class Input_Type(object):
             if min is not None and value < min:
                 raise AssertionError("Value too low. Min: %s" % min)
             if max is not None and value > max:
-                raise AssertionError("Value too hight. Max: %s" % max)
+                raise AssertionError("Value too high. Max: %s" % max)
