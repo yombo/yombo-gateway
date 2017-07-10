@@ -251,13 +251,14 @@ class Atoms(YomboLibrary):
         self.triggers = {}
         self._Automation = self._Libraries['automation']
         self._loaded = False
-        self.set('loader.operation_mode', 'run')
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
         self.automation_startup_check = []
 
     def _load_(self, **kwargs):
         self.library_state = 2
         self.set('running_since', time())
+        self.set('is_master', self._Configs.get('core', 'is_master', True, False))
+        self.set('master_gateway', self._Configs.get('core', 'master_gateway', None, False))
         self._loaded = True
 
     def _start_(self, **kwargs):
