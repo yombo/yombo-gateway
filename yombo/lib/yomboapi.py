@@ -56,7 +56,7 @@ class YomboAPI(YomboLibrary):
             self.system_session = None
             self.system_login_key = None
 
-        if self._Atoms['loader.operation_mode'] == 'run':
+        if self._States['loader.operating_mode'] == 'run':
             self.init_defer = Deferred()
             self.validate_system_login()
             return self.init_defer
