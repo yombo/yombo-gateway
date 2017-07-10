@@ -241,12 +241,25 @@ msgid "os.codename"
 msgstr "OS Codename."
 
 ## End atoms library
+## Begin configuration library
+
+#: defined in configuration library
+msgctxt "config_item"
+msgid "core:externalipaddress"
+msgstr "Current external IP address, what the internet sees."
+
+#: defined in configuration library
+msgctxt "config_item"
+msgid "core:internalipaddress"
+msgstr "Current internal IP address, what the local network sees."
+
+## End configuration library
 ## Begin devices library
 
 #: defined in devices library
-msgctxt "atom"
-msgid "loader.operation_mode"
-msgstr "The mode the system is in. One of: firstrun, config, run"
+msgctxt "state"
+msgid "loader.operating_mode"
+msgstr "The mode the system is in. One of: first_run, config, run"
 
 ## End devices library
 ## Begin downloadmodules library
@@ -298,7 +311,7 @@ msgid "system_modules:AutomationHelpers"
 msgstr "Adds additional platforms to the automation rules system."
 
 ## End localize library
-## Begin modules library
+## Begin mqtt library
 
 #: defined in mqtt library
 msgctxt "config_section"
@@ -413,7 +426,7 @@ msgstr "The secret key of the gateway. Used by the gateway to authenticate to th
 
 #: defined in startup library
 msgctxt "config_item"
-msgid "core:firstrun"
+msgid "core:first_run"
 msgstr "Used to help determine if this is the first time the gateway as run."
 
 #: defined in startup library
@@ -616,6 +629,19 @@ msgstr "When the next moon rise is."
 msgctxt "state"
 msgid "next.moonset"
 msgstr "When the next moon set is."
+
+## END time library
+## Begin web interface library
+
+#: defined in web interface library
+msgctxt "config_item"
+msgid "core:gwid"
+msgstr "An ID that identifies this gateway to anyone. Notice: This ID change."
+
+#: defined in web interface library
+msgctxt "config_item"
+msgid "core:gwuuid"
+msgstr "An ID that indentifies this gateway to it's immediate peers. Don't share, never changes."
 
 #: defined in web interface library
 msgctxt "webinterface_label"
