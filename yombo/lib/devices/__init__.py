@@ -231,7 +231,8 @@ class Devices(YomboLibrary):
     def _start_(self, **kwargs):
         yield self._load_devices_from_database()
         yield self._load_device_commands()
-        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
+        if self._States['loader.operating_mode'] == 'run':
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
 
     def _started_(self, **kwargs):
         """
@@ -242,7 +243,7 @@ class Devices(YomboLibrary):
         self.clean_device_commands_loop = LoopingCall(self.clean_device_commands)
         self.clean_device_commands_loop.start(random_int(3600, .15))
 
-        if self._Atoms['loader.operation_mode'] == 'run':
+        if self._States['loader.operating_mode'] == 'run':
             self.mqtt.subscribe("yombo/devices/+/get")
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
@@ -664,7 +665,7 @@ class Devices(YomboLibrary):
                                _operation)
 
     @inlineCallbacks
-    def add_device(self, data, **kwargs):
+    def add_device(self, api_data, **kwargs):
         """
         Add a new device. This will also make an API request to add device at the server too.
 
@@ -673,19 +674,17 @@ class Devices(YomboLibrary):
         :return:
         """
         # logger.info("Add new device.  Data: {data}", data=data)
-        api_data = {
-            'gateway_id': self.gwid,
-        }
+        api_data['gateway_id'] = self.gwid
 
         try:
-            for key in list(data.keys()):
-                if data[key] == "":
-                    data[key] = None
+            for key, value in api_data.items():
+                if value == "":
+                    api_data[key] = None
                 elif key in ['statistic_lifetime', 'pin_timeout']:
-                    if data[key] is None or (isinstance(data[key], str) and data[key].lower() == "none"):
-                        del data[key]
+                    if api_data[key] is None or (isinstance(value, str) and value.lower() == "none"):
+                        del api_data[key]
                     else:
-                        data[key] = int(data[key])
+                        api_data[key] = int(value)
         except Exception as e:
             results = {
                 'status': 'failed',
@@ -696,14 +695,8 @@ class Devices(YomboLibrary):
             }
             return results
 
-        for key, value in data.items():
-        #     if key == 'energy_map':
-        #         api_data['energy_map'] = json.dumps(data['energy_map'], separators=(',',':'))
-        #     else:
-                api_data[key] = data[key]
-
         try:
-            global_invoke_all('_device_before_add_', **{'called_by': self, 'device': data})
+            global_invoke_all('_device_before_add_', **{'called_by': self, 'device': api_data})
         except YomboHookStopProcessing as e:
             raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 
@@ -715,7 +708,7 @@ class Devices(YomboLibrary):
             logger.debug("PATCHING device. api data: {api_data}", api_data=api_data)
             del api_data['gateway_id']
             del api_data['device_type_id']
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % data['device_id'], api_data)
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % api_data['device_id'], api_data)
             logger.debug("edit device results: {device_results}", device_results=device_results)
 
         if device_results['code'] > 299:
@@ -728,9 +721,9 @@ class Devices(YomboLibrary):
             }
             return results
 
-        if 'variable_data' in data:
+        if 'variable_data' in api_data:
             # print("data['variable_data']: %s", data['variable_data'])
-            variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
+            variable_results = yield self.set_device_variables(device_results['data']['id'], api_data['variable_data'])
             # print("variable_results: %s" % variable_results)
             if variable_results['code'] > 299:
                 results = {
@@ -752,6 +745,8 @@ class Devices(YomboLibrary):
         device['created'] = device['created_at']
         device['updated'] = device['updated_at']
         self.import_device(device)
+        self.devices[device['id']].add_to_db()
+
         return results
 
     #todo: convert to use a deferred semaphore
@@ -895,7 +890,7 @@ class Devices(YomboLibrary):
                     continue
                 api_data[key] = value
 
-        print("send this data to api: %s" % api_data)
+        # print("send this data to api: %s" % api_data)
         device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
         # print("got this data from api: %s" % device_results)
         if device_results['code'] > 299:
@@ -929,7 +924,7 @@ class Devices(YomboLibrary):
             'msg': "Device edited.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_edit', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        global_invoke_all('devices_edit', called_by=self, **{'id': device_id})  # call hook "devices_edit" when editing a device.
         return results
 
     @inlineCallbacks

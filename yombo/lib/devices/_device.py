@@ -282,6 +282,9 @@ class Device(object):
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', called_by=self, **{'device': self})
 
+    def add_to_db(self):
+        self._Parent._LocalDB.add_device(self)
+
     def save_to_db(self):
         self._Parent._LocalDB.update_device(self)
 
