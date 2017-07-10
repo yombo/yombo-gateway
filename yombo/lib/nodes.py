@@ -288,7 +288,6 @@ class Nodes(YomboLibrary):
                 # logger.debug("found node by search: others: {others}", others=others)
                 if node_type is not None:
                     for other in others:
-                        # print "other: %s" % other
                         if other['value'].node_type == node_type and other['ratio'] > limiter:
                             return other['value']
                 else:
@@ -434,7 +433,7 @@ class Nodes(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def add_node(self, api_data, **kwargs):
+    def add_node(self, api_data, source=none, **kwargs):
         """
         Add a new node. Updates Yombo servers and creates a new entry locally.
 
@@ -445,22 +444,23 @@ class Nodes(YomboLibrary):
         if 'gateway_id' not in api_data:
             api_data['gateway_id'] = self._Configs.get("core", "gwid")
 
-        node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
-        print("dt_results: %s" % node_results)
+        if source != 'amqp':
+            node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
 
-        if node_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't add node",
-                'apimsg': node_results['content']['message'],
-                'apimsghtml': node_results['content']['html_message'],
-            }
-            return results
+            if node_results['code'] > 299:
+                results = {
+                    'status': 'failed',
+                    'msg': "Couldn't add node",
+                    'apimsg': node_results['content']['message'],
+                    'apimsghtml': node_results['content']['html_message'],
+                }
+                return results
+            node_id = node_results['data']['id']
 
         results = {
             'status': 'success',
             'msg': "Node type added.",
-            'node_id': node_results['data']['id'],
+            'node_id': node_id,
         }
         new_node = node_results['data']
         new_node['created'] = new_node['created_at']
@@ -469,7 +469,7 @@ class Nodes(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def edit_node(self, node_id, api_data, called_from_node=None, **kwargs):
+    def edit_node(self, node_id, api_data, called_from_node=None, source=None, **kwargs):
         """
         Edit a node at the Yombo server level, not at the local gateway level.
 

@@ -105,6 +105,8 @@ class MQTT(YomboLibrary):
 
         :return:
         """
+        print("states: %s" % self.__dict__)
+
         self.client_connections = {}
         self.hbmqtt_config_file = abspath('.') + "/usr/etc/hbmqtt.yaml"
         self.hbmqtt_pass_file = abspath('.') + "/usr/etc/hbmqtt.pw"
@@ -120,7 +122,7 @@ class MQTT(YomboLibrary):
         self.server_listen_port_websockets_ss_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_ss_ssl', 8444)
         self.server_listen_port_websockets_le_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
         self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
-        self.mqtt_client_connections = None
+        self.mqtt_available_ports = None
         self.mqtt_local_client = None
         self.yombo_mqtt_password = self._Configs.get('mqtt_users', 'yombo', random_string(length=16))
 
@@ -149,14 +151,14 @@ class MQTT(YomboLibrary):
         ssl_self_signed = self._SSLCerts.get('selfsigned')
         ssl_lib_webinterface = self._SSLCerts.get('lib_webinterface')
 
-        self.mqtt_client_connections = {
+        self.mqtt_available_ports = {
             'ws': self.server_listen_port_websockets,
             'wss': self.server_listen_port_websockets_le_ssl,
             'wss-ss': self.server_listen_port_websockets_ss_ssl,
         }
 
         if ssl_lib_webinterface['self_signed'] is True:
-            self.mqtt_client_connections['wss'] = self.server_listen_port_websockets_ss_ssl
+            self.mqtt_available_ports['wss'] = self.server_listen_port_websockets_ss_ssl
 
 
         if self.server_listen_port > 0:
@@ -210,20 +212,22 @@ class MQTT(YomboLibrary):
                 for username, password in cfg_users.items():
                     print("%s:%s" % (username, sha512_crypt(password)), file=mqtt_pw_file)
 
-        self.mqtt_server = MQTTServer(self.hbmqtt_config_file)
-        command = ['hbmqtt', "-c", self.hbmqtt_config_file]
-        self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
+        if self._States['loader.operating_mode'] == 'run':
+            self.mqtt_server = MQTTServer(self.hbmqtt_config_file)
+            command = ['hbmqtt', "-c", self.hbmqtt_config_file]
+            self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
 
-        # nasty hack..  TODO: remove nasty sleep hack
-        return sleep(0.2)
+            # nasty hack..  TODO: remove nasty sleep hack
+            return sleep(0.2)
 
     def _start_(self, **kwargs):
         """
         Just connect with a local client. Can later be used to send messages as needed.
         :return:
         """
-        self.mqtt_local_client = self.new()  # System connection to send messages.
-        # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
+        if self._States['loader.operating_mode'] == 'run':
+            self.mqtt_local_client = self.new()  # System connection to send messages.
+            # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
 
     def _stop_(self, **kwargs):
         """
@@ -245,10 +249,8 @@ class MQTT(YomboLibrary):
         return sleep(0.1)
 
     def _unload_(self, **kwargs):
-        self.mqtt_server.shutdown()
-
-    #def _unload_(self, **kwargs):
-        #self.mqtt_server.transport.signalProcess(signal.SIGKILL)
+        if self._States['loader.operating_mode'] == 'run':
+            self.mqtt_server.shutdown()
 
     def _webinterface_add_routes_(self, **kwargs):
         """
@@ -257,25 +259,25 @@ class MQTT(YomboLibrary):
         :param kwargs:
         :return:
         """
-#        if self.loadedLibraries['atoms']['loader.operation_mode'] = val
-        if self.client_enabled:
-            return {
-                'nav_side': [
-                    {
-                    'label1': 'Tools',
-                    'label2': 'MQTT',
-                    'priority1': None,  # Even with a value, 'Tools' is already defined and will be ignored.
-                    'priority2': 10000,
-                    'icon': 'fa fa-wrench fa-fw',
-                    'url': '/tools/mqtt',
-                    'tooltip': '',
-                    'opmode': 'run',
-                    },
-                ],
-                'routes': [
-                    self.web_interface_routes,
-               ],
-            }
+        if hasattr(self, '_States') and self._States['loader.operating_mode'] == 'run':
+            if self.client_enabled:
+                return {
+                    'nav_side': [
+                        {
+                        'label1': 'Tools',
+                        'label2': 'MQTT',
+                        'priority1': None,  # Even with a value, 'Tools' is already defined and will be ignored.
+                        'priority2': 10000,
+                        'icon': 'fa fa-wrench fa-fw',
+                        'url': '/tools/mqtt',
+                        'tooltip': '',
+                        'opmode': 'run',
+                        },
+                    ],
+                    'routes': [
+                        self.web_interface_routes,
+                   ],
+                }
 
     def web_interface_routes(self, webapp):
         """
@@ -336,6 +338,10 @@ class MQTT(YomboLibrary):
         """
         if not self.client_enabled:
             logger.warn("MQTT Clients Disabled. Not allowed to connect.")
+            return
+
+        if self._States['loader.operating_mode'] == 'run':
+            logger.warn("MQTT Disabled when not in run mode.")
             return
 
         if client_id is None:
