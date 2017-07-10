@@ -109,8 +109,8 @@ class Sessions(object):
         """
         cookie_session = self.config.cookie_session
         cookies = request.received_cookies
-        logger.debug("has_session is looking for cookie: {cookie_session}", cookie_session=cookie_session)
-        logger.debug("has_session found cookies: {cookies}", cookies=cookies)
+        # logger.debug("has_session is looking for cookie: {cookie_session}", cookie_session=cookie_session)
+        # logger.debug("has_session found cookies: {cookies}", cookies=cookies)
 
         if cookie_session in cookies:
             session_id = cookies[cookie_session]
@@ -173,7 +173,7 @@ class Sessions(object):
             if self.validate_session_id(session_id) is False:
                 raise YomboWarning("Invalid session id.")
             return self.active_sessions[session_id]
-        return False
+        return None
 
     def create(self, request):
         """
@@ -252,20 +252,6 @@ class Sessions(object):
         if len(session_id) > 40:
             return False
         return True
-
-    # def _validate_ip(self):
-    #     # check for change of IP
-    #     if self.session_id and self.get('ip', None) != web.ctx.ip:
-    #         if not self._config.ignore_change_ip:
-    #            return self.expired()
-    #
-
-
-    def _valid_session_id(self, session_id):
-        if session_id.isalnum() is False:
-            return False
-        if len(session_id) != 96:
-            return False
 
     @inlineCallbacks
     def clean_sessions(self, close_deferred=None):
@@ -362,11 +348,18 @@ class Session(object):
         """
         self.delete(data_requested)
 
+    def keys(self):
+        """
+        Get keys for a session.
+        """
+        return self.data.keys()
+
     def __init__(self, Sessions):
         self._Sessions = Sessions
         self.is_valid = True
         self.is_dirty = 0
         self.in_db = False
+        self.data = {}
 
     def load(self, session):
         """
