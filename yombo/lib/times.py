@@ -983,8 +983,7 @@ class Times(YomboLibrary, object):
             self.isWeekend = True
 
         self.dayofweek = day_map[day_number]
-
-        reactor.callLater(self.time_from_string('12:00am')[0] - time.time(), self._setup_weekday_events)
+        reactor.callLater(self.get_next_time('12:00am')[0] - time.time(), self._setup_weekday_events)
 
     def _send_now_night(self):
         """
