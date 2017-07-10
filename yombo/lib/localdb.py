@@ -390,15 +390,28 @@ class LocalDB(YomboLibrary):
             returnValue(records)
 
     @inlineCallbacks
-    def insert_device(self, data, **kwargs):
-        device_location = DeviceLocation()
-        device_location.id = data['id']
-        device_location.location_type = data['location_type']
-        device_location.label = data['label']
-        device_location.machine_label = data['machine_label']
-        device_location.description = data.get('description', None)
-        device_location.created = data['created']
-        device_location.updated = data['updated']
+    def add_device(self, data, **kwargs):
+        device = Device()
+        device.id = data['id']
+        device.device_type_id = data['device_type_id']
+        device.location_id = data['location_id']
+        device.area_id = data['area_id']
+        device.label = data['label']
+        device.machine_label = data['machine_label']
+        device.description = data.get('description', None)
+        device.pin_required = data['pin_required']
+        device.pin_code = data['pin_code']
+        device.pin_timeout = data['pin_timeout']
+        device.voice_cmd = data['voice_cmd']
+        device.voice_cmd_order = data['voice_cmd_order']
+        device.statistic_label = data['statistic_label']
+        device.statistic_lifetime = data['statistic_lifetime']
+        device.status = data['status']
+        device.energy_tracker_device = data['energy_tracker_device']
+        device.energy_tracker_source = data['energy_tracker_source']
+        device.energy_map = data['energy_map']
+        device.created = data['created']
+        device.updated = data['updated']
         yield device_location.save()
 
     @inlineCallbacks
@@ -761,21 +774,21 @@ class LocalDB(YomboLibrary):
         :type status: int
         """
 
-        module = yield Modules.find(where=['module_id = ?', module_id])
-        if module is None:
-            returnValue(None)
+        modules = yield Modules.find(where=['id = ?', module_id])
+        if modules is None:
+            return None
+        module = modules[0]
         module.status = status
         results = yield module.save()
-        returnValue(results)
+        return results
 
     #############################
     ###    Nodes            #####
     #############################
     @inlineCallbacks
     def get_nodes(self):
-        records = yield self.dbconfig.select('nodes',
-            select="id, parent_id, node_type, weight, machine_label, gw_always_load, destination, data_type, status, updated, created")
-        returnValue(records)
+        records = yield self.dbconfig.select('nodes')
+        return records
 
     @inlineCallbacks
     def get_node(self, node_id):
