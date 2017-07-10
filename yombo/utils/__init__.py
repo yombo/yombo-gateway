@@ -22,7 +22,7 @@ import binascii
 from difflib import SequenceMatcher
 import inspect
 import math
-import msgpack
+# import msgpack
 import netifaces
 import netaddr
 import os
@@ -248,7 +248,7 @@ def bytes_to_unicode(input):
     elif isinstance(input, list):
         return [bytes_to_unicode(element) for element in input]
     elif isinstance(input, bytes):
-        return input.decode()
+        return input.decode("utf-8")
     else:
         return input
 
@@ -524,6 +524,7 @@ def save_file(filename, content, mode = None):
     """
     if mode is None:
         mode = 'w'
+    content = bytes_to_unicode(content)
     f = fopen(filename, mode)
     f.write(content)
     f.close()
@@ -617,13 +618,14 @@ def search_instance(arguments, haystack, allowed_keys, limiter, operation):
 
 def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None, status_field=None, status_value=None):
     """        
-    Does the actual search of the devices. It scans through each device, and searches for any
+    Does the actual search of the devices. It scans through each item in haystack, and searches for any
     supplied attributes.
 
     Scan through the dictionary, and match keys. Returns the value of
     the best matching key.
+
     :param attributes: A list of dictionaries containing: field, value, limiter
-    :type oepration: list of dictionaries
+    :type attributes: list of dictionaries
     :param operation: Set weather to all matching, or highest matching. Either "any" or "highest".
     """
     # logger.info("in do_search_instance...attributes: {attributes}", attributes=attributes)
@@ -808,6 +810,22 @@ def get_local_network_info(ethernet_name = None):
 
 
 @memoize_ttl(600)
+def ip_addres_in_local_network(ip_address):
+    local_network = get_local_network_info()
+    try:
+        if ip_address_in_network(ip_address, local_network['ipv4']['cidr']):
+            return True
+    except:
+        pass
+    try:
+        if ip_address_in_network(ip_address, local_network['ipv6']['cidr']):
+            return True
+    except:
+        pass
+    return False
+
+
+@memoize_ttl(600)
 def ip_address_in_network(ip_address, subnetwork):
     """
     from: https://diego.assencio.com/?index=85e407d6c771ba2bc5f02b17714241e2
@@ -829,7 +847,8 @@ def ip_address_in_network(ip_address, subnetwork):
     if version1 != version2:
         raise ValueError("incompatible IP versions")
 
-    # print "lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper)
+    print("lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper))
+    print(ip_lower <= ip_integer <= ip_upper)
     return (ip_lower <= ip_integer <= ip_upper)
 
 
