@@ -22,6 +22,17 @@ Documentation
 
 For new users, check out the quick start guide at https://yombo.net/docs/gateway/getting_started/
 
+============
+Python 3.6.x
+============
+
+It's HIGHLY recommended to use latest Python 3.6 version. A simple script is located in yombo/install.  To execute:
+1) Go to the yombo gateway directory (where this README file is located)
+2) install/setup_pyenv.sh
+
+On a Raspberry Pi 3, this will take quite a while. On a Raspberry Pi Zero, it's best to enjoy some lunch or dinner
+at your favorite place.
+
 ==================
 Developing Modules
 ==================
