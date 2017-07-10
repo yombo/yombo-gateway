@@ -1,5 +1,6 @@
 hbmqtt; python_version > '3.3'
 Twisted; python_version > '3.6.0'
+asyncio
 parsedatetime
 netifaces
 python-gnupg
