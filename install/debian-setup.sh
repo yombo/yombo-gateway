@@ -1,5 +1,4 @@
-#!/bin/bash
-######!/usr/bin/env bash
+#!/usr/bin/env bash
 if [ "$(id -u)" -ne 0 ]; then
     echo "This must be run with sudo from the current user that will be running the gateway."
     echo ""
@@ -48,7 +47,11 @@ fi
 chmod 775 /var/log/yombo
 chown $SUDO_USER:$SUDO_USER /var/log/yombo
 
-apt-get install python python-pip python-setuptools python-dev gnupg2 rng-tools build-essential git -y
+apt-get update
+apt-get install --force-yes -y make libudev-dev g++ libyaml-dev
+apt-get install python python-pip python-setuptools python-dev gnupg2 rng-tools build-essential git libncurses5 libncurses5-dev libncursesw5 \
+libncursesw5-dev xz-utils libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl wget llvm tk-dev -y
+
 pip install Twisted python-gnupg pyephem gnupg service_identity parsedatetime psutil
 pip3 install hbmqtt
 
