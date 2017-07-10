@@ -8,6 +8,54 @@
 {% set progressbar = 60 %}
 
 {% block content %}
+<!-- Modal -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Master or Slave</h4>
+      </div>
+      <div class="modal-body">
+          <p>
+              Only one gateway per location (a house, other house, etc) is required. This setting determines if this
+              gateway is the master or primary gateway. If this is a slave gateway, simply select the master gateway
+              from the drop down.
+          </p>
+          <p>
+              Secondary gateways are typically used when wires for automation control cannot be run back to the
+              master or it just doesn't make sense to (too far, too complex). Secondary gateways are the same except
+              for the following:
+              <ul>
+                  <li>Statistics for devices are stored and processed on the master gateway.</li>
+                  <li>Some modules handle all processing at the master, while the slaves only send sensor data and
+                  can receive control data to perform actions.</li>
+                  <li>Use USB or GPIO (relays and senors) over WIFI instead of long runs of wires.</li>
+                  <li>The above use cases and more can be used from the same gateway.</li>
+              </ul>
+          </p>
+          <p>
+              A simple Raspberry PI (any version, we recommend version 3) or other low end device can be
+              used as the master. Slave devices can even be slightly lower powered, such as the Raspberry PI Zero W.
+              Secondary gateways will communicate with the primary and other slave gateways using a secure channel.
+              This allows a master and secondary gateways to communicate over open networks (the internet).
+          </p>
+          <p>
+              Use cases:
+              <ul>
+                  <li>Using various slaves allows for receiving and sending IR commands to each room to control devices.</li>
+                  <li>Use a Raspberry Pi Zero in each room to collect signal strength of Bluetooth devices. This allows
+                      the system to know which room someone is in if they keep their cell phone or other bluetooth device
+                      with them. This allows for turning on lights or items based on who is in the room.</li>
+                </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
     <form action="/setup_wizard/5" method="POST" role="form" id="myForm">
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
@@ -17,7 +65,7 @@
                         <div style="float: right;">
                             <h5><a href="#" data-toggle="modal" data-target="#privacy-notice"></i>Privacy<br>Summary</a></h5>
                         </div>
-                            <center><h3 class="modal-title">Gateway Setup Wizard</h3><br>Step 4: Security Settings</center></h3>
+                            <center><h3 class="modal-title">Gateway Setup Wizard</h3><br>Step 4: Misc Settings</center></h3>
                             <p></p>
                             <div class="col-md-8 col-md-offset-2">
                                 <div class="progress">
@@ -26,8 +74,8 @@
                                   </div>
                                 </div>
                             </div>
-                        {{ macros.modal("privacy-notice", "Privacy Statement Sumary", "You can find the <a href='https://yombo.net/policies/privacy' target='_blank'>full privacy statement online.</a>
-                        <h4>Summary of our privacy statment</h4>
+                        {{ macros.modal("privacy-notice", "Privacy Statement Summary", "You can find the <a href='https://yombo.net/policies/privacy' target='_blank'>full privacy statement online.</a>
+                        <h4>Summary of our privacy statement</h4>
                         <h5>We won't:</h5>
                         <ul>
                             <li>We won't sell, loan, trade, or give away your data.</li>
@@ -43,6 +91,32 @@
                     </div>
                     <div class="panel-body">
                         <p></p>
+                        <h2>Gateway Master / Slave
+                            <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
+                        </h2>
+                        <p>Determine if this gateway should be considered a master or a slave</p>
+                        <div class="form-group">
+                            <label for="is-master" data-toggle="tooltip" title="Is master gateway">Make this gateway a master gateway</label>
+                            <div class="material-switch pull-right">
+                                <input id="is-master" name="is-master" type="checkbox"{% if security_items.is_master == '1' %} checked {% endif %}/>
+                                <label for="is-master" class="label-primary"></label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="master-gateway" data-toggle="tooltip" title="If this is a slave gateway, select a master gateway.">If this is a slave gateway, which gateway is the master?</label>
+                            <div class="pull-right">
+                                <select name="master-gateway" id="master-gateway" required class="selectpicker show-tick" title="Select...">
+                                    <option value="none" style="background: #e6f7ff; color: #000;"{% if security_items.master_gateway == 'None' %} selected{% endif %}>None</option>
+                                    <option data-divider="true"></option>
+                                    {% for id, gateway in available_gateways.items() -%}
+                                    <option value="{{ gateway.id }}"{% if security_items.master_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
+                                    {%- endfor %}
+                                </select>
+                                <label for="master-gateway" class="label-primary"></label>
+                            </div>
+                        </div>
+                        <hr>
                         <h2>Basic Security Settings</h2>
                         <p>Control the gateway's basic security settings.</p>
                     </div>
@@ -112,12 +186,12 @@
                             <hr>
                         </div>
                         <div class="form-group">
-                            <label for="security-sent-private-stats" data-toggle="tooltip" title="Save private statistics information in the Yombo cloud.">Allow private statistics information to be sent to Yombo</label>
+                            <label for="security-send-private-stats" data-toggle="tooltip" title="Save private statistics information in the Yombo cloud.">Allow private statistics information to be sent to Yombo</label>
                             <div class="material-switch pull-right">
-                                <input id="security-sent-private-stats" name="security-sent-private-stats" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
-                                <label for="security-sent-private-stats" class="label-primary"></label>
-                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysentprivatestats"><i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitysentprivatestats", 'Send private statistics to Yombo', '
+                                <input id="security-send-private-stats" name="security-send-private-stats" type="checkbox"{% if security_items.send_private_stats == '1' %} checked {% endif %}/>
+                                <label for="security-send-private-stats" class="label-primary"></label>
+                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysendprivatestats"><i class="fa fa-question-circle  fa-2x"></i></a>
+                                {{ macros.modal("securitysendprivatestats", 'Send private statistics to Yombo', '
                                 <div class="alert alert-success">
                                   <ul class="fa-ul">
                                     <li>
@@ -137,12 +211,12 @@
                             <hr>
                         </div>
                         <div class="form-group">
-                            <label for="security-sent-anon-stats" data-toggle="tooltip" title="Save statistics information in the Yombo cloud.">Allow anonymous statistics information to be sent to Yombo</label>
+                            <label for="security-send-anon-stats" data-toggle="tooltip" title="Save statistics information in the Yombo cloud.">Allow anonymous statistics information to be sent to Yombo</label>
                             <div class="material-switch pull-right">
-                                <input id="security-sent-anon-stats" name="ssecurity-sent-anon-stats" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
-                                <label for="security-sent-anon-stats" class="label-primary"></label>
-                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysentanonstats"><i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitysentanonstats", 'Send anonymous statistics to Yombo', '
+                                <input id="security-send-anon-stats" name="security-send-anon-stats" type="checkbox"{% if security_items.send_anon_stats == '1' %} checked {% endif %}/>
+                                <label for="security-send-anon-stats" class="label-primary"></label>
+                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysendanonstats"><i class="fa fa-question-circle  fa-2x"></i></a>
+                                {{ macros.modal("securitysendanonstats", 'Send anonymous statistics to Yombo', '
                                 <div class="alert alert-success">
                                   <ul class="fa-ul">
                                     <li>

@@ -45,7 +45,7 @@ def route_panel(webapp):
                 devices=webinterface._Devices.devices,
                 devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
-                mqtt_ports = webinterface._MQTT.mqtt_client_connections,
+                mqtt_ports = webinterface._MQTT.mqtt_available_ports,
                 mqtt_password=webinterface._Configs.get('mqtt_users', 'panel.webinterface', random_string()),
                 # mqtt_port = webinterface._Configs.get('mqtt', 'server_listen_port_websockets_ssl'),
                 )

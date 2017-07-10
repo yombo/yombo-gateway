@@ -1,6 +1,5 @@
 {% extends "lib/webinterface/fragments/layout_blank.tpl" %}
 {% block head_css %}
-{% include 'lib/webinterface/fragments/select_css.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_css.tpl' %}
 {% endblock %}
 
@@ -13,7 +12,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">Local Required</h4>
+        <h4 class="modal-title" id="myModalLabel">Location Information</h4>
       </div>
       <div class="modal-body">
             The location allows the gateway to calculate sunrise, sunset, when it is
@@ -172,7 +171,6 @@
 {% endblock %}
 
 {% block body_bottom %}
-{% include 'lib/webinterface/fragments/select_js.tpl' %}
 {% include 'lib/webinterface/fragments/mappicker_js.tpl' %}
 
     <script>

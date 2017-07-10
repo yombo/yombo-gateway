@@ -43,7 +43,7 @@ def return_not_found(request, message=None, status=None):
 
 def return_error(request, message=None, status=None):
     request.setHeader('Content-Type', 'application/json')
-    if status is 500:
+    if status is None:
         status = 401
     request.setResponseCode(status)
     if message is None:

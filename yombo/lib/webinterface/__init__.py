@@ -389,14 +389,14 @@ class WebInterface(YomboLibrary):
 
     visits = 0
     alerts = OrderedDict()
+    starting = True
 
     def _init_(self, **kwargs):
-        self.starting = True
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:
             return
 
-        self.gwid = self._Configs.get("core", "gwid")
+        self.gwid = self._Configs.get2("core", "gwid", None, False)
         self._LocalDb = self._Loader.loadedLibraries['localdb']
         self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
         self._dir = '/lib/webinterface/'
@@ -436,10 +436,9 @@ class WebInterface(YomboLibrary):
         self.web_server_ssl_started = False
 
         self.already_start_web_servers = False
-        self.has_started = False
 
-        mqtt_password = self._Configs.get('mqtt_users', 'panel.webinterface', yombo.utils.random_string()),
-        mqtt_port = self._Configs.get('mqtt', 'server_listen_port_websockets'),
+        # just here to set a password if it doesn't exist.
+        mqtt_password = self._Configs.get('mqtt_users', 'panel.webinterface', yombo.utils.random_string())
 
     # def _start_(self):
     #     self.webapp.templates.globals['_'] = _  # i18n
@@ -454,7 +453,7 @@ class WebInterface(YomboLibrary):
             return
         if not self.enabled:
             return
-        self._op_mode = self._Atoms['loader.operation_mode']
+        self._op_mode = self._States['loader.operating_mode']
 
         self.auth_pin = self._Configs.get2('webinterface', 'auth_pin',
               yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
@@ -473,7 +472,7 @@ class WebInterface(YomboLibrary):
 
         self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
         self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
-        self.misc_wi_data['operation_mode'] = self._op_mode
+        self.misc_wi_data['operating_mode'] = self._op_mode
         self.misc_wi_data['notifications'] = self._Notifications
         self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
         self.misc_wi_data['breadcrumb'] = []
@@ -485,7 +484,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         # self.webapp.templates.globals['func'] = self.functions
 
-        self.has_started = True
+        self.starting = False
         self.start_web_servers()
 
     def check_have_required_nodes(self):
@@ -502,22 +501,20 @@ class WebInterface(YomboLibrary):
             return
 
         if port_nonsecure is not None:
-            if port_nonsecure == self.wi_port_nonsecure:
-                return
-            self.wi_port_nonsecure(set=port_nonsecure)
-            logger.info("Changing port for the non-secure web interface: {port}", port=port_nonsecure)
-            if self.web_server_started:
-                yield self.web_interface_listener.stopListening()
-                self.web_server_started = False
+            if port_nonsecure != self.wi_port_nonsecure():
+                self.wi_port_nonsecure(set=port_nonsecure)
+                logger.info("Changing port for the non-secure web interface: {port}", port=port_nonsecure)
+                if self.web_server_started:
+                    yield self.web_interface_listener.stopListening()
+                    self.web_server_started = False
 
         if port_secure is not None:
-            if port_secure == self.wi_port_secure:
-                return
-            self.wi_port_secure(set=port_secure)
-            logger.info("Changing port for the secure web interface: {port}", port=port_secure)
-            if self.web_server_ssl_started:
-                yield self.web_interface_ssl_listener.stopListening()
-                self.web_server_ssl_started = False
+            if port_secure != self.wi_port_secure():
+                self.wi_port_secure(set=port_secure)
+                logger.info("Changing port for the secure web interface: {port}", port=port_secure)
+                if self.web_server_ssl_started:
+                    yield self.web_interface_ssl_listener.stopListening()
+                    self.web_server_ssl_started = False
 
         self.start_web_servers()
 
@@ -570,6 +567,9 @@ class WebInterface(YomboLibrary):
         if section == 'core':
             if option == 'label':
                 self.misc_wi_data['gateway_label'] = value
+
+        if self.starting is True:
+            return
 
         if section == 'webinterface':
             if option == 'nonsecure_port':
@@ -773,8 +773,8 @@ class WebInterface(YomboLibrary):
         if self._op_mode == 'config':
             method = getattr(self, 'config_'+ router)
             return method(request, **kwargs)
-        elif self._op_mode == 'firstrun':
-            method = getattr(self, 'firstrun_'+ router)
+        elif self._op_mode == 'first_run':
+            method = getattr(self, 'first_run_'+ router)
             return method(request, **kwargs)
         method = getattr(self, 'run_'+ router)
         return method(request, **kwargs)
@@ -805,7 +805,7 @@ class WebInterface(YomboLibrary):
         return page.render(alerts=self.get_alerts(),
                            )
     @run_first()
-    def firstrun_home(self, request, session):
+    def first_run_home(self, request, session):
         return self.redirect(request, '/setup_wizard/1')
 
     @webapp.route('/logout', methods=['GET'])
@@ -821,7 +821,6 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/login/user', methods=['GET'])
     @require_auth_pin()
-    # @run_first()
     def page_login_user_get(self, request):
         return self.redirect(request, '/?')
 
@@ -847,8 +846,9 @@ class WebInterface(YomboLibrary):
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
 
-        if self._op_mode != 'firstrun':
-            results = yield self._LocalDb.get_gateway_user_by_email(self.gwid, submitted_email)
+        print("elf._op_mode: %s" % self._op_mode)
+        if self._op_mode == 'run':
+            results = yield self._LocalDb.get_gateway_user_by_email(self.gwid(), submitted_email)
             if len(results) != 1:
                 self.add_alert('Email address not allowed to access gateway.', 'warning')
                 #            self.sessions.load(request)
@@ -875,7 +875,7 @@ class WebInterface(YomboLibrary):
             session['yomboapi_login_key'] = login['login_key']
             request.received_cookies[self.sessions.config.cookie_session] = session['id']
             # print("session saved...")
-            if self._op_mode == 'firstrun':
+            if self._op_mode == 'first_run':
                 self._YomboAPI.save_system_login_key(login['login_key'])
                 self._YomboAPI.save_system_session(login['session'])
             return self.login_redirect(request, session)
@@ -913,6 +913,7 @@ class WebInterface(YomboLibrary):
                               max_age=expires)
             request.received_cookies[self.sessions.config.cookie_pin] = '1'
             session = self.sessions.create(request)
+            session['passed_pin'] = True
             session['auth'] = False
             session['auth_id'] = ''
             session['auth_time'] = 0
@@ -926,8 +927,6 @@ class WebInterface(YomboLibrary):
             else:
                 return self.redirect(request, '/login/pin')
         elif self.auth_pin_type() == 'totp':
-
-            totp_results = yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp(), window=10)
             if yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp(), window=10):
                 create_pin_session(self, request)
             else:
@@ -1032,11 +1031,11 @@ class WebInterface(YomboLibrary):
             return ""
 
     def _home_gateway_configured(self):
-        gwuuid = self._Configs.get2("core", "gwuuid", None)
-        gwhash = self._Configs.get2("core", "gwhash", None)
-        gpgkeyid = self._Configs.get2('gpg', 'keyid', None)
+        gwuuid = self._Configs.get("core", "gwuuid", None, False)
+        gwhash = self._Configs.get("core", "gwhash", None, False)
+        gpgkeyid = self._Configs.get('gpg', 'keyid', None, False)
 
-        if gwuuid() is None or gwhash() is None or gpgkeyid() is None:
+        if gwuuid is None or gwhash is None or gpgkeyid is None:
             return False
         else:
             return True
