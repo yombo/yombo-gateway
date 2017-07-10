@@ -33,12 +33,11 @@ Stops components in the following phases. Modules first, then libraries.
 :license: LICENSE for details.
 """
 # Import python libraries
-import traceback
-from re import search as ReSearch
-from collections import OrderedDict
 import asyncio
-import collections
-# from signal import signal, SIGINT
+from collections import OrderedDict, Callable
+from re import search as ReSearch
+import traceback
+import os.path
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
@@ -57,72 +56,72 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
-HARD_LOAD["Validate"] = {'operation_mode':'all'}
-HARD_LOAD["Queue"] = {'operation_mode':'all'}
-HARD_LOAD["Notifications"] = {'operation_mode':'all'}
-HARD_LOAD["LocalDB"] = {'operation_mode':'all'}
-HARD_LOAD["SQLDict"] = {'operation_mode':'all'}
-HARD_LOAD["Atoms"] = {'operation_mode':'all'}
-HARD_LOAD["States"] = {'operation_mode':'all'}
-HARD_LOAD["Configuration"] = {'operation_mode':'all'}
-HARD_LOAD["Statistics"] = {'operation_mode':'all'}
-HARD_LOAD["Startup"] = {'operation_mode':'all'}
-HARD_LOAD["AMQP"] = {'operation_mode':'run'}
-HARD_LOAD["YomboAPI"] = {'operation_mode':'all'}
-HARD_LOAD["GPG"] = {'operation_mode':'all'}
-HARD_LOAD["CronTab"] = {'operation_mode':'all'}
-HARD_LOAD["DownloadModules"] = {'operation_mode':'run'}
-HARD_LOAD["Times"] = {'operation_mode':'all'}
-HARD_LOAD["Commands"] = {'operation_mode':'all'}
-HARD_LOAD["DeviceTypes"] = {'operation_mode':'all'}
-HARD_LOAD["InputTypes"] = {'operation_mode':'all'}
-HARD_LOAD["VoiceCmds"] = {'operation_mode':'all'}
-HARD_LOAD["Variables"] = {'operation_mode':'all'}
-HARD_LOAD["Devices"] = {'operation_mode':'all'}
-HARD_LOAD["Automation"] = {'operation_mode':'all'}
-HARD_LOAD["Modules"] = {'operation_mode':'all'}
-HARD_LOAD["Localize"] = {'operation_mode':'all'}
-HARD_LOAD["AMQPYombo"] = {'operation_mode':'run'}
-HARD_LOAD["Nodes"] = {'operation_mode':'all'}
-HARD_LOAD["DeviceLocations"] = {'operation_mode':'all'}
-HARD_LOAD["MQTT"] = {'operation_mode':'run'}
-HARD_LOAD["WebInterface"] = {'operation_mode':'all'}
-HARD_LOAD["Tasks"] = {'operation_mode':'all'}
-HARD_LOAD["SSLCerts"] = {'operation_mode':'all'}
+HARD_LOAD["Validate"] = {'operating_mode':'all'}
+HARD_LOAD["Queue"] = {'operating_mode':'all'}
+HARD_LOAD["Notifications"] = {'operating_mode':'all'}
+HARD_LOAD["LocalDB"] = {'operating_mode':'all'}
+HARD_LOAD["SQLDict"] = {'operating_mode':'all'}
+HARD_LOAD["Atoms"] = {'operating_mode':'all'}
+HARD_LOAD["States"] = {'operating_mode':'all'}
+HARD_LOAD["Configuration"] = {'operating_mode':'all'}
+HARD_LOAD["Statistics"] = {'operating_mode':'all'}
+HARD_LOAD["Startup"] = {'operating_mode':'all'}
+HARD_LOAD["AMQP"] = {'operating_mode':'run'}
+HARD_LOAD["YomboAPI"] = {'operating_mode':'all'}
+HARD_LOAD["GPG"] = {'operating_mode':'all'}
+HARD_LOAD["CronTab"] = {'operating_mode':'all'}
+HARD_LOAD["DownloadModules"] = {'operating_mode':'run'}
+HARD_LOAD["Times"] = {'operating_mode':'all'}
+HARD_LOAD["Commands"] = {'operating_mode':'all'}
+HARD_LOAD["DeviceTypes"] = {'operating_mode':'all'}
+HARD_LOAD["InputTypes"] = {'operating_mode':'all'}
+HARD_LOAD["VoiceCmds"] = {'operating_mode':'all'}
+HARD_LOAD["Variables"] = {'operating_mode':'all'}
+HARD_LOAD["Devices"] = {'operating_mode':'all'}
+HARD_LOAD["Automation"] = {'operating_mode':'all'}
+HARD_LOAD["Modules"] = {'operating_mode':'all'}
+HARD_LOAD["Localize"] = {'operating_mode':'all'}
+HARD_LOAD["AMQPYombo"] = {'operating_mode':'run'}
+HARD_LOAD["Nodes"] = {'operating_mode':'all'}
+HARD_LOAD["DeviceLocations"] = {'operating_mode':'all'}
+HARD_LOAD["MQTT"] = {'operating_mode':'run'}
+HARD_LOAD["WebInterface"] = {'operating_mode':'all'}
+HARD_LOAD["Tasks"] = {'operating_mode':'all'}
+HARD_LOAD["SSLCerts"] = {'operating_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
-HARD_UNLOAD["SSLCerts"] = {'operation_mode':'all'}
-HARD_UNLOAD["Tasks"] = {'operation_mode':'all'}
-HARD_UNLOAD["Localize"] = {'operation_mode':'all'}
-HARD_UNLOAD["Startup"] = {'operation_mode':'all'}
-HARD_UNLOAD["YomboAPI"] = {'operation_mode':'all'}
-HARD_UNLOAD["GPG"] = {'operation_mode':'all'}
-HARD_UNLOAD["Automation"] = {'operation_mode':'all'}
-HARD_UNLOAD["CronTab"] = {'operation_mode':'all'}
-HARD_UNLOAD["Times"] = {'operation_mode':'all'}
-HARD_UNLOAD["Commands"] = {'operation_mode':'all'}
-HARD_UNLOAD["DeviceTypes"] = {'operation_mode':'all'}
-HARD_UNLOAD["InputTypes"] = {'operation_mode':'all'}
-HARD_UNLOAD["VoiceCmds"] = {'operation_mode':'all'}
-HARD_UNLOAD["Devices"] = {'operation_mode':'all'}
-HARD_UNLOAD["DeviceLocations"] = {'operation_mode':'all'}
-HARD_UNLOAD["Nodes"] = {'operation_mode':'all'}
-HARD_UNLOAD["Atoms"] = {'operation_mode':'all'}
-HARD_UNLOAD["States"] = {'operation_mode':'all'}
-HARD_UNLOAD["WebInterface"] = {'operation_mode':'all'}
-HARD_UNLOAD["Devices"] = {'operation_mode':'all'}
-HARD_UNLOAD["AMQPYombo"] = {'operation_mode':'run'}
-HARD_UNLOAD["Configuration"] = {'operation_mode':'all'}
-HARD_UNLOAD["Statistics"] = {'operation_mode':'all'}
-HARD_UNLOAD["Modules"] = {'operation_mode':'all'}
-HARD_UNLOAD["MQTT"] = {'operation_mode':'run'}
-HARD_UNLOAD["SQLDict"] = {'operation_mode':'all'}
-HARD_UNLOAD["AMQP"] = {'operation_mode':'run'}
-HARD_UNLOAD["Modules"] = {'operation_mode':'all'}
-HARD_LOAD["Variables"] = {'operation_mode':'all'}
-# HARD_UNLOAD["DownloadModules"] = {'operation_mode':'run'}
-HARD_UNLOAD["LocalDB"] = {'operation_mode':'all'}
-HARD_UNLOAD["Queue"] = {'operation_mode':'all'}
+HARD_UNLOAD["SSLCerts"] = {'operating_mode':'all'}
+HARD_UNLOAD["Tasks"] = {'operating_mode':'all'}
+HARD_UNLOAD["Localize"] = {'operating_mode':'all'}
+HARD_UNLOAD["Startup"] = {'operating_mode':'all'}
+HARD_UNLOAD["YomboAPI"] = {'operating_mode':'all'}
+HARD_UNLOAD["GPG"] = {'operating_mode':'all'}
+HARD_UNLOAD["Automation"] = {'operating_mode':'all'}
+HARD_UNLOAD["CronTab"] = {'operating_mode':'all'}
+HARD_UNLOAD["Times"] = {'operating_mode':'all'}
+HARD_UNLOAD["Commands"] = {'operating_mode':'all'}
+HARD_UNLOAD["DeviceTypes"] = {'operating_mode':'all'}
+HARD_UNLOAD["InputTypes"] = {'operating_mode':'all'}
+HARD_UNLOAD["VoiceCmds"] = {'operating_mode':'all'}
+HARD_UNLOAD["Devices"] = {'operating_mode':'all'}
+HARD_UNLOAD["DeviceLocations"] = {'operating_mode':'all'}
+HARD_UNLOAD["Nodes"] = {'operating_mode':'all'}
+HARD_UNLOAD["Atoms"] = {'operating_mode':'all'}
+HARD_UNLOAD["States"] = {'operating_mode':'all'}
+HARD_UNLOAD["WebInterface"] = {'operating_mode':'all'}
+HARD_UNLOAD["Devices"] = {'operating_mode':'all'}
+HARD_UNLOAD["AMQPYombo"] = {'operating_mode':'run'}
+HARD_UNLOAD["Configuration"] = {'operating_mode':'all'}
+HARD_UNLOAD["Statistics"] = {'operating_mode':'all'}
+HARD_UNLOAD["Modules"] = {'operating_mode':'all'}
+HARD_UNLOAD["MQTT"] = {'operating_mode':'run'}
+HARD_UNLOAD["SQLDict"] = {'operating_mode':'all'}
+HARD_UNLOAD["AMQP"] = {'operating_mode':'run'}
+HARD_UNLOAD["Modules"] = {'operating_mode':'all'}
+HARD_LOAD["Variables"] = {'operating_mode':'all'}
+# HARD_UNLOAD["DownloadModules"] = {'operating_mode':'run'}
+HARD_UNLOAD["LocalDB"] = {'operating_mode':'all'}
+HARD_UNLOAD["Queue"] = {'operating_mode':'all'}
 
 
 class Loader(YomboLibrary, object):
@@ -135,13 +134,22 @@ class Loader(YomboLibrary, object):
     being downloaded.
     """
     @property
-    def operation_mode(self):
-        return self._operation_mode
+    def operating_mode(self):
+        return self._operating_mode
 
-    @operation_mode.setter
-    def operation_mode(self, val):
-        self.loadedLibraries['atoms']['loader.operation_mode'] = val
-        self._operation_mode = val
+    @operating_mode.setter
+    def operating_mode(self, val):
+        self.loadedLibraries['states']['loader.operating_mode'] = val
+        self._operating_mode = val
+
+    @property
+    def run_phase(self):
+        return self._run_phase
+
+    @operating_mode.setter
+    def run_phase(self, val):
+        self.loadedLibraries['states']['loader.run_phase'] = val
+        self._run_phase = val
 
     def __getitem__(self, component_requested):
         """
@@ -161,6 +169,8 @@ class Loader(YomboLibrary, object):
                                % component_requested, '101', '__getitem__', 'loader')
 
     def __init__(self, testing=False, loop=None):
+        self._operating_mode = "system_init"
+        self._run_phase = "system_init"
         self.unittest = testing
         self._moduleLibrary = None
         YomboLibrary.__init__(self)
@@ -168,13 +178,11 @@ class Loader(YomboLibrary, object):
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
         self.loadedLibraries = FuzzySearch({self._Name.lower(): self}, .95)
         self.libraryNames = {}
-        self.__localModuleVars = {}
         self._moduleLibrary = None
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
-        self._operation_mode = None  # One of: firstrun, config, run
+        self._operating_mode = None  # One of: first_run, config, run
         self.sigint = False  # will be set to true if SIGINT is received
         self.hook_counts = OrderedDict()  # keep track of hook names, and how many times it's called.
-        self.run_phase = None
         reactor.addSystemEventTrigger("before", "shutdown", self.shutdown)
 
     def shutdown(self):
@@ -182,17 +190,8 @@ class Loader(YomboLibrary, object):
         This is called if SIGINT (ctrl-c) was caught. Very useful incase it was called during startup.
         :return:
         """
+        self.run_phase = "shutdown"
         self.sigint = True
-
-    # def shutdown2(self, signum, frame):
-    #     """
-    #     This is called if SIGINT (ctrl-c) was caught. Very useful incase it was called during startup.
-    #     :return:
-    #     """
-    #     print 'Signal handler called with signal %s' % signum
-    #     print "WHAT!  I was called - signal"
-    #     self.sigint = True
-    #     reactor.stop()
 
     @inlineCallbacks
     def start(self):  #on startup, load libraried, then modules
@@ -203,25 +202,25 @@ class Loader(YomboLibrary, object):
         this function will load all the components and modules of the gateway.
         """
         logger.info("Importing libraries, this can take a few moments.")
-        self.run_phase = "libraries_import"
 
         # Get a reference to the asyncio event loop.
         yield yombo.utils.sleep(0.01)  # kick the asyncio event loop
         self.event_loop = asyncio.get_event_loop()
 
+        self._run_phase = "libraries_import"
         yield self.import_libraries() # import and init all libraries
 
-        # if self.sigint:
-        #     return
+        if self.sigint:
+            return
         logger.debug("Calling load functions of libraries.")
-        self.run_phase = "libraries_load"
 
+        self.run_phase = "modules_import"
         yield self._moduleLibrary.import_modules()
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             self._log_loader('debug', name, 'library', 'modules_imported', 'About to call _modules_imported_.')
-            if self.check_operation_mode(config['operation_mode']):
+            if self.check_operating_mode(config['operating_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_modules_imported_", called_by=self)
                 HARD_LOAD[name]['_modules_imported_'] = True
@@ -229,12 +228,13 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_modules_imported_'] = False
             self._log_loader('debug', name, 'library', 'modules_imported', 'Finished call to _modules_imported_.')
 
+        self.run_phase = "libraries_load"
         for name, config in HARD_LOAD.items():
             # print "sigint: %s" % self.sigint
             if self.sigint:
                 return
             # self._log_loader('debug', name, 'library', 'load', 'About to call _load_.')
-            if self.check_operation_mode(config['operation_mode']):
+            if self.check_operating_mode(config['operating_mode']):
                 HARD_LOAD[name]['_load_'] = 'Starting'
                 libraryName = name.lower()
                 yield self.library_invoke(libraryName, "_load_", called_by=self)
@@ -244,16 +244,17 @@ class Loader(YomboLibrary, object):
             self._log_loader('debug', name, 'library', 'load', 'Finished call to _load_.')
 
         self._moduleLibrary = self.loadedLibraries['modules']
-        self.run_phase = "libraries_start"
 
+        self.run_phase = "modules_init"
         yield self._moduleLibrary.init_modules()
 
 #        logger.debug("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1Calling start function of libraries.")
+        self.run_phase = "libraries_start"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             self._log_loader('debug', name, 'library', 'start', 'About to call _start_.')
-            if self.check_operation_mode(config['operation_mode']):
+            if self.check_operating_mode(config['operating_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_start_", called_by=self)
                 HARD_LOAD[name]['_start_'] = True
@@ -263,13 +264,25 @@ class Loader(YomboLibrary, object):
 
         yield self._moduleLibrary.load_modules()  #includes load & start
 
+        self.run_phase = "started"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
             self._log_loader('debug', name, 'library', 'started', 'About to call _started_.')
-            if self.check_operation_mode(config['operation_mode']):
+            if self.check_operating_mode(config['operating_mode']):
                 libraryName =  name.lower()
                 yield self.library_invoke(libraryName, "_started_", called_by=self)
+                HARD_LOAD[name]['_started_'] = True
+            else:
+                HARD_LOAD[name]['_started_'] = False
+
+        for name, config in HARD_LOAD.items():
+            if self.sigint:
+                return
+            self._log_loader('debug', name, 'library', '_modules_started_', 'About to call _modules_started_.')
+            if self.check_operating_mode(config['operating_mode']):
+                libraryName =  name.lower()
+                yield self.library_invoke(libraryName, "_modules_started_", called_by=self)
                 HARD_LOAD[name]['_started_'] = True
             else:
                 HARD_LOAD[name]['_started_'] = False
@@ -279,17 +292,6 @@ class Loader(YomboLibrary, object):
             'persist': False,
             'always_show': False,
         })
-
-        for name, config in HARD_LOAD.items():
-            if self.sigint:
-                return
-            self._log_loader('debug', name, 'library', '_modules_started_', 'About to call _modules_started_.')
-            if self.check_operation_mode(config['operation_mode']):
-                libraryName =  name.lower()
-                yield self.library_invoke(libraryName, "_modules_started_", called_by=self)
-                HARD_LOAD[name]['_started_'] = True
-            else:
-                HARD_LOAD[name]['_started_'] = False
 
         logger.info("Yombo Gateway started.")
 
@@ -306,10 +308,10 @@ class Loader(YomboLibrary, object):
         yield self.unload_libraries()
         # self.loop.close()
 
-    def Times_i18n_atoms(self, **kwargs):
+    def Loader_i18n_atoms(self, **kwargs):
        return [
-           {'loader.operation_mode': {
-               'en': 'One of: firstrun, run, config',
+           {'loader.operating_mode': {
+               'en': 'One of: first_run, run, config',
                },
            },
        ]
@@ -354,11 +356,11 @@ class Loader(YomboLibrary, object):
             HARD_LOAD[name]['__init__'] = True
 
         logger.debug("Calling init functions of libraries.")
-        self.run_phase = "libraries_init"
+        self._run_phase = "libraries_init"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
-            if self.check_operation_mode(config['operation_mode']) is False:
+            if self.check_operating_mode(config['operating_mode']) is False:
                 HARD_LOAD[name]['_init_'] = False
                 continue
             HARD_LOAD[name]['_init_'] = 'Starting'
@@ -367,7 +369,7 @@ class Loader(YomboLibrary, object):
             component = name.lower()
             library = self.loadedLibraries[component]
             library._event_loop = self.event_loop
-
+            print("ADDING STATES!!!!: %s - _operating_mode: %s" % (name, self._operating_mode))
             library._AMQP = self.loadedLibraries['amqp']
             library._AMQPYombo = self.loadedLibraries['amqpyombo']
             library._Atoms = self.loadedLibraries['atoms']
@@ -396,7 +398,7 @@ class Loader(YomboLibrary, object):
             library._Times = self.loadedLibraries['times']
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']
-            if hasattr(library, '_init_') and isinstance(library._init_, collections.Callable) \
+            if hasattr(library, '_init_') and isinstance(library._init_, Callable) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = Deferred()
                 d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'About to call _init_.'))
@@ -425,29 +427,29 @@ class Loader(YomboLibrary, object):
             else:
                 logger.error("----==(Library doesn't have init function: {name})==-----", name=name)
 
-    def check_operation_mode(self, allowed):
+    def check_operating_mode(self, allowed):
         """
-        Checks if something should be run based on the current operation_mode.
-        :param config: Either string or list or posible operation_modes
+        Checks if something should be run based on the current operating_mode.
+        :param config: Either string or list or posible operating_modes
         :return: True/False
         """
-        op_mode = self.operation_mode
+        operating_mode = self.operating_mode
 
-        if op_mode is None:
+        if operating_mode is None:
             return True
 
-        def check_operation_mode_inside(mode, op_mode):
+        def check_operating_mode_inside(mode, operating_mode):
             if mode == 'all':
                 return True
-            elif mode == op_mode:
+            elif mode == operating_mode:
                 return True
             return False
 
         if isinstance(allowed, str):  # we have a string
-            return check_operation_mode_inside(allowed, op_mode)
+            return check_operating_mode_inside(allowed, operating_mode)
         else: # we have something else
             for item in allowed:
-                if check_operation_mode_inside(item, op_mode):
+                if check_operating_mode_inside(item, operating_mode):
                     return True
 
     def library_invoke_failure(self, failure, requested_library, hook_name):
@@ -481,7 +483,7 @@ class Loader(YomboLibrary, object):
             hook = library._Name.lower() + "_" + hook
         if hasattr(library, hook):
             method = getattr(library, hook)
-            if isinstance(method, collections.Callable):
+            if isinstance(method, Callable):
                 if library._Name not in self.hook_counts:
                     self.hook_counts[library._Name] = {}
                 if hook not in self.hook_counts:
@@ -574,7 +576,7 @@ class Loader(YomboLibrary, object):
         # print "klass: %s  " % klass
 
         # Put the component into various lists for mgmt
-        if not isinstance(klass, collections.Callable):
+        if not isinstance(klass, Callable):
             logger.warn("Unable to start class '{classname}', it's not callable.", classname=pyclassname)
             raise ImportError("Unable to start class '%s', it's not callable."  % pyclassname)
 
@@ -609,12 +611,12 @@ class Loader(YomboLibrary, object):
         """
         logger.debug("Stopping libraries: {stuff}", stuff=HARD_UNLOAD)
         for name, config in HARD_UNLOAD.items():
-            if self.check_operation_mode(config['operation_mode']):
+            if self.check_operating_mode(config['operating_mode']):
                 logger.debug("stopping: {name}", name=name)
                 yield self.library_invoke(name, "_stop_", called_by=self)
 
         for name, config in HARD_UNLOAD.items():
-            if self.check_operation_mode(config['operation_mode']):
+            if self.check_operating_mode(config['operating_mode']):
                 logger.debug("_unload_: {name}", name=name)
                 yield self.library_invoke(name, "_unload_", called_by=self)
 
@@ -658,7 +660,7 @@ class Loader(YomboLibrary, object):
                 if hasattr(self.loadedLibraries[component_name], component_function[0]):
                     remote_attribute = getattr(self.loadedLibraries[component_name], component_function[0]) # the dictionary
                     if component_function[1] in remote_attribute:
-                        if not isinstance(remote_attribute[component_function[1]], collections.Callable): # the key should be callable.
+                        if not isinstance(remote_attribute[component_function[1]], Callable): # the key should be callable.
                             logger.info(
                                 "Could not find callable library function by name: '{component_type} :: {component_name} :: (list) {component_function}'",
                                 component_type=component_type, component_name=component_name, component_function=component_function)
@@ -669,7 +671,7 @@ class Loader(YomboLibrary, object):
             else:
                 if hasattr(self.loadedLibraries[component_name], component_function):
                     method = getattr(self.loadedLibraries[component_name], component_function)
-                    if not isinstance(method, collections.Callable):
+                    if not isinstance(method, Callable):
                         logger.info(
                             "Could not find callable modoule function by name: '{component_type} :: {component_name} :: {component_function}'",
                             component_type=component_type, component_name=component_name, component_function=component_function)
@@ -684,7 +686,7 @@ class Loader(YomboLibrary, object):
             if hasattr(modules._modulesByName[component_name], component_function[0]):
                 remote_attribute = getattr(modules._modulesByName[component_name], component_function[0])
                 if component_function[1] in remote_attribute:
-                    if not isinstance(remote_attribute[component_function[1]], collections.Callable):  # the key should be callable.
+                    if not isinstance(remote_attribute[component_function[1]], Callable):  # the key should be callable.
                         logger.info(
                             "Could not find callable module function by name: '{component_type} :: {component_name} :: (list){component_function}'",
                             component_type=component_type, component_name=component_name,
@@ -696,7 +698,7 @@ class Loader(YomboLibrary, object):
             else:
                 if hasattr(modules._modulesByName[component_name], component_function):
                     method = getattr(modules._modulesByName[component_name], component_function)
-                    if not isinstance(method, collections.Callable):
+                    if not isinstance(method, Callable):
                         logger.info(
                             "Could not find callable module function by name: '{component_type} :: {component_name} :: {component_function}'",
                             component_type=component_type, component_name=component_name,
