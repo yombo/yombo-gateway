@@ -323,15 +323,16 @@ def upgrade(Registry, **kwargs):
     #  Defines the statistics data table. Stores node items.
     table = """CREATE TABLE `nodes` (
         `id`             TEXT NOT NULL,
-        `parent_id`      TEXT NOT NULL,
+        `parent_id`      TEXT,
         `gateway_id`     TEXT NOT NULL,
         `node_type`      TEXT NOT NULL,
         `weight`         INTEGER NOT NULL,
-        `machine_label`  TEXT NOT NULL,
+        `label`          TEXT,
+        `machine_label`  TEXT,
         `gw_always_load` INTEGER NOT NULL,
-        `destination`  TEXT NOT NULL,
+        `destination`    TEXT NOT NULL,
         `data`           BLOB,
-        `data_type`      TEXT NOT NULL,
+        `data_content_type` TEXT NOT NULL,
         `status`         INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
         `updated`        INTEGER NOT NULL,
         `created`        INTEGER NOT NULL );"""

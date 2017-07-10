@@ -358,9 +358,7 @@ class Nodes(YomboLibrary):
             raise YomboWarning()
 
         if node.parent_id in self.nodes:
-            item = self.nodes[node.parent_id]
-            data = yield self._LocalDB.get_node(item.node_id)
-            returnValue(data)
+            return self.nodes[node.parent_id]
         else:
             raise YomboWarning("Parent ID not found.")
 
@@ -384,11 +382,14 @@ class Nodes(YomboLibrary):
             logger.warn("Unable to find requested node: {node}.  Reason: {e}", node=node_requested, e=e)
             raise YomboWarning()
 
-        if node.parent_id is not None and node.data_type is not None:
-            data = yield self._LocalDB.get_node_siblings(node)
-            returnValue(data)
+        if node.parent_id is not None:
+            siblings = {}
+            for node_id, node_obj in self.nodes.items():
+                if node_obj.parent_id == node.parent_id:
+                    siblings[node_id] = node_obj
+            return siblings
         else:
-            raise YomboWarning("Node has no parent or no node_type.")
+            raise YomboWarning("Node has no parent_id.")
 
     @inlineCallbacks
     def get_children(self, node_requested, limiter=None):
@@ -410,57 +411,65 @@ class Nodes(YomboLibrary):
             logger.warn("Unable to find requested node: {node}.  Reason: {e}", node=node_requested, e=e)
             raise YomboWarning()
 
-        if node.data_type is not None:
-            data = yield self._LocalDB.get_node_children(node)
-            returnValue(data)
-        else:
-            raise YomboWarning("Node has invalid node_type.")
+        children = {}
+        for node_id, node_obj in self.nodes.items():
+            if node_obj.parent_id == node.node_id:
+                children[node_id] = node_obj
+        return children
 
-    def search(self, _limiter=None, _operation=None, **kwargs):
+    def search(self, criteria):
         """
-        Search for node based on attributes for all nodes.
+        Search for nodes based on a dictionary of key=value pairs.
 
-        :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
-        :type limiter_override: float
-        :param status: Deafult: 1 - The status of the node to check for.
-        :return: 
+        :param criteria:
+        :return:
         """
-        return search_instance(kwargs,
-                               self.nodes,
-                               self.node_search_attributes,
-                               _limiter,
-                               _operation)
+        results = {}
+        for node_id, node in self.nodes.items():
+            for key, value in criteria.items():
+                if key not in self.node_search_attributes:
+                    continue
+                if value == getattr(node, key):
+                    results[node_id] = node
+        return results
 
     @inlineCallbacks
-    def dev_node_add(self, data, **kwargs):
+    def add_node(self, api_data, **kwargs):
         """
-        Add a node at the Yombo server level, not at the local gateway level.
+        Add a new node. Updates Yombo servers and creates a new entry locally.
 
-        :param data:
+        :param api_data:
         :param kwargs:
         :return:
         """
-        node_results = yield self._YomboAPI.request('POST', '/v1/node', data)
-        # print("dt_results: %s" % node_results)
+        if 'gateway_id' not in api_data:
+            api_data['gateway_id'] = self._Configs.get("core", "gwid")
 
-        if node_results['code'] != 200:
+        node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
+        print("dt_results: %s" % node_results)
+
+        if node_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add node",
                 'apimsg': node_results['content']['message'],
                 'apimsghtml': node_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Node type added.",
             'node_id': node_results['data']['id'],
         }
-        returnValue(results)
+        new_node = node_results['data']
+        new_node['created'] = new_node['created_at']
+        new_node['updated'] = new_node['updated_at']
+        self.import_node(new_node)
+        return results
 
     @inlineCallbacks
-    def dev_node_edit(self, node_id, data, **kwargs):
+    def edit_node(self, node_id, api_data, called_from_node=None, **kwargs):
         """
         Edit a node at the Yombo server level, not at the local gateway level.
 
@@ -469,27 +478,32 @@ class Nodes(YomboLibrary):
         :return:
         """
 
-        node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), data)
+        node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
         # print("module edit results: %s" % module_results)
 
-        if node_results['code'] != 200:
+        if node_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit node",
                 'apimsg': node_results['content']['message'],
                 'apimsghtml': node_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type edited.",
             'node_id': node_results['data']['id'],
         }
-        returnValue(results)
+
+        node = self.nodes[node_id]
+        if called_from_node is not True:
+            node.update_attributes(api_data)
+            node.save_to_db()
+        return results
 
     @inlineCallbacks
-    def dev_node_delete(self, node_id, **kwargs):
+    def delete_node(self, node_id, **kwargs):
         """
         Delete a node at the Yombo server level, not at the local gateway level.
 
@@ -499,24 +513,24 @@ class Nodes(YomboLibrary):
         """
         node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
 
-        if node_results['code'] != 200:
+        if node_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete node",
                 'apimsg': node_results['content']['message'],
                 'apimsghtml': node_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Node deleted.",
             'node_id': node_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
-    def dev_node_enable(self, node_id, **kwargs):
+    def enable_node(self, node_id, **kwargs):
         """
         Enable a node at the Yombo server level, not at the local gateway level.
 
@@ -531,24 +545,24 @@ class Nodes(YomboLibrary):
 
         node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
 
-        if node_results['code'] != 200:
+        if node_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable node",
                 'apimsg': node_results['content']['message'],
                 'apimsghtml': node_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Node enabled.",
             'node_id': node_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
-    def dev_node_disable(self, node_id, **kwargs):
+    def disable_node(self, node_id, **kwargs):
         """
         Enable a node at the Yombo server level, not at the local gateway level.
 
@@ -564,21 +578,21 @@ class Nodes(YomboLibrary):
         node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
         # print("disable node results: %s" % node_results)
 
-        if node_results['code'] != 200:
+        if node_results['code'] > 299:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable node",
                 'apimsg': node_results['content']['message'],
                 'apimsghtml': node_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Node disabled.",
             'node_id': node_id,
         }
-        returnValue(results)
+        return results
 
 
 class Node:
@@ -617,6 +631,7 @@ class Node:
         self.weight = None
         self.gw_always_load = None
         self.destination = None
+        self.data = None
         self.data_type = None
         self.status = None
         self.updated = None
@@ -631,17 +646,28 @@ class Node:
         :param node: 
         :return: 
         """
-        self.parent_id = node['parent_id']
-        self.gateway_id = node['gateway_id']
-        self.node_type = node['node_type']
-        self.weight = node['weight']
-        self.machine_label = node['machine_label']
-        self.gw_always_load = node['gw_always_load']
-        self.destination = node['destination']
-        self.data_type = node['data_type']
-        self.status = node['status']
-        self.created = node['created']
-        self.updated = node['updated']
+        if 'parent_id' in node:
+            self.parent_id = node['parent_id']
+        if 'gateway_id' in node:
+            self.gateway_id = node['gateway_id']
+        if 'node_type' in node:
+            self.node_type = node['node_type']
+        if 'weight' in node:
+            self.weight = node['weight']
+        if 'machine_label' in node:
+            self.machine_label = node['machine_label']
+        if 'gw_always_load' in node:
+            self.gw_always_load = node['gw_always_load']
+        if 'destination' in node:
+            self.destination = node['destination']
+        if 'data_type' in node:
+            self.data_type = node['data_type']
+        if 'status' in node:
+            self.status = node['status']
+        if 'created' in node:
+            self.created = node['created']
+        if 'updated' in node:
+            self.updated = node['updated']
 
     def __str__(self):
         """
