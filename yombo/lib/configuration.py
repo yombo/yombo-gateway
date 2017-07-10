@@ -244,6 +244,9 @@ class Configuration(YomboLibrary):
 
         self.loading_yombo_ini = True
         self.last_yombo_ini_read = self.read_yombo_ini()
+        if self.last_yombo_ini_read is False:
+            self._Loader.operating_mode = 'first_run'
+
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
@@ -262,13 +265,12 @@ class Configuration(YomboLibrary):
             logger.warn("CAUGHT IOError!!!!!!!!!!!!!!!!!!  In reading meta: {error}", error=e)
         except configparser.NoSectionError:
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  IN saving. ")
-        # print self.configs
 
         logger.debug("done parsing yombo.ini.info")
 
         #setup some defaults if we are new....
         self.get('core', 'gwid', None)
-        self.get('core', 'gwudid', None)
+        self.get('core', 'gwuuid', None)
 
         # Perform DB cleanup activites based on local section.
         if self.get('local', 'deletedelayedmessages', False, False) is True:
@@ -288,7 +290,6 @@ class Configuration(YomboLibrary):
                 ipv4_external = yield get_external_ip_address_v4()
                 self.set("core", "externalipaddress_v4", ipv4_external)
                 self.set("core", "externalipaddresstime", int(time()))
-            #            print "didn't find external ip address"
 
         if self.get('core', 'localipaddress_v4', False, False) is False or self.get('core', 'localipaddresstime', False, False) is False:
             address_info = get_local_network_info()
@@ -319,8 +320,8 @@ class Configuration(YomboLibrary):
         # self.periodic_load_yombo_ini = LoopingCall(self.check_if_yombo_ini_modified)
         # self.periodic_load_yombo_ini.start(5)
 
-        if self.get('core', 'setup_stage', False, False) is False:
-            self.set('core', 'setup_stage', 'first_run')
+        if self.get('core', 'first_run', None, False) is None:
+            self.set('core', 'first_run', True)
         self.loading_yombo_ini = False
 
     def _load_(self, **kwargs):
@@ -351,6 +352,8 @@ class Configuration(YomboLibrary):
     def read_yombo_ini(self, update_self=True):
         temp = {}
         try:
+            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
+            copyfile('yombo.ini', "usr/bak/yombo_ini/%s_yombo.ini" % timeString)
             config_parser = configparser.ConfigParser()
             config_parser.read('yombo.ini')
             for section in config_parser.sections():
@@ -378,8 +381,7 @@ class Configuration(YomboLibrary):
 
         except IOError:
             self._Atoms.set('configuration.yombo_ini.found', False)
-            self._Loader.operation_mode = 'firstrun'
-            logger.warn("yombo.ini doesn't exist. Setting run mode to 'firstrun'.")
+            logger.warn("yombo.ini doesn't exist. Setting run mode to 'first_run'.")
             self._Atoms.set('configuration.yombo_ini.found', False)
             self.loading_yombo_ini = False
             return False
@@ -387,56 +389,10 @@ class Configuration(YomboLibrary):
         except configparser.NoSectionError as e:
             self._Atoms.set('configuration.yombo_ini.found', False)
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
-            return False
+            return True
         else:
             self._Atoms.set('configuration.yombo_ini.found', True)
-            timeString  = strftime("%Y-%m-%d_%H:%M:%S", localtime())
-            copyfile('yombo.ini', "usr/bak/yombo_ini/%s_yombo.ini" % timeString)
-            return temp
-
-    # def check_if_yombo_ini_modified(self):
-    #     last_modified = file_last_modified('yombo.ini')
-    #
-    #     if self.yombo_ini_last_modified == 0:
-    #         self.yombo_ini_last_modified = last_modified
-    #         print "yombo.ini last modified: %s" % self.yombo_ini_last_modified
-    #         return
-    #
-    #     if self.yombo_ini_last_modified < last_modified:
-    #         self.yombo_ini_last_modified = last_modified
-    #         print "yombo file updated...  should read it?"
-    #         configs = self.read_yombo_ini(update_self=False)
-    #         added, removed, modified, same = dict_diff(self.last_yombo_ini_read, configs)
-    #
-    #         print "added: %s" % added
-    #         print "removed: %s" % removed
-    #         print "modified: %s" % modified
-    #         print "same: %s" % same
-    #
-    #         for section in added:
-    #             for option, value in configs[section].iteritems():
-    #                  print "adding: %s: %s: %s" % (section, option, value)
-    #                  # self.set(section, option, value)
-    #
-    #         for section, options in configs.iteritems():
-    #             for option, value in options.iteritems():
-
-            # for section in removed:
-            #     self.configs[section][option]
-            #     for option, value in configs[section].iteritems():
-            #         print "adding: %s: %s: %s" % (section, option, value)
-            #         # self.set(section, option, value)
-
-                    #     for value in options:
-            #
-            #
-            #
-            # for section, options in added.iteritems():
-            #     print "adding: %s: %s" % (section, option)
-            #     for value in options:
-            #         self.set(section, option, value)
-
-
+            return True
 
     def Configuration_i18n_atoms(self, **kwargs):
        return [
@@ -475,8 +431,10 @@ class Configuration(YomboLibrary):
             if self.configs_dirty is True or force_save is True:
                 logger.debug("saving config file...")
                 config_file = open("yombo.ini",'w')
-                config_file.write("#\n# " + _('configuration', "This file stores configuration information about the gateway.") + "\n")
-                config_file.write("# " + _('configuration', "WARNING: Do not edit this file while the gateway is running, any changes will be lost.") + "\n# \n")
+                config_file.write("#\n# " + _('configuration',
+                  "This file stores configuration information about the gateway.") + "\n")
+                config_file.write("# " + _('configuration',
+                   "WARNING: Do not edit this file while the gateway is running, any changes will be lost.") + "\n# \n")
 
                 # first parse sections to make sure each section has a value!
                 configs = {}
@@ -726,6 +684,7 @@ class Configuration(YomboLibrary):
                 self.configs[section][option]['reads'] += 1
 #                returnValue(self.configs[section][option])
                 self._Statistics.increment("lib.configuration.get.value", bucket_size=15, anon=True)
+                # print("cfgs: %s:%s = %s" % (section, option, self.configs[section][option]['value']))
                 return self.configs[section][option]['value']
 
         # it's not here, so, if there is a default, lets save that for future reference and return it... English much?
@@ -745,7 +704,7 @@ class Configuration(YomboLibrary):
             if section not in self.configs:
                 raise KeyError("Configuration section not found: %s" % section)
             else:
-                raise KeyError("Configuration option doesn't exist in section: %s" % option)
+                raise KeyError("Configuration option doesn't exist: %s -> %s" % (section, option))
 
     @inlineCallbacks
     def set(self, section, option, value, **kwargs):
@@ -770,6 +729,8 @@ class Configuration(YomboLibrary):
         :param value: What to return if no result is found, default = None.
         :type value: int or string
         """
+        # print("cfgs set: %s:%s = %s" % (section, option, value))
+
         if len(section) > self.MAX_SECTION_LENGTH:
             self._Statistics.increment("lib.configuration.set.invalid_length", bucket_size=15, anon=True)
             raise InvalidArgumentError("section cannot be more than %d chars" % self.MAX_OPTION_LENGTH)
@@ -788,7 +749,6 @@ class Configuration(YomboLibrary):
                 raise InvalidArgumentError("value cannot be more than %d chars" %
                     self.MAX_VALUE)
 
-        # print "setting section: %s, option: %s, value: %s" % (section, option, value)
         section = section.lower()
         option = option.lower()
 
