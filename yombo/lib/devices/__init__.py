@@ -880,7 +880,7 @@ class Devices(YomboLibrary):
 
         api_data = {}
         for key, value in data.items():
-            print("key (%s) is of type: %s" % (key, type(value)))
+            # print("key (%s) is of type: %s" % (key, type(value)))
             if hasattr(device, key):
                 if isinstance(value, str) and len(value) == 0 :
                     # if key == 'energy_map':

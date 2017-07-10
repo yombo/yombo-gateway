@@ -58,7 +58,8 @@ while getopts ":dhl:LPp:t:" opt; do
       ;;
     P)
       # Enable profiling
-      YOMBO_OPTS="$YOMBO_OPTS --profiler=cprofile -p profile.out"
+      echo "enabling profiler"
+      YOMBO_OPTS="$YOMBO_OPTS --savestats --profiler cprofile -n --profile prof.stats"
       ;;
     p)
       # Change pid file location
