@@ -31,7 +31,7 @@ class GWService(Service):
         After twisted is running to get, call loader library and various starter functions
         to get everything started.
         """
-        reactor.suggestThreadPoolSize(40)
+        reactor.suggestThreadPoolSize(50)
         reactor.callWhenRunning(self.start_loader_library)
 
     def startService(self):
