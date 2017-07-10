@@ -45,20 +45,20 @@ class GPG(YomboLibrary):
         """
         Get the GnuPG subsystem up and loaded.
         """
-        self.gwid = self._Configs.get2("core", "gwid")
-        self.gwuuid = self._Configs.get2("core", "gwuuid")
-        self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
-        self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
-
         self.aes_blocksize = 32
         self._key_generation_status = {}
 
-        self.initDefer = Deferred()
         self.gpg = gnupg.GPG(gnupghome="usr/etc/gpg")
-        logger.debug("syncing gpg keys into db")
         self.sync_keyring_to_db()
-        self._done_init()
-        return self.initDefer
+
+        self.gwid = self._Configs.get2("core", "gwid", None, False)
+        self.gwuuid = self._Configs.get2("core", "gwuuid", None, False)
+        self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
+        self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
+
+        # self.initDefer = Deferred()
+        # self._done_init()
+        # return self.initDefer
 
 #    @inlineCallbacks
     def _load_(self, **kwargs):
@@ -116,6 +116,7 @@ class GPG(YomboLibrary):
 
         :return:
         """
+        logger.debug("syncing gpg keys into db")
         self.local_db = self._Libraries['localdb']
 
         db_keys = yield self.local_db.get_gpg_key()
@@ -317,6 +318,9 @@ class GPG(YomboLibrary):
         Generates a new GPG key pair. Updates yombo.ini and marks it to be sent when gateway conencts to server
         again.
         """
+        if self.gwid is None or self.gwuuid is None:
+            self._key_generation_status[request_id] = 'failed-gateway not setup'
+            return
         input_data = self.gpg.gen_key_input(
             name_email=self.gwuuid() + "@yombo.net",
             name_real="Yombo Gateway",
@@ -337,7 +341,7 @@ class GPG(YomboLibrary):
         print(request_id)
         if newkey == '':
             print("\n\rERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?\n\r")
-            raise YomboCritical("Error with python GPGP interface.  Is it installed?")
+            raise YomboCritical("Error with python GPG interface.  Is it installed?")
 
         private_keys = self.gpg.list_keys(True)
         keyid = ''
