@@ -508,12 +508,26 @@ class GPG(YomboLibrary):
     # Retyrn true if good.
         pass
 
+    @staticmethod
+    def aes_str_to_bytes(data):
+        u_type = type(b''.decode('utf8'))
+        if isinstance(data, u_type):
+            return data.encode('utf8')
+        return data
+
+    def aes_pad(self, s):
+        return s + (self.aes_blocksize - len(s) % self.aes_blocksize) * self.aes_str_to_bytes(chr(self.aes_blocksize - len(s) % self.aes_blocksize))
+
+    @staticmethod
+    def aes_unpad(s):
+        return s[:-ord(s[len(s)-1:])]
+
     @inlineCallbacks
     def encrypt_aes(self, key, raw):
         """
         Encrypt something using AES 256 (very strong).
 
-        From: https://gist.github.com/mguezuraga/257a662a51dcde53a267e838e4d387cd
+        Modified from: https://gist.github.com/mguezuraga/257a662a51dcde53a267e838e4d387cd
 
         :param key: A password
         :type key: string
@@ -521,33 +535,33 @@ class GPG(YomboLibrary):
         :return: String containing the encrypted content.
         """
         key = hashlib.sha256(key.encode('utf-8')).digest()
-        raw = self._aes_pad(raw)
+        raw = self.aes_pad(self.aes_str_to_bytes(raw))
         results = yield threads.deferToThread(self._encrypt_aes, key, raw)
-        returnValue(results)
+        return results
 
     def _encrypt_aes(self, key, raw):
         iv = Random.new().read(AES.block_size)
         cipher = AES.new(key, AES.MODE_CBC, iv)
-        return base64.b64encode(iv + cipher.encrypt(raw))
+        return iv + cipher.encrypt(raw)
+        # return base64.b85encode(iv + cipher.encrypt(raw)).decode('utf-8')
 
     @inlineCallbacks
     def decrypt_aes(self, key, enc):
         key = hashlib.sha256(key.encode('utf-8')).digest()
-        enc = base64.b64decode(enc)
+        # enc = base64.b85decode(enc)
         results = yield threads.deferToThread(self._decrypt_aes, key, enc)
-        returnValue(results)
+        data = self.aes_unpad(results)
+        return data
 
     def _decrypt_aes(self, key, enc):
         iv = enc[:AES.block_size]
         cipher = AES.new(key, AES.MODE_CBC, iv)
-        return self._aes_unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
-
-    def _aes_pad(self, s):
-        return s + (self.aes_blocksize - len(s) % self.aes_blocksize) * chr(self.aes_blocksize - len(s) % self.aes_blocksize)
-
-    @staticmethod
-    def _aes_unpad(s):
-        return s[:-ord(s[len(s)-1:])]
+        results = cipher.decrypt(enc[AES.block_size:])
+        try:
+            results = results.decode('utf-8')
+            return results
+        except:
+            return results
 
 ############ OLD Stuff
     #
