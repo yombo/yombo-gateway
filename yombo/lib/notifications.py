@@ -124,6 +124,7 @@ class Notifications(YomboLibrary):
         # return self.init_deferred
 
     def _load_(self, **kwargs):
+        self.gateway_id = self._Configs.get('core', 'gwid')
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False))
         self.load_notifications()
@@ -224,6 +225,8 @@ class Notifications(YomboLibrary):
 
         if 'type' not in notice:
             notice['type'] = 'notice'
+        if 'gateway_id' not in notice:
+            notice['gateway_id'] = self.gateway_id
         if 'priority' not in notice:
             notice['priority'] = 'normal'
         if 'source' not in notice:
@@ -288,9 +291,9 @@ class Notifications(YomboLibrary):
         """
         try:
             del self.notifications[notice_id]
+            self._LocalDB.delete_notification(notice_id)
         except:
             pass
-        self._LocalDB.delete_notification(notice_id)
         self.check_always_show_count()
 
     def get(self, notice_id, get_all=None):
@@ -343,6 +346,7 @@ class Notification:
 
         self._Parent = parent
         self.notification_id = notice['id']
+        self.gateway_id = notice['gateway_id']
         self.type = notice['type']
         self.priority = notice['priority']
         self.source = notice['source']
@@ -394,6 +398,7 @@ class Notification:
         """
         return {
             'notification_id': str(self.notification_id),
+            'gateway_id' : str(self.gateway_id),
             'type' : str(self.type),
             'priority': str(self.priority),
             'source': str(self.source),
