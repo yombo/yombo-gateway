@@ -18,7 +18,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-
+from itertools import islice
 import copy
 from collections import deque, namedtuple
 from time import time
@@ -165,6 +165,7 @@ class Device(object):
 
         #The following items are set from the databsae or AMQP service.
         self.device_type_id = None
+        self.gateway_id = None
         self.location_id = None
         self.area_id = None
         self.machine_label = None
@@ -186,6 +187,7 @@ class Device(object):
         self.energy_map = None
         self.energy_type = None
         self.device_is_new = True
+
         self.update_attributes(device)
 
     @inlineCallbacks
@@ -201,6 +203,10 @@ class Device(object):
             group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
         )
+        if self.test_device is None:
+            self.meta = yield self._SQLDict.get('yombo.lib.device', 'meta_' + self.device_id)
+        else:
+            self.meta = {}
 
         yield self._Parent._DeviceTypes.ensure_loaded(self.device_type_id)
 
@@ -222,6 +228,8 @@ class Device(object):
         """
         if 'device_type_id' in device:
             self.device_type_id = device["device_type_id"]
+        if 'gateway_id' in device:
+            self.gateway_id = device["gateway_id"]
         if 'location_id' in device:
             self.location_id = device["location_id"]
         if 'area_id' in device:
@@ -283,10 +291,12 @@ class Device(object):
             global_invoke_all('_device_updated_', called_by=self, **{'device': self})
 
     def add_to_db(self):
-        self._Parent._LocalDB.add_device(self)
+        if self._Parent.gateway_id == self.gateway_id:
+            self._Parent._LocalDB.add_device(self)
 
     def save_to_db(self):
-        self._Parent._LocalDB.update_device(self)
+        if self._Parent.gateway_id == self.gateway_id:
+            self._Parent._LocalDB.update_device(self)
 
     @inlineCallbacks
     def get_variable_fields(self):
@@ -353,7 +363,7 @@ class Device(object):
                 'statistic_lifetime': str(self.statistic_lifetime),
                 'pin_code': "********",
                 'pin_required': int(self.pin_required),
-                'pin_timeout': int(self.pin_timeout),
+                'pin_timeout': self.pin_timeout,
                 'voice_cmd': str(self.voice_cmd),
                 'voice_cmd_order': str(self.voice_cmd_order),
                 'created': int(self.created),
@@ -361,6 +371,45 @@ class Device(object):
                 'last_command': copy.copy(self.last_command),
                 'status_history': copy.copy(self.status_history),
                 }
+
+    def to_mqtt_coms(self):
+        """
+        Export device variables as a dictionary.
+        """
+        def take(n, iterable):
+            return list(islice(iterable, n))
+
+        if len(self.last_command) > 0:
+            last_command = take(1, copy.copy(self.last_command)),
+        else:
+            last_command = []
+
+        if len(self.last_command) > 0:
+            status_history = take(1, copy.copy(self.status_history)),
+        else:
+            status_history = []
+
+        return {'device_id': str(self.device_id),
+                'last_command': last_command,
+                'status_history': status_history,
+                }
+        # return {'device_id': str(self.device_id),
+        #         'device_type_id': str(self.device_type_id),
+        #         'machine_label': str(self.machine_label),
+        #         'label': str(self.label),
+        #         'description': str(self.description),
+        #         'statistic_label': str(self.statistic_label),
+        #         'statistic_lifetime': str(self.statistic_lifetime),
+        #         'pin_code': "********",
+        #         'pin_required': int(self.pin_required),
+        #         'pin_timeout': self.pin_timeout,
+        #         'voice_cmd': str(self.voice_cmd),
+        #         'voice_cmd_order': str(self.voice_cmd_order),
+        #         'created': int(self.created),
+        #         'updated': int(self.updated),
+        #         'last_command': last_command,
+        #         'status_history': status_history,
+        #         }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None,
                 inputs=None, not_after=None, **kwargs):
@@ -1052,7 +1101,7 @@ class Device(object):
 
     @property
     def area(self) -> str:
-        locations = self._Parent._DeviceLocations.device_locations
+        locations = self._Parent._Locations.locations
         area = ""
         if self.area_id in locations:
             area = locations[self.area_id].label
@@ -1065,7 +1114,7 @@ class Device(object):
 
     @property
     def location(self) -> str:
-        locations = self._Parent._DeviceLocations.device_locations
+        locations = self._Parent._Locations.locations
         area = ""
         if self.area_id in locations:
             location = locations[self.location_id].label
@@ -1078,7 +1127,7 @@ class Device(object):
 
     @property
     def area_label(self) -> str:
-        locations = self._Parent._DeviceLocations.device_locations
+        locations = self._Parent._Locations.locations
         area = ""
         if self.area_id in locations:
             area = locations[self.area_id].label
@@ -1090,7 +1139,7 @@ class Device(object):
 
     @property
     def full_label(self) -> str:
-        locations = self._Parent._DeviceLocations.device_locations
+        locations = self._Parent._Locations.locations
         location = ""
         area = ""
         if self.location_id in locations:

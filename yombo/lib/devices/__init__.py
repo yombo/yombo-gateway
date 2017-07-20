@@ -213,9 +213,9 @@ class Devices(YomboLibrary):
         self.devices = {}
         self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label', 'description',
             'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
-            'created', 'updated', 'updated_srv', 'location_id', 'area_id']
+            'created', 'updated', 'updated_srv', 'location_id', 'area_id', 'gateway_id']
 
-        self.gwid = self._Configs.get("core", "gwid")
+        self.gateway_id = self._Configs.get("core", "gwid")
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
@@ -502,7 +502,7 @@ class Devices(YomboLibrary):
         # yombo/devices/DEVICEID/get|cmd/option
         parts = topic.split('/', 10)
         logger.info("Yombo Devices got this: {topic} : {parts}", topic=topic, parts=parts)
-        payload = payload.lower().strip()
+        payload = payload.strip()
         content_type = 'string'
         try:
             payload = json.loads(payload)
@@ -658,11 +658,12 @@ class Devices(YomboLibrary):
         :param status: Deafult: 1 - The status of the device to check for.
         :return: 
         """
-        return search_instance(kwargs,
+        found, key, item, ratio, others = search_instance(kwargs,
                                self.devices,
                                self.device_search_attributes,
                                _limiter,
                                _operation)
+        return others
 
     @inlineCallbacks
     def add_device(self, api_data, **kwargs):
@@ -674,7 +675,7 @@ class Devices(YomboLibrary):
         :return:
         """
         # logger.info("Add new device.  Data: {data}", data=data)
-        api_data['gateway_id'] = self.gwid
+        api_data['gateway_id'] = self.gateway_id
 
         try:
             for key, value in api_data.items():
@@ -760,7 +761,7 @@ class Devices(YomboLibrary):
                     continue
                 if data_id.startswith('new_'):
                     post_data = {
-                        'gateway_id': self.gwid,
+                        'gateway_id': self.gateway_id,
                         'field_id': field_id,
                         'relation_id': device_id,
                         'relation_type': 'device',
