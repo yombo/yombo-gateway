@@ -194,10 +194,6 @@ class AMQPYombo(YomboLibrary):
         if self.send_local_information_loop.running is False:
             self.send_local_information_loop.start(random_int(60 * 60 * 4,.2))
 
-        if self.request_configs is False:
-            self.request_configs = True
-            return self.configHandler.connected()
-
     def amqp_disconnected(self):
         """
         Called by AQMP when disconnected.
@@ -236,10 +232,24 @@ class AMQPYombo(YomboLibrary):
         body = {
             "internal_ipv4": self._Configs.get("core", "localipaddress_v4"),
             "external_ipv4": self._Configs.get("core", "externalipaddress_v4"),
+            # "external_ipv6": self._Configs.get("core", "externalipaddress_v6"),
+            # "external_ipv6": self._Configs.get("core", "externalipaddress_v6"),
             "internal_port": self._Configs.get("webinterface", "nonsecure_port"),
             "external_port": self._Configs.get("webinterface", "nonsecure_port"),
             "internal_secure_port": self._Configs.get("webinterface", "secure_port"),
             "external_secure_port": self._Configs.get("webinterface", "secure_port"),
+            "internal_mqtt": self._Configs.get("mqtt", "server_listen_port"),
+            "internal_mqtt_le": self._Configs.get("mqtt", "server_listen_port_le_ssl"),
+            "internal_mqtt_ss": self._Configs.get("mqtt", "server_listen_port_ss_ssl"),
+            "internal_mqtt_ws": self._Configs.get("mqtt", "server_listen_port_websockets"),
+            "internal_mqtt_ws_le": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"),
+            "internal_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
+            "external_mqtt": self._Configs.get("mqtt", "server_listen_port"),
+            "external_mqtt_le": self._Configs.get("mqtt", "server_listen_port_le_ssl"),
+            "external_mqtt_ss": self._Configs.get("mqtt", "server_listen_port_ss_ssl"),
+            "external_mqtt_ws": self._Configs.get("mqtt", "server_listen_port_websockets"),
+            "external_mqtt_ws_le": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"),
+            "external_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
         }
 
         # logger.debug("sending local information.")
@@ -259,8 +269,9 @@ class AMQPYombo(YomboLibrary):
 
     def receive_local_information(self, msg=None, properties=None, correlation_info=None,
                                   send_message_info=None, receied_message_info=None, **kwargs):
-        print("########################################################### receive_local_information")
-        pass
+        if self.request_configs is False:  # this is where we start requesting information - after we have sent out info.
+            self.request_configs = True
+            return self.configHandler.connected()
 
     def generate_message_response(self, properties, exchange_name, source, destination, headers, body):
         response_msg = self.generate_message(exchange_name, source, destination, "response", headers, body)
