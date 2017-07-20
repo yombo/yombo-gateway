@@ -667,7 +667,7 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     best_key = None
 
     key_list = []
-    sorted_list = None
+    # sorted_list = None
 
     for item_id, item in haystack.items():
         # print "checking item: %s" % item
@@ -699,17 +699,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
 
     sorted_list = sorted(key_list, key=lambda k: k['ratio'], reverse=True)
 
-    return_list = []
-    if best_ratio >= best_limiter: # if we have one match, only return a list of matches.
-        for item in sorted_list:
-            if item['ratio'] >= limiter:
-                return_list.append(item)
-        # return (
-        #     best_ratio >= best_limiter,  # the part that does the actual check.
-        #     best_key,
-        #     best_match,
-        #     best_ratio,
-        #     return_list)
 
     if operation == "any":
         return (
@@ -719,6 +708,18 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             best_ratio,
             sorted_list)
     else:
+        return_list = []
+        if best_ratio >= best_limiter:  # if we have one match, only return a list of matches.
+            for item in sorted_list:
+                if item['ratio'] >= limiter:
+                    return_list.append(item)
+                    # return (
+                    #     best_ratio >= best_limiter,  # the part that does the actual check.
+                    #     best_key,
+                    #     best_match,
+                    #     best_ratio,
+                    #     return_list)
+
         if best_key is None:
             # logger.info("in do_search_instance...attributes: {attributes}", attributes=attributes)
             # logger.info("in do_search_instance...haystack: {haystack}", haystack=haystack)
