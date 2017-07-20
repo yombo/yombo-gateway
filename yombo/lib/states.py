@@ -181,23 +181,14 @@ class States(YomboLibrary, object):
         """
         return list(self.__States.items())
 
-    def iteritems(self):
-        return iter(self.__States.items())
-
-    def iterkeys(self):
-        return iter(self.__States.keys())
-
-    def itervalues(self):
-        return iter(self.__States.values())
-
     def values(self):
         return list(self.__States.values())
 
     def _init_(self, **kwargs):
         self.__States = {}
         self._loaded = False
+        self.gateway_id = self._Configs.get('core', 'gwid')
 
-        self._LocalDB = self._Loader['localdb']
         self.init_deferred = Deferred()
         self.load_states()
         self.automation_startup_check = []
@@ -208,7 +199,7 @@ class States(YomboLibrary, object):
 
     def _start_(self, **kwargs):
         self.clean_states_loop = LoopingCall(self.clean_states_table)
-        self.clean_states_loop.start(random_int(60*60*6, .05))  # clean the database every 6 hours.
+        self.clean_states_loop.start(random_int(60*60*6, .10))  # clean the database every 6 hours.
 
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='states')
@@ -226,6 +217,7 @@ class States(YomboLibrary, object):
         states = yield self._LocalDB.get_states()
         for state in states:
             self.__States[state['name']] = {
+                'gateway_id': state['gateway_id'],
                 'value': state['value'],
                 'value_human': self.convert_to_human(state['value'], state['value_type']),
                 'value_type': state['value_type'],
@@ -253,7 +245,7 @@ class States(YomboLibrary, object):
 
     def exists(self, key):
         """
-        Checks if a given state exsist. Returns true or false.
+        Checks if a given state exists. Returns true or false.
 
         :param key: Name of state to check.
         :return: If state exists:
@@ -312,7 +304,7 @@ class States(YomboLibrary, object):
 
         return partial(self.get, key, human, full)
 
-    def get(self, key, human=None, full=None):
+    def get(self, key, human=None, full=None, gateway_id=None):
         """
         Get the value of a given state (key).
 
@@ -327,16 +319,18 @@ class States(YomboLibrary, object):
         :return: Value of state
         """
         # logger.debug('states:get: {key} = {value}', key=key)
+        if gateway_id is None:
+            gateway_id = self.gateway_id
 
-        self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
-
+        self._Statistics.increment("lib.states.get", bucket_size=15, anon=True)
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
             results = pattern_search(key, self.__States)
             if len(results) > 1:
                 values = {}
                 for item in results:
-                    values[item] = self.__States[item]
+                    if gateway_id == 'any' or self.__States[item]['gateway_id'] == gateway_id:
+                        values[item] = self.__States[item]
                 return values
             else:
                 raise KeyError("Searched for atoms, none found.")
@@ -357,7 +351,7 @@ class States(YomboLibrary, object):
         return self.__States.copy()
 
     @inlineCallbacks
-    def set(self, key, value, value_type=None, function=None, arguments=None):
+    def set(self, key, value, value_type=None, function=None, arguments=None, gateway_id=None):
         """
         Set the value of a given state (key).
 
@@ -374,7 +368,16 @@ class States(YomboLibrary, object):
         :return: Value of state
         """
         # logger.debug("Saving state: {key} = {value}", key=key, value=value)
-        if key in self.__States:
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id != self.gateway_id:
+            raise YomboWarning("Cannot set state value for another gateway.")
+
+        search_chars = ['#', '+']
+        if any(s in key for s in search_chars):
+            raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
+
+        if key in self.__States and self.__States[key]['gateway_id'] == gateway_id:
             is_new = True
             # If state is already set to value, we don't do anything.
             if self.__States[key]['value'] == value:
@@ -384,13 +387,15 @@ class States(YomboLibrary, object):
         else:
             is_new = False
             self.__States[key] = {
+                'gateway_id': gateway_id,
                 'created': int(time()),
             }
             self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
 
         # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,'key': key, 'value': value})
+            state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,'key': key, 'value': value,
+                                                                          'gateway_id': gateway_id})
         except YomboHookStopProcessing as e:
             logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                            state=key, resource=e.by_who)
@@ -413,7 +418,8 @@ class States(YomboLibrary, object):
         if function is not None:
             live = True
 
-        self._LocalDB.save_state(key, value, value_type, live)
+        if gateway_id == self.gateway_id:
+            self._LocalDB.save_state(key, value, value_type, live, gateway_id)
 
         self.check_trigger(key, value)  # Check if any automation items need to fire!
 
@@ -431,7 +437,7 @@ class States(YomboLibrary, object):
             return value
 
     @inlineCallbacks
-    def get_history(self, key, offset=None, limit=None):
+    def get_history(self, key, offset=None, limit=None, gateway_id=None):
         """
         Returns a previous version of the state. Returns a dictionary with "value" and "updated" inside. See
         :py:func:`history_length` to deterine how many entries there are. Max of MAX_HISTORY (currently 100).
@@ -445,7 +451,7 @@ class States(YomboLibrary, object):
             offset = 1
         if limit is None:
             limit = 1
-        results = yield self._LocalDB.get_state_history(key, limit, offset)
+        results = yield self._LocalDB.get_state_history(key, limit, offset, gateway_id=gateway_id)
         if len(results) >= 1:
             returnValue(results)
         else:
