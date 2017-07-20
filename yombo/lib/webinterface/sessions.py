@@ -27,13 +27,14 @@ from random import randint
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
 
-from yombo.ext.expiringdict import ExpiringDict
+# from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
 from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, random_int, sleep
+# from yombo.utils.decorators import memoize_ttl
 
 logger = get_logger("library.webconfig.session")
 
@@ -45,6 +46,8 @@ class Sessions(object):
         self.loader = loader
         self._FullName = "yombo.gateway.lib.webinterface.sessions"
         self._Configs = self.loader.loadedLibraries['configuration']
+        self._LocalDB = self.loader.loadedLibraries['localdb']
+        self.gateway_id = self._Configs.get2('core', 'gwid')
 
         self.config = DictObject({
             'cookie_session': 'yombo_' + self._Configs.get('webinterface', 'cookie_session', random_string(length=randint(60,80))),
@@ -59,21 +62,14 @@ class Sessions(object):
             'httponly': True,
             'secure': False,  # will change to true after SSL system/dns complete. - Mitch
         })
-        self.localdb = self.loader.loadedLibraries['localdb']
         self.active_sessions = {}
         # self.active_sessions_cache = ExpiringDict(200, 5)  # keep 200 entries, for at most 1 second...???
 
     # @inlineCallbacks
     def init(self):
-        # db_sessions = yield self.localdb.get_dbitem_by_id_dict('Sessions')
-        # for db_session in db_sessions:
-        #     db_session['session_data'] = json.loads(db_session['session_data'])
-        #     self.active_sessions[db_session['id']] = Session(self)
-        #     self.active_sessions[db_session['id']].load(db_session['session_data'])
-
         # print "active:sessions: %s" % self.active_sessions
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(random_int(60, .7))  # Every 30-ish seconds. Save to disk, or remove from memory.
+        self._periodic_clean_sessions.start(random_int(60, .7))  # Every 60-ish seconds. Save to disk, or remove from memory.
 
     def _unload_(self):
         logger.debug("sessions:_unload_")
@@ -102,7 +98,7 @@ class Sessions(object):
     def has_session(self, request):
         """
         Checks the correct cookie exists and has a valid session. Returns True if it does, otherwise False.
-        Doesn't create session if doesn't exist.
+        Doesn't create session if doesn't exist. Does load session informaiton into memory if it exists.
 
         :param request: The request instance.
         :return: bool
@@ -121,11 +117,11 @@ class Sessions(object):
                 return True
             else:
                 logger.debug("has_session is looking in database for session...")
-                db_session = yield self.localdb.get_session(session_id)
+                db_session = yield self._LocalDB.get_session(session_id)
                 if db_session is None:
                     return False
                 # logger.debug("has_session - found in DB! {db_session}", db_session=db_session)
-                self.active_sessions[db_session.id] = Session(self)
+                self.active_sessions[db_session.id] = Session(self, db_session.gateway_id)
                 self.active_sessions[db_session.id].load(json.loads(db_session.session_data))
                 return True
         return False
@@ -154,6 +150,7 @@ class Sessions(object):
                           path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
                           secure=self.config.secure, httpOnly=self.config.httponly)
 
+    # @memoize_ttl(30)  # memoize for 5 seconds
     @inlineCallbacks
     def load(self, request):
         """
@@ -163,26 +160,28 @@ class Sessions(object):
         :param cookies: All the cookies that were sent in.
         :return:
         """
-        logger.debug("load session: {request}", request=request)
+        logger.info("load session: {request}", request=request)
         cookie_session = self.config.cookie_session
         cookies = request.received_cookies
         has_session = yield self.has_session(request)
-        logger.debug("has session: {has_session}", has_session=has_session)
+        logger.info("has session: {has_session}", has_session=has_session)
         if has_session:
             session_id = cookies[cookie_session]
             if self.validate_session_id(session_id) is False:
                 raise YomboWarning("Invalid session id.")
             return self.active_sessions[session_id]
-        return None
+        return False
 
-    def create(self, request):
+    def create(self, request, gateway_id=None):
         """
         Creates a new session.
         :param request:
         :return:
         """
+        if gateway_id is None:
+            gateway_id = self.gateway_id()
         session_id = random_string(length=randint(19, 25))
-        self.active_sessions[session_id] = Session(self)
+        self.active_sessions[session_id] = Session(self, gateway_id)
         self.active_sessions[session_id].init(session_id)
 
         request.addCookie(self.config.cookie_session, session_id, domain=self.get_cookie_domain(request),
@@ -268,7 +267,7 @@ class Sessions(object):
         for session_id in list(self.active_sessions.keys()):
             if self.active_sessions[session_id].check_valid() is False or self.active_sessions[session_id].is_valid is False:
                 del self.active_sessions[session_id]
-                yield self.localdb.delete_session(session_id)
+                yield self._LocalDB.delete_session(session_id)
                 count += 1
         # logger.debug("Deleted {count} sessions from the session store.", count=count)
 
@@ -280,12 +279,12 @@ class Sessions(object):
                 if session.in_db:
                     # session.in_db = True
                     logger.debug("updating old db session record: {id}", id=session_id)
-                    yield self.localdb.update_session(session_id, json.dumps(session.data), session.data['last_access'],
+                    yield self._LocalDB.update_session(session_id, json.dumps(session.data), session.data['last_access'],
                                           session.data['updated'])
                 else:
                     logger.debug("creating new db session record: {id}", id=session_id)
-                    yield self.localdb.save_session(session_id, json.dumps(session.data), session.data['created'],
-                                          session.data['last_access'], session.data['updated'])
+                    yield self._LocalDB.save_session(session_id, json.dumps(session.data), session.data['created'],
+                                          session.data['last_access'], session.gateway_id, session.data['updated'])
                 session.is_dirty = 0
                 if session.data['last_access'] < int(time() - (60*60*3)):
                     logger.debug("Deleting session from memory: {session_id}", session_id=session_id)
@@ -354,8 +353,9 @@ class Session(object):
         """
         return self.data.keys()
 
-    def __init__(self, Sessions):
+    def __init__(self, Sessions, gateway_id):
         self._Sessions = Sessions
+        self.gateway_id = gateway_id
         self.is_valid = True
         self.is_dirty = 0
         self.in_db = False

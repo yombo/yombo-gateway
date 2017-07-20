@@ -67,7 +67,6 @@ def run_first(*args, **kwargs):
             # if hasattr(request, 'breadcrumb') is False:
             #     request.breadcrumb = []
             #     webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
-            # print("session: %s" % session.__dict__)
 
             request.auth_id = None
             try:
@@ -119,7 +118,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 logger.warn("Discarding request, appears to be malformed session id.")
                 return return_need_login(webinterface, request, **kwargs)
 
-            if session is not None:  # if we have a session, they may pass
+            if session is not False:  # if we have a session, they may pass
                 if 'auth' in session:
                     if session['auth'] is True:
                         session.touch()
@@ -189,21 +188,16 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
             except YomboWarning as e:
                 logger.warn("Discarding request, appears to be malformed session id.")
                 return return_need_pin(webinterface, request, **kwargs)
-            # print("jjj")
 
             if needs_web_pin(webinterface, request):
-                # print("jjj 2")
                 if session is not None:  # if we have a session, they may pass
                     if 'auth_pin' in session:
-                        # print("kkk 1")
                         if session['auth_pin'] is True:
-                            # print("kkkk 2")
                             session.touch()
                             request.auth_id = session['auth_id']
                             results = yield call(f, webinterface, request, session, *a, **kw)
                             return results
                 else:  # session doesn't exist
-                    # print("mmm")
                     if login_redirect is not None:  # only create a new session if we need too
                         if session is None:
                             try:
@@ -221,7 +215,6 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
                             request.received_cookies[webinterface.sessions.config.cookie_session] = session.session_id
                         session['login_redirect'] = login_redirect
             else:
-                # print("qqq 2")
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
 
