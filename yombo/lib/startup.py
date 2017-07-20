@@ -29,9 +29,7 @@ class Startup(YomboLibrary):
     """
 #    @inlineCallbacks
     def _init_(self, **kwargs):
-        print("Startup: self._Loader.operating_mode: %s" % self._Loader.operating_mode)
         first_run = self._Configs.get('core', 'first_run', False, False)
-        print("Startup: first_run: %s" % first_run)
         if self._Loader.operating_mode == 'first_run':  # will know if first_run already or yombo.ini is missing.
             return
         if first_run is True:
@@ -48,6 +46,14 @@ class Startup(YomboLibrary):
         hash = self._Configs.get("core", "gwhash", None)
         if hash is None or hash == "":
             items_needed.append("Gateway login password hash")
+        is_master = self._Configs.get("core", "is_master", True)
+        if is_master is False:
+            master_gateway = self._Configs.get("core", "master_gateway", None, False)
+            if master_gateway is None or master_gateway == "":
+                items_needed.append("Gateway is marked as slave, but not master gateway set.")
+        else:
+            master_gateway = self._Configs.get("core", "master_gateway", None)
+
         gpg_key = self._Configs.get("gpg", "keyid", None)
         gpg_key_ascii = self._Configs.get("gpg", "keyascii", None)
         if gpg_key is None or gpg_key == '' or gpg_key_ascii is None or gpg_key_ascii == '':
