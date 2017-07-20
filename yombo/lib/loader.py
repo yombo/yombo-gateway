@@ -61,9 +61,9 @@ HARD_LOAD["Queue"] = {'operating_mode':'all'}
 HARD_LOAD["Notifications"] = {'operating_mode':'all'}
 HARD_LOAD["LocalDB"] = {'operating_mode':'all'}
 HARD_LOAD["SQLDict"] = {'operating_mode':'all'}
+HARD_LOAD["Configuration"] = {'operating_mode':'all'}
 HARD_LOAD["Atoms"] = {'operating_mode':'all'}
 HARD_LOAD["States"] = {'operating_mode':'all'}
-HARD_LOAD["Configuration"] = {'operating_mode':'all'}
 HARD_LOAD["Statistics"] = {'operating_mode':'all'}
 HARD_LOAD["Startup"] = {'operating_mode':'all'}
 HARD_LOAD["AMQP"] = {'operating_mode':'run'}
@@ -82,14 +82,16 @@ HARD_LOAD["Automation"] = {'operating_mode':'all'}
 HARD_LOAD["Modules"] = {'operating_mode':'all'}
 HARD_LOAD["Localize"] = {'operating_mode':'all'}
 HARD_LOAD["AMQPYombo"] = {'operating_mode':'run'}
+HARD_LOAD["Gateways"] = {'operating_mode':'all'}
 HARD_LOAD["Nodes"] = {'operating_mode':'all'}
-HARD_LOAD["DeviceLocations"] = {'operating_mode':'all'}
+HARD_LOAD["Locations"] = {'operating_mode':'all'}
 HARD_LOAD["MQTT"] = {'operating_mode':'run'}
 HARD_LOAD["WebInterface"] = {'operating_mode':'all'}
 HARD_LOAD["Tasks"] = {'operating_mode':'all'}
 HARD_LOAD["SSLCerts"] = {'operating_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
+HARD_UNLOAD["Gateways"] = {'operating_mode':'all'}
 HARD_UNLOAD["SSLCerts"] = {'operating_mode':'all'}
 HARD_UNLOAD["Tasks"] = {'operating_mode':'all'}
 HARD_UNLOAD["Localize"] = {'operating_mode':'all'}
@@ -104,7 +106,7 @@ HARD_UNLOAD["DeviceTypes"] = {'operating_mode':'all'}
 HARD_UNLOAD["InputTypes"] = {'operating_mode':'all'}
 HARD_UNLOAD["VoiceCmds"] = {'operating_mode':'all'}
 HARD_UNLOAD["Devices"] = {'operating_mode':'all'}
-HARD_UNLOAD["DeviceLocations"] = {'operating_mode':'all'}
+HARD_UNLOAD["Locations"] = {'operating_mode':'all'}
 HARD_UNLOAD["Nodes"] = {'operating_mode':'all'}
 HARD_UNLOAD["Atoms"] = {'operating_mode':'all'}
 HARD_UNLOAD["States"] = {'operating_mode':'all'}
@@ -123,6 +125,19 @@ HARD_LOAD["Variables"] = {'operating_mode':'all'}
 HARD_UNLOAD["LocalDB"] = {'operating_mode':'all'}
 HARD_UNLOAD["Queue"] = {'operating_mode':'all'}
 
+RUN_PHASE = {
+    'system_init': 0,
+    'libraries_import': 1,
+    'libraries_init': 2,
+    'modules_import': 3,
+    'libraries_load': 4,
+    'modules_init': 5,
+    'libraries_start': 6,
+    'modules_start': 7,
+    'modules_started': 8,
+    'libraries_started': 9,
+    'shutdown': 100,
+}
 
 class Loader(YomboLibrary, object):
     """
@@ -139,7 +154,8 @@ class Loader(YomboLibrary, object):
 
     @operating_mode.setter
     def operating_mode(self, val):
-        self.loadedLibraries['states']['loader.operating_mode'] = val
+        if RUN_PHASE[self._run_phase] > 2:
+            self.loadedLibraries['states']['loader.operating_mode'] = val
         self._operating_mode = val
 
     @property
@@ -148,7 +164,8 @@ class Loader(YomboLibrary, object):
 
     @operating_mode.setter
     def run_phase(self, val):
-        self.loadedLibraries['states']['loader.run_phase'] = val
+        if RUN_PHASE[val] > 2:
+            self.loadedLibraries['states']['loader.run_phase'] = val
         self._run_phase = val
 
     def __getitem__(self, component_requested):
@@ -207,14 +224,14 @@ class Loader(YomboLibrary, object):
         yield yombo.utils.sleep(0.01)  # kick the asyncio event loop
         self.event_loop = asyncio.get_event_loop()
 
-        self._run_phase = "libraries_import"
-        yield self.import_libraries() # import and init all libraries
+        yield self.import_libraries()  # import and init all libraries
 
         if self.sigint:
             return
         logger.debug("Calling load functions of libraries.")
 
         self.run_phase = "modules_import"
+        self.operating_mode = self.operating_mode  # so we can update the State!
         yield self._moduleLibrary.import_modules()
         for name, config in HARD_LOAD.items():
             if self.sigint:
@@ -262,9 +279,11 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_start_'] = False
             self._log_loader('debug', name, 'library', '_start_', 'Finished call to _start_.')
 
+        self.run_phase = "modules_start"
         yield self._moduleLibrary.load_modules()  #includes load & start
+        self.run_phase = "modules_started"
 
-        self.run_phase = "started"
+        self.run_phase = "libraries_started"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -345,8 +364,7 @@ class Loader(YomboLibrary, object):
         Import then "init" all libraries. Call "loadLibraries" when done.
         """
         logger.debug("Importing server libraries.")
-        # d = Deferred()
-        # d.callback(1)
+        self._run_phase = "libraries_import"
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
@@ -369,7 +387,6 @@ class Loader(YomboLibrary, object):
             component = name.lower()
             library = self.loadedLibraries[component]
             library._event_loop = self.event_loop
-            print("ADDING STATES!!!!: %s - _operating_mode: %s" % (name, self._operating_mode))
             library._AMQP = self.loadedLibraries['amqp']
             library._AMQPYombo = self.loadedLibraries['amqpyombo']
             library._Atoms = self.loadedLibraries['atoms']
@@ -377,8 +394,9 @@ class Loader(YomboLibrary, object):
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
             library._Devices = self.loadedLibraries['devices']
-            library._DeviceLocations = self.loadedLibraries['devicelocations']
+            library._Locations = self.loadedLibraries['locations']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
+            library._Gateways = self.loadedLibraries['gateways']
             library._GPG = self.loadedLibraries['gpg']
             library._InputTypes = self.loadedLibraries['inputtypes']
             library._Libraries = self.loadedLibraries
@@ -569,7 +587,13 @@ class Loader(YomboLibrary, object):
             logger.error("{trace}", trace=traceback.format_exc())
             logger.error("--------------------------------------------------------")
             raise ImportError("Cannot import module, not found.")
-
+        except Exception as e:
+            logger.error("---------------==(Traceback)==--------------------------")
+            logger.error("{trace}", trace=traceback.format_exc())
+            logger.error("--------------------------------------------------------")
+            logger.warn("An exception of type {etype} occurred in yombo.lib.nodes:import_component. Message: {msg}",
+                        etype=type(e), msg=e)
+            raise ImportError(e)
         module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ]+pymodulename.split('.')[1:])
         # print "module_tail: %s   pyclassname: %s" % (module_tail, pyclassname)
         klass = getattr(module_tail, pyclassname)
