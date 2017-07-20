@@ -17,21 +17,24 @@ A database API to SQLite3.
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
+import base64
+
 # Import python libraries
-from time import time
+from collections import OrderedDict
 
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
 import base64
-import zlib
+import inspect
+import msgpack
+from os import chmod
 import pickle
 from sqlite3 import Binary as sqlite3Binary
 import sys
-import inspect
-from os import chmod
-from collections import OrderedDict
+from time import time
+import zlib
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -94,8 +97,8 @@ class DeviceCommand(DBObject):
     TABLENAME = 'device_commands'
     BELONGSTO = ['devices']
 
-class DeviceLocation(DBObject):
-    TABLENAME = 'device_locations'
+class Location(DBObject):
+    TABLENAME = 'locations'
     BELONGSTO = ['devices']
 
 class DeviceStatus(DBObject):
@@ -109,6 +112,10 @@ class DeviceType(DBObject):
 
 class DeviceTypeCommand(DBObject):
     TABLENAME = 'device_type_commands'
+
+
+class Gateway(DBObject):
+    TABLENAME = 'gateways'
 
 
 class GpgKey(DBObject):
@@ -248,7 +255,6 @@ class LocalDB(YomboLibrary):
         """
         def show_connected(connection):
             connection.execute("PRAGMA foreign_keys = ON")
-
         self.db_model = {}  # store generated database model here.
         # Connect to the DB
         Registry.DBPOOL = adbapi.ConnectionPool('sqlite3', "usr/etc/yombo.db", check_same_thread=False,
@@ -274,6 +280,9 @@ class LocalDB(YomboLibrary):
         chmod('usr/etc/yombo.db', 0o600)
 
         yield self._load_db_model()
+
+    def _load_(self, **kwargs):
+        self.gateway_id = self._Configs.get('core', 'gwid')
 
     def get_model_class(self, class_name):
         return globals()[class_name]()
@@ -412,7 +421,7 @@ class LocalDB(YomboLibrary):
         device.energy_map = data['energy_map']
         device.created = data['created']
         device.updated = data['updated']
-        yield device_location.save()
+        yield location.save()
 
     @inlineCallbacks
     def update_device(self, device, **kwargs):
@@ -597,47 +606,47 @@ class LocalDB(YomboLibrary):
         records = yield DeviceType.find(where=['id = ?', id])
         returnValue(records)
 
-    #################################
-    ###    Device Locations     #####
-    #################################
+    ###########################
+    ###     Locations     #####
+    ###########################
 
     @inlineCallbacks
-    def get_device_locations(self, where=None):
+    def get_locations(self, where=None):
         if where is not None:
             find_where = dictToWhere(where)
-            records = yield DeviceLocation.find(where=find_where)
+            records = yield Location.find(where=find_where)
         else:
-            records = yield DeviceLocation.find(orderby='label')
+            records = yield Location.find(orderby='label')
         return records
 
     @inlineCallbacks
-    def insert_device_locations(self, data, **kwargs):
-        device_location = DeviceLocation()
-        device_location.id = data['id']
-        device_location.location_type = data['location_type']
-        device_location.label = data['label']
-        device_location.machine_label = data['machine_label']
-        device_location.description = data.get('description', None)
-        device_location.created = data['created']
-        device_location.updated = data['updated']
-        yield device_location.save()
+    def insert_locations(self, data, **kwargs):
+        location = Location()
+        location.id = data['id']
+        location.location_type = data['location_type']
+        location.label = data['label']
+        location.machine_label = data['machine_label']
+        location.description = data.get('description', None)
+        location.created = data['created']
+        location.updated = data['updated']
+        yield location.save()
 
     @inlineCallbacks
-    def update_device_locations(self, device_location, **kwargs):
+    def update_locations(self, location, **kwargs):
         args = {
-            'location_type': device_location.location_type,
-            'label': device_location.label,
-            'machine_label': device_location.machine_label,
-            'description': device_location.description,
-            'updated': device_location.updated,
+            'location_type': location.location_type,
+            'label': location.label,
+            'machine_label': location.machine_label,
+            'description': location.description,
+            'updated': location.updated,
         }
-        # print("saving notice update_device_locations: %s" % args)
-        results = yield self.dbconfig.update('device_locations', args, where=['id = ?', device_location.device_location_id])
+        # print("saving notice update_locations: %s" % args)
+        results = yield self.dbconfig.update('locations', args, where=['id = ?', location.location_id])
         return results
 
     @inlineCallbacks
-    def delete_device_locations(self, id, **kwargs):
-        results = yield self.dbconfig.delete('device_locations', where=['id = ?', id])
+    def delete_locations(self, id, **kwargs):
+        results = yield self.dbconfig.delete('locations', where=['id = ?', id])
         return results
 
 
@@ -650,6 +659,21 @@ class LocalDB(YomboLibrary):
             where=['device_type_id = ? and command_id = ?', device_type_id, command_id])
         return records
 
+    #########################
+    ###    Gateways     #####
+    #########################
+
+    @inlineCallbacks
+    def get_gateways(self, status=None):
+        if status == True:
+            records = yield self.dbconfig.select("gateways")
+            return records
+        elif status is None:
+            records = yield self.dbconfig.select("gateways", where=['status = ? OR status = ?', 1, 0])
+            return records
+        else:
+            records = yield self.dbconfig.select("gateways", where=['status = ?', status])
+            return records
 
     #################
     ### GPG     #####
@@ -680,7 +704,7 @@ class LocalDB(YomboLibrary):
                 'created': record['created'],
             }
             keys[record['fingerprint']] = key
-        returnValue(keys)
+        return keys
 
     @inlineCallbacks
     def insert_gpg_key(self, gwkey, **kwargs):
@@ -788,6 +812,18 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_nodes(self):
         records = yield self.dbconfig.select('nodes')
+        for record in records:
+            # attempt to decode the data..
+            if record.data_content_type == 'json':
+                try:
+                    record.data = json.loads(record.data)
+                except:
+                    pass
+            elif record.data_content_type == 'msgpack_base85':
+                try:
+                    record.data = msgpack.loads(base64.b85decode(record.data))
+                except:
+                    pass
         return records
 
     @inlineCallbacks
@@ -796,30 +832,51 @@ class LocalDB(YomboLibrary):
         record.node_id = record.id
         del record.id
         # attempt to decode the data..
-        if record.data_type == 'json':
+        if record.data_content_type == 'json':
             try:
                 record.data = json.loads(record.data)
             except:
                 pass
-        returnValue(record)
+        elif record.data_content_type == 'msgpack_base64':
+            try:
+                record.data = msgpack.loads(base64.b64decode(record.data))
+            except:
+                pass
+        return record
 
     @inlineCallbacks
     def get_node_siblings(self, node):
         records = yield Node.find(where=['parent_id = ? and node_type = ?', node.parent_id, node.node_type])
         for record in records:
             # attempt to decode the data..
-            if record.data_type == 'json':
-                record.data = json.loads(record.data)
-        returnValue(records)
+            if record.data_content_type == 'json':
+                try:
+                    record.data = json.loads(record.data)
+                except:
+                    pass
+            elif record.data_content_type == 'msgpack_base64':
+                try:
+                    record.data = msgpack.loads(base64.b64decode(record.data))
+                except:
+                    pass
+        return records
 
     @inlineCallbacks
     def get_node_children(self, node):
         records = yield Node.find(where=['parent_id = ? and node_type = ?', node.id, node.node_type])
         for record in records:
             # attempt to decode the data..
-            if record.data_type == 'json':
-                record.data = json.loads(record.data)
-        returnValue(records)
+            if record.data_content_type == 'json':
+                try:
+                    record.data = json.loads(record.data)
+                except:
+                    pass
+            elif record.data_content_type == 'msgpack_base64':
+                try:
+                    record.data = msgpack.loads(base64.b64decode(record.data))
+                except:
+                    pass
+        return records
 
     @inlineCallbacks
     def set_node_status(self, node_id, status=1):
@@ -862,8 +919,10 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def delete_notification(self, id):
-        records = yield Notifications.delete(where=['id = ?', id])
-        returnValue(records)
+        try:
+            records = yield self.dbconfig.delete('notifications', where=['id < ?',id])
+        except Exception as e:
+            pass
 
     @inlineCallbacks
     def delete_expired_notifications(self):
@@ -874,6 +933,7 @@ class LocalDB(YomboLibrary):
     def add_notification(self, notice, **kwargs):
         args = {
             'id': notice['id'],
+            'gateway_id': notice['gateway_id'],
             'type': notice['type'],
             'priority': notice['priority'],
             'source': notice['source'],
@@ -939,10 +999,11 @@ class LocalDB(YomboLibrary):
         returnValue(record)
 
     @inlineCallbacks
-    def save_session(self, session_id, session_data, created, last_access, updated):
+    def save_session(self, session_id, session_data, created, last_access, gateway_id, updated):
         # print("save_session: %s" % session_data)
         args = {
             'id': session_id,
+            'gateway_id': gateway_id,
             'session_data': session_data,
             'created': created,
             'last_access': last_access,
@@ -982,7 +1043,7 @@ class LocalDB(YomboLibrary):
         else:
             extra_where = ''
 
-        sql = """SELECT name, value, value_type, live, created
+        sql = """SELECT name, value, value_type, live, created, gateway_id
 FROM states s1
 WHERE created = (SELECT MAX(created) from states s2 where s1.id = s2.id)
 %s
@@ -997,6 +1058,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
                 'value_type': state[2],
                 'live': state[3],
                 'created': state[4],
+                'gateway_id': state[5],
             })
         returnValue(results)
 
@@ -1023,7 +1085,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         returnValue(count)
 
     @inlineCallbacks
-    def get_state_history(self, name, limit=None, offset=None):
+    def get_state_history(self, name, limit=None, offset=None, gateway_id=None):
         """
         Get an state history.
 
@@ -1038,7 +1100,14 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         if offset is not None:
             limit = (limit, offset)
 
-        results = yield States.find(where=['name = ?', name], limit=limit)
+        where = {
+            'name': name,
+        }
+        if gateway_id is not None:
+            where['gateway_id'] = gateway_id
+        sql_where = dictToWhere(where)
+
+        results = yield States.find(where=sql_where, limit=limit)
         records = []
         for item in results:
             temp = clean_dict(item.__dict__)
@@ -1047,11 +1116,14 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         returnValue(records)
 
     @inlineCallbacks
-    def save_state(self, name, value, value_type=None, live=None):
+    def save_state(self, name, value, value_type=None, live=None, gateway_id=None):
         if live is None:
             live = 0
+        if gateway_id is None:
+            gateway_id = self.gateway_id
         yield States(
             name=name,
+            gateway_id=gateway_id,
             value=value,
             value_type=value_type,
             live=live,
@@ -1367,11 +1439,17 @@ ORDER BY id desc"""
         :return: Available variable fields.
         :rtype: list
         """
-        records = yield VariableData.find(
+        records = yield VariableFieldDataView.find(
             where=dictToWhere(kwargs),
             orderby='data_weight ASC')
 
-        returnValue(records)
+        variables = OrderedDict()
+        for record in records:
+            # print("record: %s" % record)
+            if record.field_machine_label not in variables:
+                variables[record.field_machine_label] = {}
+                variables[record.field_machine_label][record.data_id] = record.data
+        return variables
 
     @inlineCallbacks
     def get_variable_fields(self, **kwargs):
@@ -1639,8 +1717,8 @@ ORDER BY id desc"""
             else:
                 data['value'] = None
                 data['value_display'] = ""
-            data['value_orig'] = record.data
 
+            data['value_orig'] = record.data
             variables[record.group_machine_label]['fields'][record.field_machine_label]['data'][record.data_id] = data
             variables[record.group_machine_label]['fields'][record.field_machine_label]['values'].append(data['value'])
             variables[record.group_machine_label]['fields'][record.field_machine_label]['values_display'].append(data['value_display'])
