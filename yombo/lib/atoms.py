@@ -226,15 +226,6 @@ class Atoms(YomboLibrary):
         """
         return list(self.__Atoms.items())
 
-    def iteritems(self):
-        return iter(self.__Atoms.items())
-
-    def iterkeys(self):
-        return iter(self.__Atoms.keys())
-
-    def itervalues(self):
-        return iter(self.__Atoms.values())
-
     def values(self):
         return list(self.__Atoms.values())
 
@@ -245,8 +236,10 @@ class Atoms(YomboLibrary):
         :return: None
         """
         self.library_state = 1
+        self.gateway_id = self._Configs.get('core', 'gwid')
+        self._loaded = False
         self.__Atoms = {}
-        self.__Atoms.update(self.os_data())
+        self.os_data()
 
         self.triggers = {}
         self._Automation = self._Libraries['automation']
@@ -255,6 +248,7 @@ class Atoms(YomboLibrary):
         self.automation_startup_check = []
 
     def _load_(self, **kwargs):
+        self._loaded = True
         self.library_state = 2
         self.set('running_since', time())
         self.set('is_master', self._Configs.get('core', 'is_master', True, False))
@@ -263,6 +257,31 @@ class Atoms(YomboLibrary):
 
     def _start_(self, **kwargs):
         self.library_state = 3
+
+    def exists(self, key):
+        """
+        Checks if a given atom exists. Returns true or false.
+
+        :param key: Name of atom to check.
+        :return: If atom exists:
+        :rtype: Bool
+        """
+        if key in self.__Atoms:
+            return True
+        return False
+
+    def get_last_update(self, key):
+        """
+        Get the time() the key was created or last updated.
+
+        :param key: Name of atom to check.
+        :return: Time() of last update
+        :rtype: float
+        """
+        if key in self.__Atoms:
+            return self.__Atoms[key]['created']
+        else:
+            raise KeyError("Cannot get state time: %s not found" % key)
 
     def get_atoms(self):
         """
@@ -273,7 +292,7 @@ class Atoms(YomboLibrary):
         """
         return self.__Atoms.copy()
 
-    def get(self, atom_requested):
+    def get(self, atom_requested, human=None, full=None, gateway_id=None):
         """
         Get the value of a given atom (key).
 
@@ -283,26 +302,33 @@ class Atoms(YomboLibrary):
         :return: Value of the atom
         :rtype: mixed
         """
-        logger.debug('atoms:get: {atom_requested}', atom_requested=atom_requested)
+        # logger.debug('atoms:get: {atom_requested}', atom_requested=atom_requested)
+        if gateway_id is None:
+            gateway_id = self.gateway_id
 
         self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
-
         search_chars = ['#', '+']
         if any(s in atom_requested for s in search_chars):
             results = yombo.utils.pattern_search(atom_requested, self.__Atoms)
             if len(results) > 1:
                 values = {}
+                print("atoms: %s" % self.__Atoms)
                 for item in results:
-                    values[item] = self.__Atoms[item]
+                    if gateway_id == 'any' or self.__Atoms[item]['gateway_id'] == gateway_id:
+                        values[item] = self.__Atoms[item]
                 return values
             else:
                 raise KeyError("Searched for atom, none found: %s" % atom_requested)
 
-        # print "atoms: %s" % self.__Atoms
-        return self.__Atoms[atom_requested]
+        if human is True:
+            return self.__Atoms[atom_requested]['value']
+        elif full is True:
+            return self.__Atoms[atom_requested]
+        else:
+            return self.__Atoms[atom_requested]['value_human']
 
     @inlineCallbacks
-    def set(self, key, value):
+    def set(self, key, value, value_type=None, gateway_id=None):
         """
         Get the value of a given atom (key).
 
@@ -319,46 +345,101 @@ class Atoms(YomboLibrary):
         :return: Value of atom
         :rtype: mixed
         """
-        logger.debug('atoms:set: {key} = {value}', key=key, value=value)
+        # logger.debug('atoms:set: {key} = {value}', key=key, value=value)
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id != self.gateway_id:
+            raise YomboWarning("Cannot set atom value for another gateway.")
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
-            raise YomboWarning("atom keys cannot have # or + in them, reserved for searching.")
+            raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
+
+        if key in self.__Atoms and self.__Atoms[key]['gateway_id'] == gateway_id:
+            is_new = True
+            # If state is already set to value, we don't do anything.
+            if self.__Atoms[key]['value'] == value:
+                return
+            self._Statistics.increment("lib.atoms.set.update", bucket_size=60, anon=True)
+            self.__Atoms[key]['created'] = int(round(time()))
+        else:
+            is_new = False
+            self.__Atoms[key] = {
+                'gateway_id': gateway_id,
+                'created': int(time()),
+            }
+            self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
+
+
+        self.__Atoms[key]['value'] = value
+        if is_new is True or value_type is not None:
+            self.__Atoms[key]['value_type'] = value_type
+        self.__Atoms[key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
-        already_set = False
-        if self.library_state >= 2:  # but only if we are not during init.
-            try:
-                atom_changes = yield yombo.utils.global_invoke_all(
-                    '_atoms_preset_',
-                    called_by = self,
-                    **{'keys': key, 'value': value, 'new': key in self.__Atoms})
-            except YomboHookStopProcessing as e:
-                logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
-                               state=key, resource=e.by_who)
-                returnValue(None)
-            for moduleName, newValue in atom_changes.items():
-                if newValue is not None:
-                    logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
-                                 moduleName=moduleName, newValue=newValue)
-                    self.__Atoms['key'] = newValue
-                    already_set = True
-                    break
+        try:
+            state_changes = yield yombo.utils.global_invoke_all('_atoms_set_', **{'called_by': self, 'key': key, 'value': value})
+        except YomboHookStopProcessing:
+            pass
 
-        self._Statistics.increment("lib.atoms.set", bucket_size=15, anon=True)
-        if not already_set:
-           self.__Atoms[key]= value
+        self.check_trigger(key, value)  # Check if any automation items need to fire!
 
-        if self.library_state >= 2:  # but only if we are not during init.
-            # Call any hooks
-            try:
-                state_changes = yield yombo.utils.global_invoke_all('_atoms_set_',
-                                                                    called_by=self,
-                                                                    **{'key': key, 'value': value})
-            except YomboHookStopProcessing:
-                pass
+    def convert_to_human(self, value, value_type):
+        if value_type == 'bool':
+            results = yombo.utils.is_true_false(value)
+            if results is not None:
+                return results
+            else:
+                return value
 
-        self.check_trigger(key, value)
+        elif value_type == 'epoch':
+            return yombo.utils.epoch_to_string(value)
+        else:
+            return value
+
+        # if gateway_id is None:
+        #     gateway_id = self.gateway_id
+        # if gateway_id != self.gateway_id:
+        #     raise YomboWarning("Cannot set atom value for another gateway.")
+        #
+        # search_chars = ['#', '+']
+        # if any(s in key for s in search_chars):
+        #     raise YomboWarning("atom keys cannot have # or + in them, reserved for searching.")
+        #
+        # # Call any hooks
+        # already_set = False
+        # if self.library_state >= 2:  # but only if we are not during init.
+        #     try:
+        #         atom_changes = yield yombo.utils.global_invoke_all(
+        #             '_atoms_preset_',
+        #             called_by = self,
+        #             **{'keys': key, 'value': value, 'new': key in self.__Atoms})
+        #     except YomboHookStopProcessing as e:
+        #         logger.warning("Not saving atom '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
+        #                        state=key, resource=e.by_who)
+        #         returnValue(None)
+        #     for moduleName, newValue in atom_changes.items():
+        #         if newValue is not None:
+        #             logger.debug("atoms::set Module ({moduleName}) changes atom value to: {newValue}",
+        #                          moduleName=moduleName, newValue=newValue)
+        #             self.__Atoms['key'] = newValue
+        #             already_set = True
+        #             break
+        #
+        # self._Statistics.increment("lib.atoms.set", bucket_size=15, anon=True)
+        # if not already_set:
+        #    self.__Atoms[key]= value
+        #
+        # if self.library_state >= 2:  # but only if we are not during init.
+        #     # Call any hooks
+        #     try:
+        #         state_changes = yield yombo.utils.global_invoke_all('_atoms_set_',
+        #                                                             called_by=self,
+        #                                                             **{'key': key, 'value': value})
+        #     except YomboHookStopProcessing:
+        #         pass
+        #
+        # self.check_trigger(key, value)
 
     def os_data(self):
         """
@@ -411,6 +492,8 @@ class Atoms(YomboLibrary):
         else:
             atoms['os'] = atoms['kernel']
 
+        for name, value in atoms.items():
+            self.set(name, value)
         return atoms
 
     ##############################################################################################################
@@ -502,7 +585,7 @@ class Atoms(YomboLibrary):
         """
         for name in self.automation_startup_check:
             if name in self.__Atoms:
-                self.check_trigger(name, self.__Atoms[name])
+                self.check_trigger(name, self.__Atoms[name]['value'])
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """
