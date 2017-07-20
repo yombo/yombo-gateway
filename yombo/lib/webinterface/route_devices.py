@@ -57,10 +57,10 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             return page.render(
                 alerts=webinterface.get_alerts(),
-                devices=webinterface._Libraries['devices'].devices,
+                devices=webinterface._Devices.devices,
                 devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
-                locations=webinterface._DeviceLocations.device_locations,
+                locations=webinterface._Locations.locations,
             )
 
         @webapp.route('/add')
@@ -205,6 +205,7 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Details")
+            print("device_variables: %s" % device_variables)
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devices=webinterface._Devices.devices,
@@ -212,7 +213,7 @@ def route_devices(webapp):
                                device_type=device_type,
                                commands=webinterface._Commands,
                                input_types=webinterface._InputTypes.input_types,
-                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#")
                                )
 
@@ -266,7 +267,7 @@ def route_devices(webapp):
                                device_variables=device_variables,
                                device_types=webinterface._DeviceTypes,
                                commands=webinterface._Commands,
-                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#")
                                )
 
@@ -286,7 +287,7 @@ def route_devices(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                devicetypes=webinterface._DeviceTypes,
-                               locations=webinterface._DeviceLocations.device_locations_sorted,
+                               locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#")
                                )
 
@@ -307,7 +308,7 @@ def route_devices(webapp):
                 return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
                                    devicetypes=webinterface._DeviceTypes,
-                                   locations=webinterface._DeviceLocations.device_locations_sorted,
+                                   locations=webinterface._Locations.locations_sorted,
                                    states=webinterface._States.get("#")
                                    )
 
@@ -427,13 +428,16 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id,
-                                        webinterface._DeviceLocations.get_device_label(device['area_id'], device['label']))
+                                        webinterface._Locations.get_area_label(device['area_id'], device['label']))
             webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
+            variable_data = yield webinterface._Variables.get_variable_data('device', device['device_id'])
+            print("variable_data: %s" % variable_data)
             page = yield page_devices_edit_form(
                 webinterface,
                 request,
                 session,
-                device
+                device,
+                variable_data,
             )
             return page
 
@@ -521,7 +525,7 @@ def route_devices(webapp):
                 webinterface.home_breadcrumb(request)
                 webinterface.add_breadcrumb(request, "/devices/index", "Devices")
                 webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id,
-                                            webinterface._DeviceLocations.get_device_label(device['area_id'],
+                                            webinterface._Locations.get_device_label(device['area_id'],
                                                                                            device['label']))
                 webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
                 page = yield page_devices_edit_form(
@@ -548,7 +552,7 @@ def route_devices(webapp):
             if variable_data is not None:
                 device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
                                          device_variables,
-                                         variable_data
+                                         variable_data,
                                          )
 
             return page.render(alerts=webinterface.get_alerts(),
@@ -557,6 +561,6 @@ def route_devices(webapp):
                                device_variables=device_variables,
                                commands=webinterface._Commands,
                                input_types=webinterface._InputTypes.input_types,
-                               locations=webinterface._DeviceLocations.device_locations_sorted,
-                               states=webinterface._States.get("#")
+                               locations=webinterface._Locations.locations_sorted,
+                               states=webinterface._States.get("#"),
                                )

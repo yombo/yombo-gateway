@@ -1,0 +1,151 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header"><a class="success" href="/gateways/index" aria-label="Delete">
+  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+</a> Gateway Information</h1>
+                    <p></p>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Gateway Details</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                                {{ gateway.label }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
+                                {{ gateway.machine_label }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
+                                {{ gateway.description }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Is Master: </label><br>
+                                {{ gateway.is_master|yes_no }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Master Gateway: </label><br>
+                                {%if gateway.is_master == 1 %}
+                                None
+                                {%elif gateway.master_gateway != ""%}
+                                {{ gateways[gateway.master_gateway].label }}
+                                {%else%}
+                                Error with master gateway selection
+                                {%endif%}
+                                <br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                                {{ gateway.created|epoch_to_human }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                                {{ gateway.updated|epoch_to_human }}<br>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Network Info</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Internal IP: (IPv4 / IPv6)</label><br>
+                                {{ gateway.internal_ipv4 }} / {{ gateway.internal_ipv6 }}<br>
+                                <label style="margin-top: 0px; margin-bottom: 0px">External IP: (IPv4 / IPv6)</label><br>
+                                {{ gateway.external_ipv4 }} / {{ gateway.external_ipv6 }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Web Port: (Int / Ext) </label><br>
+                                {{ gateway.internal_port }} / {{ gateway.external_port }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Web Secure Port: (Int / Ext) </label><br>
+                                {{ gateway.internal_secure_port }} / {{ gateway.external_secure_port }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">MQTT Port: (Int / Ext) </label><br>
+                                {{ gateway.internal_secure_port }} / {{ gateway.external_secure_port }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">MQTT Secure Port: (Int / Ext) </label><br>
+                                {{ gateway.internal_mqtt_ss }} / {{ gateway.external_mqtt_ss }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">MQTT WS Port: (Int / Ext) </label><br>
+                                {{ gateway.internal_mqtt_ws }} / {{ gateway.external_mqtt_ws }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">MQTT WS Secure Port: (Int / Ext) </label><br>
+                                {{ gateway.internal_mqtt_ws_ss }} / {{ gateway.external_mqtt_ws_ss }}<br>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                </div>
+            </div>
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="col-lg- col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Gateway Devices</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <div class="dataTable_wrapper">
+                                    <table width="100%" class="table table-striped table-bordered table-hover" id="gateway-devices">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>{% for deviceID, device in devices.items() if device.gateway_id == gateway.gateway_id %}
+                                             <tr>
+                                                <td data-priority="1">
+                                                    <a href="/devices/{{ device.device_id }}/details">{{ device.area_label }}</a>
+                                                </td>
+                                                <td data-priority="3">{{ device.area }}</td>
+                                                <td data-priority="4">{{ device.location }}</td>
+                                                <td data-priority="5">{{ device.description }}</td>
+                                                <td data-priority="6">{{ devicetypes[device.device_type_id].label }}</td>
+                                                <td data-priority="2">{{ device.status_all.human_status }}</td>
+                                                <td data-priority="2">
+                                                    {% if device.enabled_status == 0 -%}
+                                                 <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/devices/{{ device.device_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                    {% elif device.enabled_status == 1 -%}
+                                                 <a href="/devices/{{ device.device_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/devices/{{ device.device_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/devices/{{ device.device_id }}/delete">Delete</a>
+                                                    {% elif device.enabled_status == 2 -%}
+                                                 <a class="alert-success"  href="/devices/{{ device.device_id }}/disable">Enable</a>
+                                                    {% endif %}
+
+                                                </td>
+                                             </tr>{% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+{% endblock %}
+
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+    $(document).ready(function() {
+        $('#gateway-devices').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50,
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 4 ] }
+                    ]
+//                lengthMenu: [ 1, 2, 50, 75, 100 ],
+//                dom: '<f<t>ip>'
+
+//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
+        });
+
+    });
+    </script>
+{% endblock %}

@@ -5,10 +5,10 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">
-                        <a class="success" href="/device_locations/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Device Location Information<br>
-                        <a class="btn btn-md btn-primary" href="/device_locations/{{device_location.id}}/edit">Edit Device Location</a>
-                        <a class="btn btn-md btn-danger" href="/device_locations/{{device_location.id}}/delete">Delete Device Location</a>
+                        <a class="success" href="/locations/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        Location Information<br>
+                        <a class="btn btn-md btn-primary" href="/locations/{{location.id}}/edit">Edit Location</a>
+                        <a class="btn btn-md btn-danger" href="/locations/{{location.id}}/delete">Delete Location</a>
                     </h1>
                     <p></p>
 
@@ -26,13 +26,13 @@
                             <!-- /.panel-heading -->
                             <div class="panel-body">
                                 <label style="margin-top: 15px; margin-bottom: 0px">Location Type: </label><br>
-                                {{ device_location.location_type}}<br>
+                                {{ location.location_type}}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Label: </label><br>
-                                {{ device_location.label }}<br>
+                                {{ location.label }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
-                                {{ device_location.machine_label }}<br>
+                                {{ location.machine_label }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                                {{ device_location.description }}<br>
+                                {{ location.description }}<br>
                             </div>
                         </div>
                     </div>
@@ -42,21 +42,3 @@
             <!-- /.row -->
 {% endblock %}
 
-{% block body_bottom %}
-    <!-- Make the tables pretty -->
-    <script>
-$('.deviceCmd').click(function (event){
-     event.preventDefault();
-     $.ajax({
-        url: $(this).attr('href'),
-        dataType: 'json',
-        success: function(resp){
-            $("#cmdresult").html(resp.message);
-            $("#cmdresultmodal").modal('show');
-            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);        }
-     })
-     return false; //for good measure
-});
-
-    </script>
-{% endblock %}

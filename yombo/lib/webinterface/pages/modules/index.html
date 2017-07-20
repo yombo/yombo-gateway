@@ -60,7 +60,11 @@
                                     </thead>
                                     <tbody>{% for moduleID, module in modules.items() %}
                                          <tr>
-                                             <td><a href="/modules/{{ moduleID }}/details">{{ module._Name }}</a></td>
+                                             {% if module._load_source == 'sql' -%}
+                                             <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a></td>
+                                             {% else %}
+                                             <td>{{ module._label }}</td>
+                                             {% endif %}
                                              <td>{{ module._short_description }}</td>
                                              <td>
                                              {% if module._load_source == 'sql' -%}
@@ -71,6 +75,8 @@
                                                 {% elif module._status == 2 -%}
                                              <a class="alert-success" href="/modules/{{ moduleID }}/disable">Enable</a>
                                                 {% endif %}
+                                             {% else %}
+                                                 Module not loaded from cloud. Cannot modify.
                                              {% endif %}
 
                                          </tr>{% endfor %}

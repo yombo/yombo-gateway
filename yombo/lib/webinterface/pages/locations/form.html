@@ -3,11 +3,11 @@
 {% import "lib/webinterface/fragments/macros.tpl" as macros%}
 
 {% block content %}
-            <form method="post" id="devicelocationedit">
+            <form method="post" id="locationedit">
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">
-                        <a class="success" href="/device_locations/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                        <a class="success" href="/locations/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         {{ header_label}}</h1>
                     <hr>
                     <p></p>
@@ -27,8 +27,8 @@
                             <label style="margin-top: 0px; margin-bottom: 0px">Type: </label>
                             <div class="input-group">
                                 <select tabindex="1" required class="selectpicker show-tick form-control" name="location_type" id="status" placeholder="">
-                                    <option value="area"{% if device_location.location_type == 'area' %} selected{% endif %}>Area</option>
-                                    <option value="location"{% if device_location.location_type == 'location' %} selected{% endif %}>Location</option>
+                                    <option value="area"{% if location.location_type == 'area' %} selected{% endif %}>Area</option>
+                                    <option value="location"{% if location.location_type == 'location' %} selected{% endif %}>Location</option>
                                 </select>
                             </div>
                             <label style="margin-top: 15px; margin-bottom: 0px">Label: </label>
@@ -50,16 +50,16 @@
                                 </ul>
                                 ") }}
                             <div class="input-group">
-                                <input tabindex="2" type="text" class="form-control" name="label" id="label" size="15" placeholder="'Shed', 'Main House'" value="{{ device_location.label|hide_none }}" autofocus required>
+                                <input tabindex="2" type="text" class="form-control" name="label" id="label" size="15" placeholder="'Shed', 'Main House'" value="{{ location.label|hide_none }}" autofocus required>
                             </div>
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label>
                             <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a> <br>
                             <div class="input-group">
-                                <input tabindex="3" type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'house', 'shed', 'pool_house'" value="{{ device_location.machine_label|hide_none }}" required>
+                                <input tabindex="3" type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'house', 'shed', 'pool_house'" value="{{ location.machine_label|hide_none }}" required>
                             </div>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             <div class="input-group">
-                                <input tabindex="4" type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of location." value="{{ device_location.description|hide_none }}">
+                                <input tabindex="4" type="text" class="form-control" name="description" id="description" size="30" placeholder="Description of location." value="{{ location.description|hide_none }}">
                             </div>
 
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label>
@@ -73,7 +73,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <input type="hidden" name="json_output" id="json_output" value="">
-                    <button type="submit" class="btn btn-primary btn-lg btn-block">Submit Device Location Information</button>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block">Submit Location Information</button>
                     </form>
                 </div>
             </div>

@@ -1,8 +1,8 @@
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth
 
 def route_states(webapp):
     with webapp.subroute("/states") as webapp:
@@ -19,8 +19,8 @@ def route_states(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/states/index", "States")
             return page.render(alerts=webinterface.get_alerts(),
-                               states=webinterface._Libraries['states'].get_states(),
-                               # _=i18n,
+                               states=webinterface._States.get_states(),
+                               gateways=webinterface._Gateways.get_gateways(),
                                )
 
         @webapp.route('/<string:state_name>/details')
@@ -32,12 +32,11 @@ def route_states(webapp):
             except Exception as e:
                 webinterface.add_alert('State Name was not found.  %s' % state_name, 'warning')
                 redirect = webinterface.redirect(request, '/states/index')
-                returnValue(redirect)
+                return redirect
             state_history = yield webinterface._States.get_history(state_name, 0, 400)
             page = webinterface.get_template(request, webinterface._dir + 'pages/states/details.html')
             if state_history is None:
                 state_history = []
-            # i18n = webinterface.i18n(request)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/states/index", "States")
             webinterface.add_breadcrumb(request, "/states/%s/details" % state_name, state_name)
@@ -45,6 +44,5 @@ def route_states(webapp):
                                state=state,
                                state_history=state_history,
                                state_to_human=webinterface._States.convert_to_human,
-                               # _=i18n,
                                )
-            returnValue(page)
+            return page

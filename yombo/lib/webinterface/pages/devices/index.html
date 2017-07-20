@@ -56,12 +56,17 @@
                                     <span class="text-success">Enabled</span>
                                   </a>
                                 </li>
-                                <li role="presentation" class="next bg-warning" id="tab-device-disbled">
+                                <li role="presentation" class="next bg-success">
+                                  <a href="#othergw" id="othergw-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
+                                    <span class="text-success">Other Gateways</span>
+                                  </a>
+                                </li>
+                                <li role="presentation" class="next bg-warning">
                                   <a href="#disabled" role="tab" id="disabled-tab" data-toggle="tab" aria-controls="profile">
                                     <span class="text-warning">Disabled</span>
                                   </a>
                                 </li>
-                                <li role="presentation" class="next bg-danger" id="tab-device-deleted">
+                                <li role="presentation" class="next bg-danger">
                                   <a href="#deleted" role="tab" id="deleted-tab" data-toggle="tab" aria-controls="profile">
                                     <span class="text-danger">Deleted</span>
                                   </a>
@@ -102,7 +107,33 @@
                                         </table>
                                     </div>
                                 </div>
+                                <div role="tabpanel" class="tab-pane fade" id="othergw" aria-labelledby="profile-tab">
+                                    <br>
+                                    <div class="dataTable_wrapper">
+                                        <table width="100%" class="table table-striped table-bordered table-hover" id="devices-othergw">
+                                            <thead>
+                                                <tr>
+                                                    <th>Gateway</th><th>Location</th><th>Area</th><th>Name</th><th>Description</th><th>Device Type</th><th>Device Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{% for deviceID, device in devices.items() if device.gateway_id != local_gateway.gateway_id %}
+                                                 <tr>
+                                                    <td>{{ gateways[device.gateway_id].label }}</td>
+                                                    <td>{{ device.location }}</td>
+                                                    <td>{{ device.area }}</td>
+                                                    <td>
+                                                        <a href="/devices/{{ device.device_id }}/details">{{ device.label }}</a>
+                                                    </td>
+                                                    <td>{{ device.description }}</td>
+                                                    <td>{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td>{{ device.status_all.human_status }}</td>
+                                                 </tr>{% endfor %}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </div>
                                 <div role="tabpanel" class="tab-pane fade" id="disabled" aria-labelledby="profile-tab">
+                                    <br>
                                     <div class="dataTable_wrapper">
                                         <table width="100%" class="table table-striped table-bordered table-hover" id="devices-disabled">
                                             <thead>
@@ -136,6 +167,7 @@
                                      </div>
                                 </div>
                                 <div role="tabpanel" class="tab-pane fade" id="deleted" aria-labelledby="dropdown1-tab">
+                                    <br>
                                     <div class="dataTable_wrapper">
                                         <table width="100%" class="table table-striped table-bordered table-hover" id="devices-deleted">
                                             <thead>
@@ -199,6 +231,19 @@
 //                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
         });
 
+        $('#devices-othergw').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50,
+                order: [[ 0, "desc"], [0, "desc"]],
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 4 ] }
+                    ]
+//                lengthMenu: [ 1, 2, 50, 75, 100 ],
+//                dom: '<f<t>ip>'
+
+//                dom: 'il<"top"f>rt<"bottom"fl>p<"clear">'
+        });
         $('#devices-disabled').DataTable({
                 responsive: true,
                 paging: true,
