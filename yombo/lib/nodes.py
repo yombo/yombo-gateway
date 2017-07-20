@@ -20,6 +20,12 @@ for local data.
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
 """
+import base64
+try:  # Prefer simplejson if installed, otherwise json will work swell.
+    import simplejson as json
+except ImportError:
+    import json
+import msgpack
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
@@ -136,15 +142,6 @@ class Nodes(YomboLibrary):
         """
         return list(self.nodes.items())
 
-    def iteritems(self):
-        return iter(self.nodes.items())
-
-    def iterkeys(self):
-        return iter(self.nodes.keys())
-
-    def itervalues(self):
-        return iter(self.nodes.values())
-
     def values(self):
         return list(self.nodes.values())
 
@@ -154,6 +151,7 @@ class Nodes(YomboLibrary):
         Load() stage.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
+        self.gateway_id = self._Configs.get2("core", "gwid")
         self.nodes = {}
         self.node_search_attributes = ['node_id', 'gateway_id', 'node_type', 'machine_label', 'destination',
             'data_type', 'status']
@@ -300,7 +298,7 @@ class Nodes(YomboLibrary):
     @inlineCallbacks
     def get(self, node_requested, node_type=None, limiter=None, status=None):
         """
-        Returns a deferred! LIke get_meta, but returns a dictionaryPerforms the actual search.
+        Returns a deferred! Looking for a node id in memory and in the database.
 
         .. note::
 
@@ -433,7 +431,7 @@ class Nodes(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def add_node(self, api_data, source=none, **kwargs):
+    def add_node(self, api_data, source=None, **kwargs):
         """
         Add a new node. Updates Yombo servers and creates a new entry locally.
 
@@ -442,7 +440,20 @@ class Nodes(YomboLibrary):
         :return:
         """
         if 'gateway_id' not in api_data:
-            api_data['gateway_id'] = self._Configs.get("core", "gwid")
+            api_data['gateway_id'] = self.gateway_id()
+
+        if 'data_content_type' not in api_data:
+            api_data['data_content_type'] = 'json'
+        if api_data['data_content_type'] == 'json':
+            try:
+                api_data['data'] = json.dumps(api_data['data'])
+            except:
+                pass
+        elif api_data['data_content_type'] == 'msgpack_base85':
+            try:
+                api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
+            except:
+                pass
 
         if source != 'amqp':
             node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
@@ -463,6 +474,16 @@ class Nodes(YomboLibrary):
             'node_id': node_id,
         }
         new_node = node_results['data']
+        if new_node.data_content_type == 'json':
+            try:
+                new_node.data = json.loads(new_node.data)
+            except:
+                pass
+        elif new_node.data_content_type == 'msgpack_base85':
+            try:
+                new_node.data = msgpack.loads(base64.b85decode(new_node.data))
+            except:
+                pass
         new_node['created'] = new_node['created_at']
         new_node['updated'] = new_node['updated_at']
         self.import_node(new_node)
@@ -660,6 +681,8 @@ class Node:
             self.gw_always_load = node['gw_always_load']
         if 'destination' in node:
             self.destination = node['destination']
+        if 'data' in node:
+            self.data = node['data']
         if 'data_type' in node:
             self.data_type = node['data_type']
         if 'status' in node:
