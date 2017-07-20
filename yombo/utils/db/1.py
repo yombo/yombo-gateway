@@ -140,20 +140,6 @@ def upgrade(Registry, **kwargs):
     yield Registry.DBPOOL.runQuery(create_index('device_commands', 'finished_time'))
     # yield Registry.DBPOOL.runQuery(create_index('device_status', 'status'))
 
-    # All possible inputs for a given device type/command/input.
-    table = """CREATE TABLE `device_locations` (
-        `id`             TEXT NOT NULL,
-        `location_type`  TEXT NOT NULL,
-        `machine_label`  TEXT NOT NULL,
-        `label`          TEXT NOT NULL,
-        `description`    TEXT,
-        `updated`        INTEGER NOT NULL,
-        `created`        INTEGER NOT NULL);"""
-    yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('device_locations', 'id'))
-    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_locations_machinelabel_idx ON device_locations (location_type, machine_label)")
-    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS device_locations_label_idx ON device_locations (location_type, label)")
-
     #  Defines the device status table. Stores device status information.
     table = """CREATE TABLE `device_status` (
         `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -211,12 +197,50 @@ def upgrade(Registry, **kwargs):
     # yield Registry.DBPOOL.runQuery(create_index('command_device_types', 'command_id'))
     #    yield Registry.DBPOOL.runQuery("CREATE INDEX IF NOT EXISTS command_device_types_command_id_device_type_id_IDX ON command_device_types (command_id, device_type_id)")
 
+    table = """CREATE TABLE `gateways` (
+            `id`                   TEXT NOT NULL,
+            `is_master`            INTEGER,
+            `master_gateway`       TEXT,
+            `machine_label`        TEXT NOT NULL,
+            `label`                TEXT NOT NULL,
+            `description`          TEXT,
+            `mqtt_auth`            TEXT,
+            `mqtt_auth_prev`       TEXT,
+            `mqtt_auth_next`       TEXT,
+            `mqtt_auth_last_rotate` TEXT,
+            `internal_ipv4`        TEXT,
+            `external_ipv4`        TEXT,
+            `internal_ipv6`        TEXT,
+            `external_ipv6`        TEXT,
+            `internal_port`        INTEGER,
+            `external_port`        INTEGER,
+            `internal_secure_port` INTEGER,
+            `external_secure_port` INTEGER,
+            `internal_mqtt`        INTEGER,
+            `internal_mqtt_le`     INTEGER,
+            `internal_mqtt_ss`     INTEGER,
+            `internal_mqtt_ws`     INTEGER,
+            `internal_mqtt_ws_le`  INTEGER,
+            `internal_mqtt_ws_ss`  INTEGER,
+            `external_mqtt`        INTEGER,
+            `external_mqtt_le`     INTEGER,
+            `external_mqtt_ss`     INTEGER,
+            `external_mqtt_ws`     INTEGER,
+            `external_mqtt_ws_le`  INTEGER,
+            `external_mqtt_ws_ss`  INTEGER,
+            `status`               INTEGER NOT NULL,
+            `created`              INTEGER NOT NULL,
+            `updated`              INTEGER NOT NULL,
+         PRIMARY KEY(id));"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('gateways', 'id', unique=True))
+
     # Used for quick access to GPG keys instead of key ring.
     table = """CREATE TABLE `gpg_keys` (
         `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `notes`       TEXT,
         `endpoint`    TEXT NOT NULL,
-        `keyid` TEXT NOT NULL,
+        `keyid`       TEXT NOT NULL,
         `fingerprint` TEXT NOT NULL,
         `length`      INTEGER NOT NULL,
         `expires`     INTEGER NOT NULL,
@@ -246,6 +270,20 @@ def upgrade(Registry, **kwargs):
         UNIQUE (machine_label) ON CONFLICT IGNORE,
         PRIMARY KEY(id) ON CONFLICT IGNORE);"""
     yield Registry.DBPOOL.runQuery(table)
+
+    # All locations configured for an account.
+    table = """CREATE TABLE `locations` (
+        `id`             TEXT NOT NULL,
+        `location_type`  TEXT NOT NULL,
+        `machine_label`  TEXT NOT NULL,
+        `label`          TEXT NOT NULL,
+        `description`    TEXT,
+        `updated`        INTEGER NOT NULL,
+        `created`        INTEGER NOT NULL);"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('locations', 'id'))
+    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS locations_machinelabel_idx ON locations (location_type, machine_label)")
+    yield Registry.DBPOOL.runQuery("CREATE UNIQUE INDEX IF NOT EXISTS locations_label_idx ON locations (location_type, label)")
 
     # To be completed
     table = """CREATE TABLE `logs` (
@@ -343,6 +381,7 @@ def upgrade(Registry, **kwargs):
     #  Defines the statistics data table. Stores statistics.
     table = """CREATE TABLE `notifications` (
         `id`           TEXT NOT NULL,
+        `gateway_id`   TEXT NOT NULL,
         `type`         TEXT NOT NULL, /* system, user, etc */
         `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
         `source`       TEXT NOT NULL, /* where this message was created */
@@ -374,11 +413,12 @@ def upgrade(Registry, **kwargs):
     # Defines the tables used to store state information.
     table = """CREATE TABLE `states` (
         `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `name`    TEXT NOT NULL,
-        `value_type` TEXT,
-        `value`   INTEGER NOT NULL,
-        `live`   INTEGER NOT NULL,
-        `created` INTEGER NOT NULL);"""
+        `gateway_id`  TEXT NOT NULL,
+        `name`        TEXT NOT NULL,
+        `value_type`  TEXT,
+        `value`       INTEGER NOT NULL,
+        `live`        INTEGER NOT NULL,
+        `created`     INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('states', 'name'))
     yield Registry.DBPOOL.runQuery(create_index('states', 'created'))
@@ -453,9 +493,10 @@ def upgrade(Registry, **kwargs):
     # Defines the web interface session store. Used by the :class:`WebInterface` class to maintain session information
     table = """CREATE TABLE `webinterface_sessions` (
         `id`           TEXT NOT NULL, /* moduleUUID */
+        `gateway_id`   TEXT NOT NULL,
         `session_data` TEXT NOT NULL,
         `created`      INTEGER NOT NULL,
-        `last_access`     INTEGER NOT NULL,
+        `last_access`  INTEGER NOT NULL,
         `updated`      INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
