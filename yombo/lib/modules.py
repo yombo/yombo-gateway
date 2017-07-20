@@ -17,7 +17,6 @@ Also calls module hooks as requested by other libraries and modules.
 :license: LICENSE for details.
 """
 # Import python libraries
-
 import configparser
 import inspect
 import sys
@@ -40,6 +39,7 @@ from yombo.utils.decorators import memoize_ttl
 
 from yombo.utils.maxdict import MaxDict
 import collections
+
 
 logger = get_logger('library.modules')
 
@@ -210,7 +210,6 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def import_modules(self):
-        #        logger.debug("starting modules::load_modules !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         yield self.build_raw_module_list()  # Create a list of modules, includes localmodules.ini
         yield self.do_import_modules()  # Just call "import moduleName"
 
@@ -590,8 +589,9 @@ class Modules(YomboLibrary):
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-            module._DeviceLocations = self._Loader.loadedLibraries['devicelocations']  # Basically, all devices
+            module._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
+            module._Gateways = self._Loader.loadedLibraries['gateways']
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
             module._Libraries = self._Loader.loadedLibraries
@@ -847,6 +847,7 @@ class Modules(YomboLibrary):
                                                                      limiter=limiter,
                                                                      operation="highest")
                 # logger.debug("found module by search: {module_id}", module_id=key)
+                # print("%s %s %s %s %s" % (found, key, item, ratio, others))
                 if found:
                     return item
                 else:
