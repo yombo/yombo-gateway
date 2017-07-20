@@ -92,6 +92,7 @@ else
    YOMBO_OPTS="$YOMBO_OPTS --logfile=$YOMBO_LOGFILE"
 fi
 
+export SSL_CERT_FILE="$(python -m certifi)"
 YOMBO_OPTS="$YOMBO_OPTS -y $YOMBO_TACFILE"
 
 while :
