@@ -530,6 +530,8 @@ class PUBLISH(object):
             payload.extend(self.payload)
         elif isinstance(self.payload, str):
             payload.extend(bytearray(self.payload, encoding='utf-8'))
+        elif isinstance(self.payload, bytes):
+            payload.extend(bytearray(self.payload))
         else:
             raise PayloadTypeError(type(self.payload))
         totalLen = len(varHeader) + len(payload)
