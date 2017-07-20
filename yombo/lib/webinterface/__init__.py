@@ -55,9 +55,10 @@ from yombo.lib.webinterface.route_automation import route_automation
 from yombo.lib.webinterface.route_api_v1 import route_api_v1
 from yombo.lib.webinterface.route_configs import route_configs
 from yombo.lib.webinterface.route_devices import route_devices
-from yombo.lib.webinterface.route_device_locations import route_device_locations
+from yombo.lib.webinterface.route_locations import route_locations
 from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
 from yombo.lib.webinterface.route_devtools_config import route_devtools_config
+from yombo.lib.webinterface.route_gateways import route_gateways
 from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_notices import route_notices
 from yombo.lib.webinterface.route_panel import route_panel
@@ -85,70 +86,32 @@ nav_side_menu = [
     {
         'label1': 'Devices',
         'label2': 'Devices',
-        'priority1': 300,
+        'priority1': 400,
         'priority2': 500,
         'icon': 'fa fa-wifi fa-fw',
         'url': '/devices/index',
         'tooltip': 'Show Devices',
         'opmode': 'run',
     },
+
     {
-        'label1': 'Device Locations',
-        'label2': 'Device Locationss',
-        'priority1': 310,
-        'priority2': 500,
-        'icon': 'fa fa-map-marker fa-fw',
-        'url': '/device_locations/index',
-        'tooltip': 'Show Device Locations',
+        'label1': 'Device Tools',
+        'label2': 'Device Commands',
+        'priority1': 600,
+        'priority2': 1000,
+        'icon': 'fa fa-info fa-fw',
+        'url': '/devices/device_commands',
+        'tooltip': '',
         'opmode': 'run',
     },
+
     {
         'label1': 'Modules',
         'label2': 'Modules',
-        'priority1': 400,
+        'priority1': 800,
         'priority2': 500,
         'icon': 'fa fa-puzzle-piece fa-fw',
         'url': '/modules/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Settings',
-        'label2': 'Basic Settings',
-        'priority1': 500,
-        'priority2': 2000,
-        'icon': 'fa fa-cogs fa-fw',
-        'url': '/configs/basic',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Settings',
-        'label2': 'DNS',
-        'priority1': 500,
-        'priority2': 2250,
-        'icon': 'fa fa-cogs fa-fw',
-        'url': '/configs/dns',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Settings',
-        'label2': 'Encryption Keys',
-        'priority1': 500,
-        'priority2': 2500,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/gpg/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Settings',
-        'label2': 'Yombo.Ini',
-        'priority1': 500,
-        'priority2': 3000,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/yombo_ini',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -160,16 +123,6 @@ nav_side_menu = [
         'priority2': 2000,
         'icon': 'fa fa-info fa-fw',
         'url': '/atoms/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Info',
-        'label2': 'Device Commands',
-        'priority1': 1000,
-        'priority2': 2500,
-        'icon': 'fa fa-info fa-fw',
-        'url': '/devices/device_commands',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -234,16 +187,7 @@ nav_side_menu = [
         'tooltip': '',
         'opmode': 'run',
     },
-    {
-        'label1': 'Tools',
-        'label2': 'General',
-        'priority1': 3000,
-        'priority2': 500,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/tools/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
+
     {
         'label1': 'Tools',
         'label2': 'Debug',
@@ -251,6 +195,67 @@ nav_side_menu = [
         'priority2': 100000,
         'icon': 'fa fa-code fa-fw',
         'url': '/devtools/debug/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+
+    {
+        'label1': 'System Settings',
+        'label2': 'Locations',
+        'priority1': 3500,
+        'priority2': 500,
+        'icon': 'fa fa-map-marker fa-fw',
+        'url': '/locations/index',
+        'tooltip': 'Show Locations',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
+        'label2': 'Gateways',
+        'priority1': 3500,
+        'priority2': 1000,
+        'icon': 'fa fa-cogs fa-fw',
+        'url': '/gateways/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
+        'label2': 'Basic Settings',
+        'priority1': 3500,
+        'priority2': 1500,
+        'icon': 'fa fa-cogs fa-fw',
+        'url': '/configs/basic',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
+        'label2': 'DNS',
+        'priority1': 3500,
+        'priority2': 2000,
+        'icon': 'fa fa-cogs fa-fw',
+        'url': '/configs/dns',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
+        'label2': 'Encryption Keys',
+        'priority1': 3500,
+        'priority2': 2500,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/gpg/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
+        'label2': 'Yombo.Ini',
+        'priority1': 3500,
+        'priority2': 3000,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/configs/yombo_ini',
         'tooltip': '',
         'opmode': 'run',
     },
@@ -419,9 +424,10 @@ class WebInterface(YomboLibrary):
         route_api_v1(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
-        route_device_locations(self.webapp)
+        route_locations(self.webapp)
         route_devtools_debug(self.webapp)
         route_devtools_config(self.webapp)
+        route_gateways(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
         route_panel(self.webapp)
@@ -436,6 +442,7 @@ class WebInterface(YomboLibrary):
         self.web_server_ssl_started = False
 
         self.already_start_web_servers = False
+        self.web_factory = None
 
         # just here to set a password if it doesn't exist.
         mqtt_password = self._Configs.get('mqtt_users', 'panel.webinterface', yombo.utils.random_string())
@@ -448,7 +455,6 @@ class WebInterface(YomboLibrary):
         if hasattr(self, 'sessions'):
             yield self.sessions.init()
 
-    # def _start_(self, **kwargs):
         if hasattr(self, 'sessions') is False:
             return
         if not self.enabled:
@@ -480,12 +486,32 @@ class WebInterface(YomboLibrary):
         # self.functions = {
         #     'yes_no': yombo.utils.is_yes_no,
         # }
-
+        self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         # self.webapp.templates.globals['func'] = self.functions
 
         self.starting = False
         self.start_web_servers()
+
+    def _start_(self, **kwargs):
+        self._Notifications.add({
+            'title': 'System still starting',
+            'message': 'Still starting up. Please wait.',
+            'source': 'Web Interface Library',
+            'persist': True,
+            'priority': 'high',
+            'always_show': True,
+            'always_show_allow_clear': False,
+            'id': 'webinterface:starting',
+        })
+        added_notification = True
+        self._get_nav_side_items()
+
+    def _started_(self, **kwargs):
+        # if self._op_mode != 'run':
+        self._display_pin_console_time = int(time())
+        self.display_pin_console()
+        self._Notifications.delete('webinterface:starting')
 
     def check_have_required_nodes(self):
         try:
@@ -607,15 +633,12 @@ class WebInterface(YomboLibrary):
         logger.warn("Got updated SSL Cert!  Thanks.")
         pass
 
-    def _started_(self, **kwargs):
-        # if self._op_mode != 'run':
-        self._display_pin_console_time = int(time())
-        self.display_pin_console()
-
     @inlineCallbacks
     def _unload_(self, **kwargs):
-        yield self.web_factory.save_log_queue()
-        yield self.sessions._unload_()
+        if self.web_factory is not None:
+            yield self.web_factory.save_log_queue()
+        if self.sessions is not None:
+            yield self.sessions._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
     #     return [{'webinterface': {
@@ -657,7 +680,8 @@ class WebInterface(YomboLibrary):
         return web_translator(self, request)
 
     @inlineCallbacks
-    def _modules_loaded_(self, **kwargs):
+    # def _modules_loaded_(self, **kwargs):
+    def _get_nav_side_items(self, **kwargs):
         """
         Called before modules have their _prestart_ function called (after _load_).
 
@@ -827,7 +851,7 @@ class WebInterface(YomboLibrary):
     @webapp.route('/login/user', methods=['POST'])
     @require_auth_pin()
     @inlineCallbacks
-    def page_login_user_post(self, request):
+    def page_login_user_post(self, request, session):
         # print("rquest.args: %s"  % request.args)
         if 'g-recaptcha-response' not in request.args:
             self.add_alert('Captcha Missing', 'warning')
@@ -846,7 +870,7 @@ class WebInterface(YomboLibrary):
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
 
-        print("elf._op_mode: %s" % self._op_mode)
+        # print("self._op_mode: %s" % self._op_mode)
         if self._op_mode == 'run':
             results = yield self._LocalDb.get_gateway_user_by_email(self.gwid(), submitted_email)
             if len(results) != 1:
@@ -860,13 +884,13 @@ class WebInterface(YomboLibrary):
             login = results['content']['response']['login']
             # print("login was good...")
 
-            session = yield self.sessions.load(request)
+            # session = yield self.sessions.load(request)
             if session is False:
-                print("created session")
+                # print("created session")
                 session = self.sessions.create(request)
             else:
                 session.delete('login_redirect')
-                print("existing session")
+                # print("existing session")
 
             session['auth'] = True
             session['auth_id'] = submitted_email
@@ -961,10 +985,7 @@ class WebInterface(YomboLibrary):
         return page.render()
 
     def do_shutdown(self):
-        try:
-            raise YomboCritical("Web Interface setup wizard complete.")
-        except:
-            pass
+        raise YomboCritical("Web Interface setup wizard complete.")
 
     @webapp.route('/static/', branch=True)
     @run_first()
