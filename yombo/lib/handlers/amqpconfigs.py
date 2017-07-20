@@ -70,6 +70,52 @@ class AmqpConfigHandler(YomboLibrary):
                 }
             },
 
+            'gateway_cluster': {
+                'dbclass': "Gateway",
+                'table': "gateways",
+                'library': "gateways",
+                'functions': {
+                    # 'process': "enable_command",
+                    # 'enabled': "enable_device",
+                    # 'disabled': "disable_device",
+                    # 'deleted': "delete_device",
+                },
+                'purgeable': False,
+                'map': {
+                    'id': 'id',
+                    'is_master': 'is_master',
+                    'master_gateway': 'master_gateway',
+                    'machine_label': 'machine_label',
+                    'label': 'label',
+                    'description': 'description',
+                    'mqtt_auth': 'mqtt_auth',
+                    'mqtt_auth_prev': 'mqtt_auth',
+                    'mqtt_auth_next': 'mqtt_auth_next',
+                    'mqtt_auth_last_rotate': 'mqtt_auth_last_rotate',
+                    'internal_ipv4': 'internal_ipv4',
+                    'external_ipv4': 'external_ipv4',
+                    'internal_ipv6': 'internal_ipv6',
+                    'external_ipv6': 'external_ipv6',
+                    'internal_port': 'internal_port',
+                    'external_port': 'external_port',
+                    'internal_secure_port': 'internal_secure_port',
+                    'external_secure_port': 'external_secure_port',
+                    'internal_mqtt': 'internal_mqtt',
+                    'internal_mqtt_le': 'internal_mqtt_le',
+                    'internal_mqtt_ss': 'internal_mqtt_ss',
+                    'internal_mqtt_ws': 'internal_mqtt_ws',
+                    'internal_mqtt_ws_le': 'internal_mqtt_ws_le',
+                    'internal_mqtt_ws_ss': 'internal_mqtt_ws_ss',
+                    'externalmqtt': 'externalmqtt',
+                    'externalmqtt_le': 'externalmqtt_le',
+                    'externalmqtt_ss': 'externalmqtt_ss',
+                    'externalmqtt_ws': 'externalmqtt_ws',
+                    'externalmqtt_ws_le': 'externalmqtt_ws_le',
+                    'externalmqtt_ws_ss': 'externalmqtt_ws_ss',
+                    'created_at': 'created',
+                    'updated_at': 'updated',
+                }
+            },
             'gateway_dns_name': {
                 'dbclass': "none",
                 'table': "none",
@@ -119,6 +165,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'purgeable': True,
                 'map': {
                     'id': 'id',
+                    'gateway_id': 'gateway_id',
                     'area_id': 'area_id',
                     'location_id': 'location_id',
                     'machine_label': 'machine_label',
@@ -176,9 +223,9 @@ class AmqpConfigHandler(YomboLibrary):
                 }
             },
 
-            'gateway_device_locations': {
-                'dbclass': "DeviceLocation",
-                'table': "device_locations",
+            'gateway_locations': {
+                'dbclass': "Location",
+                'table': "locations",
                 'library': None,
                 'functions': {
                     # 'enabled': "enable_device",
@@ -589,14 +636,17 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         if self.processing:
-            returnValue(None)
+            return None
 
         if self.processing_queue == False:
             self.processing_queue = True
+            # print("self.__process_queue: %s" % self.__process_queue)
             for key in list(self.__process_queue):
                 queue = self.__process_queue[key]
+                # print("processing key: %s" % 'get_%s' % queue['headers']['config_item'])
+                # if queue['headers']['config_item'] == 'get_gateway_cluster':
                 # print("msg: %s" % queue['msg'])
-                # print("headers: %s" % queue['headers'])
+                # print("self.__pending_updates: %s" % self.__pending_updates)
                 self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
                 yield self.process_config(queue['msg'], queue['headers']['config_item'], queue['headers']['config_type'])
                 del self.__process_queue[key]
@@ -897,7 +947,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_categories",
             "get_gateway_commands",
             "get_gateway_devices", # Includes device variable groups/fields/data
-            "get_gateway_device_locations", # Includes device variable groups/fields/data
+            "get_gateway_locations", # Includes device variable groups/fields/data
             "get_gateway_device_types",
             "get_gateway_modules", # Includes module variable groups/fields/data
 
@@ -906,6 +956,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_input_types",
             "get_gateway_users",
             "get_gateway_dns_name",
+            "get_gateway_cluster",
 
             # "get_gateway_nodes",  # Includes module variable groups/fields/data
 
@@ -1009,9 +1060,9 @@ class AmqpConfigHandler(YomboLibrary):
         self.parent._Configs.set("amqpyombo", 'lastcomplete', int(time()))
         if self.init_defer.called is False:
             self.init_defer.callback(1)  # if we don't check for this, we can't stop!
-            self.parent._Notifications.add(
-                {'title': 'Configs Downloaded', 'message': 'Downloaded system configurations from Yombo server.',
-                 'timeout': 300, 'source': 'Yombo Gateway System'})
+            # self.parent._Notifications.add(
+            #     {'title': 'Configs Downloaded', 'message': 'Downloaded system configurations from Yombo server.',
+            #      'timeout': 300, 'source': 'Yombo Gateway System'})
 
 
     def _show_pending_configs(self):
