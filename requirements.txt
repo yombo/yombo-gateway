@@ -1,5 +1,5 @@
-hbmqtt; python_version > '3.3'
-Twisted; python_version > '3.6.0'
+hbmqtt
+Twisted
 asyncio
 parsedatetime
 netifaces
@@ -32,7 +32,8 @@ unidecode
 pydispatcher
 cython
 wheel
-python_openzwave
+certifi
+pyephem
 
 #psutil
 #pytest
