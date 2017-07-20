@@ -17,6 +17,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 from functools import partial
+from time import time
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
@@ -212,19 +213,21 @@ class Variables(YomboLibrary):
                 field['values'].append(data['value'])
 
     # @memoize_ttl(10)
-    def merge_variable_groups_fields_data_data(self, groups, new_data_items):
+    @inlineCallbacks
+    def merge_variable_groups_fields_data_data(self, groups, new_data_items, relation_type = None):
         """
         Merge the results from get_variable_groups_fields_data and a dictiionary of data times, usually
-        the response from a web post.
+        the response from a web post or get_variable_data.
         :param groups: 
         :param data: 
         :return: 
         """
-        # print("merge_variable_data. Groups: %s" % groups)
-        # print("merge_variable_data. new_data_items: %s" % new_data_items)
+        print("merge_variable_data. Groups: %s" % groups)
+        print("merge_variable_data. new_data_items: %s" % new_data_items)
         for group_name, group in groups.items():
             for field_name, field in group['fields'].items():
-                # print("111 %s" % field )
+                print("111 field %s" % field )
+                print("111 field_name %s" % field )
                 found_field_id = None
                 found_field_key = None
                 if field_name in new_data_items:
@@ -235,38 +238,36 @@ class Variables(YomboLibrary):
                     found_field_key = field['id']
                 if found_field_id is not None:
                     new_data_item = new_data_items[found_field_key]
-                    # print("222 new_data: %s" % new_data_item)
-                    # print("222 field['id']: %s" % field['id'])
-                    for new_data_id, new_data in new_data_item.items():
-                        # print("newdata: %s" % new_data)
-                        final_value = ""
-                        if isinstance(new_data, dict):
-                            if new_data['input'] == '-----ENCRYPTED DATA-----':
-                                # print("encry: %s" % new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
-                                # print("encry: %s" % new_data['orig'])
-                                if new_data['orig'].startswith('-----BEGIN PGP MESSAGE-----') is False:
-                                    final_value = 'error'
-                                else:
-                                    final_value = new_data['orig']
-                            else:
-                                final_value = new_data['input']
+                    print("222 new_data: %s" % new_data_item)
+                    print("222 field['id']: %s" % field['id'])
+                    for data_id, data in new_data_item.items():
+                        data_items = {
+                            'id': data_id,
+                            'relation_id': None,
+                            'relation_type': relation_type,
+                            'weight': 0,
+                            'created': time(),
+                            'updated': time(),
+                        }
+                        print("zzzzz")
+                        if data is not None:
+                            data_items['value'] = yield self._GPG.decrypt(data)
+                            data_items['value_display'] = yield self._GPG.display_encrypted(data)
                         else:
-                            final_value = new_data
+                            data_items['value'] = None
+                            data_items['value_display'] = ""
 
-                        if new_data_id in field['data']:
-                            field['data'][new_data_id]['value'] = final_value
-                        else:
-                            field['data'][new_data_id] = {
-                                'id': new_data_id,
-                                'value': final_value,
-                            }
+                        data_items['value_orig'] = data
+                        print("zzzzz 10")
+                        groups[group_name]['fields'][field_name]['data'][data_id] = data_items
+                        print("zzzzz 11")
+                        groups[group_name]['fields'][field_name]['values'].append(data_items['value'])
+                        print("zzzzz 12")
+                        groups[group_name]['fields'][field_name]['values_display'].append(data_items['value_display'])
+                        print("zzzzz 13")
+                        groups[group_name]['fields'][field_name]['values_orig'].append(data_items['value_orig'])
 
-                            # for data in field['data']:
-                    #     if data['name']
-
-                field['values'] = []
-                for data_id, data in field['data'].items():
-                    field['values'].append(data['value'])
+                        print("newdata: %s" % data_items)
 
         # print("merge_variable_data. groups_done: %s" % groups)
         return groups
