@@ -59,6 +59,7 @@ from yombo.lib.webinterface.route_locations import route_locations
 from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
 from yombo.lib.webinterface.route_devtools_config import route_devtools_config
 from yombo.lib.webinterface.route_gateways import route_gateways
+from yombo.lib.webinterface.route_misc import route_misc
 from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_notices import route_notices
 from yombo.lib.webinterface.route_panel import route_panel
@@ -428,6 +429,7 @@ class WebInterface(YomboLibrary):
         route_devtools_debug(self.webapp)
         route_devtools_config(self.webapp)
         route_gateways(self.webapp)
+        route_misc(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
         route_panel(self.webapp)
@@ -487,6 +489,7 @@ class WebInterface(YomboLibrary):
         #     'yes_no': yombo.utils.is_yes_no,
         # }
         self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
+        self.webapp.templates.globals['gateways'] = self._Gateways
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         # self.webapp.templates.globals['func'] = self.functions
 
@@ -816,7 +819,7 @@ class WebInterface(YomboLibrary):
                            automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
                            devices=self._Libraries['devices'].devices,
                            modules=self._Libraries['modules'].modules,
-                           states=self._Libraries['states'].get_states(),
+                           # states=self._Libraries['states'].get_states(),
                            )
 
     @require_auth()
