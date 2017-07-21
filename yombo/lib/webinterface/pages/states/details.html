@@ -15,25 +15,27 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="col-lg-6 col-md-6">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <label>State information for: {{ state.name }}</label>
-                            </div>
-                            <!-- /.panel-heading -->
-                            <div class="panel-body">
-                                <label style="margin-top: 15px; margin-bottom: 0px">Value: </label><br>
-                                {{ state.value }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Value For Humans: </label><br>
-                                {{ state.value_human }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Value Type: </label><br>
-                                {{ state.value_type }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ state.created|epoch_to_human }}<br>
-                            </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>State information for: {{ state.name }}</label>
                         </div>
-                        <!-- /.panel-body -->
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Gateway: </label><br>
+                            {{ state.gateway_id }} -> {{gateways[state.gateway_id].label}}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value: </label><br>
+                            {{ state.value }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value For Humans: </label><br>
+                            {{ state.value_human }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value Type: </label><br>
+                            {{ state.value_type }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                            {{ state.created|epoch_to_human }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                            {{ state.updated|epoch_to_human }}<br>
+                        </div>
                     </div>
+                    <!-- /.panel-body -->
                 </div>
                 <!-- /.col-lg-12 -->
                 <div class="col-lg-12">

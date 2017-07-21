@@ -90,9 +90,10 @@ class States(YomboLibrary, object):
         :return: Returns true if exists, otherwise false.
         :rtype: bool
         """
-        if state_requested in self.__States:
+        try:
+            self.get(state_requested)
             return True
-        else:
+        except Exception as e:
             return False
 
     def __getitem__(self, state_requested):
@@ -140,11 +141,11 @@ class States(YomboLibrary, object):
         :return: The value assigned to the state.
         :rtype: mixed
         """
-        return self.delete(key)
+        return self.delete(state_requested)
 
     def __iter__(self):
         """ iter states. """
-        return self.__States.__iter__()
+        return self.__States[self.gateway_id].__iter__()
 
     def __len__(self):
         """
@@ -153,7 +154,7 @@ class States(YomboLibrary, object):
         :return: The number of states defined.
         :rtype: int
         """
-        return len(self.__States)
+        return len(self.__States[self.gateway_id])
 
     def __str__(self):
         """
@@ -163,31 +164,48 @@ class States(YomboLibrary, object):
         """
         return "Yombo states library"
 
-    def keys(self):
+    def keys(self, gateway_id=None):
         """
         Returns the keys of the states that are defined.
 
         :return: A list of states defined. 
         :rtype: list
         """
-        return list(self.__States.keys())
+        if gateway_id is None:
+            gateway_id = self.gateway_id
 
-    def items(self):
+        if gateway_id not in self.__States:
+            return []
+        return list(self.__States[gateway_id].keys())
+
+    def items(self, gateway_id=None):
         """
         Gets a list of tuples representing the states defined.
 
         :return: A list of tuples.
         :rtype: list
         """
-        return list(self.__States.items())
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id not in self.__States:
+            return []
+        return list(self.__States[gateway_id].items())
 
-    def values(self):
-        return list(self.__States.values())
+    def values(self, gateway_id=None):
+        """
+        Gets a list of state values
+        :return: list
+        """
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id not in self.__States:
+            return []
+        return list(self.__States[gateway_id].values())
 
     def _init_(self, **kwargs):
-        self.__States = {}
         self._loaded = False
         self.gateway_id = self._Configs.get('core', 'gwid')
+        self.__States = {self.gateway_id:{}}
 
         self.init_deferred = Deferred()
         self.load_states()
@@ -216,12 +234,14 @@ class States(YomboLibrary, object):
     def load_states(self):
         states = yield self._LocalDB.get_states()
         for state in states:
-            self.__States[state['name']] = {
-                'gateway_id': state['gateway_id'],
+            self.__States[self.gateway_id][state['name']] = {
                 'value': state['value'],
                 'value_human': self.convert_to_human(state['value'], state['value_type']),
                 'value_type': state['value_type'],
+                'live': state['live'],
                 'created': state['created'],
+                'updated': state['updated'],
+                'gateway_id': self.gateway_id,
             }
         self.init_deferred.callback(10)
 
@@ -243,7 +263,7 @@ class States(YomboLibrary, object):
     #         states[key] = state
     #     return states
 
-    def exists(self, key):
+    def exists(self, key, gateway_id):
         """
         Checks if a given state exists. Returns true or false.
 
@@ -251,11 +271,14 @@ class States(YomboLibrary, object):
         :return: If state exists:
         :rtype: Bool
         """
-        if key in self.__States:
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+
+        if key in self.__States[gateway_id]:
             return True
         return False
 
-    def get_last_update(self, key):
+    def get_last_update(self, key, gateway_id=None):
         """
         Get the time() the key was created or last updated.
 
@@ -263,12 +286,14 @@ class States(YomboLibrary, object):
         :return: Time() of last update
         :rtype: float
         """
-        if key in self.__States:
-            return self.__States[key]['created']
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if key in self.__States[gateway_id]:
+            return self.__States[gateway_id][key]['created']
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
 
-    def get2(self, key, human=None, full=None, set=None, **kwargs):
+    def get2(self, key, human=None, full=None, gateway_id=None, set=None, **kwargs):
         """
         Like :py:meth:`get() <get>` below, however, this returns a callable to retrieve the value instead of an actual
         value. The callable can also be used to set the value of the state too. See
@@ -297,12 +322,12 @@ class States(YomboLibrary, object):
         """
 
         if set is not None:
-            self.set(key, set, **kwargs)
+            self.set(key, set, gateway_id=gateway_id, **kwargs)
             return set
 
-        self.get(key, human, full)
+        self.get(key, human, full, gateway_id=gateway_id)
 
-        return partial(self.get, key, human, full)
+        return partial(self.get, key, human, full, gateway_id=gateway_id)
 
     def get(self, key, human=None, full=None, gateway_id=None):
         """
@@ -325,29 +350,35 @@ class States(YomboLibrary, object):
         self._Statistics.increment("lib.states.get", bucket_size=15, anon=True)
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
-            results = pattern_search(key, self.__States)
+            if gateway_id not in self.__States:
+                return {}
+            results = pattern_search(key, self.__States[gateway_id])
             if len(results) > 1:
                 values = {}
                 for item in results:
-                    if gateway_id == 'any' or self.__States[item]['gateway_id'] == gateway_id:
-                        values[item] = self.__States[item]
+                    values[item] = self.__States[gateway_id][item]
                 return values
             else:
                 raise KeyError("Searched for atoms, none found.")
         if human is True:
-            return self.__States[key]['value']
+            return self.__States[gateway_id][key]['value_human']
         elif full is True:
-            return self.__States[key]
+            return self.__States[gateway_id][key]
         else:
-            return self.__States[key]['value_human']
+            return self.__States[gateway_id][key]['value']
 
-    def get_states(self):
+    def get_states(self, gateway_id=None):
         """
         Returns a copy of the active states.
 
         :param key: Name of state to check.
         :return: Value of state
         """
+        if gateway_id is not None:
+            if gateway_id in self.__States:
+                return self.__States[gateway_id].copy()
+            else:
+                return {}
         return self.__States.copy()
 
     @inlineCallbacks
@@ -370,25 +401,27 @@ class States(YomboLibrary, object):
         # logger.debug("Saving state: {key} = {value}", key=key, value=value)
         if gateway_id is None:
             gateway_id = self.gateway_id
-        if gateway_id != self.gateway_id:
-            raise YomboWarning("Cannot set state value for another gateway.")
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
             raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
 
-        if key in self.__States and self.__States[key]['gateway_id'] == gateway_id:
-            is_new = True
+        if gateway_id not in self.__States:
+            self.__States[gateway_id] = {}
+        if key in self.__States[gateway_id]:
+            is_new = False
             # If state is already set to value, we don't do anything.
-            if self.__States[key]['value'] == value:
+            self.__States[gateway_id][key]['updated'] = int(round(time()))
+            if self.__States[gateway_id][key]['value'] == value:
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
-            self.__States[key]['created'] = int(round(time()))
         else:
-            is_new = False
-            self.__States[key] = {
+            is_new = True
+            self.__States[gateway_id][key] = {
                 'gateway_id': gateway_id,
                 'created': int(time()),
+                'updated': int(time()),
+                'live': False,
             }
             self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
 
@@ -401,27 +434,59 @@ class States(YomboLibrary, object):
                            state=key, resource=e.by_who)
             returnValue(None)
 
-        self.__States[key]['value'] = value
-        self.__States[key]['function'] = function
-        self.__States[key]['arguments'] = arguments
+        self.__States[gateway_id][key]['value'] = value
+        self.__States[gateway_id][key]['function'] = function
+        self.__States[gateway_id][key]['arguments'] = arguments
         if is_new is True or value_type is not None:
-            self.__States[key]['value_type'] = value_type
-        self.__States[key]['value_human'] = self.convert_to_human(value, value_type)
+            self.__States[gateway_id][key]['value_type'] = value_type
+        if is_new is True or function is not None:
+            if function is None:
+                self.__States[gateway_id][key]['live'] = False
+            else:
+                self.__States[gateway_id][key]['live'] = True
+
+        self.__States[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value})
+            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value, 'gateway_id': gateway_id})
         except YomboHookStopProcessing:
             pass
 
-        live = False
-        if function is not None:
-            live = True
 
         if gateway_id == self.gateway_id:
-            self._LocalDB.save_state(key, value, value_type, live, gateway_id)
+            self._LocalDB.save_state(key, self.__States[gateway_id][key])
 
         self.check_trigger(key, value)  # Check if any automation items need to fire!
+
+    def set_gw_coms(self, key, values):
+        """
+        Used by the gateway coms (mqtt) system to set state values.
+        :param key:
+        :param values:
+        :return:
+        """
+        gateway_id = values['gateway_id']
+        if gateway_id == self.gateway_id:
+            return
+        if gateway_id not in self.__States:
+            self.__States[gateway_id] = {}
+        self.__States[values['gateway_id']][key] = {
+            'gateway_id': values['gateway_id'],
+            'value': values['value'],
+            'value_human': values['value_human'],
+            'value_type': values['value_type'],
+            'live': False,
+            'created': values['created'],
+            'updated': values['updated'],
+
+        }
+
+        # Call any hooks
+        try:
+            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value, 'gateway_id': gateway_id})
+        except YomboHookStopProcessing:
+            pass
 
     def convert_to_human(self, value, value_type):
         if value_type == 'bool':
@@ -468,7 +533,7 @@ class States(YomboLibrary, object):
         results = yield self._LocalDB.get_state_count(key)
         returnValue(results)
 
-    def delete(self, key):
+    def delete(self, key, gateway_id=None):
         """
         Deletes a status (key).
         KeyError if state not found.
@@ -478,8 +543,11 @@ class States(YomboLibrary, object):
         :return: None
         :rtype: None
         """
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+
         if key in self.__States:
-            del self.__States[key]
+            del self.__States[gateway_id][key]
         else:
             raise KeyError("Cannot delete state: %s not found" % key)
         return None
@@ -531,7 +599,7 @@ class States(YomboLibrary, object):
             self.mqtt.publish('yombo/states/%s/get_response' % parts[2], str('MQTT Error: state not found'))
             return
 
-        state = self.__States[requested_state]
+        state = self.__States[self.gateway_id][requested_state]
 
         if parts[3] == 'get':
             request_id = random_string(length=30)
@@ -629,7 +697,7 @@ class States(YomboLibrary, object):
 
         True - Rules fired, fale - no rules fired.
         """
-        logger.debug("check_trigger. {key} = {value}", key=key, value=value)
+        logger.info("check_trigger. {key} = {value}", key=key, value=value)
         if self._loaded:
             results = self._Automation.triggers_check('states', key, value)
 
@@ -689,11 +757,11 @@ class States(YomboLibrary, object):
 
         :return:
         """
-        logger.debug("states_startup_trigger_callback: %s" % self.automation_startup_check)
+        logger.info("states_startup_trigger_callback: %s" % self.automation_startup_check)
         for name in self.automation_startup_check:
             if name in self.__States:
-                logger.debug("states_startup_trigger_callback - name: %s" % name)
-                self.check_trigger(name, self.__States[name]['value'])
+                logger.info("states_startup_trigger_callback - name: %s value: %s" % (name, self.__States[self.gateway_id][name]['value']))
+                self.check_trigger(name, self.__States[self.gateway_id][name]['value'])
 
     def states_get_value_callback(self, rule, portion, **kwargs):
         """

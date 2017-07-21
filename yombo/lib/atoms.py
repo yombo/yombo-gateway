@@ -145,9 +145,10 @@ class Atoms(YomboLibrary):
         :return: Returns true if exists, otherwise false.
         :rtype: bool
         """
-        if atom_requested in self.__Atoms:
+        try:
+            self.get(atom_requested)
             return True
-        else:
+        except Exception as e:
             return False
 
     def __getitem__(self, atom_requested):
@@ -208,26 +209,43 @@ class Atoms(YomboLibrary):
         """
         return "Yombo atoms library"
 
-    def keys(self):
+    def keys(self, gateway_id=None):
         """
         Returns the keys of the atoms that are defined.
 
         :return: A list of atoms defined. 
         :rtype: list
         """
-        return list(self.__Atoms.keys())
+        if gateway_id is None:
+            gateway_id = self.gateway_id
 
-    def items(self):
+        if gateway_id not in self.__Atoms:
+            return []
+        return list(self.__Atoms[gateway_id].keys())
+
+    def items(self, gateway_id=None):
         """
         Gets a list of tuples representing the atoms defined.
 
         :return: A list of tuples.
         :rtype: list
         """
-        return list(self.__Atoms.items())
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id not in self.__Atoms:
+            return []
+        return list(self.__Atoms[gateway_id].items())
 
-    def values(self):
-        return list(self.__Atoms.values())
+    def values(self, gateway_id=None):
+        """
+        Gets a list of atom values
+        :return: list
+        """
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id not in self.__Atoms:
+            return []
+        return list(self.__Atoms[gateway_id].values())
 
     def _init_(self, **kwargs):
         """
@@ -238,7 +256,7 @@ class Atoms(YomboLibrary):
         self.library_state = 1
         self.gateway_id = self._Configs.get('core', 'gwid')
         self._loaded = False
-        self.__Atoms = {}
+        self.__Atoms = {self.gateway_id: {}}
         self.os_data()
 
         self.triggers = {}
@@ -258,15 +276,18 @@ class Atoms(YomboLibrary):
     def _start_(self, **kwargs):
         self.library_state = 3
 
-    def exists(self, key):
+    def exists(self, key, gateway_id):
         """
-        Checks if a given atom exists. Returns true or false.
+        Checks if a given state exists. Returns true or false.
 
-        :param key: Name of atom to check.
-        :return: If atom exists:
+        :param key: Name of state to check.
+        :return: If state exists:
         :rtype: Bool
         """
-        if key in self.__Atoms:
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+
+        if key in self.__Atoms[gateway_id]:
             return True
         return False
 
@@ -279,17 +300,22 @@ class Atoms(YomboLibrary):
         :rtype: float
         """
         if key in self.__Atoms:
-            return self.__Atoms[key]['created']
+            return self.__Atoms[key]['updated']
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
 
-    def get_atoms(self):
+    def get_atoms(self, gateway_id=None):
         """
         Shouldn't really be used. Just returns a _copy_ of all the atoms.
 
         :return: A dictionary containing all atoms.
         :rtype: dict
         """
+        if gateway_id is not None:
+            if gateway_id in self.__Atoms:
+                return self.__Atoms[gateway_id].copy()
+            else:
+                return {}
         return self.__Atoms.copy()
 
     def get(self, atom_requested, human=None, full=None, gateway_id=None):
@@ -309,23 +335,24 @@ class Atoms(YomboLibrary):
         self._Statistics.increment("lib.atoms.get", bucket_size=15, anon=True)
         search_chars = ['#', '+']
         if any(s in atom_requested for s in search_chars):
-            results = yombo.utils.pattern_search(atom_requested, self.__Atoms)
+            if gateway_id not in self.__Atoms:
+                return {}
+            results = yombo.utils.pattern_search(atom_requested, self.__Atoms[gateway_id])
             if len(results) > 1:
                 values = {}
-                print("atoms: %s" % self.__Atoms)
+                # print("atoms: %s" % self.__Atoms[gateway_id])
                 for item in results:
-                    if gateway_id == 'any' or self.__Atoms[item]['gateway_id'] == gateway_id:
-                        values[item] = self.__Atoms[item]
+                    values[item] = self.__Atoms[gateway_id][item]
                 return values
             else:
                 raise KeyError("Searched for atom, none found: %s" % atom_requested)
 
         if human is True:
-            return self.__Atoms[atom_requested]['value']
+            return self.__Atoms[gateway_id][atom_requested]['value_human']
         elif full is True:
-            return self.__Atoms[atom_requested]
+            return self.__Atoms[gateway_id][atom_requested]
         else:
-            return self.__Atoms[atom_requested]['value_human']
+            return self.__Atoms[gateway_id][atom_requested]['value']
 
     @inlineCallbacks
     def set(self, key, value, value_type=None, gateway_id=None):
@@ -350,31 +377,34 @@ class Atoms(YomboLibrary):
             gateway_id = self.gateway_id
         if gateway_id != self.gateway_id:
             raise YomboWarning("Cannot set atom value for another gateway.")
+        if gateway_id not in self.__Atoms:
+            self.__Atoms[gateway_id] = {}
 
         search_chars = ['#', '+']
         if any(s in key for s in search_chars):
             raise YomboWarning("state keys cannot have # or + in them, reserved for searching.")
 
-        if key in self.__Atoms and self.__Atoms[key]['gateway_id'] == gateway_id:
-            is_new = True
+        if key in self.__Atoms[gateway_id]:
+            is_new = False
             # If state is already set to value, we don't do anything.
-            if self.__Atoms[key]['value'] == value:
+            self.__Atoms[key]['updated'] = int(round(time()))
+            if self.__Atoms[gateway_id][key]['value'] == value:
                 return
             self._Statistics.increment("lib.atoms.set.update", bucket_size=60, anon=True)
-            self.__Atoms[key]['created'] = int(round(time()))
         else:
-            is_new = False
-            self.__Atoms[key] = {
+            is_new = True
+            self.__Atoms[gateway_id][key] = {
                 'gateway_id': gateway_id,
                 'created': int(time()),
+                'updated': int(time()),
             }
             self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
 
 
-        self.__Atoms[key]['value'] = value
+        self.__Atoms[gateway_id][key]['value'] = value
         if is_new is True or value_type is not None:
-            self.__Atoms[key]['value_type'] = value_type
-        self.__Atoms[key]['value_human'] = self.convert_to_human(value, value_type)
+            self.__Atoms[gateway_id][key]['value_type'] = value_type
+        self.__Atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
         try:
@@ -384,6 +414,33 @@ class Atoms(YomboLibrary):
 
         self.check_trigger(key, value)  # Check if any automation items need to fire!
 
+    def set_gw_coms(self, key, values):
+        """
+        Used by the gateway coms (mqtt) system to set atom values.
+        :param key:
+        :param values:
+        :return:
+        """
+        gateway_id = values['gateway_id']
+        if gateway_id == self.gateway_id:
+            return
+        if gateway_id not in self.__Atoms:
+            self.__Atoms[gateway_id] = {}
+        self.__Atoms[values['gateway_id']][key] = {
+            'gateway_id': values['gateway_id'],
+            'value': values['value'],
+            'value_human': values['value_human'],
+            'value_type': values['value_type'],
+            'created': values['created'],
+            'updated': values['updated'],
+        }
+
+        # Call any hooks
+        try:
+            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self, 'key': key, 'value': value,
+                                                                       'gateway_id': gateway_id})
+        except YomboHookStopProcessing:
+            pass
     def convert_to_human(self, value, value_type):
         if value_type == 'bool':
             results = yombo.utils.is_true_false(value)
@@ -453,11 +510,24 @@ class Atoms(YomboLibrary):
 
         atoms['cpu.count'] = 0
         atoms['mem.total'] = 0
+        atoms['mem.sizing'] = 'medium'
         atoms['os.family'] = 'Unknown'
         if HAS_PSUTIL:
             atoms['cpu.count'] = psutil.cpu_count()
             memory = psutil.virtual_memory()
             atoms['mem.total'] = memory.total
+        if memory.total < 261939712:
+            atoms['mem.sizing'] = 'x_small'
+        elif memory.total < 523879424:
+            atoms['mem.sizing'] = 'small'
+        elif memory.total < 1047758848:
+            atoms['mem.sizing'] = 'medium'
+        elif memory.total < 2095517696:
+            atoms['mem.sizing'] = 'large'
+        elif memory.total < 4191035392:
+            atoms['mem.sizing'] = 'x_large'
+        else:
+            atoms['mem.sizing'] = 'xx_large'
 
         if yombo.utils.is_windows():
             atoms['os'] = 'Windows'
@@ -584,8 +654,8 @@ class Atoms(YomboLibrary):
         :return:
         """
         for name in self.automation_startup_check:
-            if name in self.__Atoms:
-                self.check_trigger(name, self.__Atoms[name]['value'])
+            if name in self.__Atoms[self.gateway_id]:
+                self.check_trigger(name, self.__Atoms[self.gateway_id][name]['value'])
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """

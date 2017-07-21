@@ -17,20 +17,22 @@ def route_states(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/states/index.html')
             # i18n = webinterface.i18n(request)
             webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/states/index", "States")
             return page.render(alerts=webinterface.get_alerts(),
                                states=webinterface._States.get_states(),
                                gateways=webinterface._Gateways.get_gateways(),
                                )
 
-        @webapp.route('/<string:state_name>/details')
+        @webapp.route('/<string:gateway_id>/<string:state_name>/details')
         @require_auth()
         @inlineCallbacks
-        def page_states_details(webinterface, request, session, state_name):
+        def page_states_details(webinterface, request, session, gateway_id, state_name):
             try:
-                state = webinterface._States.get(state_name, full=True)
+                state = webinterface._States.get(state_name, full=True, gateway_id=gateway_id)
             except Exception as e:
                 webinterface.add_alert('State Name was not found.  %s' % state_name, 'warning')
+                webinterface.add_breadcrumb(request, "/info", "Info")
                 redirect = webinterface.redirect(request, '/states/index')
                 return redirect
             state_history = yield webinterface._States.get_history(state_name, 0, 400)
@@ -38,6 +40,7 @@ def route_states(webapp):
             if state_history is None:
                 state_history = []
             webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/states/index", "States")
             webinterface.add_breadcrumb(request, "/states/%s/details" % state_name, state_name)
             page = page.render(alerts=webinterface.get_alerts(),

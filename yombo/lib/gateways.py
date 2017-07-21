@@ -376,12 +376,12 @@ class Gateways(YomboLibrary):
             try:
                 module = self._Modules[component_name]
             except Exception as e:
-                logger.info("Received inter-gateway MQTT coms for module {module}, but module not found. Dropping.", module=dest_name)
+                logger.info("Received inter-gateway MQTT coms for module {module}, but module not found. Dropping.", module=component_name)
                 return
             try:
                 yield maybeDeferred(module._inter_gateway_mqtt_, topics, message)
             except Exception as e:
-                logger.info("Received inter-gateway MQTT coms for module {module}, but module doesn't have function '_inter_gateway_mqtt_' Dropping.", module=dest_name)
+                logger.info("Received inter-gateway MQTT coms for module {module}, but module doesn't have function '_inter_gateway_mqtt_' Dropping.", module=component_name)
                 return
         elif component_type == 'lib':
             if len(topics) == 5:
@@ -400,11 +400,9 @@ class Gateways(YomboLibrary):
             if component_name == 'atoms':
                 if all_requested:
                     for name, value in message['payload'].items():
-                        self._Atoms.set(name, value, gateway_id=message['source_gateway_id'])
-                    # print("all atoms from %s message: %s" % (source_gw_id, message))
+                        self._Atoms.set_gw_coms(name, value)
                 else:
-                    self._Atoms.set(opt1, message['payload'], gateway_id=message['source_gateway_id'])
-                    # print("single atom (%s) from %s message: %s" % (opt1, source_gw_id, message))
+                    self._Atoms.set_gw_coms(opt1, message['payload'])
             elif component_name == 'devices':
                 if all_requested:
                     print("all devices from %s message: %s" % (source_gw_id, message))
@@ -413,11 +411,9 @@ class Gateways(YomboLibrary):
             elif component_name == 'states':
                 if all_requested:
                     for name, value in message['payload'].items():
-                        self._States.set(name, value, gateway_id=message['source_gateway_id'])
-                    # print("all states from %s message: %s" % (source_gw_id, message))
+                        self._States.set_gw_coms(name, value)
                 else:
-                    self._States.set(opt1, message['payload'], gateway_id=message['source_gateway_id'])
-                    # print("single states (%s) from %s message: %s" % (opt1, source_gw_id, message))
+                    self._States.set_gw_coms(opt1, message['payload'])
 
     def publish(self, topic, message):
         returnable = self.encrypt(message)

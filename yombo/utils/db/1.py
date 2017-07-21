@@ -413,12 +413,12 @@ def upgrade(Registry, **kwargs):
     # Defines the tables used to store state information.
     table = """CREATE TABLE `states` (
         `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `gateway_id`  TEXT NOT NULL,
         `name`        TEXT NOT NULL,
         `value_type`  TEXT,
         `value`       INTEGER NOT NULL,
         `live`        INTEGER NOT NULL,
-        `created`     INTEGER NOT NULL);"""
+        `created`     INTEGER NOT NULL,
+        `updated`     INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('states', 'name'))
     yield Registry.DBPOOL.runQuery(create_index('states', 'created'))

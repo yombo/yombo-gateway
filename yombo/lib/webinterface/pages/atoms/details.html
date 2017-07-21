@@ -5,7 +5,7 @@
                 <div class="col-lg-12">
                     <h1 class="page-header"><a class="success" href="/atoms/index" aria-label="Delete">
   <i class="fa fa-arrow-left" aria-hidden="true"></i>
-</a> State Information</h1>
+</a> Atom Information</h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -14,25 +14,30 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="col-lg-6 col-md-6">
-                        <div class="panel panel-default">
-                            <div class="panel-heading">
-                                <label>State information for: {{ atom.name }}</label>
-                            </div>
-                            <!-- /.panel-heading -->
-                            <div class="panel-body">
-                                <label style="margin-top: 15px; margin-bottom: 0px">Value: </label><br>
-                                {{ atom.value }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Value For Humans: </label><br>
-                                {{ atom.value_human }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Value Type: </label><br>
-                                {{ atom.value_type }}<br>
-                                <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ atom.created|epoch_to_human }}<br>
-                            </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <label>State information for: {{ atom.name }}</label>
                         </div>
-                        <!-- /.panel-body -->
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <label style="margin-top: 0px; margin-bottom: 0px">Gateway: </label><br>
+                            {{ atom.gateway_id }} -> {{gateways[atom.gateway_id].label}}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value: </label><br>
+                            {{ atom.value }}<br>
+
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value: </label><br>
+                            {{ atom.value }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value For Humans: </label><br>
+                            {{ atom.value_human }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Value Type: </label><br>
+                            {{ atom.value_type }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                            {{ atom.created|epoch_to_human }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                            {{ atom.updated|epoch_to_human }}<br>
+                        </div>
                     </div>
+                    <!-- /.panel-body -->
                 </div>
             </div>
             <!-- /.row -->

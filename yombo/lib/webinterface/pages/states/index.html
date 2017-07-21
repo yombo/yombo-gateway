@@ -45,9 +45,9 @@
                                                     <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for state_name, state in states.items() %}
+                                            <tbody>{% for state_name, state in states[local_gateway.gateway_id].items() %}
                                                  <tr>
-                                                     <td><a href="/states/{{ state_name }}/details">{{ state_name }}</a></td>
+                                                     <td><a href="/states/{{state.gateway_id}}/{{ state_name }}/details">{{ state_name }}</a></td>
                                                      <td>{{ state['value_human'] }}</td>
                                                      <td>{{ state['created']|epoch_to_human }}</td>
                                                      <td>{% if _('states:::' + state_name) != 'states:::' + state_name %}{{ _('states:::' + state_name) }} {% endif %}</td>
@@ -65,14 +65,15 @@
                                                 <tr><th>Gateway</th><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for state_name, state in states.items() if state['gateway_id'] != local_gateway.gateway_id%}
+                                            <tbody>{% for gateway_id, gateway_states in states.items() if gateway_id != local_gateway.gateway_id%}
+                                                    {% for state_name, state in gateway_states.items()%}
                                                  <tr>
                                                      <td>{{ gateways[state['gateway_id']].label }}</td>
-                                                     <td><a href="/states/{{ state_name }}/details">{{ state_name }}</a></td>
+                                                     <td><a href="/states/{{state.gateway_id}}/{{ state_name }}/details">{{ state_name }}</a></td>
                                                      <td>{{ state['value_human'] }}</td>
                                                      <td>{{ state['created']|epoch_to_human }}</td>
                                                      <td>{% if _('states:::' + state_name) != 'states:::' + state_name %}{{ _('states:::' + state_name) }} {% endif %}</td>
-                                                 </tr>{% endfor %}
+                                                 </tr>{% endfor %} {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>

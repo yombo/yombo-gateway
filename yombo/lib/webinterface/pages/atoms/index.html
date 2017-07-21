@@ -44,9 +44,9 @@
                                                     <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for atom_name, atom in atoms.items() %}
+                                            <tbody>{% for atom_name, atom in atoms[local_gateway.gateway_id].items() %}
                                                  <tr>
-                                                     <td><a href="/atoms/{{ atom_name }}/details">{{ atom_name }}</a></td>
+                                                     <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
                                                      <td>{{ atom['value_human'] }}</td>
                                                      <td>{{ atom['created']|epoch_to_human }}</td>
                                                      <td>{% if _('atoms:::' + atom_name) != 'atoms:::' + atom_name %}{{ _('atoms:::' + atom_name) }} {% endif %}</td>
@@ -64,14 +64,15 @@
                                                 <tr><th>Gateway</th><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for atom_name, atom in atoms.items() if atom['gateway_id'] != local_gateway.gateway_id%}
+                                            <tbody>{% for gateway_id, gateway_atoms in atoms.items() if gateway_id != local_gateway.gateway_id%}
+                                                    {% for atom_name, atom in gateway_atoms.items()%}
                                                  <tr>
                                                      <td>{{ gateways[atom['gateway_id']].label }}</td>
-                                                     <td><a href="/atoms/{{ atom_name }}/details">{{ atom_name }}</a></td>
+                                                     <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
                                                      <td>{{ atom['value_human'] }}</td>
                                                      <td>{{ atom['created']|epoch_to_human }}</td>
                                                      <td>{% if _('atoms:::' + atom_name) != 'atoms:::' + atom_name %}{{ _('atoms:::' + atom_name) }} {% endif %}</td>
-                                                 </tr>{% endfor %}
+                                                 </tr>{% endfor %} {% endfor %}
                                             </tbody>
                                         </table>
                                     </div>
