@@ -408,7 +408,7 @@ class Atoms(YomboLibrary):
 
         # Call any hooks
         try:
-            state_changes = yield yombo.utils.global_invoke_all('_atoms_set_', **{'called_by': self, 'key': key, 'value': value})
+            state_changes = yield yombo.utils.global_invoke_all('_atoms_set_', **{'called_by': self, 'key': key, 'value': value, 'gateway_id': gateway_id})
         except YomboHookStopProcessing:
             pass
 
