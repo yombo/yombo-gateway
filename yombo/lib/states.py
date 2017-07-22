@@ -203,7 +203,7 @@ class States(YomboLibrary, object):
         return list(self.__States[gateway_id].values())
 
     def _init_(self, **kwargs):
-        self._loaded = False
+        self.library_phase = 1
         self.gateway_id = self._Configs.get('core', 'gwid')
         self.__States = {self.gateway_id:{}}
 
@@ -213,9 +213,10 @@ class States(YomboLibrary, object):
         return self.init_deferred
 
     def _load_(self, **kwargs):
-        self._loaded = True
+        self.library_phase = 2
 
     def _start_(self, **kwargs):
+        self.module_phase = 3
         self.clean_states_loop = LoopingCall(self.clean_states_table)
         self.clean_states_loop.start(random_int(60*60*6, .10))  # clean the database every 6 hours.
 
@@ -225,6 +226,9 @@ class States(YomboLibrary, object):
             self.mqtt.subscribe("yombo/states/+/get/+")
             self.mqtt.subscribe("yombo/states/+/set")
             self.mqtt.subscribe("yombo/states/+/set/+")
+
+    def _started_(self, **kwargs):
+        self.library_phase = 4
 
     def _stop_(self, **kwargs):
         if self.init_deferred is not None and self.init_deferred.called is False:
@@ -698,7 +702,7 @@ class States(YomboLibrary, object):
         True - Rules fired, fale - no rules fired.
         """
         logger.info("check_trigger. {key} = {value}", key=key, value=value)
-        if self._loaded:
+        if self.library_phase >= 2:
             results = self._Automation.triggers_check('states', key, value)
 
     def _automation_source_list_(self, **kwargs):

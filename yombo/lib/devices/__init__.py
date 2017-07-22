@@ -410,6 +410,7 @@ class Devices(YomboLibrary):
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
+            device_command['gateway_id'] = self.gateway_id
             self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
         return None
 
@@ -426,6 +427,27 @@ class Devices(YomboLibrary):
                 if device_command.finished_time > cur_time - (60*45):  # keep 45 minutes worth.
                     yield device_command.save_to_db()
                     del self.device_commands[request_id]
+
+    def add_device_command(self, device_command):
+        """
+        Insert a new device command from a dictionary. Usually called by the gateways coms system.
+
+        :param device_command:
+        :return:
+        """
+        self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=True)
+        self.device_commands.move_to_end(device_command['request_id'], last=False)  # move to the front.
+
+    def update_device_command(self, device_command):
+        """
+        Update device command information based on dictionary items. Usually called by the gateway coms systems.
+
+        :param device_command:
+        :return:
+        """
+        request_id = device_command['request_id']
+        if request_id in self.device_commands:
+            self.device_commands[device_command['request_id']].update_attributes(device_command)
 
     def get_delayed_commands(self):
         """

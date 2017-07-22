@@ -40,6 +40,8 @@ class Gateways(YomboLibrary):
     """
     Manages information about gateways.
     """
+    library_phase = 0
+
     def __contains__(self, gateway_requested):
         """
         .. note:: The gateway must be enabled to be found using this method.
@@ -149,6 +151,7 @@ class Gateways(YomboLibrary):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
+        self.library_phase = 1
         self.mqtt = None
         self.gateway_id = self._Configs.get('core', 'gwid')
         self.is_master = self._Configs.get2('core', 'is_master')
@@ -168,6 +171,8 @@ class Gateways(YomboLibrary):
         return self.load_deferred
 
     def _start_(self, **kwargs):
+        self.library_phase = 3
+
         self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='gateways_%s' % self.gateway_id)
         self.mqtt.subscribe("ybo_gw_req/+/all/#")
         self.mqtt.subscribe("ybo_gw_req/+/%s/#" % self.gateway_id)
@@ -177,7 +182,8 @@ class Gateways(YomboLibrary):
     def _started_(self, **kwargs):
         self.mqtt.publish("ybo_gw/%s/lib/gateways/online" % self.gateway_id, "")
         self.send_all_info()
-        self.test_send()
+        self.library_phase = 4
+        # self.test_send()
 
     def _stop_(self, **kwargs):
         """
@@ -281,7 +287,7 @@ class Gateways(YomboLibrary):
             return
         if topic_parts[1] == self.gateway_id:
             logger.info("discarding message that I sent.")
-            # return
+            return
 
         logger.info("Yombo Incoming got this: {topic} : {topic_parts}", topic=topic, topic_parts=topic_parts)
         if len(raw_payload) > 0:
@@ -318,7 +324,6 @@ class Gateways(YomboLibrary):
 
         if component_type not in ('lib', 'module'):
             logger.info("Gateway COMS received invalid component type: {component_type}", component_type=component_type)
-            print("discarding message that I sent.")
             return
 
         if component_type == 'module':
@@ -408,12 +413,148 @@ class Gateways(YomboLibrary):
                     print("all devices from %s message: %s" % (source_gw_id, message))
                 else:
                     print("single devices (%s) from %s message: %s" % (opt1, source_gw_id, message))
+            elif component_name == 'device_command':
+                self.incoming_data_device_command(message)
+            elif component_name == 'device_status':
+                self.incoming_data_device_status(message)
             elif component_name == 'states':
                 if all_requested:
                     for name, value in message['payload'].items():
                         self._States.set_gw_coms(name, value)
                 else:
                     self._States.set_gw_coms(opt1, message['payload'])
+
+    def incoming_data_device_command(self, message):
+        """
+        Handles incoming device commands.
+
+        :param message:
+        :return:
+        """
+        print("aaa")
+        payload = message['payload']
+
+        state = payload['state']
+        device_command = payload['device_command']
+
+        if state == 'new':
+            self._Devices.add_device_command(device_command)
+        else:
+            self._Devices.update_device_command(device_command)
+
+    def incoming_data_device_status(self, message):
+        """
+        Handles incoming device status.
+
+        :param message:
+        :return:
+        """
+        print("bbb: %s" % message)
+        payload = message['payload']
+        device_id = payload['device_id']
+        command = payload['command']
+        status = payload['status']
+
+
+        # self._Devices.add_device_command(device_command)
+
+    def _atom_set_(self, **kwargs):
+        """
+        Publish a new atom, if it's from ourselves.
+
+        :param kwargs:
+        :return:
+        """
+        if self.library_phase < 4:
+            return
+
+        gateway_id = kwargs['gateway_id']
+        if gateway_id == self.gateway_id:
+            return
+        key = kwargs['key']
+
+        values = self._States.get(key, full=True)
+        topic = self.get_return_topic('all') + "lib/atoms/" + key
+        print("sending _atom_set_: %s -> %s" % (topic, message))
+        self.publish(topic, values)
+
+    def _device_command_(self, **kwargs):
+        """
+        A new command for a device has been sent. This is used to tell other gateways that either a local device
+        is about to do something, other another gateway should do something.
+
+        :param kwargs:
+        :return:
+        """
+        device_command = kwargs['device_command'].dump()
+        message = {
+            'state': 'new',
+            'device_command': device_command
+        }
+
+        topic = self.get_return_topic('all') + "lib/device_command/" + device_command['request_id']
+        print("sending _device_command_: %s -> %s" % (topic, message))
+        self.publish(topic, message)
+
+    def _device_command_status_(self, **kwargs):
+        """
+        A new command for a device has been sent. This is used to tell other gateways that either a local device
+        is about to do something, other another gateway should do something.
+
+        :param kwargs:
+        :return:
+        """
+        state = kwargs['state']
+        device_command = kwargs['device_command'].dump()
+        message = {
+            'state': state,
+            'device_command': device_command
+        }
+
+        topic = self.get_return_topic('all') + "lib/device_command/" + device_command['request_id']
+        print("sending _device_command_: %s -> %s" % (topic, message))
+        self.publish(topic, message)
+
+    def _device_status_(self, **kwargs):
+        """
+        Publish a new state, if it's from ourselves.
+
+        :param kwargs:
+        :return:
+        """
+        device = kwargs['device']
+        device_id = device.device_id
+        command = kwargs['command']
+
+        message = {
+            'device_id': device_id,
+            'command': command,
+            'status': kwargs['status'],
+        }
+
+        topic = self.get_return_topic('all') + "lib/device_status/" + device_id
+        print("sending _device_status_: %s -> %s" % (topic, message))
+        self.publish(topic, message)
+
+    def _states_set_(self, **kwargs):
+        """
+        Publish a new state, if it's from ourselves.
+
+        :param kwargs:
+        :return:
+        """
+        if self.library_phase < 4:
+            return
+
+        gateway_id = kwargs['gateway_id']
+        if gateway_id == self.gateway_id:
+            return
+        key = kwargs['key']
+
+        values = self._States.get(key, full=True)
+        topic = self.get_return_topic('all') + "lib/states/" + key
+        print("sending _states_set_: %s -> %s" % (topic, message))
+        self.publish(topic, values)
 
     def publish(self, topic, message):
         returnable = self.encrypt(message)

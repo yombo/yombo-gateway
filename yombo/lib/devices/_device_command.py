@@ -70,6 +70,8 @@ class Device_Command(object):
         self.requested_by = data['requested_by']
         self.status = data.get('status', 'new')
 
+        self.gateway_id = data.get('gateway_id', self._Parent.gateway_id)
+
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
         self.broadcast_time = data.get('broadcast_time', None)  # time when command was sent through hooks.
@@ -91,14 +93,20 @@ class Device_Command(object):
             self.history.append((self.created_time, self.status, 'Created.'))
             self.id = None
 
-        self._started = False
+        self.started = data.get('started', False)
         if start is None or start is True:
             reactor.callLater(0.001, self.start)
 
+    def update_attributes(self, data):
+        if 'history' in data:
+            self.history = data['history']
+        if 'status' in data:
+            self.history = data['status']
+
     def start(self):
-        if self._started is True:
+        if self.started is True:
             return
-        self._started = True
+        self.started = True
         if self.source == 'database' and self.status == 'sent':
             logger.debug(
                 "Discarding a device command message loaded from database it's already been sent.")
@@ -236,17 +244,18 @@ class Device_Command(object):
 
     @inlineCallbacks
     def save_to_db(self, forced = None):
+        if self.gateway_id != self._Parent.gateway_id:
+            self.dirty = False
+            return
         if self.dirty or forced is True:
             results = yield self._Parent._LocalDB.save_device_command(self)
             self.dirty = False
             self.id = results.id
 
-    def __str__(self):
-        return "Device command for '%s': %s" % (self.device.label, self.command.label)
-
-    def __repr__(self):
+    def dump(self):
         return {
             "device_id": self.device.device_id,
+            "gateway_id": self.gateway_id,
             "command_id": self.command.command_id,
             "request_id": self.request_id,
             "inputs": self.inputs,
@@ -263,5 +272,9 @@ class Device_Command(object):
             "not_after_time": self.not_after_time,
             "command_status_received": self.command_status_received,
             "dirty": self.dirty,
+            "started": self.started,
         }
+
+    def __repr__(self):
+        return "Device command for '%s': %s" % (self.device.label, self.command.label)
 

@@ -159,8 +159,41 @@ class Device(object):
         else:
             self.test_device = test_device
 
-        self.last_command = deque({}, 50)
-        self.status_history = deque({}, 50)
+        memory_sizing = {
+            'x_small': {'other_last_command': 2,  #less then 256mb
+                           'other_status_history': 2,
+                           'local_last_command': 5,
+                           'local_status_history': 5},
+            'small': {'other_last_command': 5,  #About 512mb
+                           'other_status_history': 5,
+                           'local_last_command': 25,
+                           'local_status_history': 25},
+            'medium': {'other_last_command': 25,  # About 1024mb
+                      'other_status_history': 25,
+                      'local_last_command': 75,
+                      'local_status_history': 75},
+            'large': {'other_last_command': 50,  # About 2048mb
+                       'other_status_history': 50,
+                       'local_last_command': 125,
+                       'local_status_history': 125},
+            'x_large': {'other_last_command': 100,  # About 4092mb
+                      'other_status_history': 100,
+                      'local_last_command': 250,
+                      'local_status_history': 250},
+            'xx_large': {'other_last_command': 200,  # About 8000mb
+                        'other_status_history': 200,
+                        'local_last_command': 500,
+                        'local_status_history': 500},
+        }
+
+        sizes = memory_sizing[self._Parent._Atoms['mem.sizing']]
+        if device["gateway_id"] != _Parent.gateway_id:
+            self.last_command = deque({}, sizes['other_last_command'])
+            self.status_history = deque({}, sizes['other_status_history'])
+        else:
+            self.last_command = deque({}, sizes['local_last_command'])
+            self.status_history = deque({}, sizes['local_status_history'])
+
         self.device_variables = {}
 
         #The following items are set from the databsae or AMQP service.
@@ -496,7 +529,7 @@ class Device(object):
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
         if request_id is None:
-            request_id = random_string(length=18)  # print("in device command: rquest_id 2: %s" % request_id)
+            request_id = random_string(length=20)  # print("in device command: rquest_id 2: %s" % request_id)
 
         device_command['request_id'] = request_id
 
@@ -572,6 +605,8 @@ class Device(object):
             'machine_label': command.machine_label,
             'label': command.label,
             'request_id': request_id,
+            'inputs': inputs,
+            'gateway_id': self.gateway_id,
         })
         self._Parent.device_commands[request_id] = Device_Command(device_command, self._Parent)
         self._Parent.device_commands.move_to_end(request_id, last=False)  # move to the front.
@@ -626,7 +661,7 @@ class Device(object):
         else:
             return
 
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='processing')
 
     def device_command_sent(self, request_id, **kwargs):
         """
@@ -642,7 +677,7 @@ class Device(object):
         else:
             return
 
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='sent')
 
     def device_command_received(self, request_id, **kwargs):
         """
@@ -658,7 +693,7 @@ class Device(object):
         else:
             return
 
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='received')
 
     def device_command_pending(self, request_id, **kwargs):
         """
@@ -677,7 +712,7 @@ class Device(object):
 
         message = kwargs.get('message', None)
         self._Parent.device_commands[request_id].set_pending(message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='received')
 
     def device_command_failed(self, request_id, **kwargs):
         """
@@ -696,7 +731,7 @@ class Device(object):
             return
 
         if message is not None:
-            logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message)
+            logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message, state='failed')
         global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
 
     def device_command_cancel(self, request_id, **kwargs):
@@ -717,7 +752,7 @@ class Device(object):
 
         if message is not None:
             logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
-        global_invoke_all('_device_command_cancel_', called_by=self, device_command=device_command)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='cancel')
 
     def device_command_done(self, request_id, **kwargs):
         """
@@ -735,7 +770,7 @@ class Device(object):
         else:
             return
 
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
+        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='done')
 
     def get_request(self, request_id):
         """
@@ -928,11 +963,10 @@ class Device(object):
         else:
             message['command'] = None
 
+        message['status'] = self.status_history[0]
         if len(self.status_history) == 1:
-            message['status'] = self.status_history[0]
             message['previous_status'] = None
         else:
-            message['status'] = self.status_history[0]
             message['previous_status'] = self.status_history[1]
 
         global_invoke_all('_device_status_', called_by=self, **message)
