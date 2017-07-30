@@ -151,7 +151,7 @@ class Nodes(YomboLibrary):
         Load() stage.
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
-        self.gateway_id = self._Configs.get2("core", "gwid")
+        self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.nodes = {}
         self.node_search_attributes = ['node_id', 'gateway_id', 'node_type', 'machine_label', 'destination',
             'data_type', 'status']
@@ -168,8 +168,9 @@ class Nodes(YomboLibrary):
         """
         Cleans up any pending deferreds.
         """
-        if self.load_deferred is not None and self.load_deferred.called is False:
-            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+        if hasattr(self, 'load_deferred'):
+            if self.load_deferred is not None and self.load_deferred.called is False:
+                self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     @inlineCallbacks
     def _load_nodes_from_database(self):
@@ -643,7 +644,6 @@ class Node:
 
         self.node_id = node['id']
         self.machine_label = node['machine_label']
-        self.updated_srv = None
 
         # below are configure in update_attributes()
         self.parent_id = None
