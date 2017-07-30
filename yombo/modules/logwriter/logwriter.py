@@ -10,53 +10,48 @@ class LogWriter(YomboModule):
     """
     Simple log writer module - save yombo messages to log file.
 
-    :author: U{Mitch Schwenk<mitch@ahx.me>}
-    :organization: U{Automated Home Exchange (AHX)<http://www.ahx.me>}
-    :copyright: 2010-2016 Yombo
-    :license: see LICENSE.TXT from Yombo Gateway Software distribution
+    .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+    :copyright: Copyright 2012-2017 by Yombo.
+    :license: LICENSE for details.
     """
 
-    def _init_(self):
-        self._ModDescription = "Writes message to a log file."
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "http://www.yombo.net"
-        self._RegisterDistributions = ['all']
-
+    def _init_(self, **kwargs):
         # Get a file name save data to..
         if "logfile" in self._ModVariables:
-          self.fileName = self._ModVariables["logfile"][0]['value']
+          self.fileName = self._ModVariables["logfile"]['values'][0]
         else:
           logger.warn("No 'logfile' set for log writing, using default: 'logwriter.txt'")
           self.fileName = "logwriter.txt"
 
         self.fp_out = None
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         """
         Simple file open.
         """
         try:
-            self.fp_out = open("logwriter.out", "a")
+            self.fp_out = open(self.fileName, "a")
             logger.info("logwriter opened file: %s" % self.fileName)
-        except IOError as xxx_todo_changeme:
-            (errno, strerror) = xxx_todo_changeme.args
+        except IOError as e:
+            (errno, strerror) = e.args
             logger.warn("Lowriter could not open file for writing. Reason: %s" % strerror)
             self.fp_out = None
             callLater(10, self.load)
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Nothing to start, move along.
         """
         pass
 
-    def _stop_(self):
+    def _stop_(self, **kwargs):
         """
         Nothing to stop.
         """
         pass
 
-    def _unload_(self):
+    def _unload_(self, **kwargs):
         """
         Flush and close the output log file.
         """
@@ -66,17 +61,6 @@ class LogWriter(YomboModule):
             self.fp_out.close()
           except:
             pass
-
-    def YomboBot_message_subscriptions(self, **kwargs):
-        """
-        hook_message_subscriptions called by the messages library to get a list of message types to be delivered here.
-
-        YomboBot wants status messages to deliever to connected clients. Allows clients to get updates on device status.
-
-        :param kwargs:
-        :return:
-        """
-        return ['status']
 
     def _configuration_set_(self, **kwargs):
         """

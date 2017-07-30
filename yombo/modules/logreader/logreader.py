@@ -10,8 +10,10 @@ This module demonstrates two features of the Yombo Gateway:
 2. Treats the incoming logfile as a stream of commands. This provides a simple method to allow
    other processes to trigger actions, such as "open garage door".
 
-:copyright: 2013-2016 Yombo
-:license: GPL
+.. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
+:copyright: Copyright 2013-2017 by Yombo.
+:license: LICENSE for details.
 """
 from yombo.core.exceptions import YomboFileError
 from yombo.core.log import get_logger
@@ -28,17 +30,13 @@ class LogReader(YomboModule):
     :ivar fileReader: A yombo :doc:`FileReader <../core/filereader>` that reads text files
       delivers lines of text to callable.
     """
-    def _init_(self):
+    def _init_(self, **kwargs):
         """
         Init the module.
         """
-        self._ModDescription = "Logread monitors a file for voice commands."
-        self._ModAuthor = "Mitch Schwenk @ Yombo"
-        self._ModUrl = "https://yombo.net"
-
         self.fileReader = None  # Used to test if file reader is running on stop.
 
-    def _load_(self):
+    def _load_(self, **kwargs):
         # Make sure YomboBot is loaded and available.
         try:
             self.YomboBot = self._Modules['yombobot']
@@ -53,7 +51,7 @@ class LogReader(YomboModule):
             logger.warn("No 'logfile' set for logreader, using default: 'logreader.txt'")
             self.fileName = "logreader.txt"
 
-    def _start_(self):
+    def _start_(self, **kwargs):
         """
         Setups the file to be read. FileReader does the heavy lifting.
 
