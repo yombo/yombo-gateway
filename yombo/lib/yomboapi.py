@@ -449,10 +449,20 @@ class YomboAPI(YomboLibrary):
             'phrase': phrase,
             'headers': headers,
         }
-        if 'response' in content:
-            if 'locator' in content['response']:
-                results['data'] = content['response'][content['response']['locator']]
-            else:
-                results['data'] = []
-        return results
+        if content_type == "string":
+            results['code'] = 500
+            results['data'] = []
+            results['content'] = {
+                'message': 'Unknown api error',
+                'html_message': 'Unknown api error',
+            }
+            # print("Error content: %s" % content)
+            return results
+        else:
+            if 'response' in content:
+                if 'locator' in content['response']:
+                    results['data'] = content['response'][content['response']['locator']]
+                else:
+                    results['data'] = []
+            return results
 
