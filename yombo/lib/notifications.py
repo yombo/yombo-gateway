@@ -121,12 +121,15 @@ class Notifications(YomboLibrary):
         # self.init_deferred = Deferred()  # Prevents loader from moving on past _load_ until we are done.
         self.notifications = SlicableOrderedDict()
         self.always_show_count = 0
+        self.gateway_id = 'local'
         # return self.init_deferred
 
     def _load_(self, **kwargs):
-        self.gateway_id = self._Configs.get('core', 'gwid')
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+
+    # def _start_(self, **kwargs):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
-        self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False))
+        self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False), False)
         self.load_notifications()
 
     def _stop_(self, **kwargs):
