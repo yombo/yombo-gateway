@@ -42,7 +42,7 @@ class Variables(YomboLibrary):
         """
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
 
-        self.gwid = self._Configs.get("core", "gwid")
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
 
     # @memoize_ttl(15)
     @inlineCallbacks
