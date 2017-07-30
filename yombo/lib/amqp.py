@@ -757,10 +757,8 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         if self.AMQPClient.is_connected and str(reason.value) != "Connection was closed cleanly.":
             logger.warn("In PikaFactory clientConnectionLost. Reason: {reason}", reason=reason.value)
         print("pika factory clientConnectionLost 2")
-        # self.AMQPClient.disconnected('lost')
-        print("pika factory clientConnectionLost 3")
         protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
-        print("pika factory clientConnectionLost 4")
+        print("pika factory clientConnectionLost 3")
 
     def clientConnectionFailed(self, connector, reason):
         logger.info("In PikaFactory clientConnectionFailed. Reason: {reason}", reason=reason)
