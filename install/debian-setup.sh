@@ -10,12 +10,12 @@ if [ "$(id -u)" -ne 0 ]; then
     exit
 fi
 
-echo "This will download any required components as well as downloading the Yombo Gateway"
+echo "This will download any required components as well as download the Yombo Gateway"
 echo "using git."
 echo ""
-echo "This will take a while due to compiling needed requirements."
+echo "This will take a while due to compiling the needed requirements."
 while true; do
-    read -p "Do you wish to install this program? (y/n)" yn
+    read -p "Do you wish to install these programs? (y/n)" yn
     case $yn in
         [Yy]* ) break;;
         [Nn]* ) exit;;
@@ -31,27 +31,52 @@ read -e -p "Git Repo: " -i "https://bitbucket.org/yombo/yombo-gateway.git" repol
 
 echo ""
 echo "Using git repo location: $repolocation";
-exit
 
-echo "Creating PID file location."
+sudo apt-get update
+sudo apt-get upgrade -y
+
+sudo apt-get install make libudev-dev g++ libssl-dev zlib1g-dev libbz2-dev libreadline6-dev \
+libreadline6-dev libreadline-dev libsqlite3-dev libexpat1-dev liblzma-dev \
+python python-dev python3-dev gnupg2 rng-tools build-essential git \
+python3-setuptools python3-pip python-pip libyaml-dev libncurses5 \
+libncurses5-dev libncursesw5 libncursesw5-dev xz-utils curl wget llvm tk-dev libbluetooth-dev -y
+
+sudo pip3 install --upgrade pip
+sudo usermod -a -G dialout $SUDO_USER
+
+cwd=$(pwd)
+
+cd /opt
+sudo git clone https://bitbucket.org/yombo/yombo-gateway.git
+sudo chown -R $SUDO_USER:$SUDO_USER /opt/yombo-gateway
+sudo chown -R $SUDO_USER:$SUDO_USER /opt/yombo-gateway/.[^.]*
+
 if [ ! -d /var/run/yombo ]; then
   mkdir /var/run/yombo
 fi
 chmod 775 /var/run/yombo
 chown $SUDO_USER:$SUDO_USER /var/run/yombo
 
-echo "Create log file location."
 if [ ! -d /var/log/yombo ]; then
   mkdir /var/log/yombo
 fi
 chmod 775 /var/log/yombo
 chown $SUDO_USER:$SUDO_USER /var/log/yombo
 
-apt-get update
-apt-get install --force-yes -y make libudev-dev g++ libyaml-dev
-apt-get install python python-pip python-setuptools python-dev gnupg2 rng-tools build-essential git libncurses5 libncurses5-dev libncursesw5 \
-libncursesw5-dev xz-utils libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev curl wget llvm tk-dev -y
+echo ""
+echo "System files installed and setup. Now is time to install the user portion."
+echo ""
+echo "Execute 'install-pyenv'? This will install pyenv and Python 3.6.2 inside that."
+echo ""
+echo "This will take a while due to compiling the needed requirements."
+while true; do
+    read -p "Do you wish to install these programs? (y/n)" yn
+    case $yn in
+        [Yy]* ) break;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
 
-pip install Twisted python-gnupg pyephem gnupg service_identity parsedatetime psutil
-pip3 install hbmqtt
-
+cd $cwd
+sudo runuser -l pi -c "bash install-pyenv.sh"
