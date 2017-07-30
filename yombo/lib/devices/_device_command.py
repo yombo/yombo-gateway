@@ -49,6 +49,8 @@ class Device_Command(object):
         """
         # print("new device_comamnd: %s" % data)
         self._Parent = parent
+        self.source_gateway_id = data.get('source_gateway_id', self._Parent.gateway_id)
+        self.local_gateway_id = self._Parent.gateway_id
         self.request_id = data['request_id']
         if 'device' in data:
             self.device = data['device']
@@ -70,8 +72,6 @@ class Device_Command(object):
         self.requested_by = data['requested_by']
         self.status = data.get('status', 'new')
 
-        self.gateway_id = data.get('gateway_id', self._Parent.gateway_id)
-
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
         self.broadcast_time = data.get('broadcast_time', None)  # time when command was sent through hooks.
@@ -85,19 +85,58 @@ class Device_Command(object):
         self.created_time = data.get('created_time', time())
         self.dirty = is_true_false(data.get('dirty', True))
         self.source = data.get('_source', None)
+        self.started = data.get('started', False)
 
+        print("a new device command....")
         if self.source == 'database':
             self.dirty = False
-            self.id = data['id']
-        else:
-            self.history.append((self.created_time, self.status, 'Created.'))
-            self.id = None
+            self.in_db = True
+        elif self.source == 'gateway_coms':
+            self.dirty = False
+            self.in_db = False
+            reactor.callLater(0.001, self.check_if_device_command_in_database)
 
-        self.started = data.get('started', False)
+        else:
+            self.history.append((self.created_time, self.status, 'Created.', self.local_gateway_id))
+            self.in_db = False
+
+        if self.device.gateway_id == self.local_gateway_id:
+            print("I should start....")
+            self.started = False
+            start = True
+
+        print("checking if should start.... local gw: %s" % self.local_gateway_id)
+        print("checking if should start.... device gw: %s" % self.device.gateway_id)
         if start is None or start is True:
             reactor.callLater(0.001, self.start)
 
+    @inlineCallbacks
+    def check_if_device_command_in_database(self):
+        where = {
+            'request_id': self.request_id,
+        }
+        device_commands = yield self._Parent._LocalDB.get_device_commands(where)
+        if len(device_commands) > 0:
+            self.in_db = True
+            self.save_to_db()
+
     def update_attributes(self, data):
+        if 'command_status_received' in data:
+            self.command_status_received = data['command_status_received']
+        if 'broadcast_time' in data:
+            self.broadcast_time = data['broadcast_time']
+        if 'sent_time' in data:
+            self.sent_time = data['sent_time']
+        if 'received_time' in data:
+            self.received_time = data['received_time']
+        if 'pending_time' in data:
+            self.pending_time = data['pending_time']
+        if 'finished_time' in data:
+            self.finished_time = data['finished_time']
+        if 'not_before_time' in data:
+            self.not_before_time = data['not_before_time']
+        if 'not_after_time' in data:
+            self.not_after_time = data['not_after_time']
         if 'history' in data:
             self.history = data['history']
         if 'status' in data:
@@ -106,6 +145,7 @@ class Device_Command(object):
     def start(self):
         if self.started is True:
             return
+        print("starting command!!!!!!!!!!!??!?!?!?!!?!?!?!?!?!?!? %s - %s - %s" % (self.request_id, self.device.label, self.command.label))
         self.started = True
         if self.source == 'database' and self.status == 'sent':
             logger.debug(
@@ -137,7 +177,7 @@ class Device_Command(object):
                 return True
 
     def last_message(self):
-        return self.history[0]
+        return self.history[-1]
 
     def set_broadcast(self, broadcast_time=None, message=None):
         self.dirty = True
@@ -146,8 +186,8 @@ class Device_Command(object):
         self.broadcast_time = broadcast_time
         self.status = 'broadcast'
         if message is None:
-            message='Command broadcasted to hooks.'
-        self.history.append((broadcast_time, self.status, message))
+            message='Command broadcasted to hooks and gateway coms.'
+        self.history.append((broadcast_time, self.status, message, self.local_gateway_id))
 
     def set_sent(self, sent_time=None, message=None):
         self.dirty = True
@@ -157,7 +197,7 @@ class Device_Command(object):
         self.status = 'sent'
         if message is None:
             message='Command sent to device or processing sub-system.'
-        self.history.append((sent_time, self.status, message))
+        self.history.append((sent_time, self.status, message, self.local_gateway_id))
 
     def set_received(self, received_time=None, message=None):
         self.dirty = True
@@ -167,7 +207,7 @@ class Device_Command(object):
         self.status = 'received'
         if message is None:
             message='Command received by the device or processing sub-system.'
-        self.history.append((received_time, self.status, message))
+        self.history.append((received_time, self.status, message, self.local_gateway_id))
 
     def set_pending(self, pending_time=None, message=None):
         self.dirty = True
@@ -179,11 +219,11 @@ class Device_Command(object):
             message='Command processing or being completed by the device or processing sub-system.'
         if self.set_sent is None:
             self.set_sent = pending_time
-            self.history.append((pending_time, 'sent', 'Command sent to device or processing sub-system. Back filled by pending action.'))
+            self.history.append((pending_time, 'sent', 'Command sent to device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
         if self.received_time is None:
             self.received_time = pending_time
-            self.history.append((pending_time, 'received', 'Command received by the device or processing sub-system. Back filled by pending action.'))
-        self.history.append((pending_time, self.status, message))
+            self.history.append((pending_time, 'received', 'Command received by the device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
+        self.history.append((pending_time, self.status, message, self.local_gateway_id))
 
     def set_finished(self, finished_time=None, status=None, message=None):
         self.dirty = True
@@ -191,14 +231,14 @@ class Device_Command(object):
             finished_time = time()
         self.finished_time = finished_time
         if status is None:
-            status = 'done'
+            status = 'finished'
         self.status = status
         if self.set_sent is None:
             self.set_sent = finished_time
-            self.history.append((finished_time, 'sent', 'Command sent to device or processing sub-system. Back filled by finished action.'))
-        self.history.append((finished_time, self.status, status))
-        if message is not None:
-            self.set_message(message)
+            self.history.append((finished_time, 'sent', 'Command sent to device or processing sub-system. Back filled by finished action.', self.local_gateway_id))
+        if message is None:
+            message = "Finished."
+        self.history.append((finished_time, self.status, message, self.local_gateway_id))
 
         try:
             self.call_later.cancel()
@@ -221,17 +261,24 @@ class Device_Command(object):
             message = "System reported command failed."
         self.set_finished(finished_time=finished_time, status='delay_expired', message=message)
 
-    def set_status(self, status, message=None):
+    def set_status(self, status, message=None, log_time=None):
         self.dirty = True
         self.status = status
-        self.history.append((time(), self.status, status))
-        if message is not None:
-            self.set_message(message)
+        if log_time is None:
+            log_time = time()
+        self.history.append((log_time, status, message, self.local_gateway_id))
+
+    def gw_coms_set_status(self, src_gateway_id, log_time, status, message):
+        self.dirty = True
+        self.status = status
+        if hasattr(self, '%s_time' % status):
+            setattr(self, '%s_time' % status, log_time)
+        self.history.append((log_time, status, message, src_gateway_id, self.local_gateway_id))
 
     def set_message(self, message):
         self.dirty = True
         self.message = message
-        self.history.append((time(), self.status, message))
+        self.history.append((time(), self.status, message, self.local_gateway_id))
 
     def status_received(self):
         self.command_status_received = True
@@ -244,23 +291,23 @@ class Device_Command(object):
 
     @inlineCallbacks
     def save_to_db(self, forced = None):
-        if self.gateway_id != self._Parent.gateway_id:
+        if self.device.gateway_id != self._Parent.gateway_id and self._Parent.is_master is not True:
             self.dirty = False
             return
         if self.dirty or forced is True:
-            results = yield self._Parent._LocalDB.save_device_command(self)
+            yield self._Parent._LocalDB.save_device_command(self)
             self.dirty = False
-            self.id = results.id
+            self.in_db = True
 
     def dump(self):
         return {
+            "source_gateway_id": self.source_gateway_id,
             "device_id": self.device.device_id,
-            "gateway_id": self.gateway_id,
             "command_id": self.command.command_id,
             "request_id": self.request_id,
             "inputs": self.inputs,
             "history": self.history,
-            "requested_by": self.request_id,
+            "requested_by": self.requested_by,
             "status": self.status,
             "persistent_request_id": self.persistent_request_id,
             "created_time": self.created_time,

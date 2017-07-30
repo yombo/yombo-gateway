@@ -367,6 +367,15 @@ class DeviceTypes(YomboLibrary):
                                _operation)
 
     @inlineCallbacks
+    def addable(self):
+        """
+        Get a list of addable device types.
+        :return:
+        """
+        device_types = yield self._LocalDB.get_addable_device_types()
+        return device_types
+
+    @inlineCallbacks
     def ensure_loaded(self, device_type_id):
         """
         Called by the device class to make sure the requsted device type id is loaded. This happens in

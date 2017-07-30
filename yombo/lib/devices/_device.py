@@ -214,7 +214,6 @@ class Device(object):
         self.enabled_status = None  # not to be confused for device state. see status_history
         self.created = None
         self.updated = None
-        self.updated_srv = None
         self.energy_tracker_device = None
         self.energy_tracker_source = None
         self.energy_map = None
@@ -296,8 +295,6 @@ class Device(object):
             self.created = int(device["created"])
         if 'updated' in device:
             self.updated = int(device["updated"])
-        if 'updated_srv' in device:
-            self.updated_srv = int(device["updated_srv"])
         if 'energy_tracker_device' in device:
             self.energy_tracker_device = device['energy_tracker_device']
         if 'energy_tracker_source' in device:
@@ -643,7 +640,7 @@ class Device(object):
         results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
             if result is True:
-                device_command.set_received(message="Received by: %s" % component)
+                device_command.set_received(message="Received by: %s" % component,)
         self._Parent._Statistics.increment("lib.devices.commands_sent", anon=True)
 
     def device_command_processing(self, request_id, **kwargs):
@@ -654,14 +651,17 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_sent(message=message)
-            device_command.set_received(message=message)
+            device_command.set_received(message=message, received_time=log_time)
+            global_invoke_all('_device_command_status_', called_by=self, device_command=device_command,
+                              state='received')
+            device_command.set_sent(message=message, sent_time=log_time)
+            global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='sent')
         else:
             return
 
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='processing')
 
     def device_command_sent(self, request_id, **kwargs):
         """
@@ -671,13 +671,13 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_sent(message=message)
+            device_command.set_sent(message=message, sent_time=log_time)
+            global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='sent')
         else:
             return
-
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='sent')
 
     def device_command_received(self, request_id, **kwargs):
         """
@@ -687,13 +687,14 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_received(message=message)
+            device_command.set_received(message=message, received_time=log_time)
+            global_invoke_all('_device_command_status_', called_by=self, device_command=device_command,
+                              state='received')
         else:
             return
-
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='received')
 
     def device_command_pending(self, request_id, **kwargs):
         """
@@ -704,15 +705,14 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_pending(message=message)
+            device_command.set_pending(message=message, pending_time=log_time)
+            message = kwargs.get('message', None)
+            global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='pending')
         else:
             return
-
-        message = kwargs.get('message', None)
-        self._Parent.device_commands[request_id].set_pending(message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='received')
 
     def device_command_failed(self, request_id, **kwargs):
         """
@@ -724,15 +724,16 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_failed(message=message)
+            device_command.set_failed(message=message, finished_time=log_time)
+            if message is not None:
+                logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message,
+                            state='failed')
+                global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
         else:
             return
-
-        if message is not None:
-            logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message, state='failed')
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command)
 
     def device_command_cancel(self, request_id, **kwargs):
         """
@@ -742,17 +743,37 @@ class Device(object):
         :param request_id: The request_id provided by the _device_command_ hook.
         :return:
         """
-        status = kwargs.get('status', None)
+        log_time = kwargs.get('log_time', None)
         message = kwargs.get('message', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.cancel(status=status, message=message)
+            device_command.set_canceled(message=message, finished_time=log_time)
+            if message is not None:
+                logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
+                global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='cancel')
         else:
             return
 
-        if message is not None:
-            logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='cancel')
+    def device_delay_expired(self, request_id, **kwargs):
+        """
+        This is called on system bootup when a device command was set for a delayed execution, but the time
+        limit for executing the command has elasped.
+
+        :param request_id: The request_id provided by the _device_command_ hook.
+        :return:
+        """
+        log_time = kwargs.get('log_time', None)
+        message = kwargs.get('message', None)
+        if request_id in self._Parent.device_commands:
+            device_command = self._Parent.device_commands[request_id]
+            device_command.set_delay_expired(message=message, finished_time=log_time)
+            if message is not None:
+                logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
+                global_invoke_all('_device_command_status_', called_by=self, device_command=device_command,
+                              state='delay_expired')
+        else:
+            return
+
 
     def device_command_done(self, request_id, **kwargs):
         """
@@ -764,13 +785,13 @@ class Device(object):
         :return:
         """
         message = kwargs.get('message', None)
+        log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_finished(message=message)
+            device_command.set_finished(message=message, finished_time=log_time)
+            global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='done')
         else:
             return
-
-        global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='done')
 
     def get_request(self, request_id):
         """
@@ -843,7 +864,7 @@ class Device(object):
         # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         kwargs = self.set_status_process(**kwargs)
 
-        self._set_status(**kwargs)
+        kwargs = self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
 
@@ -890,6 +911,7 @@ class Device(object):
         else:
             request_id = None
             requested_by = requested_by_default
+        kwargs['request_id'] = request_id
         kwargs['requested_by'] = requested_by
 
         reported_by = kwargs.get('reported_by', 'Unknown')
@@ -911,6 +933,7 @@ class Device(object):
 
         if 'command' in kwargs:
             command = self._Parent._Commands[kwargs['command']]
+            kwargs['command'] = command
             command_machine_label = command.machine_label
             message['last_command'] = command.machine_label
             message['command_machine_label'] = command.machine_label
@@ -921,6 +944,7 @@ class Device(object):
                                                          machine_status_extra=machine_status_extra,
                                                          )
         else:
+            kwargs['command'] = None
             command_machine_label = machine_status
             energy_usage, energy_type = self.energy_calc(machine_status=machine_status,
                                                          machine_status_extra=machine_status_extra,
@@ -941,7 +965,9 @@ class Device(object):
             self._Parent._LocalDB.save_device_status(**new_status._asdict())
         self._Parent.check_trigger(self.device_id, new_status)
 
-        self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
+        if self._Parent.mqtt != None:
+            self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
+        return kwargs
 
     def send_status(self, **kwargs):
         """
@@ -956,6 +982,8 @@ class Device(object):
 
         message = {
             'device': self,
+            'request_id': kwargs.get('request_id', None),
+            'reported_by': kwargs.get('reported_by', None),
         }
 
         if 'command' in kwargs:

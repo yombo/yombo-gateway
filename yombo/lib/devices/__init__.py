@@ -60,6 +60,8 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 import msgpack
+import sys
+import traceback
 
 from hashlib import sha1
 from time import time
@@ -213,9 +215,11 @@ class Devices(YomboLibrary):
         self.devices = {}
         self.device_search_attributes = ['device_id', 'device_type_id', 'machine_label', 'label', 'description',
             'pin_required', 'pin_code', 'pin_timeout', 'voice_cmd', 'voice_cmd_order', 'statistic_label', 'status',
-            'created', 'updated', 'updated_srv', 'location_id', 'area_id', 'gateway_id']
+            'created', 'updated', 'location_id', 'area_id', 'gateway_id']
 
-        self.gateway_id = self._Configs.get("core", "gwid")
+        self.gateway_id = self._Configs.get("core", "gwid", "local", False)
+        self.is_master = self._Configs.get("core", "is_master", "local", False)
+        self.master_gateway = self._Configs.get("core", "master_gateway", "local", False)
 
         # used to store delayed queue for restarts. It'll be a bare, dehydrated version.
         # store the above, but after hydration.
@@ -226,6 +230,8 @@ class Devices(YomboLibrary):
 
         self.startup_queue = {}  # Place device commands here until we are ready to process device commands
         self.processing_commands = False
+
+        self.mqtt = None
 
     @inlineCallbacks
     def _start_(self, **kwargs):
@@ -379,6 +385,12 @@ class Devices(YomboLibrary):
                 self.devices[device_id] = klass(device, self)
             except Exception as e:
                 logger.error("Error while creating device instance: {e}", e=e)
+                logger.error("-------==(Error: While saving new config data)==--------")
+                logger.error("--------------------------------------------------------")
+                logger.error("{error}", error=sys.exc_info())
+                logger.error("---------------==(Traceback)==--------------------------")
+                logger.error("{trace}", trace=traceback.print_exc(file=sys.stdout))
+                logger.error("--------------------------------------------------------")
 
         else:
             import_state = 'update'
@@ -388,7 +400,7 @@ class Devices(YomboLibrary):
         try:
             self._VoiceCommandsLibrary.add_by_string(device["voice_cmd"], None, device["id"],
                                                      device["voice_cmd_order"])
-        except YomboWarning:
+        except Exception:
             logger.debug("Device {label} has an invalid voice_cmd {voice_cmd}", label=device["label"],
                          voice_cmd=device["voice_cmd"])
 
@@ -407,6 +419,7 @@ class Devices(YomboLibrary):
     def _load_device_commands(self):
         where = {
             'finished_time': None,
+            'source_gateway_id': self.gateway_id,
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
@@ -438,16 +451,28 @@ class Devices(YomboLibrary):
         self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=True)
         self.device_commands.move_to_end(device_command['request_id'], last=False)  # move to the front.
 
-    def update_device_command(self, device_command):
+    def update_device_command(self, src_gateway_id, request_id, log_time, status, message):
         """
         Update device command information based on dictionary items. Usually called by the gateway coms systems.
 
         :param device_command:
         :return:
         """
-        request_id = device_command['request_id']
         if request_id in self.device_commands:
-            self.device_commands[device_command['request_id']].update_attributes(device_command)
+            self.device_commands[request_id].gw_coms_set_status(src_gateway_id, log_time, status, message)
+
+    def get_gateway_device_commands(self, dest_gateway_id):
+        """
+        Gets all device commands for a gateway where the device's gateway is matches the requested.
+
+        :param dest_gateway_id:
+        :return:
+        """
+        results = []
+        for device_command_id, device_command in self.device_commands.items():
+            if device_command.device.gateway_id == dest_gateway_id:
+                results.append(device_command.dump())
+        return results
 
     def get_delayed_commands(self):
         """
@@ -744,7 +769,7 @@ class Devices(YomboLibrary):
             }
             return results
 
-        if 'variable_data' in api_data:
+        if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
             # print("data['variable_data']: %s", data['variable_data'])
             variable_results = yield self.set_device_variables(device_results['data']['id'], api_data['variable_data'])
             # print("variable_results: %s" % variable_results)
@@ -926,7 +951,7 @@ class Devices(YomboLibrary):
             }
             return results
 
-        if 'variable_data' in data:
+        if 'variable_data' in data and len(api_data['variable_data']) > 0:
             variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
             if variable_results['code'] > 299:
                 results = {
