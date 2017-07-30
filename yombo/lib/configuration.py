@@ -269,7 +269,7 @@ class Configuration(YomboLibrary):
         logger.debug("done parsing yombo.ini.info")
 
         #setup some defaults if we are new....
-        self.get('core', 'gwid', None)
+        self.get('core', 'gwid', 'local')
         self.get('core', 'gwuuid', None)
 
         # Perform DB cleanup activites based on local section.
@@ -324,16 +324,26 @@ class Configuration(YomboLibrary):
             self.set('core', 'first_run', True)
         self.loading_yombo_ini = False
 
+        # set system defaults. Reasons: 1) All in one place. 2) Somes values are needed before respective libraries
+        # are loaded.
+        self._Configs.get('mqtt', 'client_enabled', True)
+        self._Configs.get('mqtt', 'server_enabled', True)
+        self._Configs.get('mqtt', 'server_max_connections', 1000)
+        self._Configs.get('mqtt', 'server_timeout_disconnect_delay', 2)
+        self._Configs.get('mqtt', 'server_listen_ip', '*')
+        self._Configs.get('mqtt', 'server_listen_port', 1883)
+        self._Configs.get('mqtt', 'server_listen_port_ss_ssl', 1884)
+        self._Configs.get('mqtt', 'server_listen_port_le_ssl', 1885)
+        self._Configs.get('mqtt', 'server_listen_port_websockets', 8081)
+        self._Configs.get('mqtt', 'server_listen_port_websockets_ss_ssl', 8444)
+        self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
+        self._Configs.get('mqtt', 'server_allow_anonymous', False)
+        self._Configs.get('misc', 'tempurature_display', 'f')
+        self._Configs.get('misc', 'length_display',  'imperial')  # will we ever get to metric?
+
     def _load_(self, **kwargs):
         self._loaded = True
 
-    def _start_(self, **kwargs):
-        """
-        Define some default configuration items.
-        :return:
-        """
-        self.set('misc', 'tempurature_display', 'f')
-        self.set('misc', 'length_display', 'imperial')  # will we ever get to metric?
 
     def _stop_(self, **kwargs):
         if self.periodic_save_yombo_ini is not None and self.periodic_save_yombo_ini.running:
@@ -380,18 +390,17 @@ class Configuration(YomboLibrary):
                         self.set(section, option, value)
 
         except IOError:
-            self._Atoms.set('configuration.yombo_ini.found', False)
             logger.warn("yombo.ini doesn't exist. Setting run mode to 'first_run'.")
-            self._Atoms.set('configuration.yombo_ini.found', False)
+            # self._Atoms.set('configuration.yombo_ini.found', False)
             self.loading_yombo_ini = False
             return False
             # return
         except configparser.NoSectionError as e:
-            self._Atoms.set('configuration.yombo_ini.found', False)
+            # self._Atoms.set('configuration.yombo_ini.found', False)
             logger.warn("CAUGHT ConfigParser.NoSectionError!!!!  In Loading. {error}", error=e)
             return True
         else:
-            self._Atoms.set('configuration.yombo_ini.found', True)
+            # self._Atoms.set('configuration.yombo_ini.found', True)
             return True
 
     def Configuration_i18n_atoms(self, **kwargs):
