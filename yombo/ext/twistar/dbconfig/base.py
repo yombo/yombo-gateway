@@ -8,7 +8,7 @@ from twisted.internet import defer
 
 from yombo.ext.twistar.registry import Registry
 from yombo.ext.twistar.exceptions import ImaginaryTableError, CannotRefreshError
-from yombo.ext.twistar.utils import joinWheres
+from yombo.ext.twistar.utils import joinWheres, transaction
 from six.moves import range
 
 
@@ -35,6 +35,7 @@ class InteractionBase(object):
         Log the query and any args or kwargs using C{twisted.python.log.msg} if
         C{InteractionBase.LOG} is True.
         """
+        # print("TWISTAR query: %s: %s" % (query, args))
         if not InteractionBase.LOG:
             return
         log.msg("TWISTAR query: %s" % query)
@@ -204,7 +205,6 @@ class InteractionBase(object):
         """
         return ["`%s`" % x for x in colnames]
 
-
     def insertMany(self, tablename, vals):
         """
         Insert many values into a table.
@@ -216,7 +216,7 @@ class InteractionBase(object):
 
         @return: A C{Deferred}.
         """
-        colnames = ",".join(self.escapeColNames(vals[0].keys()))
+        colnames = ",".join(self.escapeColNames(list(vals[0].keys())))
         params = ",".join([self.insertArgsToString(val) for val in vals])
         args = []
         for val in vals:
@@ -251,7 +251,20 @@ class InteractionBase(object):
         return self.executeOperation(q, args)
 
 
-    def update(self, tablename, args, where=None, txn=None, limit=None):
+    def deleteMany(self, tablename, ids):
+        """
+        Delete many values into a table.
+
+        @param tablename: Table to insert a row into.
+        @param ids: Id's to delete
+        @return: A C{Deferred}.
+        """
+        q = "DELETE FROM %s WHERE id IN (%s)" % (tablename, ", ".join(ids))
+        print("delete many: %s" % q)
+        return self.executeOperation(q)
+
+
+    def update(self, tablename, args, where=None, txn=None, limit=None, string_only=None):
         """
         Update a row into the given table.
 
@@ -279,9 +292,33 @@ class InteractionBase(object):
         if limit is not None:
             q += " LIMIT " + str(limit)
 
+        if string_only is True:
+            return q
+
+        # print("base about to update record: %s -> %s = %s" % (tablename, q, args) )
+
         if txn is not None:
             return self.executeTxn(txn, q, args)
         return self.executeOperation(q, args)
+
+    def updateMany(self, tablename, the_items, where_column):
+        """
+        Update a row into the given table.
+
+        @param tablename: Table to insert a row into.
+
+        @param args: Values to insert.  Should be a dictionary in the form of
+        C{{'name': value, 'othername': value}}.
+
+        @param where: Conditional of the same form as the C{where} parameter in L{DBObject.find}.
+        If given, the rows updated will be restricted to ones matching this conditional.
+
+        @return: A C{Deferred}
+        """
+        for item in the_items:
+            # print("base about to update record: %s -> %s" % (tablename, item) )
+            where = ["%s = ?" % where_column, item[where_column]]
+            self.update(tablename, item, where)
 
 
     def valuesToHash(self, txn, values, tablename, cacheable=True):
@@ -425,3 +462,12 @@ class InteractionBase(object):
         d = self.select(tablename, where=where, select='count(*)')
         d.addCallback(lambda res: res[0]['count(*)'])
         return d
+
+    def drop(self, tablename):
+        """
+        Drop (delete) a table.
+
+        @return: A C{Deferred}.
+        """
+        q = "DROP TABLE %s" % tablename
+        return self.executeOperation(q, [])

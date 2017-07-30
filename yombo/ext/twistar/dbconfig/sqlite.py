@@ -20,12 +20,11 @@ class SQLiteDBConfig(InteractionBase):
         return "(" + ",".join(["?" for _ in list(vals.items())]) + ")"
 
 
-    # retarded sqlite can't handle multiple row inserts
-    def insertMany(self, tablename, vals):
-        def _insertMany(txn):
-            for val in vals:
-                self.insert(tablename, val, txn)
-        return Registry.DBPOOL.runInteraction(_insertMany)
+    # def insertMany(self, tablename, vals):
+    #     def _insertMany(txn):
+    #         for val in vals:
+    #             self.insert(tablename, val, txn)
+    #     return Registry.DBPOOL.runInteraction(_insertMany)
 
     def pragma(self, pragma_string):
         """
