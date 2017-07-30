@@ -158,8 +158,9 @@ class Locations(YomboLibrary):
         """
         Cleans up any pending deferreds.
         """
-        if self.load_deferred is not None and self.load_deferred.called is False:
-            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+        if hasattr(self, 'load_deferred'):
+            if self.load_deferred is not None and self.load_deferred.called is False:
+                self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     @inlineCallbacks
     def _load_locations_from_database(self):
