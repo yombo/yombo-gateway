@@ -74,8 +74,8 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        self.gwid = "gw_" + self._Configs.get("core", "gwid")
-        self.login_gwuuid = self.gwid + "_" + self._Configs.get("core", "gwuuid")
+        self.gateway_id = "gw_" + self._Configs.get('core', 'gwid', 'local', False)
+        self.login_gwuuid = self.gateway_id + "_" + self._Configs.get("core", "gwuuid")
         self._LocalDBLibrary = self._Libraries['localdb']
         self.request_configs = False
 
@@ -151,7 +151,7 @@ class AMQPYombo(YomboLibrary):
         # The servers will have a dedicated queue for us. All pending messages will be held there for us. If we
         # connect to a different server, they wil automagically be re-routed to our new queue.
         if already_have_amqp is None:
-            self.amqp.subscribe("ygw.q." + self.gwid, incoming_callback=self.amqp_incoming, queue_no_ack=False,
+            self.amqp.subscribe("ygw.q." + self.gateway_id, incoming_callback=self.amqp_incoming, queue_no_ack=False,
                                 persistent=True)
 
         self.configHandler.connect_setup(self.init_deferred)
@@ -230,9 +230,11 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         body = {
+            "is_master": self._Configs.get("core", "is_master", True, False),
+            "master_gateway": self._Configs.get("core", "master_gateway", "", False),
             "internal_ipv4": self._Configs.get("core", "localipaddress_v4"),
             "external_ipv4": self._Configs.get("core", "externalipaddress_v4"),
-            # "external_ipv6": self._Configs.get("core", "externalipaddress_v6"),
+            # "internal_ipv6": self._Configs.get("core", "externalipaddress_v6"),
             # "external_ipv6": self._Configs.get("core", "externalipaddress_v6"),
             "internal_port": self._Configs.get("webinterface", "nonsecure_port"),
             "external_port": self._Configs.get("webinterface", "nonsecure_port"),
@@ -284,10 +286,10 @@ class AMQPYombo(YomboLibrary):
 
         # print "properties: %s" % properties
         if 'route' in properties.headers:
-            route = str(properties.headers['route']) + ",yombo.gw.amqpyombo:" + self.gwid
+            route = str(properties.headers['route']) + ",yombo.gw.amqpyombo:" + self.gateway_id
             response_msg['properties']['headers']['route'] = route
         else:
-            response_msg['properties']['headers']['route'] = "yombo.gw.amqpyombo:" + self.gwid
+            response_msg['properties']['headers']['route'] = "yombo.gw.amqpyombo:" + self.gateway_id
         return response_msg
 
     def generate_message_request(self, exchange_name=None, source=None, destination=None,
@@ -357,11 +359,11 @@ class AMQPYombo(YomboLibrary):
             "body": msgpack.dumps(body),
             "properties": {
                 # "correlation_id" : correlation_id,
-                "user_id": self.gwid,  # system id is required to be able to send it.
+                "user_id": self.gateway_id,  # system id is required to be able to send it.
                 "content_type": 'application/msgpack',
                 "headers": {
                     # "requesting_user_id"        : user
-                    "source": source + ":" + self.gwid,
+                    "source": source + ":" + self.gateway_id,
                     "destination": destination,
                     "type": header_type,
                     "protocol_verion": PROTOCOL_VERSION,
