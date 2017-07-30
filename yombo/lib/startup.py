@@ -37,7 +37,7 @@ class Startup(YomboLibrary):
             return True
         items_needed = []
 
-        gwid = self._Configs.get("core", "gwid", None)
+        gwid = self._Configs.get('core', 'gwid', 'local', False)
         if gwid is None or gwid == "":
             items_needed.append("Gateway ID")
         gwuuid = self._Configs.get("core", "gwuuid", None)
@@ -52,7 +52,7 @@ class Startup(YomboLibrary):
             if master_gateway is None or master_gateway == "":
                 items_needed.append("Gateway is marked as slave, but not master gateway set.")
         else:
-            master_gateway = self._Configs.get("core", "master_gateway", None)
+            master_gateway = self._Configs.get("core", "master_gateway", None, False)
 
         gpg_key = self._Configs.get("gpg", "keyid", None)
         gpg_key_ascii = self._Configs.get("gpg", "keyascii", None)
