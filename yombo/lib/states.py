@@ -53,6 +53,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 :license: LICENSE for details.
 """
 # Import python libraries
+from collections import OrderedDict, deque
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -173,7 +174,6 @@ class States(YomboLibrary, object):
         """
         if gateway_id is None:
             gateway_id = self.gateway_id
-
         if gateway_id not in self.__States:
             return []
         return list(self.__States[gateway_id].keys())
@@ -204,16 +204,18 @@ class States(YomboLibrary, object):
 
     def _init_(self, **kwargs):
         self.library_phase = 1
-        self.gateway_id = self._Configs.get('core', 'gwid')
-        self.__States = {self.gateway_id:{}}
-
-        self.init_deferred = Deferred()
-        self.load_states()
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+        self.__States = {self.gateway_id: {}}
         self.automation_startup_check = []
-        return self.init_deferred
+        self.db_save_states_data = deque()
+        self.db_save_states_loop = LoopingCall(self.db_save_states)
+        self.db_save_states_loop.start(random_int(60, .10), False)  # clean the database every 6 hours.
 
     def _load_(self, **kwargs):
         self.library_phase = 2
+        self.init_deferred = Deferred()
+        self.load_states()
+        return self.init_deferred
 
     def _start_(self, **kwargs):
         self.module_phase = 3
@@ -231,21 +233,27 @@ class States(YomboLibrary, object):
         self.library_phase = 4
 
     def _stop_(self, **kwargs):
-        if self.init_deferred is not None and self.init_deferred.called is False:
-            self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
+        if hasattr(self, 'load_deferred'):
+            if self.init_deferred is not None and self.init_deferred.called is False:
+                self.init_deferred.callback(1)  # if we don't check for this, we can't stop!
+
+    @inlineCallbacks
+    def _unload_(self, **kwargs):
+        yield self.db_save_states()
 
     @inlineCallbacks
     def load_states(self):
         states = yield self._LocalDB.get_states()
+
         for state in states:
             self.__States[self.gateway_id][state['name']] = {
+                'gateway_id': state['gateway_id'],
                 'value': state['value'],
                 'value_human': self.convert_to_human(state['value'], state['value_type']),
                 'value_type': state['value_type'],
                 'live': state['live'],
                 'created': state['created'],
                 'updated': state['updated'],
-                'gateway_id': self.gateway_id,
             }
         self.init_deferred.callback(10)
 
@@ -378,12 +386,14 @@ class States(YomboLibrary, object):
         :param key: Name of state to check.
         :return: Value of state
         """
-        if gateway_id is not None:
-            if gateway_id in self.__States:
-                return self.__States[gateway_id].copy()
-            else:
-                return {}
-        return self.__States.copy()
+        if gateway_id is None:
+            return self.__States.copy()
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if gateway_id in self.__States:
+            return self.__States[gateway_id].copy()
+        else:
+            return {}
 
     @inlineCallbacks
     def set(self, key, value, value_type=None, function=None, arguments=None, gateway_id=None):
@@ -431,8 +441,13 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,'key': key, 'value': value,
-                                                                          'gateway_id': gateway_id})
+            state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,
+                                                                          'key': key,
+                                                                          'value': value,
+                                                                          'value_full': self.__States[gateway_id][key],
+                                                                          'gateway_id': gateway_id
+                                                                          }
+                                                    )
         except YomboHookStopProcessing as e:
             logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                            state=key, resource=e.by_who)
@@ -453,17 +468,53 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value, 'gateway_id': gateway_id})
+            state_changes = yield global_invoke_all('_states_set_',
+                                                    **{'called_by': self,
+                                                       'key': key,
+                                                       'value': value,
+                                                       'gateway_id': gateway_id})
         except YomboHookStopProcessing:
             pass
 
 
         if gateway_id == self.gateway_id:
-            self._LocalDB.save_state(key, self.__States[gateway_id][key])
+            self.db_save_states_data.append((key, self.__States[gateway_id][key]))
 
-        self.check_trigger(key, value)  # Check if any automation items need to fire!
+        self.check_trigger(key, value, gateway_id)  # Check if any automation items need to fire!
 
-    def set_gw_coms(self, key, values):
+    @inlineCallbacks
+    def db_save_states(self):
+        """
+        Called periodically and on exit to save states to database.
+
+        :return:
+        """
+        to_save = deque()
+
+        while True:
+            try:
+                key, data = self.db_save_states_data.popleft()
+                if data['live'] is True:
+                    live = 1
+                else:
+                    live = 0
+
+                od = OrderedDict()
+                od['gateway_id'] = data['gateway_id']
+                od['name'] = key
+                od['value'] = data['value']
+                od['value_type'] = data['value_type']
+                od['live'] = live
+                od['created'] = data['created']
+                od['updated'] = data['updated']
+                to_save.append(od)
+            except IndexError:
+                break
+        if len(to_save) > 0:
+            yield self._LocalDB.save_state_bulk(to_save)
+
+    @inlineCallbacks
+    def set_from_gateway_communications(self, key, values):
         """
         Used by the gateway coms (mqtt) system to set state values.
         :param key:
@@ -483,12 +534,19 @@ class States(YomboLibrary, object):
             'live': False,
             'created': values['created'],
             'updated': values['updated'],
-
         }
 
         # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self,'key': key, 'value': value, 'gateway_id': gateway_id})
+            yield global_invoke_all('_states_set_',
+                                    **{'called_by': self,
+                                       'key': key,
+                                       'value': values['value'],
+                                       'value_type': values['value_type'],
+                                       'value_human': values['value_human'],
+                                       'gateway_id': gateway_id
+                                       }
+                                    )
         except YomboHookStopProcessing:
             pass
 
@@ -516,6 +574,9 @@ class States(YomboLibrary, object):
         :limit limit: How many records to provide
         :return:
         """
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+
         if offset is None:
             offset = 1
         if limit is None:
@@ -694,16 +755,17 @@ class States(YomboLibrary, object):
     # automation library!                                                                                        #
     #############################################################################################################
 
-    def check_trigger(self, key, value):
+    def check_trigger(self, key, value, gateway_id):
         """
         Called by the states.set function when a new value is set. It asks the automation library if this key is
         trigger, and if so, fire any rules.
 
         True - Rules fired, fale - no rules fired.
         """
-        logger.info("check_trigger. {key} = {value}", key=key, value=value)
+        # logger.info("check_trigger. {key} = {value}", key=key, value=value)
+        gateway_id_name = gateway_id + ":::" + key
         if self.library_phase >= 2:
-            results = self._Automation.triggers_check('states', key, value)
+            results = self._Automation.triggers_check('states', gateway_id_name, value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -751,9 +813,16 @@ class States(YomboLibrary, object):
         :return:
         """
         if 'run_on_start' in rule:
-            if rule['run_on_start'] is True and rule['trigger']['source']['name'] not in self.automation_startup_check:
-                self.automation_startup_check.append(rule['trigger']['source']['name'])
-        self._Automation.triggers_add(rule['rule_id'], 'states', rule['trigger']['source']['name'])
+            if 'gateway_id' in rule['trigger']['source']:
+                gateway_id = rule['trigger']['source']['gateway_id']
+            else:
+                gateway_id = self.gateway_id
+            gateway_id_name = gateway_id + ":::" + rule['trigger']['source']['name']
+
+            if rule['run_on_start'] is True and gateway_id_name not in self.automation_startup_check:
+                self.automation_startup_check.append(gateway_id_name)
+
+        self._Automation.triggers_add(rule['rule_id'], 'states', gateway_id_name)
 
     def states_startup_trigger_callback(self):
         """
@@ -762,10 +831,18 @@ class States(YomboLibrary, object):
         :return:
         """
         logger.info("states_startup_trigger_callback: %s" % self.automation_startup_check)
-        for name in self.automation_startup_check:
-            if name in self.__States:
-                logger.info("states_startup_trigger_callback - name: %s value: %s" % (name, self.__States[self.gateway_id][name]['value']))
-                self.check_trigger(name, self.__States[self.gateway_id][name]['value'])
+        for check_name in self.automation_startup_check:
+            logger.info("check_name: %s" % check_name)
+            results = check_name.split(':::')
+            if len(results) == 1:
+                gateway_id = self.gateway_id
+                name = results[0]
+            else:
+                gateway_id = results[0]
+                name = results[1]
+            if gateway_id in self.__States:
+                if name in self.__States[gateway_id]:
+                    self.check_trigger(name, check_name, gateway_id)
 
     def states_get_value_callback(self, rule, portion, **kwargs):
         """
@@ -775,7 +852,12 @@ class States(YomboLibrary, object):
         :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        return self.get(portion['source']['name'])
+        if 'gateway_id' in rule['source']:
+            gateway_id = rule['source']['gateway_id']
+        else:
+            gateway_id = self.gateway_id
+
+        return self.get(rule['source']['name'], gateway_id=gateway_id)
 
     def _automation_action_list_(self, **kwargs):
         """
@@ -831,4 +913,11 @@ class States(YomboLibrary, object):
         :return:
         """
         logger.debug("Automation rule fired. Setting:  {name} = {value}", name=action['name'], value=action['value'])
-        return self.set(action['name'], action['value'])
+        results = action['name'].split(":::")
+        if len(results) == 1:
+            gateway_id = self.gateway_id
+            name = results[0]
+        else:
+            gateway_id = results[0]
+            name = results[1]
+        return self.set(name, action['value'], gateway_id=gateway_id)

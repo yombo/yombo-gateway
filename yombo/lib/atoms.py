@@ -36,14 +36,14 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-import platform
+# import distro
 from os.path import dirname, abspath
+import platform
 import re
-from platform import _supported_dists
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
@@ -51,7 +51,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.utils
 
-_supported_dists += ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
+SUPPORTED_DISTS = platform._supported_dists + ('arch', 'mageia', 'meego', 'vmware', 'bluewhite64',
                      'slamd64', 'ovs', 'system', 'mint', 'oracle')
 logger = get_logger("library.atoms")
 
@@ -190,7 +190,7 @@ class Atoms(YomboLibrary):
 
     def __iter__(self):
         """ iter atoms. """
-        return self.__Atoms.__iter__()
+        return self.__Atoms[self.gateway_id].__iter__()
 
     def __len__(self):
         """
@@ -199,7 +199,7 @@ class Atoms(YomboLibrary):
         :return: The number of atoms defined.
         :rtype: int
         """
-        return len(self.__Atoms)
+        return len(self.__Atoms[self.gateway_id])
 
     def __str__(self):
         """
@@ -232,6 +232,7 @@ class Atoms(YomboLibrary):
         """
         if gateway_id is None:
             gateway_id = self.gateway_id
+
         if gateway_id not in self.__Atoms:
             return []
         return list(self.__Atoms[gateway_id].items())
@@ -254,14 +255,16 @@ class Atoms(YomboLibrary):
         :return: None
         """
         self.library_state = 1
-        self.gateway_id = self._Configs.get('core', 'gwid')
+        # self.gateway_id = 'local'
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self._loaded = False
         self.__Atoms = {self.gateway_id: {}}
+        # if 'local' not in self.__Atoms:
+        #     self.__Atoms['local'] = {}
         self.os_data()
 
         self.triggers = {}
-        self._Automation = self._Libraries['automation']
-        self._loaded = False
+        # self._Automation = self._Libraries['automation']
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
         self.automation_startup_check = []
 
@@ -276,7 +279,7 @@ class Atoms(YomboLibrary):
     def _start_(self, **kwargs):
         self.library_state = 3
 
-    def exists(self, key, gateway_id):
+    def exists(self, key, gateway_id=None):
         """
         Checks if a given state exists. Returns true or false.
 
@@ -311,12 +314,12 @@ class Atoms(YomboLibrary):
         :return: A dictionary containing all atoms.
         :rtype: dict
         """
-        if gateway_id is not None:
-            if gateway_id in self.__Atoms:
-                return self.__Atoms[gateway_id].copy()
-            else:
-                return {}
-        return self.__Atoms.copy()
+        if gateway_id is None:
+            return self.__Atoms.copy()
+        if gateway_id in self.__Atoms:
+            return self.__Atoms[gateway_id].copy()
+        else:
+            return {}
 
     def get(self, atom_requested, human=None, full=None, gateway_id=None):
         """
@@ -355,7 +358,7 @@ class Atoms(YomboLibrary):
             return self.__Atoms[gateway_id][atom_requested]['value']
 
     @inlineCallbacks
-    def set(self, key, value, value_type=None, gateway_id=None):
+    def set(self, key, value, value_type=None, gateway_id=None, human_value=None):
         """
         Get the value of a given atom (key).
 
@@ -372,11 +375,10 @@ class Atoms(YomboLibrary):
         :return: Value of atom
         :rtype: mixed
         """
-        # logger.debug('atoms:set: {key} = {value}', key=key, value=value)
         if gateway_id is None:
             gateway_id = self.gateway_id
-        if gateway_id != self.gateway_id:
-            raise YomboWarning("Cannot set atom value for another gateway.")
+        # logger.debug('atoms:set: {gateway_id}: {key} = {value}', gateway_id=gateway_id, key=key, value=value)
+
         if gateway_id not in self.__Atoms:
             self.__Atoms[gateway_id] = {}
 
@@ -387,7 +389,9 @@ class Atoms(YomboLibrary):
         if key in self.__Atoms[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
-            self.__Atoms[key]['updated'] = int(round(time()))
+            self.__Atoms[gateway_id][key]['updated'] = int(round(time()))
+            if human_value is not None:
+                self.__Atoms[gateway_id][key]['value_human'] = human_value
             if self.__Atoms[gateway_id][key]['value'] == value:
                 return
             self._Statistics.increment("lib.atoms.set.update", bucket_size=60, anon=True)
@@ -404,17 +408,29 @@ class Atoms(YomboLibrary):
         self.__Atoms[gateway_id][key]['value'] = value
         if is_new is True or value_type is not None:
             self.__Atoms[gateway_id][key]['value_type'] = value_type
-        self.__Atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
+
+        if human_value is not None:
+            self.__Atoms[gateway_id][key]['value_human'] = human_value
+        else:
+            self.__Atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
         try:
-            state_changes = yield yombo.utils.global_invoke_all('_atoms_set_', **{'called_by': self, 'key': key, 'value': value, 'gateway_id': gateway_id})
+            state_changes = yield yombo.utils.global_invoke_all('_atoms_set_',
+                                                                **{'called_by': self,
+                                                                   'key': key,
+                                                                   'value': value,
+                                                                   'value_full': self.__Atoms[gateway_id][key],
+                                                                   'gateway_id': gateway_id
+                                                                   }
+                                                                )
         except YomboHookStopProcessing:
             pass
 
-        self.check_trigger(key, value)  # Check if any automation items need to fire!
+        self.check_trigger(key, value, gateway_id)  # Check if any automation items need to fire!
 
-    def set_gw_coms(self, key, values):
+    @inlineCallbacks
+    def set_from_gateway_communications(self, key, values):
         """
         Used by the gateway coms (mqtt) system to set atom values.
         :param key:
@@ -434,13 +450,20 @@ class Atoms(YomboLibrary):
             'created': values['created'],
             'updated': values['updated'],
         }
-
-        # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_set_', **{'called_by': self, 'key': key, 'value': value,
-                                                                       'gateway_id': gateway_id})
-        except YomboHookStopProcessing:
+            yield yombo.utils.global_invoke_all('_atoms_set_',
+                                                **{'called_by': self,
+                                                   'key': key,
+                                                   'value': values['value'],
+                                                   'value_type': values['value_type'],
+                                                   'value_human': values['value_human'],
+                                                   'gateway_id': gateway_id,
+                                                   }
+                                                )
+        except YomboHookStopProcessing as e:
+            logger.warn("Issues with set_from_gateway_communications calling _atoms_set_: %s" % e)
             pass
+
     def convert_to_human(self, value, value_type):
         if value_type == 'bool':
             results = yombo.utils.is_true_false(value)
@@ -538,7 +561,8 @@ class Atoms(YomboLibrary):
 
             (osname, osrelease, oscodename) = \
                 [x.strip('"').strip("'") for x in
-                 platform.linux_distribution(supported_dists=_supported_dists)]
+                 # distro.linux_distribution(full_distribution_name=False)
+                 platform.linux_distribution(supported_dists=SUPPORTED_DISTS)]
 
             if 'os.fullname' not in atoms:
                 atoms['os.fullname'] = osname.strip()
@@ -571,7 +595,7 @@ class Atoms(YomboLibrary):
     # automation library!                                                                                        #
     ##############################################################################################################
 
-    def check_trigger(self, key, value):
+    def check_trigger(self, key, value, gateway_id):
         """
         .. note::
 
@@ -583,7 +607,8 @@ class Atoms(YomboLibrary):
         True - Rules fired, fale - no rules fired.
         """
         if self._loaded:
-            results = self._Automation.triggers_check('atoms', key, value)
+            gateway_id_name = gateway_id + ":::" + key
+            self._Automation.triggers_check('atoms', gateway_id_name, value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -642,10 +667,17 @@ class Atoms(YomboLibrary):
         :return:
         """
         if 'run_on_start' in rule:
-            if rule['run_on_start'] is True and rule['trigger']['source']['name'] not in self.automation_startup_check:
-                self.automation_startup_check.append(rule['trigger']['source']['name'])
 
-        self._Automation.triggers_add(rule['rule_id'], 'atoms', rule['trigger']['source']['name'])
+            if 'gateway_id' in rule['trigger']['source']:
+                gateway_id = rule['trigger']['source']['gateway_id']
+            else:
+                gateway_id = self.gateway_id
+            gateway_id_name = gateway_id + ":::" + rule['source']['name']
+
+            if rule['run_on_start'] is True and gateway_id_name not in self.automation_startup_check:
+                self.automation_startup_check.append(gateway_id_name)
+
+        self._Automation.triggers_add(rule['rule_id'], 'atoms', gateway_id_name)
 
     def atoms_startup_trigger_callback(self):
         """
@@ -653,9 +685,17 @@ class Atoms(YomboLibrary):
 
         :return:
         """
-        for name in self.automation_startup_check:
-            if name in self.__Atoms[self.gateway_id]:
-                self.check_trigger(name, self.__Atoms[self.gateway_id][name]['value'])
+        for check_name in self.automation_startup_check:
+            results = check_name.split(':::')
+            if len(results) == 1:
+                gateway_id = self.gateway_id
+                name = results[0]
+            else:
+                gateway_id = results[0]
+                name = results[1]
+            if gateway_id in self.__Atoms:
+                if name in self.__Atoms[gateway_id]:
+                    self.check_trigger(name, check_name, gateway_id)
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """
@@ -669,7 +709,12 @@ class Atoms(YomboLibrary):
         :param portion: Dictionary containg everything in the portion of rule being fired. Includes source, filter, etc.
         :return:
         """
-        return self.get(portion['source']['name'])
+        if 'gateway_id' in rule['source']:
+            gateway_id = rule['source']['gateway_id']
+        else:
+            gateway_id = self.gateway_id
+
+        return self.get(rule['source']['name'], gateway_id=gateway_id)
 
     def _automation_action_list_(self, **kwargs):
         """
@@ -735,4 +780,11 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        return self.set(action['name'], action['value'])
+        results = action['name'].split(":::")
+        if len(results) == 1:
+            gateway_id = self.gateway_id
+            name = results[0]
+        else:
+            gateway_id = results[0]
+            name = results[1]
+        return self.set(name, action['value'], gateway_id=gateway_id)
