@@ -98,7 +98,7 @@
                         <div class="form-group">
                             <label for="is-master" data-toggle="tooltip" title="Is master gateway">Make this gateway a master gateway</label>
                             <div class="material-switch pull-right">
-                                <input id="is-master" name="is-master" type="checkbox"{% if security_items.is_master == '1' %} checked {% endif %}/>
+                                <input id="is-master" name="is-master" type="checkbox"{% if security_items.is_master == '1' or security_items.is_master == 1 %} checked {% endif %}/>
                                 <label for="is-master" class="label-primary"></label>
                             </div>
                         </div>
@@ -109,7 +109,7 @@
                                 <select name="master-gateway" id="master-gateway" required class="selectpicker show-tick" title="Select...">
                                     <option value="none" style="background: #e6f7ff; color: #000;"{% if security_items.master_gateway == 'None' %} selected{% endif %}>None</option>
                                     <option data-divider="true"></option>
-                                    {% for id, gateway in available_gateways.items() -%}
+                                    {% for id, gateway in available_gateways.items() if gateway.is_master == '1' or gateway.is_master == 1  -%}
                                     <option value="{{ gateway.id }}"{% if security_items.master_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
                                     {%- endfor %}
                                 </select>
@@ -259,7 +259,6 @@ $("form").submit(function () {
 
     this_master.find('input[type="checkbox"]').each( function () {
         var checkbox_this = $(this);
-
 
         if( checkbox_this.is(":checked") == true ) {
             checkbox_this.attr('value','1');

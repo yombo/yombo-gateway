@@ -1,5 +1,6 @@
 from functools import wraps
 from time import time
+import traceback
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -8,6 +9,7 @@ except ImportError:
 from twisted.internet.defer import inlineCallbacks, returnValue
 
 from yombo.core.exceptions import YomboWarning
+from yombo.lib.webinterface.sessions import Session
 from yombo.utils import get_local_network_info, ip_addres_in_local_network, bytes_to_unicode
 
 from yombo.core.log import get_logger
@@ -114,20 +116,32 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             try:
                 session = yield webinterface.sessions.load(request)
+                # print("require auth session: %s" % session)
             except YomboWarning as e:
                 logger.warn("Discarding request, appears to be malformed session id.")
                 return return_need_login(webinterface, request, **kwargs)
 
-            if session is not False:  # if we have a session, they may pass
+            if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
+                # print("is an instance!!!! %s" % session.data)
                 if 'auth' in session:
+                    # print("instance auth: %s" % session['auth'])
                     if session['auth'] is True:
                         session.touch()
                         request.auth_id = session['auth_id']
-                        results = yield call(f, webinterface, request, session, *a, **kw)
-                        return results
+                        try:
+                            print("abnout to call a function: %s" % f)
+                            results = yield call(f, webinterface, request, session, *a, **kw)
+                            return results
+                        except Exception as e: # catch anything here...so can display details.
+                            logger.error("---------------==(Traceback)==--------------------------")
+                            logger.error("{trace}", trace=traceback.format_exc())
+                            logger.error("--------------------------------------------------------")
+                            page = webinterface.get_template(request, webinterface._dir + 'pages/misc/traceback.html')
+                            return page.render(traceback=traceback.format_exc())
             else:  # session doesn't exist
+                # print("is NOT an instance!!!!")
                 if login_redirect is not None: # only create a new session if we need too
-                    if session is None:
+                    if session is False:
                         try:
                             session = webinterface.sessions.create(request)
                         except YomboWarning as e:
@@ -141,6 +155,8 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         session['yomboapi_login_key'] = ''
                         request.received_cookies[webinterface.sessions.config.cookie_session] = session.session_id
                     session['login_redirect'] = login_redirect
+                    # print("session: %s" % session)
+                    # print("session: %s" % session.data)
 
             return return_need_login(webinterface, request, **kwargs)
         return wrapped_f
@@ -190,7 +206,8 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
                 return return_need_pin(webinterface, request, **kwargs)
 
             if needs_web_pin(webinterface, request):
-                if session is not None:  # if we have a session, they may pass
+                if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
+                    print("is an instance!!!!")
                     if 'auth_pin' in session:
                         if session['auth_pin'] is True:
                             session.touch()

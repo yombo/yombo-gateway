@@ -79,7 +79,7 @@
                                         <table width="100%" class="table table-striped table-bordered table-hover" id="devices-enabled">
                                             <thead>
                                                 <tr>
-                                                    <th>Name</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
+                                                    <th>Name</th><th>Gateway</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>{% for deviceID, device in devices.items() if device.enabled_status == 1%}
@@ -87,6 +87,7 @@
                                                     <td data-priority="1">
                                                         <a href="/devices/{{ device.device_id }}/details">{{ locations[device.area_id].label|hide_none }} {{ device.label }}</a>
                                                     </td>
+                                                    <td data-priority="3">{{ gateways[device.gateway_id].label }}</td>
                                                     <td data-priority="3">{{ device.area }}</td>
                                                     <td data-priority="4">{{ device.location }}</td>
                                                     <td data-priority="5">{{ device.description }}</td>

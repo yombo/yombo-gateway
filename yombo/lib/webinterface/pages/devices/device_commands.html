@@ -29,7 +29,7 @@
                                 </li>
                                 <li role="presentation" class="next bg-success" id="tab-done">
                                   <a href="#done" role="tab" id="done-tab" data-toggle="tab" aria-controls="profile">
-                                    <span class="text-success">Done</span>
+                                    <span class="text-success">Finished</span>
                                   </a>
                                 </li>
                                 <li role="presentation" class="next bg-warning" id="tab-pending">
@@ -121,7 +121,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>{% for request_id, command in device_commands.items()
-                                            if command.status in ('done') %}
+                                            if command.status == 'finished' %}
                                                  <tr>
                                                     <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
                                                     <td>{{ command.command.label }}</td>
@@ -143,7 +143,7 @@
                                             </thead>
                                             <tbody>{% for request_id, command in device_commands.items()
                                             if command.status not in ('delayed', 'new', 'sent', 'received', 'pending',
-                                                'failed', 'delay_expired', 'done') %}
+                                                'failed', 'delay_expired', 'finished') %}
                                                  <tr>
                                                     <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
                                                     <td>{{ command.command.label }}</td>

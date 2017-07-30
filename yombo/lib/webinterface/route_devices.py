@@ -65,6 +65,7 @@ def route_devices(webapp):
 
         @webapp.route('/add')
         @require_auth()
+        @inlineCallbacks
         def page_devices_add_select_device_type_get(webinterface, request, session):
             # session['add_device'] = {
             #     'start': time(),
@@ -77,12 +78,12 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
-            device_types = webinterface._DeviceTypes.device_types
-            device_types_sorted = OrderedDict(sorted(device_types.items(), key=lambda x: x[1].label))
+            device_types = yield webinterface._DeviceTypes.addable()
+            print("device_types %s" % device_types)
 
             return page.render(
                 alerts=webinterface.get_alerts(),
-                device_types = device_types_sorted,
+                device_types = device_types,
             )
 
 

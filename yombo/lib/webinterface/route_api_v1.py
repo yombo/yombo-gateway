@@ -121,7 +121,7 @@ def route_api_v1(webapp):
                     requested_by={
                         'user_id': session['auth_id'],
                         'component': 'yombo.gateway.lib.WebInterface.api_v1.devices_get',
-                        'gateway': webinterface.gwid()
+                        'gateway': webinterface.gateway_id()
                     },
                     inputs=inputs,
                     )

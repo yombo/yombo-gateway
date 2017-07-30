@@ -1,0 +1,13 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12 col-md-12">
+                    <h1 class="page-header">Traceback</h1>
+                    Yombo Gateway generated an error and displayed here for troubleshooting.
+                    <pre>{{traceback}}</pre>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+{% endblock %}

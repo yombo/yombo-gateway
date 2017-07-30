@@ -214,7 +214,7 @@ def route_configs(webapp):
                 'dns_domain_id': submitted_dns_domain,
             }
 
-            dns_results = yield webinterface._YomboAPI.request('POST', '/v1/gateway/%s/dns_name' % webinterface._Configs.get('core', 'gwid'), data)
+            dns_results = yield webinterface._YomboAPI.request('POST', '/v1/gateway/%s/dns_name' % webinterface.gateway_id(), data)
             if dns_results['code'] != 200:
                 # print "dns_results: %s" % dns_results
                 webinterface.add_alert(dns_results['content']['html_message'], 'warning')

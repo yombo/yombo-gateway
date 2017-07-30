@@ -22,6 +22,9 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
+                            {% if msg.content|length > 0 %}
+                            <p>{{msg.content}}</p>
+                            {% endif %}
                             <p><em>A <a class="confirm-restart" href="#">restart</a> of the Yombo Gateway is required
                                 for the changes to take effect.</em></p>
                         </div>

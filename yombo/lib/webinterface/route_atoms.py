@@ -11,13 +11,11 @@ def route_atoms(webapp):
         @require_auth()
         def page_lib_atoms_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/atoms/index.html')
-            # i18n = webinterface.i18n(request)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/atoms/index", "Atoms")
             return page.render(alerts=webinterface.get_alerts(),
                                atoms=webinterface._Libraries['atoms'].get_atoms(),
-                               # _=i18n,
                                )
 
         @webapp.route('/<string:gateway_id>/<string:atom_name>/details')

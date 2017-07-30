@@ -402,7 +402,7 @@ class WebInterface(YomboLibrary):
         if not self.enabled:
             return
 
-        self.gwid = self._Configs.get2("core", "gwid", None, False)
+        self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self._LocalDb = self._Loader.loadedLibraries['localdb']
         self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
         self._dir = '/lib/webinterface/'
@@ -461,7 +461,7 @@ class WebInterface(YomboLibrary):
             return
         if not self.enabled:
             return
-        self._op_mode = self._States['loader.operating_mode']
+        self.operating_mode = self._Loader.operating_mode
 
         self.auth_pin = self._Configs.get2('webinterface', 'auth_pin',
               yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
@@ -480,7 +480,7 @@ class WebInterface(YomboLibrary):
 
         self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
         self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
-        self.misc_wi_data['operating_mode'] = self._op_mode
+        self.misc_wi_data['operating_mode'] = self.operating_mode
         self.misc_wi_data['notifications'] = self._Notifications
         self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
         self.misc_wi_data['breadcrumb'] = []
@@ -491,6 +491,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
         self.webapp.templates.globals['gateways'] = self._Gateways
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
+        self.webapp.templates.globals['devices'] = self._Devices
         # self.webapp.templates.globals['func'] = self.functions
 
         self.starting = False
@@ -511,7 +512,7 @@ class WebInterface(YomboLibrary):
         self._get_nav_side_items()
 
     def _started_(self, **kwargs):
-        # if self._op_mode != 'run':
+        # if self.operating_mode != 'run':
         self._display_pin_console_time = int(time())
         self.display_pin_console()
         self._Notifications.delete('webinterface:starting')
@@ -557,7 +558,20 @@ class WebInterface(YomboLibrary):
                 logger.warn("Non secure port has been disabled. With gateway stopped, edit yomobo.ini and change: webinterface->nonsecure_port")
             else:
                 self.web_server_started = True
-                self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure(), self.web_factory)
+                port_attempts = 0
+                while port_attempts < 100:
+                    try:
+                        self.web_interface_listener = reactor.listenTCP(self.wi_port_nonsecure()+port_attempts, self.web_factory)
+                        break
+                    except Exception as e:
+                        port_attempts += 1
+                if port_attempts < 100:
+                    self._Configs.set('webinterface', 'nonsecure_port', self.wi_port_nonsecure()+port_attempts)
+                    logger.warn(
+                        "Web interface is on a new port: {new_port}", new_port=self.wi_port_nonsecure()+port_attempts)
+                elif port_attempts >= 100:
+                    logger.warn("Unable to start web server, no available port could be found. Tried: {starting} - {ending}",
+                                starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
 
         if self.web_server_ssl_started is False:
             if self.wi_port_secure() == 0:
@@ -578,7 +592,22 @@ class WebInterface(YomboLibrary):
                                                         certificate=certpyssl,
                                                         extraCertChain=chainpyssl)
 
-                self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory, contextFactory)
+                port_attempts = 0
+                while port_attempts < 100:
+                    try:
+                        self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory,
+                                                                            contextFactory)
+                        break
+                    except Exception as e:
+                        port_attempts += 1
+                if port_attempts < 100:
+                    self._Configs.set('webinterface', 'secure_port', self.wi_port_secure()+port_attempts)
+                    logger.warn(
+                        "Web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
+                elif port_attempts >= 100:
+                    logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
+                                starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
+
         logger.debug("done starting web servers")
         self.already_start_web_servers = False
 
@@ -593,9 +622,9 @@ class WebInterface(YomboLibrary):
         option = kwargs['option']
         value = kwargs['value']
 
-        if section == 'core':
-            if option == 'label':
-                self.misc_wi_data['gateway_label'] = value
+        # if section == 'core':
+        #     if option == 'label':
+        #         self.misc_wi_data['gateway_label'] = value
 
         if self.starting is True:
             return
@@ -638,10 +667,12 @@ class WebInterface(YomboLibrary):
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
-        if self.web_factory is not None:
-            yield self.web_factory.save_log_queue()
-        if self.sessions is not None:
-            yield self.sessions._unload_()
+        if hasattr(self, 'web_factory'):
+            if self.web_factory is not None:
+                yield self.web_factory.save_log_queue()
+        if hasattr(self, 'sessions'):
+            if self.sessions is not None:
+                yield self.sessions._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
     #     return [{'webinterface': {
@@ -797,10 +828,10 @@ class WebInterface(YomboLibrary):
         request.redirect(redirect_path)
 
     def check_op_mode(self, request, router, **kwargs):
-        if self._op_mode == 'config':
+        if self.operating_mode == 'config':
             method = getattr(self, 'config_'+ router)
             return method(request, **kwargs)
-        elif self._op_mode == 'first_run':
+        elif self.operating_mode == 'first_run':
             method = getattr(self, 'first_run_'+ router)
             return method(request, **kwargs)
         method = getattr(self, 'run_'+ router)
@@ -873,9 +904,9 @@ class WebInterface(YomboLibrary):
         #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
         #     return self.require_auth(request, alerts)
 
-        # print("self._op_mode: %s" % self._op_mode)
-        if self._op_mode == 'run':
-            results = yield self._LocalDb.get_gateway_user_by_email(self.gwid(), submitted_email)
+        # print("self.operating_mode: %s" % self.operating_mode)
+        if self.operating_mode == 'run':
+            results = yield self._LocalDb.get_gateway_user_by_email(self.gateway_id(), submitted_email)
             if len(results) != 1:
                 self.add_alert('Email address not allowed to access gateway.', 'warning')
                 #            self.sessions.load(request)
@@ -891,18 +922,18 @@ class WebInterface(YomboLibrary):
             if session is False:
                 # print("created session")
                 session = self.sessions.create(request)
-            else:
-                session.delete('login_redirect')
-                # print("existing session")
+            # else:
+            #     session.delete('login_redirect')
+            #     print("existing session")
 
             session['auth'] = True
             session['auth_id'] = submitted_email
             session['auth_time'] = time()
             session['yomboapi_session'] = login['session']
             session['yomboapi_login_key'] = login['login_key']
-            request.received_cookies[self.sessions.config.cookie_session] = session['id']
+            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
             # print("session saved...")
-            if self._op_mode == 'first_run':
+            if self.operating_mode == 'first_run':
                 self._YomboAPI.save_system_login_key(login['login_key'])
                 self._YomboAPI.save_system_session(login['session'])
             return self.login_redirect(request, session)
@@ -914,6 +945,7 @@ class WebInterface(YomboLibrary):
     def login_redirect(self, request, session=None, location=None):
         if session is not None and 'login_redirect' in session:
             location = session['login_redirect']
+            session.delete('login_redirect')
         if location is None:
             location = "/?"
         # print("login_redirect: %s" % location)
@@ -946,7 +978,7 @@ class WebInterface(YomboLibrary):
             session['auth_time'] = 0
             session['yomboapi_session'] = ''
             session['yomboapi_login_key'] = ''
-            request.received_cookies[self.sessions.config.cookie_session] = session['id']
+            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
 
         if self.auth_pin_type() == 'pin':
             if submitted_pin == self.auth_pin:
@@ -993,13 +1025,14 @@ class WebInterface(YomboLibrary):
     @webapp.route('/static/', branch=True)
     @run_first()
     def static(self, request, session):
-        request.setHeader('Cache-Control', 'max-age=%s' % randint(300, 420))
+        request.responseHeaders.removeHeader('Expires')
+        request.setHeader('Cache-Control', 'max-age=%s' % randint(3600, 7200))
         return File(self._current_dir + "/lib/webinterface/static/dist")
 
     def display_pin_console(self):
         print("###########################################################")
         print("#                                                         #")
-        if self._op_mode != 'run':
+        if self.operating_mode != 'run':
             print("# The Yombo Gateway website is running in                 #")
             print("# configuration only mode.                                #")
             print("#                                                         #")

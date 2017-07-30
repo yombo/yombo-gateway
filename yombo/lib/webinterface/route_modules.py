@@ -136,11 +136,12 @@ def route_modules(webapp):
                                                      })
 
                     page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-                    webinterface.add_alert("Module configuratiuon updated. A restart is required to take affect.")
                     msg={
                         'header': 'Module Added',
                         'label': 'Module added successfully',
                         'description': '',
+                        'content': 'The module was added and will be installed on next reboot. You can also '\
+                        '<a href="/modules/server_index"><label>add another module</label></a>.'
                     }
                     return page.render(alerts=webinterface.get_alerts(), msg=msg)
                 else:

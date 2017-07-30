@@ -38,7 +38,7 @@ def route_gateways(webapp):
             page = page.render(alerts=webinterface.get_alerts(),
                                gateway=gateway,
                                gateways=webinterface._Gateways.get_gateways(),
-                               devices=webinterface._Devices.devices,
+                               # devices=webinterface._Devices.devices,
                                devicetypes=webinterface._DeviceTypes.device_types,
                                )
             return page

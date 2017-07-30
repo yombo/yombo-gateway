@@ -81,13 +81,14 @@
                             <table width="100%" class="table table-striped table-bordered table-hover">
                                 <thead>
                                     <tr>
-                                        <th>Time</th><th>Status</th><th>Message</th>
+                                        <th>Time</th><th>Status</th><th>Source Gateway</th><th>Message</th>
                                     </tr>
                                 </thead>
                                 <tbody>{% for history in command.history %}
                                      <tr>
                                         <td>{{ history[0]|epoch_to_human}}</td>
                                         <td>{{ history[1]}}</td>
+                                        <td>{{ history[3]}}</td>
                                         <td>{{ history[2]}}</td>
                                      </tr>{% endfor %}
                                 </tbody>

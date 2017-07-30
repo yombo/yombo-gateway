@@ -23,20 +23,20 @@
                             </div>
                     </div>
                     <div class="panel-body">
-                        <h2>Getway Configured</h2>
+                        <h2>Gateway Setup Complete</h2>
                         <p>The gateway has been configured and setup.</p>
                         <p></p>
                         <h2>Domain Name</h2>
                         <p>Associate a domain name with this gateway. This is like a dynamic DNS for this gateway and
                             allows you, and other systems, to find this gateway easier.
                         </p>
-                        <p>Current DNS FQDN: {{ fqdn }}  <br><strong>You must wait 30 days between changing domain names.</strong></p>
+                        <p>Current DNS FQDN: {{ fqdn }}</p>
 
                         <input type="hidden" name="dns_domain_id" />
                         <label>Domain prefix: </label>
                         <input type="text" name="dns_name" id="dns-name" autofocus="autofocus">
                         <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
-
+<br><strong>Choose carefully: </strong>You must wait 30 days between changing domain names.
                         <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
                           <thead class="thead-default">
                             <tr>
@@ -47,16 +47,28 @@
                           <tbody id="tBody"></tbody>
                             <tr rowspan="2"><td><strong>Search for domains first.</strong></td> </tr>
                         </table>
-
-                        </form>
-
                         </p>
                     </div>
                 </div>
             </div>
         </div>
     </form>
-
+    <div class="modal fade" id="dns_check_error_modal" role="dialog">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header panel-heading panel-danger">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Error</h4>
+                </div>
+                <div class="modal-body">
+                    <p> </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block body_bottom %}
@@ -102,22 +114,27 @@ function doSearch() {
                 $.each(resp, function (i, userData) {
                     var availField = "";
                     if (userData.available == false) {
-                        availField = '<button type="submit" class="btn btn-sm btn-dangle disabled" onclick="submitter(this)">Not Available</button>';
+                        availField = '<button type="button" class="btn btn-sm btn-dangle disabled">Not Available</button>';
                     } else {
                         availField = '<button type="submit" class="btn btn-sm btn-primary" onclick="submitter(this)">Available</button>';
                     }
 
                         trHTML +=
-                            '<tr id="' + userData.id + '"><td>'
-                            + "<strong>" + val + "</strong>." + userData.domain
-                            + '</td><td>'
+                            '<tr id="' + userData.id + '"><td width="10%">'
                             + availField
+                            + '</td><td>'
+                            + "<strong>" + val + "</strong>." + userData.domain
                             + '</td></tr>';
                 });
                 $('#tBody').append(trHTML);
             },
             error: function (req, status, err) {
+                var data = req.responseJSON;
                 console.log('something went wrong', status, err);
+                console.log(data);
+                var mymodal = $('#dns_check_error_modal');
+                mymodal.find('.modal-body').text(data['html_message']);
+                mymodal.modal('show');
             }
         });
 
