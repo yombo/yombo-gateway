@@ -234,9 +234,12 @@ class Devices(YomboLibrary):
         self.mqtt = None
 
     @inlineCallbacks
-    def _start_(self, **kwargs):
+    def _load_(self, **kwargs):
         yield self._load_devices_from_database()
         yield self._load_device_commands()
+
+    # @inlineCallbacks
+    def _start_(self, **kwags):
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
 

@@ -176,18 +176,14 @@ class DeviceTypes(YomboLibrary):
             'status', 'always_load', 'public']
         self.platforms = {}  # This is filled in lib.modules::do_import_modules
 
+    @inlineCallbacks
     def _load_(self, **kwargs):
         """
         Loads device types from the database and imports them.
         
         :return: 
         """
-        self.load_deferred = Deferred()
-        self._load_device_types_from_database()
-        return self.load_deferred
-
-    @inlineCallbacks
-    def _start_(self, **kwargs):
+        yield self._load_device_types_from_database()
         self.load_platforms(BASE_PLATFORMS)
         platforms = yield global_invoke_all('_device_platforms_', called_by=self)
         for component, item in platforms.items():
@@ -213,7 +209,6 @@ class DeviceTypes(YomboLibrary):
         logger.debug("device_types: {device_types}", device_types=device_types)
         for device_type in device_types:
             yield self.import_device_types(device_type)
-        self.load_deferred.callback(10)
 
     def load_platforms(self, platforms):
         """
