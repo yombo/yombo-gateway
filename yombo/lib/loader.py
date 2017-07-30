@@ -127,16 +127,16 @@ HARD_UNLOAD["Queue"] = {'operating_mode':'all'}
 
 RUN_PHASE = {
     'system_init': 0,
-    'libraries_import': 1,
-    'libraries_init': 2,
-    'modules_import': 3,
-    'libraries_load': 4,
-    'modules_init': 5,
-    'libraries_start': 6,
-    'modules_start': 7,
-    'modules_started': 8,
-    'libraries_started': 9,
-    'shutdown': 100,
+    'libraries_import': 100,
+    'libraries_init': 200,
+    'modules_import': 300,
+    'libraries_load': 400,
+    'modules_init': 500,
+    'libraries_start': 600,
+    'modules_start': 700,
+    'modules_started': 800,
+    'libraries_started': 900,
+    'shutdown': 1000,
 }
 
 class Loader(YomboLibrary, object):
@@ -160,7 +160,7 @@ class Loader(YomboLibrary, object):
 
     @property
     def run_phase(self):
-        return self._run_phase
+        return (self._run_phase, RUN_PHASE[self._run_phase])
 
     @operating_mode.setter
     def run_phase(self, val):
@@ -601,7 +601,7 @@ class Loader(YomboLibrary, object):
 
         # Put the component into various lists for mgmt
         if not isinstance(klass, Callable):
-            logger.warn("Unable to start class '{classname}', it's not callable.", classname=pyclassname)
+            logger.error("Unable to start class '{classname}', it's not callable.", classname=pyclassname)
             raise ImportError("Unable to start class '%s', it's not callable."  % pyclassname)
 
         try:
