@@ -32,7 +32,7 @@ from twisted.internet import reactor, threads
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
-from yombo.utils import random_string
+from yombo.utils import random_string, bytes_to_unicode
 
 from yombo.core.log import get_logger
 logger = get_logger('library.gpg')
@@ -51,8 +51,8 @@ class GPG(YomboLibrary):
         self.gpg = gnupg.GPG(gnupghome="usr/etc/gpg")
         self.sync_keyring_to_db()
 
-        self.gwid = self._Configs.get2("core", "gwid", None, False)
-        self.gwuuid = self._Configs.get2("core", "gwuuid", None, False)
+        self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
+        self.gwuuid = self._Configs.get2('core', 'gwuuid', None, False)
         self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
         self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
 
@@ -102,7 +102,7 @@ class GPG(YomboLibrary):
     #
     #     if section == 'core':
     #         if option == 'gwid':
-    #             self.gwid = value
+    #             self.gateway_id = value
     #         if option == 'gwuuid':
     #             self.gwuuid = value
 
@@ -303,7 +303,8 @@ class GPG(YomboLibrary):
                 'type' : record['type'],
                 'uids' : record['uids'],
             }
-            variables[record['fingerprint'].encode('utf-8')] = key
+            key = bytes_to_unicode(key)
+            variables[record['fingerprint']] = key
         return variables
 #[{'dummy': u'', 'keyid': u'CDAADDFAA405F78F', 'expires': u'1495090800', 'sigs': {u'Yombo Gateway (L2rwJHeKuRSUQoxQFOQP7RnB) <L2rwJHeKuRSUQoxQFOQP7RnB@yombo.net>': []}, 'subkeys': [], 'length': u'4096',
 #  'ownertrust': u'u', 'algo': u'1', 'fingerprint': u'F7ADD4CD09A0DC9CC5F63B5ACDAADDFAA405F78F', 'date': u'1463636545', 'trust': u'u', 'type': u'pub',
@@ -318,7 +319,7 @@ class GPG(YomboLibrary):
         Generates a new GPG key pair. Updates yombo.ini and marks it to be sent when gateway conencts to server
         again.
         """
-        if self.gwid is None or self.gwuuid is None:
+        if self.gateway_id is 'local' or self.gwuuid is None:
             self._key_generation_status[request_id] = 'failed-gateway not setup'
             return
         input_data = self.gpg.gen_key_input(
@@ -335,12 +336,12 @@ class GPG(YomboLibrary):
         newkey = yield self.gpg.gen_key(input_data)
         self._key_generation_status[request_id] = 'done'
 
-        print("newkey!!!!!! ====")
-        print(format(newkey))
-        print("request id =")
-        print(request_id)
+        # print("newkey!!!!!! ====")
+        # print(format(newkey))
+        # print("request id =")
+        # print(request_id)
         if newkey == '':
-            print("\n\rERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?\n\r")
+            logger.error("ERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?")
             raise YomboCritical("Error with python GPG interface.  Is it installed?")
 
         private_keys = self.gpg.list_keys(True)
@@ -354,8 +355,8 @@ class GPG(YomboLibrary):
         gpg_keys = yield self.gpg.list_keys(keyid)
         keys = self._format_list_keys(gpg_keys)
 
-        print("keys: %s" % type(keys))
-        print("keys: %s" % keys)
+        # print("keys: %s" % type(keys))
+        # print("keys: %s" % keys)
 
         data = keys[format(newkey)]
         data['publickey'] = asciiArmoredPublicKey
@@ -363,9 +364,6 @@ class GPG(YomboLibrary):
         data['have_private'] = 1
         yield self.local_db.insert_gpg_key(data)
 
-        # print "new generated key: %s" % data
-        #
-        # print "New keys (public and private) have been saved to key ring."
         returnValue({'keyid': keyid, 'keypublicascii': asciiArmoredPublicKey})
 
     def get_key(self, keyid):
