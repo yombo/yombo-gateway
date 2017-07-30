@@ -66,9 +66,9 @@ class FileReader:
         :type fileid: string
         :param callback: **Required.** A function to call with new content found in file.
         :type callback: pointer to function
-        :param makeexist: If true, will create an empty file if file doesn't
+        :param make_if_missing: If true, will create an empty file if file doesn't
             already exist.  Default: True
-        :type makeexist: bool
+        :type make_if_missing: bool
         :param frequency: How often, in seconds, to check for new content. Default: 1
         :type frequency: int
         """
@@ -85,25 +85,22 @@ class FileReader:
         self._owner_object = owner_object
 
         self.fileid = kwargs.get('fileid', self.filename)
-        self.makeexist = kwargs.get('makeexist', True)
+        self.make_if_missing = kwargs.get('make_if_missing', True)
         self.frequency = kwargs.get('frequency', 1)
         self._SQLDict = get_component('yombo.gateway.lib.sqldict')
 
     @inlineCallbacks
     def start(self):
         self.fileInfo = yield self._SQLDict.get('yombo.gateway.utils-filereader', 'fileInfo')
-#        self.fileInfo = {}
 
         if 'startLocation' not in self.fileInfo:
             self.fileInfo['startLocation'] = 0
         self.fp_in = None
-        self.filestartable = False
-        self.fileOpened = False
-        self.timer = None
+        self.watch_loop = None
 
         try:
             if not os.path.exists(self.filename):
-                if self.makeexist is True:  # if file doesn't exist
+                if self.make_if_missing is True:  # if file doesn't exist
                     open(self.filename, 'w').close()  # create it and then close.
                     self.fileInfo['startLocation'] = 0
                 else:
@@ -116,22 +113,20 @@ class FileReader:
                 
             self.fp_in = codecs.open(self.filename, encoding='utf-8')
             self.fp_in.seek(self.fileInfo['startLocation'])
-        except IOError as xxx_todo_changeme:
-            (errno, strerror) = xxx_todo_changeme.args
+        except IOError as e:
+            (errno, strerror) = e.args
             raise YomboFileError("Logreader could not open file for reading. Reason: %s" % strerror,
                                  104, '__init__', 'FileReader')
-#            self.fileOpened = None
-#            callLater(10, self.load)
         else:
-            self.timer = LoopingCall(self._watch)
-            self.timer.start(self.frequency)
+            self.watch_loop = LoopingCall(self._watch)
+            self.watch_loop.start(self.frequency)
 
     def close(self):
         """
         Call to close the file from being monitored.
         """
-        if self.timer is not None:
-            self.timer.stop()
+        if self.watch_loop is not None:
+            self.watch_loop.stop()
 
         if self.fp_in is not None:
             self.fp_in.close()
