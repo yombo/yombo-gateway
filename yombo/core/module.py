@@ -138,7 +138,7 @@ class YomboModule:
 
     def _is_my_device(self, device):
         devices = self._devices()
-        if device.device_id in devices:
+        if device.device_id in devices and device.gateway_id == self._Devices.gateway_id:
             return True
         else:
             return False
