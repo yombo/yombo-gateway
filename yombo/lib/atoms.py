@@ -455,8 +455,7 @@ class Atoms(YomboLibrary):
                                                 **{'called_by': self,
                                                    'key': key,
                                                    'value': values['value'],
-                                                   'value_type': values['value_type'],
-                                                   'value_human': values['value_human'],
+                                                   'value_full': values,
                                                    'gateway_id': gateway_id,
                                                    }
                                                 )

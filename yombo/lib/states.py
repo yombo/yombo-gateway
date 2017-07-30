@@ -444,7 +444,6 @@ class States(YomboLibrary, object):
             state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,
                                                                           'key': key,
                                                                           'value': value,
-                                                                          'value_full': self.__States[gateway_id][key],
                                                                           'gateway_id': gateway_id
                                                                           }
                                                     )
@@ -472,6 +471,7 @@ class States(YomboLibrary, object):
                                                     **{'called_by': self,
                                                        'key': key,
                                                        'value': value,
+                                                       'value_full': self.__States[gateway_id][key],
                                                        'gateway_id': gateway_id})
         except YomboHookStopProcessing:
             pass
@@ -542,9 +542,8 @@ class States(YomboLibrary, object):
                                     **{'called_by': self,
                                        'key': key,
                                        'value': values['value'],
-                                       'value_type': values['value_type'],
-                                       'value_human': values['value_human'],
-                                       'gateway_id': gateway_id
+                                       'value_full': self.__States[gateway_id][key],
+                                       'gateway_id': gateway_id,
                                        }
                                     )
         except YomboHookStopProcessing:
