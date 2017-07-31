@@ -109,15 +109,15 @@ class Sessions(object):
 
         if cookie_session in cookies:
             session_id = cookies[cookie_session]
-            logger.info("has_session found session_id in cookie: {session_id}", session_id=session_id)
+            logger.debug("has_session found session_id in cookie: {session_id}", session_id=session_id)
             if self.validate_session_id(session_id) is False:
                 raise YomboWarning("Invalid session id.")
             if session_id in self.active_sessions:
                 return True
             else:
-                logger.info("has_session is looking in database for session...")
+                logger.debug("has_session is looking in database for session...")
                 db_session = yield self._LocalDB.get_session(session_id)
-                logger.info("has_session found db_session: {db_session}", db_session=db_session)
+                logger.debug("has_session found db_session: {db_session}", db_session=db_session)
                 if db_session is None:
                     return False
                 # logger.debug("has_session - found in DB! {db_session}", db_session=db_session)
@@ -163,11 +163,11 @@ class Sessions(object):
         :param cookies: All the cookies that were sent in.
         :return:
         """
-        logger.info("load session: {request}", request=request)
+        logger.debug("load session: {request}", request=request)
         cookie_session = self.config.cookie_session
         cookies = request.received_cookies
         has_session = yield self.has_session(request)
-        logger.info("has session: {has_session}", has_session=has_session)
+        logger.debug("has session: {has_session}", has_session=has_session)
         if has_session is False:
             return False
         session_id = cookies[cookie_session]
