@@ -55,7 +55,7 @@ from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import save_file, read_file, global_invoke_modules, global_invoke_libraries, random_int
+from yombo.utils import save_file, read_file, global_invoke_modules, global_invoke_libraries, random_int, unicode_to_bytes
 from yombo.utils.dictobject import DictObject
 import collections
 
@@ -83,7 +83,7 @@ class SSLCerts(YomboLibrary):
         self.generate_csr_queue = self._Queue.new('library.sslcerts.generate_csr', self.generate_csr)
         self.hostname = gethostname()
 
-        self.gwid = self._Configs.get("core", "gwid")
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.fqdn = self._Configs.get2('dns', 'fqdn', None, False)
 
         self.recieved_message_for_unknown = ExpiringDict(100, 600)
@@ -127,11 +127,13 @@ class SSLCerts(YomboLibrary):
         Simply stop any loops, tell all the certs to save themselves to disk as a backup.
         :return:
         """
-        if self.check_if_certs_need_update_loop is not None and self.check_if_certs_need_update_loop.running:
-            self.check_if_certs_need_update_loop.stop()
+        if hasattr(self, 'check_if_certs_need_update_loop'):
+            if self.check_if_certs_need_update_loop is not None and self.check_if_certs_need_update_loop.running:
+                self.check_if_certs_need_update_loop.stop()
 
-        for sslname, cert in self.managed_certs.items():
-            cert.stop()
+        if hasattr(self, 'managed_certs'):
+            for sslname, cert in self.managed_certs.items():
+                cert.stop()
 
     def check_if_certs_need_update(self):
         """
@@ -306,7 +308,7 @@ class SSLCerts(YomboLibrary):
         else:
             kwargs['key_type'] = crypto.TYPE_DSA
 
-        gwid = "gw_%s" % self.gwid[0:10]
+        gwid = "gw_%s" % self.gateway_id[0:10]
         req = crypto.X509Req()
         req.get_subject().CN = kwargs['cn']
         req.get_subject().countryName = 'US'
@@ -322,7 +324,7 @@ class SSLCerts(YomboLibrary):
                 san_string.append("DNS: %s" % i)
             san_string = ", ".join(san_string)
 
-            x509_extensions = [crypto.X509Extension("subjectAltName", False, san_string)]
+            x509_extensions = [crypto.X509Extension("subjectAltName", False, unicode_to_bytes(san_string))]
             req.add_extensions(x509_extensions)
 
         key = yield threads.deferToThread(
@@ -355,7 +357,7 @@ class SSLCerts(YomboLibrary):
         own use.
         """
         req = crypto.X509()
-        gwid = "%s %s" % (self.gwid, self.hostname)
+        gwid = "%s %s" % (self.gateway_id, self.hostname)
         req.get_subject().CN = 'localhost'
         req.get_subject().countryName = 'US'
         req.get_subject().stateOrProvinceName = 'California'
@@ -924,7 +926,7 @@ class SSLCert(object):
         """
         self.clean_section('next')
 
-        logger.debug("generate_new_csr: {sslname}.  Submit: {submit}", sslname=self.sslname, submit=submit)
+        logger.warn("generate_new_csr: {sslname}.  Submit: {submit}", sslname=self.sslname, submit=submit)
         # End local functions.
         request = {
             'sslname': self.sslname,
