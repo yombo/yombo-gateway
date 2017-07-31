@@ -710,8 +710,6 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         Called by PikaProtocol when connected.
         :return:
         """
-        print("pika factory connected")
-
         self.AMQPProtocol.do_register_queues()
         self.AMQPProtocol.do_register_exchanges()
         self.AMQPProtocol.do_register_exchange_queue_bindings()
@@ -1053,7 +1051,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
         if correlation_info is not None:
             if correlation_info['callback'] is not None:
                 if isinstance(correlation_info['callback'], collections.Callable) is True:
-                    logger.warn("calling message callback, not incoming queue callback")
+                    logger.debug("calling message callback, not incoming queue callback")
                     already_calledback = True
                     messsage_callback = correlation_info['callback']
                     d = defer.maybeDeferred(messsage_callback, msg=msg, properties=props, deliver=deliver,
