@@ -208,7 +208,6 @@ class Devices(YomboLibrary):
         """
         Sets up basic attributes.
         """
-        self._AutomationLibrary = self._Loader.loadedLibraries['automation']
         self._VoiceCommandsLibrary = self._Loader.loadedLibraries['voicecmds']
         self.automation_startup_check = []
 
@@ -1087,7 +1086,7 @@ class Devices(YomboLibrary):
         :param new_status: New device state
         :type new_status: str
         """
-        self._AutomationLibrary.triggers_check('devices', device_id, new_status.machine_status)
+        self._Automation.triggers_check(['devices', device_id], new_status.machine_status)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -1144,12 +1143,14 @@ class Devices(YomboLibrary):
         :param kwargs: None
         :return:
         """
-        logger.debug("devices_add_trigger_callback")
+        keys = ['devices', rule['trigger']['source']['device_pointers'].device_id]
+        self._Automation.triggers_add(rule['rule_id'], keys)
         if 'run_on_start' in rule:
-            if rule['run_on_start'] is True and rule['trigger']['source']['device_pointers'].device_id not in self.automation_startup_check:
+            if rule['trigger']['source']['device_pointers'].device_id not in self.automation_startup_check:
                 self.automation_startup_check.append(rule['trigger']['source']['device_pointers'].device_id)
 
-        self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', rule['trigger']['source']['device_pointers'].device_id)
+        logger.error("devices_add_trigger_callback.automation_startup_check: %s = %s" %
+                     (rule['rule_id'], self.automation_startup_check))
 
     def devices_startup_trigger_callback(self):
         """
@@ -1158,10 +1159,15 @@ class Devices(YomboLibrary):
         :return:
         """
         logger.debug("devices_startup_trigger_callback: %s" % self.automation_startup_check)
-        for name in self.automation_startup_check:
-            if name in self.devices:
-                logger.debug("devices_startup_trigger_callback - name: %s" % name)
-                self.check_trigger(name, self.devices[name].status_all)
+        for device_id in self.automation_startup_check:
+            if device_id in self.devices:
+                self.check_trigger(device_id, self.devices[device_id].status_all)
+
+        #
+        # for name in self.automation_startup_check:
+        #     if name in self.devices:
+        #         logger.debug("devices_startup_trigger_callback - name: %s" % name)
+        #         self.check_trigger(name, self.devices[name].status_all)
 
     def devices_get_value_callback(self, rule, portion, **kwargs):
         """

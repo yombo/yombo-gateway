@@ -69,7 +69,8 @@ from twisted.internet.task import LoopingCall
 from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
-from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, random_string, random_int
+from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, random_string,\
+    random_int, get_nested_dict, set_nested_dict
 
 logger = get_logger("library.states")
 
@@ -206,7 +207,7 @@ class States(YomboLibrary, object):
         self.library_phase = 1
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.__States = {self.gateway_id: {}}
-        self.automation_startup_check = []
+        self.automation_startup_check = {}
         self.db_save_states_data = deque()
         self.db_save_states_loop = LoopingCall(self.db_save_states)
         self.db_save_states_loop.start(random_int(60, .10), False)  # clean the database every 6 hours.
@@ -246,15 +247,16 @@ class States(YomboLibrary, object):
         states = yield self._LocalDB.get_states()
 
         for state in states:
-            self.__States[self.gateway_id][state['name']] = {
-                'gateway_id': state['gateway_id'],
-                'value': state['value'],
-                'value_human': self.convert_to_human(state['value'], state['value_type']),
-                'value_type': state['value_type'],
-                'live': state['live'],
-                'created': state['created'],
-                'updated': state['updated'],
-            }
+            if state['name'] not in self.__States[self.gateway_id]:
+                self.__States[self.gateway_id][state['name']] = {
+                    'gateway_id': state['gateway_id'],
+                    'value': state['value'],
+                    'value_human': self.convert_to_human(state['value'], state['value_type']),
+                    'value_type': state['value_type'],
+                    'live': state['live'],
+                    'created': state['created'],
+                    'updated': state['updated'],
+                }
         self.init_deferred.callback(10)
 
     def clean_states_table(self):
@@ -480,7 +482,7 @@ class States(YomboLibrary, object):
         if gateway_id == self.gateway_id:
             self.db_save_states_data.append((key, self.__States[gateway_id][key]))
 
-        self.check_trigger(key, value, gateway_id)  # Check if any automation items need to fire!
+        self.check_trigger(gateway_id, key, value)  # Check if any automation items need to fire!
 
     @inlineCallbacks
     def db_save_states(self):
@@ -754,17 +756,17 @@ class States(YomboLibrary, object):
     # automation library!                                                                                        #
     #############################################################################################################
 
-    def check_trigger(self, key, value, gateway_id):
+    def check_trigger(self, gateway_id, name, value):
         """
         Called by the states.set function when a new value is set. It asks the automation library if this key is
         trigger, and if so, fire any rules.
 
         True - Rules fired, fale - no rules fired.
         """
-        # logger.info("check_trigger. {key} = {value}", key=key, value=value)
-        gateway_id_name = gateway_id + ":::" + key
+        logger.debug("check_trigger. {name} = {value}", name=name, value=value)
         if self.library_phase >= 2:
-            results = self._Automation.triggers_check('states', gateway_id_name, value)
+            logger.debug("check_trigger running... {name} = {value}", name=name, value=value)
+            results = self._Automation.triggers_check(['states', gateway_id, name], value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -811,17 +813,20 @@ class States(YomboLibrary, object):
         :param kwargs: None
         :return:
         """
+        if 'gateway_id' in rule['trigger']['source']:
+            gateway_id = rule['trigger']['source']['gateway_id']
+        else:
+            gateway_id = self.gateway_id
+        # if rule['run_on_start'] is True:
+
+        keys = ['states', gateway_id, rule['trigger']['source']['name']]
+        self._Automation.triggers_add(rule['rule_id'], keys)
         if 'run_on_start' in rule:
-            if 'gateway_id' in rule['trigger']['source']:
-                gateway_id = rule['trigger']['source']['gateway_id']
-            else:
-                gateway_id = self.gateway_id
-            gateway_id_name = gateway_id + ":::" + rule['trigger']['source']['name']
+            keys = [gateway_id, rule['trigger']['source']['name']]
+            set_nested_dict(self.automation_startup_check, keys, True)
 
-            if rule['run_on_start'] is True and gateway_id_name not in self.automation_startup_check:
-                self.automation_startup_check.append(gateway_id_name)
-
-        self._Automation.triggers_add(rule['rule_id'], 'states', gateway_id_name)
+        logger.debug("states_add_trigger_callback.automation_startup_check: {automation_startup_check}",
+                     automation_startup_check=self.automation_startup_check)
 
     def states_startup_trigger_callback(self):
         """
@@ -829,19 +834,21 @@ class States(YomboLibrary, object):
 
         :return:
         """
-        logger.info("states_startup_trigger_callback: %s" % self.automation_startup_check)
-        for check_name in self.automation_startup_check:
-            logger.info("check_name: %s" % check_name)
-            results = check_name.split(':::')
-            if len(results) == 1:
-                gateway_id = self.gateway_id
-                name = results[0]
-            else:
-                gateway_id = results[0]
-                name = results[1]
-            if gateway_id in self.__States:
-                if name in self.__States[gateway_id]:
-                    self.check_trigger(name, check_name, gateway_id)
+        # logger.debug("states_startup_trigger_callback: {automation_startup_check}",
+        #             automation_startup_check=self.automation_startup_check)
+        for gateway_id, keys in self.automation_startup_check.items():
+            # logger.debug("states_startup_trigger_callback keys: keys {keys}",
+            #             keys=keys)
+            for name, name_value in keys.items():
+                # logger.debug("states_startup_trigger_callback keys: name {name} = {value}",
+                #             name=name, value=name_value)
+                if name_value is True:
+                    try:
+                        value = self.__States[gateway_id][name]['value']
+                        # logger.debug("states_startup_trigger_callback state {name} = {value}", name=name, value=value)
+                        self.check_trigger(gateway_id, name, value)
+                    except Exception as e:
+                        pass
 
     def states_get_value_callback(self, rule, portion, **kwargs):
         """

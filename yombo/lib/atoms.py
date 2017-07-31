@@ -266,7 +266,7 @@ class Atoms(YomboLibrary):
         self.triggers = {}
         # self._Automation = self._Libraries['automation']
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
-        self.automation_startup_check = []
+        self.automation_startup_check = {}
 
     def _load_(self, **kwargs):
         self._loaded = True
@@ -427,7 +427,7 @@ class Atoms(YomboLibrary):
         except YomboHookStopProcessing:
             pass
 
-        self.check_trigger(key, value, gateway_id)  # Check if any automation items need to fire!
+        self.check_trigger(gateway_id, key, value)  # Check if any automation items need to fire!
 
     @inlineCallbacks
     def set_from_gateway_communications(self, key, values):
@@ -594,7 +594,7 @@ class Atoms(YomboLibrary):
     # automation library!                                                                                        #
     ##############################################################################################################
 
-    def check_trigger(self, key, value, gateway_id):
+    def check_trigger(self, gateway_id, name, value):
         """
         .. note::
 
@@ -606,8 +606,7 @@ class Atoms(YomboLibrary):
         True - Rules fired, fale - no rules fired.
         """
         if self._loaded:
-            gateway_id_name = gateway_id + ":::" + key
-            self._Automation.triggers_check('atoms', gateway_id_name, value)
+            results = self._Automation.triggers_check(['atoms', gateway_id, name], value)
 
     def _automation_source_list_(self, **kwargs):
         """
@@ -665,18 +664,19 @@ class Atoms(YomboLibrary):
         :param kwargs: None
         :return:
         """
+        if 'gateway_id' in rule['trigger']['source']:
+            gateway_id = rule['trigger']['source']['gateway_id']
+        else:
+            gateway_id = self.gateway_id
+        # if rule['run_on_start'] is True:
+
+        keys = ['atoms', gateway_id, rule['trigger']['source']['name']]
+        self._Automation.triggers_add(rule['rule_id'], keys)
         if 'run_on_start' in rule:
+            keys = [gateway_id, rule['trigger']['source']['name']]
+            yombo.utils.set_nested_dict(self.automation_startup_check, keys, True)
 
-            if 'gateway_id' in rule['trigger']['source']:
-                gateway_id = rule['trigger']['source']['gateway_id']
-            else:
-                gateway_id = self.gateway_id
-            gateway_id_name = gateway_id + ":::" + rule['source']['name']
-
-            if rule['run_on_start'] is True and gateway_id_name not in self.automation_startup_check:
-                self.automation_startup_check.append(gateway_id_name)
-
-        self._Automation.triggers_add(rule['rule_id'], 'atoms', gateway_id_name)
+        logger.error("atoms_add_trigger_callback.automation_startup_check: %s" % self.automation_startup_check)
 
     def atoms_startup_trigger_callback(self):
         """
@@ -684,17 +684,16 @@ class Atoms(YomboLibrary):
 
         :return:
         """
-        for check_name in self.automation_startup_check:
-            results = check_name.split(':::')
-            if len(results) == 1:
-                gateway_id = self.gateway_id
-                name = results[0]
-            else:
-                gateway_id = results[0]
-                name = results[1]
-            if gateway_id in self.__Atoms:
-                if name in self.__Atoms[gateway_id]:
-                    self.check_trigger(name, check_name, gateway_id)
+        logger.info("atoms_startup_trigger_callback: %s" % self.automation_startup_check)
+        for gateway_id, keys in self.automation_startup_check.items():
+            logger.info("gateway_id: %s" % gateway_id)
+            for name, name_value in keys.items():
+                if name_value is True:
+                    try:
+                        value = self.__Atoms[gateway_id][name]['value']
+                        self.check_trigger(gateway_id, name, value)
+                    except Exception as e:
+                        pass
 
     def atoms_get_value_callback(self, rule, portion, **kwargs):
         """

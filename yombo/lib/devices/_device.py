@@ -423,23 +423,6 @@ class Device(object):
                 'last_command': last_command,
                 'status_history': status_history,
                 }
-        # return {'device_id': str(self.device_id),
-        #         'device_type_id': str(self.device_type_id),
-        #         'machine_label': str(self.machine_label),
-        #         'label': str(self.label),
-        #         'description': str(self.description),
-        #         'statistic_label': str(self.statistic_label),
-        #         'statistic_lifetime': str(self.statistic_lifetime),
-        #         'pin_code': "********",
-        #         'pin_required': int(self.pin_required),
-        #         'pin_timeout': self.pin_timeout,
-        #         'voice_cmd': str(self.voice_cmd),
-        #         'voice_cmd_order': str(self.voice_cmd_order),
-        #         'created': int(self.created),
-        #         'updated': int(self.updated),
-        #         'last_command': last_command,
-        #         'status_history': status_history,
-        #         }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None,
                 inputs=None, not_after=None, **kwargs):
@@ -878,13 +861,13 @@ class Device(object):
         if 'machine_status' not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
 
+        machine_status = kwargs['machine_status']
         human_status = kwargs.get('human_status', machine_status)
         human_message = kwargs.get('human_message', human_status)
-        machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', {})
         uploaded = kwargs.get('uploaded', 0)
-        uploadable = kwargs.get('uploadable', 0)
-        set_time = time()
+        uploadable = kwargs.get('uploadable', 1)
+        set_time = kwargs.get('set_time', time())
 
         requested_by_default = {
             'user_id': 'Unknown',
@@ -907,7 +890,7 @@ class Device(object):
                 if 'component' not in requested_by:
                     requested_by['component'] = 'Unknown'
                 if 'gateway' not in requested_by:
-                    requested_by['gateway'] = 'Unknown'
+                    requested_by['gateway'] = self.gateway_id
         else:
             request_id = None
             requested_by = requested_by_default
@@ -968,6 +951,19 @@ class Device(object):
         if self._Parent.mqtt != None:
             self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
         return kwargs
+
+    def set_status_from_gateway_communications(self, new_status):
+        """
+        Used by the gateway library to directly inject a new device status.
+
+        :param new_status:
+        :return:
+        """
+        new_status = self.StatusTuple(*new_status)
+        self.status_history.appendleft(new_status)
+        if self.test_device is False:
+            self._Parent._LocalDB.save_device_status(**new_status._asdict())
+        self._Parent.check_trigger(self.device_id, new_status)
 
     def send_status(self, **kwargs):
         """
@@ -1077,15 +1073,6 @@ class Device(object):
             except YomboWarning as e:
                 return False
                 # raise KeyError('Searched for %s, but had problems: %s' % (command_requested, e))
-
-    # def update(self, record):
-    #
-    #     # check if device_type_id changes.
-    #     if 'device_type_id' in record:
-    #         if record['device_type_id'] != self.device_type_id:
-    #             self.device_type_id = record['device_type_id']
-    #
-    #     # global_invoke_all('_devices_update_', **{'id': record['id']})  # call hook "device_update" when adding a new device.
 
     def delete(self, called_by_parent=None):
         """
@@ -1317,6 +1304,14 @@ class Device(object):
             if value is not False:
                 features[feature] = value
         return features
+
+    @property
+    def device_type(self):
+        """
+        Returns the device type object for the device.
+        :return:
+        """
+        return self._Parent._DeviceTypes[self.device_type_id]
 
     def get_toggle_command(self):
         """

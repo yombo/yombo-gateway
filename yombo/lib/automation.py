@@ -47,9 +47,12 @@ Developers should review the following modules for examples of implementation:
 :license: LICENSE for details.
 """
 # Import python libraries
+from functools import reduce  # forward compatibility for Python 3
 import hjson
+import operator
 import msgpack
 from time import time
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet import reactor
@@ -179,13 +182,13 @@ class Automation(YomboLibrary):
         """
         # Collect a list of automation source platforms.
         automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
-        logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
+        # logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
         for component_name, item in automation_sources.items():
             for vals in item:
                 if 'platform' in vals:
                     vals['platform_source'] = component_name
                     self.sources[vals['platform']] = vals
-        logger.debug("sources: {sources}", sources=self.sources)
+        # logger.debug("sources: {sources}", sources=self.sources)
 
         # Collect a list of automation filter platforms.
         automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
@@ -243,7 +246,7 @@ class Automation(YomboLibrary):
         """
         for platform in self.sources:
             if 'startup_trigger_callback' in self.sources[platform]:
-                logger.debug("startup_trigger_callbacks: {platform}", platform=platform)
+                # logger.debug("startup_trigger_callbacks: {platform}", platform=platform)
                 startup_trigger_callback = self.sources[platform]['startup_trigger_callback']
                 startup_trigger_callback()
 
@@ -492,7 +495,7 @@ class Automation(YomboLibrary):
 
         return rule
 
-    def triggers_add(self, rule_id, platform_label, tracked_key):
+    def triggers_add(self, rule_id, tracked_keys):
         """
         A public function that modules and libraries can optionally use to trigger rules. Used to track simple
         dictionary type items or things that can be contained in a dictionary.
@@ -505,7 +508,7 @@ class Automation(YomboLibrary):
 
         In devices, states, atoms, etc, when 'add_trigger_callback' is called, they all register tracked_keys with
         this function. This function creates an entry in a dictionary and can store the values.  Now, whenever a
-        device status changes, states change, atoms change, they call triggers_check with the tracked_key and
+        device status changes, states change, atoms change, they call triggers_check with the tracked_keys and
         the value. If the value's changed, :py:meth:`triggers_check <triggers_check>` will fire any rules as required.
 
         *Usage**:
@@ -515,20 +518,26 @@ class Automation(YomboLibrary):
            self._AutomationLibrary.triggers_add(rule['rule_id'], 'devices', automation_device_id)
 
         :param rule_id: Rule ID to attach trigger to.
-        :param platform_label: Source platform being added: EG: devices, states, atoms
-        :param tracked_key: An immutable key to monitor. Usually a dictionary key.
+        :param tracked_keys: An immutable key to monitor. Usually a dictionary key.
         :return:
         """
-        if platform_label not in self.tracker:
-            self.tracker[platform_label] = {}
-        if tracked_key not in self.tracker[platform_label]:
-            self.tracker[platform_label][tracked_key] = []
+        if isinstance(tracked_keys, list) is False:
+            logger.error("Triggers_add expects a list of tracked_keys")
+            # raise YomboAutomationWarning("Tracked Keys must be a list of keys.")
+            return
 
-        self.tracker[platform_label][tracked_key].append({
+        try:
+            root = yombo.utils.get_nested_dict(self.tracker, tracked_keys)
+        except:
+            yombo.utils.set_nested_dict(self.tracker, tracked_keys, [])
+            root = yombo.utils.get_nested_dict(self.tracker, tracked_keys)
+
+        root.append({
             'rule_id': rule_id,
         })
+        # print("done adding tracker: %s" % self.tracker)
 
-    def triggers_check(self, platform_label, tracked_key, new_value):
+    def triggers_check(self, tracked_keys, new_value):
         """
         If modules or libraries used triggers_add() above, they should call this function with their platform
         label, the key, and the new value. This will fire fules if new_value 
@@ -538,23 +547,21 @@ class Automation(YomboLibrary):
 
         See the :py:mod:`devices <yombo.lib.devices>` library for best example and documentation.
 
-        :param platform_label: Platform label to track.
-        :param tracked_key: Defined key from triggers_add
+        :param tracked_keys: Defined key from triggers_add
         :param new_value: New value to track
         :return:
         """
-        # logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@triggers_check({platform_label}, {tracked_key}, {new_value})",
+        # logger.warn("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@triggers_check({platform_label}, {tracked_keys}, {new_value})",
         #             platform_label=platform_label,
-        #             tracked_key=tracked_key,
+        #             tracked_keys=tracked_keys,
         #             new_value=new_value)
-        logger.debug("trackers: {tracker}", tracker=self.tracker)
-        if platform_label not in self.tracker:
-            logger.debug("platform_label ({platform_label}) not in self.tracker. Skipping rule.", platform_label=platform_label)
+        # logger.debug("triggers_check tracked_keys: {tracked_keys}", tracked_keys=tracked_keys)
+        # logger.debug("triggers_check trackers: {tracker}", tracker=self.tracker)
+        try:
+            rule_ids = yombo.utils.get_nested_dict(self.tracker, tracked_keys)
+        except Exception as e:
             return False
-        if tracked_key not in self.tracker[platform_label]:
-            logger.debug("platform (%s), not tracking key: %s  " % (platform_label, tracked_key))
-            return False
-        rule_ids = self.tracker[platform_label][tracked_key]
+
         if len(rule_ids) == 0:
             logger.warn("There should be rules, but found none!")
             return False

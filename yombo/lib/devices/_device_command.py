@@ -87,7 +87,6 @@ class Device_Command(object):
         self.source = data.get('_source', None)
         self.started = data.get('started', False)
 
-        print("a new device command....")
         if self.source == 'database':
             self.dirty = False
             self.in_db = True
@@ -101,12 +100,10 @@ class Device_Command(object):
             self.in_db = False
 
         if self.device.gateway_id == self.local_gateway_id:
-            print("I should start....")
+            # print("I should start....")
             self.started = False
             start = True
 
-        print("checking if should start.... local gw: %s" % self.local_gateway_id)
-        print("checking if should start.... device gw: %s" % self.device.gateway_id)
         if start is None or start is True:
             reactor.callLater(0.001, self.start)
 
@@ -145,7 +142,7 @@ class Device_Command(object):
     def start(self):
         if self.started is True:
             return
-        print("starting command!!!!!!!!!!!??!?!?!?!!?!?!?!?!?!?!? %s - %s - %s" % (self.request_id, self.device.label, self.command.label))
+        # print("starting command!!!!!!!!!!!??!?!?!?!!?!?!?!?!?!?!? %s - %s - %s" % (self.request_id, self.device.label, self.command.label))
         self.started = True
         if self.source == 'database' and self.status == 'sent':
             logger.debug(
