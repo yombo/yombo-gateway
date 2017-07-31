@@ -26,8 +26,8 @@ from time import time
 import traceback
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
-from twisted.internet import defer, reactor
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -617,17 +617,13 @@ class AmqpConfigHandler(YomboLibrary):
         """
         # logger.info("properties: {properties}", properties=properties)
         # logger.info("headers: {headers}", headers=properties.headers)
-        #
-        # config_item = properties.headers['config_item']
 
         if properties.headers['config_item'] not in self.config_items:
             raise YomboWarning("Configuration item '%s' not configured." % properties.headers['config_item'])
-            #                        print "process config: config_item: %s, msg: %s" % (properties.headers['config_item'],msg)
         self.__process_queue[random_string(length=10)] = {
             'msg': bytes_to_unicode(msg),
             'headers': properties.headers,
             }
-        # print "got type: %s" % properties.headers['config_item']
         self.__pending_updates['get_%s' % properties.headers['config_item']]['status'] = 'received'
 
         self.process_config_queue();
@@ -732,19 +728,13 @@ class AmqpConfigHandler(YomboLibrary):
         self.processing = False
 
     def field_remap(self, data, config_data):
-        # print "field remap"
-        # print "field remap - config_data =%s" % config_data
-        # print "field remap - data =%s" % data
         new_data = {}
-        # print "remap data: %s" % data
         table_meta = self._LocalDB.db_model[config_data['table']]
-        # print "tablemeta: %s" % table_meta
         key = None
         value = None
         try:
             for key, value in data.items(): # we must re-map AMQP names to local names.  Removes ones without a DB column too.
                 if key in config_data['map']:
-                    # print "field remap - key = %s (%s)" % (key, table_meta[config_data['map'][key]]['type'])
                     # Convert ints and floats.
                     if value is None:
                         pass
@@ -769,7 +759,6 @@ class AmqpConfigHandler(YomboLibrary):
             return new_data
         except Exception as e:
             print("error in field remap.  Last key: %s" % key)
-            # print "table info for key: %s" % table_meta[config_data['map'][key]]
             print("input value: %s" % value)
             print("field remap - config_data =%s" % config_data)
             print("field remap - data =%s" % data)
@@ -871,10 +860,35 @@ class AmqpConfigHandler(YomboLibrary):
                 else:
                     records = yield self._LocalDB.get_dbitem_by_id(config_data['dbclass'], filtered_data['id'])
 
+                # handle any nested items here.
+                if 'device_types' in data:
+                    if len(data['device_types']):
+                        newMsg = msg.copy()
+                        newMsg['data'] = data['device_types']
+                        yield self.process_config(newMsg, 'module_device_type')
+
+                if 'variable_groups' in data:
+                    if len(data['variable_groups']):
+                        newMsg = msg.copy()
+                        newMsg['data'] = data['variable_groups']
+                        yield self.process_config(newMsg, 'variable_groups')
+
+                if 'variable_fields' in data:
+                    if len(data['variable_fields']):
+                        newMsg = msg.copy()
+                        newMsg['data'] = data['variable_fields']
+                        yield self.process_config(newMsg, 'variable_fields')
+
+                if 'variable_data' in data:
+                    if len(data['variable_data']):
+                        newMsg = msg.copy()
+                        newMsg['data'] = data['variable_data']
+                        yield self.process_config(newMsg, 'variable_data')
+
                 # If a new record
                 # print("if filtered_data['id'] (%s) not in self.db_existing_data[current_table] (%s) == 0:
                 if filtered_data['id'] not in self.db_existing_data[current_table]:
-                    if 'status' in data and data['status'] == 2: # we don't add deleted items...
+                    if 'status' in filtered_data and filtered_data['status'] == 2: # we don't add deleted items...
                         if config_data['purgeable']:
                             self.item_purged(config_item, filtered_data['id'])
                             continue
@@ -894,6 +908,10 @@ class AmqpConfigHandler(YomboLibrary):
 
                 # update records
                 else:
+                    # if config_item == 'gateway_modules':
+                    #     print("new data: %s" % filtered_data)
+                    #     print("old data: %s" % self.db_existing_data[current_table][filtered_data['id']])
+                    #     print("filtered_data['updated']: %s" % filtered_data['updated'])
                     if 'updated' in filtered_data:
                         # Only update if records says it's newer...
                         if filtered_data['updated'] == self.db_existing_data[current_table][filtered_data['id']]['updated']:
@@ -919,31 +937,6 @@ class AmqpConfigHandler(YomboLibrary):
                         klass = getattr(library, config_data['functions']['added'])
                         klass(filtered_data, True)
 
-                # handle any nested items here.
-                if 'device_types' in filtered_data:
-                    # print "device types: %s" % data['device_types']
-                    if len(data['device_types']):
-                        newMsg = msg.copy()
-                        newMsg['data'] = data['device_types']
-                        yield self.process_config(newMsg, 'module_device_type')
-
-                if 'variable_groups' in data:
-                    if len(data['variable_groups']):
-                        newMsg = msg.copy()
-                        newMsg['data'] = data['variable_groups']
-                        yield self.process_config(newMsg, 'variable_groups')
-
-                if 'variable_fields' in data:
-                    if len(data['variable_fields']):
-                        newMsg = msg.copy()
-                        newMsg['data'] = data['variable_fields']
-                        yield self.process_config(newMsg, 'variable_fields')
-
-                if 'variable_data' in data:
-                    if len(data['variable_data']):
-                        newMsg = msg.copy()
-                        newMsg['data'] = data['variable_data']
-                        yield self.process_config(newMsg, 'variable_data')
             # print("calling insertmany for config_data %s" % to_save)
             # if len(to_save) > 0:
             #     yield self._LocalDB.insert_many(current_table, to_save)
@@ -1025,7 +1018,6 @@ class AmqpConfigHandler(YomboLibrary):
             }
             request = self.generate_config_request(headers, body)
 
-#            print request
             self.parent.publish(**request)
             self._append_full_download_queue(item)
 
@@ -1145,7 +1137,6 @@ class AmqpConfigHandler(YomboLibrary):
         count_pending = 0
         currently_processing = ''
         display_waiting_on = []
-        # print self.__pending_updates
         for key in list(self.__pending_updates):
             count_pending += 1
             logger.debug("Config: {config}, Status: {status}", config=key,  status=self.__pending_updates[key]['status'])
