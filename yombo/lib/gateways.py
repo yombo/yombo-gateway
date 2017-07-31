@@ -42,6 +42,7 @@ class Gateways(YomboLibrary):
     Manages information about gateways.
     """
     library_phase = 0
+    ok_to_send_updates = False
 
     def __contains__(self, gateway_requested):
         """
@@ -153,6 +154,7 @@ class Gateways(YomboLibrary):
         Load() stage.
         """
         self.library_phase = 1
+        self.ok_to_send_updates = False
         self.mqtt = None
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.is_master = self._Configs.get('core', 'is_master', True, False)
@@ -197,6 +199,7 @@ class Gateways(YomboLibrary):
             return
         self.publish_data("all", "lib/gateways/online", "")
         self.send_all_info()
+        self.ok_to_send_updates = True
         # self.test_send()
 
     def _stop_(self, **kwargs):
@@ -486,7 +489,7 @@ class Gateways(YomboLibrary):
                         self._States.set_from_gateway_communications(opt1, message['payload'])
                 elif component_name == 'gateways':
                     if opt1 == 'online':
-                        print("setting gw %s as online" % source_gw_id)
+                        # print("setting gw %s as online" % source_gw_id)
                         self.gateways[source_gw_id].com_status = 'online'
                         reactor.callLater(random_int(2, .8), self.send_all_info, source_gw_id)
                     elif opt1 == 'offline':
@@ -503,14 +506,14 @@ class Gateways(YomboLibrary):
         :param message:
         :return:
         """
-        print("got device_commands")
+        # print("got device_commands")
         payload = message['payload']
 
         def do_device_command(self, device_command):
             device = self._Devices.get(device_command['device_id'])
-            print("do_device_command")
+            # print("do_device_command")
             if device.gateway_id != self.gateway_id and self.is_master is not True:  # if we are not a master, we don't care!
-                print("do_device_command..skipping due to not local gateway and not a master: %s" % self.is_master)
+                # print("do_device_command..skipping due to not local gateway and not a master: %s" % self.is_master)
                 # print("dropping device command..  dest gw: %s" % device_command['gateway_id'])
                 # print("dropping device command..  self.gateway_id: %s" % self.gateway_id)
                 return
@@ -548,11 +551,15 @@ class Gateways(YomboLibrary):
         :param message:
         :return:
         """
-        print("bbb: %s" % message)
         payload = message['payload']
         payload['status_source'] = 'gateway_coms'
 
-        # self._Devices.set_device_status()
+        try:
+            device = self._Devices[payload['device_id']]
+        except Exception:
+            logger.warn("Local gateway doesn't have a local copy of the device. Perhaps reboot this gateway.")
+            return
+        device.set_status_from_gateway_communications(payload['status'])
 
     def _atoms_set_(self, **kwargs):
         """
@@ -561,7 +568,7 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.library_phase < 4 or self._Loader.operating_mode != 'run':
+        if self.ok_to_send_updates is False:
             return
 
         gateway_id = kwargs['gateway_id']
@@ -578,7 +585,7 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.library_phase < 4 or self._Loader.operating_mode != 'run':
+        if self.ok_to_send_updates is False:
             return
 
         device_command = kwargs['device_command'].dump()
@@ -591,7 +598,7 @@ class Gateways(YomboLibrary):
         }
 
         topic = "lib/device_commands/" + device_command['request_id']
-        print("sending _device_command_: %s -> %s" % (topic, message))
+        # print("sending _device_command_: %s -> %s" % (topic, message))
         self.publish_data('all', topic, message)
 
     def _device_command_status_(self, **kwargs):
@@ -602,7 +609,7 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.library_phase < 4 or self._Loader.operating_mode != 'run':
+        if self.ok_to_send_updates is False:
             return
 
         device_command = kwargs['device_command']
@@ -626,12 +633,12 @@ class Gateways(YomboLibrary):
         :return:
         """
         # print("_device_status_: %s" % kwargs['command'])
-        if self.library_phase < 4 or self._Loader.operating_mode != 'run':
+        if self.ok_to_send_updates is False:
             return
         device = kwargs['device']
         device_id = device.device_id
 
-        print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
+        # print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
         if self.gateway_id != device.gateway_id:
             return
 
@@ -644,14 +651,14 @@ class Gateways(YomboLibrary):
         }
 
         command = kwargs['command']
-        print("device_status: command: %s" % command)
+        # print("device_status: command: %s" % command)
         if command is not None:
             message['command_id'] = command.command_id
         else:
             message['command_id'] = None
 
         topic = "lib/device_status/" + device_id
-        print("sending _device_status_: %s -> %s" % (topic, message))
+        # print("sending _device_status_: %s -> %s" % (topic, message))
         self.publish_data('all', topic, message)
 
     def _states_set_(self, **kwargs):
@@ -661,7 +668,7 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.library_phase < 4 or self._Loader.operating_mode != 'run':
+        if self.ok_to_send_updates is False:
             return
 
         gateway_id = kwargs['gateway_id']
@@ -767,7 +774,6 @@ class Gateways(YomboLibrary):
 
     def get_mqtt_passwords(self):
         passwords = {}
-        print("gateways: %s" % self.gateways)
         for gateway_id, gateway in self.gateways.items():
             if gateway.mqtt_auth is not None and gateway.mqtt_auth_next is not None:
                 passwords[gateway_id] = {
