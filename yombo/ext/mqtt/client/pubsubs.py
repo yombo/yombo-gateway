@@ -147,7 +147,6 @@ class MQTTProtocol(MQTTBaseProtocol):
         # a callback  when CONNACK packet is received
         self.onMqttConnectionMade = None  
       
-       
     # -----------------------------
     # IMQTTPublisher Implementation
     # -----------------------------

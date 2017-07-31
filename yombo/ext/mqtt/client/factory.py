@@ -41,26 +41,29 @@ from twisted.internet.protocol import ReconnectingClientFactory
 # Own modules
 # -----------
 
-from ..      import __version__
+from .. import __version__
 from ..error import ProfileValueError
 
 # Yombo Items
 from yombo.core.log import get_logger
-log = get_logger('ext.mqtt.factory')
+logger = get_logger('ext.mqtt.factory')
+
 
 class MQTTFactory(ReconnectingClientFactory):
 
-
     SUBSCRIBER = 0x1
-    PUBLISHER  = 0x2
-
+    PUBLISHER = 0x2
 
     def __init__(self, profile):
         self.profile  = profile
-        self.factor   = 2
-        self.maxDelay = 2*3600
+
+        self.initialDelay = 0.7  # these settings copied from yombo amqp
+        self.jitter = 0.2
+        self.factor = 1.82503912
+        self.maxDelay = 25 # this puts retrys around 17-26 seconds
+
         # Packet Id generator
-        self.id       = 0
+        self.id = 0
         self.queuePublishTx    = {} # PUBLISH messages waiting before being transmitted
         self.windowPublish     = {} # PUBLISH messages window waiting for PUBREC/PUBACK
         self.windowPubRelease  = {} # PUBREL  messages (qos=2) window waiting for PUBCOMP (publisher)
@@ -68,8 +71,10 @@ class MQTTFactory(ReconnectingClientFactory):
         self.windowSubscribe   = {} # SUBSCRIBE messages window, waiting fr SUBACK
         self.windowUnsubscribe = {} # UNSUBSCRIBE messages window, waiting fr UNSUBACK
 
-        log.debug("MQTT Client library version {version}", version=__version__)
-    
+        # Various queues
+        self.send_queue = deque()  # queue messages up if we are disconnected.
+
+        # logger.debug("MQTT Client library version {version}", version=__version__)
 
     def buildProtocol(self, addr):
         if   self.profile == self.SUBSCRIBER:
@@ -79,17 +84,17 @@ class MQTTFactory(ReconnectingClientFactory):
         elif self.profile == (self.SUBSCRIBER | self.PUBLISHER):
             from yombo.ext.mqtt.client.pubsubs import MQTTProtocol
         else:
-            raise ProfileValueError("profile value not supported" , self.profile)
+            raise ProfileValueError("profile value not supported", self.profile)
         
         v = self.queuePublishTx.get(addr, deque())
         self.queuePublishTx[addr] = v
-        v = self.windowPublish.get(addr, dict() )
+        v = self.windowPublish.get(addr, dict())
         self.windowPublish[addr] = v
-        v = self.windowPubRelease.get(addr, dict() )
+        v = self.windowPubRelease.get(addr, dict())
         self.windowPubRelease[addr] = v
         v = self.windowPubRx.get(addr, dict())
         self.windowPubRx[addr] = v
-        v = self.windowSubscribe.get(addr, dict() )
+        v = self.windowSubscribe.get(addr, dict())
         self.windowSubscribe[addr] = v
         v = self.windowUnsubscribe.get(addr, dict())
         self.windowUnsubscribe[addr] = v
@@ -99,18 +104,15 @@ class MQTTFactory(ReconnectingClientFactory):
         self.protocol = MQTTProtocol(self, addr)
         return self.protocol
 
-
     def clientConnectionLost(self, connector, reason):
         if reason.type.__doc__ != "Connection was closed cleanly":
-            log.warn('Lost connection. Reason {reason!r}:', reason=reason)
+            logger.debug('Lost connection. Reason {reason!r}:', reason=reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
-
     def clientConnectionFailed(self, connector, reason):
-        log.warn('Connection failed. Reason {reason!r}:', reason=reason)
+        logger.debug('Connection failed. Reason {reason!r}:', reason=reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector,
                                                          reason)
-
     # -------------
     # Helper methods
     # --------------
