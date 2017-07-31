@@ -129,7 +129,6 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         session.touch()
                         request.auth_id = session['auth_id']
                         try:
-                            print("abnout to call a function: %s" % f)
                             results = yield call(f, webinterface, request, session, *a, **kw)
                             return results
                         except Exception as e: # catch anything here...so can display details.

@@ -43,7 +43,6 @@ class Input_Type(object):
         self._Parent = parent
         self.input_type_id = input_type['id']
         self.machine_label = input_type['machine_label']
-        self.updated_srv = None
 
         # below are configure in update_attributes()
         self.category_id = None

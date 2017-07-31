@@ -26,7 +26,7 @@ from yombo.core.log import get_logger
 from yombo.utils import is_true_false
 import collections
 
-logger = get_logger("library.automationhelper")
+logger = get_logger("modules.automationhelper")
 
 # A list of possible operations that can be used in "basic_values" filters.
 ops = {
@@ -205,13 +205,13 @@ class AutomationHelpers(YomboModule):
         """
         filter_value = portion['filter']['value']
 
-        logger.debug("basic_values_run_filter_callback rule name: {name}", name=rule['name'])
-        logger.info("Checking new = filter: {new_value} = {filter_value}",
-                    new_value=new_value,
-                    filter_value=filter_value)
-        logger.info("Checking as bools: {new_value} = {filter_value}",
-                    new_value=is_true_false(new_value),
-                    filter_value=is_true_false(filter_value))
+        # logger.debug("basic_values_run_filter_callback rule name: {name}", name=rule['name'])
+        # logger.debug("Checking new = filter: {new_value} = {filter_value}",
+        #             new_value=new_value,
+        #             filter_value=filter_value)
+        # logger.debug("Checking as bools: {new_value} = {filter_value}",
+        #             new_value=is_true_false(new_value),
+        #             filter_value=is_true_false(filter_value))
 
         if 'operator' in portion['filter']:
             op_func = ops[portion['filter']['operator']]

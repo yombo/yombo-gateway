@@ -412,6 +412,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):
+        print("add_device in lcoaldb: %s" % kwargs)
         device = Device()
         device.id = data['id']
         device.device_type_id = data['device_type_id']
