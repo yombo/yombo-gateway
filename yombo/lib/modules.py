@@ -200,7 +200,7 @@ class Modules(YomboLibrary):
         """
         Init doesn't do much. Just setup a few variables. Things really happen in start.
         """
-        self.gwid = self._Configs.get("core", "gwid")
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self._invoke_list_cache = {}  # Store a list of hooks that exist or not. A cache.
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
         self.hooks_called = MaxDict(200, {})
@@ -941,7 +941,7 @@ class Modules(YomboLibrary):
             'status': 1,
         }
 
-        module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gwid, api_data)
+        module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
         # print("add module results: %s" % module_results)
 
         if module_results['code']  > 299:
@@ -966,7 +966,7 @@ class Modules(YomboLibrary):
                     if data_id.startswith('new_'):
                         # print("data_id starts with new...")
                         post_data = {
-                            'gateway_id': self.gwid,
+                            'gateway_id': self.gateway_id,
                             'field_id': field_id,
                             'relation_id': data['module_id'],
                             'relation_type': 'module',
@@ -1026,7 +1026,7 @@ class Modules(YomboLibrary):
             'status': data['status'],
         }
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id), api_data)
         # print("module edit results: %s" % module_results)
 
         if module_results['code']  > 299:
@@ -1057,7 +1057,7 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to remove.", 300, 'disable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
+        module_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
         # print("delete module results: %s" % module_results)
 
         if module_results['code']  > 299:
@@ -1098,7 +1098,7 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id), api_data)
         # print("enable module results: %s" % module_results)
 
         if module_results['code']  > 299:
@@ -1136,7 +1136,7 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id), api_data)
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id), api_data)
         # print("disable module results: %s" % module_results)
 
         if module_results['code']  > 299:
@@ -1385,7 +1385,7 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gwid, module_id))
+        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
         # print("disable module results: %s" % module_results)
 
         if module_results['code']  > 299:
