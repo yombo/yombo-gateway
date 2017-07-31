@@ -565,13 +565,13 @@ class WebInterface(YomboLibrary):
                         break
                     except Exception as e:
                         port_attempts += 1
-                if port_attempts < 100:
+                if port_attempts >= 100:
+                    logger.warn("Unable to start web server, no available port could be found. Tried: {starting} - {ending}",
+                                starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
+                elif port_attempts > 0:
                     self._Configs.set('webinterface', 'nonsecure_port', self.wi_port_nonsecure()+port_attempts)
                     logger.warn(
                         "Web interface is on a new port: {new_port}", new_port=self.wi_port_nonsecure()+port_attempts)
-                elif port_attempts >= 100:
-                    logger.warn("Unable to start web server, no available port could be found. Tried: {starting} - {ending}",
-                                starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
 
         if self.web_server_ssl_started is False:
             if self.wi_port_secure() == 0:
@@ -600,13 +600,13 @@ class WebInterface(YomboLibrary):
                         break
                     except Exception as e:
                         port_attempts += 1
-                if port_attempts < 100:
-                    self._Configs.set('webinterface', 'secure_port', self.wi_port_secure()+port_attempts)
-                    logger.warn(
-                        "Web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
-                elif port_attempts >= 100:
+                if port_attempts >= 100:
                     logger.warn("Unable to start secure web server, no available port could be found. Tried: {starting} - {ending}",
                                 starting=self.wi_port_secure(), ending=self.wi_port_secure()+port_attempts)
+                elif port_attempts > 0:
+                    self._Configs.set('webinterface', 'secure_port', self.wi_port_secure()+port_attempts)
+                    logger.warn(
+                        "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
 
         logger.debug("done starting web servers")
         self.already_start_web_servers = False
