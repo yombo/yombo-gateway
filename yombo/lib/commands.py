@@ -550,7 +550,6 @@ class Command:
         self.command_id = command['id']
         self.cmd = command['machine_label']
         self.machine_label = self.cmd
-        self.updated_srv = None
 
         # the below are setup during update_attributes()
         self.label = None
