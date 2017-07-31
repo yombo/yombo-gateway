@@ -49,6 +49,38 @@ logger = get_logger('utils.__init__')
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 
+def get_nested_dict(data_dict, map_list):
+    """
+    Get a dictionary value using keys as a list.
+    From: https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
+
+    :param dic:
+    :param map_list:
+    :return:
+    """
+    for k in map_list: data_dict = data_dict[k]
+    return data_dict
+    # return reduce(operator.getitem, dic, keys)
+
+def set_nested_dict(dic, keys, value):
+    """
+    For a given dic(t) and keys, set a value.
+    From:https://stackoverflow.com/questions/14692690/access-nested-dictionary-items-via-a-list-of-keys
+
+    >>> d = {}
+    >>> set_nested_dict(d, ['computer', 'folder', 'file'], 'yombo.txt')
+    >>> d
+    {'computer': {'folder': {'file': 'yombo.txt'}}}
+
+    :param dic:
+    :param keys:
+    :param value:
+    :return:
+    """
+    for key in keys[:-1]:
+        dic = dic.setdefault(key, {})
+    dic[keys[-1]] = value
+
 def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     """
     Get the attributes of an instance and return a dictionary.
