@@ -260,7 +260,6 @@ class InteractionBase(object):
         @return: A C{Deferred}.
         """
         q = "DELETE FROM %s WHERE id IN (%s)" % (tablename, ", ".join(ids))
-        print("delete many: %s" % q)
         return self.executeOperation(q)
 
 
