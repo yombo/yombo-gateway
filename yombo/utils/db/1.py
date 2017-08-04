@@ -460,7 +460,7 @@ def create_table_nodes(Registry, **kwargs):
         `weight`         INTEGER NOT NULL,
         `label`          TEXT,
         `machine_label`  TEXT,
-        `gw_always_load` INTEGER NOT NULL,
+        `always_load`    INTEGER NOT NULL,
         `destination`    TEXT NOT NULL,
         `data`           BLOB,
         `data_content_type` TEXT NOT NULL,
