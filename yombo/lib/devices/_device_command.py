@@ -81,6 +81,7 @@ class Device_Command(object):
         self.finished_time = data.get('finished_time', None)  # when the command is finished and end-point has changed state
         self.not_before_time = data.get('not_before_time', None)
         self.not_after_time = data.get('not_after_time', None)
+        self.pin = data.get('pin', None)
         self.call_later = None
         self.created_time = data.get('created_time', time())
         self.dirty = is_true_false(data.get('dirty', True))
