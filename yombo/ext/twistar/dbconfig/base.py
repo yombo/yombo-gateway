@@ -259,7 +259,7 @@ class InteractionBase(object):
         @param ids: Id's to delete
         @return: A C{Deferred}.
         """
-        q = "DELETE FROM %s WHERE id IN (%s)" % (tablename, ", ".join(ids))
+        q = "DELETE FROM %s WHERE id IN ('%s')" % (tablename, "', '".join(ids))
         return self.executeOperation(q)
 
 
