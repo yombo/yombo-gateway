@@ -828,104 +828,108 @@ class LocalDB(YomboLibrary):
     #############################
     ###    Nodes            #####
     #############################
+
+    def node_decode_data(self, node):
+        if node['data_content_type'] == 'json':
+            try:
+                return json.loads(node['data'])
+            except:
+                pass
+        elif node['data_content_type'] == 'msgpack_base85':
+            try:
+                return msgpack.loads(base64.b85decode(node['data']))
+            except:
+                pass
+        return node['data']
+
     @inlineCallbacks
     def get_nodes(self):
         records = yield self.dbconfig.select('nodes')
         for record in records:
-            # attempt to decode the data..
-            if record.data_content_type == 'json':
-                try:
-                    record.data = json.loads(record.data)
-                except:
-                    pass
-            elif record.data_content_type == 'msgpack_base85':
-                try:
-                    record.data = msgpack.loads(base64.b85decode(record.data))
-                except:
-                    pass
+            record['data'] = self.node_decode_data(record)
         return records
 
     @inlineCallbacks
     def get_node(self, node_id):
-        record = yield Node.find(where=['id = ?', node_id], limit=1)
-        record.node_id = record.id
-        del record.id
+        record = yield Node.select(where=['id = ?', node_id], limit=1)
+        record['node_id'] = record['id']
+        del record['id']
         # attempt to decode the data..
-        if record.data_content_type == 'json':
-            try:
-                record.data = json.loads(record.data)
-            except:
-                pass
-        elif record.data_content_type == 'msgpack_base64':
-            try:
-                record.data = msgpack.loads(base64.b64decode(record.data))
-            except:
-                pass
+        record['data'] = self.node_decode_data(record)
         return record
-
-    @inlineCallbacks
-    def get_node_siblings(self, node):
-        records = yield Node.find(where=['parent_id = ? and node_type = ?', node.parent_id, node.node_type])
-        for record in records:
-            # attempt to decode the data..
-            if record.data_content_type == 'json':
-                try:
-                    record.data = json.loads(record.data)
-                except:
-                    pass
-            elif record.data_content_type == 'msgpack_base64':
-                try:
-                    record.data = msgpack.loads(base64.b64decode(record.data))
-                except:
-                    pass
-        return records
-
-    @inlineCallbacks
-    def get_node_children(self, node):
-        records = yield Node.find(where=['parent_id = ? and node_type = ?', node.id, node.node_type])
-        for record in records:
-            # attempt to decode the data..
-            if record.data_content_type == 'json':
-                try:
-                    record.data = json.loads(record.data)
-                except:
-                    pass
-            elif record.data_content_type == 'msgpack_base64':
-                try:
-                    record.data = msgpack.loads(base64.b64decode(record.data))
-                except:
-                    pass
-        return records
-
-    @inlineCallbacks
-    def set_node_status(self, node_id, status=1):
-        results = yield self.dbconfig.update('nodes', {'status': status},
-                                             where=['id = ?', node_id])
-
-    # @inlineCallbacks
-    # def save_new_node(self, node_id, **kwargs):
-    #     set_time = kwargs.get('set_time', time())
-    #     energy_usage = kwargs['energy_usage']
-    #     machine_status = kwargs['machine_status']
-    #     human_status = kwargs.get('human_status', machine_status)
-    #     machine_status_extra = json.dumps(kwargs.get('machine_status_extra', ''), separators=(',', ':'))
-    #     requested_by = json.dumps(kwargs.get('requested_by', ''), separators=(',', ':'))
-    #     source = kwargs.get('source', '')
-    #     uploaded = kwargs.get('uploaded', 0)
-    #     uploadable = kwargs.get('uploadable', 0)
     #
-    #     yield DeviceStatus(
-    #         device_id=device_id,
-    #         set_time=set_time,
-    #         energy_usage=energy_usage,
-    #         human_status=human_status,
-    #         machine_status=machine_status,
-    #         machine_status_extra=machine_status_extra,
-    #         source=source,
-    #         uploaded=uploaded,
-    #         requested_by=requested_by,
-    #         uploadable=uploadable,
-    #     ).save()
+    # @inlineCallbacks
+    # def get_node_siblings(self, node):
+    #     records = yield Node.select(where=['parent_id = ? and node_type = ?', node.parent_id, node.node_type])
+    #     for record in records:
+    #         record['data'] = self.node_decode_data(record)
+    #     return records
+    #
+    # @inlineCallbacks
+    # def get_node_children(self, node):
+    #     records = yield Node.select(where=['parent_id = ? and node_type = ?', node.id, node.node_type])
+    #     for record in records:
+    #         record['data'] = self.node_decode_data(record)
+    #     return records
+
+    def encode_data(self, data, encode_type):
+        if encode_type == 'json':
+            try:
+                data = json.dumps(data)
+            except:
+                pass
+        elif encode_type == 'msgpack_base85':
+            try:
+                data = base64.b85encode(msgpack.dumps(data))
+            except:
+                pass
+        return data
+
+    @inlineCallbacks
+    def add_node(self, data, **kwargs):
+        print("add_node in lcoaldb: %s" % kwargs)
+        node = Node()
+        node.id = data.node_id
+        node.parent_id = data.parent_id
+        node.gateway_id = data.gateway_id
+        node.node_type = data.node_type
+        node.weight = data.weight
+        node.label = data.label
+        node.machine_label = data.machine_label
+        node.always_load = data.always_load
+        node.destination = data.destination
+        node.data = self.encode_data(data.data, data.data_content_type)
+        node.data_content_type = data.data_content_type
+        node.status = data.status
+        node.updated = data.updated
+        node.created = data.created
+        yield node.save()
+
+    @inlineCallbacks
+    def update_node(self, node, **kwargs):
+        args = {
+            'parent_id': node.parent_id,
+            'gateway_id': node.gateway_id,
+            'node_type': node.node_type,
+            'weight': node.weight,
+            'label': node.label,
+            'machine_label': node.machine_label,
+            'always_load': node.always_load,
+            'destination': node.destination,
+            'data': self.encode_data(node.data, node.data_content_type),
+            'data_content_type': node.data_content_type,
+            'status': node.enabled_status,
+            'created': node.updated,
+            'updated': node.updated,
+        }
+        results = yield self.dbconfig.update('nodes', args, where=['id = ?', node.device_id])
+        return results
+
+
+    @inlineCallbacks
+    def delete_node(self, node_id):
+        results = yield self.dbconfig.delete('nodes', where=['id = ?', node_id])
+        return results
 
     #############################
     ###    Notifications    #####
@@ -939,7 +943,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def delete_notification(self, id):
         try:
-            records = yield self.dbconfig.delete('notifications', where=['id < ?',id])
+            records = yield self.dbconfig.delete('notifications', where=['id < ?', id])
         except Exception as e:
             pass
 
@@ -1909,4 +1913,3 @@ ORDER BY id desc"""
             return limit
         else:
             return (limit, offset)
-
