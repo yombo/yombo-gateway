@@ -33,7 +33,7 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all, bytes_to_unicode, random_int, percentage
+from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int
 
 logger = get_logger('library.gateways')
 
@@ -42,7 +42,7 @@ class Gateways(YomboLibrary):
     Manages information about gateways.
     """
     library_phase = 0
-    ok_to_send_updates = False
+    ok_to_publish_updates = False
 
     def __contains__(self, gateway_requested):
         """
@@ -154,7 +154,7 @@ class Gateways(YomboLibrary):
         Load() stage.
         """
         self.library_phase = 1
-        self.ok_to_send_updates = False
+        self.ok_to_publish_updates = False
         self.mqtt = None
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.is_master = self._Configs.get('core', 'is_master', True, False)
@@ -199,7 +199,7 @@ class Gateways(YomboLibrary):
             return
         self.publish_data("all", "lib/gateways/online", "")
         self.send_all_info()
-        self.ok_to_send_updates = True
+        self.ok_to_publish_updates = True
         # self.test_send()
 
     def _stop_(self, **kwargs):
@@ -481,6 +481,8 @@ class Gateways(YomboLibrary):
                     self.incoming_data_device_command_status(source_gw_id, message)
                 elif component_name == 'device_status':
                     self.incoming_data_device_status(source_gw_id, message)
+                elif component_name == 'notification':
+                    self.incoming_data_notification(source_gw_id, message)
                 elif component_name == 'states':
                     if all_requested:
                         for name, value in message['payload'].items():
@@ -544,6 +546,16 @@ class Gateways(YomboLibrary):
                                             payload['status'],
                                             payload['message'])
 
+    def incoming_data_notification(self, src_gateway_id, message):
+        """
+        Handles incoming device status.
+
+        :param message:
+        :return:
+        """
+        payload = message['payload']
+        payload['status_source'] = 'gateway_coms'
+
     def incoming_data_device_status(self, src_gateway_id, message):
         """
         Handles incoming device status.
@@ -568,11 +580,10 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.ok_to_send_updates is False:
+        if self.ok_to_publish_updates is False:
             return
 
-        gateway_id = kwargs['gateway_id']
-        if gateway_id == self.gateway_id:
+        if kwargs['gateway_id'] != self.gateway_id:
             return
 
         self.publish_data('all', "lib/atoms/" + kwargs['key'], kwargs['value_full'])
@@ -585,7 +596,7 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.ok_to_send_updates is False:
+        if self.ok_to_publish_updates is False:
             return
 
         device_command = kwargs['device_command'].dump()
@@ -609,10 +620,13 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.ok_to_send_updates is False:
+        if self.ok_to_publish_updates is False:
             return
 
         device_command = kwargs['device_command']
+        if self.gateway_id != device_command.source_gateway_id:
+            return
+
         history = device_command.history[-1]
         message = {
             'request_id': kwargs['device_command'].request_id,
@@ -633,7 +647,7 @@ class Gateways(YomboLibrary):
         :return:
         """
         # print("_device_status_: %s" % kwargs['command'])
-        if self.ok_to_send_updates is False:
+        if self.ok_to_publish_updates is False:
             return
         device = kwargs['device']
         device_id = device.device_id
@@ -661,6 +675,58 @@ class Gateways(YomboLibrary):
         # print("sending _device_status_: %s -> %s" % (topic, message))
         self.publish_data('all', topic, message)
 
+    def _notification_add_(self, **kwargs):
+        """
+        Publish a new notification, if it's from ourselves.
+
+        :param kwargs:
+        :return:
+        """
+        # print("_device_status_: %s" % kwargs['command'])
+        if self.ok_to_publish_updates is False:
+            return
+
+        notice = kwargs['notification']
+
+        # print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
+        if self.gateway_id != notice['gateway_id']:
+            return
+
+        message = {
+            'action': 'add',
+            'notice': notice,
+        }
+
+        topic = "lib/notification/" + notice['id']
+        # print("sending _device_status_: %s -> %s" % (topic, message))
+        self.publish_data('all', topic, message)
+
+    def _notification_delete_(self, **kwargs):
+        """
+        Delete a notification, if it's from ourselves.
+
+        :param kwargs:
+        :return:
+        """
+        # print("_device_status_: %s" % kwargs['command'])
+        if self.ok_to_publish_updates is False:
+            return
+
+        notice = kwargs['notification']
+
+        # print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
+        if self.gateway_id != notice['gateway_id']:
+            return
+
+        message = {
+            'action': 'delete',
+            'id': notice['id'],
+        }
+
+        topic = "lib/notification/" + notice['id']
+        # print("sending _device_status_: %s -> %s" % (topic, message))
+        self.publish_data('all', topic, message)
+
     def _states_set_(self, **kwargs):
         """
         Publish a new state, if it's from ourselves.
@@ -668,7 +734,7 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        if self.ok_to_send_updates is False:
+        if self.ok_to_publish_updates is False:
             return
 
         gateway_id = kwargs['gateway_id']
