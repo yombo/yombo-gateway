@@ -489,6 +489,8 @@ class WebInterface(YomboLibrary):
         #     'yes_no': yombo.utils.is_yes_no,
         # }
         self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
+        self.webapp.templates.globals['commands'] = self._Commands
+        self.webapp.templates.globals['devices'] = self._Devices
         self.webapp.templates.globals['gateways'] = self._Gateways
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         self.webapp.templates.globals['devices'] = self._Devices
