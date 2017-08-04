@@ -85,6 +85,28 @@ def route_devtools_debug(webapp):
                                hooks_called=webinterface._Modules.hook_counts
                                )
 
+        @webapp.route('/nodes')
+        @require_auth()
+        def page_devtools_debug_nodes(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/nodes/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/nodes", "Nodes")
+            return page.render(alerts=webinterface.get_alerts(),
+                               nodes=webinterface._Nodes.nodes,
+                               )
+
+        @webapp.route('/nodes/<string:node_id>/details')
+        @require_auth()
+        def page_devtools_debug_nodes_details(webinterface, request, session, node_id):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/nodes/details.html')
+            node = webinterface._Nodes.nodes[node_id]
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/nodes", "Nodes")
+            webinterface.add_breadcrumb(request, "/devtools/debug/nodes/%s/details" % node_id, node.label)
+            return page.render(alerts=webinterface.get_alerts(),
+                               node=node,
+                               )
+
         @webapp.route('/modules')
         @require_auth()
         def page_devtools_debug_modules(webinterface, request, session):

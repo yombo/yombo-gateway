@@ -1,0 +1,57 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+
+{% block content %}
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">
+                        Node Information<br>
+                    </h1>
+                    <p></p>
+
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+
+            <div class="row">
+                    <div class="col-lg-12 col-md-12">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Run Time Values</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Label: </label><br>
+                                {{ node.label }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
+                                {{ node.machine_label }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Gateway Id: </label><br>
+                                {{ node.gateway_id }} -> {{ gateways[node.gateway_id].label}}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Node Type: </label><br>
+                                {{ node.node_type }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Parent ID: </label><br>
+                                {{ node.parent_id }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Always Load: </label><br>
+                                {{ node.always_load }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Destination: </label><br>
+                                {{ node.destination }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Data Content Type: </label><br>
+                                {{ node.data_content_type }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Data: </label><br>
+                                {{ node.data }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
+                                {{ node.weight }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
+                                {{ node.status|status_to_string }}<br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
+                                {{ node.updated|epoch_to_human }} ({{ node.updated_at|epoch_to_pretty_date }}) <br>
+                                <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
+                                {{ node.created|epoch_to_human }}<br>
+                            </div>
+                        </div>
+                    </div>
+               <!-- /.col-lg-12 -->
+            </div>
+            <!-- /.row -->
+{% endblock %}
