@@ -183,18 +183,19 @@ class Nodes(YomboLibrary):
         """
         nodes = yield self._LocalDB.get_nodes()
         for node in nodes:
-            self.import_node(node)
+            self.import_node(node, source='database')
         self.load_deferred.callback(10)
 
-    def import_node(self, node, test_node=False):
+    def import_node(self, node, source=None, test_node=False):
         """
-        Add a new nodes to memory or update an existing nodes.
+        Imports a new node. This should only be called by this library on during startup or from "add_node"
+        function.
 
         **Hooks called**:
 
-        * _node_before_load_ : If added, sends node dictionary as 'node'
+        * _node_before_import_ : If added, sends node dictionary as 'node'
         * _node_before_update_ : If updated, sends node dictionary as 'node'
-        * _node_loaded_ : If added, send the node instance as 'node'
+        * _node_imported_ : If added, send the node instance as 'node'
         * _node_updated_ : If updated, send the node instance as 'node'
 
         :param node: A dictionary of items required to either setup a new node or update an existing one.
@@ -209,11 +210,11 @@ class Nodes(YomboLibrary):
         node_id = node["id"]
         if node_id not in self.nodes:
             global_invoke_all('_node_before_load_', called_by=self, **{'node': node})
-            self.nodes[node_id] = Node(node)
+            self.nodes[node_id] = Node(self, node)
             global_invoke_all('_node_loaded_', called_by=self, **{'node': self.nodes[node_id]})
         elif node_id not in self.nodes:
             global_invoke_all('_node_before_update_', called_by=self, **{'node': node})
-            self.nodes[node_id].update_attributes(node)
+            self.nodes[node_id].update_attributes(node, source)
             global_invoke_all('_node_updated_', called_by=self, **{'node': self.nodes[node_id]})
 
     def get_all(self):
@@ -328,12 +329,7 @@ class Nodes(YomboLibrary):
         except Exception as e:
             logger.warn("Unable to find requested node: {node}.  Reason: {e}", node=node_requested, e=e)
             raise YomboWarning("Cannot find requested node...")
-
-        try:
-            data = yield self._LocalDB.get_node(node.node_id)
-            returnValue(data)
-        except YomboWarning as e:
-            raise KeyError('Cannot find node (%s) in database: %s' % (node_requested, e))
+        return node
 
     @inlineCallbacks
     def get_parent(self, node_requested, limiter=None):
@@ -440,58 +436,65 @@ class Nodes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        results = None
+        new_node = None
         if 'gateway_id' not in api_data:
             api_data['gateway_id'] = self.gateway_id()
 
         if 'data_content_type' not in api_data:
             api_data['data_content_type'] = 'json'
-        if api_data['data_content_type'] == 'json':
-            try:
-                api_data['data'] = json.dumps(api_data['data'])
-            except:
-                pass
-        elif api_data['data_content_type'] == 'msgpack_base85':
-            try:
-                api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
-            except:
-                pass
 
         if source != 'amqp':
-            node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
+            input_data = api_data['data'].copy()
+            if api_data['data_content_type'] == 'json':
+                try:
+                    api_data['data'] = json.dumps(api_data['data'])
+                except:
+                    pass
+            elif api_data['data_content_type'] == 'msgpack_base85':
+                try:
+                    api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
+                except:
+                    pass
 
+            node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
+            print("added node results: %s" % node_results)
             if node_results['code'] > 299:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't add node",
+                    'data': None,
+                    'node_id': None,
                     'apimsg': node_results['content']['message'],
                     'apimsghtml': node_results['content']['html_message'],
                 }
                 return results
             node_id = node_results['data']['id']
+            new_node = node_results['data']
+            new_node['data'] = input_data
 
-        results = {
-            'status': 'success',
-            'msg': "Node type added.",
-            'node_id': node_id,
-        }
-        new_node = node_results['data']
-        if new_node.data_content_type == 'json':
-            try:
-                new_node.data = json.loads(new_node.data)
-            except:
-                pass
-        elif new_node.data_content_type == 'msgpack_base85':
-            try:
-                new_node.data = msgpack.loads(base64.b85decode(new_node.data))
-            except:
-                pass
+        else:
+            node_id = api_data['id']
+            new_node = api_data
+
         new_node['created'] = new_node['created_at']
         new_node['updated'] = new_node['updated_at']
-        self.import_node(new_node)
+
+        self.import_node(new_node, source)
+        self.nodes[node_id].add_to_db()
+        global_invoke_all('_node_added_', called_by=self, **{'node': self.nodes[node_id]})
+        results = {
+            'status': 'success',
+            'msg': "Node edited.",
+            'node_id': node_id,
+            'data': self.nodes[node_id].dump(),
+            'apimsg': "Node edited.",
+            'apimsghtml': "Node edited.",
+        }
         return results
 
     @inlineCallbacks
-    def edit_node(self, node_id, api_data, called_from_node=None, source=None, **kwargs):
+    def edit_node(self, node_id, api_data, source=None, **kwargs):
         """
         Edit a node at the Yombo server level, not at the local gateway level.
 
@@ -499,33 +502,59 @@ class Nodes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        results = None
+        node = self.nodes[node_id]
+        for key, value in api_data.items():
+            setattr(node, key, value)
 
-        node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
-        # print("module edit results: %s" % module_results)
+        if source != 'amqp':
+            input_data = api_data['data'].copy()
+            print("input_data- %s " % type(input_data))
+            if 'data_content_type' not in api_data:
+                api_data['data_content_type'] = node.data_content_type
+            if api_data['data_content_type'] == 'json':
+                try:
+                    api_data['data'] = json.dumps(api_data['data'])
+                except:
+                    pass
+            elif api_data['data_content_type'] == 'msgpack_base85':
+                try:
+                    api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
+                except:
+                    pass
+            node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
 
-        if node_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't edit node",
-                'apimsg': node_results['content']['message'],
-                'apimsghtml': node_results['content']['html_message'],
-            }
-            return results
+            api_data['data'] = input_data
 
-        results = {
-            'status': 'success',
-            'msg': "Device type edited.",
-            'node_id': node_results['data']['id'],
-        }
+            if node_results['code'] > 299:
+                results = {
+                    'status': 'failed',
+                    'msg': "Couldn't edit node",
+                    'data': None,
+                    'node_id': node_id,
+                    'apimsg': node_results['content']['message'],
+                    'apimsghtml': node_results['content']['html_message'],
+                }
+                return results
 
         node = self.nodes[node_id]
-        if called_from_node is not True:
-            node.update_attributes(api_data)
+        if source != 'node':
+            node.update_attributes(api_data, source='parent')
             node.save_to_db()
+
+        global_invoke_all('_node_edited_', called_by=self, **{'node': node})
+        results = {
+            'status': 'success',
+            'msg': "Node edited.",
+            'node_id': node_id,
+            'data': node.dump(),
+            'apimsg': "Node edited.",
+            'apimsghtml': "Node edited.",
+            }
         return results
 
     @inlineCallbacks
-    def delete_node(self, node_id, **kwargs):
+    def delete_node(self, node_id, source=None, **kwargs):
         """
         Delete a node at the Yombo server level, not at the local gateway level.
 
@@ -533,86 +562,120 @@ class Nodes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
+        results = None
+        if source != 'amqp':
+            node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
 
-        if node_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't delete node",
-                'apimsg': node_results['content']['message'],
-                'apimsghtml': node_results['content']['html_message'],
-            }
-            return results
+            if node_results['code'] > 299:
+                results = {
+                    'status': 'failed',
+                    'msg': "Couldn't delete node",
+                    'node_id': node_id,
+                    'data': None,
+                    'apimsg': node_results['content']['message'],
+                    'apimsghtml': node_results['content']['html_message'],
+                }
+                return results
 
+        api_data = {
+            'status': 2,
+        }
+        node = self.nodes[node_id]
+        if source != 'node':
+            node.update_attributes(api_data, source='parent')
+            node.save_to_db()
+        global_invoke_all('_node_deleted_', called_by=self, **{'node': node})
         results = {
             'status': 'success',
             'msg': "Node deleted.",
             'node_id': node_id,
-        }
+            'data': node.dump(),
+            'apimsg': "Node deleted.",
+            'apimsghtml': "Node deleted.",
+            }
         return results
 
     @inlineCallbacks
-    def enable_node(self, node_id, **kwargs):
+    def enable_node(self, node_id, source=None, **kwargs):
         """
-        Enable a node at the Yombo server level, not at the local gateway level.
+        Enable a node at the Yombo server level
 
         :param node_id: The node ID to enable.
         :param kwargs:
         :return:
         """
-        #        print "enabling node: %s" % node_id
+        results = None
         api_data = {
             'status': 1,
         }
 
-        node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
+        if source != 'amqp':
+            node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
 
-        if node_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't enable node",
-                'apimsg': node_results['content']['message'],
-                'apimsghtml': node_results['content']['html_message'],
-            }
-            return results
+            if node_results['code'] > 299:
+                results = {
+                    'status': 'failed',
+                    'msg': "Couldn't enable node",
+                    'node_id': node_id,
+                    'data': None,
+                    'apimsg': node_results['content']['message'],
+                    'apimsghtml': node_results['content']['html_message'],
+                }
+                return results
 
+        node = self.nodes[node_id]
+        if source != 'node':
+            node.update_attributes(api_data, source='parent')
+            node.save_to_db()
+        global_invoke_all('_node_enabled_', called_by=self, **{'node': node})
         results = {
             'status': 'success',
             'msg': "Node enabled.",
             'node_id': node_id,
-        }
+            'data': node.dump(),
+            'apimsg': "Node enabled.",
+            'apimsghtml': "Node enabled.",
+            }
         return results
 
     @inlineCallbacks
-    def disable_node(self, node_id, **kwargs):
+    def disable_node(self, node_id, source=None, **kwargs):
         """
-        Enable a node at the Yombo server level, not at the local gateway level.
+        Disable a node at the Yombo server level
 
         :param node_id: The node ID to disable.
         :param kwargs:
         :return:
         """
-#        print "disabling node: %s" % node_id
+        results = None
         api_data = {
             'status': 0,
         }
 
-        node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
-        # print("disable node results: %s" % node_results)
+        if source != 'amqp':
+            node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
 
-        if node_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't disable node",
-                'apimsg': node_results['content']['message'],
-                'apimsghtml': node_results['content']['html_message'],
-            }
-            return results
+            if node_results['code'] > 299:
+                results = {
+                    'status': 'failed',
+                    'msg': "Couldn't disable node",
+                    'apimsg': node_results['content']['message'],
+                    'apimsghtml': node_results['content']['html_message'],
+                }
+                return results
 
+        node = self.nodes[node_id]
+        if source != 'node':
+            node.update_attributes(api_data, source='parent')
+            node.save_to_db()
+        global_invoke_all('_node_disabled_', called_by=self, **{'node': node})
         results = {
             'status': 'success',
             'msg': "Node disabled.",
             'node_id': node_id,
+            'data': node.dump(),
+            'apimsg': "Node disabled.",
+            'apimsghtml': "Node disabled.",
         }
         return results
 
@@ -632,7 +695,7 @@ class Node:
     :ivar updated: (int) EPOCH time when last updated
     """
 
-    def __init__(self, node):
+    def __init__(self, parent, node):
         """
         Setup the node object using information passed in.
 
@@ -642,55 +705,77 @@ class Node:
         """
         logger.debug("node info: {node}", node=node)
 
+        self._Parent = parent
         self.node_id = node['id']
-        self.machine_label = node['machine_label']
+        self.machine_label = node.get('machine_label', None)
 
         # below are configure in update_attributes()
         self.parent_id = None
         self.gateway_id = None
         self.node_type = None
-        self.weight = None
-        self.gw_always_load = None
+        self.weight = 0
+        self.gw_always_load = 1
         self.destination = None
         self.data = None
-        self.data_type = None
+        self.data_content_type = None
         self.status = None
         self.updated = None
         self.created = None
-        self.update_attributes(node)
+        self.update_attributes(node, source='parent')
 
-    def update_attributes(self, node):
+    def update_attributes(self, new_data, source=None):
         """
-        Sets various values from a node dictionary. This can be called when either new or
+        Sets various values from a new_data dictionary. This can be called when either new or
         when updating.
 
-        :param node: 
+        :param new_data:
         :return: 
         """
-        if 'parent_id' in node:
-            self.parent_id = node['parent_id']
-        if 'gateway_id' in node:
-            self.gateway_id = node['gateway_id']
-        if 'node_type' in node:
-            self.node_type = node['node_type']
-        if 'weight' in node:
-            self.weight = node['weight']
-        if 'machine_label' in node:
-            self.machine_label = node['machine_label']
-        if 'gw_always_load' in node:
-            self.gw_always_load = node['gw_always_load']
-        if 'destination' in node:
-            self.destination = node['destination']
-        if 'data' in node:
-            self.data = node['data']
-        if 'data_type' in node:
-            self.data_type = node['data_type']
-        if 'status' in node:
-            self.status = node['status']
-        if 'created' in node:
-            self.created = node['created']
-        if 'updated' in node:
-            self.updated = node['updated']
+        if 'parent_id' in new_data:
+            self.parent_id = new_data['parent_id']
+        if 'gateway_id' in new_data:
+            self.gateway_id = new_data['gateway_id']
+        if 'node_type' in new_data:
+            self.node_type = new_data['node_type']
+        if 'weight' in new_data:
+            self.weight = new_data['weight']
+        if 'label' in new_data:
+            self.label = new_data['label']
+        if 'machine_label' in new_data:
+            self.machine_label = new_data['machine_label']
+        if 'gw_always_load' in new_data:
+            self.gw_always_load = new_data['gw_always_load']
+        if 'destination' in new_data:
+            self.destination = new_data['destination']
+        if 'data' in new_data:
+            self.data = new_data['data']
+        if 'data_content_type' in new_data:
+            self.data_content_type = new_data['data_content_type']
+        if 'status' in new_data:
+            self.status = new_data['status']
+        if 'created_at' in new_data:
+            self.created = new_data['created_at']
+        if 'created' in new_data:
+            self.created = new_data['created']
+        if 'updated_at' in new_data:
+            self.updated = new_data['updated_at']
+        if 'updated' in new_data:
+            self.updated = new_data['updated']
+        if source != "parent":
+            self._Parent.edit_node(new_data, source="node")
+
+    def add_to_db(self):
+        if self._Parent.gateway_id() == self.gateway_id:
+            self._Parent._LocalDB.add_node(self)
+
+    def save_to_db(self):
+        if self._Parent.gateway_id == self.gateway_id:
+            self._Parent._LocalDB.update_node(self)
+
+    def delete_from_db(self):
+        if self._Parent.gateway_id == self.gateway_id:
+            self._Parent._LocalDB.delete_node(self)
+
 
     def __str__(self):
         """
@@ -699,19 +784,22 @@ class Node:
         """
         return self.node_id
 
-    def __repl__(self):
+    def dump(self):
         """
         Export node variables as a dictionary.
         """
         return {
             'node_id': str(self.node_id),
-            'parent_id': str(self.parent_id),
-            'gateway_id': str(self.gateway_id),
+            'parent_id': self.parent_id,
             'node_type': str(self.node_type),
             'weight': int(self.weight),
-            'gw_always_load': int(self.gw_always_load),
-            'destination': str(self.destination),
-            'data_type': str(self.data_type),
+            'label': self.label,
+            'machine_label': self.machine_label,
+            'gw_always_load': self.gw_always_load,
+            'gateway_id': str(self.gateway_id),
+            'destination': self.destination,
+            'data': self.data,
+            'data_content_type': self.data_content_type,
             'status': int(self.status),
             'created': int(self.created),
             'updated': int(self.updated),
