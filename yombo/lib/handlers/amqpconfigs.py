@@ -407,7 +407,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'weight': 'weight',
                     'label': 'label',
                     'machine_label': 'machine_label',
-                    'gw_always_load': 'gw_always_load',
+                    'always_load': 'always_load',
                     'destination': 'destination',
                     'data': 'data',
                     'data_content_type': 'data_content_type',
@@ -991,7 +991,7 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_dns_name",
             "get_gateway_cluster",
 
-            # "get_gateway_nodes",  # Includes module variable groups/fields/data
+            "get_gateway_nodes",  # Includes module variable groups/fields/data
 
             # "get_gateway_input_types",
             # "get_gateway_configs",
