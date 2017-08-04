@@ -32,10 +32,10 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import random_string, is_true_false
+from yombo.utils import random_string, is_true_false, global_invoke_all
 
 logger = get_logger('library.notifications')
 
@@ -111,6 +111,14 @@ class Notifications(YomboLibrary):
         except:
             return False
 
+    @property
+    def always_show_count(self) -> int:
+        always_show_count = 0
+        for id, notif in self.notifications.items():
+            if notif.always_show:
+                always_show_count += 1
+        return always_show_count
+
     def iteritems(self, start=None, stop=None):
         return iter(self.notifications.items())
 
@@ -120,7 +128,6 @@ class Notifications(YomboLibrary):
         """
         # self.init_deferred = Deferred()  # Prevents loader from moving on past _load_ until we are done.
         self.notifications = SlicableOrderedDict()
-        self.always_show_count = 0
         self.gateway_id = 'local'
         # return self.init_deferred
 
@@ -167,12 +174,6 @@ class Notifications(YomboLibrary):
                 del self.notifications[id]
         self._LocalDB.delete_expired_notifications()
 
-    def check_always_show_count(self):
-        self.always_show_count = 0
-        for id, notif in self.notifications.items():
-            if notif.always_show:
-                self.always_show_count += 1
-
     @inlineCallbacks
     def load_notifications(self):
         """
@@ -185,7 +186,6 @@ class Notifications(YomboLibrary):
                 continue
             notice['meta'] = json.loads(notice['meta'])
             self.add(notice, from_db=True)
-        self.check_always_show_count()
         logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
         # self.init_deferred.callback(10)
 
@@ -281,8 +281,16 @@ class Notifications(YomboLibrary):
 
         self.notifications.prepend(notice['id'], Notification(self, notice))
 
-        if from_db is None:
-            self.check_always_show_count()
+        # Call any hooks
+        try:
+            yield global_invoke_all('_notification_add_',
+                                    **{'called_by': self,
+                                       'notification': self.notifications[notice['id']],
+                                       }
+                                    )
+        except YomboHookStopProcessing:
+            pass
+
         return notice['id']
 
     def delete(self, notice_id):
@@ -292,12 +300,21 @@ class Notifications(YomboLibrary):
         :param notice_id:
         :return:
         """
+        # Call any hooks
+        try:
+            yield global_invoke_all('_notification_add_',
+                                    **{'called_by': self,
+                                       'notification': self.notifications[notice_id],
+                                       }
+                                    )
+        except YomboHookStopProcessing:
+            pass
+
         try:
             del self.notifications[notice_id]
             self._LocalDB.delete_notification(notice_id)
         except:
             pass
-        self.check_always_show_count()
 
     def get(self, notice_id, get_all=None):
         """
@@ -376,7 +393,11 @@ class Notification:
         """
         return "%s: %s" % (self.notification_id, self.message)
 
-    def set_ack(self, ack_time, new_ack):
+    def set_ack(self, ack_time=None, new_ack=None):
+        if ack_time is None:
+            ack_time = time()
+        if new_ack is None:
+            new_ack = True
         self.acknowledged = new_ack
         self.acknowledged_time = ack_time
         if self.always_show_allow_clear is True:
@@ -406,7 +427,7 @@ class Notification:
             'priority': str(self.priority),
             'source': str(self.source),
             'expire': str(self.expire),
-            'acknowledged': str(self.acknowledged),
+            'acknowledged': self.acknowledged,
             'acknowledged_time': float(self.acknowledged_time),
             'title': str(self.title),
             'message': str(self.message),
