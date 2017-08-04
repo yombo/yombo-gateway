@@ -57,7 +57,7 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             return page.render(
                 alerts=webinterface.get_alerts(),
-                devices=webinterface._Devices.devices,
+                # devices=webinterface._Devices.devices,
                 devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
                 locations=webinterface._Locations.locations,
@@ -209,7 +209,7 @@ def route_devices(webapp):
             print("device_variables: %s" % device_variables)
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               devices=webinterface._Devices.devices,
+                               # devices=webinterface._Devices.devices,
                                device_variables=device_variables,
                                device_type=device_type,
                                commands=webinterface._Commands,
@@ -558,7 +558,7 @@ def route_devices(webapp):
 
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               devices=webinterface._Devices.devices,
+                               # devices=webinterface._Devices.devices,
                                device_variables=device_variables,
                                commands=webinterface._Commands,
                                input_types=webinterface._InputTypes.input_types,
