@@ -13,16 +13,13 @@ from OpenSSL import crypto
 import shutil
 from collections import OrderedDict
 from os import path, listdir, mkdir
-from os.path import dirname, abspath
-from time import strftime, localtime, time
+from time import time
 from urllib.parse import parse_qs, urlparse
 from operator import itemgetter
 import jinja2
 from klein import Klein
 import markdown
 from docutils.core import publish_parts
-from random import randint
-import datetime
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
@@ -31,7 +28,6 @@ from hashlib import sha256
 
 # Import twisted libraries
 from twisted.web.server import Site
-from twisted.web.static import File
 from twisted.internet import reactor, ssl
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import LoopingCall
@@ -40,8 +36,7 @@ from twisted.internet.task import LoopingCall
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
-
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.ext.totp
@@ -59,6 +54,7 @@ from yombo.lib.webinterface.route_locations import route_locations
 from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
 from yombo.lib.webinterface.route_devtools_config import route_devtools_config
 from yombo.lib.webinterface.route_gateways import route_gateways
+from yombo.lib.webinterface.route_home import route_home
 from yombo.lib.webinterface.route_misc import route_misc
 from yombo.lib.webinterface.route_modules import route_modules
 from yombo.lib.webinterface.route_notices import route_notices
@@ -68,257 +64,11 @@ from yombo.lib.webinterface.route_states import route_states
 from yombo.lib.webinterface.route_system import route_system
 from yombo.lib.webinterface.route_voicecmds import route_voicecmds
 from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
+from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
 #from yombo.lib.webinterfaceyombosession import YomboSession
 
 logger = get_logger("library.webinterface")
-
-nav_side_menu = [
-    {
-        'label1': 'Panel',
-        'label2': 'Panel',
-        'priority1': 200,
-        'priority2': 500,
-        'icon': 'fa fa-gamepad fa-fw',
-        'url': '/panel/index',
-        'tooltip': 'System Panel',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Devices',
-        'label2': 'Devices',
-        'priority1': 400,
-        'priority2': 500,
-        'icon': 'fa fa-wifi fa-fw',
-        'url': '/devices/index',
-        'tooltip': 'Show Devices',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'Device Tools',
-        'label2': 'Device Commands',
-        'priority1': 600,
-        'priority2': 1000,
-        'icon': 'fa fa-info fa-fw',
-        'url': '/devices/device_commands',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'Modules',
-        'label2': 'Modules',
-        'priority1': 800,
-        'priority2': 500,
-        'icon': 'fa fa-puzzle-piece fa-fw',
-        'url': '/modules/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'Info',
-        'label2': 'Atoms',
-        'priority1': 1000,
-        'priority2': 2000,
-        'icon': 'fa fa-info fa-fw',
-        'url': '/atoms/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Info',
-        'label2': 'States',
-        'priority1': 1000,
-        'priority2': 3000,
-        'icon': 'fa fa-info fa-fw',
-        'url': '/states/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Info',
-        'label2': 'Voice Commands',
-        'priority1': 1000,
-        'priority2': 4000,
-        'icon': 'fa fa-info fa-fw',
-        'url': '/voicecmds/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'Automation',
-        'label2': 'Rules',
-        'priority1': 1500,
-        'priority2': 500,
-        'icon': 'fa fa-random fa-fw',
-        'url': '/automation/index',
-        'tooltip': 'Show Rules',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Automation',
-        'label2': 'Platforms',
-        'priority1': 1500,
-        'priority2': 1500,
-        'icon': 'fa fa-random fa-fw',
-        'url': '/automation/platforms',
-        'tooltip': 'Automation Platforms',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Automation',
-        'label2': 'Add Rule',
-        'priority1': 1500,
-        'priority2': 1000,
-        'icon': 'fa fa-random fa-fw',
-        'url': '/automation/add_rule',
-        'tooltip': 'Automation Platforms',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'Statistics',
-        'label2': 'General',
-        'priority1': 2000,
-        'priority2': 500,
-        'icon': 'fa fa-dashboard fa-fw',
-        'url': '/statistics/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'Tools',
-        'label2': 'Debug',
-        'priority1': 3000,
-        'priority2': 100000,
-        'icon': 'fa fa-code fa-fw',
-        'url': '/devtools/debug/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'System Settings',
-        'label2': 'Locations',
-        'priority1': 3500,
-        'priority2': 500,
-        'icon': 'fa fa-map-marker fa-fw',
-        'url': '/locations/index',
-        'tooltip': 'Show Locations',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System Settings',
-        'label2': 'Gateways',
-        'priority1': 3500,
-        'priority2': 1000,
-        'icon': 'fa fa-cogs fa-fw',
-        'url': '/gateways/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System Settings',
-        'label2': 'Basic Settings',
-        'priority1': 3500,
-        'priority2': 1500,
-        'icon': 'fa fa-cogs fa-fw',
-        'url': '/configs/basic',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System Settings',
-        'label2': 'DNS',
-        'priority1': 3500,
-        'priority2': 2000,
-        'icon': 'fa fa-cogs fa-fw',
-        'url': '/configs/dns',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System Settings',
-        'label2': 'Encryption Keys',
-        'priority1': 3500,
-        'priority2': 2500,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/gpg/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System Settings',
-        'label2': 'Yombo.Ini',
-        'priority1': 3500,
-        'priority2': 3000,
-        'icon': 'fa fa-wrench fa-fw',
-        'url': '/configs/yombo_ini',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
-        'label1': 'Developer Tools',
-        'label2': 'Config Tools',
-        'priority1': 5000,
-        'priority2': 500,
-        'icon': 'fa fa-code fa-fw',
-        'url': '/devtools/config/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System',
-        'label2': 'Status',
-        'priority1': 6000,
-        'priority2': 500,
-        'icon': 'fa fa-hdd-o fa-fw',
-        'url': '/system/index',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-    {
-        'label1': 'System',
-        'label2': 'Control',
-        'priority1': 6000,
-        'priority2': 1000,
-        'icon': 'fa fa-hdd-o fa-fw',
-        'url': '/system/control',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-]
-
-default_nodes = [
-    {
-        'machine_label': 'main_page',
-        'node_type': 'webinterface_page',
-        'data_type': 'text',
-        'data': 'no data yet....',
-        'destination': 'gw',
-        'children': [
-            {
-                'machine_label': 'some_item',
-                'node_type': 'webinterface_page_item',
-                'data_type': 'text',
-                'data': 'no data yet.... for item',
-                'destination': 'gw',
-            },
-        ],
-    },
-]
-
-notification_priority_map_css = {
-    'debug': 'info',
-    'low': 'info',
-    'normal': 'info',
-    'high': 'warning',
-    'urent': 'danger',
-}
 
 
 class NotFound(Exception):
@@ -429,6 +179,7 @@ class WebInterface(YomboLibrary):
         route_devtools_debug(self.webapp)
         route_devtools_config(self.webapp)
         route_gateways(self.webapp)
+        route_home(self.webapp)
         route_misc(self.webapp)
         route_modules(self.webapp)
         route_notices(self.webapp)
@@ -482,7 +233,7 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
         self.misc_wi_data['operating_mode'] = self.operating_mode
         self.misc_wi_data['notifications'] = self._Notifications
-        self.misc_wi_data['notification_priority_map_css'] = notification_priority_map_css
+        self.misc_wi_data['NOTIFICATION_PRIORITY_MAP_CSS'] = NOTIFICATION_PRIORITY_MAP_CSS
         self.misc_wi_data['breadcrumb'] = []
 
         # self.functions = {
@@ -691,7 +442,12 @@ class WebInterface(YomboLibrary):
     #             },
     #     }]
 
-
+    @webapp.route('/<path:catchall>')
+    @require_auth()
+    def page_404(self, request, session, catchall):
+        request.setResponseCode(404)
+        page = self.get_template(request, self._dir + 'pages/404.html')
+        return page.render()
 
     @webapp.handle_errors(NotFound)
     @require_auth()
@@ -699,12 +455,45 @@ class WebInterface(YomboLibrary):
         request.setResponseCode(404)
         return 'Not found, I say'
 
-    @webapp.route('/<path:catchall>')
-    @require_auth()
-    def page_404(self, request, session, catchall):
-        request.setResponseCode(404)
-        page = self.get_template(request, self._dir + 'pages/404.html')
-        return page.render()
+    def display_pin_console(webinterface):
+        print("###########################################################")
+        print("#                                                         #")
+        if webinterface.operating_mode != 'run':
+            print("# The Yombo Gateway website is running in                 #")
+            print("# configuration only mode.                                #")
+            print("#                                                         #")
+
+        dns_fqdn = webinterface._Configs.get('dns', 'fqdn', None, False)
+        if dns_fqdn is None:
+            local_hostname = "127.0.0.1"
+            internal_hostname = webinterface._Configs.get('core', 'localipaddress_v4')
+            external_hostname = webinterface._Configs.get('core', 'externalipaddress_v4')
+            local = "http://%s:%s" %(local_hostname, webinterface.wi_port_nonsecure())
+            internal = "http://%s:%s" %(internal_hostname, webinterface.wi_port_nonsecure())
+            external = "https://%s:%s" % (external_hostname, webinterface.wi_port_secure())
+            print("# The gateway can be accessed from the following urls:    #")
+            print("#                                                         #")
+            print("# On local machine:                                       #")
+            print("#  %-54s #" % local)
+            print("#                                                         #")
+            print("# On local network:                                       #")
+            print("#  %-54s #" % internal)
+            print("#                                                         #")
+            print("# From external network (check port forwarding):          #")
+            print("#  %-54s #" % external)
+        else:
+            website_url = "http://%s" % dns_fqdn
+            print("# The gateway can be accessed from the following url:     #")
+            print("#                                                         #")
+            print("# From anywhere:                                          #")
+            print("#  %-54s #" % website_url)
+
+        print("#                                                         #")
+        print("#                                                         #")
+        print("# Web Interface access pin code:                          #")
+        print("#  %-25s                              #" % webinterface.auth_pin())
+        print("#                                                         #")
+        print("###########################################################")
 
     def i18n(self, request):
         """
@@ -750,7 +539,7 @@ class WebInterface(YomboLibrary):
         """
         # first, lets get the top levels already defined so children don't re-arrange ours.
         temp_dict = {}
-        newlist = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
+        newlist = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2'))
         for item in newlist:
             level1 = item['label1']
             if level1 not in newlist:
@@ -762,13 +551,13 @@ class WebInterface(YomboLibrary):
                 for new_nav in options['nav_side']:
                     if new_nav['label1'] in temp_dict:
                         new_nav['priority1'] =  temp_dict[new_nav['label1']]
-                    nav_side_menu.append(new_nav)
+                    NAV_SIDE_MENU.append(new_nav)
             if 'routes' in options:
                 for new_route in options['routes']:
                     new_route(self.webapp)
 
         self.misc_wi_data['nav_side'] = OrderedDict()
-        newlist = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
+        newlist = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2'))
         for item in newlist:
             level1 = item['label1']
             if level1 not in self.misc_wi_data['nav_side']:
@@ -828,248 +617,6 @@ class WebInterface(YomboLibrary):
     def redirect(self, request, redirect_path):
         request.setHeader('server', 'Yombo/1.0')
         request.redirect(redirect_path)
-
-    def check_op_mode(self, request, router, **kwargs):
-        if self.operating_mode == 'config':
-            method = getattr(self, 'config_'+ router)
-            return method(request, **kwargs)
-        elif self.operating_mode == 'first_run':
-            method = getattr(self, 'first_run_'+ router)
-            return method(request, **kwargs)
-        method = getattr(self, 'run_'+ router)
-        return method(request, **kwargs)
-
-    @webapp.route('/')
-    def home(self, request):
-        print("home aaaaa")
-        return self.check_op_mode(request, 'home')
-
-    @require_auth()
-    def run_home(self, request, session):
-        print("run_home aaaaaa")
-        page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
-        delayed_device_commands = self._Devices.get_delayed_commands()
-        return page.render(alerts=self.get_alerts(),
-                           device_commands_delayed = delayed_device_commands,
-                           automation_rules = len(self._Loader.loadedLibraries['automation'].rules),
-                           devices=self._Libraries['devices'].devices,
-                           modules=self._Libraries['modules'].modules,
-                           # states=self._Libraries['states'].get_states(),
-                           )
-
-    @require_auth()
-    def config_home(self, request, session):
-        # auth = self.require_auth(request)
-        # if auth is not None:
-        #     return auth
-
-        page = self.get_template(request, self._dir + 'config_pages/index.html')
-        return page.render(alerts=self.get_alerts(),
-                           )
-    @run_first()
-    def first_run_home(self, request, session):
-        return self.redirect(request, '/setup_wizard/1')
-
-    @webapp.route('/logout', methods=['GET'])
-    @run_first()
-    def page_logout_get(self, request, session):
-        try:
-            self.sessions.close_session(request)
-        except:
-            pass
-        return self.redirect(request, "/?")
-
-    @webapp.route('/login/user', methods=['GET'])
-    @require_auth_pin()
-    def page_login_user_get(self, request, session):
-        return self.redirect(request, '/?')
-
-    @webapp.route('/login/user', methods=['POST'])
-    @require_auth_pin()
-    @inlineCallbacks
-    def page_login_user_post(self, request, session):
-        # print("rquest.args: %s"  % request.args)
-        if 'g-recaptcha-response' not in request.args:
-            self.add_alert('Captcha Missing', 'warning')
-            return self.login_redirect(request)
-        if 'email' not in request.args:
-            self.add_alert('Email Missing', 'warning')
-            return self.login_redirect(request)
-        if 'password' not in request.args:
-            self.add_alert('Password Missing', 'warning')
-            return self.login_redirect(request)
-        submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
-        submitted_email = request.args.get('email')[0]
-        submitted_password = request.args.get('password')[0]
-        # print("submitted_email: %s" % submitted_email)
-        # if submitted_pin.isalnum() is False:
-        #     alerts = { '1234': self.make_alert('Invalid authentication.', 'warning')}
-        #     return self.require_auth(request, alerts)
-
-        # print("self.operating_mode: %s" % self.operating_mode)
-        if self.operating_mode == 'run':
-            results = yield self._LocalDb.get_gateway_user_by_email(self.gateway_id(), submitted_email)
-            if len(results) != 1:
-                self.add_alert('Email address not allowed to access gateway.', 'warning')
-                #            self.sessions.load(request)
-                page = self.get_template(request, self._dir + 'pages/login_user.html')
-                return page.render(alerts=self.get_alerts())
-
-        results = yield self._YomboAPI.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
-        if (results['code'] == 200):
-            login = results['content']['response']['login']
-            # print("login was good...")
-
-            # session = yield self.sessions.load(request)
-            if session is False:
-                # print("created session")
-                session = self.sessions.create(request)
-            # else:
-            #     session.delete('login_redirect')
-            #     print("existing session")
-
-            session['auth'] = True
-            session['auth_id'] = submitted_email
-            session['auth_at'] = time()
-            session['yomboapi_session'] = login['session']
-            session['yomboapi_login_key'] = login['login_key']
-            request.received_cookies[self.sessions.config.cookie_session_name] = session.session_id
-            # print("session saved...")
-            if self.operating_mode == 'first_run':
-                self._YomboAPI.save_system_login_key(login['login_key'])
-                self._YomboAPI.save_system_session(login['session'])
-            return self.login_redirect(request, session)
-        else:
-            self.add_alert(results['content']['message'], 'warning')
-            page = self.get_template(request, self._dir + 'pages/login_user.html')
-            return page.render(alerts=self.get_alerts())
-
-    def login_redirect(self, request, session=None, location=None):
-        if session is not None and 'login_redirect' in session:
-            location = session['login_redirect']
-            session.delete('login_redirect')
-        if location is None:
-            location = "/?"
-        # print("login_redirect: %s" % location)
-        return self.redirect(request, location)
-
-    @webapp.route('/login/pin', methods=['GET'])
-    @run_first()
-    def page_login_pin_get(self, request, session):
-        return self.redirect(request, '/?')
-
-    @webapp.route('/login/pin', methods=['POST'])
-    @run_first()
-    def page_login_pin_post(self, request, session):
-        submitted_pin = request.args.get('authpin')[0]
-        valid_pin = False
-        if submitted_pin.isalnum() is False:
-            self.add_alert('Invalid authentication.', 'warning')
-            return self.redirect(request, '/login/pin')
-
-        def create_pin_session(self, request):
-            expires = 10 * 365 * 24 * 60 * 60  # 10 years from now.
-            request.addCookie(self.sessions.config.cookie_pin, time(), domain=None, path='/',
-                              secure=self.sessions.config.secure, httpOnly=self.sessions.config.httponly,
-                              max_age=expires)
-            request.received_cookies[self.sessions.config.cookie_pin] = '1'
-            session = self.sessions.create(request)
-            session['passed_pin'] = True
-            session['auth'] = False
-            session['auth_id'] = ''
-            session['auth_at'] = 0
-            session['yomboapi_session'] = ''
-            session['yomboapi_login_key'] = ''
-            request.received_cookies[self.sessions.config.cookie_session_name] = session.session_id
-
-        if self.auth_pin_type() == 'pin':
-            if submitted_pin == self.auth_pin:
-                create_pin_session(self, request)
-            else:
-                return self.redirect(request, '/login/pin')
-        elif self.auth_pin_type() == 'totp':
-            if yombo.ext.totp.valid_totp(submitted_pin, self.secret_pin_totp(), window=10):
-                create_pin_session(self, request)
-            else:
-                return self.redirect(request, '/login/pin')
-        elif self.auth_pin_type() == 'none':
-            create_pin_session(self, request)
-
-        return self.home(request)
-
-    def restart(self, request, message=None, redirect=None):
-        if message is None:
-            message = "Web interface requested restart."
-        if redirect is None:
-            redirect = "/?"
-
-        page = self.get_template(request, self._dir + 'pages/restart.html')
-        reactor.callLater(0.3, self.do_restart)
-        return page.render(message=message,
-                           redirect=redirect,
-                           uptime=str(self._Atoms['running_since'])
-                           )
-
-    def do_restart(self):
-        try:
-            raise YomboRestart("Web Interface setup wizard complete.")
-        except:
-            pass
-
-    def shutdown(self, request):
-        page = self.get_template(request, self._dir + 'pages/shutdown.html')
-        # reactor.callLater(0.3, self.do_shutdown)
-        return page.render()
-
-    def do_shutdown(self):
-        raise YomboCritical("Web Interface setup wizard complete.")
-
-    @webapp.route('/static/', branch=True)
-    @run_first()
-    def static(self, request, session):
-        request.responseHeaders.removeHeader('Expires')
-        request.setHeader('Cache-Control', 'max-age=%s' % randint(3600, 7200))
-        return File(self._current_dir + "/lib/webinterface/static/dist")
-
-    def display_pin_console(self):
-        print("###########################################################")
-        print("#                                                         #")
-        if self.operating_mode != 'run':
-            print("# The Yombo Gateway website is running in                 #")
-            print("# configuration only mode.                                #")
-            print("#                                                         #")
-
-        dns_fqdn = self._Configs.get('dns', 'fqdn', None, False)
-        if dns_fqdn is None:
-            local_hostname = "127.0.0.1"
-            internal_hostname = self._Configs.get('core', 'localipaddress_v4')
-            external_hostname = self._Configs.get('core', 'externalipaddress_v4')
-            local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure())
-            internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure())
-            external = "https://%s:%s" % (external_hostname, self.wi_port_secure())
-            print("# The gateway can be accessed from the following urls:    #")
-            print("#                                                         #")
-            print("# On local machine:                                       #")
-            print("#  %-54s #" % local)
-            print("#                                                         #")
-            print("# On local network:                                       #")
-            print("#  %-54s #" % internal)
-            print("#                                                         #")
-            print("# From external network (check port forwarding):          #")
-            print("#  %-54s #" % external)
-        else:
-            website_url = "http://%s" % dns_fqdn
-            print("# The gateway can be accessed from the following url:     #")
-            print("#                                                         #")
-            print("# From anywhere:                                          #")
-            print("#  %-54s #" % website_url)
-
-        print("#                                                         #")
-        print("#                                                         #")
-        print("# Web Interface access pin code:                          #")
-        print("#  %-25s                              #" % self.auth_pin())
-        print("#                                                         #")
-        print("###########################################################")
 
     @inlineCallbacks
     def get_api(webinterface, request, method, path, data=None):
