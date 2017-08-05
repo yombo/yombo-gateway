@@ -765,7 +765,7 @@ class Configuration(YomboLibrary):
             self.configs[section] = {}
         if option not in self.configs[section]:
             self.configs[section][option] = {
-                'create_time': int(time()),
+                'created_at': int(time()),
                 'reads': 0,
                 'writes': 0,
             }
@@ -778,7 +778,7 @@ class Configuration(YomboLibrary):
             self._Statistics.increment("lib.configuration.set.update", bucket_size=15, anon=True)
 
         self.configs[section][option] = dict_merge(self.configs[section][option], {
-                'set_time': int(time()),
+                'updated_at': int(time()),
                 'value': value,
                 'hash': hashlib.sha224( str(value).encode('utf-8') ).hexdigest(),
             })

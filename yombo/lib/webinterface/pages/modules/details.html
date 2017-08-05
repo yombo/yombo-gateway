@@ -97,9 +97,9 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Issue Tracker Link: </label><br>
                                 {{ module._issue_tracker_link|make_link("Link", "_blank") }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ module._created|epoch_to_human }}<br>
+                                {{ module._created_at|epoch_to_human }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                                {{ module._updated|epoch_to_human }}<br>
+                                {{ module._updated_at|epoch_to_human }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->

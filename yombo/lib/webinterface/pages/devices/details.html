@@ -225,7 +225,7 @@
                                             </thead>
                                             <tbody>{% for history in device.status_history %}
                                                  <tr>
-                                                    <td> {{ history.set_time|epoch_to_human }}</td>
+                                                    <td> {{ history.set_at|epoch_to_human }}</td>
                                                     <td> User: {{ history.requested_by.user_id }}<br> Component: {{ history.requested_by.component }}</td>
                                                     <td> {{ history.reported_by }}</td>
                                                     <td> {{ history.human_status }}</td>

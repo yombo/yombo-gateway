@@ -272,8 +272,8 @@ class InputTypes(YomboLibrary):
                 'always_load': 1,
                 'status': 1,
                 'public': 0,
-                'created': time(),
-                'updated': time(),
+                'created_at': time(),
+                'updated_at': time(),
             }
             self._import_input_type(input_type, klass)
         self.load_deferred.callback(10)

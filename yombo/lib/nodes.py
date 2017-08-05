@@ -477,9 +477,6 @@ class Nodes(YomboLibrary):
             node_id = api_data['id']
             new_node = api_data
 
-        new_node['created'] = new_node['created_at']
-        new_node['updated'] = new_node['updated_at']
-
         self.import_node(new_node, source)
         self.nodes[node_id].add_to_db()
         global_invoke_all('_node_added_', called_by=self, **{'node': self.nodes[node_id]})
@@ -691,8 +688,8 @@ class Node:
     :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
     :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
-    :ivar created: (int) EPOCH time when created
-    :ivar updated: (int) EPOCH time when last updated
+    :ivar created_at: (int) EPOCH time when created
+    :ivar updated_at: (int) EPOCH time when last updated
     """
 
     def __init__(self, parent, node):
@@ -719,8 +716,8 @@ class Node:
         self.data = None
         self.data_content_type = None
         self.status = None
-        self.updated = None
-        self.created = None
+        self.updated_at = None
+        self.created_at = None
         self.update_attributes(node, source='parent')
 
     def update_attributes(self, new_data, source=None):
@@ -754,13 +751,9 @@ class Node:
         if 'status' in new_data:
             self.status = new_data['status']
         if 'created_at' in new_data:
-            self.created = new_data['created_at']
-        if 'created' in new_data:
-            self.created = new_data['created']
+            self.created_at = new_data['created_at']
         if 'updated_at' in new_data:
-            self.updated = new_data['updated_at']
-        if 'updated' in new_data:
-            self.updated = new_data['updated']
+            self.updated_at = new_data['updated_at']
         if source != "parent":
             self._Parent.edit_node(new_data, source="node")
 
@@ -801,6 +794,6 @@ class Node:
             'data': self.data,
             'data_content_type': self.data_content_type,
             'status': int(self.status),
-            'created': int(self.created),
-            'updated': int(self.updated),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
         }

@@ -45,9 +45,9 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
                                 {{ node.status|status_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                                {{ node.updated|epoch_to_human }} ({{ node.updated_at|epoch_to_pretty_date }}) <br>
+                                {{ node.updated_at|epoch_to_human }} ({{ node.updated_at|epoch_to_pretty_date }}) <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ node.created|epoch_to_human }}<br>
+                                {{ node.created_at|epoch_to_human }}<br>
                             </div>
                         </div>
                     </div>

@@ -374,6 +374,7 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def _patch(self, path, headers, data):
+        print("yapi patch called. path: %s... headers: %s... data: %s" % (path, headers, data))
         response = yield treq.patch(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
@@ -381,12 +382,12 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def _post(self, path, headers, data):
-        # print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
+        print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
 
         response = yield treq.post(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        # print("dddd: %s" % final_response)
+        print("dddd: %s" % final_response)
         returnValue(final_response)
 
     @inlineCallbacks
@@ -456,7 +457,7 @@ class YomboAPI(YomboLibrary):
                 'message': 'Unknown api error',
                 'html_message': 'Unknown api error',
             }
-            # print("Error content: %s" % content)
+            print("Error content: %s" % content)
             return results
         else:
             if 'response' in content:

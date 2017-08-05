@@ -246,16 +246,16 @@ class DownloadModules(YomboLibrary):
 
         ModuleInstalled = self._LocalDBLibrary.get_model_class("ModuleInstalled")
 
-        if module.install_time is None:
+        if module.install_at is None:
             module_installed = self._LocalDBLibrary.modules_install_new(
                 {'module_id': module_id,
                  'installed_version': data['install_version'],
-                 'install_time': int(time.time())
+                 'install_at': int(time.time())
                  })
         else:
             module_installed = ModuleInstalled.find(['module_id = ?', module_id])
             module_installed.installed_version = data['install_version']
-            module_installed.install_time = int(time.time())
+            module_installed.install_at = int(time.time())
             module_installed.save()
         return "1"
 

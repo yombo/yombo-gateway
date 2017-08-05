@@ -375,8 +375,8 @@ class Locations(YomboLibrary):
             'location_id': location_results['data']['id'],
         }
         data['id'] = location_results['data']['id']
-        data['updated'] = time()
-        data['created'] = time()
+        data['updated_at'] = time()
+        data['created_at'] = time()
         self._LocalDB.insert_locations(data)
         self.import_location(data)
         return results
@@ -456,8 +456,8 @@ class Location:
     :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
     :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
-    :ivar created: (int) EPOCH time when created
-    :ivar updated: (int) EPOCH time when last updated
+    :ivar created_at: (int) EPOCH time when created
+    :ivar updated_at: (int) EPOCH time when last updated
     """
 
     def __init__(self, parent, location):
@@ -478,8 +478,8 @@ class Location:
         self.machine_label = None
         self.label = None
         self.description = None
-        self.updated = None
-        self.created = None
+        self.updated_at = None
+        self.created_at = None
         self.update_attributes(location)
 
     def update_attributes(self, location):
@@ -498,10 +498,10 @@ class Location:
             self.label = location['label']
         if 'description' in location:
             self.description = location['description']
-        if 'created' in location:
-            self.created = location['created']
-        if 'updated' in location:
-            self.updated = location['updated']
+        if 'created_at' in location:
+            self.created_at = location['created_at']
+        if 'updated_at' in location:
+            self.updated_at = location['updated_at']
 
     def save_to_db(self):
         self._Parent._LocalDB.update_locations(self)
@@ -523,6 +523,6 @@ class Location:
     #         'machine_label': str(self.machine_label),
     #         'label': str(self.label),
     #         'description': int(self.description),
-    #         'created': int(self.created),
-    #         'updated': str(self.updated),
+    #         'created_at': int(self.created_at),
+    #         'updated_at': str(self.updated_at),
     #     }

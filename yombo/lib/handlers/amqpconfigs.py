@@ -65,8 +65,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'label': 'label',
                     'description': 'description',
                     'status': 'status',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                     # '': '',
                 }
             },
@@ -113,8 +113,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'externalmqtt_ws': 'externalmqtt_ws',
                     'externalmqtt_ws_le': 'externalmqtt_ws_le',
                     'externalmqtt_ws_ss': 'externalmqtt_ws_ss',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
             'gateway_dns_name': {
@@ -146,8 +146,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'label': 'label',
                     'description': 'description',
                     'always_load': 'always_load',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                     'status': 'status',
                     'public': 'public',
                     # '': '',
@@ -187,8 +187,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'energy_tracker_source': 'energy_tracker_source',
                     'energy_tracker_device': 'energy_tracker_device',
                     'energy_map': 'energy_map',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                     'status': 'status',
                 }
             },
@@ -219,8 +219,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'encryption': 'encryption',
                     'notes': 'notes',
                     'always_load': 'always_load',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -241,8 +241,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'description': 'description',
                     'public': 'public',
                     'status': 'status',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -264,8 +264,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'label': 'label',
                     'description': 'description',
                     'always_load': 'always_load',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                     'public': 'public',
                     'status': 'status',
                 }
@@ -285,7 +285,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'id': 'id',
                     'device_type_id': 'device_type_id',
                     'command_id': 'command_id',
-                    'created_at': 'created',
+                    'created_at': 'created_at',
                 }
             },
 
@@ -307,8 +307,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'description': 'description',
                     'input_regex': 'input_regex',
                     'always_load': 'always_load',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                     'public': 'public',
                     'status': 'status',
                 }
@@ -347,8 +347,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'always_load': 'always_load',
                     'public': 'public',
                     'status': 'status',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -366,8 +366,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'gateway_id': 'gateway_id',
                     'user_id': 'user_id',
                     'email': 'email',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -385,7 +385,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'id': 'id',
                     'module_id': 'module_id',
                     'device_type_id': 'device_type_id',
-                    'created_at': 'created',
+                    'created_at': 'created_at',
                 }
             },
 
@@ -412,8 +412,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'data': 'data',
                     'data_content_type': 'data_content_type',
                     'status': 'status',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -433,8 +433,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'group_description': 'group_description',
                     'group_weight': 'group_weight',
                     'status': 'status',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -461,8 +461,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'default_value': 'default_value',
                     'field_help_text': 'field_help_text',
                     'multiple': 'multiple',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -481,8 +481,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'relation_type': 'data_relation_type',
                     'data': 'data',
                     'data_weight': 'data_weight',
-                    'created_at': 'created',
-                    'updated_at': 'updated',
+                    'created_at': 'created_at',
+                    'updated_at': 'updated_at',
                 }
             },
 
@@ -801,10 +801,10 @@ class AmqpConfigHandler(YomboLibrary):
             self.db_delete_ids[current_table] = []
 
             select_fields = ['id']
-            if 'updated' in table_cols:
-                select_fields.append('updated')
-            if 'created' in table_cols:
-                select_fields.append('created')
+            if 'updated_at' in table_cols:
+                select_fields.append('updated_at')
+            if 'created_at' in table_cols:
+                select_fields.append('created_at')
             # print(" selecting table: %s  fields: %s" % (current_table, select_fields))
             records = yield self._LocalDB.select(current_table, ", ".join(select_fields))
             for record in records:
@@ -903,7 +903,7 @@ class AmqpConfigHandler(YomboLibrary):
                     self.db_insert_data[current_table].append(item_to_insert)
                     self.db_completed_ids[current_table].append(filtered_data['id'])
                     if 'added' in config_data['functions']:
-                        klass = getattr(library, config_data['functions']['updated'])
+                        klass = getattr(library, config_data['functions']['updated_at'])
                         klass(data, True)  # True = the library doesn't need to update the database
 
                 # update records
@@ -911,14 +911,14 @@ class AmqpConfigHandler(YomboLibrary):
                     # if config_item == 'gateway_modules':
                     #     print("new data: %s" % filtered_data)
                     #     print("old data: %s" % self.db_existing_data[current_table][filtered_data['id']])
-                    #     print("filtered_data['updated']: %s" % filtered_data['updated'])
-                    if 'updated' in filtered_data:
+                    #     print("filtered_data['updated_at']: %s" % filtered_data['updated_at'])
+                    if 'updated_at' in filtered_data:
                         # Only update if records says it's newer...
-                        if filtered_data['updated'] == self.db_existing_data[current_table][filtered_data['id']]['updated']:
+                        if filtered_data['updated_at'] == self.db_existing_data[current_table][filtered_data['id']]['updated_at']:
                             self.db_completed_ids[current_table].append(data['id'])
                             continue
-                    elif 'created' in filtered_data:
-                        if filtered_data['created'] == self.db_existing_data[current_table][filtered_data['id']]['created']:
+                    elif 'created_at' in filtered_data:
+                        if filtered_data['created_at'] == self.db_existing_data[current_table][filtered_data['id']]['created_at']:
                             self.db_completed_ids[current_table].append(data['id'])
                             continue
 
@@ -933,7 +933,7 @@ class AmqpConfigHandler(YomboLibrary):
                     self.db_update_data[current_table].append(item_to_update)
                     self.db_completed_ids[current_table].append(filtered_data['id'])
                     # self._LocalDB.dbconfig.update(current_table, filtered_data, where=['id = ?', data['id']] )
-                    if 'updated' in config_data['functions']:
+                    if 'updated_at' in config_data['functions']:
                         klass = getattr(library, config_data['functions']['added'])
                         klass(filtered_data, True)
 
@@ -969,7 +969,7 @@ class AmqpConfigHandler(YomboLibrary):
         :return:
         """
         self.__doing_full_configs = True
-        self._full_download_start_time = time()
+        self._full_download_start_at = time()
         self._getAllConfigsLoggerLoop = LoopingCall(self._show_pending_configs)
         self._getAllConfigsLoggerLoop.start(3, False)  # Display a log line for pending downloaded, false - Dont' show now
         self._checkProcessQueueLoop.start(0.5, False)
@@ -1061,7 +1061,7 @@ class AmqpConfigHandler(YomboLibrary):
             logger.debug("Adding table to request queue: {table}", table=table)
             self.__pending_updates[table] = {
                 'status': 'requested',
-                'request_time': time(),
+                'request_at': time(),
             }
 
     def _remove_full_download_dueue(self, table):
@@ -1132,7 +1132,7 @@ class AmqpConfigHandler(YomboLibrary):
 
 
     def _show_pending_configs(self):
-        waitingTime = time() - self._full_download_start_time
+        waitingTime = time() - self._full_download_start_at
         logger.debug("Waited {waitingTime} for startup; pending these configurations:", waitingTime=waitingTime)
         count_pending = 0
         currently_processing = ''

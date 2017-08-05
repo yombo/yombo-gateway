@@ -48,7 +48,7 @@
                                                  <tr>
                                                      <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
                                                      <td>{{ atom['value_human'] }}</td>
-                                                     <td>{{ atom['created']|epoch_to_human }}</td>
+                                                     <td>{{ atom['created_at']|epoch_to_human }}</td>
                                                      <td>{% if _('atoms:::' + atom_name) != 'atoms:::' + atom_name %}{{ _('atoms:::' + atom_name) }} {% endif %}</td>
                                                  </tr>{% endfor %}
                                             </tbody>
@@ -70,7 +70,7 @@
                                                      <td>{{ gateways[atom['gateway_id']].label }}</td>
                                                      <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
                                                      <td>{{ atom['value_human'] }}</td>
-                                                     <td>{{ atom['created']|epoch_to_human }}</td>
+                                                     <td>{{ atom['updated_at']|epoch_to_human }}</td>
                                                      <td>{% if _('atoms:::' + atom_name) != 'atoms:::' + atom_name %}{{ _('atoms:::' + atom_name) }} {% endif %}</td>
                                                  </tr>{% endfor %} {% endfor %}
                                             </tbody>

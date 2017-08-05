@@ -298,7 +298,7 @@ class GPG(YomboLibrary):
                 'length' : record['length'],
                 'ownertrust' : record['ownertrust'],
                 'algo' : record['algo'],
-                'created' : record['date'],
+                'created_at' : record['date'],
                 'trust' : record['trust'],
                 'type' : record['type'],
                 'uids' : record['uids'],

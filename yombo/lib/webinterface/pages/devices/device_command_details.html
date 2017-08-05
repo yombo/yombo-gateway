@@ -27,19 +27,19 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Command: </label><br>
                             {{ command.command.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created Time: </label><br>
-                            {{ command.created_time|epoch_to_human }} ({{command.created_time|epoch_to_pretty_date}})<br>
+                            {{ command.created_at|epoch_to_human }} ({{command.created_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Sent Time: </label><br>
-                            {{ command.sent_time|epoch_to_human }} ({{command.sent_time|epoch_to_pretty_date}})<br>
+                            {{ command.sent_at|epoch_to_human }} ({{command.sent_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Received Time: </label><br>
-                            {{ command.received_time|epoch_to_human }} ({{command.received_time|epoch_to_pretty_date}})<br>
+                            {{ command.received_at|epoch_to_human }} ({{command.received_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Pending Time: </label><br>
-                            {{ command.pending_time|epoch_to_human }} ({{command.pending_time|epoch_to_pretty_date}})<br>
+                            {{ command.pending_at|epoch_to_human }} ({{command.pending_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Finished Time: </label><br>
-                            {{ command.finished_time|epoch_to_human }} ({{command.finished_time|epoch_to_pretty_date}})<br>
+                            {{ command.finished_at|epoch_to_human }} ({{command.finished_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Not Before Time: </label><br>
-                            {{ command.not_before_time|epoch_to_human }} ({{command.not_before_time|epoch_to_pretty_date}})<br>
+                            {{ command.not_before_at|epoch_to_human }} ({{command.not_before_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Not After Time: </label><br>
-                            {{ command.not_after_time|epoch_to_human }} ({{command.not_after_time|epoch_to_pretty_date}})<br>
+                            {{ command.not_after_at|epoch_to_human }} ({{command.not_after_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Request Id: </label><br>
                             {{ command.request_id }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Persistent Request Id: </label><br>

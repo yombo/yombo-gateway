@@ -34,9 +34,9 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Source: </label><br>
                             {{ notice.source }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                            {{ notice.created|epoch_to_human }} ({{ notice.created|epoch_to_pretty_date }})<br>
+                            {{ notice.created_at|epoch_to_human }} ({{ notice.created|epoch_to_pretty_date }})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Expires: </label><br>
-                            {{ notice.expire|epoch_to_human }}<br>
+                            {{ notice.expire_at |epoch_to_human }}<br>
                         </div>
                     <!-- /.panel-body -->
                     </div>

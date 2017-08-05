@@ -558,8 +558,8 @@ class Command:
         self.always_load = None
         self.public = None
         self.status = None
-        self.created = None
-        self.updated = None
+        self.created_at = None
+        self.updated_at = None
 
         self.update_attributes(command)
 
@@ -578,8 +578,8 @@ class Command:
         self.always_load = command['always_load']
         self.public = command['public']
         self.status = command['status']
-        self.created = command['created']
-        self.updated = command['updated']
+        self.created_at = command['created_at']
+        self.updated_at = command['updated_at']
 
     def __str__(self):
         """
@@ -608,6 +608,6 @@ class Command:
             'description': str(self.description),
             'public': int(self.public),
             'status': int(self.status),
-            'created': int(self.created),
-            'updated': int(self.updated),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
         }

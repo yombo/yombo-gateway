@@ -246,8 +246,8 @@ class Variables(YomboLibrary):
                             'relation_id': None,
                             'relation_type': relation_type,
                             'weight': 0,
-                            'created': time(),
-                            'updated': time(),
+                            'created_at': time(),
+                            'updated_at': time(),
                         }
                         print("zzzzz")
                         if data is not None:

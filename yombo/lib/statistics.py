@@ -658,7 +658,7 @@ class Statistics(YomboLibrary):
                         od['bucket_type'] = current_bucket['type']
                         od['bucket_name'] = current_bucket['name']
                         od['bucket_value'] = current_bucket['value']
-                        od['updated'] = int(time())
+                        od['updated_at'] = int(time())
                         od['anon'] = current_bucket['anon']
                         od['finished'] = int(bucket_time < (current_bucket_time['time']))
                         to_save.append(od)
@@ -697,7 +697,7 @@ class Statistics(YomboLibrary):
                             od['bucket_name'] = current_bucket['name']
                             od['bucket_value'] = current_bucket['value']
                             od['bucket_average_data'] = json.dumps(current_bucket['average_data'], separators=(',',':'))
-                            od['updated'] = int(time())
+                            od['updated_at'] = int(time())
                             od['anon'] = current_bucket['anon']
                             od['finished'] = int(bucket_time < (current_bucket_time['time']))
                             to_save.append(od)
@@ -716,7 +716,7 @@ class Statistics(YomboLibrary):
                 od['bucket_type'] = current_bucket['type']
                 od['bucket_name'] = current_bucket['name']
                 od['bucket_value'] = current_bucket['value']
-                od['updated'] = int(time())
+                od['updated_at'] = int(time())
                 od['anon'] = current_bucket['anon']
                 od['finished'] = 1
                 to_save.append(od)

@@ -80,9 +80,9 @@
                                     </div>
                                     <!-- Change this to a button or input when using this as a form -->
                                     <br>
-                                    <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq"></div>
+                                    <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq" data-callback="enableSubmitBtn"></div>
                                     <div>&nbsp;</div>
-                                    <button type="submit" id="submit_login" class="btn btn-lg btn-success btn-block">Login</button>
+                                    <button type="submit" id="submit_login" class="disabled btn btn-lg btn-success btn-block">Login</button>
                                 </fieldset>
                             </form>
                          </div>
@@ -103,8 +103,16 @@
 
 {% block body_bottom %}
 <script>
+function enableSubmitBtn(){
+    document.getElementById("submit_login").disabled = false;
+}
+
 $().ready(function() {
 
+    $('#submit_login').prop('disabled', true);
+
+//    document.getElementById("submit_login").disabled = true;
+//    console.log("disabled it...")
     $('#login').validate({
         ignore: ".ignore",
         rules: {

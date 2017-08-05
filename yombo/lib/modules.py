@@ -66,8 +66,8 @@ SYSTEM_MODULES['automationhelpers'] = {
     'git_link': '',
     'public': '2',
     'status': '1',
-    'created': int(time()),
-    'updated': int(time()),
+    'created_at': int(time()),
+    'updated_at': int(time()),
     'load_source': 'system modules',
     }
 
@@ -395,8 +395,8 @@ class Modules(YomboLibrary):
                   'dev_version': '',
                   'public': '0',
                   'status': '1',
-                  'created': int(time()),
-                  'updated': int(time()),
+                  'created_at': int(time()),
+                  'updated_at': int(time()),
                   'load_source': 'localmodules.ini'
                 }
 
@@ -424,8 +424,8 @@ class Modules(YomboLibrary):
                             'input_required': 0,
                             'input_type_id': "any",
                             'variable_id': 'xxx',
-                            'created': int(time()),
-                            'updated': int(time()),
+                            'created_at': int(time()),
+                            'updated_at': int(time()),
                         }
                         self._localModuleVars[mod_label][variable['field_machine_label']].append(variable)
 
@@ -497,8 +497,8 @@ class Modules(YomboLibrary):
             self.modules[module_id]._dev_version = module['dev_version']
             self.modules[module_id]._public = module['public']
             self.modules[module_id]._status = module['status']
-            self.modules[module_id]._created = module['created']
-            self.modules[module_id]._updated = module['updated']
+            self.modules[module_id]._created_at = module['created_at']
+            self.modules[module_id]._updated_at = module['updated_at']
             self.modules[module_id]._load_source = module['load_source']
             self.modules[module_id]._device_types = []  # populated by Modules::module_init_invoke
             # print "loading modules: %s" % self.modules[module_id]._machine_label

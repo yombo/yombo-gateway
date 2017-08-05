@@ -303,7 +303,7 @@ class Atoms(YomboLibrary):
         :rtype: float
         """
         if key in self.__Atoms:
-            return self.__Atoms[key]['updated']
+            return self.__Atoms[key]['updated_at']
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
 
@@ -389,7 +389,7 @@ class Atoms(YomboLibrary):
         if key in self.__Atoms[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
-            self.__Atoms[gateway_id][key]['updated'] = int(round(time()))
+            self.__Atoms[gateway_id][key]['updated_at'] = int(round(time()))
             if human_value is not None:
                 self.__Atoms[gateway_id][key]['value_human'] = human_value
             if self.__Atoms[gateway_id][key]['value'] == value:
@@ -399,8 +399,8 @@ class Atoms(YomboLibrary):
             is_new = True
             self.__Atoms[gateway_id][key] = {
                 'gateway_id': gateway_id,
-                'created': int(time()),
-                'updated': int(time()),
+                'created_at': int(time()),
+                'updated_at': int(time()),
             }
             self._Statistics.increment("lib.atoms.set.new", bucket_size=60, anon=True)
 
@@ -447,8 +447,8 @@ class Atoms(YomboLibrary):
             'value': values['value'],
             'value_human': values['value_human'],
             'value_type': values['value_type'],
-            'created': values['created'],
-            'updated': values['updated'],
+            'created_at': values['created_at'],
+            'updated_at': values['updated_at'],
         }
         try:
             yield yombo.utils.global_invoke_all('_atoms_set_',

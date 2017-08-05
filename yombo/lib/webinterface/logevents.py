@@ -158,8 +158,8 @@ class LogEvents(YomboLibrary):
         else:
             if notice['expire'] > int(time()):
                 YomboWarning("New notification is set to expire before current time.")
-        if 'created' not in notice:
-            notice['created'] = int(time())
+        if 'created_at' not in notice:
+            notice['created_at'] = int(time())
 
         if 'acknowledged' not in notice:
             notice['acknowledged'] = False
@@ -180,7 +180,7 @@ class LogEvents(YomboLibrary):
             self.notifications.prepend(notice['id'], Notification(notice))
         else:
             self.notifications[notice['id']] = Notification(notice)
-            # self.notifications = OrderedDict(sorted(self.notifications.items(), key=lambda x: x[1]['created']))
+            # self.notifications = OrderedDict(sorted(self.notifications.items(), key=lambda x: x[1]['created_at']))
             pass
         return notice['id']
 
@@ -210,7 +210,7 @@ class Notification:
         self.title = notice['title']
         self.message = notice['message']
         self.meta = notice['meta']
-        self.created = notice['created']
+        self.created_at = notice['created_at']
 
     def __str__(self):
         """
@@ -233,5 +233,5 @@ class Notification:
             'title': str(self.title),
             'message': str(self.message),
             'meta': str(self.meta),
-            'created': str(self.created),
+            'created_at': str(self.created_at),
         }

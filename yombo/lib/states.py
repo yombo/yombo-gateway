@@ -254,8 +254,8 @@ class States(YomboLibrary, object):
                     'value_human': self.convert_to_human(state['value'], state['value_type']),
                     'value_type': state['value_type'],
                     'live': state['live'],
-                    'created': state['created'],
-                    'updated': state['updated'],
+                    'created_at': state['created_at'],
+                    'updated_at': state['updated_at'],
                 }
         self.init_deferred.callback(10)
 
@@ -303,7 +303,7 @@ class States(YomboLibrary, object):
         if gateway_id is None:
             gateway_id = self.gateway_id
         if key in self.__States[gateway_id]:
-            return self.__States[gateway_id][key]['created']
+            return self.__States[gateway_id][key]['created_at']
         else:
             raise KeyError("Cannot get state time: %s not found" % key)
 
@@ -427,7 +427,7 @@ class States(YomboLibrary, object):
         if key in self.__States[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
-            self.__States[gateway_id][key]['updated'] = int(round(time()))
+            self.__States[gateway_id][key]['updated_at'] = int(round(time()))
             if self.__States[gateway_id][key]['value'] == value:
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
@@ -435,8 +435,8 @@ class States(YomboLibrary, object):
             is_new = True
             self.__States[gateway_id][key] = {
                 'gateway_id': gateway_id,
-                'created': int(time()),
-                'updated': int(time()),
+                'created_at': int(time()),
+                'updated_at': int(time()),
                 'live': False,
             }
             self._Statistics.increment("lib.states.set.new", bucket_size=60, anon=True)
@@ -507,8 +507,8 @@ class States(YomboLibrary, object):
                 od['value'] = data['value']
                 od['value_type'] = data['value_type']
                 od['live'] = live
-                od['created'] = data['created']
-                od['updated'] = data['updated']
+                od['created_at'] = data['created_at']
+                od['updated_at'] = data['updated_at']
                 to_save.append(od)
             except IndexError:
                 break
@@ -534,8 +534,8 @@ class States(YomboLibrary, object):
             'value_human': values['value_human'],
             'value_type': values['value_type'],
             'live': False,
-            'created': values['created'],
-            'updated': values['updated'],
+            'created_at': values['created_at'],
+            'updated_at': values['updated_at'],
         }
 
         # Call any hooks

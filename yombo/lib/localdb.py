@@ -320,22 +320,22 @@ class LocalDB(YomboLibrary):
 
         command = yield Command.find('command1')
         if command is None:
-            command = yield Command(id='command1', machine_label='6on', label='O6n', public=1, status=1, created=1,
-                                    updated=1).save()
+            command = yield Command(id='command1', machine_label='6on', label='O6n', public=1, status=1, created_at=1,
+                                    updated_at=1).save()
 
         device = yield Device.find('device1')
         if device is None:
             device = yield Device(id='device1', machine_label='on', label='Lamp1', gateway_id='gateway1',
-                                  device_type_id='devicetype1', pin_required=0, pin_timeout=0, status=1, created=1,
-                                  updated=1, description='desc', notes='note', Voice_cmd_src='auto',
+                                  device_type_id='devicetype1', pin_required=0, pin_timeout=0, status=1, created_at=1,
+                                  updated_at=1, description='desc', notes='note', Voice_cmd_src='auto',
                                   voice_cmd='lamp on').save()
-            # variable = yield Variable(variable_type='device', variable_id="variable_id1", foreign_id='deviceVariable1', device_id=device.id, weigh=0, machine_label='device_var_1', label='Device Var 1', value='somevalue1', updated=1, created=1).save()
+            # variable = yield Variable(variable_type='device', variable_id="variable_id1", foreign_id='deviceVariable1', device_id=device.id, weigh=0, machine_label='device_var_1', label='Device Var 1', value='somevalue1', updated_at=1, created_at=1).save()
 
         deviceType = yield DeviceType.find('devicetype1')
         if deviceType is None:
             deviceType = yield DeviceType(id=device.device_type_id, machine_label='x10_appliance', label='Lamp1',
-                                          device_class='x10', description='x10 appliances', status=1, created=1,
-                                          updated=1).save()
+                                          device_class='x10', description='x10 appliances', status=1, created_at=1,
+                                          updated_at=1).save()
             args = {'device_type_id': device.id, 'command_id': command.id}
             yield self.dbconfig.insert('command_device_types', args)
 
@@ -432,8 +432,8 @@ class LocalDB(YomboLibrary):
         device.energy_tracker_device = data['energy_tracker_device']
         device.energy_tracker_source = data['energy_tracker_source']
         device.energy_map = data['energy_map']
-        device.created = data['created']
-        device.updated = data['updated']
+        device.created_at = data['created_at']
+        device.updated_at = data['updated_at']
         yield device.save()
 
     @inlineCallbacks
@@ -453,8 +453,8 @@ class LocalDB(YomboLibrary):
             'statistic_label': device.statistic_label,
             'statistic_lifetime': device.statistic_lifetime,
             'status': device.enabled_status,
-            'created': device.updated,
-            'updated': device.updated,
+            'created_at': device.created_at,
+            'updated_at': device.updated_at,
             'energy_tracker_device': device.energy_tracker_device,
             'energy_tracker_source': device.energy_tracker_source,
             'energy_map': json.dumps(device.energy_map),
@@ -490,8 +490,8 @@ class LocalDB(YomboLibrary):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
         records = yield self.dbconfig.select('device_status',
-                                             select='device_id, set_time, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, request_id, uploaded, uploadable',
-                                             where=['device_id = ?', id], orderby='set_time', limit=limit)
+                                             select='device_id, set_at, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, request_id, uploaded, uploadable',
+                                             where=['device_id = ?', id], orderby='set_at', limit=limit)
         for index in range(len(records)):
             machine_status_extra = records[index]['machine_status_extra']
             if machine_status_extra is None:
@@ -511,7 +511,7 @@ class LocalDB(YomboLibrary):
             machine_status_extra = json.dumps(kwargs['machine_status_extra'], separators=(',', ':'))
         results = yield DeviceStatus(
             device_id=device_id,
-            set_time=kwargs.get('set_time', time()),
+            set_at=kwargs.get('set_at', time()),
             energy_usage=kwargs['energy_usage'],
             energy_type=kwargs['energy_type'],
             human_status=kwargs.get('human_status', machine_status),
@@ -528,7 +528,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def get_device_commands(self, where):
-        records = yield DeviceCommand.find(where=dictToWhere(where), orderby='created_time DESC')
+        records = yield DeviceCommand.find(where=dictToWhere(where), orderby='created_at DESC')
         DCs = []
         for record in records:
             DC =  record.__dict__
@@ -555,14 +555,14 @@ class LocalDB(YomboLibrary):
             device_command.device_id=DC.device.device_id
             device_command.command_id=DC.command.command_id
             device_command.inputs=inputs
-            device_command.created_time=DC.created_time
-            device_command.broadcast_time=DC.broadcast_time
-            device_command.sent_time=DC.sent_time
-            device_command.received_time=DC.received_time
-            device_command.pending_time=DC.pending_time
-            device_command.finished_time=DC.finished_time
-            device_command.not_before_time=DC.not_before_time
-            device_command.not_after_time=DC.not_after_time
+            device_command.created_at=DC.created_at
+            device_command.broadcast_at=DC.broadcast_at
+            device_command.sent_at=DC.sent_at
+            device_command.received_at=DC.received_at
+            device_command.pending_at=DC.pending_at
+            device_command.finished_at=DC.finished_at
+            device_command.not_before_at=DC.not_before_at
+            device_command.not_after_at=DC.not_after_at
             device_command.history=json.dumps(DC.history, separators=(',', ':'))
             device_command.status=DC.status
             device_command.requested_by=json.dumps(DC.requested_by, separators=(',', ':'))
@@ -572,13 +572,13 @@ class LocalDB(YomboLibrary):
         else:
             args = {
                 'inputs': inputs,
-                'created_time': DC.created_time,
-                'sent_time': DC.sent_time,
-                'received_time': DC.received_time,
-                'pending_time': DC.pending_time,
-                'finished_time': DC.finished_time,
-                'not_before_time': DC.not_before_time,
-                'not_after_time': DC.not_after_time,
+                'created_at': DC.created_at,
+                'sent_at': DC.sent_at,
+                'received_at': DC.received_at,
+                'pending_at': DC.pending_at,
+                'finished_at': DC.finished_at,
+                'not_before_at': DC.not_before_at,
+                'not_after_at': DC.not_after_at,
                 'history': json.dumps(DC.history, separators=(',', ':')),
                 'status': DC.status,
                 'requested_by': json.dumps(DC.requested_by, separators=(',', ':')),
@@ -646,8 +646,8 @@ class LocalDB(YomboLibrary):
         location.label = data['label']
         location.machine_label = data['machine_label']
         location.description = data.get('description', None)
-        location.created = data['created']
-        location.updated = data['updated']
+        location.created_at = data['created_at']
+        location.updated_at = data['updated_at']
         yield location.save()
 
     @inlineCallbacks
@@ -657,7 +657,7 @@ class LocalDB(YomboLibrary):
             'label': location.label,
             'machine_label': location.machine_label,
             'description': location.description,
-            'updated': location.updated,
+            'updated_at': location.updated_at,
         }
         # print("saving notice update_locations: %s" % args)
         results = yield self.dbconfig.update('locations', args, where=['id = ?', location.location_id])
@@ -720,7 +720,7 @@ class LocalDB(YomboLibrary):
                 'length': record['length'],
                 'have_private': record['have_private'],
                 'expires': record['expires'],
-                'created': record['created'],
+                'created_at': record['created_at'],
             }
             keys[record['fingerprint']] = key
         return keys
@@ -734,7 +734,7 @@ class LocalDB(YomboLibrary):
         key.publickey = gwkey['publickey']
         key.length = gwkey['length']
         key.expires = gwkey['expires']
-        key.created = gwkey['created']
+        key.created_at = gwkey['created_at']
         key.have_private = gwkey['have_private']
         if 'notes' in gwkey:
             key.notes = gwkey['notes']
@@ -783,8 +783,8 @@ class LocalDB(YomboLibrary):
     def modules_install_new(self, data):
         results = yield ModuleInstalled(module_id=data['module_id'],
                                         installed_version=data['installed_version'],
-                                        install_time=data['install_time'],
-                                        last_check=data['install_time'],
+                                        install_at=data['install_at'],
+                                        last_check=data['last_check'],
                                         ).save()
         return results
 
@@ -901,8 +901,8 @@ class LocalDB(YomboLibrary):
         node.data = self.encode_data(data.data, data.data_content_type)
         node.data_content_type = data.data_content_type
         node.status = data.status
-        node.updated = data.updated
-        node.created = data.created
+        node.updated_at = data.updated_at
+        node.created_at = data.created_at
         yield node.save()
 
     @inlineCallbacks
@@ -919,8 +919,8 @@ class LocalDB(YomboLibrary):
             'data': self.encode_data(node.data, node.data_content_type),
             'data_content_type': node.data_content_type,
             'status': node.enabled_status,
-            'created': node.updated,
-            'updated': node.updated,
+            'created_at': node.created_at,
+            'updated_at': node.updated_at,
         }
         results = yield self.dbconfig.update('nodes', args, where=['id = ?', node.device_id])
         return results
@@ -937,7 +937,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_notifications(self):
         cur_time = int(time())
-        records = yield Notifications.find(where=['expire > ?', cur_time], orderby='created DESC')
+        records = yield Notifications.find(where=['expire > ?', cur_time], orderby='created_at DESC')
         return records
 
     @inlineCallbacks
@@ -964,12 +964,12 @@ class LocalDB(YomboLibrary):
             'always_show': notice['always_show'],
             'always_show_allow_clear': notice['always_show_allow_clear'],
             'acknowledged': notice['acknowledged'],
-            'acknowledged_time': notice['acknowledged_time'],
+            'acknowledged_at': notice['acknowledged_at'],
             'user': notice['user'],
             'title': notice['title'],
             'message': notice['message'],
             'meta': json.dumps(notice['meta'], separators=(',', ':')),
-            'created': notice['created'],
+            'created_at': notice['created_at'],
         }
         results = yield self.dbconfig.insert('notifications', args, None, 'OR IGNORE')
         return results
@@ -984,7 +984,7 @@ class LocalDB(YomboLibrary):
             'always_show': notice.always_show,
             'always_show_allow_clear': notice.always_show_allow_clear,
             'acknowledged': notice.acknowledged,
-            'acknowledged_time': notice.acknowledged_time,
+            'acknowledged_at': notice.acknowledged_at,
             'user': notice.user,
             'title': notice.title,
             'message': notice.message,
@@ -1025,9 +1025,9 @@ class LocalDB(YomboLibrary):
             'is_valid': session_data['is_valid'],
             'gateway_id': gateway_id,
             'session_data': json.dumps(session_data),
-            'created': session_data['created'],
+            'created_at': session_data['created_at'],
             'last_access': session_data['last_access'],
-            'updated': session_data['updated'],
+            'updated_at': session_data['updated_at'],
         }
         yield self.dbconfig.insert('webinterface_sessions', args, None, 'OR IGNORE')
 
@@ -1036,7 +1036,7 @@ class LocalDB(YomboLibrary):
         args = {'is_valid':session_data['is_valid'],
                 'session_data': json.dumps(session_data),
                 'last_access': session_data['last_access'],
-                'updated': session_data['updated'],
+                'updated_at': session_data['updated_at'],
                 }
         yield self.dbconfig.update('webinterface_sessions', args, where=['id = ?', session_id])
 
@@ -1061,11 +1061,11 @@ class LocalDB(YomboLibrary):
         else:
             extra_where = ''
 
-        sql = """SELECT name, gateway_id, value, value_type, live, created, updated
+        sql = """SELECT name, gateway_id, value, value_type, live, created_at, updated_at
 FROM states s1
-WHERE created = (SELECT MAX(created) from states s2 where s1.id = s2.id)
+WHERE created_at = (SELECT MAX(created_at) from states s2 where s1.id = s2.id)
 %s
-AND created > %s
+AND created_at > %s
 GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         states = yield Registry.DBPOOL.runQuery(sql)
         results = []
@@ -1076,8 +1076,8 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
                 'value': state[2],
                 'value_type': state[3],
                 'live': state[4],
-                'created': state[5],
-                'updated': state[6],
+                'created_at': state[5],
+                'updated_at': state[6],
             })
         return results
 
@@ -1155,8 +1155,8 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
             value=values['value'],
             value_type=values['value_type'],
             live=live,
-            created=values['created'],
-            updated=values['updated'],
+            created_at=values['created_at'],
+            updated_at=values['updated_at'],
         ).save()
 
     @inlineCallbacks
@@ -1173,13 +1173,13 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         :param name:
         :return:
         """
-        sql = "DELETE FROM states WHERE created < %s" % str(int(time()) - 60 * 60 * 24 * 60)
+        sql = "DELETE FROM states WHERE created_at < %s" % str(int(time()) - 60 * 60 * 24 * 60)
         yield Registry.DBPOOL.runQuery(sql)
         sql = """DELETE FROM states WHERE id IN
               (SELECT id
                FROM states AS s
                WHERE s.name = states.name
-               ORDER BY created DESC
+               ORDER BY created_at DESC
                LIMIT -1 OFFSET 100)"""
         yield Registry.DBPOOL.runQuery(sql)
 
@@ -1220,7 +1220,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         args = {'component': component,
                 'dict_name': dict_name,
                 'dict_data': dict_data,
-                'updated': int(time()),
+                'updated_at': int(time()),
                 }
         #        print "starting set_sql_dict"
         records = yield self.dbconfig.select('sqldict', select='dict_name',
@@ -1230,7 +1230,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
                                                  where=['component = ? AND dict_name = ?', component, dict_name])
         #            print "set_sql_dict: update reuslts: %s" %results
         else:
-            args['created'] = args['updated']
+            args['created_at'] = args['updated_at']
             results = yield self.dbconfig.insert('sqldict', args, None, 'OR IGNORE')
         #            print "set_sql_dict: insert reuslts: %s" %results
 
@@ -1263,13 +1263,13 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
 FROM  statistics s1
 INNER JOIN
 (
-    SELECT Max(updated) updated, bucket_name
+    SELECT Max(updated_at) updated_at, bucket_name
     FROM   statistics
     WHERE bucket_type = 'datapoint'
     GROUP BY bucket_name
 ) AS s2
     ON s1.bucket_name = s2.bucket_name
-    AND s1.updated = s2.updated
+    AND s1.updated_at = s2.updated_at
 ORDER BY id desc"""
         stats = yield Registry.DBPOOL.runQuery(sql)
         results = {}
@@ -1291,7 +1291,7 @@ ORDER BY id desc"""
 
         # print "save stat data : %s" % bucket
         args = {'bucket_value': bucket['value'],
-                'updated': int(time()),
+                'updated_at': int(time()),
                 'anon': bucket['anon'],
                 }
 
@@ -1345,7 +1345,7 @@ ORDER BY id desc"""
     @inlineCallbacks
     def set_uploaded_statistics(self, value, the_list):
         where_str = "id in (" + ", ".join(map(str, the_list)) + ")"
-        yield self.dbconfig.update('statistics', {'updated': int(time()), 'uploaded': value},
+        yield self.dbconfig.update('statistics', {'updated_at': int(time()), 'uploaded': value},
                                    where=[where_str])
 
     def _unpickle_stats(self, stats, type_name=None, averagedata_name=None):
@@ -1447,7 +1447,7 @@ ORDER BY id desc"""
         #  `task_name`      TEXT NOT NULL,
         #  `task_arguments` BLOB,
         #  `source`         TEXT NOT NULL,
-        #  `created`        INTEGER NOT NULL,
+        #  `created_at`        INTEGER NOT NULL,
         #  );"""
 
     ###########################
@@ -1567,8 +1567,8 @@ ORDER BY id desc"""
                     'default_value': record.default_value,
                     'multiple': record.multiple,
                     'data_weight': record.data_weight,
-                    'created': record.field_created,
-                    'updated': record.field_updated,
+                    'created_at': record.field_created_at,
+                    'updated_at': record.field_updated_at,
                     'data': OrderedDict(),
                     'values': [],
                     'values_display': [],
@@ -1578,8 +1578,8 @@ ORDER BY id desc"""
             data = {
                 'id': record.data_id,
                 'weight': record.data_weight,
-                'created': record.data_created,
-                'updated': record.data_updated,
+                'created_at': record.data_created_at,
+                'updated_at': record.data_updated_at,
                 'relation_id': record.data_relation_id,
                 'relation_type': record.data_relation_type,
             }
@@ -1659,8 +1659,8 @@ ORDER BY id desc"""
                     'input_type_id': record.input_type_id,
                     'default_value': record.default_value,
                     'multiple': record.multiple,
-                    'created': record.field_created,
-                    'updated': record.field_updated,
+                    'created_at': record.field_created_at,
+                    'updated_at': record.field_updated_at,
                     'data': OrderedDict(),
                     'values': [],
                     'values_display': [],
@@ -1714,8 +1714,8 @@ ORDER BY id desc"""
                     'default_value': record.default_value,
                     'multiple': record.multiple,
                     'data_weight': record.data_weight,
-                    'created': record.field_created,
-                    'updated': record.field_updated,
+                    'created_at': record.field_created_at,
+                    'updated_at': record.field_updated_at,
                     'data': OrderedDict(),
                     'values': [],
                     'values_display': [],
@@ -1724,8 +1724,8 @@ ORDER BY id desc"""
             data = {
                 'id': record.data_id,
                 'weight': record.data_weight,
-                'created': record.data_created,
-                'updated': record.data_updated,
+                'created_at': record.data_created_at,
+                'updated_at': record.data_updated_at,
                 'relation_id': record.data_relation_id,
                 'relation_type': record.data_relation_type,
             }
@@ -1773,6 +1773,23 @@ ORDER BY id desc"""
                                                     data_relation_id]
                                              )
         return results
+
+    @inlineCallbacks
+    def add_variable_data(self, data, **kwargs):
+        args = {
+            'id': data['id'],
+            'gateway_id': data['gateway_id'],
+            'field_id': data['type'],
+            'data_relation_id': data['priority'],
+            'data_relation_type': data['source'],
+            'data': data['expire'],
+            'data_weight': data['always_show'],
+            'updated_at': data['always_show_allow_clear'],
+            'created_at': data['acknowledged'],
+        }
+        results = yield self.dbconfig.insert('variable_data', args, None, 'OR IGNORE')
+        return results
+
 
     @inlineCallbacks
     def get_variable_groups(self, group_relation_type, group_relation_id):

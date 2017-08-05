@@ -310,7 +310,7 @@ class Devices(YomboLibrary):
                     new_map[float(key)] = float(value)
                 record['energy_map'] = new_map
                 logger.debug("Loading device: {record}", record=record)
-                yield self.import_device(record)
+                yield self.import_device(record, source='database')
 
         # print("devices: %s" % self.devices )
         for device_id, device in self.devices.items():
@@ -335,13 +335,15 @@ class Devices(YomboLibrary):
             key = 'area_label'
         return OrderedDict(sorted(iter(self.devices.items()), key=lambda i: getattr(i[1], key)))
 
-    def import_device(self, device, test_device=None):  # load or re-load if there was an update.
+    def import_device(self, device, source=None, test_device=None):  # load or re-load if there was an update.
         """
-        Add a new device to memory or update an existing device.
+        Add a new device to memory.
 
         **Hooks called**:
 
+        * _device_before_import_ : If added, sends device dictionary as 'device'
         * _device_before_update_ : If updated, sends device dictionary as 'device'
+        * _device_imported_ : If added, send the device instance as 'device'
         * _device_updated_ : If updated, send the device instance as 'device'
 
         :param device: A dictionary of items required to either setup a new device or update an existing one.
@@ -397,7 +399,7 @@ class Devices(YomboLibrary):
         else:
             import_state = 'update'
             global_invoke_all('_device_before_update_', called_by=self, **{'device': device})
-            self.devices[device_id].update_attributes(device)
+            self.devices[device_id].update_attributes(device, source)
 
         try:
             self._VoiceCommandsLibrary.add_by_string(device["voice_cmd"], None, device["id"],
@@ -420,7 +422,7 @@ class Devices(YomboLibrary):
     @inlineCallbacks
     def _load_device_commands(self):
         where = {
-            'finished_time': None,
+            'finished_at': None,
             'source_gateway_id': self.gateway_id,
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
@@ -438,8 +440,8 @@ class Devices(YomboLibrary):
         cur_time = time()
         for request_id in list(self.device_commands.keys()):
             device_command = self.device_commands[request_id]
-            if device_command.finished_time is not None:
-                if device_command.finished_time > cur_time - (60*45):  # keep 45 minutes worth.
+            if device_command.finished_at is not None:
+                if device_command.finished_at > cur_time - (60*45):  # keep 45 minutes worth.
                     yield device_command.save_to_db()
                     del self.device_commands[request_id]
 
@@ -715,7 +717,7 @@ class Devices(YomboLibrary):
         return others
 
     @inlineCallbacks
-    def add_device(self, api_data, **kwargs):
+    def add_device(self, api_data, source=None, **kwargs):
         """
         Add a new device. This will also make an API request to add device at the server too.
 
@@ -723,8 +725,10 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
+        results = None
         # logger.info("Add new device.  Data: {data}", data=data)
-        api_data['gateway_id'] = self.gateway_id
+        if 'gateway_id' not in api_data:
+            api_data['gateway_id'] = self.gateway_id()
 
         try:
             for key, value in api_data.items():
@@ -741,7 +745,8 @@ class Devices(YomboLibrary):
                 'msg': "Couldn't add device",
                 'apimsg': e,
                 'apimsghtml': e,
-                'device_id': '',
+                'device_id': None,
+                'data': None,
             }
             return results
 
@@ -750,58 +755,68 @@ class Devices(YomboLibrary):
         except YomboHookStopProcessing as e:
             raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 
-        if 'device_id' not in api_data:
+        if source != 'amqp':
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
             device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
             logger.debug("add new device results: {device_results}", device_results=device_results)
-        else:
-            logger.debug("PATCHING device. api data: {api_data}", api_data=api_data)
-            del api_data['gateway_id']
-            del api_data['device_type_id']
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % api_data['device_id'], api_data)
-            logger.debug("edit device results: {device_results}", device_results=device_results)
 
-        if device_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't add device",
-                'apimsg': device_results['content']['message'],
-                'apimsghtml': device_results['content']['html_message'],
-                'device_id': '',
-            }
-            return results
-
-        if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
-            # print("data['variable_data']: %s", data['variable_data'])
-            variable_results = yield self.set_device_variables(device_results['data']['id'], api_data['variable_data'])
-            # print("variable_results: %s" % variable_results)
-            if variable_results['code'] > 299:
+            if device_results['code'] > 299:
                 results = {
                     'status': 'failed',
-                    'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
-                    'apimsg': variable_results['apimsg'],
-                    'apimsghtml': variable_results['apimsghtml'],
-                    'device_id': device_results['data']['id'],
+                    'msg': "Couldn't add device",
+                    'apimsg': device_results['content']['message'],
+                    'apimsghtml': device_results['content']['html_message'],
+                    'device_id': None,
+                    'data': None,
                 }
                 return results
 
-        logger.debug("device edit results: {device_results}", device_results=device_results)
-        results = {
-            'status': 'success',
-            'msg': "Device added.",
-            'device_id': device_results['data']['id']
-        }
-        device = device_results['data']
-        device['created'] = device['created_at']
-        device['updated'] = device['updated_at']
-        self.import_device(device)
-        self.devices[device['id']].add_to_db()
+            if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
+                # print("data['variable_data']: %s", data['variable_data'])
+                variable_results = yield self.set_device_variables(device_results['data']['id'],
+                                                                   api_data['variable_data'],
+                                                                   'add',
+                                                                   source)
+                # print("variable_results: %s" % variable_results)
+                if variable_results['code'] > 299:
+                    results = {
+                        'status': 'failed',
+                        'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
+                        'apimsg': variable_results['apimsg'],
+                        'apimsghtml': variable_results['apimsghtml'],
+                        'device_id': device_results['data']['id'],
+                        'data': device_results['data'],
+                    }
 
+            device_id = device_results['data']['id']
+            new_device = device_results['data']
+            new_device['created'] = new_device['created_at']
+            new_device['updated'] = new_device['updated_at']
+        else:
+            device_id = api_data['id']
+            new_device = api_data
+
+        logger.debug("device add results: {device_results}", device_results=device_results)
+
+        self.import_device(new_device, source)
+        self.devices[device_id].add_to_db()
+
+        global_invoke_all('_device_added_', called_by=self, **{'device': self.devices[device_id]})
+
+        if results is None:
+            results = {
+                'status': 'success',
+                'msg': "Device added",
+                'apimsg':  "Device added",
+                'apimsghtml':  "Device added",
+                'device_id': device_id,
+                'data': new_device,
+            }
         return results
 
     #todo: convert to use a deferred semaphore
     @inlineCallbacks
-    def set_device_variables(self, device_id, variables):
+    def set_device_variables(self, device_id, variables, action_type=None, source=None):
         # print("set variables: %s" % variables)
         for field_id, data in variables.items():
             # print("devices.set_device_variables.data: %s" % data)
@@ -818,6 +833,7 @@ class Devices(YomboLibrary):
                         'data': value,
                     }
                     # print("Posting new variable: %s" % post_data)
+
                     var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
                     if var_data_results['code'] > 299:
                         results = {
@@ -825,9 +841,12 @@ class Devices(YomboLibrary):
                             'msg': "Couldn't add device variables",
                             'apimsg': var_data_results['content']['message'],
                             'apimsghtml': var_data_results['content']['html_message'],
-                            'device_id': device_id
+                            'device_id': device_id,
+                            'data': None,
                         }
                         return results
+                    data = var_data_results['data']
+                    self._LocalDB.add_variable_data(data)
                 else:
                     post_data = {
                         'data_weight': 0,
@@ -853,8 +872,9 @@ class Devices(YomboLibrary):
         return {
             'status': 'success',
             'code': var_data_results['code'],
-            'msg': "Device added.",
-            'variable_id': var_data_results['data']['id']
+            'msg': "Device variable added.",
+            'variable_id': var_data_results['data']['id'],
+            'data': var_data_results['data'],
         }
 
     @inlineCallbacks
@@ -893,7 +913,7 @@ class Devices(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def edit_device(self, device_id, data, called_from_device=None, **kwargs):
+    def edit_device(self, device_id, data, source=None, **kwargs):
         """
         Edit device settings. Accepts a list of items to change. This will also make an API request to update
         the server too.
@@ -940,33 +960,34 @@ class Devices(YomboLibrary):
                     continue
                 api_data[key] = value
 
-        # print("send this data to api: %s" % api_data)
-        device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        # print("got this data from api: %s" % device_results)
-        if device_results['code'] > 299:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't edit device",
-                'apimsg': device_results['content']['message'],
-                'apimsghtml': device_results['content']['html_message'],
-                'device_id': device_id,
-            }
-            return results
-
-        if 'variable_data' in data and len(api_data['variable_data']) > 0:
-            variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
-            if variable_results['code'] > 299:
+        if source != 'amqp':
+            # print("send this data to api: %s" % api_data)
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+            # print("got this data from api: %s" % device_results)
+            if device_results['code'] > 299:
                 results = {
                     'status': 'failed',
-                    'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
-                    'apimsg': variable_results['apimsg'],
-                    'apimsghtml': variable_results['apimsghtml'],
+                    'msg': "Couldn't edit device",
+                    'apimsg': device_results['content']['message'],
+                    'apimsghtml': device_results['content']['html_message'],
                     'device_id': device_id,
                 }
                 return results
 
-        if called_from_device is not True:
-            device.update_attributes(data)
+            if 'variable_data' in data and len(api_data['variable_data']) > 0:
+                variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
+                if variable_results['code'] > 299:
+                    results = {
+                        'status': 'failed',
+                        'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
+                        'apimsg': variable_results['apimsg'],
+                        'apimsghtml': variable_results['apimsghtml'],
+                        'device_id': device_id,
+                    }
+                    return results
+
+        if source != 'node':
+            device.update_attributes(data, source='parent')
             device.save_to_db()
 
         results = {
@@ -978,7 +999,7 @@ class Devices(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def enable_device(self, device_id, called_from_device=None):
+    def enable_device(self, device_id, source=None):
         """
         Enables a given device id.
 
@@ -1003,7 +1024,7 @@ class Devices(YomboLibrary):
             }
             return results
 
-        if called_from_device is not True:
+        if source != 'node':
             self.devices[device_id].enable(True)
 
         results = {
@@ -1015,7 +1036,7 @@ class Devices(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def disable_device(self, device_id, called_from_device=None):
+    def disable_device(self, device_id, source=None):
         """
         Disables a given device id.
 
@@ -1040,10 +1061,8 @@ class Devices(YomboLibrary):
             }
             return results
 
-        if called_from_device is not True:
+        if source != 'node':
             self.devices[device_id].disable(True)
-
-        self.devices[device_id].disable()
 
         results = {
             'status': 'success',
@@ -1052,22 +1071,6 @@ class Devices(YomboLibrary):
         }
         global_invoke_all('devices_disabled', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
         return results
-
-    def update_device(self, record, test_device=False):
-        """
-        Add a new device. Record must contain:
-
-        id, uri, label, notes, description, gateway_id, device_type_id, voice_cmd, voice_cmd_order,
-        Voice_cmd_src, pin_code, pin_timeout, created, updated, device_class
-
-        :param record: Row of items from the SQLite3 database.
-        :type record: dict
-        :returns: Pointer to new device. Only used during unittest
-        """
-        logger.debug("update_device: {record}", record=record)
-        if record['device_id'] not in self.devices:
-            raise YomboWarning("device_id doesn't exist. Nothing to do.", 300, 'update_device', 'Devices')
-            # self.devices[record['device_id']].update(record)
 
 
     ##############################################################################################################

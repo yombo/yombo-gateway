@@ -364,7 +364,7 @@ class Yombo_Site(Site):
             return
 
         od = OrderedDict({
-            'request_time': time(),
+            'request_at': time(),
             'request_protocol': request.clientproto.decode().strip(),
             'referrer': self._escape(request.getHeader(b"referer") or b"-").strip(),
             'agent': self._escape(request.getHeader(b"user-agent") or b"-").strip(),
@@ -476,7 +476,7 @@ class WebInterface(YomboLibrary):
 #        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
 
-        self._display_pin_console_time = 0
+        self._display_pin_console_at = 0
 
         self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
         self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
@@ -515,7 +515,7 @@ class WebInterface(YomboLibrary):
 
     def _started_(self, **kwargs):
         # if self.operating_mode != 'run':
-        self._display_pin_console_time = int(time())
+        self._display_pin_console_at = int(time())
         self.display_pin_console()
         self._Notifications.delete('webinterface:starting')
 
@@ -841,10 +841,12 @@ class WebInterface(YomboLibrary):
 
     @webapp.route('/')
     def home(self, request):
+        print("home aaaaa")
         return self.check_op_mode(request, 'home')
 
     @require_auth()
     def run_home(self, request, session):
+        print("run_home aaaaaa")
         page = self.webapp.templates.get_template(self._dir + 'pages/index.html')
         delayed_device_commands = self._Devices.get_delayed_commands()
         return page.render(alerts=self.get_alerts(),
@@ -875,13 +877,11 @@ class WebInterface(YomboLibrary):
             self.sessions.close_session(request)
         except:
             pass
-
-        request.received_cookies[self.sessions.config.cookie_session] = 'LOGOFF'
-        return self.home(request)
+        return self.redirect(request, "/?")
 
     @webapp.route('/login/user', methods=['GET'])
     @require_auth_pin()
-    def page_login_user_get(self, request):
+    def page_login_user_get(self, request, session):
         return self.redirect(request, '/?')
 
     @webapp.route('/login/user', methods=['POST'])
@@ -930,10 +930,10 @@ class WebInterface(YomboLibrary):
 
             session['auth'] = True
             session['auth_id'] = submitted_email
-            session['auth_time'] = time()
+            session['auth_at'] = time()
             session['yomboapi_session'] = login['session']
             session['yomboapi_login_key'] = login['login_key']
-            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
+            request.received_cookies[self.sessions.config.cookie_session_name] = session.session_id
             # print("session saved...")
             if self.operating_mode == 'first_run':
                 self._YomboAPI.save_system_login_key(login['login_key'])
@@ -977,10 +977,10 @@ class WebInterface(YomboLibrary):
             session['passed_pin'] = True
             session['auth'] = False
             session['auth_id'] = ''
-            session['auth_time'] = 0
+            session['auth_at'] = 0
             session['yomboapi_session'] = ''
             session['yomboapi_login_key'] = ''
-            request.received_cookies[self.sessions.config.cookie_session] = session.session_id
+            request.received_cookies[self.sessions.config.cookie_session_name] = session.session_id
 
         if self.auth_pin_type() == 'pin':
             if submitted_pin == self.auth_pin:

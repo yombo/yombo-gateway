@@ -128,8 +128,8 @@ class Device(object):
         :ivar pin_required: *(bool)* - If a pin is required to access this device.
         :ivar pin_code: *(string)* - The device pin number.
             system to deliver commands and status update requests.
-        :ivar created: *(int)* - When the device was created; in seconds since EPOCH.
-        :ivar updated: *(int)* - When the device was last updated; in seconds since EPOCH.
+        :ivar created_at: *(int)* - When the device was created; in seconds since EPOCH.
+        :ivar updated_at: *(int)* - When the device was last updated; in seconds since EPOCH.
         :ivar last_command: *(dict)* - A dictionary of up to the last 30 command messages.
         :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
         :ivar device_variables: *(dict)* - The device variables as defined by various modules, with
@@ -142,12 +142,12 @@ class Device(object):
         # logger.debug("New device - info: {device}", device=device)
 
         self.StatusTuple = namedtuple('StatusTuple',
-                                      "device_id, set_time, energy_usage, energy_type, human_status, human_message, "
+                                      "device_id, set_at, energy_usage, energy_type, human_status, human_message, "
                                       "last_command, machine_status, machine_status_extra, requested_by, "
                                       "reported_by, request_id, uploaded, uploadable")
 
         self.CommandTuple = namedtuple('CommandTuple',
-                                       "set_time, command_id, requested_by, reported_by, request_id, uploaded, "
+                                       "set_at, command_id, requested_by, reported_by, request_id, uploaded, "
                                        "uploadable")
 
         self.call_before_command = []
@@ -212,15 +212,15 @@ class Device(object):
         self.statistic_label = None
         self.statistic_lifetime = None
         self.enabled_status = None  # not to be confused for device state. see status_history
-        self.created = None
-        self.updated = None
+        self.created_at = None
+        self.updated_at = None
         self.energy_tracker_device = None
         self.energy_tracker_source = None
         self.energy_map = None
         self.energy_type = None
         self.device_is_new = True
 
-        self.update_attributes(device)
+        self.update_attributes(device, source='parent')
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -230,6 +230,7 @@ class Device(object):
         :return:
         """
         # print("getting device variables for: %s" % self.device_id)
+        yield self.import_device_variables()
         self.device_variables = yield self._Parent._Variables.get_variable_fields_data(
             group_relation_type='device_type',
             group_relation_id=self.device_type_id,
@@ -246,10 +247,18 @@ class Device(object):
             self.device_is_new = False
             yield self.load_history(35)
 
+    @inlineCallbacks
+    def import_device_variables(self):
+        self.device_variables = yield self._Parent._Variables.get_variable_fields_data(
+            group_relation_type='device_type',
+            group_relation_id=self.device_type_id,
+            data_relation_id=self.device_id
+        )
+
     def _start_(self):
         pass
 
-    def update_attributes(self, device):
+    def update_attributes(self, device, source=None):
         """
         Sets various values from a device dictionary. This can be called when the device is first being setup or
         when being updated by the AMQP service.
@@ -291,10 +300,10 @@ class Device(object):
             self.statistic_lifetime = device["statistic_lifetime"]  # 'myhome.groundfloor.kitchen'
         if 'status' in device:
             self.enabled_status = int(device["status"])
-        if 'created' in device:
-            self.created = int(device["created"])
-        if 'updated' in device:
-            self.updated = int(device["updated"])
+        if 'created_at' in device:
+            self.created_at = int(device["created_at"])
+        if 'updated_at' in device:
+            self.updated_at = int(device["updated_at"])
         if 'energy_tracker_device' in device:
             self.energy_tracker_device = device['energy_tracker_device']
         if 'energy_tracker_source' in device:
@@ -320,13 +329,17 @@ class Device(object):
         if self.device_is_new is True:
             global_invoke_all('_device_updated_', called_by=self, **{'device': self})
 
+        if source != "parent":
+            self._Parent.edit_device(device, source="node")
+
+
     def add_to_db(self):
         if self._Parent.gateway_id == self.gateway_id:
             self._Parent._LocalDB.add_device(self)
 
     def save_to_db(self):
         if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.update_device(self)
+            self._Parent._LocalDB.update_node(self)
 
     @inlineCallbacks
     def get_variable_fields(self):
@@ -396,8 +409,8 @@ class Device(object):
                 'pin_timeout': self.pin_timeout,
                 'voice_cmd': str(self.voice_cmd),
                 'voice_cmd_order': str(self.voice_cmd_order),
-                'created': int(self.created),
-                'updated': int(self.updated),
+                'created_at': int(self.created_at),
+                'updated_at': int(self.updated_at),
                 'last_command': copy.copy(self.last_command),
                 'status_history': copy.copy(self.status_history),
                 }
@@ -446,7 +459,7 @@ class Device(object):
         :type cmd: str
         :param pin: A pin to check.
         :type pin: str
-        :param request_id: Request ID for tracking. If none given, one will be created.
+        :param request_id: Request ID for tracking. If none given, one will be created_at.
         :type request_id: str
         :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
         :type delay: int or float
@@ -473,6 +486,7 @@ class Device(object):
                     raise YomboPinCodeError("'pin' supplied is incorrect.")
         device_command = {
             "device": self,
+            "pin": pin,
         }
         if isinstance(cmd, Command):
             command = cmd
@@ -498,7 +512,7 @@ class Device(object):
             raise YomboWarning("Invalid command requested for device.", errorno=103)
 
         cur_time = time()
-        device_command['created_time'] = cur_time
+        device_command['created_at'] = cur_time
 
         persistent_request_id = kwargs.get('persistent_request_id', None)
         device_command['persistent_request_id'] = persistent_request_id
@@ -615,7 +629,9 @@ class Device(object):
             'inputs': device_command.inputs,
             'request_id': device_command.request_id,
             'device_command': device_command,
+            'requested_by': device_command.requested_by,
             'called_by': self,
+            'pin': device_command.request_id,
         }
         device_command.set_broadcast()
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
@@ -637,10 +653,10 @@ class Device(object):
         log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_received(message=message, received_time=log_time)
+            device_command.set_received(message=message, received_at=log_time)
             global_invoke_all('_device_command_status_', called_by=self, device_command=device_command,
                               state='received')
-            device_command.set_sent(message=message, sent_time=log_time)
+            device_command.set_sent(message=message, sent_at=log_time)
             global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='sent')
         else:
             return
@@ -657,7 +673,7 @@ class Device(object):
         log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_sent(message=message, sent_time=log_time)
+            device_command.set_sent(message=message, sent_at=log_time)
             global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='sent')
         else:
             return
@@ -673,7 +689,7 @@ class Device(object):
         log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_received(message=message, received_time=log_time)
+            device_command.set_received(message=message, received_at=log_time)
             global_invoke_all('_device_command_status_', called_by=self, device_command=device_command,
                               state='received')
         else:
@@ -691,7 +707,7 @@ class Device(object):
         log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_pending(message=message, pending_time=log_time)
+            device_command.set_pending(message=message, pending_at=log_time)
             message = kwargs.get('message', None)
             global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='pending')
         else:
@@ -710,7 +726,7 @@ class Device(object):
         log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_failed(message=message, finished_time=log_time)
+            device_command.set_failed(message=message, finished_at=log_time)
             if message is not None:
                 logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message,
                             state='failed')
@@ -730,7 +746,7 @@ class Device(object):
         message = kwargs.get('message', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_canceled(message=message, finished_time=log_time)
+            device_command.set_canceled(message=message, finished_at=log_time)
             if message is not None:
                 logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
                 global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='cancel')
@@ -749,7 +765,7 @@ class Device(object):
         message = kwargs.get('message', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_delay_expired(message=message, finished_time=log_time)
+            device_command.set_delay_expired(message=message, finished_at=log_time)
             if message is not None:
                 logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
                 global_invoke_all('_device_command_status_', called_by=self, device_command=device_command,
@@ -771,7 +787,7 @@ class Device(object):
         log_time = kwargs.get('log_time', None)
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
-            device_command.set_finished(message=message, finished_time=log_time)
+            device_command.set_finished(message=message, finished_at=log_time)
             global_invoke_all('_device_command_status_', called_by=self, device_command=device_command, state='done')
         else:
             return
@@ -867,7 +883,7 @@ class Device(object):
         machine_status_extra = kwargs.get('machine_status_extra', {})
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 1)
-        set_time = kwargs.get('set_time', time())
+        set_at = kwargs.get('set_at', time())
 
         requested_by_default = {
             'user_id': 'Unknown',
@@ -909,7 +925,7 @@ class Device(object):
             'machine_status_extra': machine_status_extra,
             'human_message': human_message,
             'human_status': human_status,
-            'time': set_time,
+            'time': set_at,
             'requested_by': requested_by,
             'reported_by': reported_by,
         }
@@ -940,7 +956,7 @@ class Device(object):
             self._Parent._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
             self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
 
-        new_status = self.StatusTuple(self.device_id, set_time, energy_usage, energy_type, human_status, human_message,
+        new_status = self.StatusTuple(self.device_id, set_at, energy_usage, energy_type, human_status, human_message,
                                       command_machine_label, machine_status, machine_status_extra, requested_by,
                                       reported_by, request_id, uploaded, uploadable)
         self.status_history.appendleft(new_status)
@@ -1025,11 +1041,11 @@ class Device(object):
         if len(records) > 0:
             for record in records:
                 self.status_history.appendleft(
-                    self.StatusTuple(record['device_id'], record['set_time'], record['energy_usage'], record['energy_type'],
+                    self.StatusTuple(record['device_id'], record['set_at'], record['energy_usage'], record['energy_type'],
                                      record['human_status'], record['human_message'], record['last_command'],
                                      record['machine_status'], record['machine_status_extra'], record['requested_by'],
                                      record['reported_by'], record['request_id'], record['uploaded'], record['uploadable']))
-                #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_time,          energy_usage,     energy_type,      human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
+                #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_at,          energy_usage,     energy_type,      human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
 
                 # logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
@@ -1232,7 +1248,7 @@ class Device(object):
         Return the address of the device.
         """
         # self.StatusTuple = namedtuple('StatusTuple',
-        #                               "device_id, set_time, energy_usage, energy_type, human_status, human_message, "
+        #                               "device_id, set_at, energy_usage, energy_type, human_status, human_message, "
         #                               "last_command, machine_status, machine_status_extra, requested_by, "
         #                               "reported_by, request_id, uploaded, uploadable")
 

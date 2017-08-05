@@ -1034,8 +1034,6 @@ class Gateways(YomboLibrary):
             'gateway_id': gateway_id,
         }
         new_gateway = gateway_results['data']
-        new_gateway['created'] = new_gateway['created_at']
-        new_gateway['updated'] = new_gateway['updated_at']
         self.import_gateway(new_gateway)
         return results
 
@@ -1177,7 +1175,7 @@ class Gateway:
     :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
     :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
-    :ivar created: (int) EPOCH time when created
+    :ivar created_at: (int) EPOCH time when created
     :ivar updated: (int) EPOCH time when last updated
     """
 
@@ -1222,8 +1220,8 @@ class Gateway:
         self.external_mqtt_ws_le = None
         self.external_mqtt_ws_ss = None
         self.status = None
-        self.updated = None
-        self.created = None
+        self.updated_at = None
+        self.created_at = None
 
         # runtime info
 
@@ -1294,10 +1292,10 @@ class Gateway:
             self.external_mqtt_ws_ss = gateway['external_mqtt_ws_ss']
         if 'status' in gateway:
             self.status = gateway['status']
-        if 'created' in gateway:
-            self.created = gateway['created']
-        if 'updated' in gateway:
-            self.updated = gateway['updated']
+        if 'created_at' in gateway:
+            self.created_at = gateway['created_at']
+        if 'updated_at' in gateway:
+            self.updated_at = gateway['updated_at']
 
     def __str__(self):
         """
@@ -1318,6 +1316,6 @@ class Gateway:
             'label': int(self.label),
             'description': int(self.description),
             'status': int(self.status),
-            'created': int(self.created),
-            'updated': int(self.updated),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
         }

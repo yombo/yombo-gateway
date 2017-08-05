@@ -6,7 +6,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.sessions import Session
@@ -66,9 +66,6 @@ def run_first(*args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             # request._ = webinterface.i18n(request)
-            # if hasattr(request, 'breadcrumb') is False:
-            #     request.breadcrumb = []
-            #     webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             request.auth_id = None
             try:
@@ -76,8 +73,7 @@ def run_first(*args, **kwargs):
             except YomboWarning as e:
                 logger.warn("Discarding request, appears to be malformed session id.")
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
-                # print "require_auth..session: %s" % session
-                returnValue(page.render(alerts=webinterface.get_alerts()))
+                return page.render(alerts=webinterface.get_alerts())
 
             if session is not False:
                 if 'auth' in session:
@@ -149,10 +145,10 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         session['auth_pin'] = False
                         session['auth'] = False
                         session['auth_id'] = ''
-                        session['auth_time'] = 0
+                        session['auth_at'] = 0
                         session['yomboapi_session'] = ''
                         session['yomboapi_login_key'] = ''
-                        request.received_cookies[webinterface.sessions.config.cookie_session] = session.session_id
+                        request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
                     session['login_redirect'] = login_redirect
                     # print("session: %s" % session)
                     # print("session: %s" % session.data)
@@ -206,7 +202,7 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
 
             if needs_web_pin(webinterface, request):
                 if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
-                    print("is an instance!!!!")
+                    # print("is an instance!!!!")
                     if 'auth_pin' in session:
                         if session['auth_pin'] is True:
                             session.touch()
@@ -225,10 +221,10 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
                             session['auth_pin'] = False
                             session['auth'] = False
                             session['auth_id'] = ''
-                            session['auth_time'] = 0
+                            session['auth_at'] = 0
                             session['yomboapi_session'] = ''
                             session['yomboapi_login_key'] = ''
-                            request.received_cookies[webinterface.sessions.config.cookie_session] = session.session_id
+                            request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
                         session['login_redirect'] = login_redirect
             else:
                 results = yield call(f, webinterface, request, session, *a, **kw)
@@ -271,8 +267,8 @@ def needs_web_pin(webinterface, request):
 
         # had to break these up... - kept dieing on me
         # Display the PIN to the console for the user to see, but only once every 30 seconds at most.
-        if webinterface._display_pin_console_time < int(time())-30:
-            webinterface._display_pin_console_time = int(time())
+        if webinterface._display_pin_console_at < int(time())-30:
+            webinterface._display_pin_console_at = int(time())
             webinterface.display_pin_console()
         return True
     return False

@@ -34,8 +34,8 @@
         {%-  endif %}>
                  <td><a href="/notifications/{{ id }}/details">{{ notice.title }}</a></td>
                  <td>{{ notice.message }}</td>
-                 <td>{{ notice.created|epoch_to_human }}</td>
-                 <td>{{ notice.expire|epoch_to_human }}</td>
+                 <td>{{ notice.created_at|epoch_to_human }}</td>
+                 <td>{{ notice.expire_at|epoch_to_human }}</td>
              </tr>{% endfor %}
         </tbody>
     </table>

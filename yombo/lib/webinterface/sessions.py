@@ -49,8 +49,7 @@ class Sessions(object):
         # print("session-cookie_id, get_master_gateway_id: %s = %s" % (self._Gateways.get_master_gateway_id(), cookie_id))
 
         self.config = DictObject({
-            'cookie_session': 'yombo_' + cookie_id,
-            'cookie_pin': 'yombo_' + cookie_id,
+            'cookie_session_name': 'yombo_' + cookie_id,
             'cookie_path' : '/',
             'max_session': 15552000,  # How long session can be good for: 180 days
             'max_idle': 5184000,  # Max idle timeout: 60 days
@@ -102,13 +101,15 @@ class Sessions(object):
         :param request: The request instance.
         :return: bool
         """
-        cookie_session = self.config.cookie_session
+        cookie_session_name = self.config.cookie_session_name
         cookies = request.received_cookies
-        # logger.debug("has_session is looking for cookie: {cookie_session}", cookie_session=cookie_session)
+        # logger.debug("has_session is looking for cookie: {cookie_session_name}", cookie_session_name=cookie_session_name)
         # logger.debug("has_session found cookies: {cookies}", cookies=cookies)
 
-        if cookie_session in cookies:
-            session_id = cookies[cookie_session]
+        if cookie_session_name in cookies:
+            session_id = cookies[cookie_session_name]
+            if session_id == "LOGOFF":
+                return False
             logger.debug("has_session found session_id in cookie: {session_id}", session_id=session_id)
             if self.validate_session_id(session_id) is False:
                 raise YomboWarning("Invalid session id.")
@@ -145,11 +146,10 @@ class Sessions(object):
 
     def close_session(self, request):
         if self.has_session(request):
-            cookie_session = self.config.cookie_session
-            session_id = request.received_cookies[cookie_session]
+            cookie_session_name = self.config.cookie_session_name
+            session_id = request.received_cookies[cookie_session_name]
             self.active_sessions[session_id].expire_session()
-
-            request.addCookie(cookie_session, 'LOGOFF', domain=self.get_cookie_domain(request),
+            request.addCookie(cookie_session_name, 'LOGOFF', domain=self.get_cookie_domain(request),
                           path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
                           secure=self.config.secure, httpOnly=self.config.httponly)
 
@@ -164,13 +164,16 @@ class Sessions(object):
         :return:
         """
         logger.debug("load session: {request}", request=request)
-        cookie_session = self.config.cookie_session
+        cookie_session_name = self.config.cookie_session_name
         cookies = request.received_cookies
         has_session = yield self.has_session(request)
         logger.debug("has session: {has_session}", has_session=has_session)
         if has_session is False:
             return False
-        session_id = cookies[cookie_session]
+        session_id = cookies[cookie_session_name]
+        if session_id == "LOGOFF":
+            return False
+
         if self.validate_session_id(session_id) is False:
             raise YomboWarning("Invalid session id.")
         return self.active_sessions[session_id]
@@ -203,7 +206,7 @@ class Sessions(object):
             gateway_id = self.gateway_id
 
         if request is not None:
-            request.addCookie(self.config.cookie_session, session_id, domain=self.get_cookie_domain(request),
+            request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
                               path=self.config.cookie_path, max_age=self.config.max_session,
                               secure=self.config.secure, httpOnly=self.config.httponly)
 
@@ -221,10 +224,10 @@ class Sessions(object):
         if self.has_session(request):
             try:
                 # print "name: %s" % name
-                # print "self.config.cookie_session: %s" % self.config.cookie_session
+                # print "self.config.cookie_session_name: %s" % self.config.cookie_session_name
                 # print "data: %s" % self.active_sessions
-                # print "request.received_cookies[self.config.cookie_session]: %s" % request.received_cookies[self.config.cookie_session]
-                self.active_sessions[request.received_cookies[self.config.cookie_session]][name] = value
+                # print "request.received_cookies[self.config.cookie_session_name]: %s" % request.received_cookies[self.config.cookie_session_name]
+                self.active_sessions[request.received_cookies[self.config.cookie_session_name]][name] = value
                 return True
             except:
                 return False
@@ -239,7 +242,7 @@ class Sessions(object):
         """
         if self.has_session(request):
             try:
-                return self.active_sessions[request.received_cookies[self.config.cookie_session]][name]
+                return self.active_sessions[request.received_cookies[self.config.cookie_session_name]][name]
             except:
                 return None
         return None
@@ -253,7 +256,7 @@ class Sessions(object):
         """
         if self.has_session(request):
             try:
-                del self.active_sessions[request.received_cookies[self.config.cookie_session]][name]
+                del self.active_sessions[request.received_cookies[self.config.cookie_session_name]][name]
                 return True
             except:
                 return False
@@ -265,6 +268,8 @@ class Sessions(object):
         :param session_id: 
         :return: 
         """
+        if session_id == "LOGOFF":  # lets not raise an error.
+            return True
         if session_id.isalnum() is False:
             return False
         if len(session_id) < 15:
@@ -282,9 +287,9 @@ class Sessions(object):
         """
         # logger.debug("clean_sessions()")
         count = 0
-        # session_delete_time = int(time()) - self.config.max_session
-        # idle_delete_time = int(time()) - self.config.max_idle
-        # max_session_no_auth_time = int(time()) - self.config.max_session_no_auth
+        # session_delete_at = int(time()) - self.config.max_session
+        # idle_delete_at = int(time()) - self.config.max_idle
+        # max_session_no_auth_at = int(time()) - self.config.max_session_no_auth
         for session_id in list(self.active_sessions.keys()):
             if self.active_sessions[session_id].check_valid() is False or self.active_sessions[session_id].is_valid is False:
                 del self.active_sessions[session_id]
@@ -386,13 +391,13 @@ class Session(object):
         self.session_id = session_id
         self.data = {
             'auth_pin': None,
-            'auth_pin_time': None,
+            'auth_pin_at': None,
             'auth': None,
             'auth_id': None,
-            'auth_time': None,
+            'auth_at': None,
             'last_access': int(time()),
-            'created': int(time()),
-            'updated': int(time()),
+            'created_at': int(time()),
+            'updated_at': int(time()),
             'is_valid': self.is_valid,
         }
         # print("sessions....data: %s" % self.data)
@@ -427,8 +432,8 @@ class Session(object):
             raise YomboWarning("Use expire_session() method to expire this session.")
         if key == 'id':
             raise YomboWarning("Cannot change the ID of this session.")
-        if key not in ('last_access', 'created', 'updated'):
-            self.data['updated'] = int(time())
+        if key not in ('last_access', 'created_at', 'updated_at'):
+            self.data['updated_at'] = int(time())
             self.data[key] = val
             self.is_dirty = 200
             return val
@@ -439,7 +444,7 @@ class Session(object):
             self.last_access = int(time())
             try:
                 del self.data[key]
-                self.data['updated'] = int(time())
+                self.data['updated_at'] = int(time())
                 self.is_dirty = 200
             except:
                 pass
@@ -454,9 +459,9 @@ class Session(object):
         if self.is_valid is False:
             return False
 
-        if self.data['created'] < (int(time() - self._Sessions.config.max_session)):
+        if self.data['created_at'] < (int(time() - self._Sessions.config.max_session)):
             self.expire_session()
-            # print "session invalid - created too old: %s" % self.created
+            # print "session invalid - created_at too old: %s" % self.created_at
             return False
 
         if self.data['last_access'] < (int(time()- self._Sessions.config.max_idle)):

@@ -368,13 +368,13 @@ class AMQPYombo(YomboLibrary):
                     "type": header_type,
                     "protocol_verion": PROTOCOL_VERSION,
                     "message_id": random_string(length=20),
-                    "msg_created_time": str(time()),
+                    "msg_created_at": str(time()),
                 },
             },
             "meta": {
                 "content_type": 'application/msgpack',
             },
-            "created_time": time(),
+            "created_at": time(),
         }
 
         if "callback" is not None:
@@ -500,9 +500,9 @@ class AMQPYombo(YomboLibrary):
                                            anon=True)
                 raise YomboWarning("correlation_id missing.")
 
-            if sent_message_info is not None and sent_message_info['sent_time'] is not None:
-                delay_date_time = received_message_info['received_time'] - sent_message_info['sent_time']
-                milliseconds = (delay_date_time.days * 24 * 60 * 60 + delay_date_time.seconds) * 1000 + delay_date_time.microseconds / 1000.0
+            if sent_message_info is not None and sent_message_info['sent_at'] is not None:
+                delay_date_at = received_message_info['received_at'] - sent_message_info['sent_at']
+                milliseconds = (delay_date_at.days * 24 * 60 * 60 + delay_date_at.seconds) * 1000 + delay_date_at.microseconds / 1000.0
                 logger.debug("Time between sending and receiving a response:: {milliseconds}", milliseconds=milliseconds)
                 received_message_info['round_trip_timing'] = milliseconds
 

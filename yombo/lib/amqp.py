@@ -136,11 +136,11 @@ class AMQP(YomboLibrary):
         Clean up the tracking dictionaries for messages sent and messages processed.
         """
         for correlation_id in list(self.message_correlations.keys()):
-            if self.message_correlations[correlation_id]['correlation_time'] < (time() - (60*10)):
+            if self.message_correlations[correlation_id]['correlation_at'] < (time() - (60*10)):
                 del self.message_correlations[correlation_id]
 
         for msg_id in list(self.messages_processed.keys()):
-            if self.messages_processed[msg_id]['msg_time'] < (time() - (60*5)):
+            if self.messages_processed[msg_id]['msg_at'] < (time() - (60*5)):
                     del self.messages_processed[msg_id]
 
     def _local_log(self, level, location="", msg=""):
@@ -458,8 +458,8 @@ class AMQPClient(object):
                     "AMQP Client:{%s} - Must have a body." % self.client_id,
                     202, 'publish', 'AMQPClient')
 
-        elif 'created_time' not in kwargs['meta']:
-            kwargs['meta']['created_time'] = kwargs.get("created_time", time())
+        elif 'created_at' not in kwargs['meta']:
+            kwargs['meta']['created_at'] = kwargs.get("created_at", time())
         if 'routing_key' not in kwargs:
             raise YomboWarning(
                     "AMQP Client:{%s} - Must have routing_key to publish to, therwise, don't know how to route!" % self.client_id,
@@ -657,23 +657,23 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         kwargs['properties'] = properties
 
         message_info = {
-            "msg_time": time(),
+            "msg_at": time(),
             "direction": 'outgoing',
             "message_id": message_id,
             "correlation_id": correlation_id,
             'replied_message_id': None,
-            'sent_time': None,
+            'sent_at': None,
             "reply_received": None,
-            "reply_received_time": None,
+            "reply_received_at": None,
             "round_trip_timing": None,
-            "sent_time": None,
+            "sent_at": None,
         }
 
         msg_meta = kwargs.get('meta', None)
         if msg_meta is not None:
             message_info.update(msg_meta)
-        if 'created_time' not in message_info:
-            message_info['created_time'] = time()
+        if 'created_at' not in message_info:
+            message_info['created_at'] = time()
 
         correlation_persistent = kwargs.get('correlation_persistent', True)
         if correlation_id is not None:
@@ -685,7 +685,7 @@ class PikaFactory(protocol.ReconnectingClientFactory):
                 "callback_component_type_function": callback_function,  # name of the function to call
                 "correlation_id": correlation_id,
                 "correlation_persistent": correlation_persistent,
-                "correlation_time": time()
+                "correlation_at": time()
             }
             self.AMQPClient._AMQP.message_correlations[correlation_id] = correlation_info
             message_info['correlation_id'] = correlation_id
@@ -932,9 +932,9 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                         # print "do publish, has a message_id: messages_processed: %s" % self.factory.AMQPClient._AMQP.messages_processed
                         if msg['properties']['message_id'] in self.factory.AMQPClient._AMQP.messages_processed:
                             # print "do publish, has a message_id"
-                            self.factory.AMQPClient._AMQP.messages_processed[msg['properties']['message_id']]['sent_time'] = time()
+                            self.factory.AMQPClient._AMQP.messages_processed[msg['properties']['message_id']]['sent_at'] = time()
                     msg['properties'] = pika.BasicProperties(**msg['properties'])
-                    msg['properties'].headers['msg_sent_time'] = str(time())
+                    msg['properties'].headers['msg_sent_at'] = str(time())
 
                     yield self.channel.basic_publish(exchange=msg['exchange_name'], routing_key=msg['routing_key'], body=msg['body'], properties=msg['properties'])
 
@@ -1002,30 +1002,30 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
                     if correlation_info['message_id'] is not None and \
                             correlation_info['message_id'] in self.factory.AMQPClient._AMQP.messages_processed:
                         sent_message_info = self.factory.AMQPClient._AMQP.messages_processed[correlation_info['message_id']]
-                        sent_message_info['reply_received_time'] = time()
+                        sent_message_info['reply_received_at'] = time()
 
         # print "received correlationInfo: %s" % correlation_info
         # print "received correlationInfo: %s" % self.factory.AMQPClient._AMQP.message_correlations
 
         if sent_message_info is not None:
-            sent_message_info['reply_received_time'] = time()
+            sent_message_info['reply_received_at'] = time()
         if correlation_info is not None:
             sent_message_info['correlation_id'] = correlation_id
 
         received_message_info = {
-            "msg_time": time(),
+            "msg_at": time(),
             'direction': 'incoming',
             'message_id': received_message_id,
             'correlation_id': None,
-            "received_time": time(),
+            "received_at": time(),
             'replied_message_id': None,
-            "replied_time": None,
+            "replied_at": None,
             "round_trip_timing": None,
         }
 
         try:
             if received_message_id[0:2] != 'xx_' and sent_message_info is not None:
-                milliseconds = sent_message_info['reply_received_time'] - sent_message_info['sent_time']
+                milliseconds = sent_message_info['reply_received_at'] - sent_message_info['sent_at']
                 sent_message_info['round_trip_timing'] = milliseconds
         except Exception as e:
             logger.warn("Problem calculating message rount_trip_timing: %s" % e)
@@ -1036,7 +1036,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             received_message_info['correlation_id_correlated'] = False
 
         if sent_message_info is not None:
-            sent_message_info['reply_received_time'] = time()
+            sent_message_info['reply_received_at'] = time()
 
         if received_message_id[0:2] != 'xx_':
             self.factory.AMQPClient._AMQP.messages_processed[received_message_id] = received_message_info

@@ -35,9 +35,9 @@
                                 <label style="margin-top: 15px; margin-bottom: 0px">Public State: </label><br>
                                 {{ command.public|public_to_string }}<br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Updated: </label><br>
-                                {{ command.updated|epoch_to_human }} ({{ command.updated_at|epoch_to_pretty_date }}) <br>
+                                {{ command.updated_at|epoch_to_human }} ({{ command.updated_at|epoch_to_pretty_date }}) <br>
                                 <label style="margin-top: 15px; margin-bottom: 0px">Created: </label><br>
-                                {{ command.created|epoch_to_human }}<br>
+                                {{ command.created_at|epoch_to_human }}<br>
                             </div>
                         </div>
                     </div>

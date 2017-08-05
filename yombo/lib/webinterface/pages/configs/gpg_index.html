@@ -96,8 +96,8 @@
                                               %} {{ _('No') }} {%
                                              endif %}
                                             </td>
-                                            <td>{{ key.created|epoch_to_human }}</td>
-                                            <td>{{ key.expires|epoch_to_human }}</td>
+                                            <td>{{ key.created_at|epoch_to_human }}</td>
+                                            <td>{{ key.expires_at|epoch_to_human }}</td>
                                             <td>{{ key.keyid }}</td>
                                             <td>{{ fingerprint }}</td>
                                             <td> None </td>

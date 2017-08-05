@@ -840,8 +840,8 @@ class DeviceType(object):
         self.description = None
         self.public = None
         self.status = None
-        self.created = None
-        self.updated = None
+        self.created_at = None
+        self.updated_at = None
 
         self.update_attributes(device_type)
 
@@ -859,8 +859,8 @@ class DeviceType(object):
         self.description = device_type['description']
         self.public = device_type['public']
         self.status = device_type['status']
-        self.created = device_type['created']
-        self.updated = device_type['updated']
+        self.created_at = device_type['created_at']
+        self.updated_at = device_type['updated_at']
         if 'platform' in device_type:
             if device_type["platform"] is None or device_type["platform"] == "":
                 self.platform = "device"
@@ -897,8 +897,8 @@ class DeviceType(object):
                     'value_casing': input.value_casing,
                     'encryption': input.encryption,
                     'notes': input.notes,
-                    'updated': input.updated,
-                    'created': input.created,
+                    'updated_at': input.updated_at,
+                    'created_at': input.created_at,
                 }
 
     @inlineCallbacks
@@ -978,6 +978,6 @@ class DeviceType(object):
             'description': str(self.description),
             'public': int(self.public),
             'status': int(self.status),
-            'created': int(self.created),
-            'updated': int(self.updated),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
         }

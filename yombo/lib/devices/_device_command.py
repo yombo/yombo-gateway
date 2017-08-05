@@ -74,16 +74,16 @@ class Device_Command(object):
 
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
-        self.broadcast_time = data.get('broadcast_time', None)  # time when command was sent through hooks.
-        self.sent_time = data.get('sent_time', None)  # when a module or receiver sent the command to final end-point
-        self.received_time = data.get('received_time', None)  # when the command was received by the final end-point
-        self.pending_time = data.get('pending_time', None)  # if command takes a while to process time, this is the timestamp of last update
-        self.finished_time = data.get('finished_time', None)  # when the command is finished and end-point has changed state
-        self.not_before_time = data.get('not_before_time', None)
-        self.not_after_time = data.get('not_after_time', None)
+        self.broadcast_at = data.get('broadcast_at', None)  # time when command was sent through hooks.
+        self.sent_at = data.get('sent_at', None)  # when a module or receiver sent the command to final end-point
+        self.received_at = data.get('received_at', None)  # when the command was received by the final end-point
+        self.pending_at = data.get('pending_at', None)  # if command takes a while to process time, this is the timestamp of last update
+        self.finished_at = data.get('finished_at', None)  # when the command is finished and end-point has changed state
+        self.not_before_at = data.get('not_before_at', None)
+        self.not_after_at = data.get('not_after_at', None)
         self.pin = data.get('pin', None)
         self.call_later = None
-        self.created_time = data.get('created_time', time())
+        self.created_at = data.get('created_at', time())
         self.dirty = is_true_false(data.get('dirty', True))
         self.source = data.get('_source', None)
         self.started = data.get('started', False)
@@ -97,7 +97,7 @@ class Device_Command(object):
             reactor.callLater(0.001, self.check_if_device_command_in_database)
 
         else:
-            self.history.append((self.created_time, self.status, 'Created.', self.local_gateway_id))
+            self.history.append((self.created_at, self.status, 'Created.', self.local_gateway_id))
             self.in_db = False
 
         if self.device.gateway_id == self.local_gateway_id:
@@ -121,20 +121,20 @@ class Device_Command(object):
     def update_attributes(self, data):
         if 'command_status_received' in data:
             self.command_status_received = data['command_status_received']
-        if 'broadcast_time' in data:
-            self.broadcast_time = data['broadcast_time']
-        if 'sent_time' in data:
-            self.sent_time = data['sent_time']
-        if 'received_time' in data:
-            self.received_time = data['received_time']
-        if 'pending_time' in data:
-            self.pending_time = data['pending_time']
-        if 'finished_time' in data:
-            self.finished_time = data['finished_time']
-        if 'not_before_time' in data:
-            self.not_before_time = data['not_before_time']
-        if 'not_after_time' in data:
-            self.not_after_time = data['not_after_time']
+        if 'broadcast_at' in data:
+            self.broadcast_at = data['broadcast_at']
+        if 'sent_at' in data:
+            self.sent_at = data['sent_at']
+        if 'received_at' in data:
+            self.received_at = data['received_at']
+        if 'pending_at' in data:
+            self.pending_at = data['pending_at']
+        if 'finished_at' in data:
+            self.finished_at = data['finished_at']
+        if 'not_before_at' in data:
+            self.not_before_at = data['not_before_at']
+        if 'not_after_at' in data:
+            self.not_after_at = data['not_after_at']
         if 'history' in data:
             self.history = data['history']
         if 'status' in data:
@@ -151,15 +151,15 @@ class Device_Command(object):
             self.set_sent()
             return
 
-        if self.not_before_time is not None:
-            cur_time = time()
-            if self.not_after_time < cur_time:
+        if self.not_before_at is not None:
+            cur_at = time()
+            if self.not_after_at < cur_at:
                 self.set_delay_expired(message='Unable to send message due to request being expired by "%s" seconds.'
-                                    % str(cur_time - self.not_after_time))
+                                    % str(cur_at - self.not_after_at))
                 if self.source != 'database':  # Nothing should be loaded from the database that not a delayed command.
                     raise YomboWarning("Cannot setup delayed device command, it's already expired.")
             else:
-                when = self.not_before_time - cur_time
+                when = self.not_before_at - cur_at
                 if when < 0:
                     self.device._do_command_hook(self)
                 else:
@@ -177,66 +177,66 @@ class Device_Command(object):
     def last_message(self):
         return self.history[-1]
 
-    def set_broadcast(self, broadcast_time=None, message=None):
+    def set_broadcast(self, broadcast_at=None, message=None):
         self.dirty = True
-        if broadcast_time is None:
-            broadcast_time = time()
-        self.broadcast_time = broadcast_time
+        if broadcast_at is None:
+            broadcast_at = time()
+        self.broadcast_at = broadcast_at
         self.status = 'broadcast'
         if message is None:
             message='Command broadcasted to hooks and gateway coms.'
-        self.history.append((broadcast_time, self.status, message, self.local_gateway_id))
+        self.history.append((broadcast_at, self.status, message, self.local_gateway_id))
 
-    def set_sent(self, sent_time=None, message=None):
+    def set_sent(self, sent_at=None, message=None):
         self.dirty = True
-        if sent_time is None:
-            sent_time = time()
-        self.sent_time = sent_time
+        if sent_at is None:
+            sent_at = time()
+        self.sent_at = sent_at
         self.status = 'sent'
         if message is None:
             message='Command sent to device or processing sub-system.'
-        self.history.append((sent_time, self.status, message, self.local_gateway_id))
+        self.history.append((sent_at, self.status, message, self.local_gateway_id))
 
-    def set_received(self, received_time=None, message=None):
+    def set_received(self, received_at=None, message=None):
         self.dirty = True
-        if received_time is None:
-            received_time = time()
-        self.received_time = received_time
+        if received_at is None:
+            received_at = time()
+        self.received_at = received_at
         self.status = 'received'
         if message is None:
             message='Command received by the device or processing sub-system.'
-        self.history.append((received_time, self.status, message, self.local_gateway_id))
+        self.history.append((received_at, self.status, message, self.local_gateway_id))
 
-    def set_pending(self, pending_time=None, message=None):
+    def set_pending(self, pending_at=None, message=None):
         self.dirty = True
-        if pending_time is None:
-            pending_time = time()
-        self.pending_time = pending_time
+        if pending_at is None:
+            pending_at = time()
+        self.pending_at = pending_at
         self.status = 'pending'
         if message is None:
             message='Command processing or being completed by the device or processing sub-system.'
         if self.set_sent is None:
-            self.set_sent = pending_time
-            self.history.append((pending_time, 'sent', 'Command sent to device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
-        if self.received_time is None:
-            self.received_time = pending_time
-            self.history.append((pending_time, 'received', 'Command received by the device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
-        self.history.append((pending_time, self.status, message, self.local_gateway_id))
+            self.set_sent = pending_at
+            self.history.append((pending_at, 'sent', 'Command sent to device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
+        if self.received_at is None:
+            self.received_at = pending_at
+            self.history.append((pending_at, 'received', 'Command received by the device or processing sub-system. Back filled by pending action.', self.local_gateway_id))
+        self.history.append((pending_at, self.status, message, self.local_gateway_id))
 
-    def set_finished(self, finished_time=None, status=None, message=None):
+    def set_finished(self, finished_at=None, status=None, message=None):
         self.dirty = True
-        if finished_time is None:
-            finished_time = time()
-        self.finished_time = finished_time
+        if finished_at is None:
+            finished_at = time()
+        self.finished_at = finished_at
         if status is None:
             status = 'finished'
         self.status = status
         if self.set_sent is None:
-            self.set_sent = finished_time
-            self.history.append((finished_time, 'sent', 'Command sent to device or processing sub-system. Back filled by finished action.', self.local_gateway_id))
+            self.set_sent = finished_at
+            self.history.append((finished_at, 'sent', 'Command sent to device or processing sub-system. Back filled by finished action.', self.local_gateway_id))
         if message is None:
             message = "Finished."
-        self.history.append((finished_time, self.status, message, self.local_gateway_id))
+        self.history.append((finished_at, self.status, message, self.local_gateway_id))
 
         try:
             self.call_later.cancel()
@@ -244,34 +244,34 @@ class Device_Command(object):
             pass
         self.save_to_db()
 
-    def set_canceled(self, finished_time=None, message=None):
+    def set_canceled(self, finished_at=None, message=None):
         if message is None:
             message = "Request canceled."
-        self.set_finished(finished_time=finished_time, status='canceled', message=message)
+        self.set_finished(finished_at=finished_at, status='canceled', message=message)
 
-    def set_failed(self, finished_time=None, message=None):
+    def set_failed(self, finished_at=None, message=None):
         if message is None:
             message = "System reported command failed."
-        self.set_finished(finished_time=finished_time, status='failed', message=message)
+        self.set_finished(finished_at=finished_at, status='failed', message=message)
 
-    def set_delay_expired(self, finished_time=None, message=None):
+    def set_delay_expired(self, finished_at=None, message=None):
         if message is None:
             message = "System reported command failed."
-        self.set_finished(finished_time=finished_time, status='delay_expired', message=message)
+        self.set_finished(finished_at=finished_at, status='delay_expired', message=message)
 
-    def set_status(self, status, message=None, log_time=None):
+    def set_status(self, status, message=None, log_at=None):
         self.dirty = True
         self.status = status
-        if log_time is None:
-            log_time = time()
-        self.history.append((log_time, status, message, self.local_gateway_id))
+        if log_at is None:
+            log_at = time()
+        self.history.append((log_at, status, message, self.local_gateway_id))
 
-    def gw_coms_set_status(self, src_gateway_id, log_time, status, message):
+    def gw_coms_set_status(self, src_gateway_id, log_at, status, message):
         self.dirty = True
         self.status = status
-        if hasattr(self, '%s_time' % status):
-            setattr(self, '%s_time' % status, log_time)
-        self.history.append((log_time, status, message, src_gateway_id, self.local_gateway_id))
+        if hasattr(self, '%s_at' % status):
+            setattr(self, '%s_at' % status, log_at)
+        self.history.append((log_at, status, message, src_gateway_id, self.local_gateway_id))
 
     def set_message(self, message):
         self.dirty = True
@@ -282,10 +282,10 @@ class Device_Command(object):
         self.command_status_received = True
         self.set_message('status_received')
 
-    def cancel(self, finished_time=None, status=None, message=None):
+    def cancel(self, finished_at=None, status=None, message=None):
         if status is None:
             status = 'canceled'
-        self.set_finished(finished_time, status, message)
+        self.set_finished(finished_at, status, message)
 
     @inlineCallbacks
     def save_to_db(self, forced = None):
@@ -308,13 +308,13 @@ class Device_Command(object):
             "requested_by": self.requested_by,
             "status": self.status,
             "persistent_request_id": self.persistent_request_id,
-            "created_time": self.created_time,
-            "received_time": self.received_time,
-            "sent_time": self.sent_time,
-            "pending_time": self.pending_time,
-            "finished_time": self.finished_time,
-            "not_before_time": self.not_before_time,
-            "not_after_time": self.not_after_time,
+            "created_at": self.created_at,
+            "received_at": self.received_at,
+            "sent_at": self.sent_at,
+            "pending_at": self.pending_at,
+            "finished_at": self.finished_at,
+            "not_before_at": self.not_before_at,
+            "not_after_at": self.not_after_at,
             "command_status_received": self.command_status_received,
             "dirty": self.dirty,
             "started": self.started,

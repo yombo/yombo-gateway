@@ -420,7 +420,7 @@ def route_setup_wizard(webapp):
             session.set('setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
             gpg_existing = yield webinterface._LocalDb.get_gpg_key()
-            gpg_existing_sorted = OrderedDict(sorted(gpg_existing.items(), key=lambda x: x[1]['created']))
+            gpg_existing_sorted = OrderedDict(sorted(gpg_existing.items(), key=lambda x: x[1]['created_at']))
             if len(gpg_existing_sorted) > 0:
                 print(first(gpg_existing_sorted)[0])
                 gpg_selected = first(gpg_existing_sorted)[0]
@@ -541,8 +541,8 @@ def route_setup_wizard(webapp):
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
 
-            webinterface._Configs.set('core', 'updated', results['data']['updated_at'])
-            webinterface._Configs.set('core', 'created', results['data']['created_at'])
+            # webinterface._Configs.set('core', 'updated', results['data']['updated_at'])
+            # webinterface._Configs.set('core', 'created', results['data']['created_at'])
             print("new gwid: %s" % results['data']['id'])
             print("got gwid before set: %s" % webinterface._Configs.get('core', 'gwid'))
             webinterface._Configs.set('core', 'gwid', results['data']['id'])

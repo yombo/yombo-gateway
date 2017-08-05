@@ -168,9 +168,9 @@ class Notifications(YomboLibrary):
         """
         cur_time = time()
         for id in list(self.notifications.keys()):
-            if self.notifications[id].expire == "Never":
+            if self.notifications[id].expire_at == "Never":
                 continue
-            if cur_time > self.notifications[id].expire:
+            if cur_time > self.notifications[id].expire_at:
                 del self.notifications[id]
         self._LocalDB.delete_expired_notifications()
 
@@ -182,14 +182,14 @@ class Notifications(YomboLibrary):
         notifications = yield self._LocalDB.get_notifications()
         for notice in notifications:
             notice = notice.__dict__
-            if notice['expire'] < time():
+            if notice['expire_at'] < time():
                 continue
             notice['meta'] = json.loads(notice['meta'])
             self.add(notice, from_db=True)
         logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
         # self.init_deferred.callback(10)
 
-    def ack(self, notice_id, ack_time=None, new_ack=None):
+    def ack(self, notice_id, acknowledged_at=None, new_ack=None):
         """
         Acknowledge a notice id.
 
@@ -202,9 +202,9 @@ class Notifications(YomboLibrary):
         if new_ack is None:
             new_ack = True
 
-        if ack_time is None:
-            act_time = time()
-        self.notifications[notice_id].set_ack(act_time, new_ack)
+        if acknowledged_at is None:
+            acknowledged_at = time()
+        self.notifications[notice_id].set_ack(acknowledged_at, new_ack)
 
     def add(self, notice, from_db=None, create_event=None):
         """
@@ -252,19 +252,19 @@ class Notifications(YomboLibrary):
         if notice['persist'] is True and 'always_show_allow_clear' is True:
             YomboWarning("New notification cannot have both 'persist' and 'always_show_allow_clear' set to true.")
 
-        if 'expire' not in notice:
+        if 'expire_at' not in notice:
             if 'timeout' in notice:
-                notice['expire'] = time() + notice['timeout']
+                notice['expire_at'] = time() + notice['timeout']
             else:
-                notice['expire'] = time() + 60*60*24*30 # keep persistent notifications for 30 days.
+                notice['expire_at'] = time() + 60*60*24*30 # keep persistent notifications for 30 days.
         else:
-            if notice['expire'] == None:
+            if notice['expire_at'] == None:
                 if notice['persist'] == True:
                     YomboWarning("Cannot persist a non-expiring notification")
-            elif notice['expire'] > time():
+            elif notice['expire_at'] > time():
                 YomboWarning("New notification is set to expire before current time.")
-        if 'created' not in notice:
-            notice['created'] = time()
+        if 'created_at' not in notice:
+            notice['created_at'] = time()
 
         if 'acknowledged' not in notice:
             notice['acknowledged'] = False
@@ -272,8 +272,8 @@ class Notifications(YomboLibrary):
             if notice['acknowledged'] not in (True, False):
                 YomboWarning("New notification 'acknowledged' must be either True or False.")
 
-        if 'acknowledged_time' not in notice:
-            notice['acknowledged_time'] = None
+        if 'acknowledged_at' not in notice:
+            notice['acknowledged_at'] = None
 
         logger.debug("notice: {notice}", notice=notice)
         if from_db is None and notice['persist'] is True:
@@ -370,13 +370,13 @@ class Notification:
         self.type = notice['type']
         self.priority = notice['priority']
         self.source = notice['source']
-        if notice['expire'] == 0:
-            self.expire = "None"
+        if notice['expire_at'] == 0:
+            self.expire_at = "None"
         else:
-            self.expire = notice['expire']
+            self.expire_at = notice['expire_at']
 
         self.acknowledged = notice['acknowledged']
-        self.acknowledged_time = notice['acknowledged_time']
+        self.acknowledged_at = notice['acknowledged_at']
         self.user = notice['user']
         self.title = notice['title']
         self.message = notice['message']
@@ -384,7 +384,7 @@ class Notification:
         self.always_show = notice['always_show']
         self.always_show_allow_clear = notice['always_show_allow_clear']
         self.persist = notice['persist']
-        self.created = notice['created']
+        self.created_at = notice['created_at']
 
     def __str__(self):
         """
@@ -393,13 +393,13 @@ class Notification:
         """
         return "%s: %s" % (self.notification_id, self.message)
 
-    def set_ack(self, ack_time=None, new_ack=None):
-        if ack_time is None:
-            ack_time = time()
+    def set_ack(self, acknowledged_at=None, new_ack=None):
+        if acknowledged_at is None:
+            acknowledged_at = time()
         if new_ack is None:
             new_ack = True
         self.acknowledged = new_ack
-        self.acknowledged_time = ack_time
+        self.acknowledged_at = acknowledged_at
         if self.always_show_allow_clear is True:
             self.always_show = False
         self._Parent._LocalDB.update_notification(self)
@@ -426,14 +426,14 @@ class Notification:
             'type' : str(self.type),
             'priority': str(self.priority),
             'source': str(self.source),
-            'expire': str(self.expire),
+            'expire_at': str(self.expire_at),
             'acknowledged': self.acknowledged,
-            'acknowledged_time': float(self.acknowledged_time),
+            'acknowledged_at': float(self.acknowledged_at),
             'title': str(self.title),
             'message': str(self.message),
             'meta': str(self.meta),
             'always_show': str(self.always_show),
             'always_show_allow_clear': str(self.always_show_allow_clear),
             'persist': str(self.persist),
-            'created': str(self.created),
+            'created_at': str(self.created_at),
         }
