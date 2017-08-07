@@ -112,15 +112,12 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             try:
                 session = yield webinterface.sessions.load(request)
-                # print("require auth session: %s" % session)
             except YomboWarning as e:
                 logger.warn("Discarding request, appears to be malformed session id.")
-                return return_need_login(webinterface, request, **kwargs)
+                return return_need_login(webinterface, request, False, **kwargs)
 
             if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
-                # print("is an instance!!!! %s" % session.data)
                 if 'auth' in session:
-                    # print("instance auth: %s" % session['auth'])
                     if session['auth'] is True:
                         session.touch()
                         request.auth_id = session['auth_id']
@@ -134,14 +131,13 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                             page = webinterface.get_template(request, webinterface._dir + 'pages/misc/traceback.html')
                             return page.render(traceback=traceback.format_exc())
             else:  # session doesn't exist
-                # print("is NOT an instance!!!!")
                 if login_redirect is not None: # only create a new session if we need too
                     if session is False:
                         try:
                             session = webinterface.sessions.create(request)
                         except YomboWarning as e:
                             logger.warn("Discarding request, appears to be malformed request. Unable to create session.")
-                            return return_need_login(webinterface, request, **kwargs)
+                            return return_need_login(webinterface, request, False, **kwargs)
                         session['auth_pin'] = False
                         session['auth'] = False
                         session['auth_id'] = ''
@@ -150,24 +146,10 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         session['yomboapi_login_key'] = ''
                         request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
                     session['login_redirect'] = login_redirect
-                    # print("session: %s" % session)
-                    # print("session: %s" % session.data)
 
-            return return_need_login(webinterface, request, **kwargs)
+            return return_need_login(webinterface, request, session, **kwargs)
         return wrapped_f
     return deco
-
-
-def return_need_login(webinterface, request, **kwargs):
-    if needs_web_pin(webinterface, request):
-        if 'api' in kwargs and kwargs['api'] is True:
-            return return_api_error(request, 'submit pin first')
-        page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
-    else:
-        if 'api' in kwargs and kwargs['api'] is True:
-            return return_api_error(request, 'error with request', 500)
-        page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
-    return page.render(alerts=webinterface.get_alerts())
 
 
 def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
@@ -200,9 +182,8 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
                 logger.warn("Discarding request, appears to be malformed session id.")
                 return return_need_pin(webinterface, request, **kwargs)
 
-            if needs_web_pin(webinterface, request):
+            if check_needs_web_pin(webinterface, request, session):
                 if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
-                    # print("is an instance!!!!")
                     if 'auth_pin' in session:
                         if session['auth_pin'] is True:
                             session.touch()
@@ -235,14 +216,27 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
     return deco
 
 
+def return_need_login(webinterface, request, session, **kwargs):
+    if check_needs_web_pin(webinterface, request, session):
+        return return_need_pin(webinterface, request, **kwargs)
+    else:
+        if 'api' in kwargs and kwargs['api'] is True:
+            return return_api_error(request, 'error with request', 500)
+    page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+    return page.render(alerts=webinterface.get_alerts())
+
+
 def return_need_pin(webinterface, request, **kwargs):
     if 'api' in kwargs and kwargs['api'] is True:
         return return_api_error(request, 'submit pin first')
+    if webinterface._display_pin_console_at < int(time()) - 30:
+        webinterface._display_pin_console_at = int(time())
+        webinterface.display_pin_console()
     page = webinterface.get_template(request, webinterface._dir + 'pages/login_pin.html')
     return page.render(alerts=webinterface.get_alerts())
 
 
-def needs_web_pin(webinterface, request):
+def check_needs_web_pin(webinterface, request, session):
     """
     First checks if request is within the local network, we don't prompt for pin.
 
@@ -252,23 +246,19 @@ def needs_web_pin(webinterface, request):
     :param request:
     :return:
     """
+    if webinterface.auth_pin_required is False:  # if user has configured gateway to require a pin
+        return False
+
     client_ip = request.getClientIP()
     if client_ip == "127.0.0.1":
         return False
 
-    network_info = get_local_network_info()
     if ip_addres_in_local_network(client_ip):
         return False
 
-    if webinterface.auth_pin_required:  # if user has configured gateway to require a pin
-        cookie_pin = webinterface.sessions.config.cookie_pin
-        if cookie_pin in request.received_cookies:  # and it matches a submitted one,
-            return False  # then we don't need one.
-
-        # had to break these up... - kept dieing on me
-        # Display the PIN to the console for the user to see, but only once every 30 seconds at most.
-        if webinterface._display_pin_console_at < int(time())-30:
-            webinterface._display_pin_console_at = int(time())
-            webinterface.display_pin_console()
+    if session is False or session is None:
         return True
-    return False
+
+    if session['auth_pin'] is True:
+        return False
+    return True  # catch all...just in case.

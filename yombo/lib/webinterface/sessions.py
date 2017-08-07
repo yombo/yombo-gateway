@@ -65,7 +65,6 @@ class Sessions(object):
 
     # @inlineCallbacks
     def init(self):
-        # print "active:sessions: %s" % self.active_sessions
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
         self._periodic_clean_sessions.start(random_int(60, .7))  # Every 60-ish seconds. Save to disk, or remove from memory.
 
@@ -133,8 +132,6 @@ class Sessions(object):
     def get_cookie_domain(self, request):
         fqdn = self._Configs.get("dns", 'fqdn', None, False)
         host = "%s" % request.getRequestHostname().decode();
-        # print("get_cookie_domain...fqdn: %s" % fqdn)
-        # print("get_cookie_domain...host: %s" % host)
 
         if fqdn is None:
             return host
@@ -175,9 +172,12 @@ class Sessions(object):
             return False
 
         if self.validate_session_id(session_id) is False:
-            raise YomboWarning("Invalid session id.")
-        return self.active_sessions[session_id]
-        # return False
+            logger.info("Invalid session id found.")
+            return False
+        if session_id in self.active_sessions:
+            return self.active_sessions[session_id]
+        else:
+            return False
 
     def create(self, request=None, make_active=None, session_data=None, gateway_id=None):
         """
@@ -204,6 +204,7 @@ class Sessions(object):
 
         if gateway_id is None:
             gateway_id = self.gateway_id
+            session_data['gateway_id'] = gateway_id
 
         if request is not None:
             request.addCookie(self.config.cookie_session_name, session_id, domain=self.get_cookie_domain(request),
@@ -223,10 +224,6 @@ class Sessions(object):
         """
         if self.has_session(request):
             try:
-                # print "name: %s" % name
-                # print "self.config.cookie_session_name: %s" % self.config.cookie_session_name
-                # print "data: %s" % self.active_sessions
-                # print "request.received_cookies[self.config.cookie_session_name]: %s" % request.received_cookies[self.config.cookie_session_name]
                 self.active_sessions[request.received_cookies[self.config.cookie_session_name]][name] = value
                 return True
             except:
@@ -299,8 +296,6 @@ class Sessions(object):
 
         for session_id in list(self.active_sessions):
             session = self.active_sessions[session_id]
-            # print "session.data['last_access']: %s" % session.data['last_access']
-            # print "time: %s" % int(time() - (60*60*3))
             if session.is_dirty >= 200 or close_deferred is not None or session.data['last_access'] < int(time() - (60*5)):
                 if session.in_db:
                     # session.in_db = True
@@ -336,7 +331,6 @@ class Session(object):
         """
         try:
             self.get(data_requested)
-            # print "aa 22"
             return True
         except Exception as e:
             return False
@@ -416,8 +410,6 @@ class Session(object):
             self.data.update(session_data)
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
-        # if key in self:
-        #     print "zzz"
         if key in self.data:
             self.data['last_access'] = int(time())
             return self.data[key]
@@ -454,29 +446,23 @@ class Session(object):
         self.is_dirty += 1
 
     def check_valid(self):
-        # print "checking session valid!!! %s" % self.__invalid
-        # print "time: %s" % time()
         if self.is_valid is False:
             return False
 
         if self.data['created_at'] < (int(time() - self._Sessions.config.max_session)):
             self.expire_session()
-            # print "session invalid - created_at too old: %s" % self.created_at
             return False
 
         if self.data['last_access'] < (int(time()- self._Sessions.config.max_idle)):
-            # print "session invalid - last access - idle too long"
             self.expire_session()
             return False
 
         if 'auth_id' in self:
             if self.data['auth_id'] is None and self.data['last_access'] < (int(time() - self._Sessions.config.max_session_no_auth)):
-                # print "session invalid - last access - idle too long without auth"
                 self.expire_session()
                 return False
         else:
             if self.data['last_access'] < (int(time() - self._Sessions.config.max_session_no_auth)):
-                # print "session invalid - last access - idle too long without auth"
                 self.expire_session()
         return True
 
