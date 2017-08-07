@@ -47,7 +47,7 @@
     <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
         <option value="" data-subtext="No device selected">None</option>
     {%- for device_id, device in devices.items() %}
-        <option value="{{device_id}}"{% if selected_item == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.label}}</option>
+        <option value="{{device_id}}"{% if selected_item == device_id %} selected{% endif %} data-subtext="{{device.machine_label}}">{{device.full_label}}</option>
     {%- endfor %}
     </select>
 {%- endmacro %}

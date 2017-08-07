@@ -8,7 +8,6 @@ from twisted.internet.defer import inlineCallbacks, Deferred, maybeDeferred
 from twisted.web.static import File
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboRestart, YomboCritical
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 import yombo.ext.totp
 import yombo.utils
@@ -100,15 +99,11 @@ def route_home(webapp):
                 login = results['content']['response']['login']
                 # print("login was good...")
 
-                # session = yield webinterface.sessions.load(request)
                 if session is False:
-                    # print("created session")
                     session = webinterface.sessions.create(request)
-                # else:
-                #     session.delete('login_redirect')
-                #     print("existing session")
 
                 session['auth'] = True
+                session['auth_pin'] = True
                 session['auth_id'] = submitted_email
                 session['auth_at'] = time()
                 session['yomboapi_session'] = login['session']
@@ -142,19 +137,15 @@ def route_home(webapp):
         @run_first()
         def page_login_pin_post(webinterface, request, session):
             submitted_pin = request.args.get('authpin')[0]
-            valid_pin = False
+
             if submitted_pin.isalnum() is False:
                 webinterface.add_alert('Invalid authentication.', 'warning')
                 return webinterface.redirect(request, '/login/pin')
 
-            def create_pin_session(webinterface, request):
-                expires = 10 * 365 * 24 * 60 * 60  # 10 years from now.
-                request.addCookie(webinterface.sessions.config.cookie_pin, time(), domain=None, path='/',
-                                  secure=webinterface.sessions.config.secure, httpOnly=webinterface.sessions.config.httponly,
-                                  max_age=expires)
-                request.received_cookies[webinterface.sessions.config.cookie_pin] = '1'
-                session = webinterface.sessions.create(request)
-                session['passed_pin'] = True
+            def create_pin_session(webinterface, request, session):
+                if session is False:
+                    session = webinterface.sessions.create(request)
+                session['auth_pin'] = True
                 session['auth'] = False
                 session['auth_id'] = ''
                 session['auth_at'] = 0
@@ -164,45 +155,18 @@ def route_home(webapp):
 
             if webinterface.auth_pin_type() == 'pin':
                 if submitted_pin == webinterface.auth_pin:
-                    create_pin_session(webinterface, request)
+                    create_pin_session(webinterface, request, session)
                 else:
                     return webinterface.redirect(request, '/login/pin')
             elif webinterface.auth_pin_type() == 'totp':
                 if yombo.ext.totp.valid_totp(submitted_pin, webinterface.secret_pin_totp(), window=10):
-                    create_pin_session(webinterface, request)
+                    create_pin_session(webinterface, request, session)
                 else:
                     return webinterface.redirect(request, '/login/pin')
             elif webinterface.auth_pin_type() == 'none':
-                create_pin_session(webinterface, request)
+                create_pin_session(webinterface, request, session)
 
             return webinterface.home(request)
-
-        def restart(webinterface, request, message=None, redirect=None):
-            if message is None:
-                message = "Web interface requested restart."
-            if redirect is None:
-                redirect = "/?"
-
-            page = webinterface.get_template(request, webinterface._dir + 'pages/restart.html')
-            reactor.callLater(0.3, webinterface.do_restart)
-            return page.render(message=message,
-                               redirect=redirect,
-                               uptime=str(webinterface._Atoms['running_since'])
-                               )
-
-        def do_restart(webinterface):
-            try:
-                raise YomboRestart("Web Interface setup wizard complete.")
-            except:
-                pass
-
-        def shutdown(webinterface, request):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/shutdown.html')
-            # reactor.callLater(0.3, webinterface.do_shutdown)
-            return page.render()
-
-        def do_shutdown(webinterface):
-            raise YomboCritical("Web Interface setup wizard complete.")
 
         @webapp.route('/static/', branch=True)
         @run_first()

@@ -429,10 +429,10 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/%s/details" % device_id,
-                                        webinterface._Locations.get_area_label(device['area_id'], device['label']))
+                                        webinterface._Locations.area_label(device['area_id'], device['label']))
             webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
             variable_data = yield webinterface._Variables.get_variable_data('device', device['device_id'])
-            print("variable_data: %s" % variable_data)
+            # print("variable_data: %s" % variable_data)
             page = yield page_devices_edit_form(
                 webinterface,
                 request,
@@ -487,7 +487,7 @@ def route_devices(webapp):
             energy_map = OrderedDict(sorted(list(energy_map.items()), key=lambda x_y1: float(x_y1[0])))
             json_output = json.loads(request.args.get('json_output')[0])
 
-            print("energy_map: %s " % energy_map)
+            # print("energy_map: %s " % energy_map)
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             data = {
                 'location_id': request.args.get('location_id')[0],
@@ -538,13 +538,14 @@ def route_devices(webapp):
                 )
                 return page
 
+            webinterface.add_alert('Device saved.', 'warning')
             return webinterface.redirect(request, '/devices/%s/details' % device_id)
 
         @inlineCallbacks
         def page_devices_edit_form(webinterface, request, session, device, variable_data=None):
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/edit.html')
             # device_variables = device.device_variables
-            print("device: %s" % device)
+            # print("device: %s" % device)
             device_variables = yield webinterface._Variables.get_variable_groups_fields(
                 group_relation_type='device_type',
                 group_relation_id=device['device_type_id']
