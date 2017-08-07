@@ -632,7 +632,7 @@ class MQTTClient(object):
         if the client has a connected callback, will also call that.
         :return:
         """
-        logger.info("client ID connected: {client_id}", client_id=self.client_id)
+        logger.debug("client ID connected: {client_id}", client_id=self.client_id)
         self.connected = True
         self.dispatch_job_queue()
         self.queue.resume()
@@ -644,7 +644,8 @@ class MQTTClient(object):
             for job_id, job_info in self.republish_queue.items():
                 if self.republish_queue[job_id]['published'] is False:
                     self.republish_queue[job_id]['published'] = True
-                    self.queue.put(job_info, priority=job_info['priority'])
+                    if self.queue.stopped is False:
+                        self.queue.put(job_info, priority=job_info['priority'])
 
     @inlineCallbacks
     def process_queue(self, job):
