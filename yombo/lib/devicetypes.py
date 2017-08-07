@@ -34,12 +34,13 @@ from functools import reduce
 
 logger = get_logger('library.devicetypes')
 
-BASE_PLATFORMS = [
-    ['yombo.lib.devices._device', 'Device'],
-    ['yombo.lib.devices.appliance', 'Appliance'],
-    ['yombo.lib.devices.light', 'Light'],
-    ['yombo.lib.devices.relay', 'Relay'],
-]
+BASE_DEVICE_TYPE_PLATFORMS = {
+    'yombo.lib.devices._device': ['Device'],
+    'yombo.lib.devices.appliance': ['Appliance'],
+    'yombo.lib.devices.light': ['Light'],
+    'yombo.lib.devices.relay': ['Relay'],
+    'yombo.lib.devices.sensor': ['Sensor', 'DigitalSensor'],
+}
 
 
 class DeviceTypes(YomboLibrary):
@@ -184,7 +185,7 @@ class DeviceTypes(YomboLibrary):
         :return: 
         """
         yield self._load_device_types_from_database()
-        self.load_platforms(BASE_PLATFORMS)
+        self.load_platforms(BASE_DEVICE_TYPE_PLATFORMS)
         platforms = yield global_invoke_all('_device_platforms_', called_by=self)
         for component, item in platforms.items():
             self.load_platforms(item)
@@ -217,20 +218,19 @@ class DeviceTypes(YomboLibrary):
         :param platforms: 
         :return: 
         """
-        # print("platforms: %s" % platforms)
-        for item in platforms:
-            item_key = item[1].lower()
-            if item_key.startswith('_'):
-                item_key = item_key[1:]
-            # print(" item_key2: %s" % type(item_key))
+        for path, items in platforms.items():
+            for item in items:
+                item_key = item.lower()
+                if item_key.startswith('_'):
+                    item_key = item_key
 
-            module_root = __import__(item[0], globals(), locals(), [], 0)
-            module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + item[0].split('.')[1:])
-            klass = getattr(module_tail, item[1])
-            if not isinstance(klass, collections.Callable):
-                logger.warn("Unable to load device platform '{name}', it's not callable.", name=item[1])
-                continue
-            self.platforms[item_key] = klass
+                module_root = __import__(path, globals(), locals(), [], 0)
+                module_tail = reduce(lambda p1, p2: getattr(p1, p2), [module_root, ] + path.split('.')[1:])
+                klass = getattr(module_tail, item)
+                if not isinstance(klass, collections.Callable):
+                    logger.warn("Unable to load device platform '{name}', it's not callable.", name=item)
+                    continue
+                self.platforms[item_key] = klass
 
     @inlineCallbacks
     def import_device_types(self, device_type, test_device_type=False):
@@ -481,7 +481,6 @@ class DeviceTypes(YomboLibrary):
             returnValue(results)
 
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
-        # print("dt_results: %s" % device_type_results)
 
         if device_type_results['code'] > 299:
             results = {
