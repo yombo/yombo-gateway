@@ -36,7 +36,7 @@ from twisted.internet.task import LoopingCall
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.ext.totp
@@ -730,23 +730,50 @@ class WebInterface(YomboLibrary):
                 return ""
         return input
 
-    def WebInterface_configuration_set(self, **kwargs):
-        """
-        Hook from configuration library. Get any configuration changes.
+    def restart(self, request, message=None, redirect=None):
+        if message is None:
+            message = "Web interface requested restart."
+        if redirect is None:
+            redirect = "/?"
 
-        :param kwargs: 'section', 'option', and 'value' are sent here.
-        :return:
-        """
-        if kwargs['section'] == 'webinterface':
-            option = kwargs['option']
-            if option == 'auth_pin':
-                self.auth_pin(set=kwargs['value'])
-            elif option == 'auth_pin_totp':
-                self.auth_pin_totp(set=kwargs['value'])
-            elif option == 'auth_pin_type':
-                self.auth_pin_type(set=kwargs['value'])
-            elif option == 'auth_pin_required':
-                self.auth_pin_required(set=kwargs['value'])
+        page = self.get_template(request, self._dir + 'pages/restart.html')
+        reactor.callLater(0.3, self.do_restart)
+        return page.render(message=message,
+                           redirect=redirect,
+                           uptime=str(self._Atoms['running_since'])
+                           )
+
+    def do_restart(self):
+        try:
+            raise YomboRestart("Web Interface setup wizard complete.")
+        except:
+            pass
+
+    def shutdown(self, request):
+        page = self.get_template(request, self._dir + 'pages/shutdown.html')
+        # reactor.callLater(0.3, webinterface.do_shutdown)
+        return page.render()
+
+    def do_shutdown(self):
+        raise YomboCritical("Web Interface setup wizard complete.")
+
+    # def WebInterface_configuration_set(self, **kwargs):
+    #     """
+    #     Hook from configuration library. Get any configuration changes.
+    #
+    #     :param kwargs: 'section', 'option', and 'value' are sent here.
+    #     :return:
+    #     """
+    #     if kwargs['section'] == 'webinterface':
+    #         option = kwargs['option']
+    #         if option == 'auth_pin':
+    #             self.auth_pin(set=kwargs['value'])
+    #         elif option == 'auth_pin_totp':
+    #             self.auth_pin_totp(set=kwargs['value'])
+    #         elif option == 'auth_pin_type':
+    #             self.auth_pin_type(set=kwargs['value'])
+    #         elif option == 'auth_pin_required':
+    #             self.auth_pin_required(set=kwargs['value'])
 
     def _build_dist(self):
         """
