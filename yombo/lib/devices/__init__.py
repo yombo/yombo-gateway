@@ -298,7 +298,6 @@ class Devices(YomboLibrary):
         database and we need to refresh existing devices.
         """
         devices = yield self._LocalDB.get_devices()
-        # logger.info("Loading devices:::: {devices}", devices=devices)
         if len(devices) > 0:
             for record in devices:
                 record = record.__dict__
@@ -369,7 +368,7 @@ class Devices(YomboLibrary):
             class_names = "".join(class_names.split())  # we don't like spaces
             class_names = class_names.split(',')
 
-            # logger.debug("Loading device ({device}), platforms: {platforms}",
+            # logger.info("Loading device ({device}), platforms: {platforms}",
             #             device=device['label'],
             #             platforms=class_names)
 
@@ -728,7 +727,7 @@ class Devices(YomboLibrary):
         results = None
         # logger.info("Add new device.  Data: {data}", data=data)
         if 'gateway_id' not in api_data:
-            api_data['gateway_id'] = self.gateway_id()
+            api_data['gateway_id'] = self.gateway_id
 
         try:
             for key, value in api_data.items():
@@ -974,7 +973,7 @@ class Devices(YomboLibrary):
                 }
                 return results
 
-            if 'variable_data' in data and len(api_data['variable_data']) > 0:
+            if 'variable_data' in data and len(api_data) > 0:
                 variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
                 if variable_results['code'] > 299:
                     results = {
@@ -1152,7 +1151,7 @@ class Devices(YomboLibrary):
             if rule['trigger']['source']['device_pointers'].device_id not in self.automation_startup_check:
                 self.automation_startup_check.append(rule['trigger']['source']['device_pointers'].device_id)
 
-        logger.error("devices_add_trigger_callback.automation_startup_check: %s = %s" %
+        logger.debug("devices_add_trigger_callback.automation_startup_check: %s = %s" %
                      (rule['rule_id'], self.automation_startup_check))
 
     def devices_startup_trigger_callback(self):

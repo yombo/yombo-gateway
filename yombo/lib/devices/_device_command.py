@@ -143,13 +143,14 @@ class Device_Command(object):
     def start(self):
         if self.started is True:
             return
-        # print("starting command!!!!!!!!!!!??!?!?!?!!?!?!?!?!?!?!? %s - %s - %s" % (self.request_id, self.device.label, self.command.label))
+        print("starting command!!!!!!!!!!!??!?!?!?!!?!?!?!?!?!?!? %s - %s - %s" % (self.request_id, self.device.label, self.command.label))
         self.started = True
         if self.source == 'database' and self.status == 'sent':
             logger.debug(
                 "Discarding a device command message loaded from database it's already been sent.")
             self.set_sent()
             return
+        print("Now actually starting device_command...")
 
         if self.not_before_at is not None:
             cur_at = time()

@@ -143,7 +143,7 @@ class Device(object):
 
         self.StatusTuple = namedtuple('StatusTuple',
                                       "device_id, set_at, energy_usage, energy_type, human_status, human_message, "
-                                      "last_command, machine_status, machine_status_extra, requested_by, "
+                                      "last_command, machine_status, machine_status_extra, gateway_id, requested_by, "
                                       "reported_by, request_id, uploaded, uploadable")
 
         self.CommandTuple = namedtuple('CommandTuple',
@@ -502,7 +502,6 @@ class Device(object):
             requested_by = {
                 'user_id': 'Unknown',
                 'component': 'Unknown',
-                'gateway': 'Unknown'
             }
         device_command['requested_by'] = requested_by
 
@@ -631,7 +630,7 @@ class Device(object):
             'device_command': device_command,
             'requested_by': device_command.requested_by,
             'called_by': self,
-            'pin': device_command.request_id,
+            'pin': device_command.pin,
         }
         device_command.set_broadcast()
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
@@ -876,7 +875,7 @@ class Device(object):
         machine_status = None
         if 'machine_status' not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
-
+        command = None
         machine_status = kwargs['machine_status']
         human_status = kwargs.get('human_status', machine_status)
         human_message = kwargs.get('human_message', human_status)
@@ -884,11 +883,12 @@ class Device(object):
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 1)
         set_at = kwargs.get('set_at', time())
+        if 'gateway_id' not in kwargs:
+            kwargs['gateway_id'] = self.gateway_id
 
         requested_by_default = {
             'user_id': 'Unknown',
             'component': 'Unknown',
-            'gateway': 'Unknown'
         }
 
         if "request_id" in kwargs and kwargs['request_id'] in self._Parent.device_commands:
@@ -905,11 +905,17 @@ class Device(object):
                     requested_by['user_id'] = 'Unknown'
                 if 'component' not in requested_by:
                     requested_by['component'] = 'Unknown'
-                if 'gateway' not in requested_by:
-                    requested_by['gateway'] = self.gateway_id
         else:
             request_id = None
             requested_by = requested_by_default
+
+        if command is None:
+            if 'command' in kwargs:
+                command = self._Parent._Commands[kwargs['command']]
+            else:
+                print("trying to get command_from_Status")
+                command = self.command_from_status(machine_status, machine_status_extra)
+
         kwargs['request_id'] = request_id
         kwargs['requested_by'] = requested_by
 
@@ -917,7 +923,7 @@ class Device(object):
 
         kwargs['reported_by'] = reported_by
 
-        message = {
+        mqtt_message = {
             'device_id': self.device_id,
             'device_machine_label': self.machine_label,
             'device_label': self.label,
@@ -926,60 +932,77 @@ class Device(object):
             'human_message': human_message,
             'human_status': human_status,
             'time': set_at,
+            'gateway_id': kwargs['gateway_id'],
             'requested_by': requested_by,
             'reported_by': reported_by,
         }
 
-        if 'command' in kwargs:
-            command = self._Parent._Commands[kwargs['command']]
+
+        if command is not None:
+            print("set status - command found!")
             kwargs['command'] = command
             command_machine_label = command.machine_label
-            message['last_command'] = command.machine_label
-            message['command_machine_label'] = command.machine_label
-            message['command_label'] = command.label
-            message['command_id'] = command.command_id
+            mqtt_message['command_machine_label'] = command.machine_label
+            mqtt_message['command_label'] = command.label
+            mqtt_message['command_id'] = command.command_id
+            mqtt_message['last_command'] = command.machine_label
             energy_usage, energy_type = self.energy_calc(command=command,
                                                          machine_status=machine_status,
                                                          machine_status_extra=machine_status_extra,
                                                          )
         else:
+            print("set status - no command found!")
             kwargs['command'] = None
+            mqtt_message['command_machine_label'] = None
+            mqtt_message['command_label'] = None
+            mqtt_message['command_id'] = None
+            mqtt_message['last_command'] = None
             command_machine_label = machine_status
             energy_usage, energy_type = self.energy_calc(machine_status=machine_status,
                                                          machine_status_extra=machine_status_extra,
                                                          )
 
-        message['energy_usage'] = energy_usage
-        message['energy_type'] = energy_type
+        mqtt_message['energy_usage'] = energy_usage
+        mqtt_message['energy_type'] = energy_type
 
         if self.statistic_label is not None and self.statistic_label != "":
             self._Parent._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
             self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
 
         new_status = self.StatusTuple(self.device_id, set_at, energy_usage, energy_type, human_status, human_message,
-                                      command_machine_label, machine_status, machine_status_extra, requested_by,
-                                      reported_by, request_id, uploaded, uploadable)
+                                      command_machine_label, machine_status, machine_status_extra, kwargs['gateway_id'],
+                                      requested_by, reported_by, request_id, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
             self._Parent._LocalDB.save_device_status(**new_status._asdict())
         self._Parent.check_trigger(self.device_id, new_status)
 
         if self._Parent.mqtt != None:
-            self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(message), 1)
+            self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(mqtt_message), 1)
         return kwargs
 
-    def set_status_from_gateway_communications(self, new_status):
+    def set_status_from_gateway_communications(self, payload):
         """
         Used by the gateway library to directly inject a new device status.
 
         :param new_status:
         :return:
         """
-        new_status = self.StatusTuple(*new_status)
+        # payload = {'device_id': 'ZQD3daJAZE7mz120', 'command_id': '4Y9KXkz80B1A2',
+        #    'status': {'device_id': 'ZQD3daJAZE7mz120', 'set_at': 1501972805.924836, 'energy_usage': 0,
+        #               'energy_type': 'electric', 'human_status': 1, 'human_message': 1, 'last_command': 'high',
+        #               'machine_status': 1, 'machine_status_extra': {}, 'gateway_id': 'PZyVLR4PzWzwd7j0',
+        #               'requested_by': {'user_id': 'Unknown', 'component': 'Unknown'},
+        #               'reported_by': 'yombo.gateway.modules.RaspberryPiGPIO', 'request_id': None, 'uploaded': 0,
+        #               'uploadable': 1}, 'request_id': None, 'reported_by': 'yombo.gateway.modules.RaspberryPiGPIO',
+        #    'gateway_id': 'PZyVLR4PzWzwd7j0', 'status_source': 'gateway_coms'}
+
+        new_status = self.StatusTuple(*payload['status'])
         self.status_history.appendleft(new_status)
-        if self.test_device is False:
+        if self.test_device is False and self._Parent.is_master is True:
             self._Parent._LocalDB.save_device_status(**new_status._asdict())
         self._Parent.check_trigger(self.device_id, new_status)
+        self.send_status(**payload)
 
     def send_status(self, **kwargs):
         """
@@ -987,21 +1010,29 @@ class Device(object):
 
         Calls the _device_status_ hook to send current device status. Useful if you just want to send a status of
         a device without actually changing the status.
-
+s
         :param kwargs:
         :return:
         """
+        print("send status keys: %s" % kwargs.keys())
+        if 'command' in kwargs:
+            print("has command..")
+            command = kwargs['command']
+            print("command: %s" % command)
+        elif 'command_id' in kwargs:
+            print("searching for command..")
+            command = self._Parent._Commands[kwargs['command_id']]
+            print("command: %s" % command)
+        else:
+            command = None
 
         message = {
             'device': self,
+            'command': command,
             'request_id': kwargs.get('request_id', None),
             'reported_by': kwargs.get('reported_by', None),
+            'gateway_id': kwargs.get('gateway_id', self.gateway_id)
         }
-
-        if 'command' in kwargs:
-            message['command'] = kwargs['command']
-        else:
-            message['command'] = None
 
         message['status'] = self.status_history[0]
         if len(self.status_history) == 1:
@@ -1043,8 +1074,9 @@ class Device(object):
                 self.status_history.appendleft(
                     self.StatusTuple(record['device_id'], record['set_at'], record['energy_usage'], record['energy_type'],
                                      record['human_status'], record['human_message'], record['last_command'],
-                                     record['machine_status'], record['machine_status_extra'], record['requested_by'],
-                                     record['reported_by'], record['request_id'], record['uploaded'], record['uploadable']))
+                                     record['machine_status'], record['machine_status_extra'], record['gateway_id'],
+                                     record['requested_by'], record['reported_by'], record['request_id'],
+                                     record['uploaded'], record['uploadable']))
                 #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_at,          energy_usage,     energy_type,      human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
 
                 # logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
@@ -1055,7 +1087,6 @@ class Device(object):
             return available_commands[command_requested]
         else:
             commands = {}
-            # print("available_commands: %s" % available_commands)
             for command_id, data in available_commands.items():
                 commands[command_id] = data['command']
             attrs = [
@@ -1270,7 +1301,7 @@ class Device(object):
 
             }
             return self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown',
-                                    'Unknown status for device', None, None, {},
+                                    'Unknown status for device', None, None, self.gateway_id, {},
                                     requested_by, None, 'Unknown', 0, 1)
 
         return self.status_history[0]
@@ -1445,7 +1476,7 @@ class Device(object):
     def turn_on(self, cmd, **kwargs):
         for item in ('on', 'open'):
             try:
-                command = self.in_available_commands('on')
+                command = self.in_available_commands(item)
                 return self.command(command, **kwargs)
             except Exception:
                 pass
@@ -1454,8 +1485,32 @@ class Device(object):
     def turn_off(self, cmd, **kwargs):
         for item in ('off', 'close'):
             try:
-                command = self.in_available_commands('on')
+                command = self.in_available_commands(item)
                 return self.command(command, **kwargs)
             except Exception:
                 pass
         raise YomboWarning("Unable to turn off device. Device doesn't have any of these commands: off, close")
+
+    def command_from_status(self, machine_status, machine_status_extra=None):
+        """
+        Attempt to find a command based on the status of a device.
+        :param machine_status:
+        :return:
+        """
+        print("attempting to get command_from_status - device: %s - %s" % (machine_status, machine_status_extra))
+        if machine_status == int(1):
+            for item in ('on', 'open', 'high'):
+                try:
+                    command = self.in_available_commands(item)
+                    return command
+                except Exception:
+                    pass
+        elif machine_status == int(0):
+            for item in ('off', 'close', 'low'):
+                try:
+                    command = self.in_available_commands(item)
+                    return command
+                except Exception:
+                    pass
+        return None
+

@@ -21,3 +21,16 @@ class Relay(Appliance):
             return self.command('open')
         else:
             return self.command('close')
+
+    def command_from_status(self, machine_status, machine_status_extra=None):
+        """
+        Attempt to find a command based on the status of a device.
+        :param machine_status:
+        :return:
+        """
+        print("attempting to get command_from_status - relay: %s - %s" % (machine_status, machine_status_extra))
+        if machine_status == int(1):
+            return self._Commands['on']
+        elif machine_status == int(0):
+            return self._Commands['off']
+        return None
