@@ -24,11 +24,12 @@ from time import time
 
 # Import twisted libraries
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import is_true_false
+from yombo.utils import is_true_false, data_pickle, data_unpickle
+
 from yombo.core.log import get_logger
 logger = get_logger('library.devices.device_command')
 
@@ -94,7 +95,7 @@ class Device_Command(object):
         elif self.source == 'gateway_coms':
             self.dirty = False
             self.in_db = False
-            reactor.callLater(0.001, self.check_if_device_command_in_database)
+            reactor.callLater(5, self.check_if_device_command_in_database)
 
         else:
             self.history.append((self.created_at, self.status, 'Created.', self.local_gateway_id))
@@ -150,7 +151,9 @@ class Device_Command(object):
                 "Discarding a device command message loaded from database it's already been sent.")
             self.set_sent()
             return
-        print("Now actually starting device_command...")
+        if self.broadcast_at is not None:
+            logger.info("not starting device command, already broadcast...")
+            return
 
         if self.not_before_at is not None:
             cur_at = time()
@@ -288,37 +291,47 @@ class Device_Command(object):
             status = 'canceled'
         self.set_finished(finished_at, status, message)
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def save_to_db(self, forced = None):
         if self.device.gateway_id != self._Parent.gateway_id and self._Parent.is_master is not True:
             self.dirty = False
             return
         if self.dirty or forced is True:
-            yield self._Parent._LocalDB.save_device_command(self)
+            data = self.dump()
+            # if self.inputs is None:
+            #     data['inputs'] = None
+            # else:
+            data['history'] = data_pickle(self.history)
+            data['inputs'] = data_pickle(self.inputs)
+            data['requested_by'] = data_pickle(self.requested_by)
+
+            if self.in_db is True:
+                self._Parent._LocalDB.add_bulk_queue('device_commands', 'insert', data, 'request_id')
+            else:
+                self._Parent._LocalDB.add_bulk_queue('device_commands', 'update', data, 'request_id')
+
             self.dirty = False
             self.in_db = True
 
     def dump(self):
         return {
+            "request_id": self.request_id,
             "source_gateway_id": self.source_gateway_id,
             "device_id": self.device.device_id,
             "command_id": self.command.command_id,
-            "request_id": self.request_id,
             "inputs": self.inputs,
-            "history": self.history,
-            "requested_by": self.requested_by,
-            "status": self.status,
-            "persistent_request_id": self.persistent_request_id,
             "created_at": self.created_at,
-            "received_at": self.received_at,
+            "broadcast_at": self.broadcast_at,
             "sent_at": self.sent_at,
+            "received_at": self.received_at,
             "pending_at": self.pending_at,
             "finished_at": self.finished_at,
             "not_before_at": self.not_before_at,
             "not_after_at": self.not_after_at,
             "command_status_received": self.command_status_received,
-            "dirty": self.dirty,
-            "started": self.started,
+            "history": self.history,
+            "status": self.status,
+            "requested_by": self.requested_by,
         }
 
     def __repr__(self):
