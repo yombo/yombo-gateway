@@ -18,6 +18,10 @@ class Email(Input_Type):
         return str(value)
 
 
+class YomboUsername(Email):
+    pass
+
+
 class URI(Input_Type):
     MIN = 5
     MAX = 196

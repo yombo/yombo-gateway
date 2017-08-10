@@ -52,6 +52,30 @@ class _Integer(Input_Type):
         self.check_min_max(value, **kwargs)
         return value
 
+class Filename(Input_Type):
+    """
+    Very basic filename validator.
+    """
+    MIN = 3
+    MAX = 256
+
+    def validate(self, value, **kwargs):
+        if isinstance(value, bytes) is True:
+            if self.CONVERT is False:
+                raise AssertionError("Input is bytes, only strings allowed.")
+            else:
+                try:
+                    value = value.decode("utf-8")
+                except:
+                    raise AssertionError("Unable to convert input to string, from bytes.")
+        if isinstance(value, str) is False:
+            raise AssertionError("Input must be string.")
+        valid_chars = "-_.() /%s%s" % (string.ascii_letters, string.digits)
+        for char in value:
+            if char not in valid_chars:
+                raise AssertionError("Input has invalid character: %s" % char)
+        self.check_min_max(value, **kwargs)
+        return value
 
 class _Float(Input_Type):
     """
