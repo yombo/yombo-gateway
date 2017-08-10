@@ -18,11 +18,12 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
+import base64
 import binascii
 from difflib import SequenceMatcher
 import inspect
 import math
-# import msgpack
+import msgpack
 import netifaces
 import netaddr
 import os
@@ -32,7 +33,8 @@ import socket
 import string
 from struct import pack as struct_pack, unpack as struct_unpack
 import sys
-from time import strftime, localtime, time
+from time import strftime, localtime
+import zlib
 
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
@@ -80,6 +82,98 @@ def set_nested_dict(dic, keys, value):
     for key in keys[:-1]:
         dic = dic.setdefault(key, {})
     dic[keys[-1]] = value
+
+def data_pickle(data, encoder=None, zip_level=None):
+    """
+    Encodes data with an encoder type. The default is "msgpack_base85". This allows data to be sent to
+    databases or nearly everywhere.
+
+    :param data: String, list, or dictionary to be encoded.
+    :param encoder: Optional encode method. One of: json, msgpack, msgpack_zip, msgpack_base85, msgpack_base85_zip
+    :param zip: True or a compression number from 1 to 9. Only works with msgpack_base85, and converts it to a
+      msgpack_base85_zip.
+
+    :return: bytes (not string) of the encoded data that can be used with data_unpickle.
+    """
+    if zip_level is True:
+        zip_level = 5
+
+    if encoder is None:
+        if isinstance(zip_level, int):
+            if zip_level < 1 or zip_level > 9:
+                zip_level=5
+            encoder = 'msgpack_base85_zip'
+        else:
+            encoder = 'msgpack_base85'
+
+    if encoder == 'json':
+        try:
+            return json.dumps(data)
+        except:
+            pass
+    elif encoder == 'msgpack':
+        try:
+            return msgpack.packb(data)
+        except:
+            pass
+    elif encoder == 'msgpack_zip':
+        try:
+            return zlib.compress(msgpack.packb(data), zip_level)
+        except:
+            pass
+    elif encoder == 'msgpack_base85':
+        try:
+            return base64.b85encode(msgpack.packb(data))
+        except:
+            pass
+    elif encoder == 'msgpack_base85_zip':
+        if isinstance(zip_level, int) is False:
+            zip_level = 5
+        try:
+            return base64.b85encode(zlib.compress(msgpack.packb(data), zip_level))
+        except:
+            pass
+
+def data_unpickle(data, encoder=None, zip_level=None):
+    """
+    Unpack data packed with data_pickle.
+
+    :param data:
+    :param encoder:
+    :param zip_level:
+    :return:
+    """
+    if encoder is None:
+        if zip_level is True or isinstance(zip_level, int):
+            encoder = 'msgpack_base85_zip'
+        else:
+            encoder = 'msgpack_base85'
+
+    if encoder == 'json':
+        try:
+            return json.loads(data)
+        except:
+            pass
+    elif encoder == 'msgpack':
+        try:
+            return msgpack.unpackb(data, encoding='utf-8')
+        except:
+            pass
+    elif encoder == 'msgpack_zip':
+        try:
+            return zlib.decompress(msgpack.unpackb(data, encoding='utf-8'))
+        except:
+            pass
+    elif encoder == 'msgpack_base85':
+        try:
+            return msgpack.unpackb(base64.b85decode(data), encoding='utf-8')
+        except:
+            pass
+    elif encoder == 'msgpack_base85_zip':
+        try:
+            return msgpack.unpackb(zlib.decompress(base64.b85decode(data)), encoding='utf-8')
+        except:
+            pass
 
 def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     """
@@ -702,7 +796,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
     # sorted_list = None
 
     for item_id, item in haystack.items():
-        # print "checking item: %s" % item
         if status_value is not None:
             if getattr(item, status_field) != status_value:
                 continue
@@ -713,7 +806,6 @@ def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operati
             # except TypeError:
             #     continue  # might get here, even though it's not a string. Catch it!
             ratio = stringDiff.ratio()
-            # print "%s = %s has a ratio of: %s" % (getattr(item, attr['field']), attr['value'], ratio)
 
             if operation == "any":
                 if ratio > attr['limiter']:
@@ -871,17 +963,14 @@ def ip_address_in_network(ip_address, subnetwork):
     and "192.168.1.0/24") and IPv6 addresses/subnetworks (e.g.
     "2a02:a448:ddb0::" and "2a02:a448:ddb0::/44") are accepted.
     """
-    # print "ip: %s" % ip_address
-    # print "subnetwork: %s" % subnetwork
-
     (ip_integer, version1) = ip_to_integer(ip_address)
     (ip_lower, ip_upper, version2) = subnetwork_to_ip_range(subnetwork)
 
     if version1 != version2:
         raise ValueError("incompatible IP versions")
 
-    print("lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper))
-    print(ip_lower <= ip_integer <= ip_upper)
+    # print("lower: %s, ip: %s, upper: %s" % (ip_lower, ip_integer, ip_upper))
+    # print(ip_lower <= ip_integer <= ip_upper)
     return (ip_lower <= ip_integer <= ip_upper)
 
 
