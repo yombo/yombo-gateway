@@ -25,8 +25,7 @@ class Sensor(Device):
         :param machine_status:
         :return:
         """
-        print("attempting to get command_from_status - Sensor: %s - %s" % (machine_status, machine_status_extra))
-        # print("attempting to get command_from_status - Sensor machine status: %s" % (machine_status, type(machine_status)))
+        # print("attempting to get command_from_status - Sensor: %s - %s" % (machine_status, machine_status_extra))
         if machine_status == int(1):
             return self._Parent._Commands['high']
         elif machine_status == int(0):

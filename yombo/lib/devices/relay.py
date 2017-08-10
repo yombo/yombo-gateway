@@ -28,7 +28,7 @@ class Relay(Appliance):
         :param machine_status:
         :return:
         """
-        print("attempting to get command_from_status - relay: %s - %s" % (machine_status, machine_status_extra))
+        # print("attempting to get command_from_status - relay: %s - %s" % (machine_status, machine_status_extra))
         if machine_status == int(1):
             return self._Commands['on']
         elif machine_status == int(0):
