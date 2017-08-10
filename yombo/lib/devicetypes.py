@@ -20,14 +20,13 @@ This library keeps track of what modules can access what device types, and what 
 import inspect
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 # Import Yombo libraries
-from yombo.utils.decorators import memoize_ttl
-from yombo.core.exceptions import YomboFuzzySearchError, YomboWarning
+#from yombo.utils.decorators import memoize_ttl
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils.fuzzysearch import FuzzySearch
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
 import collections
 from functools import reduce
@@ -171,6 +170,7 @@ class DeviceTypes(YomboLibrary):
         """
         Sets up basic attributes.
         """
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.device_types = {}
         self.device_type_search_attributes = ['device_type_id', 'input_type_id', 'category_id', 'label', 'machine_label', 'description',
@@ -383,7 +383,7 @@ class DeviceTypes(YomboLibrary):
             device_type = yield self._LocalDB.get_device_type(device_type_id)
             yield self.import_device_types(device_type[0])
 
-    def devices_by_device_type(self, requested_device_type):
+    def devices_by_device_type(self, requested_device_type, gateway_id=None):
         """
         A list of devicess for a given device type.
 
@@ -393,7 +393,7 @@ class DeviceTypes(YomboLibrary):
         :rtype: list
         """
         device_type = self.get(requested_device_type)
-        return device_type.get_devices()
+        return device_type.get_devices(gateway_id=gateway_id)
 
     def device_type_commands(self, device_type_id):
         """
@@ -919,11 +919,13 @@ class DeviceType(object):
         # print('devicetype repsonse __getitem__: ', type(getattr(self, key)))
         return getattr(self, key)
 
-    def get_devices(self):
+    def get_devices(self, gateway_id=None):
         """
         Return a dictionary of devices for a given device_type
         :return:
         """
+        # if gateway_id is None:
+        #     gateway_id = self.gateway_id
 
         attrs = [
             {
@@ -940,6 +942,9 @@ class DeviceType(object):
                 devices = {}
                 for item in others:
                     device = item['value']
+                    if gateway_id is not None:
+                        if device.gateway_id != gateway_id:
+                            continue
                     devices[device['device_id']] = device
                 return devices
             else:
