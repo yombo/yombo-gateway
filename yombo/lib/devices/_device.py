@@ -23,7 +23,6 @@ import copy
 from collections import deque, namedtuple
 from time import time
 from collections import OrderedDict
-import collections
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
@@ -31,7 +30,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import random_string, global_invoke_all, do_search_instance, instance_properties
+from yombo.utils import random_string, global_invoke_all, do_search_instance, instance_properties, data_pickle, data_unpickle
 from yombo.lib.commands import Command  # used only to determine class type
 from ._device_command import Device_Command
 logger = get_logger('library.devices.device')
@@ -632,10 +631,10 @@ class Device(object):
             'called_by': self,
             'pin': device_command.pin,
         }
-        device_command.set_broadcast()
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
         results = yield global_invoke_all('_device_command_', **items)
+        device_command.set_broadcast()
         for component, result in results.items():
             if result is True:
                 device_command.set_received(message="Received by: %s" % component,)
@@ -913,7 +912,7 @@ class Device(object):
             if 'command' in kwargs:
                 command = self._Parent._Commands[kwargs['command']]
             else:
-                print("trying to get command_from_Status")
+                # print("trying to get command_from_Status")
                 command = self.command_from_status(machine_status, machine_status_extra)
 
         kwargs['request_id'] = request_id
@@ -939,7 +938,7 @@ class Device(object):
 
 
         if command is not None:
-            print("set status - command found!")
+            # print("set status - command found!")
             kwargs['command'] = command
             command_machine_label = command.machine_label
             mqtt_message['command_machine_label'] = command.machine_label
@@ -951,7 +950,7 @@ class Device(object):
                                                          machine_status_extra=machine_status_extra,
                                                          )
         else:
-            print("set status - no command found!")
+            # print("set status - no command found!")
             kwargs['command'] = None
             mqtt_message['command_machine_label'] = None
             mqtt_message['command_label'] = None
@@ -969,12 +968,19 @@ class Device(object):
             self._Parent._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
             self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
 
+
         new_status = self.StatusTuple(self.device_id, set_at, energy_usage, energy_type, human_status, human_message,
                                       command_machine_label, machine_status, machine_status_extra, kwargs['gateway_id'],
                                       requested_by, reported_by, request_id, uploaded, uploadable)
         self.status_history.appendleft(new_status)
         if self.test_device is False:
-            self._Parent._LocalDB.save_device_status(**new_status._asdict())
+            # self._Parent._LocalDB.save_device_status(**new_status._asdict())
+            save_status = new_status._asdict()
+            save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
+            # print("requested by before: %s" % save_status['requested_by'])
+            save_status['requested_by'] = data_pickle(save_status['requested_by'])
+            # print("requested by after: %s" % save_status['requested_by'])
+            self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
         self._Parent.check_trigger(self.device_id, new_status)
 
         if self._Parent.mqtt != None:
@@ -998,9 +1004,13 @@ class Device(object):
         #    'gateway_id': 'PZyVLR4PzWzwd7j0', 'status_source': 'gateway_coms'}
 
         new_status = self.StatusTuple(*payload['status'])
+        save_status = new_status._asdict()
+        save_status['requested_by'] = data_pickle(save_status['requested_by'])
+        save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
         self.status_history.appendleft(new_status)
         if self.test_device is False and self._Parent.is_master is True:
-            self._Parent._LocalDB.save_device_status(**new_status._asdict())
+            self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
+            # self._Parent._LocalDB.save_device_status(**new_status._asdict())
         self._Parent.check_trigger(self.device_id, new_status)
         self.send_status(**payload)
 
@@ -1014,15 +1024,15 @@ s
         :param kwargs:
         :return:
         """
-        print("send status keys: %s" % kwargs.keys())
+        # print("send status keys: %s" % kwargs.keys())
         if 'command' in kwargs:
-            print("has command..")
+            # print("has command..")
             command = kwargs['command']
-            print("command: %s" % command)
+            # print("command: %s" % command)
         elif 'command_id' in kwargs:
-            print("searching for command..")
+            # print("searching for command..")
             command = self._Parent._Commands[kwargs['command_id']]
-            print("command: %s" % command)
+            # print("command: %s" % command)
         else:
             command = None
 
@@ -1077,9 +1087,6 @@ s
                                      record['machine_status'], record['machine_status_extra'], record['gateway_id'],
                                      record['requested_by'], record['reported_by'], record['request_id'],
                                      record['uploaded'], record['uploadable']))
-                #                              self.StatusTuple = namedtuple('Status',  "device_id,           set_at,          energy_usage,     energy_type,      human_status,           human_message,           machine_status,          machine_status_extra,           requested_by,           reported_by,           uploaded,           uploadable")
-
-                # logger.debug("Device load history: {device_id} - {status_history}", device_id=self.device_id, status_history=self.status_history)
 
     def validate_command(self, command_requested):
         available_commands = self.available_commands()
@@ -1297,11 +1304,9 @@ s
             requested_by = {
                 'user_id': 'Unknown',
                 'component': 'Unknown',
-                'gateway': 'Unknown'
-
             }
             return self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown',
-                                    'Unknown status for device', None, None, self.gateway_id, {},
+                                    'Unknown status for device', None, None, {}, self.gateway_id,
                                     requested_by, None, 'Unknown', 0, 1)
 
         return self.status_history[0]
@@ -1439,8 +1444,6 @@ s
         items = list(self.energy_map.items())
         for i in range(0, len(self.energy_map) - 1):
             if items[i][0] <= machine_status <= items[i + 1][0]:
-                # print "translate(key, items[counter][0], items[counter+1][0], items[counter][1], items[counter+1][1])"
-                # print "%s, %s, %s, %s, %s" % (key, items[counter][0], items[counter+1][0], items[counter][1], items[counter+1][1])
                 value = self.energy_translate(machine_status, items[i][0], items[i + 1][0], items[i][1],
                                               items[i + 1][1])
                 return [value, self.energy_type]
@@ -1497,7 +1500,7 @@ s
         :param machine_status:
         :return:
         """
-        print("attempting to get command_from_status - device: %s - %s" % (machine_status, machine_status_extra))
+        # print("attempting to get command_from_status - device: %s - %s" % (machine_status, machine_status_extra))
         if machine_status == int(1):
             for item in ('on', 'open', 'high'):
                 try:
