@@ -16,6 +16,16 @@ YOMBO_TACFILE="yombo.tac"
 YOMBO_LOGENABLE="0"
 YOMBO_DAEMON="0"
 
+#Check if pyenv is being used and isn't loaded...
+if [ -f ".python-version" ] ; then
+  if ! [ -x "$(command -v pyenv)" ]; then
+    echo "Yombo.sh setting up pyenv"
+    export PATH="~/.pyenv/bin:$PATH"
+    eval "$(pyenv init -)"
+    eval "$(pyenv virtualenv-init -)"
+  fi
+fi
+
 usage()
 {
 cat << EOF
@@ -97,6 +107,7 @@ YOMBO_OPTS="$YOMBO_OPTS -y $YOMBO_TACFILE"
 
 while :
 do
+  echo "asdfdddd"
   if [ $YOMBO_DAEMON -eq "1" ]; then
      $YOMBO_OPTS &
   else
