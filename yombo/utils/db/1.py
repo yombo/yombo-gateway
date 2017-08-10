@@ -114,31 +114,34 @@ def create_table_commands(Registry, **kwargs):
 def create_table_devices(Registry, **kwargs):
     """ Defines the devices table. Lists all possible devices for local gateway and related remote gateways. """
     table = """CREATE TABLE `devices` (
-        `id`              TEXT NOT NULL,
-        `gateway_id`      TEXT NOT NULL,
-        `device_type_id`  TEXT NOT NULL,
-        `location_id`     TEXT NOT NULL,
-        `area_id`         TEXT NOT NULL,
-        `machine_label`   TEXT NOT NULL,
-        `label`           TEXT NOT NULL,
-        `description`     TEXT,
-        `statistic_label` TEXT,
-        `statistic_lifetime` INTEGER DEFAULT 0,
-        `notes`           TEXT,
-        `attributes`      TEXT,
-        `voice_cmd`       TEXT,
-        `voice_cmd_order` TEXT,
-        `voice_cmd_src`   TEXT,
-        `energy_type`     TEXT,
-        `energy_tracker_source` TEXT,
-        `energy_tracker_device` TEXT,
-        `energy_map`      TEXT,
-        `pin_code`        TEXT,
-        `pin_required`    INTEGER NOT NULL,
-        `pin_timeout`     INTEGER DEFAULT 0,
-        `status`          INTEGER NOT NULL,
-        `created_at`      INTEGER NOT NULL,
-        `updated_at`      INTEGER NOT NULL,
+        `id`                     TEXT NOT NULL,
+        `gateway_id`             TEXT NOT NULL,
+        `device_type_id`         TEXT NOT NULL,
+        `location_id`            TEXT NOT NULL,
+        `area_id`                TEXT NOT NULL,
+        `machine_label`          TEXT NOT NULL,
+        `label`                  TEXT NOT NULL,
+        `description`            TEXT,
+        `statistic_label`        TEXT,
+        `statistic_lifetime`     INTEGER DEFAULT 0,
+        `statistic_type`         TEXT,
+        `statistic_bucket_size`  TEXT,
+        `data`                   BLOB,
+        `notes`                  TEXT,
+        `attributes`             TEXT,
+        `voice_cmd`              TEXT,
+        `voice_cmd_order`        TEXT,
+        `voice_cmd_src`          TEXT,
+        `energy_type`            TEXT,
+        `energy_tracker_source`  TEXT,
+        `energy_tracker_device`  TEXT,
+        `energy_map`             TEXT,
+        `pin_code`               TEXT,
+        `pin_required`           INTEGER NOT NULL,
+        `pin_timeout`            INTEGER DEFAULT 0,
+        `status`                 INTEGER NOT NULL,
+        `created_at`             INTEGER NOT NULL,
+        `updated_at`             INTEGER NOT NULL,
 /*     FOREIGN KEY(device_type_id) REFERENCES artist(device_types) */
      PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
@@ -180,14 +183,14 @@ def create_table_device_commands(Registry, **kwargs):
         `device_id`         TEXT NOT NULL,
         `command_id`        TEXT NOT NULL,
         `inputs`            TEXT,
-        `created_at`   FLOAT NOT NULL,
-        `broadcast_at`    FLOAT,
-        `sent_at`         FLOAT,
-        `received_at`     FLOAT,
-        `pending_at`      FLOAT,
-        `finished_at`     FLOAT,
-        `not_before_at`   FLOAT,
-        `not_after_at`    FLOAT,
+        `created_at`        FLOAT NOT NULL,
+        `broadcast_at`      FLOAT,
+        `sent_at`           FLOAT,
+        `received_at`       FLOAT,
+        `pending_at`        FLOAT,
+        `finished_at`       FLOAT,
+        `not_before_at`     FLOAT,
+        `not_after_at`      FLOAT,
         `command_status_received` INT NOT NULL DEFAULT 0,
         `history`           TEXT NOT NULL,
         `status`            TEXT NOT NULL,
@@ -208,13 +211,14 @@ def create_table_device_status(Registry, **kwargs):
     table = """CREATE TABLE `device_status` (
         `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `device_id`            TEXT NOT NULL, /* device_id */
-        `set_at`             REAL NOT NULL,
+        `set_at`               REAL NOT NULL,
         `energy_usage`         INTEGER NOT NULL,
         `energy_type`          TEXT,
         `human_status`         TEXT NOT NULL,
         `human_message`        TEXT NOT NULL,
         `last_command`         TEXT,
         `machine_status`       TEXT NOT NULL,
+        `gateway_id`           TEXT,
         `machine_status_extra` TEXT,
         `requested_by`         TEXT NOT NULL,
         `reported_by`          TEXT NOT NULL,
@@ -453,20 +457,20 @@ def create_table_nodes(Registry, **kwargs):
     """  """
     #  Defines the statistics data table. Stores node items.
     table = """CREATE TABLE `nodes` (
-        `id`             TEXT NOT NULL,
-        `parent_id`      TEXT,
-        `gateway_id`     TEXT NOT NULL,
-        `node_type`      TEXT NOT NULL,
-        `weight`         INTEGER NOT NULL,
-        `label`          TEXT,
-        `machine_label`  TEXT,
-        `always_load`    INTEGER NOT NULL,
-        `destination`    TEXT NOT NULL,
-        `data`           BLOB,
+        `id`                TEXT NOT NULL,
+        `parent_id`         TEXT,
+        `gateway_id`        TEXT NOT NULL,
+        `node_type`         TEXT NOT NULL,
+        `weight`            INTEGER NOT NULL,
+        `label`             TEXT,
+        `machine_label`     TEXT,
+        `always_load`       INTEGER NOT NULL,
+        `destination`       TEXT NOT NULL,
+        `data`              BLOB,
         `data_content_type` TEXT NOT NULL,
-        `status`         INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
-        `updated_at`     INTEGER NOT NULL,
-        `created_at`     INTEGER NOT NULL );"""
+        `status`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
+        `updated_at`        INTEGER NOT NULL,
+        `created_at`        INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('nodes', 'id'))
     yield Registry.DBPOOL.runQuery(create_index('nodes', 'parent_id'))
@@ -476,20 +480,20 @@ def create_table_notifications(Registry, **kwargs):
     """  """
     #  Defines the statistics data table. Stores statistics.
     table = """CREATE TABLE `notifications` (
-        `id`           TEXT NOT NULL,
-        `gateway_id`   TEXT NOT NULL,
-        `type`         TEXT NOT NULL, /* system, user, etc */
-        `priority`     TEXT NOT NULL, /* debug, low, normal, high, urgent */
-        `source`       TEXT NOT NULL, /* where this message was created_at */
-        `expire`       INTEGER, /* timestamp when msg should expire */
-        `always_show`  INTEGER NOT NULL, /* If notification should always show until user clears it. */
+        `id`                      TEXT NOT NULL,
+        `gateway_id`              TEXT NOT NULL,
+        `type`                    TEXT NOT NULL, /* system, user, etc */
+        `priority`                TEXT NOT NULL, /* debug, low, normal, high, urgent */
+        `source`                  TEXT NOT NULL, /* where this message was created_at */
+        `expire`                  INTEGER, /* timestamp when msg should expire */
+        `always_show`             INTEGER NOT NULL, /* If notification should always show until user clears it. */
         `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
         `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
-        `acknowledged_at`       INTEGER, /* Timestemp when msg was ack'd by the user. */
-        `user`         TEXT, /* Message data */
-        `title`        TEXT, /* Message data */
-        `message`      TEXT, /* Message data */
-        `meta`         TEXT, /* Any extra meta data. JSON format */
+        `acknowledged_at`         INTEGER, /* Timestemp when msg was ack'd by the user. */
+        `user`                    TEXT, /* Message data */
+        `title`                   TEXT, /* Message data */
+        `message`                 TEXT, /* Message data */
+        `meta`                    TEXT, /* Any extra meta data. JSON format */
         `created_at`   INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('notifications', 'id'))

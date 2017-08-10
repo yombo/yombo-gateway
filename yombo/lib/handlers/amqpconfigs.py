@@ -183,6 +183,10 @@ class AmqpConfigHandler(YomboLibrary):
                     'pin_required': 'pin_required',
                     'pin_timeout': 'pin_timeout',
                     'statistic_label': 'statistic_label',
+                    'statistic_lifetime': 'statistic_lifetime',
+                    'statistic_type': 'statistic_type',
+                    'statistic_bucket_size': 'statistic_bucket_size',
+                    'data': 'data',
                     'energy_type': 'energy_type',
                     'energy_tracker_source': 'energy_tracker_source',
                     'energy_tracker_device': 'energy_tracker_device',
@@ -677,7 +681,7 @@ class AmqpConfigHandler(YomboLibrary):
         # print("processing msg.... %s" % msg)
         if msg['code'] != 200:
             logger.warn("Configuration for configuration '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
-            self._remove_full_download_dueue("get_" + config_item)
+            yield self._remove_full_download_dueue("get_" + config_item)
             self.processing = False
             return
 
@@ -724,7 +728,7 @@ class AmqpConfigHandler(YomboLibrary):
                 # print("add_update_delete stop list")
         else:
             logger.warn("ConfigurationUpdate::process_config - '{config_item}' is not a valid configuration item. Skipping.", config_item=config_item)
-        self._remove_full_download_dueue("get_" + config_item)
+        yield self._remove_full_download_dueue("get_" + config_item)
         self.processing = False
 
     def field_remap(self, data, config_data):
@@ -1064,6 +1068,7 @@ class AmqpConfigHandler(YomboLibrary):
                 'request_at': time(),
             }
 
+    @inlineCallbacks
     def _remove_full_download_dueue(self, table):
         # logger.info("Removing table from request queue: {table}", table=table)
         # logger.info("Configs pending: {pendingUpdates}", pendingUpdates=self.__pending_updates)
@@ -1093,19 +1098,19 @@ class AmqpConfigHandler(YomboLibrary):
                     records.append(existing_id)
                 if len(records) > 0:
                     print("%s should be delete_many these records: %s" % (table, records))
-                    self._LocalDB.delete_many(table, records)
+                    yield self._LocalDB.delete_many(table, records)
             self.db_existing_data = {}
 
             for table, records in self.db_update_data.items():
                 if len(records) > 0:
                     # print("%s should be update_many records: %s" % (table, records))
-                    self._LocalDB.update_many(table, records, 'id')
+                    yield self._LocalDB.update_many(table, records, 'id')
             self.db_update_data = {}
 
             for table, records in self.db_insert_data.items():
                 if len(records) > 0:
                     # print("%s should be insert_many these records: %s" % (table, records))
-                    self._LocalDB.insert_many(table, records)
+                    yield self._LocalDB.insert_many(table, records)
             self.db_update_data = {}
 
             reactor.callLater(0.1, self.done_with_startup_downloads) # give DB some breathing room
