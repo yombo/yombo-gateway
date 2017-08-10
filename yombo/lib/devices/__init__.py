@@ -422,6 +422,7 @@ class Devices(YomboLibrary):
     def _load_device_commands(self):
         where = {
             'finished_at': None,
+            'broadcast_at': [time() - 3600, '>'],
             'source_gateway_id': self.gateway_id,
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
