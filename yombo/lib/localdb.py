@@ -17,24 +17,13 @@ A database API to SQLite3.
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
 """
-import base64
-
 # Import python libraries
 from collections import OrderedDict
 
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-import base64
 import inspect
-import msgpack
 from os import chmod
-import pickle
-from sqlite3 import Binary as sqlite3Binary
 import sys
 from time import time
-import zlib
 
 # Import 3rd-party libs
 from yombo.ext.twistar.registry import Registry
@@ -43,13 +32,14 @@ from yombo.ext.twistar.dbobject import DBObject
 
 # Import twisted libraries
 from twisted.enterprise import adbapi
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import clean_dict, instance_properties
+from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle
 
 logger = get_logger('lib.localdb')
 
@@ -253,6 +243,8 @@ class LocalDB(YomboLibrary):
         Check to make sure the database exists. Will create if missing, will also update schema if any
         changes are required.
         """
+        self.db_bulk_queue = {}
+        self.db_bulk_queue_id_cols = {}
         def show_connected(connection):
             connection.execute("PRAGMA foreign_keys = ON")
         self.db_model = {}  # store generated database model here.
@@ -296,6 +288,14 @@ class LocalDB(YomboLibrary):
 
     def _load_(self, **kwargs):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+        self.save_bulk_queue_loop = LoopingCall(self.save_bulk_queue)
+        self.save_bulk_queue_loop.start(61.1, False)
+
+    @inlineCallbacks
+    def _stop_(self, **kwargs):
+        yield self.save_bulk_queue()
+        if self.save_bulk_queue_loop is not None and self.save_bulk_queue_loop.running:
+            self.save_bulk_queue_loop.stop()
 
     def get_model_class(self, class_name):
         return globals()[class_name]()
@@ -348,13 +348,11 @@ class LocalDB(YomboLibrary):
     def get_dbitem_by_id(self, dbitem, id, status=None):
         if dbitem not in MODULE_CLASSES:
             raise YomboWarning("get_dbitem_by_id expects dbitem to be a DBObject")
-        #        print MODULE_CLASSES
         if status is None:
             records = yield MODULE_CLASSES[dbitem].find(where=['id = ?', id])
         else:
             records = yield MODULE_CLASSES[dbitem].find(where=['id = ? and status = ?', id, status])
         results = []
-        # print("get_dbitem_by_id results: %s" % records)
         for record in records:
             results.append(record.__dict__)  # we need a dictionary, not an object
         return results
@@ -362,19 +360,65 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_dbitem_by_id_dict(self, dbitem, where=None, status=None):
         if dbitem not in MODULE_CLASSES:
-            # print MODULE_CLASSES
             raise YomboWarning("get_dbitem_by_id_dict expects dbitem to be a DBObject")
-        #        print MODULE_CLASSES
         if where is None:
-            records = yield MODULE_CLASSES[dbitem].find()
-        #            print "looking without status!"
+            records = yield MODULE_CLASSES[dbitem].select()
         else:
-            records = yield MODULE_CLASSES[dbitem].find(where=dictToWhere(where))
-        #        print "get_dbitem_by_id. class: %s, id: %s, status: %s" % (dbitem, id, status)
-        results = []
-        for record in records:
-            results.append(record.__dict__)  # we need a dictionary, not an object
-        return results
+            records = yield MODULE_CLASSES[dbitem].select(where=dictToWhere(where))
+        return records
+
+    def add_bulk_queue(self, table, queue_type, data, id_col=None, insert_blind=None):
+        if id_col is None:
+            id_col = 'id'
+        self.db_bulk_queue_id_cols[table] = id_col
+
+        if queue_type not in ('update', 'insert', 'delete'):
+            return
+        if table not in self.db_bulk_queue:
+            self.db_bulk_queue[table] = {
+                'insert': {},
+                'insert_blind': [],
+                'update': {},
+                'delete': [],
+            }
+
+        if queue_type == 'insert':
+            if insert_blind is True:
+                self.db_bulk_queue[table]['insert_blind'].append(data)
+            else:
+                self.db_bulk_queue[table][queue_type][data[id_col]] = data
+        elif queue_type == 'update':
+            if data[id_col] in self.db_bulk_queue[table]['insert']:
+                for key, value in data:
+                    self.db_bulk_queue[table]['insert'][data[id_col]][key] = value
+            elif data[id_col] in self.db_bulk_queue[table]['update']:
+                for key, value in data:
+                    self.db_bulk_queue[table]['update'][data[id_col]][key] = value
+            else:
+                self.db_bulk_queue[table][queue_type][data[id_col]] = data
+        elif queue_type == 'delete':
+            self.db_bulk_queue[table][queue_type].append(data[id_col])
+
+    @inlineCallbacks
+    def save_bulk_queue(self):
+        # print("saving bulk data: %s" % self.db_bulk_queue)
+        for table, queues in self.db_bulk_queue.items():
+            for queue_type, data in queues.items():
+                if len(data) > 0:
+                    db_data = self.db_bulk_queue[table][queue_type].copy()
+                    self.db_bulk_queue[table][queue_type].clear()
+                    if queue_type == 'insert':
+                        send_data = []
+                        for key, value in db_data.items():
+                            send_data.append(value)
+                        yield self.insert_many(table, send_data)
+                    elif queue_type == 'update':
+                        send_data = []
+                        for key, value in db_data.items():
+                            send_data.append(value)
+                        yield self.update_many(table, send_data, self.db_bulk_queue_id_cols[table])
+                    elif queue_type == 'delete':
+                        yield self.delete_many(table, db_data)
 
     #########################
     ###    Commands     #####
@@ -412,7 +456,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):
-        print("add_device in lcoaldb: %s" % kwargs)
+        # print("add_device in lcoaldb: %s" % kwargs)
         device = Device()
         device.id = data['id']
         device.device_type_id = data['device_type_id']
@@ -457,7 +501,7 @@ class LocalDB(YomboLibrary):
             'updated_at': device.updated_at,
             'energy_tracker_device': device.energy_tracker_device,
             'energy_tracker_source': device.energy_tracker_source,
-            'energy_map': json.dumps(device.energy_map),
+            'energy_map': data_pickle(device.energy_map),
         }
         results = yield self.dbconfig.update('devices', args, where=['id = ?', device.device_id])
         return results
@@ -490,41 +534,16 @@ class LocalDB(YomboLibrary):
         id = kwargs['id']
         limit = self._get_limit(**kwargs)
         records = yield self.dbconfig.select('device_status',
-                                             select='device_id, set_at, energy_usage, energy_type, human_status, human_message, last_command, machine_status, machine_status_extra, requested_by, reported_by, request_id, uploaded, uploadable',
                                              where=['device_id = ?', id], orderby='set_at', limit=limit)
         for index in range(len(records)):
             machine_status_extra = records[index]['machine_status_extra']
             if machine_status_extra is None:
                 records[index]['machine_status_extra'] = None
             else:
-                records[index]['machine_status_extra'] = json.loads(machine_status_extra)
+                records[index]['machine_status_extra'] = data_unpickle(machine_status_extra)
 
-            records[index]['requested_by'] = json.loads(str(records[index]['requested_by']))
+            records[index]['requested_by'] = data_unpickle(records[index]['requested_by'])
         return records
-
-    @inlineCallbacks
-    def save_device_status(self, device_id, **kwargs):
-        machine_status = kwargs['machine_status']
-        if kwargs['machine_status_extra'] is None :
-            machine_status_extra = None
-        else:
-            machine_status_extra = json.dumps(kwargs['machine_status_extra'], separators=(',', ':'))
-        results = yield DeviceStatus(
-            device_id=device_id,
-            set_at=kwargs.get('set_at', time()),
-            energy_usage=kwargs['energy_usage'],
-            energy_type=kwargs['energy_type'],
-            human_status=kwargs.get('human_status', machine_status),
-            human_message=kwargs.get('human_message', machine_status),
-            last_command=kwargs.get('last_command', machine_status),
-            machine_status=machine_status,
-            machine_status_extra=machine_status_extra,
-            requested_by=json.dumps(kwargs.get('requested_by', {}), separators=(',', ':')),
-            reported_by=kwargs.get('reported_by', 'Unknown'),
-            uploaded=kwargs.get('uploaded', 0),
-            uploadable=kwargs.get('uploadable', 0),
-        ).save()
-        return results
 
     @inlineCallbacks
     def get_device_commands(self, where):
@@ -535,63 +554,11 @@ class LocalDB(YomboLibrary):
             del DC['errors']
             del DC['_rowid']
             DC['_source'] = "database"
-            DC['history'] = json.loads(DC['history'])
-            DC['requested_by'] = json.loads(DC['requested_by'])
+            DC['inputs'] = data_unpickle(DC['inputs'])
+            DC['history'] = data_unpickle(DC['history'])
+            DC['requested_by'] = data_unpickle(DC['requested_by'])
             DCs.append(DC)
         return DCs
-
-    @inlineCallbacks
-    def save_device_command(self, DC):
-        if DC.inputs is None:
-            inputs = None
-        else:
-            inputs = json.dumps(DC.inputs, separators=(',', ':'))
-
-        if DC.in_db is False:
-            device_command = DeviceCommand()
-            device_command.command_status_received=DC.command_status_received
-            device_command.request_id=DC.request_id
-            device_command.source_gateway_id=DC.source_gateway_id
-            device_command.device_id=DC.device.device_id
-            device_command.command_id=DC.command.command_id
-            device_command.inputs=inputs
-            device_command.created_at=DC.created_at
-            device_command.broadcast_at=DC.broadcast_at
-            device_command.sent_at=DC.sent_at
-            device_command.received_at=DC.received_at
-            device_command.pending_at=DC.pending_at
-            device_command.finished_at=DC.finished_at
-            device_command.not_before_at=DC.not_before_at
-            device_command.not_after_at=DC.not_after_at
-            device_command.history=json.dumps(DC.history, separators=(',', ':'))
-            device_command.status=DC.status
-            device_command.requested_by=json.dumps(DC.requested_by, separators=(',', ':'))
-            device_command.uploaded=0
-            device_command.uploadable=0
-            yield device_command.save()
-        else:
-            args = {
-                'inputs': inputs,
-                'created_at': DC.created_at,
-                'sent_at': DC.sent_at,
-                'received_at': DC.received_at,
-                'pending_at': DC.pending_at,
-                'finished_at': DC.finished_at,
-                'not_before_at': DC.not_before_at,
-                'not_after_at': DC.not_after_at,
-                'history': json.dumps(DC.history, separators=(',', ':')),
-                'status': DC.status,
-                'requested_by': json.dumps(DC.requested_by, separators=(',', ':')),
-                'command_status_received': DC.command_status_received,
-                # 'uploaded': DC.uploaded,
-                # 'uploadable': DC.uploadable,
-            }
-            yield self.dbconfig.update('device_commands', args,
-                                                 where=['id = ?', DC.request_id])
-
-        device_command_results = yield DeviceCommand.find(where=['request_id = ?' , DC.request_id])
-        return device_command_results[0]
-
 
     #############################
     ###    Device Types     #####
@@ -829,24 +796,11 @@ class LocalDB(YomboLibrary):
     ###    Nodes            #####
     #############################
 
-    def node_decode_data(self, node):
-        if node['data_content_type'] == 'json':
-            try:
-                return json.loads(node['data'])
-            except:
-                pass
-        elif node['data_content_type'] == 'msgpack_base85':
-            try:
-                return msgpack.loads(base64.b85decode(node['data']))
-            except:
-                pass
-        return node['data']
-
     @inlineCallbacks
     def get_nodes(self):
         records = yield self.dbconfig.select('nodes')
         for record in records:
-            record['data'] = self.node_decode_data(record)
+            record['data'] = data_unpickle(record['data'], record['data_content_type'])
         return records
 
     @inlineCallbacks
@@ -855,39 +809,26 @@ class LocalDB(YomboLibrary):
         record['node_id'] = record['id']
         del record['id']
         # attempt to decode the data..
-        record['data'] = self.node_decode_data(record)
+        record['data'] = data_unpickle(record['data'], record['data_content_type'])
         return record
     #
     # @inlineCallbacks
     # def get_node_siblings(self, node):
     #     records = yield Node.select(where=['parent_id = ? and node_type = ?', node.parent_id, node.node_type])
     #     for record in records:
-    #         record['data'] = self.node_decode_data(record)
+    #         record['data'] = data_unpickle(record['data'], record['data_content_type'])
     #     return records
     #
     # @inlineCallbacks
     # def get_node_children(self, node):
     #     records = yield Node.select(where=['parent_id = ? and node_type = ?', node.id, node.node_type])
     #     for record in records:
-    #         record['data'] = self.node_decode_data(record)
+    #         record['data'] = data_unpickle(record['data'], record['data_content_type'])
     #     return records
-
-    def encode_data(self, data, encode_type):
-        if encode_type == 'json':
-            try:
-                data = json.dumps(data)
-            except:
-                pass
-        elif encode_type == 'msgpack_base85':
-            try:
-                data = base64.b85encode(msgpack.dumps(data))
-            except:
-                pass
-        return data
 
     @inlineCallbacks
     def add_node(self, data, **kwargs):
-        print("add_node in lcoaldb: %s" % kwargs)
+        # print("add_node in lcoaldb: %s" % kwargs)
         node = Node()
         node.id = data.node_id
         node.parent_id = data.parent_id
@@ -898,7 +839,7 @@ class LocalDB(YomboLibrary):
         node.machine_label = data.machine_label
         node.always_load = data.always_load
         node.destination = data.destination
-        node.data = self.encode_data(data.data, data.data_content_type)
+        node.data = data_pickle(data.data, data.data_content_type)
         node.data_content_type = data.data_content_type
         node.status = data.status
         node.updated_at = data.updated_at
@@ -916,7 +857,7 @@ class LocalDB(YomboLibrary):
             'machine_label': node.machine_label,
             'always_load': node.always_load,
             'destination': node.destination,
-            'data': self.encode_data(node.data, node.data_content_type),
+            'data': data_pickle(node.data, node.data_content_type),
             'data_content_type': node.data_content_type,
             'status': node.enabled_status,
             'created_at': node.created_at,
@@ -968,7 +909,7 @@ class LocalDB(YomboLibrary):
             'user': notice['user'],
             'title': notice['title'],
             'message': notice['message'],
-            'meta': json.dumps(notice['meta'], separators=(',', ':')),
+            'meta': data_pickle(notice['meta'], separators=(',', ':')),
             'created_at': notice['created_at'],
         }
         results = yield self.dbconfig.insert('notifications', args, None, 'OR IGNORE')
@@ -988,7 +929,7 @@ class LocalDB(YomboLibrary):
             'user': notice.user,
             'title': notice.title,
             'message': notice.message,
-            'meta': json.dumps(notice.meta, separators=(',', ':')),
+            'meta': data_pickle(notice.meta, separators=(',', ':')),
         }
         # print("saving notice: %s" %args)
         results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
@@ -1010,11 +951,10 @@ class LocalDB(YomboLibrary):
     #########################
     @inlineCallbacks
     def get_session(self, session_id=None):
-        # print "session_data: %s" % session_data
         record = yield Sessions.find(session_id, where=['is_valid = 1'])
         if record is None:
             return None
-        record.session_data = json.loads(record.session_data)
+        record.session_data = data_unpickle(record.session_data)
         return record
 
     @inlineCallbacks
@@ -1024,7 +964,7 @@ class LocalDB(YomboLibrary):
             'id': session_id,
             'is_valid': session_data['is_valid'],
             'gateway_id': gateway_id,
-            'session_data': json.dumps(session_data),
+            'session_data': data_pickle(session_data),
             'created_at': session_data['created_at'],
             'last_access': session_data['last_access'],
             'updated_at': session_data['updated_at'],
@@ -1034,7 +974,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def update_session(self, session_id, session_data):
         args = {'is_valid':session_data['is_valid'],
-                'session_data': json.dumps(session_data),
+                'session_data': data_pickle(session_data),
                 'last_access': session_data['last_access'],
                 'updated_at': session_data['updated_at'],
                 }
@@ -1042,7 +982,6 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def delete_session(self, session_id):
-        # print "session_data: %s" % session_data
         yield self.dbconfig.delete('webinterface_sessions', where=['id = ?', session_id])
 
     #########################
@@ -1190,12 +1129,13 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
     def get_sql_dict(self, component, dict_name):
         records = yield self.dbconfig.select('sqldict', select='dict_data',
                                              where=['component = ? AND dict_name = ?', component, dict_name])
-        if len(records) == 1:
+        # print("get sql dict: %s" % records)
+        for record in records:
             try:
-                before = len(records[0]['dict_data'])
-                records[0]['dict_data'] = zlib.decompress(base64.decodebytes(records[0]['dict_data']))
+                before = len(record['dict_data'])
+                record['dict_data'] = data_unpickle(record['dict_data'], 'msgpack_base85_zip')
                 logger.debug("SQLDict Compression. With: {withcompress}, Without: {without}",
-                             without=len(records[0]['dict_data']), withcompress=before)
+                             without=len(record['dict_data']), withcompress=before)
             except:
                 pass
         return records
@@ -1214,25 +1154,21 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         :param data1: Data
         :return: None
         """
-        if len(dict_data) > 3000:
-            dict_data = base64.encodestring(zlib.compress(dict_data, 5))
+        dict_data = data_pickle(dict_data, 'msgpack_base85_zip')
 
         args = {'component': component,
                 'dict_name': dict_name,
                 'dict_data': dict_data,
                 'updated_at': int(time()),
                 }
-        #        print "starting set_sql_dict"
         records = yield self.dbconfig.select('sqldict', select='dict_name',
                                              where=['component = ? AND dict_name = ?', component, dict_name])
         if len(records) > 0:
             results = yield self.dbconfig.update('sqldict', args,
                                                  where=['component = ? AND dict_name = ?', component, dict_name])
-        #            print "set_sql_dict: update reuslts: %s" %results
         else:
             args['created_at'] = args['updated_at']
             results = yield self.dbconfig.insert('sqldict', args, None, 'OR IGNORE')
-        #            print "set_sql_dict: insert reuslts: %s" %results
 
     #####################
     ### Statistics  #####
@@ -1253,8 +1189,6 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
     def get_statistic(self, where):
         find_where = dictToWhere(where)
         records = yield Statistics.find(where=find_where)
-
-        # print "stat records: %s" % records
         return records
 
     @inlineCallbacks
@@ -1279,7 +1213,6 @@ ORDER BY id desc"""
 
     @inlineCallbacks
     def save_statistic_bulk(self, buckets):
-        # print "localdb save: %s" % buckets
         results = yield self.dbconfig.insertMany('statistics', buckets)
         return results
 
@@ -1289,7 +1222,6 @@ ORDER BY id desc"""
         if finished is None:
             finished = False
 
-        # print "save stat data : %s" % bucket
         args = {'bucket_value': bucket['value'],
                 'updated_at': int(time()),
                 'anon': bucket['anon'],
@@ -1301,7 +1233,7 @@ ORDER BY id desc"""
             args['finished'] = 0
 
         if bucket['type'] == 'average':
-            args['bucket_average_data'] = json.dumps(bucket['average_data'], separators=(',',':'))
+            args['bucket_average_data'] = data_pickle(bucket['average_data'], separators=(',',':'))
 
         if 'restored_db_id' in bucket:
             results = yield self.dbconfig.update('statistics',
@@ -1356,9 +1288,9 @@ ORDER BY id desc"""
         if isinstance(stats, list):
             for s in stats:
                 if s[type_name] == 'average':
-                    s[averagedata_name] = json.loads(str(s[averagedata_name]))
+                    s[averagedata_name] = data_unpickle(s[averagedata_name])
         else:
-            stats[averagedata_name] = json.loads(str(stats[averagedata_name]))
+            stats[averagedata_name] = data_unpickle(stats[averagedata_name])
 
     @inlineCallbacks
     def get_stats_sums(self, bucket_name, bucket_type=None, bucket_size=None, time_start=None, time_end=None):
@@ -1388,7 +1320,6 @@ ORDER BY id desc"""
         #             select='sum(value), bucket_name, bucket_type, round(bucket / 3600) * 3600 AS bucket',
         select_fields = 'sum(bucket_value) as value, bucket_name, bucket_type, round(bucket_time / %s) * %s AS bucket' % (
         bucket_size, bucket_size)
-        # print "select_fields: %s" % select_fields
         records = yield self.dbconfig.select('statistics',
                                              select=select_fields,
                                              where=where_final,
@@ -1410,7 +1341,7 @@ ORDER BY id desc"""
         results = []
         for record in records:
             data = record.__dict__
-            data['task_arguments'] = zlib.decompress(base64.decodestring(data['task_arguments']))
+            data['task_arguments'] = data_unpickle(data['task_arguments'], 'msgpack_base85_zip')
             results.append(data)  # we need a dictionary, not an object
         return results
 
@@ -1421,7 +1352,7 @@ ORDER BY id desc"""
 
         :return:
         """
-        records = yield self.dbconfig.delete('taskes', where=['id = ?', id])
+        records = yield self.dbconfig.delete('tasks', where=['id = ?', id])
         return records
 
     @inlineCallbacks
@@ -1431,24 +1362,9 @@ ORDER BY id desc"""
 
         :return:
         """
-        data['task_arguments'] = sqlite3Binary(pickle.dumps(data['task_arguments'], pickle.HIGHEST_PROTOCOL))
-        if len(data['task_arguments']) > 3000:
-            data['task_arguments'] = base64.encodestring(zlib.compress(data['task_arguments'], 5))
-
-        results = yield self.dbconfig.insert('sqldict', data, None, 'OR IGNORE')
+        data['task_arguments'] = data_pickle(data['task_arguments'], 'msgpack_base85_zip')
+        results = yield self.dbconfig.insert('tasks', data, None, 'OR IGNORE')
         return results
-        #
-        # table = """CREATE TABLE `tasks` (
-        #  `id`             INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        #  `run_section`    INTEGER NOT NULL,
-        #  `run_once`       INTEGER NOT NULL,
-        #  `run_interval`   INTEGER NOT NULL,
-        #  `task_component` TEXT NOT NULL,
-        #  `task_name`      TEXT NOT NULL,
-        #  `task_arguments` BLOB,
-        #  `source`         TEXT NOT NULL,
-        #  `created_at`        INTEGER NOT NULL,
-        #  );"""
 
     ###########################
     ###  Users              ###
@@ -1543,7 +1459,6 @@ ORDER BY id desc"""
         records = yield VariableFieldDataView.find(
             where=dictToWhere(kwargs),
             orderby='field_weight ASC, data_weight ASC')
-        # print "get_variable_data records: %s" % records
         variables = OrderedDict()
         for record in records:
             if data_relation_id is not None:
@@ -1597,7 +1512,7 @@ ORDER BY id desc"""
                         default=variables[record.field_machine_label]['default_value'],
                     )
                 except Exception as e:
-                    logger.warn("Variable doesn't validate ({input_type_id}): {label}   Value:{value}    Reason: {e}",
+                    logger.debug("Variable doesn't validate ({input_type_id}): {label}   Value:{value}    Reason: {e}",
                                 label=variables[record.field_machine_label]['field_label'],
                                 value=value,
                                 input_type_id=variables[record.field_machine_label]['input_type_id'],
@@ -1630,7 +1545,6 @@ ORDER BY id desc"""
             orderby='group_weight ASC, field_weight ASC')
         variables = OrderedDict()
         for record in records:
-            # print "get_variable_groups_fields record: %s" % record
             if record.group_machine_label not in variables:
                 variables[record.group_machine_label] = {
                     'id': record.group_id,
@@ -1779,13 +1693,13 @@ ORDER BY id desc"""
         args = {
             'id': data['id'],
             'gateway_id': data['gateway_id'],
-            'field_id': data['type'],
-            'data_relation_id': data['priority'],
-            'data_relation_type': data['source'],
-            'data': data['expire'],
-            'data_weight': data['always_show'],
-            'updated_at': data['always_show_allow_clear'],
-            'created_at': data['acknowledged'],
+            'field_id': data['field_id'],
+            'data_relation_id': data['data_relation_id'],
+            'data_relation_type': data['data_relation_type'],
+            'data': data['data'],
+            'data_weight': data['data_weight'],
+            'updated_at': data['updated_at'],
+            'created_at': data['created_at'],
         }
         results = yield self.dbconfig.insert('variable_data', args, None, 'OR IGNORE')
         return results
@@ -1873,7 +1787,7 @@ ORDER BY id desc"""
         :param vals:
         :return:
         """
-        #        print "insert_many: (%s) %s" % (table, vals)
+        # print("insert_many: (%s) %s" % (table, vals))
         yield self.dbconfig.insertMany(table, vals)
 
     @inlineCallbacks
@@ -1885,7 +1799,6 @@ ORDER BY id desc"""
         :param val:
         :return:
         """
-        # print "insert: (%s) %s" % (table, val)
         yield self.dbconfig.insert(table, val)
 
     @inlineCallbacks
@@ -1902,7 +1815,6 @@ ORDER BY id desc"""
         :param vals:
         :return:
         """
-        #        print "insert_many: (%s) %s" % (table, vals)
         yield self.dbconfig.updateMany(table, vals, where_column)
 
     @inlineCallbacks
@@ -1917,9 +1829,6 @@ ORDER BY id desc"""
         yield self.drop_table(table)
         create_function = getattr(self.current_db_meta_file, "create_table_" + table)
         yield create_function(Registry)
-
-        # records = yield self.dbconfig.truncate(table)
-        # return records
 
     def _get_limit(self, **kwargs):
         limit = kwargs.get('limit', None)
