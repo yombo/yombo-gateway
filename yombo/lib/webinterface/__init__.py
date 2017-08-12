@@ -203,6 +203,10 @@ class WebInterface(YomboLibrary):
     # def _start_(self):
     #     self.webapp.templates.globals['_'] = _  # i18n
 
+    @property
+    def operating_mode(self):
+        return self._Loader.operating_mode
+
     @inlineCallbacks
     def _load_(self, **kwargs):
         if hasattr(self, 'sessions'):
@@ -212,7 +216,6 @@ class WebInterface(YomboLibrary):
             return
         if not self.enabled:
             return
-        self.operating_mode = self._Loader.operating_mode
 
         self.auth_pin = self._Configs.get2('webinterface', 'auth_pin',
               yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
@@ -455,22 +458,22 @@ class WebInterface(YomboLibrary):
         request.setResponseCode(404)
         return 'Not found, I say'
 
-    def display_pin_console(webinterface):
+    def display_pin_console(self):
         print("###########################################################")
         print("#                                                         #")
-        if webinterface.operating_mode != 'run':
+        if self.operating_mode != 'run':
             print("# The Yombo Gateway website is running in                 #")
             print("# configuration only mode.                                #")
             print("#                                                         #")
 
-        dns_fqdn = webinterface._Configs.get('dns', 'fqdn', None, False)
+        dns_fqdn = self._Configs.get('dns', 'fqdn', None, False)
         if dns_fqdn is None:
             local_hostname = "127.0.0.1"
-            internal_hostname = webinterface._Configs.get('core', 'localipaddress_v4')
-            external_hostname = webinterface._Configs.get('core', 'externalipaddress_v4')
-            local = "http://%s:%s" %(local_hostname, webinterface.wi_port_nonsecure())
-            internal = "http://%s:%s" %(internal_hostname, webinterface.wi_port_nonsecure())
-            external = "https://%s:%s" % (external_hostname, webinterface.wi_port_secure())
+            internal_hostname = self._Configs.get('core', 'localipaddress_v4')
+            external_hostname = self._Configs.get('core', 'externalipaddress_v4')
+            local = "http://%s:%s" %(local_hostname, self.wi_port_nonsecure())
+            internal = "http://%s:%s" %(internal_hostname, self.wi_port_nonsecure())
+            external = "https://%s:%s" % (external_hostname, self.wi_port_secure())
             print("# The gateway can be accessed from the following urls:    #")
             print("#                                                         #")
             print("# On local machine:                                       #")
@@ -491,7 +494,7 @@ class WebInterface(YomboLibrary):
         print("#                                                         #")
         print("#                                                         #")
         print("# Web Interface access pin code:                          #")
-        print("#  %-25s                              #" % webinterface.auth_pin())
+        print("#  %-25s                              #" % self.auth_pin())
         print("#                                                         #")
         print("###########################################################")
 
@@ -505,7 +508,6 @@ class WebInterface(YomboLibrary):
         return web_translator(self, request)
 
     @inlineCallbacks
-    # def _modules_loaded_(self, **kwargs):
     def _get_nav_side_items(self, **kwargs):
         """
         Called before modules have their _prestart_ function called (after _load_).
@@ -538,31 +540,38 @@ class WebInterface(YomboLibrary):
 
         """
         # first, lets get the top levels already defined so children don't re-arrange ours.
-        temp_dict = {}
-        newlist = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2'))
-        for item in newlist:
-            level1 = item['label1']
-            if level1 not in newlist:
-                temp_dict[level1] = item['priority1']
+        top_levels = {}
+        temp_list = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2'))
+        for item in temp_list:
+            label1 = item['label1']
+            if label1 not in temp_list:
+                top_levels[label1] = item['priority1']
 
-        temp_strings = yield yombo.utils.global_invoke_all('_webinterface_add_routes_', called_by=self)
-        for component, options in temp_strings.items():
+        nav_side_menu = NAV_SIDE_MENU.copy()
+
+        add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_', called_by=self)
+        for component, options in add_on_menus.items():
             if 'nav_side' in options:
                 for new_nav in options['nav_side']:
-                    if new_nav['label1'] in temp_dict:
-                        new_nav['priority1'] =  temp_dict[new_nav['label1']]
-                    NAV_SIDE_MENU.append(new_nav)
+                    if isinstance(new_nav['priority1'], int) is False:
+                        new_nav['priority1'] = top_levels[new_nav['label1']]
+                    nav_side_menu.append(new_nav)
+            if 'menu_priorities' in options:  # allow modules to change the ording of top level menus
+                for label, priority in options['menu_priorities'].items():
+                    top_levels[label] = priority
             if 'routes' in options:
                 for new_route in options['routes']:
                     new_route(self.webapp)
 
+        # build menu tree
         self.misc_wi_data['nav_side'] = OrderedDict()
-        newlist = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2'))
-        for item in newlist:
-            level1 = item['label1']
-            if level1 not in self.misc_wi_data['nav_side']:
-                self.misc_wi_data['nav_side'][level1] = []
-            self.misc_wi_data['nav_side'][level1].append(item)
+
+        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
+        for item in temp_list:
+            label1 = item['label1']
+            if label1 not in self.misc_wi_data['nav_side']:
+                self.misc_wi_data['nav_side'][label1] = []
+            self.misc_wi_data['nav_side'][label1].append(item)
         self.starting = False
 
     def add_alert(self, message, level='info', dismissable=True, type='session', deletable=True):
@@ -619,8 +628,8 @@ class WebInterface(YomboLibrary):
         request.redirect(redirect_path)
 
     @inlineCallbacks
-    def get_api(webinterface, request, method, path, data=None):
-        results = yield webinterface._YomboAPI.request(method, path, data)
+    def get_api(self, request, method, path, data=None):
+        results = yield self._YomboAPI.request(method, path, data)
         if results['code'] != 200:
             request.setResponseCode(results['code'])
             error = {
@@ -649,7 +658,7 @@ class WebInterface(YomboLibrary):
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
 
-    def format_markdown(webinterface, description, description_formatting):
+    def format_markdown(self, description, description_formatting):
         if description_formatting == 'restructured':
             return publish_parts(description, writer_name='html')['html_body']
         elif description_formatting == 'markdown':
@@ -751,7 +760,7 @@ class WebInterface(YomboLibrary):
 
     def shutdown(self, request):
         page = self.get_template(request, self._dir + 'pages/shutdown.html')
-        # reactor.callLater(0.3, webinterface.do_shutdown)
+        # reactor.callLater(0.3, self.do_shutdown)
         return page.render()
 
     def do_shutdown(self):
