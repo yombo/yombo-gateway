@@ -26,8 +26,8 @@ Implements MQTT. It does 2 things:
 
 
    def mqtt_incoming(self, topic, payload, qos, retain):
-       print "topic: %s" % topic
-       print "message: %s" % message
+       print("topic: %s" % topic)
+       print("message: %s" % message)
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -135,6 +135,12 @@ class MQTT(YomboLibrary):
             self.client_remote_ssl2 = False
             self.client_remote_port1 = self.server_listen_port
             self.client_remote_port2 = self.server_listen_port
+            self.client_remote_internal_ws = self._Gateways[self.master_gateway].internal_mqtt_ws
+            self.client_remote_external_ws = self._Gateways[self.master_gateway].external_mqtt_ws
+            self.client_remote_internal_ws_ss = self._Gateways[self.master_gateway].internal_mqtt_ws_ss
+            self.client_remote_external_ws_ss = self._Gateways[self.master_gateway].external_mqtt_ws_ss
+            self.client_remote_internal_ws_le = self._Gateways[self.master_gateway].internal_mqtt_ws_le
+            self.client_remote_external_ws_le = self._Gateways[self.master_gateway].external_mqtt_ws_le
             self.client_remote_username = self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
@@ -154,12 +160,16 @@ class MQTT(YomboLibrary):
             self.client_remote_ssl2 = True
             self.client_remote_port1 = self._Gateways[self.master_gateway].internal_mqtt_ss
             self.client_remote_port2 = self._Gateways[self.master_gateway].external_mqtt_ss
+            self.client_remote_internal_ws = self._Gateways[self.master_gateway].internal_mqtt_ws
+            self.client_remote_external_ws = self._Gateways[self.master_gateway].external_mqtt_ws
+            self.client_remote_internal_ws_ss = self._Gateways[self.master_gateway].internal_mqtt_ws_ss
+            self.client_remote_external_ws_ss = self._Gateways[self.master_gateway].external_mqtt_ws_ss
+            self.client_remote_internal_ws_le = self._Gateways[self.master_gateway].internal_mqtt_ws_le
+            self.client_remote_external_ws_le = self._Gateways[self.master_gateway].external_mqtt_ws_le
             self.client_remote_username = self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
 
-        if not self.server_enabled:
-            return
 
     def _load_(self, **kwargs):
         if self.server_enabled is False:
@@ -550,7 +560,7 @@ class MQTTClient(object):
             else:
                 self.my_reactor = reactor.connectTCP(server_hostname, server_port, self.factory)
         except Exception:
-            print("MQTTTTT couldn't connect !?!?!?")
+            # print("MQTTTTT couldn't connect !?!?!?")
             if ssl2:
                 self.my_reactor = reactor.connectSSL(server_hostname2, server_port2, self.factory,
                                                      ClientContextFactory())
