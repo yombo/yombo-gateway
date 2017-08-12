@@ -70,12 +70,19 @@ def dictToWhere(attrs, joiner="AND"):
     if len(attrs) == 0:
         return None
 
+    new_attrs = {}
     wheres = []
     for key, value in attrs.items():
-        comparator = 'is' if value is None else '='
+        if isinstance(value, list):
+            new_value = value[0]
+            comparator = 'is' if value is None else value[1]
+        else:
+            new_value = value
+            comparator = 'is' if value is None else '='
+        new_attrs[key] = new_value
         wheres.append("(%s %s ?)" % (key, comparator))
 
-    return [(" %s " % joiner).join(wheres)] + list(attrs.values())
+    return [(" %s " % joiner).join(wheres)] + list(new_attrs.values())
 
 
 def joinWheres(wone, wtwo, joiner="AND"):

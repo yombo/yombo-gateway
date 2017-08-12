@@ -205,6 +205,7 @@ class InteractionBase(object):
         """
         return ["`%s`" % x for x in colnames]
 
+
     def insertMany(self, tablename, vals):
         """
         Insert many values into a table.
