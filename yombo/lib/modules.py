@@ -577,6 +577,7 @@ class Modules(YomboLibrary):
             module._ModuleDevices = partial(
                 self.module_devices,
                 module_id,
+                self.gateway_id,
             )
             module._ModuleType = self._rawModulesList[module_id]['module_type']
 
@@ -885,7 +886,7 @@ class Modules(YomboLibrary):
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
     @memoize_ttl(30)
-    def module_devices(self, module_id):
+    def module_devices(self, module_id, gateway_id=None):
         """
         A list of devices for a given module id.
 
@@ -898,9 +899,11 @@ class Modules(YomboLibrary):
             logger.warn("module_devices cannot find '{module_id}' in available modules.", module_id=module_id)
             return {}
 
+        if gateway_id is None:
+            gateway_id = self.gateway_id
         temp = {}
         for dt in self.module_device_types(module_id):
-            temp.update(self._DeviceTypes[dt].get_devices())
+            temp.update(self._DeviceTypes[dt].get_devices(gateway_id=gateway_id))
 
         return temp
 
