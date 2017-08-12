@@ -82,7 +82,7 @@
                                                     <th>Name</th><th>Gateway</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.items() if device.enabled_status == 1%}
+                                            <tbody>{% for deviceID, device in devices.items() if device.enabled_status == 1 and device.gateway_id == local_gateway.gateway_id%}
                                                  <tr>
                                                     <td data-priority="1">
                                                         <a href="/devices/{{ device.device_id }}/details">{{ locations[device.area_id].label|hide_none }} {{ device.label }}</a>
