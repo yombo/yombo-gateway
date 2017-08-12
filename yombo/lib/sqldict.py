@@ -146,9 +146,9 @@ class SQLDict(YomboLibrary):
                 # logger.info("save_sql_dict 4 {di}", di=safe_data)
 
                 # logger.info("save_sql_dict {safe_data} ", safe_data=safe_data)
-                save_data = msgpack.packb(safe_data, use_bin_type=True)
+                # save_data = msgpack.packb(safe_data, use_bin_type=True)
                 yield self._Libraries['localdb'].set_sql_dict(di['component_name'],
-                        di['dict_name'], save_data)
+                        di['dict_name'], safe_data)
 #                print "in save_sql_dict - returned from saving data into sql"
                 di['dirty'] = False
 
@@ -207,8 +207,7 @@ class SQLDictionary(dict):
         if len(results) != 1:
             return None
 
-        items = msgpack.unpackb(results[0]['dict_data'], encoding='utf-8')
-        # print("sqldict results: %s" % items)
+        items = results[0]['dict_data']
 
         for key, value in items.items():
             if self.__unserializer is not None:
