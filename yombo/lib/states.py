@@ -79,6 +79,7 @@ class States(YomboLibrary, object):
     Provides a base API to store common states among libraries and modules.
     """
     MAX_HISTORY = 100
+    gateway_id = 'local'
 
     def __contains__(self, state_requested):
         """
