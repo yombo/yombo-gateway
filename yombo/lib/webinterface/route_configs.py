@@ -1,7 +1,7 @@
 import socket
 from time import time
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.utils import random_string
 
@@ -201,13 +201,13 @@ def route_configs(webapp):
                 submitted_dns_name = request.args.get('dns_name')[0]  # underscore here due to jquery
             except:
                 webinterface.add_alert("Select a valid dns name.")
-                returnValue(webinterface.redirect(request, '/configs/dns'))
+                return  webinterface.redirect(request, '/configs/dns')
 
             try:
                 submitted_dns_domain = request.args.get('dns_domain_id')[0]  # underscore here due to jquery
             except:
                 webinterface.add_alert("Select a valid dns domain.")
-                returnValue(webinterface.redirect(request, '/configs/dns'))
+                return  webinterface.redirect(request, '/configs/dns')
 
             data = {
                 'dns_name': submitted_dns_name,
@@ -215,10 +215,20 @@ def route_configs(webapp):
             }
 
             dns_results = yield webinterface._YomboAPI.request('POST', '/v1/gateway/%s/dns_name' % webinterface.gateway_id(), data)
-            if dns_results['code'] != 200:
+            if dns_results['code'] > 299 :
                 # print "dns_results: %s" % dns_results
                 webinterface.add_alert(dns_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/configs/dns'))
+                return webinterface.redirect(request, '/configs/dns')
+
+            webinterface._Notifications.add({'title': 'Restart Required',
+                                             'message': 'DNS Changed. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
+                                             'source': 'Web Interface',
+                                             'persist': False,
+                                             'priority': 'high',
+                                             'always_show': True,
+                                             'always_show_allow_clear': False,
+                                             'id': 'reboot_required',
+                                             })
 
             webinterface._Configs.set('dns', 'dns_name', dns_results['data']['dns_name'])
             webinterface._Configs.set('dns', 'dns_domain', dns_results['data']['dns_domain'])
@@ -227,14 +237,21 @@ def route_configs(webapp):
             webinterface._Configs.set('dns', 'fqdn', dns_results['data']['fqdn'])
 
             dns_configs = webinterface._Configs.get("dns", "*")
+            if dns_configs is None:
+                dns_configs = {
+                    'dns_name': 'None',
+                    'dns_domain': 'None',
+                    'dns_domain_id': 'None',
+                    'allow_change_at': int(time()),
+                    'fqdn': 'None',
+                }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/dns.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/configs/dns", "DNS")
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                dns_configs=dns_configs,
                                )
-                        )
 
         @webapp.route('/yombo_ini')
         @require_auth(login_redirect="/configs/yombo_ini")
@@ -255,11 +272,11 @@ def route_configs(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
-            returnValue(page.render(
+            return page.render(
                 alerts=webinterface.get_alerts(),
                 gpg_keys=db_keys,
                 gw_keyid=gw_keyid,
-            ))
+            )
 
         @webapp.route('/gpg/generate_key')
         @require_auth(login_redirect="/configs/gpg/generate_key")
