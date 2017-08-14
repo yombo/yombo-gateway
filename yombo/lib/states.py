@@ -225,7 +225,7 @@ class States(YomboLibrary, object):
         self.clean_states_loop.start(random_int(60*60*6, .10))  # clean the database every 6 hours.
 
         if self._States['loader.operating_mode'] == 'run':
-            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-states-' %
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-states-%s' %
                                                                                             self.gateway_id)
             self.mqtt.subscribe("yombo/states/+/get")
             self.mqtt.subscribe("yombo/states/+/get/+")
