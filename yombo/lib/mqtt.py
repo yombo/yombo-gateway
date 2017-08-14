@@ -113,7 +113,10 @@ class MQTT(YomboLibrary):
         self.server_max_connections = self._Configs.get('mqtt', 'server_max_connections', 1000)
         self.server_timeout_disconnect_delay = self._Configs.get('mqtt', 'server_timeout_disconnect_delay', 2)
         self.is_master = self._Configs.get('core', 'is_master', True, False)
-        self.master_gateway = self._Configs.get('core', 'master_gateway', "", False)
+        if self.is_master is True:
+            self.master_gateway = self.gateway_id
+        else:
+            self.master_gateway = self._Configs.get('core', 'master_gateway', "", False)
 
         self.mqtt_server = None
         self.mqtt_available_ports = None
@@ -284,7 +287,7 @@ class MQTT(YomboLibrary):
         :return:
         """
         if self._States['loader.operating_mode'] == 'run':
-            self.mqtt_local_client = self.new()  # System connection to send messages.
+            self.mqtt_local_client = self.new(client_id='Yombo-%s-mqtt' % self.gateway_id)  # System connection to send messages.
             # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
     #
     # def _stop_(self, **kwargs):
@@ -377,9 +380,9 @@ class MQTT(YomboLibrary):
 
 
     def new(self, server_hostname=None, server_port=None, username=None, password=None, ssl=None, ssl2=None,
-            mqtt_incoming_callback=None, mqtt_connected_callback=None, mqtt_connection_lost_calback=None,
-            mqtt_connection_lost_callback=None, will_topic=None, will_message=None, will_qos=0, will_retain=None,
-            clean_start=True, version=v311, keepalive=0, client_id=None, server_hostname2=None, server_port2=None,
+            mqtt_incoming_callback=None, mqtt_connected_callback=None, mqtt_connection_lost_callback=None,
+            will_topic=None, will_message=None, will_qos=0, will_retain=None, clean_start=True,
+            version=v311, keepalive=0, client_id=None, server_hostname2=None, server_port2=None,
             password2=None):
         """
         Create a new connection to MQTT. Don't worry, it's designed for many many connections. Leave all
@@ -408,7 +411,7 @@ class MQTT(YomboLibrary):
             return
 
         if client_id is None:
-            client_id = random_string(length=10)
+            client_id = "Yombo-%s-unknown-%s" % (self.gateway_id, random_string(length=10))
         if client_id in self.client_connections:
             logger.warn("client_id must be unique. Got: %s" % client_id)
             raise YomboWarning ("client_id must be unique. Got: %s" % client_id, 'MQTT::new', 'mqtt')
@@ -718,7 +721,7 @@ class MQTTYomboProtocol(MQTTProtocol):
     def connectionMade(self):  # Empty through stack of twisted and MQTT library
         self.onMqttConnectionMade = self.factory.mqtt_client.mqtt_connected
         self.onDisconnection = self.factory.mqtt_client.client_connectionLost
-        self.connect("Yombo-%s" % self.factory.mqtt_client.client_id, keepalive=self.factory.keepalive,
+        self.connect(self.factory.mqtt_client.client_id, keepalive=self.factory.keepalive,
             willTopic=self.factory.will_topic, willMessage=self.factory.will_message,
             willQoS=self.factory.will_qos, willRetain=self.factory.will_retain,
             username=self.factory.username, password=self.factory.password,

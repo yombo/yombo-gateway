@@ -240,7 +240,8 @@ class Devices(YomboLibrary):
     # @inlineCallbacks
     def _start_(self, **kwags):
         if self._States['loader.operating_mode'] == 'run':
-            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='devices')
+            self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-devices-%s' %
+                                                                                            self.gateway_id)
 
     def _started_(self, **kwargs):
         """

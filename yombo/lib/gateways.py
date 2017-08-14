@@ -189,7 +189,7 @@ class Gateways(YomboLibrary):
         self.library_phase = 3
         if self._States['loader.operating_mode'] != 'run':
             return
-        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='gateways_%s' % self.gateway_id)
+        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-gateways-%s' % self.gateway_id)
         self.mqtt.subscribe("ybo_gw_req/+/all/#")
         self.mqtt.subscribe("ybo_gw_req/+/%s/#" % self.gateway_id)
         self.mqtt.subscribe("ybo_gw/+/all/#")
