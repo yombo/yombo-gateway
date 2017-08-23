@@ -245,6 +245,7 @@ class LocalDB(YomboLibrary):
         """
         self.db_bulk_queue = {}
         self.db_bulk_queue_id_cols = {}
+        self.save_bulk_queue_loop = None
         def show_connected(connection):
             connection.execute("PRAGMA foreign_keys = ON")
         self.db_model = {}  # store generated database model here.
