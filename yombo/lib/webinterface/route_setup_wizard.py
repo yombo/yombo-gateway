@@ -5,6 +5,7 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarningCredentails
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
+from yombo.utils import is_true_false
 
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
@@ -552,7 +553,7 @@ def route_setup_wizard(webapp):
             webinterface._Configs.set('core', 'label', session['setup_wizard_gateway_label'])
             webinterface._Configs.set('core', 'description', session['setup_wizard_gateway_description'])
             webinterface._Configs.set('core', 'gwhash', results['data']['hash'])
-            webinterface._Configs.set('core', 'is_master', session['setup_wizard_gateway_is_master'])
+            webinterface._Configs.set('core', 'is_master', is_true_false(session['setup_wizard_gateway_is_master']))
             webinterface._Configs.set('core', 'master_gateway', session['setup_wizard_gateway_master_gateway'])
             webinterface._Configs.set('security', 'amqpsendstatus', session['setup_wizard_security_status'])
             webinterface._Configs.set('security', 'amqpsendgpsstatus', session['setup_wizard_security_gps_status'])
