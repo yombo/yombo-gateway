@@ -93,6 +93,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'mqtt_auth_prev': 'mqtt_auth_prev',
                     'mqtt_auth_next': 'mqtt_auth_next',
                     'mqtt_auth_last_rotate': 'mqtt_auth_last_rotate',
+                    'fqdn': 'fqdn',
                     'internal_ipv4': 'internal_ipv4',
                     'external_ipv4': 'external_ipv4',
                     'internal_ipv6': 'internal_ipv6',
