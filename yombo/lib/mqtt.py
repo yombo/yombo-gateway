@@ -7,8 +7,8 @@
 
 Implements MQTT. It does 2 things:
 
-1) Start an embedded HBMQTT MQTT Broker. This can be disabled.
-2) Is allows libraries and modules to connect to MQTT brokers and subscribe to topics.
+1) Generate a mostquitto config file and password file
+2) send HUP signal to mosquitto to reload the files
 
 *Usage**:
 
@@ -38,18 +38,17 @@ Implements MQTT. It does 2 things:
 """
 # Import python libraries
 
+import base64
 from collections import deque, Callable, OrderedDict
-import crypt
 from datetime import datetime
-from os import environ
-from os.path import abspath
+import hashlib
 import random
 import string
+from subprocess import call
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import yaml
 
 # Import twisted libraries
 from twisted.internet.ssl import ClientContextFactory
@@ -69,28 +68,33 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
-from yombo.utils import random_string, sleep
+from yombo.utils import random_string, sleep, unicode_to_bytes, bytes_to_unicode
 
 logger = get_logger('library.mqtt')
 
-def sha512_crypt(password, salt=None, rounds=None):
+def sha512_crypt_mosquitto(password, salt_base64=None, rounds=None):
     """
-    Used for generating a crypted version for hbmqtt pasword file.
+    Used for generating a crypted version for mosquitto pasword file.
 
     :param password:
-    :param salt:
+    :param salt_base64:
     :param rounds:
     :return:
     """
-    if salt is None:
+    if salt_base64 is None:
         rand = random.SystemRandom()
-        salt = ''.join([rand.choice(string.ascii_letters + string.digits)
-                        for _ in range(8)])
-    prefix = '$6$'
-    if rounds is not None:
-        rounds = max(1000, min(999999999, rounds or 5000))
-        prefix += 'rounds={0}$'.format(rounds)
-    return crypt.crypt(password, prefix + salt)
+        salt_base64 = ''.join([rand.choice(string.ascii_letters + string.digits)
+                        for _ in range(16)])
+    salt = base64.b64decode(salt_base64)
+
+    m = hashlib.sha512()
+    m.update(unicode_to_bytes(password))
+    m.update(salt)
+    hashed_password = m.digest()
+    encoded_password = bytes_to_unicode(base64.b64encode(hashed_password))
+
+    return '$6$' + salt_base64 + "$" + encoded_password
+
 
 class MQTT(YomboLibrary):
     """
@@ -106,8 +110,8 @@ class MQTT(YomboLibrary):
         """
         self.client_connections = {}
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        self.hbmqtt_config_file = abspath('.') + "/usr/etc/hbmqtt.yaml"
-        self.hbmqtt_pass_file = abspath('.') + "/usr/etc/hbmqtt.pw"
+        self.mosquitto_config_file = "/etc/mosquitto/yombo/yombo.conf"
+        self.mosquitto_pass_file = "/etc/mosquitto/yombo/passwd"
         self.client_enabled = self._Configs.get('mqtt', 'client_enabled', True)
         self.server_enabled = self._Configs.get('mqtt', 'server_enabled', True)
         self.server_max_connections = self._Configs.get('mqtt', 'server_max_connections', 1000)
@@ -132,19 +136,21 @@ class MQTT(YomboLibrary):
             self.server_listen_port_websockets_le_ssl = self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
             self.server_allow_anonymous = self._Configs.get('mqtt', 'server_allow_anonymous', False)
 
-            self.client_remote_ip1 = self.server_listen_ip
-            self.client_remote_ip2 = self.server_listen_ip
-            self.client_remote_ssl1 = False
-            self.client_remote_ssl2 = False
-            self.client_remote_port1 = self.server_listen_port
-            self.client_remote_port2 = self.server_listen_port
+            self.client_remote_internal_host = self._Gateways[self.master_gateway].internal_ipv4
+            self.client_remote_external_host = self._Gateways[self.master_gateway].external_ipv4
+            self.client_remote_internal_mqtt = self._Gateways[self.master_gateway].internal_mqtt
+            self.client_remote_external_mqtt = self._Gateways[self.master_gateway].external_mqtt
+            self.client_remote_internal_mqtt_le = self._Gateways[self.master_gateway].internal_mqtt_le
+            self.client_remote_external_mqtt_le = self._Gateways[self.master_gateway].external_mqtt_le
+            self.client_remote_internal_mqtt_ss = self._Gateways[self.master_gateway].internal_mqtt_ss
+            self.client_remote_external_mqtt_ss = self._Gateways[self.master_gateway].external_mqtt_ss
             self.client_remote_internal_ws = self._Gateways[self.master_gateway].internal_mqtt_ws
             self.client_remote_external_ws = self._Gateways[self.master_gateway].external_mqtt_ws
             self.client_remote_internal_ws_ss = self._Gateways[self.master_gateway].internal_mqtt_ws_ss
             self.client_remote_external_ws_ss = self._Gateways[self.master_gateway].external_mqtt_ws_ss
             self.client_remote_internal_ws_le = self._Gateways[self.master_gateway].internal_mqtt_ws_le
             self.client_remote_external_ws_le = self._Gateways[self.master_gateway].external_mqtt_ws_le
-            self.client_remote_username = self.gateway_id
+            self.client_remote_username = 'yombogw_' + self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
         else:
@@ -157,21 +163,27 @@ class MQTT(YomboLibrary):
             self.server_listen_port_websockets_le_ssl = 0
             self.server_allow_anonymous = None
 
-            self.client_remote_ip1 = self._Gateways[self.master_gateway].internal_ipv4
-            self.client_remote_ip2 = self._Gateways[self.master_gateway].external_ipv4
-            self.client_remote_ssl1 = True
-            self.client_remote_ssl2 = True
-            self.client_remote_port1 = self._Gateways[self.master_gateway].internal_mqtt_ss
-            self.client_remote_port2 = self._Gateways[self.master_gateway].external_mqtt_ss
+            self.client_remote_internal_host = self._Gateways[self.master_gateway].internal_ipv4
+            self.client_remote_external_host = self._Gateways[self.master_gateway].external_ipv4
+            self.client_remote_internal_mqtt = self._Gateways[self.master_gateway].internal_mqtt
+            self.client_remote_external_mqtt = self._Gateways[self.master_gateway].external_mqtt
+            self.client_remote_internal_mqtt_le = self._Gateways[self.master_gateway].internal_mqtt_le
+            self.client_remote_external_mqtt_le = self._Gateways[self.master_gateway].external_mqtt_le
+            self.client_remote_internal_mqtt_ss = self._Gateways[self.master_gateway].internal_mqtt_ss
+            self.client_remote_external_mqtt_ss = self._Gateways[self.master_gateway].external_mqtt_ss
             self.client_remote_internal_ws = self._Gateways[self.master_gateway].internal_mqtt_ws
             self.client_remote_external_ws = self._Gateways[self.master_gateway].external_mqtt_ws
             self.client_remote_internal_ws_ss = self._Gateways[self.master_gateway].internal_mqtt_ws_ss
             self.client_remote_external_ws_ss = self._Gateways[self.master_gateway].external_mqtt_ws_ss
             self.client_remote_internal_ws_le = self._Gateways[self.master_gateway].internal_mqtt_ws_le
             self.client_remote_external_ws_le = self._Gateways[self.master_gateway].external_mqtt_ws_le
-            self.client_remote_username = self.gateway_id
+            self.client_remote_username = 'yombogw_' + self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
+
+        self.client_default_host = self._Gateways.master_mqtt_host
+        self.client_default_ssl = self._Gateways.master_mqtt_ssl
+        self.client_default_port = self._Gateways.master_mqtt_port
 
 
     def _load_(self, **kwargs):
@@ -179,26 +191,95 @@ class MQTT(YomboLibrary):
             logger.info("Embedded MQTT Disabled.")
             return
 
-        if self.is_master is False:
-            logger.info("Disabling MQTT service, we are not the master!")
+        if self.is_master is not True:
+            logger.info("Not managing MQTT broker, we are not the master!")
             return
-
-        yaml_config = OrderedDict({
-            'listeners': {
-                'default': {
-                    'max_connections': self.server_max_connections,
-                    'type': 'tcp'
-                },
-            },
-            'timeout_disconnect_delay': self.server_timeout_disconnect_delay,
-            'auth': {
-                'password-file': self.hbmqtt_pass_file,
-                'allow-anonymous': self.server_allow_anonymous,
-            },
-        })
 
         ssl_self_signed = self._SSLCerts.get('selfsigned')
         ssl_lib_webinterface = self._SSLCerts.get('lib_webinterface')
+
+        mosquitto_config = [
+            'allow_anonymous false',
+            'password_file /etc/mosquitto/yombo/passwd',
+            'user mosquitto',
+            'persistent_client_expiration 4h',
+            'max_connections 512',
+            '',
+        ]
+        if self.server_listen_port > 0:
+            mosquitto_config.append("port %s" % self.server_listen_port)
+
+        if self.server_listen_port_ss_ssl > 0:
+            mosquitto_config.extend([
+                '#',
+                '# Self-signed cert for mqtt',
+                '#',
+                'listener %s' % self.server_listen_port_ss_ssl,
+                'certfile %s' % ssl_self_signed['cert_file'],
+                'keyfile %s' % ssl_self_signed['key_file'],
+                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
+                'tls_version tlsv1.2',
+                'protocol mqtt',
+                '',
+            ])
+
+        if self.server_listen_port_le_ssl > 0 and ssl_lib_webinterface['self_signed'] is False:
+            mosquitto_config.extend([
+                '#',
+                '# Lets encrypt signed cert for mqtt',
+                '#',
+                'listener %s' % self.server_listen_port_le_ssl,
+                'cafile %s' % ssl_lib_webinterface['chain_file'],
+                'certfile %s' % ssl_lib_webinterface['cert_file'],
+                'keyfile %s' % ssl_lib_webinterface['key_file'],
+                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
+                'tls_version tlsv1.2',
+                'protocol mqtt',
+                '',
+            ])
+
+        if self.server_listen_port_websockets > 0:
+            mosquitto_config.extend([
+                '#',
+                '# Unecrypted websockets',
+                '#',
+                'listener %s' % self.server_listen_port_websockets,
+                'protocol websockets',
+                'max_connections 512',
+                '',
+            ])
+
+        if self.server_listen_port_websockets_ss_ssl > 0:
+            mosquitto_config.extend([
+                '#',
+                '# Self-signed cert for websockets',
+                '#',
+                'listener %s' % self.server_listen_port_websockets_ss_ssl,
+                'certfile %s' % ssl_self_signed['cert_file'],
+                'keyfile %s' % ssl_self_signed['key_file'],
+                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
+                'tls_version tlsv1.2',
+                'protocol websockets',
+                '',
+            ])
+
+        if self.server_listen_port_websockets_le_ssl > 0 and  ssl_lib_webinterface['self_signed'] is False:
+            mosquitto_config.extend([
+                '#',
+                '# Lets encrypt signed cert for websockets',
+                '#',
+                'listener %s' % self.server_listen_port_websockets_le_ssl,
+                'cafile %s' % ssl_lib_webinterface['chain_file'],
+                'certfile %s' % ssl_lib_webinterface['cert_file'],
+                'keyfile %s' % ssl_lib_webinterface['key_file'],
+                'ciphers ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS',
+                'tls_version tlsv1.2',
+                'protocol websockets',
+                '',
+            ])
+
+        if ssl_lib_webinterface['self_signed'] is False:
+            self.server_listen_port_websockets_le_ssl = self.server_listen_port_websockets_ss_ssl
 
         self.mqtt_available_ports = {
             'ws': self.server_listen_port_websockets,
@@ -206,56 +287,20 @@ class MQTT(YomboLibrary):
             'wss-ss': self.server_listen_port_websockets_ss_ssl,
         }
 
-        if ssl_lib_webinterface['self_signed'] is True:
-            self.mqtt_available_ports['wss'] = self.server_listen_port_websockets_ss_ssl
+        mosquitto_config_filepointer = open(self.mosquitto_config_file, 'w')
+        print("# File automatically generated by Yombo Gateway. Edits will be lost.", file=mosquitto_config_filepointer)
+        print("# Created  %s" % f"{datetime.now():%Y-%m-%d %H%M%S}", file=mosquitto_config_filepointer)
+        print("#", file=mosquitto_config_filepointer)
+        print("# Base configs", file=mosquitto_config_filepointer)
+        print("#", file=mosquitto_config_filepointer)
 
+        for line_out in mosquitto_config:
+            print(line_out, file=mosquitto_config_filepointer)
+        mosquitto_config_filepointer.close()
 
-        if self.server_listen_port > 0:
-            yaml_config['listeners']['yombo-mqtt'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port),
-            }
-        if self.server_listen_port_ss_ssl > 0:
-            yaml_config['listeners']['yombo-mqtts-ss'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_ss_ssl),
-                'ssl': 'on',
-                'certfile': ssl_self_signed['cert_file'],
-                'keyfile': ssl_self_signed['key_file'],
-            }
-        if self.server_listen_port_le_ssl > 0 and  ssl_lib_webinterface['self_signed'] is False:
-            yaml_config['listeners']['yombo-mqtts-le'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_le_ssl),
-                'ssl': 'on',
-                'certfile': ssl_lib_webinterface['cert_file'],
-                'keyfile': ssl_lib_webinterface['key_file'],
-            }
-        if self.server_listen_port_websockets > 0:
-            yaml_config['listeners']['yombo-ws'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_websockets),
-                'type': 'ws',
-            }
-        if self.server_listen_port_websockets_ss_ssl > 0:
-            yaml_config['listeners']['yombo-wss-ss'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_websockets_ss_ssl),
-                'type': 'ws',
-                'ssl': 'on',
-                'certfile': ssl_self_signed['cert_file'],
-                'keyfile': ssl_self_signed['key_file'],
-            }
-        if self.server_listen_port_websockets_le_ssl > 0 and  ssl_lib_webinterface['self_signed'] is False:
-            yaml_config['listeners']['yombo-wss-le'] = {
-                'bind': self.server_listen_ip + ":" + str(self.server_listen_port_websockets_le_ssl),
-                'type': 'ws',
-                'ssl': 'on',
-                'certfile': ssl_lib_webinterface['cert_file'],
-                'keyfile': ssl_lib_webinterface['key_file'],
-            }
-
-        with open(self.hbmqtt_config_file, 'w') as yaml_conf_file:
-            yaml_conf_file.write( yaml.dump(yaml_config, default_flow_style=False))
-
-        password_file = open(self.hbmqtt_pass_file, 'w')
+        password_file = open(self.mosquitto_pass_file, 'w')
         print("# File automatically generated by Yombo Gateway. Edits will be lost.", file=password_file)
-        print("# Created: %s" % f"{datetime.now():%Y-%m-%d %H:%M:%S}", file=password_file)
+        print("# Created  %s" % f"{datetime.now():%Y-%m-%d %H%M%S}", file=password_file)
         cfg_users = self._Configs.get('mqtt_users', '*')
 
         if cfg_users is not None:
@@ -263,20 +308,23 @@ class MQTT(YomboLibrary):
             print("# Users from yombo.ini", file=password_file)
             print("# ", file=password_file)
             for username, password in cfg_users.items():
-                print("%s:%s" % (username, sha512_crypt(password)), file=password_file)
+                print("%s:%s" % (username, sha512_crypt_mosquitto(password)), file=password_file)
 
         gateway_passwords = self._Gateways.get_mqtt_passwords()
         for gateway, passwords in gateway_passwords.items():
             print("# ", file=password_file)
-            print("# Other gateways", file=password_file)
+            print("# Gateways", file=password_file)
             print("# ", file=password_file)
-            print("%s:%s" % (gateway, sha512_crypt(passwords['current'])), file=password_file)
+            print("yombogw_%s:%s" % (gateway, sha512_crypt_mosquitto(passwords['current'])), file=password_file)
         password_file.close()
 
-        if self._Loader.operating_mode == 'run':
-            self.mqtt_server = MQTTServer(self.hbmqtt_config_file)
-            command = ['hbmqtt', "-c", self.hbmqtt_config_file]
-            self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
+        if self._Loader.operating_mode == 'run' and self.is_master is True:
+
+            # self.mqtt_server = MQTTServer()
+            # 100% not async code..but this is only during startup. :-)
+            call(['sudo', 'systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
+
+            # self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
 
             # nasty hack..  TODO: remove nasty sleep hack
             return sleep(0.2)
@@ -289,12 +337,6 @@ class MQTT(YomboLibrary):
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt_local_client = self.new(client_id='Yombo-%s-mqtt' % self.gateway_id)  # System connection to send messages.
             # self.test()  # todo: move to unit tests..  Todo: Create unit tests.. :-)
-    #
-    # def _stop_(self, **kwargs):
-    #     """
-    #     Stops the client connections and shuts down the MQTT server.
-    #     :return:
-    #     """
 
     @inlineCallbacks
     def _unload_(self, **kwargs):
@@ -379,15 +421,14 @@ class MQTT(YomboLibrary):
                     returnValue(json.dumps(results))
 
 
-    def new(self, server_hostname=None, server_port=None, username=None, password=None, ssl=None, ssl2=None,
+    def new(self, server_hostname=None, server_port=None, username=None, password=None, ssl=None,
             mqtt_incoming_callback=None, mqtt_connected_callback=None, mqtt_connection_lost_callback=None,
             will_topic=None, will_message=None, will_qos=0, will_retain=None, clean_start=True,
-            version=v311, keepalive=0, client_id=None, server_hostname2=None, server_port2=None,
-            password2=None):
+            version=v311, keepalive=0, client_id=None, password2=None):
         """
         Create a new connection to MQTT. Don't worry, it's designed for many many connections. Leave all
         connection details blank or all completed. Blank will connect the MQTT client to the default Yombo
-        embedded MQTT Server: HBMQTT
+        embedded MQTT Server: Mostquitto
 
         .. code-block:: python
 
@@ -417,19 +458,16 @@ class MQTT(YomboLibrary):
             raise YomboWarning ("client_id must be unique. Got: %s" % client_id, 'MQTT::new', 'mqtt')
 
         if server_hostname is None:
-            server_hostname = self.client_remote_ip1
-        if server_hostname2 is None:
-            server_hostname2 = self.client_remote_ip2
+            if self.client_default_host is None:
+                logger.warn("Cannot create MQTT client, no default host defined.")
+                return
+            server_hostname = self.client_default_host
 
         if ssl is None:
-            ssl = self.client_remote_ssl1
-        if ssl2 is None:
-            ssl2 = self.client_remote_ssl2
+            ssl = self.client_default_ssl
 
         if server_port is None:
-            server_port = self.client_remote_port1
-        if server_port2 is None:
-            server_port2 = self.client_remote_port2
+            server_port = self.client_default_port
 
         if username is None:
             username = self.client_remote_username
@@ -447,10 +485,9 @@ class MQTT(YomboLibrary):
             if isinstance(mqtt_connected_callback, Callable) is False:
                 raise YomboWarning("If mqtt_connected_callback is set, it must be be callable.", 201, 'new', 'Devices')
 
-        self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_hostname2, server_port,
-            server_port2, username, password, password2, ssl, ssl2, mqtt_incoming_callback, mqtt_connected_callback,
-            mqtt_connection_lost_callback, will_topic, will_message, will_qos, will_retain, clean_start, version,
-            keepalive)
+        self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, username,
+            password, password2, ssl, mqtt_incoming_callback, mqtt_connected_callback, mqtt_connection_lost_callback,
+            will_topic, will_message, will_qos, will_retain, clean_start, version, keepalive)
         return self.client_connections[client_id]
 
     def test(self):
@@ -485,23 +522,20 @@ class MQTTClient(object):
        self.my_mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='my_client_name')
        self.mqtt.subscribe("yombo/devices/+/get")  # subscribe to a topic. + is a wilcard for a single section.
     """
-    def __init__(self, mqtt_library, client_id, server_hostname, server_hostname2, server_port, server_port2,
-                 username=None, password=None, password2=None, ssl=False, ssl2=True, mqtt_incoming_callback=None,
-                 mqtt_connected_callback=None, mqtt_connection_lost_callback=None, will_topic=None, will_message=None,
+    def __init__(self, mqtt_library, client_id, server_hostname, server_port, username=None, password=None,
+                 password2=None, ssl=False, mqtt_incoming_callback=None, mqtt_connected_callback=None,
+                 mqtt_connection_lost_callback=None, will_topic=None, will_message=None,
                  will_qos=0, will_retain=None, clean_start=True, version=v311, keepalive=0):
         """
         Creates a new client connection to an MQTT broker.
         :param mqtt_library: A reference to the MQTT library above.
         :param server_hostname: Broker to connect to. If not set, uses the local broker.
-        :param server_hostname2: Alternative broker to connect to. If not set, uses the local broker.
         :param server_port: Port to connect to, default is the non-secure port.
-        :param server_port2: Alternative port to connect to, default is the secure port.
         :param client_id: Client ID, either supplied from the calling library or random.
         :param username: User to connect as. Default is the local yombo user.
         :param password: Password to use for connection. Default is the local yombo user password.
         :param password2: Second password to try to use for connection. Default is the local yombo user password.
         :param ssl: Use SSL. Default is False. It's recommended to use SSL when connecting to a remote server.
-        :param ssl2: Alternative connection - Use SSL. Default is True. It's recommended to use SSL when connecting to a remote server.
         :param mqtt_incoming_callback: Callback to send incomming messages to.
         :param mqtt_connected_callback: Callback to a method when the MQTT connection is up. Used for notifications or status updates.
         :param mqtt_connection_lost_callback: Callback to a method when the MQTT connection goes down.
@@ -517,14 +551,11 @@ class MQTTClient(object):
         :return:
         """
         self.server_hostname = server_hostname
-        self.server_hostname2 = server_hostname2
         self.server_port = server_port
-        self.server_port2 = server_port2
         self.username = username
         self.password = password
         self.password2 = password2
         self.ssl = ssl
-        self.ssl2 = ssl2
         self.connected = False
         self._Parent = mqtt_library
         self.client_id = client_id
@@ -562,15 +593,9 @@ class MQTTClient(object):
                                                      ClientContextFactory())
             else:
                 self.my_reactor = reactor.connectTCP(server_hostname, server_port, self.factory)
-        except Exception:
-            # print("MQTTTTT couldn't connect !?!?!?")
-            if ssl2:
-                self.my_reactor = reactor.connectSSL(server_hostname2, server_port2, self.factory,
-                                                     ClientContextFactory())
-            else:
-                self.my_reactor = reactor.connectTCP(server_hostname2, server_port2, self.factory)
+        except Exception as e:
+            logger.warn("Unanble to connect to MQTT: {e}", e=e)
 
-    # @inlineCallbacks
     def publish(self, topic, message, qos=0, priority=10, retain=False, republish=None):
         """
         Publish a message.
@@ -721,6 +746,11 @@ class MQTTYomboProtocol(MQTTProtocol):
     def connectionMade(self):  # Empty through stack of twisted and MQTT library
         self.onMqttConnectionMade = self.factory.mqtt_client.mqtt_connected
         self.onDisconnection = self.factory.mqtt_client.client_connectionLost
+        print("connection mqtt client: %s -> %s" % (self.factory.mqtt_client.username,
+                                                    self.factory.mqtt_client.password) )
+        print("connection mqtt client: %s -> %s:%s" % (self.factory.mqtt_client.ssl,
+                                                       self.factory.mqtt_client.server_hostname,
+                                                       self.factory.mqtt_client.server_port))
         self.connect(self.factory.mqtt_client.client_id, keepalive=self.factory.keepalive,
             willTopic=self.factory.will_topic, willMessage=self.factory.will_message,
             willQoS=self.factory.will_qos, willRetain=self.factory.will_retain,
@@ -767,8 +797,8 @@ class MQTTTYomboFactory(MQTTFactory):
     #     protocol.ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 class MQTTServer(protocol.ProcessProtocol):
-    def __init__(self, config_file):
-        self.config_file = config_file
+    def __init__(self):
+        pass
 
     def shutdown(self):
         self.transport.closeStdin() # tell them we're done
