@@ -86,9 +86,9 @@ HARD_LOAD["Gateways"] = {'operating_mode':'all'}
 HARD_LOAD["Nodes"] = {'operating_mode':'all'}
 HARD_LOAD["Locations"] = {'operating_mode':'all'}
 HARD_LOAD["MQTT"] = {'operating_mode':'run'}
+HARD_LOAD["SSLCerts"] = {'operating_mode':'all'}
 HARD_LOAD["WebInterface"] = {'operating_mode':'all'}
 HARD_LOAD["Tasks"] = {'operating_mode':'all'}
-HARD_LOAD["SSLCerts"] = {'operating_mode':'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Gateways"] = {'operating_mode':'all'}
