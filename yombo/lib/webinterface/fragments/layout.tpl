@@ -141,9 +141,27 @@
                         <div class="breadcrumbs">
                         {%- for breadcrumb in misc_wi_data.breadcrumb -%}
                             {%- if breadcrumb.style == 'select' %}
-                                <select class="selectpicker" data-width="fit" id="{{breadcrumb.hash}}" data-style="btn-primary">
+                                <select class="selectpicker" data-width="fit" id="{{breadcrumb.hash}}" data-live-search="true" data-style="btn-primary">
                                 {%- for data in breadcrumb.data %}
+                                {% if data.style == 'divider' %}
+                                     <option data-divider="true"></option>
+                                {% else %}
                                     <option value="{{data.url}}" {{data.selected}}>{{data.text}}</option>
+                                {% endif %}
+                                {%- endfor %}
+                                </select>
+                            {%- elif breadcrumb.style == 'select_groups' %}
+                                <select class="selectpicker" data-width="fit" id="{{breadcrumb.hash}}" data-live-search="true" data-style="btn-primary">
+                                {%- for group_label, group_data  in breadcrumb.data.items() %}
+                                    <optgroup label="{{group_label}}">
+                                    {%- for device_data in group_data %}
+                                        {%- if device_data.style == 'divider' %}
+                                            <option data-divider="true"></option>
+                                        {%- else %}
+                                            <option value="{{device_data.url}}" {{device_data.selected}}>{{device_data.text}}</option>
+                                        {%- endif %}
+                                    {%- endfor %}
+                                    </optgroup>
                                 {%- endfor %}
                                 </select>
                             {%- else %}
@@ -187,7 +205,7 @@
 
 {%- if misc_wi_data.breadcrumb|length > 0 -%}
     {%- for breadcrumb in misc_wi_data.breadcrumb -%}
-        {%- if breadcrumb.style == 'select' %}
+        {%- if breadcrumb.style == 'select' or breadcrumb.style == 'select_groups'%}
     document.getElementById("{{breadcrumb.hash}}").onchange = function() {
             window.location.href = this.value;
     };

@@ -693,15 +693,39 @@ class WebInterface(YomboLibrary):
 
         if style is None:
             style = 'link'
+        elif style == 'select_groups':
+            items = {}
+            for option_label, option_data in data.items():
+                items[option_label] = []
+                for select_text, select_url in option_data.items():
+                    selected = ''
+                    option_style = 'None'
+                    if select_url.startswith("$"):
+                        selected = 'selected'
+                        select_url = select_url[1:]
+                    elif select_url.startswith("#"):
+                        option_style = 'divider'
+
+                    items[option_label].append({
+                        'option_style': option_style,
+                        'text': select_text,
+                        'url': select_url,
+                        'selected': selected,
+                    })
+            data = items
         elif style == 'select':
             items = []
             for select_text, select_url in data.items():
                 selected = ''
+                option_style = 'None'
                 if select_url.startswith("$"):
                     selected = 'selected'
                     select_url = select_url[1:]
+                elif select_url.startswith("#"):
+                    option_style = 'divider'
 
                 items.append({
+                    'option_style': option_style,
                     'text': select_text,
                     'url': select_url,
                     'selected': selected,
