@@ -106,7 +106,7 @@ class SSLCerts(YomboLibrary):
 
         self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
                                                      unserializer=self.sslcert_unserializer)
-        # print("startup: managed_certs: %s" % self.managed_certs)
+        print("startup: managed_certs: %s" % self.managed_certs)
 
         self.check_if_certs_need_update_loop = None
 
@@ -163,7 +163,7 @@ class SSLCerts(YomboLibrary):
         :return: 
         """
         for component_name, item in sslcerts.items():
-            # print("mod started, from: %s item: %s" % (component_name, item))
+            print("mod started, from: %s item: %s" % (component_name, item))
             try:
                 item = self.check_csr_input(item)  # Clean up module developers input.
             except YomboWarning as e:
@@ -356,6 +356,7 @@ class SSLCerts(YomboLibrary):
         Creates a self signed cert. Shouldn't be called directly except by this library for its
         own use.
         """
+        logger.debug("Creating self signed cert.")
         req = crypto.X509()
         gwid = "%s %s" % (self.gateway_id, self.hostname)
         req.get_subject().CN = 'localhost'
@@ -412,7 +413,7 @@ class SSLCerts(YomboLibrary):
         :param sslname: Name of the ssl for tracking.
         :return:
         """
-        logger.debug("send_csr_request, preparing to send CSR.")
+        logger.debug("send_csr_request, preparing to send CSR: %s" % sslname)
         if len(sslname) > 100:
             raise YomboWarning("'sslname' too long, limit is 100 characters.")
 
@@ -457,6 +458,7 @@ class SSLCerts(YomboLibrary):
         :param kwargs: 
         :return: 
         """
+        logger.debug("Received CSR response mesage: {msg}", msg=msg)
         if 'sslname' not in msg:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return
@@ -466,7 +468,8 @@ class SSLCerts(YomboLibrary):
         # print("managed_certs: %s" % self.managed_certs)
         # print("managed_certs: %s" % type(self.managed_certs))
         if sslname not in self.managed_certs:
-            logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes.")
+            logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes: %s" %
+                        sslname)
             if sslname in self.recieved_message_for_unknown:
                 self.recieved_message_for_unknown[sslname].append(msg)
             else:
@@ -974,7 +977,7 @@ class SSLCert(object):
         :param submit: True if we should submit it to yombo for signing.
         :return:
         """
-        # logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
+        logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
         # logger.info("generate_new_csr_done:results: results {results}", results=results)
         # logger.info("generate_new_csr_done:results: args {results}", results=args)
         self.key_next = results['key']
