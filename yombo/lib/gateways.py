@@ -22,6 +22,7 @@ a remote gateway, that automation rule should only fire on the master server.
 from collections import deque
 import msgpack
 from time import time
+import socket
 import traceback
 import zlib
 
@@ -33,7 +34,7 @@ from twisted.internet import reactor
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int
+from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep
 
 logger = get_logger('library.gateways')
 
@@ -43,6 +44,14 @@ class Gateways(YomboLibrary):
     """
     library_phase = 0
     ok_to_publish_updates = False
+
+    @property
+    def local(self):
+        return self.gateways[self.gateway_id]
+
+    @local.setter
+    def local(self, val):
+        return
 
     def __contains__(self, gateway_requested):
         """
@@ -178,19 +187,54 @@ class Gateways(YomboLibrary):
 
         yield self._load_gateways_from_database()
 
+        # now local the master, on or off network.
+        self.master_mqtt_host = None
+        self.master_mqtt_ssl = None
+        self.master_mqtt_port = None
+        self.master_websock_ssl = None
+        self.master_websock_port = None
+
+        if self.is_master is True:
+            self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
+            self.master_mqtt_ssl = False
+            self.master_mqtt_port = self.gateways[self.gateway_id].internal_mqtt
+            self.master_websock_ssl = False
+            self.master_websock_port = self.gateways[self.gateway_id].internal_mqtt_ws
+        else:
+            master = self.gateways[self.master_gateway()]
+            print("gateway is looking for master....")
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result = sock.connect_ex(('i.' + master.fqdn, master.internal_mqtt_ss))
+            if result == 0:
+                self.master_mqtt_host = 'i.' + master.fqdn
+                self.master_mqtt_ssl = True
+                self.master_mqtt_port = master.internal_mqtt_le
+                self.master_websock_ssl = True
+                self.master_websock_port = master.internal_mqtt_ws_le
+            else:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                result = sock.connect_ex(('e.' + master.fqdn, master.external_mqtt_ss))
+                if result == 0:
+                    self.master_mqtt_host = 'e.' + master.fqdn
+                    self.master_mqtt_ssl = True
+                    self.master_mqtt_port = master.external_mqtt_le
+                    self.master_websock_ssl = True
+                    self.master_websock_port = master.external_mqtt_ws_le
+                else:
+                    logger.warn("Cannot find an open MQTT port to the master gateway.")
+
+        # save for later use.
         # self.encrypt = self._GPG.encrypt_aes
         # self.decrypt = self._GPG.decrypt_aes
         # self.encrypt = partial(self._GPG.encrypt_aes, self.account_mqtt_key)
         # self.decrypt = partial(self._GPG.decrypt_aes, self.account_mqtt_key)
 
-        # return self.load_deferred
-
     def _start_(self, **kwargs):
         self.library_phase = 3
         if self._States['loader.operating_mode'] != 'run':
             return
-        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-gateways-%s' %
-                                                                                        self.gateway_id)
+        self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming,
+                                   client_id='Yombo-gateways-%s' % self.gateway_id)
         self.mqtt.subscribe("ybo_gw_req/+/all/#")
         self.mqtt.subscribe("ybo_gw_req/+/%s/#" % self.gateway_id)
         self.mqtt.subscribe("ybo_gw/+/all/#")
@@ -206,6 +250,7 @@ class Gateways(YomboLibrary):
 
         # self.test_send()
 
+    @inlineCallbacks
     def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
@@ -213,6 +258,7 @@ class Gateways(YomboLibrary):
         if hasattr(self, 'mqtt'):
             if self.mqtt is not None:
                 self.publish_data("all", "lib/gateways/offline", "")
+                yield sleep(0.05)
         if hasattr(self, 'load_deferred'):
             if self.load_deferred is not None and self.load_deferred.called is False:
                 self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
@@ -1226,6 +1272,7 @@ class Gateway:
         self.mqtt_auth_prev = None
         self.mqtt_auth_next = None
         self.mqtt_auth_last_rotate = None
+        self.fqdn = None
         self.internal_ipv4 = None
         self.external_ipv4 = None
         self.internal_port = None
@@ -1283,6 +1330,8 @@ class Gateway:
             self.internal_port = gateway['internal_port']
         if 'external_port' in gateway:
             self.external_port = gateway['external_port']
+        if 'fqdn' in gateway:
+            self.fqdn = gateway['fqdn']
         if 'internal_secure_port' in gateway:
             self.internal_secure_port = gateway['internal_secure_port']
         if 'external_secure_port' in gateway:
@@ -1331,6 +1380,7 @@ class Gateway:
         """
         return {
             'gateway_id': str(self.gateway_id),
+            'fqdn': str(self.fqdn),
             'is_master': self.is_master,
             'master_gateway': str(self.master_gatewaymaster_gateway),
             'machine_label': str(self.machine_label),
