@@ -390,10 +390,10 @@ class LocalDB(YomboLibrary):
                 self.db_bulk_queue[table][queue_type][data[id_col]] = data
         elif queue_type == 'update':
             if data[id_col] in self.db_bulk_queue[table]['insert']:
-                for key, value in data:
+                for key, value in data.items():
                     self.db_bulk_queue[table]['insert'][data[id_col]][key] = value
             elif data[id_col] in self.db_bulk_queue[table]['update']:
-                for key, value in data:
+                for key, value in data.items():
                     self.db_bulk_queue[table]['update'][data[id_col]][key] = value
             else:
                 self.db_bulk_queue[table][queue_type][data[id_col]] = data
@@ -531,35 +531,45 @@ class LocalDB(YomboLibrary):
         return results
 
     @inlineCallbacks
-    def get_device_status(self, **kwargs):
-        id = kwargs['id']
+    def get_device_status(self, where, **kwargs):
         limit = self._get_limit(**kwargs)
-        records = yield self.dbconfig.select('device_status',
-                                             where=['device_id = ?', id], orderby='set_at', limit=limit)
-        for index in range(len(records)):
-            machine_status_extra = records[index]['machine_status_extra']
-            if machine_status_extra is None:
-                records[index]['machine_status_extra'] = None
-            else:
-                records[index]['machine_status_extra'] = data_unpickle(machine_status_extra)
 
-            records[index]['requested_by'] = data_unpickle(records[index]['requested_by'])
-        return records
+        records = yield self.dbconfig.select('device_status',
+                                             where=dictToWhere(where),
+                                             orderby='set_at',
+                                             limit=limit)
+        data = []
+        for record in records:
+            record['_source'] = "database"
+            machine_status_extra = records['machine_status_extra']
+            if machine_status_extra is None:
+                record['machine_status_extra'] = None
+            else:
+                record['machine_status_extra'] = data_unpickle(machine_status_extra)
+
+            requested_by = data_unpickle(record['requested_by'])
+            if requested_by is None:
+                record['requested_by'] = None
+            else:
+                record['requested_by'] = data_unpickle(requested_by)
+            data.append(record)
+        return data
 
     @inlineCallbacks
-    def get_device_commands(self, where):
-        records = yield DeviceCommand.find(where=dictToWhere(where), orderby='created_at DESC')
-        DCs = []
+    def get_device_commands(self, where, **kwargs):
+        limit = self._get_limit(**kwargs)
+        records = yield self.dbconfig.select('device_commands',
+                                             where=dictToWhere(where),
+                                             orderby='created_at DESC',
+                                             limit=limit)
+        data = []
         for record in records:
-            DC =  record.__dict__
-            del DC['errors']
-            del DC['_rowid']
-            DC['_source'] = "database"
-            DC['inputs'] = data_unpickle(DC['inputs'])
-            DC['history'] = data_unpickle(DC['history'])
-            DC['requested_by'] = data_unpickle(DC['requested_by'])
-            DCs.append(DC)
-        return DCs
+            record['_source'] = "database"
+            record['inputs'] = data_unpickle(record['inputs'])
+            record['history'] = data_unpickle(record['history'])
+            record['requested_by'] = data_unpickle(record['requested_by'])
+            data.append(record)
+        return data
 
     #############################
     ###    Device Types     #####

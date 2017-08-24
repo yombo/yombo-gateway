@@ -14,12 +14,7 @@ The device class is responsible for managing a single device.
 :license: LICENSE for details.
 """
 # Import python libraries
-
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
-
+from collections import OrderedDict
 from time import time
 
 # Import twisted libraries
@@ -28,7 +23,7 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import is_true_false, data_pickle, data_unpickle
+from yombo.utils import is_true_false, data_pickle
 
 from yombo.core.log import get_logger
 logger = get_logger('library.devices.device_command')
@@ -85,21 +80,21 @@ class Device_Command(object):
         self.pin = data.get('pin', None)
         self.call_later = None
         self.created_at = data.get('created_at', time())
-        self.dirty = is_true_false(data.get('dirty', True))
-        self.source = data.get('_source', None)
+        self._dirty = is_true_false(data.get('dirty', True))
+        self._source = data.get('_source', None)
         self.started = data.get('started', False)
 
-        if self.source == 'database':
-            self.dirty = False
-            self.in_db = True
-        elif self.source == 'gateway_coms':
-            self.dirty = False
-            self.in_db = False
-            reactor.callLater(5, self.check_if_device_command_in_database)
+        if self._source == 'database':
+            self._dirty = False
+            self._in_db = True
+        elif self._source == 'gateway_coms':
+            self._dirty = False
+            self._in_db = False
+            reactor.callLater(1, self.check_if_device_command_in_database)
 
         else:
             self.history.append((self.created_at, self.status, 'Created.', self.local_gateway_id))
-            self.in_db = False
+            self._in_db = False
 
         if self.device.gateway_id == self.local_gateway_id:
             # print("I should start....")
@@ -116,7 +111,7 @@ class Device_Command(object):
         }
         device_commands = yield self._Parent._LocalDB.get_device_commands(where)
         if len(device_commands) > 0:
-            self.in_db = True
+            self._in_db = True
             self.save_to_db()
 
     def update_attributes(self, data):
@@ -144,9 +139,8 @@ class Device_Command(object):
     def start(self):
         if self.started is True:
             return
-        print("starting command!!!!!!!!!!!??!?!?!?!!?!?!?!?!?!?!? %s - %s - %s" % (self.request_id, self.device.label, self.command.label))
         self.started = True
-        if self.source == 'database' and self.status == 'sent':
+        if self._source == 'database' and self.status == 'sent':
             logger.debug(
                 "Discarding a device command message loaded from database it's already been sent.")
             self.set_sent()
@@ -160,7 +154,7 @@ class Device_Command(object):
             if self.not_after_at < cur_at:
                 self.set_delay_expired(message='Unable to send message due to request being expired by "%s" seconds.'
                                     % str(cur_at - self.not_after_at))
-                if self.source != 'database':  # Nothing should be loaded from the database that not a delayed command.
+                if self._source != 'database':  # Nothing should be loaded from the database that not a delayed command.
                     raise YomboWarning("Cannot setup delayed device command, it's already expired.")
             else:
                 when = self.not_before_at - cur_at
@@ -171,7 +165,7 @@ class Device_Command(object):
                     self.set_status('delayed')
                 return True
         else:
-            if self.source == 'database':  # Nothing should be loaded from the database that not a delayed command.
+            if self._source == 'database':  # Nothing should be loaded from the database that not a delayed command.
                 logger.debug("Discarding a device command message loaded from database because it's not meant to be called later.")
                 self.set_failed(message="Was loaded from database, but not meant to be called later.");
             else:
@@ -182,7 +176,7 @@ class Device_Command(object):
         return self.history[-1]
 
     def set_broadcast(self, broadcast_at=None, message=None):
-        self.dirty = True
+        self._dirty = True
         if broadcast_at is None:
             broadcast_at = time()
         self.broadcast_at = broadcast_at
@@ -192,7 +186,7 @@ class Device_Command(object):
         self.history.append((broadcast_at, self.status, message, self.local_gateway_id))
 
     def set_sent(self, sent_at=None, message=None):
-        self.dirty = True
+        self._dirty = True
         if sent_at is None:
             sent_at = time()
         self.sent_at = sent_at
@@ -202,7 +196,7 @@ class Device_Command(object):
         self.history.append((sent_at, self.status, message, self.local_gateway_id))
 
     def set_received(self, received_at=None, message=None):
-        self.dirty = True
+        self._dirty = True
         if received_at is None:
             received_at = time()
         self.received_at = received_at
@@ -212,7 +206,7 @@ class Device_Command(object):
         self.history.append((received_at, self.status, message, self.local_gateway_id))
 
     def set_pending(self, pending_at=None, message=None):
-        self.dirty = True
+        self._dirty = True
         if pending_at is None:
             pending_at = time()
         self.pending_at = pending_at
@@ -228,7 +222,7 @@ class Device_Command(object):
         self.history.append((pending_at, self.status, message, self.local_gateway_id))
 
     def set_finished(self, finished_at=None, status=None, message=None):
-        self.dirty = True
+        self._dirty = True
         if finished_at is None:
             finished_at = time()
         self.finished_at = finished_at
@@ -264,21 +258,21 @@ class Device_Command(object):
         self.set_finished(finished_at=finished_at, status='delay_expired', message=message)
 
     def set_status(self, status, message=None, log_at=None):
-        self.dirty = True
+        self._dirty = True
         self.status = status
         if log_at is None:
             log_at = time()
         self.history.append((log_at, status, message, self.local_gateway_id))
 
     def gw_coms_set_status(self, src_gateway_id, log_at, status, message):
-        self.dirty = True
+        self._dirty = True
         self.status = status
         if hasattr(self, '%s_at' % status):
             setattr(self, '%s_at' % status, log_at)
         self.history.append((log_at, status, message, src_gateway_id, self.local_gateway_id))
 
     def set_message(self, message):
-        self.dirty = True
+        self._dirty = True
         self.message = message
         self.history.append((time(), self.status, message, self.local_gateway_id))
 
@@ -294,10 +288,11 @@ class Device_Command(object):
     # @inlineCallbacks
     def save_to_db(self, forced = None):
         if self.device.gateway_id != self._Parent.gateway_id and self._Parent.is_master is not True:
-            self.dirty = False
+            self._dirty = False
             return
-        if self.dirty or forced is True:
-            data = self.dump()
+        if self._dirty or forced is True:
+            data = self.asdict()
+            del data['started']
             # if self.inputs is None:
             #     data['inputs'] = None
             # else:
@@ -305,17 +300,18 @@ class Device_Command(object):
             data['inputs'] = data_pickle(self.inputs)
             data['requested_by'] = data_pickle(self.requested_by)
 
-            if self.in_db is True:
-                self._Parent._LocalDB.add_bulk_queue('device_commands', 'insert', data, 'request_id')
-            else:
+            if self._in_db is True:
                 self._Parent._LocalDB.add_bulk_queue('device_commands', 'update', data, 'request_id')
+            else:
+                self._Parent._LocalDB.add_bulk_queue('device_commands', 'insert', data, 'request_id')
 
-            self.dirty = False
-            self.in_db = True
+            self._dirty = False
+            self._in_db = True
 
-    def dump(self):
-        return {
+    def asdict(self):
+        return OrderedDict({
             "request_id": self.request_id,
+            "persistent_request_id": self.persistent_request_id,
             "source_gateway_id": self.source_gateway_id,
             "device_id": self.device.device_id,
             "command_id": self.command.command_id,
@@ -328,11 +324,12 @@ class Device_Command(object):
             "finished_at": self.finished_at,
             "not_before_at": self.not_before_at,
             "not_after_at": self.not_after_at,
+            "started": self.started,
             "command_status_received": self.command_status_received,
             "history": self.history,
             "status": self.status,
             "requested_by": self.requested_by,
-        }
+        })
 
     def __repr__(self):
         return "Device command for '%s': %s" % (self.device.label, self.command.label)

@@ -248,7 +248,6 @@ class Devices(YomboLibrary):
         Loads devices from the database and imports them.
         :return: 
         """
-
         self.clean_device_commands_loop = LoopingCall(self.clean_device_commands)
         self.clean_device_commands_loop.start(random_int(3600, .15))
 
@@ -265,6 +264,8 @@ class Devices(YomboLibrary):
         Save any device commands that need to be saved.
         :return: 
         """
+        for device_id, device in self.devices.items():
+            device._unload_()
         for request_id, device_command in self.device_commands.items():
             device_command.save_to_db(True)
 
@@ -317,8 +318,8 @@ class Devices(YomboLibrary):
             d = Deferred()
             d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
             d.addErrback(self.import_device_failure, device)
-            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
-            d.addErrback(self.import_device_failure, device)
+            # d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
+            # d.addErrback(self.import_device_failure, device)
             d.callback(1)
             yield d
 
@@ -428,7 +429,6 @@ class Devices(YomboLibrary):
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
-            device_command['gateway_id'] = self.gateway_id
             self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
         return None
 
@@ -443,8 +443,20 @@ class Devices(YomboLibrary):
             device_command = self.device_commands[request_id]
             if device_command.finished_at is not None:
                 if device_command.finished_at > cur_time - (60*45):  # keep 45 minutes worth.
-                    yield device_command.save_to_db()
-                    del self.device_commands[request_id]
+                    for device_id, device in self.devices.items():
+                        if request_id not in device.device_commands:
+                            yield device_command.save_to_db()
+                            del self.device_commands[request_id]
+
+    def add_device_command_by_object(self, device_command):
+        """
+        Simply append a device command object to the list of tracked device commands.
+
+        :param device_command:
+        :return:
+        """
+        self.device_commands[device_command.request_id] = device_command
+        self.device_commands.move_to_end(device_command.request_id, last=False)  # move to the front.
 
     def add_device_command(self, device_command):
         """
@@ -476,7 +488,7 @@ class Devices(YomboLibrary):
         results = []
         for device_command_id, device_command in self.device_commands.items():
             if device_command.device.gateway_id == dest_gateway_id:
-                results.append(device_command.dump())
+                results.append(device_command.asdict())
         return results
 
     def get_delayed_commands(self):

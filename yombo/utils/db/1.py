@@ -179,6 +179,7 @@ def create_table_device_commands(Registry, **kwargs):
     table = """CREATE TABLE `device_commands` (
         `id`                INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `request_id`        TEXT NOT NULL,
+        `persistent_request_id` TEXT,
         `source_gateway_id` TEXT NOT NULL,
         `device_id`         TEXT NOT NULL,
         `command_id`        TEXT NOT NULL,
@@ -210,23 +211,25 @@ def create_table_device_status(Registry, **kwargs):
     """ Defines the device status table. Stores device status information. """
     table = """CREATE TABLE `device_status` (
         `id`                   INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        `status_id`            TEXT NOT NULL,
         `device_id`            TEXT NOT NULL, /* device_id */
+        `command_id`           TEXT,
+        `gateway_id`           TEXT,
         `set_at`               REAL NOT NULL,
         `energy_usage`         INTEGER NOT NULL,
         `energy_type`          TEXT,
         `human_status`         TEXT NOT NULL,
         `human_message`        TEXT NOT NULL,
-        `last_command`         TEXT,
         `machine_status`       TEXT NOT NULL,
-        `gateway_id`           TEXT,
         `machine_status_extra` TEXT,
         `requested_by`         TEXT NOT NULL,
         `reported_by`          TEXT NOT NULL,
-        'request_id'           TEXT,
+        `request_id`           TEXT,
         `uploaded`             INTEGER NOT NULL DEFAULT 0,
         `uploadable`           INTEGER NOT NULL DEFAULT 0 /* For security, only items marked as 1 can be sent externally */
         );"""
     yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('device_status', 'status_id', unique=True))
     yield Registry.DBPOOL.runQuery(create_index('device_status', 'device_id'))
     yield Registry.DBPOOL.runQuery(create_index('device_status', 'uploaded'))
 

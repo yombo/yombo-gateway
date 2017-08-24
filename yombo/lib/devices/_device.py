@@ -25,7 +25,7 @@ from time import time
 from collections import OrderedDict
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
@@ -33,6 +33,7 @@ from yombo.core.log import get_logger
 from yombo.utils import random_string, global_invoke_all, do_search_instance, instance_properties, data_pickle, data_unpickle
 from yombo.lib.commands import Command  # used only to determine class type
 from ._device_command import Device_Command
+from ._device_status import Device_Status
 logger = get_logger('library.devices.device')
 
 class Device(object):
@@ -50,10 +51,8 @@ class Device(object):
         * :py:meth:`device_command_failed <Device.device_command_failed>` - When a module is unable to process a command.
         * :py:meth:`device_command_done <Device.device_command_done>` - When a command has completed..
         * :py:meth:`energy_get_usage <Device.energy_get_usage>` - Get current energy being used by a device.
-        * :py:meth:`get_status <Device.get_status>` - Get a named tuple containing the device status.
+        * :py:meth:`get_status <Device.get_status>` - Get a latest device status object.
         * :py:meth:`set_status <Device.set_status>` - Set the device status.
-        * :py:meth:`get_status <Device.get_status>` - Get a named tuple containing the device status.
-        * :py:meth:`get_status <Device.get_status>` - Get a named tuple containing the device status.
     """
 
     PLATFORM = "device"
@@ -129,7 +128,6 @@ class Device(object):
             system to deliver commands and status update requests.
         :ivar created_at: *(int)* - When the device was created; in seconds since EPOCH.
         :ivar updated_at: *(int)* - When the device was last updated; in seconds since EPOCH.
-        :ivar last_command: *(dict)* - A dictionary of up to the last 30 command messages.
         :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
         :ivar device_variables: *(dict)* - The device variables as defined by various modules, with
             values entered by the user.
@@ -138,17 +136,6 @@ class Device(object):
         self._FullName = 'yombo.gateway.lib.Devices.Device'
         self._Name = 'Devices.Device'
         self._Parent = _Parent
-        # logger.debug("New device - info: {device}", device=device)
-
-        self.StatusTuple = namedtuple('StatusTuple',
-                                      "device_id, set_at, energy_usage, energy_type, human_status, human_message, "
-                                      "last_command, machine_status, machine_status_extra, gateway_id, requested_by, "
-                                      "reported_by, request_id, uploaded, uploadable")
-
-        self.CommandTuple = namedtuple('CommandTuple',
-                                       "set_at, command_id, requested_by, reported_by, request_id, uploaded, "
-                                       "uploadable")
-
         self.call_before_command = []
         self.call_after_command = []
 
@@ -159,38 +146,38 @@ class Device(object):
             self.test_device = test_device
 
         memory_sizing = {
-            'x_small': {'other_last_command': 2,  #less then 256mb
+            'x_small': {'other_device_commands': 2,  #less then 256mb
                            'other_status_history': 2,
-                           'local_last_command': 5,
+                           'local_device_commands': 5,
                            'local_status_history': 5},
-            'small': {'other_last_command': 5,  #About 512mb
+            'small': {'other_device_commands': 5,  #About 512mb
                            'other_status_history': 5,
-                           'local_last_command': 25,
+                           'local_device_commands': 25,
                            'local_status_history': 25},
-            'medium': {'other_last_command': 25,  # About 1024mb
+            'medium': {'other_device_commands': 25,  # About 1024mb
                       'other_status_history': 25,
-                      'local_last_command': 75,
+                      'local_device_commands': 75,
                       'local_status_history': 75},
-            'large': {'other_last_command': 50,  # About 2048mb
+            'large': {'other_device_commands': 50,  # About 2048mb
                        'other_status_history': 50,
-                       'local_last_command': 125,
+                       'local_device_commands': 125,
                        'local_status_history': 125},
-            'x_large': {'other_last_command': 100,  # About 4092mb
+            'x_large': {'other_device_commands': 100,  # About 4092mb
                       'other_status_history': 100,
-                      'local_last_command': 250,
+                      'local_device_commands': 250,
                       'local_status_history': 250},
-            'xx_large': {'other_last_command': 200,  # About 8000mb
+            'xx_large': {'other_device_commands': 200,  # About 8000mb
                         'other_status_history': 200,
-                        'local_last_command': 500,
+                        'local_device_commands': 500,
                         'local_status_history': 500},
         }
 
         sizes = memory_sizing[self._Parent._Atoms['mem.sizing']]
         if device["gateway_id"] != _Parent.gateway_id:
-            self.last_command = deque({}, sizes['other_last_command'])
+            self.device_commands = deque({}, sizes['other_device_commands'])
             self.status_history = deque({}, sizes['other_status_history'])
         else:
-            self.last_command = deque({}, sizes['local_last_command'])
+            self.device_commands = deque({}, sizes['local_device_commands'])
             self.status_history = deque({}, sizes['local_status_history'])
 
         self.device_variables = {}
@@ -244,7 +231,18 @@ class Device(object):
 
         if self.test_device is False and self.device_is_new is True:
             self.device_is_new = False
-            yield self.load_history(35)
+            yield self.load_status_history(35)
+            yield self.load_device_commands_history(35)
+
+    def _unload_(self, **kwargs):
+        """
+        About to unload. Lets save all the device status items.
+
+        :param kwargs:
+        :return:
+        """
+        for status in self.status_history:
+            status.save_to_db()
 
     @inlineCallbacks
     def import_device_variables(self):
@@ -253,9 +251,6 @@ class Device(object):
             group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
         )
-
-    def _start_(self):
-        pass
 
     def update_attributes(self, device, source=None):
         """
@@ -392,7 +387,7 @@ class Device(object):
         """
         self.commands.get(command, command_list=self.available_commands())
 
-    def dump(self):
+    def asdict(self):
         """
         Export device variables as a dictionary.
         """
@@ -410,34 +405,36 @@ class Device(object):
                 'voice_cmd_order': str(self.voice_cmd_order),
                 'created_at': int(self.created_at),
                 'updated_at': int(self.updated_at),
-                'last_command': copy.copy(self.last_command),
-                'status_history': copy.copy(self.status_history),
+                'device_commands': self.device_commands,
+                'status_history': self.status_history,
                 }
 
     def to_mqtt_coms(self):
         """
         Export device variables as a dictionary.
         """
-        def take(n, iterable):
-            return list(islice(iterable, n))
+        # def take(n, iterable):
+        #     return list(islice(iterable, n))
 
-        if len(self.last_command) > 0:
-            last_command = take(1, copy.copy(self.last_command)),
+        if len(self.device_commands) > 0:
+            request_id = self.device_commands[0]
+            device_command = self._Parent.device_commands[request_id].asdict()
         else:
-            last_command = []
+            device_command = []
 
-        if len(self.last_command) > 0:
-            status_history = take(1, copy.copy(self.status_history)),
+        if len(self.status_history) > 0:
+            status_history = self.status_history[0].asdict()
         else:
-            status_history = []
+            status_history = None
 
-        return {'device_id': str(self.device_id),
-                'last_command': last_command,
-                'status_history': status_history,
-                }
+        return {
+            'device_id': str(self.device_id),
+            'device_command': device_command,
+            'status_history': status_history,
+            }
 
-    def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None, requested_by=None,
-                inputs=None, not_after=None, **kwargs):
+    def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
+                requested_by=None, inputs=None, not_after=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -592,16 +589,9 @@ class Device(object):
                     pass
         device_command['inputs'] = inputs
 
-        self.last_command.appendleft({
-            'command_id': command.command_id,
-            'machine_label': command.machine_label,
-            'label': command.label,
-            'request_id': request_id,
-            'inputs': inputs,
-            'gateway_id': self.gateway_id,
-        })
-        self._Parent.device_commands[request_id] = Device_Command(device_command, self._Parent)
-        self._Parent.device_commands.move_to_end(request_id, last=False)  # move to the front.
+        self.device_commands.appendleft(request_id)
+
+        self._Parent.add_device_command_by_object(Device_Command(device_command, self._Parent))
         return request_id
 
     @inlineCallbacks
@@ -828,14 +818,14 @@ class Device(object):
         """
         return self.status_history[history]
 
-    def get_last_command(self, history=0):
+    def get_device_commands(self, history=0):
         """
         Gets the last command information.
 
         :param history: How far back to go. 0 = previoius, 1 - the one before that, etc.
         :return:
         """
-        return self.last_command[history]
+        return self.device_commands[history]
 
     def set_status(self, **kwargs):
         """
@@ -861,7 +851,7 @@ class Device(object):
         # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         kwargs = self.set_status_process(**kwargs)
 
-        kwargs = self._set_status(**kwargs)
+        kwargs, status_id = self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
 
@@ -871,14 +861,13 @@ class Device(object):
         :param kwargs: 
         :return: 
         """
-        machine_status = None
         if 'machine_status' not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
         command = None
         machine_status = kwargs['machine_status']
+        machine_status_extra = kwargs.get('machine_status_extra', {})
         human_status = kwargs.get('human_status', machine_status)
         human_message = kwargs.get('human_message', human_status)
-        machine_status_extra = kwargs.get('machine_status_extra', {})
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 1)
         set_at = kwargs.get('set_at', time())
@@ -926,6 +915,8 @@ class Device(object):
             'device_id': self.device_id,
             'device_machine_label': self.machine_label,
             'device_label': self.label,
+            'command_id': command.command_id,
+            'command_machine_label': command.machine_label,
             'machine_status': machine_status,
             'machine_status_extra': machine_status_extra,
             'human_message': human_message,
@@ -936,15 +927,11 @@ class Device(object):
             'reported_by': reported_by,
         }
 
-
         if command is not None:
             # print("set status - command found!")
             kwargs['command'] = command
-            command_machine_label = command.machine_label
-            mqtt_message['command_machine_label'] = command.machine_label
-            mqtt_message['command_label'] = command.label
             mqtt_message['command_id'] = command.command_id
-            mqtt_message['last_command'] = command.machine_label
+            mqtt_message['command_machine_label'] = command.machine_label
             energy_usage, energy_type = self.energy_calc(command=command,
                                                          machine_status=machine_status,
                                                          machine_status_extra=machine_status_extra,
@@ -952,11 +939,8 @@ class Device(object):
         else:
             # print("set status - no command found!")
             kwargs['command'] = None
-            mqtt_message['command_machine_label'] = None
-            mqtt_message['command_label'] = None
             mqtt_message['command_id'] = None
-            mqtt_message['last_command'] = None
-            command_machine_label = machine_status
+            mqtt_message['command_machine_label'] = None
             energy_usage, energy_type = self.energy_calc(machine_status=machine_status,
                                                          machine_status_extra=machine_status_extra,
                                                          )
@@ -969,23 +953,36 @@ class Device(object):
             self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
 
 
-        new_status = self.StatusTuple(self.device_id, set_at, energy_usage, energy_type, human_status, human_message,
-                                      command_machine_label, machine_status, machine_status_extra, kwargs['gateway_id'],
-                                      requested_by, reported_by, request_id, uploaded, uploadable)
+        new_status = Device_Status(self._Parent, self, {
+            'command': command,
+            'set_at': set_at,
+            'energy_usage': energy_usage,
+            'energy_type': energy_type,
+            'human_status':human_status,
+            'human_message': human_message,
+            'machine_status': machine_status,
+            'machine_status_extra': machine_status_extra,
+            'gateway_id': kwargs['gateway_id'],
+            'requested_by': requested_by,
+            'reported_by': reported_by,
+            'request_id': request_id,
+            'uploaded': uploaded,
+            'uploadable': uploadable,
+            }
+        )
         self.status_history.appendleft(new_status)
-        if self.test_device is False:
-            # self._Parent._LocalDB.save_device_status(**new_status._asdict())
-            save_status = new_status._asdict()
-            save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
-            # print("requested by before: %s" % save_status['requested_by'])
-            save_status['requested_by'] = data_pickle(save_status['requested_by'])
-            # print("requested by after: %s" % save_status['requested_by'])
-            self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
+        # if self.test_device is False:
+        #     save_status = new_status.asdict()
+        #     save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
+        #     save_status['requested_by'] = data_pickle(save_status['requested_by'])
+        #     # print("requested by before: %s" % save_status['requested_by'])
+        #     # print("requested by after: %s" % save_status['requested_by'])
+        #     self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
         self._Parent.check_trigger(self.device_id, new_status)
 
         if self._Parent.mqtt != None:
             self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(mqtt_message), 1)
-        return kwargs
+        return kwargs, new_status['status_id']
 
     def set_status_from_gateway_communications(self, payload):
         """
@@ -994,23 +991,13 @@ class Device(object):
         :param new_status:
         :return:
         """
-        # payload = {'device_id': 'ZQD3daJAZE7mz120', 'command_id': '4Y9KXkz80B1A2',
-        #    'status': {'device_id': 'ZQD3daJAZE7mz120', 'set_at': 1501972805.924836, 'energy_usage': 0,
-        #               'energy_type': 'electric', 'human_status': 1, 'human_message': 1, 'last_command': 'high',
-        #               'machine_status': 1, 'machine_status_extra': {}, 'gateway_id': 'PZyVLR4PzWzwd7j0',
-        #               'requested_by': {'user_id': 'Unknown', 'component': 'Unknown'},
-        #               'reported_by': 'yombo.gateway.modules.RaspberryPiGPIO', 'request_id': None, 'uploaded': 0,
-        #               'uploadable': 1}, 'request_id': None, 'reported_by': 'yombo.gateway.modules.RaspberryPiGPIO',
-        #    'gateway_id': 'PZyVLR4PzWzwd7j0', 'status_source': 'gateway_coms'}
-
-        new_status = self.StatusTuple(*payload['status'])
-        save_status = new_status._asdict()
-        save_status['requested_by'] = data_pickle(save_status['requested_by'])
-        save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
+        new_status = Device_Status(self._Parent, self, payload['status'])
         self.status_history.appendleft(new_status)
-        if self.test_device is False and self._Parent.is_master is True:
-            self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
-            # self._Parent._LocalDB.save_device_status(**new_status._asdict())
+        # save_status = new_status.asdict()
+        # save_status['requested_by'] = data_pickle(save_status['requested_by'])
+        # save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
+        # if self.test_device is False and self._Parent.is_master is True:
+        #     self._Parent._LocalDB.add_bulk_queue('device_status', 'insert', save_status, 'device_id')
         self._Parent.check_trigger(self.device_id, new_status)
         self.send_status(**payload)
 
@@ -1041,7 +1028,7 @@ s
             'command': command,
             'request_id': kwargs.get('request_id', None),
             'reported_by': kwargs.get('reported_by', None),
-            'gateway_id': kwargs.get('gateway_id', self.gateway_id)
+            'gateway_id': kwargs.get('gateway_id', self.gateway_id),
         }
 
         message['status'] = self.status_history[0]
@@ -1067,26 +1054,45 @@ s
         self._Parent._MessageLibrary.device_delay_list(self.device_id)
 
     @inlineCallbacks
-    def load_history(self, limit=40):
+    def load_status_history(self, limit=40):
         """
-        Loads device history into the device instance. This method gets the data from the db and adds a callback
-        to _do_load_history to actually set the values.
+        Loads device history into the device instance. This method gets the
+         data from the db to actually set the values.
 
-        :param limit: int - How many history items should be loaded. Default: 35
+        :param limit: int - How many history items should be loaded. Default: 40
         :return:
         """
         if limit is None:
             limit = False
 
-        records = yield self._Parent._Libraries['LocalDB'].get_device_status(id=self.device_id, limit=limit)
+        where = {
+            'id': self.device_id,
+        }
+        records = yield self._Parent._Libraries['LocalDB'].get_device_status(where, limit=limit)
         if len(records) > 0:
             for record in records:
-                self.status_history.appendleft(
-                    self.StatusTuple(record['device_id'], record['set_at'], record['energy_usage'], record['energy_type'],
-                                     record['human_status'], record['human_message'], record['last_command'],
-                                     record['machine_status'], record['machine_status_extra'], record['gateway_id'],
-                                     record['requested_by'], record['reported_by'], record['request_id'],
-                                     record['uploaded'], record['uploadable']))
+                self.status_history.appendleft(Device_Status(self._Parent, self, record))
+
+    @inlineCallbacks
+    def load_device_commands_history(self, limit=40):
+        """
+        Loads device command history into the device instance. This method gets the
+        data from the db to actually set the values.
+
+        :param limit: int - How many history items should be loaded. Default: 40
+        :return:
+        """
+        if limit is None:
+            limit = False
+
+        where = {
+            'id': self.device_id,
+        }
+        records = yield self._Parent._Libraries['LocalDB'].get_device_commands(where, limit=limit)
+        if len(records) > 0:
+            for record in records:
+                if record['request_id'] not in self._Parent.device_commands:
+                    self._Parent.add_device_command_by_object(Device_Command(record, self, start=False))
 
     def validate_command(self, command_requested):
         available_commands = self.available_commands()
@@ -1283,13 +1289,8 @@ s
     @property
     def status(self):
         """
-        Return the address of the device.
+        Return the machine status of the device.
         """
-        # self.StatusTuple = namedtuple('StatusTuple',
-        #                               "device_id, set_at, energy_usage, energy_type, human_status, human_message, "
-        #                               "last_command, machine_status, machine_status_extra, requested_by, "
-        #                               "reported_by, request_id, uploaded, uploadable")
-
         # print("load history (%s): %s" % (self.label, len(self.status_history)))
         if len(self.status_history) == 0:
             return None
@@ -1298,17 +1299,30 @@ s
     @property
     def status_all(self):
         """
-        Return the address of the device.
+        Return the device's current status as a dictionary.
         """
         if len(self.status_history) == 0:
             requested_by = {
                 'user_id': 'Unknown',
                 'component': 'Unknown',
             }
-            return self.StatusTuple(self.device_id, int(time()), 0, self.energy_type, 'Unknown',
-                                    'Unknown status for device', None, None, {}, self.gateway_id,
-                                    requested_by, None, 'Unknown', 0, 1)
-
+            return Device_Status(self._Parent, self, {
+                'device_id': self.device_id,
+                'set_at': time(),
+                'energy_usage': 0,
+                'energy_type': self.energy_type,
+                'human_status': 'Unknown',
+                'human_message': 'Unknown status for device',
+                'machine_status': None,
+                'machine_status_extra': {},
+                'gateway_id': self.gateway_id,
+                'requested_by': requested_by,
+                'reported_by': None,
+                'request_id': None,
+                'uploaded': 0,
+                'uploadable': 1,
+                'fake_data': True,
+            })
         return self.status_history[0]
 
     @property
@@ -1371,13 +1385,16 @@ s
         :return: 
         """
         if self.can_toggle():
-            if self.last_command[0].command_id is None:
+            if self.device_commands > 0:
+                request_id = self.device_commands[0]
+                request = self._Parent.device_commands[request_id]
+                command_id = request.command.command_id
+                for toggle_command_id in self.TOGGLE_COMMANDS:
+                    if toggle_command_id == command_id:
+                        continue
+                    return self._Parent._Commands[toggle_command_id]
+            else:
                 raise YomboWarning("Device cannot be toggled, device is in unknown state.")
-            last_command_id = self.last_command[0].command_id
-            for command_id in self.TOGGLE_COMMANDS:
-                if command_id == last_command_id:
-                    continue
-                return self._Parent._Commands[command_id]
         raise YomboWarning("Device cannot be toggled, it's not enabled for this device.")
 
     def set_status_process(self, **kwargs):
@@ -1403,7 +1420,7 @@ s
         kwargs['machine_status_extra'] = previous_extra
         return kwargs
 
-    def available_STATUS_MODES_values(self):
+    def available_status_modes_values(self):
         return instance_properties(self, startswith_filter='STATUS_MODES_')
 
     def available_status_extra_attributes(self):
