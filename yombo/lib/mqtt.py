@@ -110,6 +110,7 @@ class MQTT(YomboLibrary):
         """
         self.client_connections = {}
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+        self.mosquitto_enabled = self._Configs.get('mqtt', 'mosquitto_enabled', False)
         self.mosquitto_config_file = "/etc/mosquitto/yombo/yombo.conf"
         self.mosquitto_pass_file = "/etc/mosquitto/yombo/passwd"
         self.client_enabled = self._Configs.get('mqtt', 'client_enabled', True)
@@ -153,6 +154,13 @@ class MQTT(YomboLibrary):
             self.client_remote_username = 'yombogw_' + self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
+            if self.mosquitto_enabled is False:
+                logger.info("Enabling mosquitto MQTT broker.")
+                call(['sudo', 'systemctl', 'enable', 'mosquitto.service'])
+                call(['sudo', 'systemctl', 'start', 'mosquitto.service'])
+                self._Configs.set('mqtt', 'mosquitto_enabled', True)
+                self.mosquitto_enabled = True
+
         else:
             self.server_listen_ip = None
             self.server_listen_port = 0
@@ -180,6 +188,12 @@ class MQTT(YomboLibrary):
             self.client_remote_username = 'yombogw_' + self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
+            if self.mosquitto_enabled is True:
+                logger.info("Disabling mosquitto MQTT broker.")
+                call(['sudo', 'systemctl', 'stop', 'mosquitto.service'])
+                call(['sudo', 'systemctl', 'disable', 'mosquitto.service'])
+                self._Configs.set('mqtt', 'mosquitto_enabled', False)
+                self.mosquitto_enabled = False
 
         self.client_default_host = self._Gateways.master_mqtt_host
         self.client_default_ssl = self._Gateways.master_mqtt_ssl
