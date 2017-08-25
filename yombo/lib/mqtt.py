@@ -54,8 +54,9 @@ except ImportError:
 from twisted.internet.ssl import ClientContextFactory
 from twisted.internet import protocol
 from twisted.internet import reactor
-from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.task import LoopingCall
+from twisted.internet.utils import getProcessOutput
 
 # 3rd party libraries
 from yombo.ext.mqtt import v311
@@ -64,11 +65,11 @@ from yombo.ext.mqtt.client.pubsubs import MQTTProtocol
 from yombo.ext.mqtt.error import ProfileValueError
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
-from yombo.utils import random_string, sleep, unicode_to_bytes, bytes_to_unicode
+from yombo.utils import random_string, sleep, unicode_to_bytes, bytes_to_unicode, sleep
 
 logger = get_logger('library.mqtt')
 
@@ -154,12 +155,6 @@ class MQTT(YomboLibrary):
             self.client_remote_username = 'yombogw_' + self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
-            if self.mosquitto_enabled is False:
-                logger.info("Enabling mosquitto MQTT broker.")
-                call(['sudo', 'systemctl', 'enable', 'mosquitto.service'])
-                call(['sudo', 'systemctl', 'start', 'mosquitto.service'])
-                self._Configs.set('mqtt', 'mosquitto_enabled', True)
-                self.mosquitto_enabled = True
 
         else:
             self.server_listen_ip = None
@@ -188,18 +183,15 @@ class MQTT(YomboLibrary):
             self.client_remote_username = 'yombogw_' + self.gateway_id
             self.client_remote_password1 = self._Gateways[self.gateway_id].mqtt_auth
             self.client_remote_password2 = self._Gateways[self.gateway_id].mqtt_auth_next
-            if self.mosquitto_enabled is True:
-                logger.info("Disabling mosquitto MQTT broker.")
-                call(['sudo', 'systemctl', 'stop', 'mosquitto.service'])
-                call(['sudo', 'systemctl', 'disable', 'mosquitto.service'])
-                self._Configs.set('mqtt', 'mosquitto_enabled', False)
-                self.mosquitto_enabled = False
+
 
         self.client_default_host = self._Gateways.master_mqtt_host
         self.client_default_ssl = self._Gateways.master_mqtt_ssl
         self.client_default_port = self._Gateways.master_mqtt_port
 
+        self.mosquitto_running = None
 
+    @inlineCallbacks
     def _load_(self, **kwargs):
         if self.server_enabled is False:
             logger.info("Embedded MQTT Disabled.")
@@ -207,6 +199,14 @@ class MQTT(YomboLibrary):
 
         if self.is_master is not True:
             logger.info("Not managing MQTT broker, we are not the master!")
+            if self.mosquitto_enabled is True:
+                logger.info("Disabling mosquitto MQTT broker.")
+                yield getProcessOutput("sudo", ['systemctl', 'disable', 'mosquitto.service'])
+                yield self.start_mqtt_broker()
+                logger.info("Sleeping for 2 seconds while MQTT broker stops.")
+                self._Configs.set('mqtt', 'mosquitto_enabled', False)
+                self.mosquitto_enabled = False
+                yield sleep(2)
             return
 
         ssl_self_signed = self._SSLCerts.get('selfsigned')
@@ -332,16 +332,22 @@ class MQTT(YomboLibrary):
             print("yombogw_%s:%s" % (gateway, sha512_crypt_mosquitto(passwords['current'])), file=password_file)
         password_file.close()
 
-        if self._Loader.operating_mode == 'run' and self.is_master is True:
+        if self.mosquitto_enabled is False:
+            logger.info("Enabling mosquitto MQTT broker.")
+            yield getProcessOutput("sudo", ['systemctl', 'enable', 'mosquitto.service'])
+            self._Configs.set('mqtt', 'mosquitto_enabled', True)
+            self.mosquitto_enabled = True
 
-            # self.mqtt_server = MQTTServer()
-            # 100% not async code..but this is only during startup. :-)
-            call(['sudo', 'systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
-
-            # self.mqtt_server_reactor = reactor.spawnProcess(self.mqtt_server, command[0], command, environ)
-
-            # nasty hack..  TODO: remove nasty sleep hack
-            return sleep(0.2)
+        yield self.check_mqtt_broker_running()
+        if self.mosquitto_running is False:
+            yield self.start_mqtt_broker()
+            logger.info("Sleeping for 2 seconds while MQTT broker starts up.")
+            yield sleep(2)
+            if self.mosquitto_running is False:
+                logger.error("MQTT failed to start!")
+                raise YomboCritical("MQTT failed to start, shutting down.")
+        else:
+            yield self.reload_mqtt_broker()  #reload the configs
 
     def _start_(self, **kwargs):
         """
@@ -372,6 +378,50 @@ class MQTT(YomboLibrary):
         if hasattr(self, '_States'):
             if self._States['loader.operating_mode'] == 'run' and self.mqtt_server is not None:
                 self.mqtt_server.shutdown()
+
+    @inlineCallbacks
+    def check_mqtt_broker_running(self):
+        """
+        Checks if the mqtt broker is running.
+        :return:
+        """
+        process_results = yield getProcessOutput("ps", ["-A"])
+        # print("process results: %s" % process_results)
+        if b'mosquitto' in process_results:
+            self.mosquitto_running = True
+            return True
+        else:
+            self.mosquitto_running = False
+            return False
+
+    @inlineCallbacks
+    def start_mqtt_broker(self):
+        """
+        Start the mqtt broker. Note: this will sleep for 2 seconds to ensure it starts.
+        :return:
+        """
+        yield getProcessOutput("sudo", ['systemctl', 'start', 'mosquitto.service'])
+        yield sleep(0.5)
+        running = yield self.check_mqtt_broker_running()
+        return running
+
+    @inlineCallbacks
+    def stop_mqtt_broker(self):
+        """
+        Stop the mqtt broker. Note: This will sleep for 2 seconds to ensure it stops.
+        :return:
+        """
+        yield getProcessOutput("sudo", ['systemctl', 'stop', 'mosquitto.service'])
+        yield sleep(0.5)
+        running = yield self.check_mqtt_broker_running()
+        return running
+
+    @inlineCallbacks
+    def reload_mqtt_broker(self):
+        yield getProcessOutput("sudo", ['systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
+        yield sleep(0.5)
+        running = yield self.check_mqtt_broker_running()
+        return running
 
     def _webinterface_add_routes_(self, **kwargs):
         """
@@ -760,11 +810,11 @@ class MQTTYomboProtocol(MQTTProtocol):
     def connectionMade(self):  # Empty through stack of twisted and MQTT library
         self.onMqttConnectionMade = self.factory.mqtt_client.mqtt_connected
         self.onDisconnection = self.factory.mqtt_client.client_connectionLost
-        print("connection mqtt client: %s -> %s" % (self.factory.mqtt_client.username,
-                                                    self.factory.mqtt_client.password) )
-        print("connection mqtt client: %s -> %s:%s" % (self.factory.mqtt_client.ssl,
-                                                       self.factory.mqtt_client.server_hostname,
-                                                       self.factory.mqtt_client.server_port))
+        # print("connection mqtt client: %s -> %s" % (self.factory.mqtt_client.username,
+        #                                             self.factory.mqtt_client.password) )
+        # print("connection mqtt client: %s -> %s:%s" % (self.factory.mqtt_client.ssl,
+        #                                                self.factory.mqtt_client.server_hostname,
+        #                                                self.factory.mqtt_client.server_port))
         self.connect(self.factory.mqtt_client.client_id, keepalive=self.factory.keepalive,
             willTopic=self.factory.will_topic, willMessage=self.factory.will_message,
             willQoS=self.factory.will_qos, willRetain=self.factory.will_retain,
