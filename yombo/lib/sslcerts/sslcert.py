@@ -109,7 +109,7 @@ class SSLCert(object):
         # Look for any tasks to do.
         self.check_updated_fqdn()
 
-        print("current_expires: %s - %s" % (self.current_expires, type(self.current_expires)))
+        # print("current_expires: %s - %s" % (self.current_expires, type(self.current_expires)))
 
         # 1) See if we need to generate a new cert.
         if self.csr_next is None or self.next_is_valid is None:
