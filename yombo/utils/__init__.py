@@ -1104,7 +1104,13 @@ def random_string(**kwargs):
     :rtype: string
     """
     length = kwargs.get('length', 32)
-    letters = kwargs.get('letters', None)
+    letters = None
+    if 'char_set' in kwargs:
+        char_set = kwargs['char_set']
+        if char_set == 'extended':
+            letters = "abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!$%()*+-;<=>@^-{}|~"
+    else:
+        letters = kwargs.get('letters', None)
 
     if not hasattr(random_string, 'randomStuff'):
         random_string.randomStuff = random.SystemRandom()
