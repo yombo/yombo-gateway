@@ -72,7 +72,7 @@ class Device_Status(object):
             self.status_id = data['status_id']
             del data['status_id']
         else:
-            self.status_id = random_string(length=20)
+            self.status_id = random_string(length=15, char_set='extended')
 
         self.gateway_id = self._Parent.gateway_id
         self.set_at = time()
