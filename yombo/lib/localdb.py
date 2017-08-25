@@ -39,7 +39,7 @@ from twisted.internet.task import LoopingCall
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
-from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle
+from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, bytes_to_unicode
 
 logger = get_logger('lib.localdb')
 
@@ -541,7 +541,7 @@ class LocalDB(YomboLibrary):
         data = []
         for record in records:
             record['_source'] = "database"
-            machine_status_extra = records['machine_status_extra']
+            machine_status_extra = record['machine_status_extra']
             if machine_status_extra is None:
                 record['machine_status_extra'] = None
             else:
