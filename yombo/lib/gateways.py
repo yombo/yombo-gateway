@@ -198,19 +198,23 @@ class Gateways(YomboLibrary):
             self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
             self.master_mqtt_ssl = False
             self.master_mqtt_port = self.gateways[self.gateway_id].internal_mqtt
+            self.master_mqtt_port_ssl = self.gateways[self.gateway_id].internal_mqtt_le
             self.master_websock_ssl = False
             self.master_websock_port = self.gateways[self.gateway_id].internal_mqtt_ws
+            self.master_websock_port_ssl = self.gateways[self.gateway_id].internal_mqtt_ws_le
         else:
             master = self.gateways[self.master_gateway()]
-            print("gateway is looking for master....")
+            # print("gateway is looking for master....")
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             result = sock.connect_ex(('i.' + master.fqdn, master.internal_mqtt_ss))
             if result == 0:
                 self.master_mqtt_host = 'i.' + master.fqdn
                 self.master_mqtt_ssl = True
                 self.master_mqtt_port = master.internal_mqtt_le
+                self.master_mqtt_port_ssl = master.internal_mqtt_le
                 self.master_websock_ssl = True
                 self.master_websock_port = master.internal_mqtt_ws_le
+                self.master_websock_port_ssl = master.internal_mqtt_ws_le
             else:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 result = sock.connect_ex(('e.' + master.fqdn, master.external_mqtt_ss))
@@ -218,8 +222,10 @@ class Gateways(YomboLibrary):
                     self.master_mqtt_host = 'e.' + master.fqdn
                     self.master_mqtt_ssl = True
                     self.master_mqtt_port = master.external_mqtt_le
+                    self.master_mqtt_port_ssl = master.external_mqtt_le
                     self.master_websock_ssl = True
                     self.master_websock_port = master.external_mqtt_ws_le
+                    self.master_websock_port_ssl = master.external_mqtt_ws_le
                 else:
                     logger.warn("Cannot find an open MQTT port to the master gateway.")
 
@@ -245,7 +251,7 @@ class Gateways(YomboLibrary):
         if self._States['loader.operating_mode'] != 'run':
             return
         self.publish_data("all", "lib/gateways/online", "")
-        print("!!!!!!!!!!!!!!!!!!gateways started!!!!!!!!!!!!!!!!1")
+        # print("!!!!!!!!!!!!!!!!!!gateways started!!!!!!!!!!!!!!!!1")
         reactor.callLater(5, self.send_all_info, set_ok_to_publish_updates=True)
 
         # self.test_send()
@@ -375,8 +381,8 @@ class Gateways(YomboLibrary):
         if topic_parts[1] not in self.gateways:
             logger.debug("Discarding message from gateway {gwid}, not in list of known gateways.", gwid=topic_parts[1])
             return
-        print("if %s == %s:" % (topic_parts[1], self.gateway_id))
-        print("got incoming: %s" % topic)
+        # print("if %s == %s:" % (topic_parts[1], self.gateway_id))
+        # print("got incoming: %s" % topic)
         self.gateways[topic_parts[1]].last_scene = time()
         self.gateways[topic_parts[1]].last_communications.append({
             'time': time(),
@@ -654,7 +660,7 @@ class Gateways(YomboLibrary):
         if self.ok_to_publish_updates is False:
             return
 
-        device_command = kwargs['device_command'].dump()
+        device_command = kwargs['device_command'].asdict()
         if self.gateway_id != device_command['source_gateway_id']:
             return
 
@@ -720,14 +726,14 @@ class Gateways(YomboLibrary):
 
         previous_status = kwargs['previous_status']
         if previous_status is not None:
-            previous_status_out = previous_status._asdict()
+            previous_status_out = previous_status.asdict()
         else:
             previous_status_out = None
 
         message = {
             'device_id': device_id,
             'command_id': command_id,
-            'status': kwargs['status']._asdict(),
+            'status': kwargs['status'].asdict(),
             'previous_status': previous_status_out,
             'request_id': kwargs['request_id'],
             'reported_by': kwargs['reported_by'],
@@ -804,7 +810,7 @@ class Gateways(YomboLibrary):
         if gateway_id != self.gateway_id:
             return
 
-        print("gw sending states set: %s" % kwargs['key'])
+        # print("gw sending states set: %s" % kwargs['key'])
         self.publish_data('all', "lib/states/" + kwargs['key'], kwargs['value_full'])
 
     def publish_request(self, dest_gw, topic, message):
@@ -846,11 +852,11 @@ class Gateways(YomboLibrary):
                 'topic': final_topic,
             })
         returnable = self.encrypt(message)
-        print("gw sending publish data: final topic: ybo_gw/%s/%s" % (self.gateway_id, final_topic))
+        # print("gw sending publish data: final topic: ybo_gw/%s/%s" % (self.gateway_id, final_topic))
         self.mqtt.publish("ybo_gw/%s/%s" % (self.gateway_id, final_topic), returnable)
 
     def send_all_info(self, destination_gw=None, set_ok_to_publish_updates=None):
-        print("gw sending !!!!!!!!!!!!!!!!!!gateways send_all_info: %s - %s" % (destination_gw, self.ok_to_publish_updates))
+        # print("gw sending !!!!!!!!!!!!!!!!!!gateways send_all_info: %s - %s" % (destination_gw, self.ok_to_publish_updates))
 
         self.send_all_atoms(destination_gw)
         self.send_all_devices(destination_gw)
@@ -860,7 +866,7 @@ class Gateways(YomboLibrary):
 
     def send_all_atoms(self, destination_gw=None, name=None):
         return_gw = self.get_return_gw(destination_gw)
-        print("gw sending all atoms to: %s" % return_gw)
+        # print("gw sending all atoms to: %s" % return_gw)
         if name is None or name == '#':
             self.publish_data(return_gw,  "lib/atoms", self._Atoms.get('#'))
         else:
