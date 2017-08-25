@@ -13,7 +13,7 @@ import yombo.ext.totp
 import yombo.utils
 
 def route_home(webapp):
-    with webapp.subroute("/") as webapp:
+    with webapp.subroute("") as webapp:
 
         @webapp.route('/')
         def home(webinterface, request):
@@ -25,7 +25,7 @@ def route_home(webapp):
 
         @require_auth()
         def run_home(webinterface, request, session):
-            print("run_home aaaaaa")
+            # print("run_home aaaaaa")
             page = webinterface.webapp.templates.get_template(webinterface._dir + 'pages/index.html')
             delayed_device_commands = webinterface._Devices.get_delayed_commands()
             return page.render(alerts=webinterface.get_alerts(),
@@ -49,7 +49,7 @@ def route_home(webapp):
         def first_run_home(webinterface, request, session):
             return webinterface.redirect(request, '/setup_wizard/1')
 
-        @webapp.route('/logout', methods=['GET'])
+        @webapp.route('/logout')
         @run_first()
         def page_logout_get(webinterface, request, session):
             try:
@@ -154,7 +154,8 @@ def route_home(webapp):
                 request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
 
             if webinterface.auth_pin_type() == 'pin':
-                if submitted_pin == webinterface.auth_pin:
+                # print("pins: %s == %s" % (submitted_pin, webinterface.auth_pin()))
+                if submitted_pin == webinterface.auth_pin():
                     create_pin_session(webinterface, request, session)
                 else:
                     return webinterface.redirect(request, '/login/pin')
@@ -166,7 +167,7 @@ def route_home(webapp):
             elif webinterface.auth_pin_type() == 'none':
                 create_pin_session(webinterface, request, session)
 
-            return webinterface.home(request)
+            return webinterface.redirect(request, '/?')
 
         @webapp.route('/static/', branch=True)
         @run_first()
