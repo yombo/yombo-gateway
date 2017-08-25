@@ -443,10 +443,14 @@ class Devices(YomboLibrary):
             device_command = self.device_commands[request_id]
             if device_command.finished_at is not None:
                 if device_command.finished_at > cur_time - (60*45):  # keep 45 minutes worth.
+                    found_dc = False
                     for device_id, device in self.devices.items():
-                        if request_id not in device.device_commands:
-                            yield device_command.save_to_db()
-                            del self.device_commands[request_id]
+                        if request_id in device.device_commands:
+                            found_dc = True
+                            break
+                    if found_dc is False:
+                        yield device_command.save_to_db()
+                        del self.device_commands[request_id]
 
     def add_device_command_by_object(self, device_command):
         """
