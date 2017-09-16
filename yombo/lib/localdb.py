@@ -447,19 +447,26 @@ class LocalDB(YomboLibrary):
     def get_devices(self, status=None):
         if status == True:
             records = yield Device.all()
-            return records
+#            return records
         elif status is None:
             records = yield Device.find(where=['status = ? OR status = ?', 1, 0])
-            return records
         else:
             records = yield Device.find(where=['status = ? ', status])
-            return records
+        if len(records) > 0:
+            for record in records:
+                record = record.__dict__
+                if record['energy_map'] is None:
+                    record['energy_map'] = {"0.0": 0, "1.0": 0}
+                else:
+                    record['energy_map'] = data_unpickle(record['energy_map'], encoder='json')
+        return records
+
 
     @inlineCallbacks
     def add_device(self, data, **kwargs):
         # print("add_device in lcoaldb: %s" % kwargs)
         device = Device()
-        device.id = data['id']
+        device.id = data['device_id']
         device.device_type_id = data['device_type_id']
         device.location_id = data['location_id']
         device.area_id = data['area_id']
@@ -502,7 +509,7 @@ class LocalDB(YomboLibrary):
             'updated_at': device.updated_at,
             'energy_tracker_device': device.energy_tracker_device,
             'energy_tracker_source': device.energy_tracker_source,
-            'energy_map': data_pickle(device.energy_map),
+            'energy_map': data_pickle(device.energy_map, encoder='json'),
         }
         results = yield self.dbconfig.update('devices', args, where=['id = ?', device.device_id])
         return results
@@ -554,6 +561,21 @@ class LocalDB(YomboLibrary):
                 record['requested_by'] = data_unpickle(requested_by)
             data.append(record)
         return data
+
+    @inlineCallbacks
+    def cleanup_device_status(self, days=None):
+        """
+        Remove old device status updates.  Long term info goes into statistics.
+
+        :param days: Number of days to keep.
+        :param kwargs:
+        :return:
+        """
+        if days is None:
+            days = 60
+
+        results = yield self.dbconfig.delete('device_status', where=['set_at < ?', time()-(60*60*24*days)])
+        return results
 
     @inlineCallbacks
     def get_device_commands(self, where, **kwargs):
@@ -889,7 +911,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_notifications(self):
         cur_time = int(time())
-        records = yield Notifications.find(where=['expire > ?', cur_time], orderby='created_at DESC')
+        records = yield Notifications.find(where=['expire_at > ?', cur_time], orderby='created_at DESC')
         return records
 
     @inlineCallbacks
@@ -901,7 +923,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def delete_expired_notifications(self):
-        records = yield self.dbconfig.delete('notifications', where=['expire < ?', time()])
+        records = yield self.dbconfig.delete('notifications', where=['expire_at < ?', time()])
         return records
 
     @inlineCallbacks
@@ -912,7 +934,7 @@ class LocalDB(YomboLibrary):
             'type': notice['type'],
             'priority': notice['priority'],
             'source': notice['source'],
-            'expire': notice['expire'],
+            'expire_at': notice['expire_at'],
             'always_show': notice['always_show'],
             'always_show_allow_clear': notice['always_show_allow_clear'],
             'acknowledged': notice['acknowledged'],
@@ -920,7 +942,7 @@ class LocalDB(YomboLibrary):
             'user': notice['user'],
             'title': notice['title'],
             'message': notice['message'],
-            'meta': data_pickle(notice['meta'], separators=(',', ':')),
+            'meta': data_pickle(notice['meta'], encoder='json'),
             'created_at': notice['created_at'],
         }
         results = yield self.dbconfig.insert('notifications', args, None, 'OR IGNORE')
@@ -932,7 +954,7 @@ class LocalDB(YomboLibrary):
             'type': notice.type,
             'priority': notice.priority,
             'source': notice.source,
-            'expire': notice.expire,
+            'expire_at': notice.expire_at,
             'always_show': notice.always_show,
             'always_show_allow_clear': notice.always_show_allow_clear,
             'acknowledged': notice.acknowledged,
@@ -940,7 +962,7 @@ class LocalDB(YomboLibrary):
             'user': notice.user,
             'title': notice.title,
             'message': notice.message,
-            'meta': data_pickle(notice.meta, separators=(',', ':')),
+            'meta': data_pickle(notice.meta, encoder='json'),
         }
         # print("saving notice: %s" %args)
         results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
@@ -1703,7 +1725,6 @@ ORDER BY id desc"""
     def add_variable_data(self, data, **kwargs):
         args = {
             'id': data['id'],
-            'gateway_id': data['gateway_id'],
             'field_id': data['field_id'],
             'data_relation_id': data['data_relation_id'],
             'data_relation_type': data['data_relation_type'],
