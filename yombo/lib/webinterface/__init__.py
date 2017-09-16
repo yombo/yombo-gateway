@@ -83,7 +83,7 @@ class Yombo_Site(Site):
         self.log_queue = []
 
         self.webinterface = webinterface
-        self.db_save_log = self.webinterface._LocalDb.webinterface_save_logs
+        self.db_save_log = self.webinterface._LocalDB.webinterface_save_logs
 
     def _escape(self, s):
         """
@@ -153,7 +153,7 @@ class WebInterface(YomboLibrary):
             return
 
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
-        self._LocalDb = self._Loader.loadedLibraries['localdb']
+        # self._LocalDB = self._Loader.loadedLibraries['localdb']
         self._current_dir = self._Atoms.get('yombo.path') + "/yombo"
         self._dir = '/lib/webinterface/'
         self._build_dist()  # Make all the JS and CSS files
@@ -236,7 +236,7 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
         self.misc_wi_data['operating_mode'] = self.operating_mode
         self.misc_wi_data['notifications'] = self._Notifications
-        self.misc_wi_data['NOTIFICATION_PRIORITY_MAP_CSS'] = NOTIFICATION_PRIORITY_MAP_CSS
+        self.misc_wi_data['notification_priority_map_css'] = NOTIFICATION_PRIORITY_MAP_CSS
         self.misc_wi_data['breadcrumb'] = []
 
         # self.functions = {
@@ -304,6 +304,7 @@ class WebInterface(YomboLibrary):
 
         self.start_web_servers()
 
+    # @inlineCallbacks
     def start_web_servers(self):
         if self.already_start_web_servers is True:
             return
@@ -335,6 +336,7 @@ class WebInterface(YomboLibrary):
             else:
                 self.web_server_ssl_started = True
                 cert = self._SSLCerts.get('lib_webinterface')
+                # print("wb init: cert: %s" % cert)
 
                 privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
                 certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
@@ -404,7 +406,7 @@ class WebInterface(YomboLibrary):
             return
         cert = {}
         cert['sslname'] = "lib_webinterface"
-        cert['sans'] = ['localhost', 'l', 'local', 'i', 'e', 'internal', 'external']
+        cert['sans'] = ['localhost', 'l', 'local', 'i', 'e', 'internal', 'external', str(time())]
         cert['cn'] = cert['sans'][0]
         cert['callback'] = self.new_ssl_cert
         return cert
@@ -658,12 +660,12 @@ class WebInterface(YomboLibrary):
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
 
-    def format_markdown(self, description, description_formatting):
-        if description_formatting == 'restructured':
-            return publish_parts(description, writer_name='html')['html_body']
-        elif description_formatting == 'markdown':
-            return markdown.markdown(description, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
-        return description
+    def format_markdown(self, input_text, formatting=None):
+        if formatting == 'restructured' or formatting is None:
+            return publish_parts(input_text, writer_name='html')['html_body']
+        elif formatting == 'markdown':
+            return markdown.markdown(input_text, extensions=['markdown.extensions.nl2br', 'markdown.extensions.codehilite'])
+        return input_text
 
     def make_link(self, link, link_text, target = None):
         if link == '' or link is None or link.lower() == "None":
