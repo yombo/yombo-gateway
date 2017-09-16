@@ -39,6 +39,10 @@ import zlib
 from twisted.internet.defer import inlineCallbacks, returnValue
 from twisted.internet.task import deferLater
 from twisted.internet import reactor
+from twisted.internet.task import react
+from twisted.internet import stdio, protocol
+from twisted.internet.defer import Deferred
+from twisted.internet.fdesc import readFromFD, setNonBlocking
 
 # Import 3rd-party libs
 from yombo.ext.hashids import Hashids
@@ -50,6 +54,26 @@ logger = get_logger('utils.__init__')
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
+
+@inlineCallbacks
+def read_file(filename):
+    """
+    Read a file, non-blocking.
+    Based from: https://stackoverflow.com/questions/1720816/non-blocking-file-access-with-twisted
+
+    :param filename:
+    :return:
+    """
+    def getFile(filename):
+        with open(filename) as f:
+            d = Deferred()
+            fd = f.fileno()
+            setNonBlocking(fd)
+            readFromFD(fd, d.callback)
+            return d
+
+    contents = yield getFile(filename)
+    return contents
 
 def get_nested_dict(data_dict, map_list):
     """
@@ -108,7 +132,7 @@ def data_pickle(data, encoder=None, zip_level=None):
 
     if encoder == 'json':
         try:
-            return json.dumps(data)
+            return json.dumps(data, separators=(',', ':'))
         except:
             pass
     elif encoder == 'msgpack':
@@ -654,23 +678,6 @@ def save_file(filename, content, mode = None):
     f = fopen(filename, mode)
     f.write(content)
     f.close()
-
-
-def read_file(filename, mode = None):
-    """
-    A quick function to read data from a file. Defaults to read only 'r'.
-
-    Don't use this for saving large files.
-    
-    THIS IS BLOCKING! TODO: find a non-blocking version....
-
-    :param filename: Full path to save to.
-    :param mode: File open mode, default to 'r'.
-    :return:
-    """
-    if mode is None:
-        mode = 'r'
-    return open(filename, mode).read()
 
 
 def file_last_modified(path_to_file):
