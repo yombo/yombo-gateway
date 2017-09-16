@@ -283,7 +283,7 @@ class Notifications(YomboLibrary):
 
         # Call any hooks
         try:
-            yield global_invoke_all('_notification_add_',
+            global_invoke_all('_notification_add_',
                                     **{'called_by': self,
                                        'notification': self.notifications[notice['id']],
                                        }
@@ -302,7 +302,7 @@ class Notifications(YomboLibrary):
         """
         # Call any hooks
         try:
-            yield global_invoke_all('_notification_add_',
+            global_invoke_all('_notification_add_',
                                     **{'called_by': self,
                                        'notification': self.notifications[notice_id],
                                        }
