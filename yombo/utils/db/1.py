@@ -359,6 +359,7 @@ def create_table_locations(Registry, **kwargs):
         `id`             TEXT NOT NULL,
         `location_type`  TEXT NOT NULL,
         `machine_label`  TEXT NOT NULL,
+        `environment`    TEXT,
         `label`          TEXT NOT NULL,
         `description`    TEXT,
         `updated_at`     INTEGER NOT NULL,
@@ -489,7 +490,6 @@ def create_table_notifications(Registry, **kwargs):
         `type`                    TEXT NOT NULL, /* system, user, etc */
         `priority`                TEXT NOT NULL, /* debug, low, normal, high, urgent */
         `source`                  TEXT NOT NULL, /* where this message was created_at */
-        `expire`                  INTEGER, /* timestamp when msg should expire */
         `always_show`             INTEGER NOT NULL, /* If notification should always show until user clears it. */
         `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
         `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
@@ -498,7 +498,8 @@ def create_table_notifications(Registry, **kwargs):
         `title`                   TEXT, /* Message data */
         `message`                 TEXT, /* Message data */
         `meta`                    TEXT, /* Any extra meta data. JSON format */
-        `created_at`   INTEGER NOT NULL);"""
+        `expire_at`               INTEGER, /* timestamp when msg should expire */
+        `created_at`              INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('notifications', 'id'))
 
@@ -542,6 +543,7 @@ def create_table_statistics(Registry, **kwargs):
         `id`                  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         `bucket_time`         DECIMAL(13,3) NOT NULL,
         `bucket_size`         INTEGER NOT NULL,
+        `bucket_lifetime`     INTEGER,
         `bucket_type`         TEXT NOT NULL,
         `bucket_name`         TEXT NOT NULL,
         `bucket_value`        REAL NOT NULL,
