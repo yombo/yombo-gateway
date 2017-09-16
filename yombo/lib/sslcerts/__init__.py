@@ -35,7 +35,7 @@ from socket import gethostname
 
 # Import twisted libraries
 from twisted.internet import threads
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -46,7 +46,7 @@ from yombo.core.log import get_logger
 from yombo.utils import save_file, read_file, global_invoke_all, random_int, unicode_to_bytes, bytes_to_unicode
 from yombo.utils.dictobject import DictObject
 
-from .sslcert import  SSLCert
+from .sslcert import SSLCert
 
 logger = get_logger('library.sslcerts')
 
@@ -90,8 +90,8 @@ class SSLCerts(YomboLibrary):
             logger.info("Generating a self signed cert for SSL. This can take a few moments.")
             yield self._create_self_signed_cert()
 
-        self.self_signed_cert = read_file(self.self_signed_cert_file)
-        self.self_signed_key = read_file(self.self_signed_key_file)
+        self.self_signed_cert = yield read_file(self.self_signed_cert_file)
+        self.self_signed_key = yield read_file(self.self_signed_key_file)
 
         self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
                                                      unserializer=self.sslcert_unserializer)
@@ -109,7 +109,9 @@ class SSLCerts(YomboLibrary):
         self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict', 'save_interval',random_int(60*60*24, .1), False))
         # get certs needed for system libraries.
         sslcerts = yield global_invoke_all('_sslcerts_', called_by=self)
-        self._add_sslcerts(sslcerts)
+        # print("about to add sslcerts")
+        yield self._add_sslcerts(sslcerts)
+        # print("done...about to add sslcerts: %s" % self.managed_certs['lib_webinterface'].__dict__)
 
     def _stop_(self, **kwargs):
         """
@@ -142,6 +144,7 @@ class SSLCerts(YomboLibrary):
     #     :return:
     #     """
 
+    @inlineCallbacks
     def _add_sslcerts(self, sslcerts):
         """
         Called when new SSL Certs need to be managed.
@@ -158,9 +161,13 @@ class SSLCerts(YomboLibrary):
                 logger.warn("Cannot add cert from hook: %s" % e)
                 continue
             if item['sslname'] in self.managed_certs:
+                # print("add_ssl_certs: update addtributes: %s" % item)
                 self.managed_certs[item['sslname']].update_attributes(item)
             else:
                 self.managed_certs[item['sslname']] = SSLCert('sslcerts', DictObject(item), self)
+                # print("loading from file system!!!!: %s" % self.managed_certs[item['sslname']])
+                yield self.managed_certs[item['sslname']].start()
+                # print("done...loading from file system!!!!: %s" % self.managed_certs[item['sslname']])
 
     def sslcert_serializer(self, item):
         """
@@ -171,6 +178,7 @@ class SSLCerts(YomboLibrary):
         """
         return item._dump()
 
+    @inlineCallbacks
     def sslcert_unserializer(self, item):
         """
         Used by SQLDict to hydrate an item stored.
@@ -178,7 +186,10 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
-        return SSLCert('sqldict', DictObject(item), self)
+        results = SSLCert('sqldict', DictObject(item), self)
+        # print("sslcert unserializer for item: %s" % item)
+        yield results.start()
+        return results
 
     def get(self, sslname_requested):
         """
@@ -331,12 +342,10 @@ class SSLCerts(YomboLibrary):
         if kwargs['key_file'] is not None:
             save_file(kwargs['key_file'], key_file)
 
-        returnValue(
-            {
+        return {
                 'csr': csr,
                 'key': key_file
-             }
-        )
+               }
 
     @inlineCallbacks
     def _create_self_signed_cert(self):
@@ -371,12 +380,11 @@ class SSLCerts(YomboLibrary):
 
         save_file(self.self_signed_cert_file, csr_key)
         save_file(self.self_signed_key_file, key_file)
-        returnValue(
-            {
+
+        return {
                 'csr_key': csr_key,
                 'key': key_file
-             }
-        )
+               }
 
     def _generate_key(self, **kwargs):
         """
@@ -433,7 +441,7 @@ class SSLCerts(YomboLibrary):
         request_msg = self._AMQPYombo.generate_message_request('ysrv.e.gw_sslcerts', 'yombo.gateway.lib.sslcerts',
                                                     "yombo.server.sslcerts", headers, request_data, callback)
         request_msg['routing_key'] = '*'
-        logger.debug("response: {request_msg}", request_msg=request_msg)
+        # logger.debug("request_msg: {request_msg}", request_msg=request_msg)
         return request_msg
 
     def send_csr_request_response(self, msg=None, properties=None, correlation_info=None, **kwargs):
