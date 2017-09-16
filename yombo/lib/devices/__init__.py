@@ -305,7 +305,8 @@ class Devices(YomboLibrary):
                 record = record.__dict__
                 if record['energy_map'] is None:
                     record['energy_map'] = '{"0.0":0,"1.0":0}'
-                record['energy_map'] = json.loads(str(record['energy_map']))
+                # print("record['energy_map']: %s" % record['energy_map'])
+                # record['energy_map'] = json.loads(str(record['energy_map']))
                 new_map = {}
                 for key, value in record['energy_map'].items():
                     new_map[float(key)] = float(value)
@@ -451,6 +452,9 @@ class Devices(YomboLibrary):
                     if found_dc is False:
                         yield device_command.save_to_db()
                         del self.device_commands[request_id]
+
+        # Lets delete any device status after 60 days. Long term data should be in the statistics.
+        self._LocalDB.cleanup_device_status(days=60)
 
     def add_device_command_by_object(self, device_command):
         """
@@ -921,6 +925,13 @@ class Devices(YomboLibrary):
 
         if called_from_device is not True:
             self.devices[device_id].delete(True)
+
+        try:
+            yield global_invoke_all('devices_edit', called_by=self, **{'id': device_id})  # call hook "devices_edit" when editing a device.
+        except Exception as e:
+            pass
+
+        del self.devices[device_id]
 
         results = {
             'status': 'success',
