@@ -13,6 +13,15 @@ class Sensor(Device):
 
     TOGGLE_COMMANDS = []
 
+    # Features this device can support
+    FEATURES = {
+        'all_on': False,
+        'all_off': False,
+        'pingable': False,
+        'pollable': True,
+        'sends_updates': False
+    }
+
     def can_toggle(self):
         return False
 
@@ -32,7 +41,7 @@ class Sensor(Device):
             return self._Parent._Commands['low']
         return None
 
-class DigitalSensor(Sensor):
+class Digital_Sensor(Sensor):
     """
     A sensor that will be either high or low.
     """
