@@ -3,7 +3,7 @@ from time import time
 
 from twisted.internet.defer import inlineCallbacks
 from yombo.lib.webinterface.auth import require_auth, run_first
-from yombo.utils import random_string
+from yombo.utils import random_string, is_true_false
 
 def route_configs(webapp):
     with webapp.subroute("/configs") as webapp:
@@ -267,7 +267,7 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/gpg/index")
         @inlineCallbacks
         def page_gpg_keys_index(webinterface, request, session):
-            db_keys = yield webinterface._LocalDb.get_gpg_key()
+            db_keys = yield webinterface._LocalDB.get_gpg_key()
             gw_keyid = webinterface._Configs.get('gpg', 'keyid')
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
             webinterface.home_breadcrumb(request)
