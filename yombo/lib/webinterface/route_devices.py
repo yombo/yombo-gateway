@@ -33,14 +33,31 @@ from yombo.core.log import get_logger
 logger = get_logger("library.webinterface.route_devices")
 
 def add_devices_breadcrumb(webinterface, request, device_id):
-    urls = OrderedDict()
+    local_devices = []
+    cluster_devices = []
     for select_device_id, select_device in webinterface._Devices.sorted().items():
         if select_device.device_id == device_id:
-            urls[select_device.area_label] = "$/devices/%s/details" % select_device_id
+            data = (select_device.area_label, "$/devices/%s/details" % select_device_id)
         else:
-            urls[select_device.area_label] = "/devices/%s/details" % select_device_id
+            data = (select_device.area_label, "/devices/%s/details" % select_device_id)
 
-    webinterface.add_breadcrumb(request, style='select', data=urls)
+        if select_device.gateway_id == webinterface.gateway_id():
+            local_devices.append(data)
+        else:
+            cluster_devices.append(data)
+
+    data = OrderedDict()
+    if len(local_devices) > 0:
+        data['Local Gateway'] = OrderedDict()
+        for item in local_devices:
+            data['Local Gateway'][item[0]] = item[1]
+    if len(cluster_devices)  >0:
+        data['Local Cluster'] = OrderedDict()
+        for item in cluster_devices:
+            data['Local Cluster'][item[0]] = item[1]
+
+    webinterface.add_breadcrumb(request, style='select_groups', data=data)
+
 
 def route_devices(webapp):
     with webapp.subroute("/devices") as webapp:
@@ -137,6 +154,7 @@ def route_devices(webapp):
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
             device = {
+                'garage_id': json_output.get('garage_id', ""),
                 'location_id': json_output.get('location_id', ""),
                 'area_id': json_output.get('area_id', ""),
                 'machine_label': json_output.get('machine_label', ""),
@@ -144,6 +162,8 @@ def route_devices(webapp):
                 'description': json_output.get('description', ""),
                 'status': int(json_output.get('status', 1)),
                 'statistic_label': json_output.get('statistic_label', ""),
+                'statistic_type': json_output.get('statistic_type', "datapoint"),
+                'statistic_bucket_size': json_output.get('statistic_bucket_size', ""),
                 'statistic_lifetime': json_output.get('statistic_lifetime', 365),
                 'device_type_id': device_type_id,
                 'pin_required': pin_required,
@@ -201,7 +221,6 @@ def route_devices(webapp):
                 )
 
 
-            # print "final device_variables: %s" % device_variables
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/add_details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
@@ -490,6 +509,7 @@ def route_devices(webapp):
             # print("energy_map: %s " % energy_map)
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             data = {
+                'garage_id': request.args.get('garage_id', ""),
                 'location_id': request.args.get('location_id')[0],
                 'area_id': request.args.get('area_id')[0],
                 'machine_label': request.args.get('machine_label')[0],
@@ -497,6 +517,8 @@ def route_devices(webapp):
                 'description': request.args.get('description')[0],
                 'status': status,
                 'statistic_label': request.args.get('statistic_label')[0],
+                'statistic_type': request.args.get('statistic_type')[0],
+                'statistic_bucket_size': request.args.get('statistic_bucket_size')[0],
                 'statistic_lifetime': request.args.get('statistic_lifetime')[0],
                 'pin_required': pin_required,
                 'pin_code': request.args.get('pin_code')[0],
