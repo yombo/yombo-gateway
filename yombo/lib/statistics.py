@@ -124,10 +124,12 @@ class Statistics(YomboLibrary):
     bucket_lifetimes = {
         '#': {'size': 300, 'lifetime': 360},
         'lib.#': {'size': 300, 'lifetime': 180},
+        'lib.atoms.#': {'size': 60, 'lifetime': 180},
         'lib.device.status.#':  {'size': 60, 'lifetime': 180},
         'lib.amqpyombo.amqp.#':{'size': 30, 'lifetime': 180},
         'modules.#': {'size': 60, 'lifetime': 180},
-        'lib.atoms.#': {'size': 60, 'lifetime': 180},
+        'devices.#': {'size': 60, 'lifetime': 0},
+        'energy.#': {'size': 60, 'lifetime': 0},
     }
 
     def _init_(self, **kwargs):
@@ -288,9 +290,10 @@ class Statistics(YomboLibrary):
         """
         # print "getting bucket: %s, %s, %s" %( type, bucket_size, bucket_name)
         if bucket_name is not None:
-            bucket_size = self.find_bucket_time(bucket_name)
+            bucket_size, bucket_lifetime = self.find_bucket_time(bucket_name)
         elif bucket_size is not None:
             if isinstance(bucket_size, int) or isinstance(bucket_size, float):
+                bucket_size, bucket_lifetime = self.find_bucket_time(bucket_name)
                 bucket_size = int(bucket_size)
             else:
                 raise YomboWarning("Invalid bucket_time submitted to _get_bucket_time")
@@ -300,11 +303,15 @@ class Statistics(YomboLibrary):
             elif type == "averages":
                 bucket_size = self.averages_bucket_duration
             elif type == "datapoint":
-                return int(time())
+                return {'size': bucket_size,
+                        'time': round(time(), 3),
+                        'lifetime': bucket_lifetime}
             else:
                 raise YomboWarning('Invalid _get_bucket_time type: %s' % type)
 
-        return {'size': bucket_size, 'time': int(int((time() / bucket_size)) * bucket_size)}
+        return {'size': bucket_size,
+                'time': int(int((time() / bucket_size)) * bucket_size),
+                'lifetime': bucket_lifetime}
 
     @memoize_ttl(0)  # use the version that support kwargs....
     def _validate_name(self, bucket_name):
@@ -359,24 +366,25 @@ class Statistics(YomboLibrary):
             if self._datapoint_last_value[bucket_name] == value:  # we don't save duplicates!
                 return
 
-        bucket_time = round(time(), 3)
-        if bucket_time not in self._datapoints:
-            self._datapoints[bucket_time] = {}
+        bucket = self._get_bucket_time('datapoint', bucket_size=1, bucket_name=bucket_name)
+        if bucket['time'] not in self._datapoints:
+            self._datapoints[bucket['time']] = {}
         if bucket_name not in self._datapoints:
-            self._datapoints[bucket_time][bucket_name] = {
-                'time': bucket_time,
+            self._datapoints[bucket['time']][bucket_name] = {
+                'time': bucket['time'],
+                'lifetime': bucket['lifetime'],
                 'size': 0,
                 'type': 'datapoint',
                 'name': bucket_name,
                 'anon': False,
                 'restored_from_db': False,
             }
-        self._datapoints[bucket_time][bucket_name]['value'] = value
+        self._datapoints[bucket['time']][bucket_name]['value'] = value
 
         if anon is True:
-            self._datapoints[bucket_time][bucket_name]['anon'] = True
+            self._datapoints[bucket['time']][bucket_name]['anon'] = True
         else:
-            self._datapoints[bucket_time][bucket_name]['anon'] = False
+            self._datapoints[bucket['time']][bucket_name]['anon'] = False
 
 
     def count(self, bucket_name, value, bucket_size=None, anon=None, lifetimes=None):
@@ -412,6 +420,7 @@ class Statistics(YomboLibrary):
             self._counters[bucket['time']][bucket_name] = {
                 'time': bucket['time'],
                 'size': bucket['size'],
+                'lifetime': bucket['lifetime'],
                 'type': 'counter',
                 'name': bucket_name,
                 'anon': False,
@@ -464,6 +473,7 @@ class Statistics(YomboLibrary):
             self._counters[bucket['time']][bucket_name] = {
                 'time': bucket['time'],
                 'size': bucket['size'],
+                'lifetime': bucket['lifetime'],
                 'type': 'counter',
                 'name': bucket_name,
                 'anon': False,
@@ -517,6 +527,7 @@ class Statistics(YomboLibrary):
             self._counters[bucket['time']][bucket_name] = {
                 'time': bucket['time'],
                 'size': bucket['size'],
+                'lifetime': bucket['lifetime'],
                 'type': 'counter',
                 'name': bucket_name,
                 'anon': False,
@@ -563,7 +574,7 @@ class Statistics(YomboLibrary):
         if lifetimes is not None:
             self.add_bucket_lifetime(bucket_name, lifetimes)
 
-        bucket = self._get_bucket_time('count', bucket_size=bucket_size, bucket_name=bucket_name)
+        bucket = self._get_bucket_time('averages', bucket_size=bucket_size, bucket_name=bucket_name)
 
         if bucket['time'] not in self._averages:
             self._averages[bucket['time']] = {}
@@ -571,6 +582,7 @@ class Statistics(YomboLibrary):
         if bucket_name not in self._averages[bucket['time']]:
             self._averages[bucket['time']][bucket_name] = {
                 'time': bucket['time'],
+                'lifetime': bucket['lifetime'],
                 'values': [value],
                 'restored_from_db': False,
                 'anon': False,
@@ -655,6 +667,7 @@ class Statistics(YomboLibrary):
                         od = OrderedDict()
                         od['bucket_time'] = current_bucket['time']
                         od['bucket_size'] = current_bucket_time['size']
+                        od['bucket_lifetime'] = current_bucket['lifetime']
                         od['bucket_type'] = current_bucket['type']
                         od['bucket_name'] = current_bucket['name']
                         od['bucket_value'] = current_bucket['value']
@@ -693,6 +706,7 @@ class Statistics(YomboLibrary):
                             od = OrderedDict()
                             od['bucket_time'] = current_bucket['time']
                             od['bucket_size'] = current_bucket_time['size']
+                            od['bucket_lifetime'] = current_bucket['lifetime']
                             od['bucket_type'] = current_bucket['type']
                             od['bucket_name'] = current_bucket['name']
                             od['bucket_value'] = current_bucket['value']
@@ -713,6 +727,7 @@ class Statistics(YomboLibrary):
                 od = OrderedDict()
                 od['bucket_time'] = current_bucket['time']
                 od['bucket_size'] = 0
+                od['bucket_lifetime'] = current_bucket['lifetime']
                 od['bucket_type'] = current_bucket['type']
                 od['bucket_name'] = current_bucket['name']
                 od['bucket_value'] = current_bucket['value']
@@ -858,9 +873,9 @@ class Statistics(YomboLibrary):
         # print "got filters: %s" % filters
         if len('filters') > 0:
             bucket_time = select_closest(regexs, bucket_name)
-            return self.bucket_lifetimes[bucket_time]['size']
+            return self.bucket_lifetimes[bucket_time]['size'], self.bucket_lifetimes[bucket_time]['lifetime']
         else:
-            return self.bucket_lifetimes_default['size']
+            return self.bucket_lifetimes_default['size'], self.bucket_lifetimes_default['lifetime']
 
 
     @inlineCallbacks
