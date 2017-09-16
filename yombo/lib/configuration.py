@@ -338,7 +338,7 @@ class Configuration(YomboLibrary):
         self._Configs.get('mqtt', 'server_listen_port_websockets_ss_ssl', 8444)
         self._Configs.get('mqtt', 'server_listen_port_websockets_le_ssl', 8445)
         self._Configs.get('mqtt', 'server_allow_anonymous', False)
-        self._Configs.get('misc', 'tempurature_display', 'f')
+        self._Configs.get('misc', 'temperature_display', 'f')
         self._Configs.get('misc', 'length_display',  'imperial')  # will we ever get to metric?
 
     def _load_(self, **kwargs):
