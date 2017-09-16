@@ -304,7 +304,7 @@ class Devices(YomboLibrary):
             for record in devices:
                 record = record.__dict__
                 if record['energy_map'] is None:
-                    record['energy_map'] = '{"0.0":0,"1.0":0}'
+                    record['energy_map'] = {"0.0":0, "1.0":0}
                 # print("record['energy_map']: %s" % record['energy_map'])
                 # record['energy_map'] = json.loads(str(record['energy_map']))
                 new_map = {}
