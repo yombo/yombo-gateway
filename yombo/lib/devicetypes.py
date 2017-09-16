@@ -38,7 +38,8 @@ BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices.appliance': ['Appliance'],
     'yombo.lib.devices.light': ['Light'],
     'yombo.lib.devices.relay': ['Relay'],
-    'yombo.lib.devices.sensor': ['Sensor', 'DigitalSensor'],
+    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor'],
+    'yombo.lib.devices.thermometer': ['Thermometer'],
 }
 
 
