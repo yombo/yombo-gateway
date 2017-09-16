@@ -72,43 +72,44 @@ class Localize(YomboLibrary):
         self.translator = self.get_translator()
         builtins.__dict__['_'] = self.handle_translate
 
-    def display_temperature(self, in_temp, in_type, out_type=None,  out_decimals=None):
+    def display_temperature(self, in_temp, in_type=None, out_type=None, out_decimals=None):
         """
-        Convert a temperature input for display according to the system settings.
+        Simply converts a one temperature from another. Assumes incoming is the system standard of
+        'c' for celcius and defaults to convert the output to the gateway defined system
+        default of either 'c' or 'f'.
 
-        :param i_temp: input temperature to consider
-        :type i_temp: int, float
-        :param temp_type: Input temp type. C or F.
-        :type temp_type: str
-        :param o_decimals: How many decimals to output. None means don't modify.
-        :type o_decimals: int
-        :return: 
+        :param in_temp: input temperature to consider
+        :type in_temp: int, float
+        :param in_type: Output temp type. C or F. Default is 'c'.
+        :type out_type: str
+        :param out_type: Output temp type. C or F. Default is the system defined value.
+        :type in_type: str
+        :param out_decimals: If an int, will return the value as a string with the specified decimals.
+        :type out_decimals: int, None
+        :return:
         """
+        if in_type is None:
+            in_type = 'c'
+        else:
+            in_type = in_type[0].lower()
+
         if out_type is None:
             out_type = self.localization_degrees()[0].lower()
         else:
             out_type = out_type[0].lower()
 
-        in_type = in_type[0].lower()
-        # print("in_temp: %s" % in_temp)
-        # print("temp_type: %s" % temp_type)
-        # print("system_type: %s" % system_type)
-
         if out_type == in_type:
             return in_temp
+
         converter = '%s_%s' % (in_type, out_type)
         out_temp = unit_convert(converter, in_temp)
 
         if out_decimals is None:
-            if out_type == 'c':
-                out_decimals = 1
-            else:
-                out_decimals = 0
-
-        if out_decimals >= 0:
-            return "{0:.{1}f}".format(out_temp, out_decimals)
-        else:
-            return out_temp
+            return {'value': out_temp, 'type': out_type}
+        return {
+            'value': "{0:.{1}f}".format(out_temp, out_decimals),
+            'type': out_type,
+           }
 
     def _modules_created_(self, **kwargs):
         """
