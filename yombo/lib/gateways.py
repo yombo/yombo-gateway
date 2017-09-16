@@ -718,7 +718,7 @@ class Gateways(YomboLibrary):
             return
 
         command = kwargs['command']
-        print("device status command: %s" % command)
+        # print("device status command: %s" % command)
         if command is not None:
             command_id = command.command_id
         else:
@@ -851,9 +851,9 @@ class Gateways(YomboLibrary):
                 'direction': 'sent',
                 'topic': final_topic,
             })
-        returnable = self.encrypt(message)
+        outgoing_data = self.encrypt(message)
         # print("gw sending publish data: final topic: ybo_gw/%s/%s" % (self.gateway_id, final_topic))
-        self.mqtt.publish("ybo_gw/%s/%s" % (self.gateway_id, final_topic), returnable)
+        self.mqtt.publish("ybo_gw/%s/%s" % (self.gateway_id, final_topic), outgoing_data)
 
     def send_all_info(self, destination_gw=None, set_ok_to_publish_updates=None):
         # print("gw sending !!!!!!!!!!!!!!!!!!gateways send_all_info: %s - %s" % (destination_gw, self.ok_to_publish_updates))
