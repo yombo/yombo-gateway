@@ -13,6 +13,15 @@ class Relay(Appliance):
 
     TOGGLE_COMMANDS = ['open', 'close']  # Put two command machine_labels in a list to enable toggling.
 
+    # Features this device can support
+    FEATURES = {
+        'all_on': False,
+        'all_off': False,
+        'pingable': False,
+        'pollable': False,
+        'sends_updates': False
+    }
+
     def can_toggle(self):
         return True
 
