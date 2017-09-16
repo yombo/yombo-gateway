@@ -12,11 +12,12 @@ from time import time
 
 # Import twisted libraries
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import save_file, read_file, global_invoke_modules, global_invoke_libraries, random_int, unicode_to_bytes
+from yombo.utils import save_file, read_file
 import collections
 
 logger = get_logger('library.sslcerts.sslcert')
@@ -36,6 +37,7 @@ class SSLCert(object):
         self._FullName = 'yombo.gateway.lib.SSLCerts.SSLCert'
         self._Name = 'SSLCerts.SSLCert'
         self._ParentLibrary = _ParentLibrary
+        self.source = source
 
         self.sslname = sslcert.sslname
         self.cn = sslcert.cn
@@ -85,8 +87,13 @@ class SSLCert(object):
 
         self.check_messages_of_the_unknown()
 
-        if source != 'sqldict':  # we only trust SQLDict or the filesystem for data.
-            self.sync_from_filesystem()
+    @inlineCallbacks
+    def start(self):
+        # print("!!!!!  starting ssl cert")
+        if self.source != 'sqldict':  # we only trust SQLDict or the filesystem for data.
+            # print("about to sync from filesystem: %s" % self.key_current)
+            yield self.sync_from_filesystem()
+            # print("done about to sync from filesystem: %s" % self.key_current)
 
         self.check_is_valid()
         # print("status: %s" % self.__dict__)
@@ -231,6 +238,7 @@ class SSLCert(object):
         if self.sslname in self._ParentLibrary.received_message_for_unknown:
             logger.warn("We have messages for us.  TODO: Implement this.")
 
+    @inlineCallbacks
     def sync_from_filesystem(self):
         """
         Reads meta data and items from the file system. This allows us to restore data incase the database
@@ -238,14 +246,15 @@ class SSLCert(object):
 
         :return:
         """
-        logger.debug("Inspecting file system for certs.")
+        logger.info("Inspecting file system for certs.")
 
         for label in ['previous', 'current', 'next']:
             setattr(self, "%s_is_valid" % label, None)
 
             if os.path.exists('usr/etc/certs/%s.%s.meta' % (self.sslname, label)):
-                logger.debug("SSL Meta found for: {label}", label=label)
-                meta = json.loads(read_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label)))
+                logger.info("SSL Meta found for: {label} - {sslname}", label=label, sslname=self.sslname)
+                file_content = yield read_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label))
+                meta = json.loads(file_content)
                 # print("meta: %s" % meta)
 
                 csr_read = False
@@ -253,7 +262,7 @@ class SSLCert(object):
                     logger.debug("Looking for 'next' information.")
                     if os.path.exists('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label)):
                         if getattr(self, "csr_%s" % label) is None:
-                            csr = read_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label))
+                            csr = yield read_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label))
                             if sha256(str(csr).encode('utf-8')).hexdigest() == meta['csr']:
                                 csr_read = True
                             else:
@@ -267,7 +276,7 @@ class SSLCert(object):
                 if getattr(self, "cert_%s" % label) is None:
                     if os.path.exists('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label)):
                         # print("setting cert!!!")
-                        cert = read_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label))
+                        cert = yield read_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label))
                         cert_read = True
                         if sha256(str(cert).encode('utf-8')).hexdigest() != meta['cert']:
                             logger.warn("Appears that the file system has bad meta signatures (cert). Purging.")
@@ -280,7 +289,7 @@ class SSLCert(object):
                 if getattr(self, "chain_%s" % label) is None:
                     if os.path.exists('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label)):
                         # print("setting chain!!!")
-                        chain = read_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label))
+                        chain = yield read_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label))
                         chain_read = True
                         if sha256(str(chain).encode('utf-8')).hexdigest() != meta['chain']:
                             logger.warn("Appears that the file system has bad meta signatures (chain). Purging.")
@@ -292,7 +301,7 @@ class SSLCert(object):
                 key_read = False
                 if getattr(self, "key_%s" % label) is None:
                     if os.path.exists('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label)):
-                        key = read_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label))
+                        key = yield read_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label))
                         key_read = True
                         if sha256(str(key).encode('utf-8')).hexdigest() != meta['key']:
                             logger.warn("Appears that the file system has bad meta signatures (key). Purging.")
@@ -535,6 +544,7 @@ class SSLCert(object):
         """
         if msg['status'] == "signed":
             self.chain_next = msg['chain_text']
+            self.cert_next = msg['cert_text']
             self.cert_next = msg['cert_text']
             self.next_signed = msg['cert_signed']
             self.next_expires = msg['cert_expires']
