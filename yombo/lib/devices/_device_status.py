@@ -122,9 +122,15 @@ class Device_Status(object):
         :return: 
         """
         if 'command' in device:
-            self.command = self._Parent._Commands[device['command']]
+            try:
+                self.command = self._Parent._Commands[device['command']]
+            except Exception as E:
+                pass
         elif 'command_id' in device:
-            self.command = self._Parent._Commands[device['command_id']]
+            try:
+                self.command = self._Parent._Commands[device['command_id']]
+            except Exception as E:
+                pass
         if 'gateway_id' in device:
             self.gateway_id = device["gateway_id"]
         if 'status_id' in device:
