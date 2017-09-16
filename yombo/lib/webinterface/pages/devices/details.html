@@ -149,8 +149,12 @@
                                         {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
                                         <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ device_types.get(device.device_type_id).label }}</a><br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Statistic Type: </label><br>
+                                        {{ device.statistic_type }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Label: </label><br>
-                                        {{ device.statistic_label }}<br>
+                                        {{ device.statistic_label_slug }}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Statistic Bucket Size: </label><br>
+                                        {{ device.statistic_bucket_size }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
                                         {{ device.statistic_lifetime }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
@@ -194,7 +198,9 @@
                                     <div class="panel-body">
                                         {% if device.status_history|length == 0 %} No status data available.
                                         {% else %}
-                                        <label style="margin-top: 0px; margin-bottom: 0px">Human: </label><br>
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Human Message: </label><br>
+                                        {{ device.status_all.human_message }}<br>
+                                        <label style="margin-top: 0px; margin-bottom: 0px">Human Status: </label><br>
                                         {{ device.status_all.human_status }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Current Energy Usage: </label><br>
                                         {{ device.status_all.energy_usage }} {% if device.energy_type == 'electric' %} watts {% endif %}<br>

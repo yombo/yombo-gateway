@@ -26,7 +26,9 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                             {{ var_field.field_machine_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                            {{ var_field.field_description }}<br>
+                            {{ var_field.field_description|format_markdown() }}
+                            <label style="margin-top: 15px; margin-bottom: 0px">Help: </label><br>
+                            {{ var_field.field_help_text|format_markdown() }}
                             <label style="margin-top: 15px; margin-bottom: 0px">Input Type: </label><br>
                             {{input_type.label}}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Encryption: </label><br>

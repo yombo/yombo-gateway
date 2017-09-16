@@ -36,7 +36,7 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                             {{ command.machine_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                            {{ command.description }}<br>
+                            {{ command.description|format_markdown() }}
                             <label style="margin-top: 15px; margin-bottom: 0px">Voice Command: </label><br>
                             {{ command.voice_cmd }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>

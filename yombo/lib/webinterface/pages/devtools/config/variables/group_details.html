@@ -43,7 +43,7 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                             {{ group.group_machine_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                            {{ group.group_description }}<br>
+                            {{ group.group_description|format_markdown() }}
                             <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>
                             {{ group.group_weight }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>

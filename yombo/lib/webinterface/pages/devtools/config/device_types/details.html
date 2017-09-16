@@ -37,7 +37,7 @@
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
                             {{ device_type.machine_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
-                            {{ device_type.description }}<br>
+                            {{ device_type.description|format_markdown() }}
                             <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
                             {{ device_type.platform }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Category: </label><br>

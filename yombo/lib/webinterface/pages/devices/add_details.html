@@ -85,43 +85,92 @@
                                         <option value="0"{% if device.status == 0 %} selected{% endif %} data-subtext="Device unusable">Disabled</option>
                                     </select>
                                 </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
-                                <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
-                                a new device, but still maintain it's history. For example,
-                                if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
-                                the device name the same statistic label.</p>
-                                <p>The statistic label is free form!</p>
-                                <p>You will want to name the location from least specific to most specific using a dotted notation, such as
-                                'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
-                                <p>Some more examples:</p>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <label>Statistics Information</label>
+                            </div>
+                            <!-- /.panel-heading -->
+                            <div class="panel-body">
+                                <label style="margin-top: 0px; margin-bottom: 0px">Statistics Type: </label>
+                                <a href="#" data-toggle="modal" data-target="#modalstatisticstype"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modalstatisticstype", 'Statistics Type', "
+                                <p>There are two primary statistics:</p>
                                 <ul>
-                                    <li>myhouse.garage.workbench_light</li>
-                                    <li>myhouse.master_bedroom.ceiling_fan</li>
-                                    <li>shed.fan</li>
-                                    <li>myhouse.hvac</li>
-                                    <li>outside.front.landscape_lights</li>
-                                    <li>outside.front.landscape_sprinklers</li>
-                                    <li>outside.back.landscape_sprinklers</li>
-                                    <li>outside.backyard.music</li>
+                                    <li>Data Point - A single data point such as if the window is closed or open, light on, 50% or off.</li>
+                                    <li>Average - Can average data points together. This is the best way to store temperature data or
+                                    other inputs that tend to flucuate a alot. This also helps keeps your database file from getting
+                                    to big.</li>
+                                    <ul>
+                                        <li>When using the average method, you also need to set the 'bucket size', or how long
+                                            the data should be averaged together. For example, a bucket size of '60' will average data
+                                            together for 60 seconds.  See 'bucket size' for details.</li>
+                                    </ul>
                                 </ul>
-                                <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
-                                you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
-                                with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
                                 ") }}
                                 <br>
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="myhouse.living_room.corner_light" value="{{ device.statistic_label|hide_none }}">
+                                    <select class="selectpicker show-tick form-control" tabindex="10" name="statistic_type" id="statistic_type">
+                                        <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
+                                        <option value="datapoint"{% if device.energy_type == "datapoint" %} selected{% endif %}>Single Data Point</option>
+                                        <option value="average"{% if device.energy_type == "average" %} selected{% endif %}>Average</option>
+                                    </select>
                                 </div>
-                                <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalStatisticlifetime"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalStatisticlifetime", 'Statistic Lifetime', "
-                                <p>How many days of statistics should be kept for this device. Use 0 (zero) for unlimited.</p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <input type="text" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="1825" value="{{ device.statistic_lifetime|hide_none }}">
+                                <div id="div_statistics">
+                                    <label style="margin-top: 20px; margin-bottom: 0px">Statistic Label: </label>
+                                    <a href="#" data-toggle="modal" data-target="#modalStatisticlabel"><i class="fa fa-question fa-lg"></i></a>
+                                    {{ macros.modal("modalStatisticlabel", 'Statistic Label', "
+                                    <p>The default statistic label uses the 'location + area + machine_name' for the device if no
+                                    value is set.</p>
+                                    <p>This label is used to track the device history over time. Using a label allows the device to be replaced with
+                                    a new device, but still maintain it's history. For example,
+                                    if you have an insteon lamp module controlling your living table lamp and later decide to replace with zwave, you would give
+                                    the device name the same statistic label.</p>
+                                    <p>The statistic label is free form.</p>
+                                    <p>You will want to name the location from least specific to most specific using a dotted notation, such as
+                                    'myhouse.downstairs.livingroom.tabel_lamp'.  If you didn't have two stories, just omit 'downstairs'.</p>
+                                    <p>Some more examples:</p>
+                                    <ul>
+                                        <li>myhouse.garage.workbench_light</li>
+                                        <li>myhouse.master_bedroom.ceiling_fan</li>
+                                        <li>shed.fan</li>
+                                        <li>myhouse.hvac</li>
+                                        <li>outside.front.landscape_lights</li>
+                                        <li>outside.front.landscape_sprinklers</li>
+                                        <li>outside.back.landscape_sprinklers</li>
+                                        <li>outside.backyard.music</li>
+                                    </ul>
+                                    <p>After some statistics are generated, you can show energy/water/noise for any given area. For example,
+                                    you show all water used 'outside.*' or 'outside.front' for a given time period. Or electricity used
+                                    with search terms like 'myhouse.upstairs.* or 'myhouse.*.bedroom'.</p>
+                                    ") }}
+                                    <br>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="statistic_label" id="statistic_label" size="30" placeholder="myhouse.living_room.corner_light" value="{{ device.statistic_label|hide_none }}">
+                                    </div>
+                                    <label style="margin-top: 20px; margin-bottom: 0px">Statistic Lifetime: </label>
+                                    <a href="#" data-toggle="modal" data-target="#modalStatisticlifetime"><i class="fa fa-question fa-lg"></i></a>
+                                    {{ macros.modal("modalStatisticlifetime", 'Statistic Lifetime', "
+                                    <p>How many days of statistics should be kept for this device. Use 0 (zero) for unlimited.</p>
+                                    ") }}
+                                    <br>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="statistic_lifetime" id="statistic_lifetime" size="30" placeholder="1825" value="{{ device.statistic_lifetime|hide_none }}">
+                                    </div>
+                                </div>
+                                <div id="div_statistic_bucket_size">
+                                    <label style="margin-top: 15px; margin-bottom: 0px">Statistic Bucket Size: </label>
+                                    <a href="#" data-toggle="modal" data-target="#modalstatisticsbucketsize"><i class="fa fa-question fa-lg"></i></a>
+                                    {{ macros.modal("modalstatisticsbucketsize", 'Bucket Size', "
+                                    <p>When averaging data points together, the system divides time into 'buckets' For example, if 60 seconds is
+                                        set as the bucket set, all data points within a 60 second will be grouped together.</p>
+                                    </p>
+                                    ") }}
+                                    <br>
+                                    <div class="input-group">
+                                    <input type="text" tabindex="13" class="form-control" name="statistic_bucket_size" id="statistic_label" size="30" placeholder="1, 5, 30, 60, 300..." value="{{ device.statistic_bucket_size|hide_none }}">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -182,6 +231,7 @@
                                 <br>
                                 <div class="input-group">
                                     <select class="form-control" name="energy_type" id="energy_type" placeholder="Energy Type.">
+                                        <option value="none"{% if device.energy_type == "none" %} selected{% endif %}>None</option>
                                         <option value="electric"{% if device.energy_type == "electric" %} selected{% endif %}>Electric</option>
                                         <option value="gas"{% if device.energy_type == "gas" %} selected{% endif %}>Gas</option>
                                         <option value="water"{% if device.energy_type == "water" %} selected{% endif %}>Water</option>
@@ -189,97 +239,98 @@
                                     </select>
                                 </div>
 
-                                <label style="margin-top: 15px; margin-bottom: 0px">Energy Info Source Type: </label>
-                                <a href="#" data-toggle="modal" data-target="#modalenergysource"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modalenergytype", 'Energy Information Source', "
-                                <p>Energy information can be collected from various sources. Some modules that manage a device will
-                                override this setting, as is the case for many thermostats.
-                                <ul>
-                                <li>Calculated - Use the energy map below to calculate usage. Most commong for basic devices.</li>
-                                <li>Device - Allows a device to specified. It's machine status value will be used as the energy value.</li>
-                                <li>State - A state's value will be used as the energy value.</li>
-                                </ul>
-                                </p>
-                                ") }}
-                                <br>
-                                <div class="input-group">
-                                    <select class="form-control" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
-                                        <option value="calculated"{% if device.energy_type == "calculated" %} selected{% endif %}>Calculated</option>
-                                        <option value="device"{% if device.energy_type == "device" %} selected{% endif %}>Device</option>
-                                        <option value="state"{% if device.energy_type == "device" %} selected{% endif %}>State</option>
-                                    </select>
-                                </div>
-                                <div id="div_energy_tracker_device">
-                                    <label style="margin-top: 15px; margin-bottom: 0px">Energy Source Device: </label>
-                                    <a href="#" data-toggle="modal" data-target="#modalenergysourcedevice"><i class="fa fa-question fa-lg"></i></a>
-                                    {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
-                                    <p>When 'Engery Info Source Type' is marked as 'Device', the following device will be used as the
-                                        value for the Energy information. For example, a device could be an energy monitor that
-                                        reports energy used or created.
+                                <div id="div_energy_type">
+                                    <label style="margin-top: 15px; margin-bottom: 0px">Energy Info Source Type: </label>
+                                    <a href="#" data-toggle="modal" data-target="#modalenergysource"><i class="fa fa-question fa-lg"></i></a>
+                                    {{ macros.modal("modalenergytype", 'Energy Information Source', "
+                                    <p>Energy information can be collected from various sources. Some modules that manage a device will
+                                    override this setting, as is the case for many thermostats.
+                                    <ul>
+                                    <li>Calculated - Use the energy map below to calculate usage. Most commong for basic devices.</li>
+                                    <li>Device - Allows a device to specified. It's machine status value will be used as the energy value.</li>
+                                    <li>State - A state's value will be used as the energy value.</li>
+                                    </ul>
                                     </p>
                                     ") }}
                                     <br>
                                     <div class="input-group">
-                                    {{macros.form_select_device(devices, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
+                                        <select class="form-control" name="energy_tracker_source" id="energy_tracker_source" placeholder="">
+                                            <option value="calculated"{% if device.energy_type == "calculated" %} selected{% endif %}>Calculated</option>
+                                            <option value="device"{% if device.energy_type == "device" %} selected{% endif %}>Device</option>
+                                            <option value="state"{% if device.energy_type == "device" %} selected{% endif %}>State</option>
+                                        </select>
+                                    </div>
+                                    <div id="div_energy_tracker_device">
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Energy Source Device: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modalenergysourcedevice"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
+                                        <p>When 'Engery Info Source Type' is marked as 'Device', the following device will be used as the
+                                            value for the Energy information. For example, a device could be an energy monitor that
+                                            reports energy used or created.
+                                        </p>
+                                        ") }}
+                                        <br>
+                                        <div class="input-group">
+                                        {{macros.form_select_device(devices, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
+                                        </div>
+                                    </div>
+                                    <div id="div_energy_tracker_state">
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Energy Source State: </label>
+                                        <a href="#" data-toggle="modal" data-target="#modalenergysourcestate"><i class="fa fa-question fa-lg"></i></a>
+                                        {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
+                                        <p>When 'Engery Info Source Type' is marked as 'State', the following state will be used as the
+                                            value for the Energy information.
+                                        </p>
+                                        ") }}
+                                        <br>
+                                        <div class="input-group">
+                                        {{macros.form_select_state(states, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
+                                        </div>
+                                    </div>
+                                    <div id="div_energy_map">
+                                        <label id="energy_map_label" style="margin-top: 15px;">Energy Map Information <a href="#" data-toggle="modal" data-target="#modalenergymap"><i class="fa fa-question fa-lg"></i></a></label>
+                                        {{ macros.modal("modalenergymap", 'Energy Map', "
+                                        <p>Allows you to specify ranges of energy consumption or generation for any particular device, including
+                                        water usage. With an energy 'map', Yombo Gateway can calculate the energy usage (or generation) for a
+                                        particular device. For example, if a lamp module is on 25%, it will calculate how much energy is being
+                                        consumed at 25% power.</p>
+                                        <p>Typically, you will have 0% and 100%. For 0%, you might put 1 or 2 watts as most insteon,
+                                        zwave, x10 devices consume some power all the time, regardless of the state. For 100%, you would put in
+                                        the bulb usage power plus the 0% rate. So, for a 40 watt bulb, you would enter 41 or 42.</p>
+                                        <h3>Advanced use</h3>
+                                        <p>The 'map' feature allows you to be very precise. For example, if your device consumes more power at lower
+                                        set states (for exaple, at 25% on, it consumes relatively more power than at 40%). You can then specify that from
+                                        0% to %50, the device can consume up 200 watts, but from 51% to 100%, it can consume up to 300 watts. In this
+                                        example, a device at 25% power would consume 100 watts, but at 75%, it would consume 250watts.</p>
+                                        ") }}
+                                        <br>
+                                        <div class="input-group">
+                                            <table width="100%" class="table table-striped table-bordered table-hover" id="energymap">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Percent</th><th>Value</th><th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                            <tbody>
+                                            {% if device.energy_map is not none -%}
+                                                {% for start_value, energy_usage in device.energy_map.items() %}
+                                                 <tr>
+                                                    <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value*100}}"></td>
+                                                    <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>
+                                                    <td><a href="#">Delete</a></td>
+                                                 </tr>{% endfor %}
+                                            {% endif %}
+                                                 <tr>
+                                                    <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>
+                                                    <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>
+                                                    <td><a class="deleterow" href="#">Delete</a></td>
+                                                 </tr>
+                                            </tbody>
+                                            </table>
+                                            <a id="add_row" class="btn btn-md btn-primary pull-left">Add Row</a><p></p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div id="div_energy_tracker_state">
-                                    <label style="margin-top: 15px; margin-bottom: 0px">Energy Source State: </label>
-                                    <a href="#" data-toggle="modal" data-target="#modalenergysourcestate"><i class="fa fa-question fa-lg"></i></a>
-                                    {{ macros.modal("modalenergysourcedevice", 'Energy Data from Device', "
-                                    <p>When 'Engery Info Source Type' is marked as 'State', the following state will be used as the
-                                        value for the Energy information.
-                                    </p>
-                                    ") }}
-                                    <br>
-                                    <div class="input-group">
-                                    {{macros.form_select_state(states, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
-                                    </div>
-                                </div>
-                                <div id="div_energy_map">
-                                    <label id="energy_map_label" style="margin-top: 15px;">Energy Map Information <a href="#" data-toggle="modal" data-target="#modalenergymap"><i class="fa fa-question fa-lg"></i></a></label>
-                                    {{ macros.modal("modalenergymap", 'Energy Map', "
-                                    <p>Allows you to specify ranges of energy consumption or generation for any particular device, including
-                                    water usage. With an energy 'map', Yombo Gateway can calculate the energy usage (or generation) for a
-                                    particular device. For example, if a lamp module is on 25%, it will calculate how much energy is being
-                                    consumed at 25% power.</p>
-                                    <p>Typically, you will have 0% and 100%. For 0%, you might put 1 or 2 watts as most insteon,
-                                    zwave, x10 devices consume some power all the time, regardless of the state. For 100%, you would put in
-                                    the bulb usage power plus the 0% rate. So, for a 40 watt bulb, you would enter 41 or 42.</p>
-                                    <h3>Advanced use</h3>
-                                    <p>The 'map' feature allows you to be very precise. For example, if your device consumes more power at lower
-                                    set states (for exaple, at 25% on, it consumes relatively more power than at 40%). You can then specify that from
-                                    0% to %50, the device can consume up 200 watts, but from 51% to 100%, it can consume up to 300 watts. In this
-                                    example, a device at 25% power would consume 100 watts, but at 75%, it would consume 250watts.</p>
-                                    ") }}
-                                    <br>
-                                    <div class="input-group">
-                                        <table width="100%" class="table table-striped table-bordered table-hover" id="energymap">
-                                            <thead>
-                                                <tr>
-                                                    <th>Percent</th><th>Value</th><th>Actions</th>
-                                                </tr>
-                                            </thead>
-                                        <tbody>
-                                        {% if device.energy_map is not none -%}
-                                            {% for start_value, energy_usage in device.energy_map.items() %}
-                                             <tr>
-                                                <td><input type="text" class="form-control" name="start_percent" id="start_percent" value="{{ start_value*100}}"></td>
-                                                <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value="{{ energy_usage }}"></td>
-                                                <td><a href="#">Delete</a></td>
-                                             </tr>{% endfor %}
-                                        {% endif %}
-                                             <tr>
-                                                <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>
-                                                <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>
-                                                <td><a class="deleterow" href="#">Delete</a></td>
-                                             </tr>
-                                        </tbody>
-                                        </table>
-                                        <a id="add_row" class="btn btn-md btn-primary pull-left">Add Row</a><p></p>
-                                    </div>
-                                </div>
-
                             </div>
                         </div>
                     </div>
@@ -320,78 +371,122 @@
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
     <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
     <script>
-     $(document).ready(function(){
+    function update_stat_label() {
+        console.log("update stat label called")
+        var new_string = "";
+        new_string += $("#location_id option:selected").text().toLowerCase();
+        new_string += "." + $("#area_id option:selected").text().toLowerCase();
+        new_string += "." + $("#machine_label").val().toLowerCase();
+        new_string=new_string.replace(" ","_");
+        $('#statistic_label').attr("placeholder", new_string);
+        console.log("update stat label finiushed: " + new_string)
+    }
 
-    $("#energy_tracker_source").change(function() {
-        var input_value = this.value;
-        console.log(input_value);
-        if (input_value == 'device') {
-            $("#energy_map_label").text("input_value");
-            $('#div_energy_tracker_device').slideDown();
-        } else {
-            $('#div_energy_tracker_device').slideUp();
-        }
-        $('#energy_tracker_device').selectpicker('refresh');
-
-        if (input_value == 'state') {
-            $("#energy_map_label").text("input_value");
-            $('#div_energy_tracker_state').slideDown();
-        } else {
-            $('#div_energy_tracker_state').slideUp();
-        }
-        $('#div_energy_tracker_state').selectpicker('refresh');
-
-        if (input_value == 'calculated') {
-            $('#div_energy_map').slideDown();
-        } else {
-            $('#div_energy_map').slideUp();
-        }
-        $('#energy_tracker_device').selectpicker('refresh');
-        }).change(); //to trigger on load
-
-        var i=1;
-        $("#add_row").click(function(){
-            $('#energymap tr:last').after('<tr>\
-                                            <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>\
-                                            <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>\
-                                            <td><a href="#">Delete</a></td>\
-                                         </tr>');
-            i++;
+    $(document).ready(function(){
+        update_stat_label();
+        $('#machine_label').change(function() {
+            update_stat_label();
         });
-        $(".deleterow").click(function(event) {
-            var href = $(this).attr('href');
-            $(this).closest("tr").remove(); // remove row
-            return false; // prevents default behavior
+        $('#location_id').change(function() {
+            update_stat_label();
+        });
+        $('#area_id').change(function() {
+            update_stat_label();
         });
 
-        (function($) {
-            $.extend({
-                toDictionary: function(query) {
-                    var parms = {};
-                    var items = query.split("&"); // split
-                    for (var i = 0; i < items.length; i++) {
-                        var values = items[i].split("=");
-                        var key = decodeURIComponent(values.shift());
-                        var value = values.join("=")
-                        parms[key] = decodeURIComponent(value);
+        $("#statistic_type").change(function() {
+            var input_value = this.value;
+            console.log(input_value);
+            if (input_value == 'datapoint') {
+                $('#div_statistics').slideDown();
+                $('#div_statistic_bucket_size').slideUp();
+            } else if (input_value == 'average') {
+                $('#div_statistics').slideDown();
+                $('#div_statistic_bucket_size').slideDown();
+            } else if (input_value == 'none') {
+                $('#div_statistics').slideUp();
+                $('#div_statistic_bucket_size').slideUp();
+            }
+            }).change(); //to trigger on load
+
+        $("#energy_type").change(function() {
+            var input_value = this.value;
+            if (input_value == 'none') {
+                $('#div_energy_type').slideUp();
+            } else {
+                $('#div_energy_type').slideDown();
+            }
+            }).change(); //to trigger on load
+
+        $("#energy_tracker_source").change(function() {
+            var input_value = this.value;
+            console.log(input_value);
+            if (input_value == 'device') {
+                $("#energy_map_label").text("input_value");
+                $('#div_energy_tracker_device').slideDown();
+            } else {
+                $('#div_energy_tracker_device').slideUp();
+            }
+            $('#energy_tracker_device').selectpicker('refresh');
+
+            if (input_value == 'state') {
+                $("#energy_map_label").text("input_value");
+                $('#div_energy_tracker_state').slideDown();
+            } else {
+                $('#div_energy_tracker_state').slideUp();
+            }
+            $('#div_energy_tracker_state').selectpicker('refresh');
+
+            if (input_value == 'calculated') {
+                $('#div_energy_map').slideDown();
+            } else {
+                $('#div_energy_map').slideUp();
+            }
+            $('#energy_tracker_device').selectpicker('refresh');
+            }).change(); //to trigger on load
+
+            var i=1;
+            $("#add_row").click(function(){
+                $('#energymap tr:last').after('<tr>\
+                                                <td><input type="text" class="form-control" name="start_percent" id="start_percent" value=""></td>\
+                                                <td><input type="text" class="form-control" name="energy_usage" id="energy_usage" value=""></td>\
+                                                <td><a href="#">Delete</a></td>\
+                                             </tr>');
+                i++;
+            });
+            $(".deleterow").click(function(event) {
+                var href = $(this).attr('href');
+                $(this).closest("tr").remove(); // remove row
+                return false; // prevents default behavior
+            });
+
+            (function($) {
+                $.extend({
+                    toDictionary: function(query) {
+                        var parms = {};
+                        var items = query.split("&"); // split
+                        for (var i = 0; i < items.length; i++) {
+                            var values = items[i].split("=");
+                            var key = decodeURIComponent(values.shift());
+                            var value = values.join("=")
+                            parms[key] = decodeURIComponent(value);
+                        }
+                        return (parms);
                     }
-                    return (parms);
-                }
-            })
-        })(jQuery);
+                })
+            })(jQuery);
 
-        $("#devicenew").submit(function(event) {
-//            event.preventDefault();
+            $("#devicenew").submit(function(event) {
+    //            event.preventDefault();
 
-            var rawData = $('#devicenew').serializeJSON();
-            var formData = JSON.stringify(rawData);
-            console.log(formData);
-            $('#json_output').val(formData)
-//            console.log(formData);
-        });
+                var rawData = $('#devicenew').serializeJSON();
+                var formData = JSON.stringify(rawData);
+                console.log(formData);
+                $('#json_output').val(formData)
+    //            console.log(formData);
+            });
 
-
-    });
+    });  // end document ready
 
     $('.ls-modal').on('click', function(e){
       e.preventDefault();

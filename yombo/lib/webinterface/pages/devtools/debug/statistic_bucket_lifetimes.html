@@ -47,25 +47,16 @@
                                     <thead>
                                         <tr>
                                             <th>Statistic Mask</th>
-                                            <th>Full</th>
-                                            <th>5 Min</th>
-                                            <th>15 Min</th>
-                                            <th>60 Min</th>
-                                            <th>6 Hrs</th>
-                                            <th>24 Hrs</th>
+                                            <th>SSize of bucket in seconds</th>
+                                            <th>Lifetime - How many days to keep</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for bucket in bucket_lifetimes.keys() %}
-                                    {%- set data = bucket_lifetimes[bucket]['life'] -%}
+                                    <tbody>{% for bucket_name, values in bucket_lifetimes.items() %}
                                         <tr>
-                                            <td>{{ bucket }}</td>
+                                            <td>{{ bucket_name }}</td>
 
-                                            <td>{{ data['full'] }}</td>
-                                            <td>{{ data['5m'] }}</td>
-                                            <td>{{ data['15m'] }}</td>
-                                            <td>{{ data['60m'] }}</td>
-                                            <td>{{ data['6hr'] }}</td>
-                                            <td>{{ data['24h'] }}</td>
+                                            <td>{{ values['size'] }}</td>
+                                            <td>{{ values['lifetime'] }}</td>
                                         </tr> {% endfor %}
                                     </tbody>
                                 </table>
