@@ -416,6 +416,7 @@ class Loader(YomboLibrary, object):
             library._Times = self.loadedLibraries['times']
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']
+            library._Validate = self.loadedLibraries['validate']
             if hasattr(library, '_init_') and isinstance(library._init_, Callable) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = Deferred()
