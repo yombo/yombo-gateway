@@ -406,8 +406,8 @@ def route_setup_wizard(webapp):
             session['setup_wizard_security_send_private_stats'] = submitted_security_send_private_stats
             session['setup_wizard_security_send_anon_stats'] = submitted_security_send_anon_stats
 
-            print("22222 %s" % session['setup_wizard_security_send_private_stats'])
-            print("33333 %s" % session['setup_wizard_security_send_anon_stats'])
+            # print("22222 %s" % session['setup_wizard_security_send_private_stats'])
+            # print("33333 %s" % session['setup_wizard_security_send_anon_stats'])
             page = yield page_setup_wizard_5_show_form(webinterface, request, session)
             return page
 
@@ -420,7 +420,7 @@ def route_setup_wizard(webapp):
             i18n = webinterface.i18n(request)
             session.set('setup_wizard_last_step', 5)
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/5.html')
-            gpg_existing = yield webinterface._LocalDb.get_gpg_key()
+            gpg_existing = yield webinterface._LocalDB.get_gpg_key()
             gpg_existing_sorted = OrderedDict(sorted(gpg_existing.items(), key=lambda x: x[1]['created_at']))
             if len(gpg_existing_sorted) > 0:
                 print(first(gpg_existing_sorted)[0])
@@ -440,7 +440,7 @@ def route_setup_wizard(webapp):
             if webinterface.sessions.get(request, 'setup_wizard_last_step') != 5:
                 return "Invalid wizard state. No content found."
 
-            gpg_existing = yield webinterface._LocalDb.get_gpg_key()
+            gpg_existing = yield webinterface._LocalDB.get_gpg_key()
 
             valid_submit = True
             try:
@@ -587,7 +587,7 @@ def route_setup_wizard(webapp):
                     webinterface.add_alert("When importing, must have a valid public GPG/PGP key.")
                     return webinterface.redirect(request, '/setup_wizard/5')
             else:
-                gpg_existing = yield webinterface._LocalDb.get_gpg_key()
+                gpg_existing = yield webinterface._LocalDB.get_gpg_key()
                 if submitted_gpg_action in gpg_existing:
                     key_ascii = webinterface._GPG.get_key(submitted_gpg_action)
                     webinterface._Configs.set('gpg', 'keyid', submitted_gpg_action)

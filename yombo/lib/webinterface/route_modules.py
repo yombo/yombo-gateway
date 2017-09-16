@@ -257,7 +257,7 @@ def route_modules(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
             # print "webinterface._Modules[module_id]._dump: %s" % webinterface._Modules[module_id]._dump()
             # print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
-            device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
+            device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
             module_variables = module._ModuleVariables
             # print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)
@@ -359,7 +359,7 @@ def route_modules(webapp):
                 returnValue(webinterface.redirect(request, '/devtools/config/modules/index'))
 
             module_variables = module._ModuleVariables
-            device_types = yield webinterface._LocalDb.get_module_device_types(module_id)
+            device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
