@@ -87,7 +87,7 @@ def route_home(webapp):
 
             # print("webinterface.operating_mode: %s" % webinterface.operating_mode)
             if webinterface.operating_mode == 'run':
-                results = yield webinterface._LocalDb.get_gateway_user_by_email(webinterface.gateway_id(), submitted_email)
+                results = yield webinterface._LocalDB.get_gateway_user_by_email(webinterface.gateway_id(), submitted_email)
                 if len(results) != 1:
                     webinterface.add_alert('Email address not allowed to access gateway.', 'warning')
                     #            webinterface.sessions.load(request)
