@@ -38,9 +38,6 @@ requires the serializer and unserializer to be set inside the get() request.
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
 """
-# Import python libraries
-import msgpack
-
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
@@ -103,17 +100,16 @@ class SQLDict(YomboLibrary):
         if component_name+":"+dict_name in self._dictionaries:
             return self._dictionaries[component_name+":"+dict_name]['dict']
 
-        dict = SQLDictionary(self, component_name, dict_name, serializer, unserializer, max_length)
-#        print "SQLDict: about to load: %s" % dict_name
-        yield dict.load()
+        sqldict = SQLDictionary(self, component_name, dict_name, serializer, unserializer, max_length)
+        yield sqldict.load()
 
         self._dictionaries[component_name+":"+dict_name] = {
             'component_name': component_name,
             'dict_name': dict_name,
-            'dict': dict,
+            'dict': sqldict,
             'dirty': False  # True if data needs to be saved.
             }
-        return dict
+        return sqldict
 
     @inlineCallbacks
     def save_sql_dict(self, save_all=False):
@@ -207,12 +203,14 @@ class SQLDictionary(dict):
         if len(results) != 1:
             return None
 
-        items = results[0]['dict_data']
+        data = results[0]['dict_data']
+        if data is None:
+            data = {}
 
-        for key, value in items.items():
+        for key, value in data.items():
             if self.__unserializer is not None:
                 try:
-                    value = self.__unserializer(value)
+                    value = yield self.__unserializer(value)
                     self[key] = value
                 except YomboWarning:
                     continue
