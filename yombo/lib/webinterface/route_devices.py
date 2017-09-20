@@ -199,6 +199,7 @@ def route_devices(webapp):
                                                      'always_show': True,
                                                      'always_show_allow_clear': False,
                                                      'id': 'reboot_required',
+                                                     'local': True,
                                                      })
 
                     page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')

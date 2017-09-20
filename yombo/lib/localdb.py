@@ -942,6 +942,7 @@ class LocalDB(YomboLibrary):
             'user': notice['user'],
             'title': notice['title'],
             'message': notice['message'],
+            'local': notice['local'],
             'meta': data_pickle(notice['meta'], encoder='json'),
             'created_at': notice['created_at'],
         }

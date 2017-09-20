@@ -756,9 +756,11 @@ class Gateways(YomboLibrary):
             return
 
         notice = kwargs['notification']
+        if notice.local is True:
+            return
 
         # print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
-        if self.gateway_id != notice['gateway_id']:
+        if self.gateway_id != notice.gateway_id:
             return
 
         message = {
@@ -782,6 +784,8 @@ class Gateways(YomboLibrary):
             return
 
         notice = kwargs['notification']
+        if notice.local is True:
+            return
 
         # print("checking if i should send this device_status.  %s != %s" % (self.gateway_id, device.gateway_id))
         if self.gateway_id != notice['gateway_id']:

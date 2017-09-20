@@ -248,6 +248,8 @@ class Notifications(YomboLibrary):
             notice['meta'] = {}
         if 'user' not in notice:
             notice['user'] = None
+        if 'local' not in notice:
+            notice['local'] = False
 
         if notice['persist'] is True and 'always_show_allow_clear' is True:
             YomboWarning("New notification cannot have both 'persist' and 'always_show_allow_clear' set to true.")
@@ -384,6 +386,7 @@ class Notification:
         self.always_show = notice['always_show']
         self.always_show_allow_clear = notice['always_show_allow_clear']
         self.persist = notice['persist']
+        self.local = notice['local']
         self.created_at = notice['created_at']
 
     def __str__(self):
@@ -435,5 +438,6 @@ class Notification:
             'always_show': str(self.always_show),
             'always_show_allow_clear': str(self.always_show_allow_clear),
             'persist': str(self.persist),
+            'local': self.local,
             'created_at': str(self.created_at),
         }

@@ -228,6 +228,7 @@ def route_configs(webapp):
                                              'always_show': True,
                                              'always_show_allow_clear': False,
                                              'id': 'reboot_required',
+                                             'local': True,
                                              })
 
             webinterface._Configs.set('dns', 'dns_name', dns_results['data']['dns_name'])
