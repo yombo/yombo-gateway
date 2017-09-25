@@ -57,6 +57,12 @@ def update_request(webinterface, request):
 
 
 def run_first(*args, **kwargs):
+    # print("run first.... 1")
+    # for arg in args:
+    #     print("arg: %s" % arg)
+    # print("run first.... 2 %s" % kwargs)
+    # for kwarg, value in kwargs.items():
+    #     print("kwarg: %s -> " % (kwarg, value))
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -98,6 +104,9 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
             request.auth_id = None
 
             host = request.getHeader('host')
+            if host is None:
+                logger.warn("Discarding request, appears to be malformed session id.")
+                return return_need_login(webinterface, request, False, **kwargs)
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
 
@@ -165,6 +174,9 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
 
             host = request.getHeader('host')
             host_info = host.split(':')
+            if host is None:
+                logger.warn("Discarding request, appears to be malformed session id.")
+                return return_need_login(webinterface, request, False, **kwargs)
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
 
             if len(host_info) > 1:
