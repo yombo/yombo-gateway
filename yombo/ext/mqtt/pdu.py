@@ -222,6 +222,7 @@ class CONNECT(object):
         
         varHeader.extend(encodeString(self.version['tag'])) 
         varHeader.append(self.version['level']) # protocol Level
+        # print("MQTT:PDU:encode: cleanstart: %s" % self.cleanStart)
         flags =  (self.cleanStart << 1)
         if  self.willTopic is not None and self.willMessage is not None:
             flags |= 0x04 | (self.willRetain << 5) | (self.willQoS << 3)
@@ -229,6 +230,7 @@ class CONNECT(object):
             flags |= 0x80
         if self.password is not None:
             flags |= 0x40
+        # print("mqtt flags: %s" % bin(flags))
         varHeader.append(flags)
         varHeader.extend(encode16Int(self.keepalive))
         # ------ Payload encoding section ----

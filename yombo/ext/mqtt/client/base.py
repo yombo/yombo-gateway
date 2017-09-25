@@ -521,7 +521,7 @@ class MQTTBaseProtocol(Protocol):
 
     def connect(self, clientId, keepalive=0, willTopic=None,
                 willMessage=None, willQoS=0, willRetain=False,
-                username=None,password=None,cleanStart=True, version=v311):
+                username=None,password=None, cleanStart=True, version=v311):
         '''
         API Entry Point       
         '''
