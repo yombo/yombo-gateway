@@ -138,3 +138,25 @@ def route_devtools_debug(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                bucket_lifetimes=webinterface._Statistics.bucket_lifetimes
                                )
+
+        @webapp.route('/sslcerts')
+        @require_auth()
+        def page_devtools_debug_sslcerts(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/sslcerts/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/sslcerts", "SSL Certs")
+            return page.render(alerts=webinterface.get_alerts(),
+                               sslcerts=webinterface._SSLCerts.managed_certs,
+                               )
+
+        @webapp.route('/sslcerts/<string:cert_name>/details')
+        @require_auth()
+        def page_devtools_debug_sslcerts_details(webinterface, request, session, cert_name):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/sslcerts/details.html')
+            sslcert = webinterface._SSLCerts.managed_certs[cert_name]
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/sslcerts", "SSL Certs")
+            webinterface.add_breadcrumb(request, "/devtools/debug/sslcerts/%s/details" % sslcert.sslname, sslcert.sslname)
+            return page.render(alerts=webinterface.get_alerts(),
+                               sslcert=sslcert,
+                               )
