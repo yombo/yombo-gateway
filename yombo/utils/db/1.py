@@ -494,10 +494,11 @@ def create_table_notifications(Registry, **kwargs):
         `always_show_allow_clear` INTEGER NOT NULL, /* User allowed to clear notification form always_show. */
         `acknowledged`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
         `acknowledged_at`         INTEGER, /* Timestemp when msg was ack'd by the user. */
-        `user`                    TEXT, /* Message data */
-        `title`                   TEXT, /* Message data */
-        `message`                 TEXT, /* Message data */
+        `user`                    TEXT,
+        `title`                   TEXT,
+        `message`                 TEXT,
         `meta`                    TEXT, /* Any extra meta data. JSON format */
+        `local`                   BOOL,
         `expire_at`               INTEGER, /* timestamp when msg should expire */
         `created_at`              INTEGER NOT NULL);"""
     yield Registry.DBPOOL.runQuery(table)
