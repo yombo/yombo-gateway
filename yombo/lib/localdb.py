@@ -427,7 +427,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_commands(self, always_load=None):
         if always_load is None:
-            always_load = True
+            always_load = False
 
         if always_load == True:
             records = yield self.dbconfig.select('commands', where=['always_load = ?', 1])
@@ -599,7 +599,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_device_types(self, always_load=None):
         if always_load is None:
-            always_load = True
+            always_load = False
 
         if always_load == True:
             records = yield self.dbconfig.select('device_types', where=['always_load = ?', 1])
@@ -747,7 +747,7 @@ class LocalDB(YomboLibrary):
     @inlineCallbacks
     def get_input_types(self, always_load=None):
         if always_load is None:
-            always_load = True
+            always_load = False
 
         if always_load == True:
             records = yield self.dbconfig.select('input_types', where=['always_load = ?', 1])
