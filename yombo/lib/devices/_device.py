@@ -123,6 +123,35 @@ class Device(Base_Device):
         return "%s%s%s" % (location, area, self.label)
 
     @property
+    def statistic_label_slug(self):
+        """
+        Get statistics label. Use the user defined version or create one if doesn't exist.
+        :return:
+        """
+        if self.statistic_label in (None, "", "None", "none"):
+            locations = self._Parent._Locations.locations
+            new_label = ""
+            if self.location_id in locations:
+                location = locations[self.location_id].label
+                if location.lower() != "none":
+                    new_label = self._Validate.slugify(location)
+
+            if self.area_id in locations:
+                area = locations[self.area_id].label
+                if area.lower() != "none":
+                    if len(new_label) > 0:
+                        new_label = new_label + "." + self._Validate.slugify(location)
+                    else:
+                       new_label = self._Validate.slugify(location)
+            if len(new_label) > 0:
+                new_label = new_label + "." + self._Validate.slugify(self.machine_label)
+            else:
+               new_label = self._Validate.slugify(self.machine_label)
+            return new_label
+        else:
+            return self.statistic_label
+
+    @property
     def should_poll(self) -> bool:
         """
         Return True if the device needs to be polled to get current status.
@@ -151,6 +180,15 @@ class Device(Base_Device):
         if len(self.status_history) == 0:
             return None
         return self.status_history[0].machine_status
+
+    @property
+    def machine_status(self):
+        """
+        Get the current machine status for a device.
+
+        :return:
+        """
+        return self.status_all.machine_status
 
     @property
     def status_all(self):

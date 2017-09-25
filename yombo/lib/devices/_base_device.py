@@ -174,6 +174,8 @@ class Base_Device(object):
         self.voice_cmd = None
         self.voice_cmd_order = None
         self.statistic_label = None
+        self.statistic_type = None
+        self.statistic_bucket_size = None
         self.statistic_lifetime = None
         self.enabled_status = None  # not to be confused for device state. see status_history
         self.created_at = None
@@ -268,8 +270,12 @@ class Base_Device(object):
             self.voice_cmd_order = device["voice_cmd_order"]
         if 'statistic_label' in device:
             self.statistic_label = device["statistic_label"]  # 'myhome.groundfloor.kitchen'
+        if 'statistic_type' in device:
+            self.statistic_type = device["statistic_type"]
+        if 'statistic_bucket_size' in device:
+            self.statistic_bucket_size = device["statistic_bucket_size"]
         if 'statistic_lifetime' in device:
-            self.statistic_lifetime = device["statistic_lifetime"]  # 'myhome.groundfloor.kitchen'
+            self.statistic_lifetime = device["statistic_lifetime"]
         if 'status' in device:
             self.enabled_status = int(device["status"])
         if 'created_at' in device:
@@ -280,7 +286,6 @@ class Base_Device(object):
             self.energy_tracker_device = device['energy_tracker_device']
         if 'energy_tracker_source' in device:
             self.energy_tracker_source = device['energy_tracker_source']
-
         if 'energy_type' in device:
             self.energy_type = device['energy_type']
 
@@ -311,7 +316,7 @@ class Base_Device(object):
 
     def save_to_db(self):
         if self._Parent.gateway_id == self.gateway_id:
-            self._Parent._LocalDB.update_node(self)
+            self._Parent._LocalDB.update_device(self)
 
     @inlineCallbacks
     def get_variable_fields(self):
@@ -375,6 +380,8 @@ class Base_Device(object):
                 'label': str(self.label),
                 'description': str(self.description),
                 'statistic_label': str(self.statistic_label),
+                'statistic_type': str(self.statistic_type),
+                'statistic_bucket_size': str(self.statistic_bucket_size),
                 'statistic_lifetime': str(self.statistic_lifetime),
                 'pin_code': "********",
                 'pin_required': int(self.pin_required),
@@ -893,8 +900,6 @@ class Base_Device(object):
             'device_id': self.device_id,
             'device_machine_label': self.machine_label,
             'device_label': self.label,
-            'command_id': command.command_id,
-            'command_machine_label': command.machine_label,
             'machine_status': machine_status,
             'machine_status_extra': machine_status_extra,
             'human_message': human_message,
@@ -926,10 +931,17 @@ class Base_Device(object):
         mqtt_message['energy_usage'] = energy_usage
         mqtt_message['energy_type'] = energy_type
 
-        if self.statistic_label is not None and self.statistic_label != "":
-            self._Parent._Statistics.datapoint("devices.%s" % self.statistic_label, machine_status)
-            self._Parent._Statistics.datapoint("energy.%s" % self.statistic_label, energy_usage)
-
+        if self.statistic_type not in (None, "", "None", "none"):
+            if self.statistic_type.lower() == "datapoint" or self.statistic_type.lower() == "average":
+                statistic_label_slug = self.statistic_label_slug
+            if self.statistic_type.lower() == "datapoint":
+                self._Parent._Statistics.datapoint("devices.%s" % statistic_label_slug, machine_status)
+                if self.energy_type not in (None, "", "none", "None"):
+                    self._Parent._Statistics.datapoint("energy.%s" % statistic_label_slug, energy_usage)
+            elif self.statistic_type.lower() == "average":
+                self._Parent._Statistics.averages("devices.%s" % statistic_label_slug, machine_status, int(self.statistic_bucket_size))
+                if self.energy_type not in (None, "", "none", "None"):
+                    self._Parent._Statistics.averages("energy.%s" % statistic_label_slug, energy_usage, int(self.statistic_bucket_size))
 
         new_status = Device_Status(self._Parent, self, {
             'command': command,
@@ -995,9 +1007,10 @@ s
             command = kwargs['command']
             # print("command: %s" % command)
         elif 'command_id' in kwargs:
-            # print("searching for command..")
-            command = self._Parent._Commands[kwargs['command_id']]
-            # print("command: %s" % command)
+            try:
+                command = self._Parent._Commands[kwargs['command_id']]
+            except Exception as e:
+                command = None
         else:
             command = None
 

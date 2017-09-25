@@ -387,6 +387,38 @@ class Devices(YomboLibrary):
                             label=device['label'],
                             class_names=class_names)
 
+            # setup some base items for the new device class.
+            klass._Atoms = self._Loader.loadedLibraries['atoms']
+            klass._Automation = self._Loader.loadedLibraries['automation']
+            klass._AMQP = self._Loader.loadedLibraries['amqp']
+            klass._AMQPYombo = self._Loader.loadedLibraries['amqpyombo']
+            klass._Commands = self._Loader.loadedLibraries['commands']
+            klass._Configs = self._Loader.loadedLibraries['configuration']
+            klass._CronTab = self._Loader.loadedLibraries['crontab']
+            klass._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
+            klass._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
+            klass._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
+            klass._Gateways = self._Loader.loadedLibraries['gateways']
+            klass._GPG = self._Loader.loadedLibraries['gpg']
+            klass._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
+            klass._Libraries = self._Loader.loadedLibraries
+            klass._Libraries = self._Loader.loadedLibraries
+            klass._Localize = self._Loader.loadedLibraries['localize']
+            klass._klasss = self
+            klass._MQTT = self._Loader.loadedLibraries['mqtt']
+            klass._Nodes = self._Loader.loadedLibraries['nodes']
+            klass._Notifications = self._Loader.loadedLibraries['notifications']
+            klass._Queue = self._Loader.loadedLibraries['queue']
+            klass._SQLDict = self._Loader.loadedLibraries['sqldict']
+            klass._SSLCerts = self._Loader.loadedLibraries['sslcerts']
+            klass._States = self._Loader.loadedLibraries['states']
+            klass._Statistics = self._Loader.loadedLibraries['statistics']
+            klass._Tasks = self._Loader.loadedLibraries['tasks']
+            klass._Times = self._Loader.loadedLibraries['times']
+            klass._YomboAPI = self._Loader.loadedLibraries['yomboapi']
+            klass._Variables = self._Loader.loadedLibraries['variables']
+            klass._Validate = self._Loader.loadedLibraries['validate']
+            klass._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
             try:
                 self.devices[device_id] = klass(device, self)
             except Exception as e:
