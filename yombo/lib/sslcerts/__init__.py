@@ -53,7 +53,7 @@ logger = get_logger('library.sslcerts')
 
 class SSLCerts(YomboLibrary):
     """
-    Responsible for managing various certificates for Yombo.
+    Responsible for managing various encryption and TLS (SSL) certificates.
     """
 
     managed_certs = {}
@@ -61,14 +61,16 @@ class SSLCerts(YomboLibrary):
     @inlineCallbacks
     def _init_(self, **kwargs):
         """
-        On startup, various libraries will need certs (webinterface, MQTT) will need at least a basic cert.
-        This module loads previously created certs. Then, after things settle, it will request new certs
-        as needed.
+        On startup, various libraries will need certs (webinterface, MQTT) for encryption. This
+        module stores certificates in a directory so other programs can use certs as well. It's
+        working data is stored in the database, while a backup is kept in the file system as well
+        and is only used if the data is missing from the database.
 
-        If a cert isn't avail for the requested sslname, it will receive a sign-signed certificate.
+        If a cert isn't avail for the requested sslname, it will receive a self-signed certificate.
 
         :return:
         """
+        # Since SSL generation can take some time on slower devices, we use a simple queue system.
         self.generate_csr_queue = self._Queue.new('library.sslcerts.generate_csr', self.generate_csr)
         self.hostname = gethostname()
 
@@ -83,10 +85,9 @@ class SSLCerts(YomboLibrary):
 
         if os.path.exists(self.self_signed_cert_file) is False or \
                 self.self_signed_expires is None or \
-                self.self_signed_expires < int(time() + (60*60*24*30)) or \
+                self.self_signed_expires < int(time() + (60*60*24*60)) or \
                 self.self_signed_created is None or \
-                not os.path.exists(self.self_signed_key_file) or \
-                not os.path.exists(self.self_signed_cert_file):
+                not os.path.exists(self.self_signed_key_file):
             logger.info("Generating a self signed cert for SSL. This can take a few moments.")
             yield self._create_self_signed_cert()
 
@@ -95,19 +96,23 @@ class SSLCerts(YomboLibrary):
 
         self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
                                                      unserializer=self.sslcert_unserializer)
-        # print("startup: managed_certs: %s" % self.managed_certs)
+        # for name, data in self.managed_certs.items():
+        #     print("cert name: %s" % name)
+        #     print("  cert data: %s" % data.__dict__)
 
         self.check_if_certs_need_update_loop = None
 
     @inlineCallbacks
     def _load_(self, **kwargs):
         """
-        Starts the loop to save data to SQL every so often.
+        Starts the loop to check if any certs need to be updated.
+
         :return:
         """
         self.check_if_certs_need_update_loop = LoopingCall(self.check_if_certs_need_update)
         self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict', 'save_interval',random_int(60*60*24, .1), False))
-        # get certs needed for system libraries.
+
+        # Check if any libraries or modules need certs.
         sslcerts = yield global_invoke_all('_sslcerts_', called_by=self)
         # print("about to add sslcerts")
         yield self._add_sslcerts(sslcerts)
@@ -134,16 +139,6 @@ class SSLCerts(YomboLibrary):
         for sslname, cert in self.managed_certs.items():
             cert.check_if_rotate_needed()
 
-    # @inlineCallbacks
-    # def _modules_inited_(self, **kwargs):
-    #     """
-    #     Called before the modules have their preload called, after their _init_.
-    #
-    #     In turn, calls the hook "sslcerts" to gather requirements to manage certs.
-    #
-    #     :return:
-    #     """
-
     @inlineCallbacks
     def _add_sslcerts(self, sslcerts):
         """
@@ -152,8 +147,8 @@ class SSLCerts(YomboLibrary):
         :param sslcerts: 
         :return: 
         """
-        logger.debug("Adding new managed certs.")
         for component_name, item in sslcerts.items():
+            logger.debug("Adding new managed certs: %s" % component_name)
             # print("SSLCERTS: mod started, from: %s item: %s" % (component_name, item))
             try:
                 item = self.check_csr_input(item)  # Clean up module developers input.
@@ -187,7 +182,6 @@ class SSLCerts(YomboLibrary):
         :return:
         """
         results = SSLCert('sqldict', DictObject(item), self)
-        # print("sslcert unserializer for item: %s" % item)
         yield results.start()
         return results
 

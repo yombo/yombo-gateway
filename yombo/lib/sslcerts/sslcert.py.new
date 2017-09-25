@@ -17,7 +17,7 @@ from twisted.internet.defer import inlineCallbacks
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import save_file, read_file, bytes_to_unicode, unicode_to_bytes
+from yombo.utils import save_file, read_file
 import collections
 
 logger = get_logger('library.sslcerts.sslcert')
@@ -26,27 +26,6 @@ class SSLCert(object):
     """
     A class representing a single cert.
     """
-
-    @property
-    def previous_status(self):
-        return self.human_status(self.previous_is_valid)
-
-    @property
-    def current_status(self):
-        return self.human_status(self.current_is_valid)
-
-    @property
-    def next_status(self):
-        return self.human_status(self.next_is_valid)
-
-    def human_status(self, valid):
-        if valid is True:
-            return "Valid"
-        elif valid is False:
-            return "Unsigned"
-        elif valid is None:
-            return "None"
-
     def __init__(self, source, sslcert, _ParentLibrary):
         """
         :param source: *(source)* - One of: 'sql', 'sslcerts', or 'sqldict'
@@ -65,49 +44,44 @@ class SSLCert(object):
         self.sans = sslcert.sans
         self.cert_fqdn = self._ParentLibrary.fqdn
 
-        self.update_callback = None
-        self.update_callback_type = None
-        self.update_callback_component = None
-        self.update_callback_function = None
+        self.update_callback = sslcert.get('update_callback', None)
+        self.update_callback_type = sslcert.get('update_callback_type', None)
+        self.update_callback_component = sslcert.get('update_callback_component', None)
+        self.update_callback_function = sslcert.get('update_callback_function', None)
 
-        self.key_size = None
-        self.key_type = None
+        self.key_size = int(sslcert.get('key_size', None))
+        self.key_type = sslcert.get('key_type', None)
 
-        self.cert_previous = None
-        self.chain_previous = None
-        self.key_previous = None
-        self.previous_created = None
-        self.previous_expires = None
-        self.previous_signed = None
-        self.previous_submitted = None
+        self.cert_previous = sslcert.get('cert_previous', None)
+        self.chain_previous = sslcert.get('chain_previous', None)
+        self.key_previous = sslcert.get('key_previous', None)
+        self.previous_expires = int(sslcert.get('previous_expires', 0))
+        self.previous_created = int(sslcert.get('previous_created', 0))
+        self.previous_signed = int(sslcert.get('previous_signed', 0))
+        self.previous_submitted = int(sslcert.get('previous_submitted', 0))
         self.previous_is_valid = None
 
-        self.cert_current = None
-        self.chain_current = None
-        self.key_current = None
-        self.current_created = None
-        self.current_expires = None
-        self.current_signed = None
-        self.current_submitted = None
+        self.cert_current = sslcert.get('cert_current', None)
+        self.chain_current = sslcert.get('chain_current', None)
+        self.key_current = sslcert.get('key_current', None)
+        self.current_created = int(sslcert.get('current_created', 0))
+        self.current_expires = int(sslcert.get('current_expires', 0))
+        self.current_signed = int(sslcert.get('current_signed', 0))
+        self.current_submitted = int(sslcert.get('current_submitted', 0))
         self.current_is_valid = None
 
-        self.csr_next = None
-        self.cert_next = None
-        self.chain_next = None
-        self.key_next = None
-        self.next_created = None
-        self.next_expires = None
-        self.next_signed = None
-        self.next_submitted = None
-
+        self.csr_next = sslcert.get('csr_next', None)
+        self.cert_next = sslcert.get('cert_next', None)
+        self.chain_next = sslcert.get('chain_next', None)
+        self.key_next = sslcert.get('key_next', None)
+        self.next_created = int(sslcert.get('next_created', 0))
+        self.next_expires = int(sslcert.get('next_expires', 0))
+        self.next_signed = int(sslcert.get('next_signed', 0))
+        self.next_submitted = int(sslcert.get('next_submitted', 0))
         self.next_is_valid = None
         self.next_csr_generation_error_count = 0
         self.next_csr_generation_in_progress = False
         self.next_csr_submit_after_generation = False
-        self.csr_last_generated = 0
-
-        self.update_attributes(sslcert)
-        self.dirty = False
 
         self.sync_to_file_calllater = None
 
@@ -115,12 +89,11 @@ class SSLCert(object):
 
     @inlineCallbacks
     def start(self):
-        # print("!!!!!  starting ssl cert")
-        # SQLDict means it came from the database, so only scan the files otherwise.
-        if self.source != 'sqldict':
-            # print("about to sync from filesystem: %s" % self.key_current)
+        print("!!!!!  starting ssl cert")
+        if self.source != 'sqldict':  # we only trust SQLDict or the filesystem for data.
+            print("about to sync from filesystem: %s" % self.key_current)
             yield self.sync_from_filesystem()
-            # print("done about to sync from filesystem: %s" % self.key_current)
+            print("done about to sync from filesystem: %s" % self.key_current)
 
         self.check_is_valid()
         # print("status: %s" % self.__dict__)
@@ -129,147 +102,49 @@ class SSLCert(object):
         self.check_if_rotate_needed()
 
     def stop(self):
-        """
-        Saves the cert meta data to disk...if it's dirty.
-
-        :return:
-        """
         self._sync_to_file()
 
-
-    def update_attributes(self, attributes):
+    def check_if_rotate_needed(self):
         """
-        Update various attributes. Should only be used by the SQLCerts system when loading updated things from
-        a library or module.
+        Our methodology is to always make sure a next key is avail. If we are due for signing, lets
+        get it signed and rotate into use.
 
-        The attributes have already been screened by the parent.
-
-        :param attributes:
-        :return:
-        """
-        self.manage_requested = True
-
-        # print("update_attributes: %s" % attributes)
-        if 'update_callback' in attributes:
-            self.update_callback = attributes['update_callback']
-        if 'update_callback_type' in attributes:
-            self.update_callback_type = attributes['update_callback_type']
-        if 'update_callback_component' in attributes:
-            self.update_callback_component = attributes['update_callback_component']
-        if 'update_callback_function' in attributes:
-            self.update_callback_function = attributes['update_callback_function']
-
-        if 'key_size' in attributes:
-            self.key_size = int(attributes['key_size']) if attributes['key_size'] else None
-        if 'key_type' in attributes:
-            self.key_type = attributes['key_type']
-
-        if 'cert_previous' in attributes:
-            self.cert_previous = attributes['cert_previous']
-        if 'chain_previous' in attributes:
-            self.chain_previous = attributes['chain_previous']
-        if 'key_previous' in attributes:
-            self.key_previous = attributes['key_previous']
-        if 'previous_created' in attributes:
-            self.previous_created = int(attributes['previous_created']) if attributes['previous_created'] else None
-        if 'previous_expires' in attributes:
-            self.previous_expires = int(attributes['previous_expires']) if attributes['previous_expires'] else None
-        if 'previous_signed' in attributes:
-            self.previous_signed = int(attributes['previous_signed']) if attributes['previous_signed'] else None
-        if 'previous_submitted' in attributes:
-            self.previous_submitted = int(attributes['previous_submitted']) if attributes['previous_submitted'] else None
-        if 'previous_is_valid' in attributes:
-            self.previous_is_valid = attributes['previous_is_valid']
-
-        if 'cert_current' in attributes:
-            self.cert_current = attributes['cert_current']
-        if 'chain_current' in attributes:
-            self.chain_current = attributes['chain_current']
-        if 'key_current' in attributes:
-            self.key_current = attributes['key_current']
-        if 'current_created' in attributes:
-            self.current_created = int(attributes['current_created']) if attributes['current_created'] else None
-        if 'current_expires' in attributes:
-            self.current_expires = int(attributes['current_expires']) if attributes['current_expires'] else None
-        if 'current_signed' in attributes:
-            self.current_signed = int(attributes['current_signed']) if attributes['current_signed'] else None
-        if 'current_submitted' in attributes:
-            self.current_submitted = int(attributes['current_submitted']) if attributes['current_submitted'] else None
-        if 'current_is_valid' in attributes:
-            self.current_is_valid = attributes['current_is_valid']
-
-        if 'csr_next' in attributes:
-            self.csr_next = attributes['csr_next']
-        if 'cert_next' in attributes:
-            self.cert_next = attributes['cert_next']
-        if 'chain_next' in attributes:
-            self.chain_next = attributes['chain_next']
-        if 'key_next' in attributes:
-            self.key_next = attributes['key_next']
-        if 'next_created' in attributes:
-            self.next_created = int(attributes['next_created']) if attributes['next_created'] else None
-        if 'next_expires' in attributes:
-            self.next_expires = int(attributes['next_expires']) if attributes['next_expires'] else None
-        if 'next_signed' in attributes:
-            self.next_signed = int(attributes['next_signed']) if attributes['next_signed'] else None
-        if 'next_submitted' in attributes:
-            self.next_submitted = int(attributes['next_submitted']) if attributes['next_submitted'] else None
-        if 'next_is_valid' in attributes:
-            self.next_is_valid = attributes['next_is_valid']
-
-        self.dirty = True
-
-    def check_if_rotate_needed(self, recursive=None):
-        """
-        Always make sure the current key is valid. If it's expiring within 60 days, get a new cert.
-        However, if the current cert is good, and not expiring soon, we should always have a fresh CSR
-        ready to be signed when needed.
-
+        These checks for the next cert include checks for the current cert, including invalid,
+        non-existent, or expired.
         :return:
         """
         # Look for any tasks to do.
-        self.check_updated_fqdn()  # if fqdn of cert doesn't match current, get new cert.
+        self.check_updated_fqdn()
+
         # print("current_expires: %s - %s" % (self.current_expires, type(self.current_expires)))
 
         # 1) See if we need to generate a new cert.
         if self.csr_next is None or self.next_is_valid is None:
             if self.current_is_valid is not True or \
                     self.key_current is None or \
-                    self.current_expires is None or \
-                    int(self.current_expires) < int(time() + (30 * 24 * 60 * 60)):  # our current cert is bad or expiring
+                    self.current_expires < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
                 # print("self.current_is_valid: (should be not True): %s" % self.current_is_valid)
                 # print("self.key_current: (should be None): %s" % self.key_current)
                 # print("self.current_expires: (should be not NOne): %s" % self.current_expires)
                 # print("int(time() + (30 * 24 * 60 * 60)): (should be less then above number): %s" % int(time() + (30 * 24 * 60 * 60)))
-                # print("generate new csr...1")
                 self.generate_new_csr(submit=True)
             else: # just generate the CSR, no need to sign just yet.  Too soon.
-                # print("generate new csr...2")
                 self.generate_new_csr(submit=False)
         # 2) If next is valid, then lets rotate into current, doesn't matter if current is good, expired, etc. Just use the next cert.
         elif self.next_is_valid is True:
             self.make_next_be_current()
-            self.generate_new_csr(submit=False)
-            if recursive is None:
-                return self.check_if_rotate_needed(True)
+            # we not have ran for a long time, lets check if we need to submit CSR right away:
+            if self.current_is_valid is not True or \
+                    self.key_current is None or \
+                    self.current_expires < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
+                self.generate_new_csr(submit=True)
             else:
-                raise Exception("Error while rotating next cert to current cert - recursion loop.")
-            # # lets check if we need to submit CSR right away:
-            # if self.current_is_valid is not True or \
-            #         self.key_current is None or \
-            #         self.current_expires is None or \
-            #         int(self.current_expires) < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
-            #     print("generate new csr...4")
-            #     self.generate_new_csr(submit=True)
-            # else:
-            #     print("generate new csr...5")
-            #     self.generate_new_csr(submit=False)
+                self.generate_new_csr(submit=False)
         # 3) Next cert might be half generated, half signed, maybe waited to be signed, etc. Lets inspect.
         elif self.next_is_valid is False:
             if self.current_is_valid is not True or \
                     self.key_current is None or \
-                    self.current_expires is None or \
-                    int(self.current_expires) < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
+                    self.current_expires < int(time() + (30 * 24 * 60 * 60)):  # our current cert if bad...lets get a new one ASAP.
                 # print("self.current_is_valid: (should be not True): %s" % self.current_is_valid)
                 # print("self.key_current: (should be None): %s" % self.key_current)
                 # print("self.current_expires: (should be not NOne): %s" % self.current_expires)
@@ -342,7 +217,6 @@ class SSLCert(object):
         :param label:
         :return:
         """
-        # print("cleaning section: %s" % label)
         if label == 'next':
             self.csr_next = None
             self.next_csr_generation_error_count
@@ -350,62 +224,16 @@ class SSLCert(object):
         setattr(self, "cert_%s" % label, None)
         setattr(self, "chain_%s" % label, None)
         setattr(self, "key_%s" % label, None)
-        setattr(self, "%s_created" % label, None)
-        setattr(self, "%s_expires" % label, None)
-        setattr(self, "%s_signed" % label, None)
-        setattr(self, "%s_submitted" % label, None)
+        setattr(self, "%s_created" % label, 0)
+        setattr(self, "%s_expires" % label, 0)
+        setattr(self, "%s_signed" % label, 0)
+        setattr(self, "%s_submitted" % label, 0)
         setattr(self, "%s_is_valid" % label, None)
         self.sync_to_file() # this will remove the data file, and make a nearly empty meta file.
 
     def check_messages_of_the_unknown(self):
         if self.sslname in self._ParentLibrary.received_message_for_unknown:
             logger.warn("We have messages for us.  TODO: Implement this.")
-
-    def check_is_valid(self, label=None):
-        if label is None:
-            labels = ['previous', 'current', 'next']
-        else:
-            labels = [label]
-
-        for label in labels:
-            # print("check is valid for section: %s" % label)
-            if getattr(self, "%s_expires" % label) is not None and \
-                    int(getattr(self, "%s_expires" % label)) > int(time()) and \
-                    getattr(self, "%s_signed" % label) is not None and \
-                    getattr(self, "key_%s" % label) is not None and \
-                    getattr(self, "cert_%s" % label) is not None and \
-                    getattr(self, "chain_%s" % label) is not None:
-                setattr(self, "%s_is_valid" % label, True)
-            else:
-                # print("Setting %s_is_valid to false" % label)
-                # print("expires: %s" % getattr(self, "%s_expires" % label))
-                # print("time   : %s" % int(time()))
-                # print("signed: %s" % getattr(self, "%s_signed" % label))
-                # print("key_: %s" % getattr(self, "key_%s" % label))
-                # print("cert_: %s" % getattr(self, "cert_%s" % label))
-                # print("chain_: %s" % getattr(self, "chain_%s" % label))
-                setattr(self, "%s_is_valid" % label, False)
-
-                # print("key_: %s" % getattr(self, "key_%s" % label))
-                # print("cert_: %s" % getattr(self, "cert_%s" % label))
-                # print("chain_: %s" % getattr(self, "chain_%s" % label))
-                if label != "next":
-                    if getattr(self, "key_%s" % label) is None or \
-                                    getattr(self, "cert_%s" % label) is None or \
-                                    getattr(self, "chain_%s" % label) is None or \
-                                    getattr(self, "%s_created" % label) is None:
-                        # print("calling clean section from check_is_valid for non-next")
-                        self.clean_section(label)
-                else:
-                    # print("csr_next: %s" % getattr(self, "csr_%s" % label))
-                    # print("next_created: %s" % getattr(self, "%s_created" % label))
-                    if getattr(self, "key_%s" % label) is None or \
-                                    getattr(self, "csr_%s" % label) is None or \
-                                    getattr(self, "%s_created" % label) is None:
-                        # print("calling clean section from check_is_valid_for NEXT")
-                        self.clean_section(label)
-
-
 
     @inlineCallbacks
     def sync_from_filesystem(self):
@@ -485,7 +313,6 @@ class SSLCert(object):
                     try:
                         return int(input)
                     except Exception as e:
-                        print("ERROR: Cannot convert to int: %s" % e)
                         return input
 
                 if csr_read:
@@ -500,10 +327,35 @@ class SSLCert(object):
                 setattr(self, "%s_created" % label, return_int(meta['created']))
                 setattr(self, "%s_signed" % label, return_int(meta['signed']))
                 setattr(self, "%s_submitted" % label, return_int(meta['submitted']))
+                setattr(self, "%s_needs" % label, None)
 
                 self.check_is_valid(label)
             else:
+                setattr(self, "%s_is_valid" % label, None)
+
+    def check_is_valid(self, label=None):
+        if label is None:
+            labels = ['previous', 'current', 'next']
+        else:
+            labels = [label]
+
+        for label in labels:
+            if int(getattr(self, "%s_expires" % label)) > int(time()) and \
+                    getattr(self, "%s_signed" % label) is not None and \
+                    getattr(self, "key_%s" % label) is not None and \
+                    getattr(self, "cert_%s" % label) is not None and \
+                    getattr(self, "chain_%s" % label) is not None:
+                setattr(self, "%s_is_valid" % label, True)
+            else:
+                # print("Setting %s_is_valid to false" % label)
+                # print("expires: %s" % getattr(self, "%s_expires" % label))
+                # print("time   : %s" % int(time()))
+                # print("signed: %s" % getattr(self, "%s_signed" % label))
+                # print("key_: %s" % getattr(self, "key_%s" % label))
+                # print("cert_: %s" % getattr(self, "cert_%s" % label))
+                # print("chain_: %s" % getattr(self, "chain_%s" % label))
                 setattr(self, "%s_is_valid" % label, False)
+
 
     def sync_to_file(self):
         if self.sync_to_file_calllater is None:
@@ -528,12 +380,10 @@ class SSLCert(object):
         for label in ['previous', 'current', 'next']:
 
             meta = {
-                'created': getattr(self, "%s_created" % label),
                 'expires': getattr(self, "%s_expires" % label),
+                'created': getattr(self, "%s_created" % label),
                 'signed': getattr(self, "%s_signed" % label),
                 'submitted': getattr(self, "%s_submitted" % label),
-                'key_type': self.key_type,
-                'key_size': self.key_size,
             }
 
             if getattr(self, "cert_%s" % label) is None:
@@ -582,7 +432,7 @@ class SSLCert(object):
             self.current_is_valid = None
             self.generate_new_csr(submit=True)
 
-    def generate_new_csr(self, submit=False, force_new=False):
+    def generate_new_csr(self, submit=False):
         """
         Requests a new csr to be generated. This uses the base class to do the heavy lifting.
 
@@ -590,26 +440,9 @@ class SSLCert(object):
         of when we actually need.
 
         :param submit: If true, will also submit the csr.
-        :param force_new: Will create a new CSR regardless of the current state.
         :return:
         """
-        # print("1 calling local generate_new_csr. Force: %s.  Is valid: %s" % (force_new, self.next_is_valid))
-        if force_new is True:
-            self.clean_section('next')
-        else:
-            # print("calling check is valid from generate new csr")
-            self.check_is_valid('next')
-
-        # print("2 calling local generate_new_csr. Force: %s.  Is valid: %s" % (force_new, self.next_is_valid))
-        if self.next_is_valid is not None:
-            if submit is True:
-                if self.next_csr_generation_in_progress is True:
-                    self.next_csr_submit_after_generation = True
-                else:
-                    self.submit_csr()
-            else:
-                logger.info("Was asked to generatre CSR, but we don't need it.")
-            return
+        self.clean_section('next')
 
         logger.warn("generate_new_csr: {sslname}.  Submit: {submit}", sslname=self.sslname, submit=submit)
         # End local functions.
@@ -659,13 +492,11 @@ class SSLCert(object):
         :param submit: True if we should submit it to yombo for signing.
         :return:
         """
-        logger.warn("generate_new_csr_done: {sslname}", sslname=self.sslname)
-        results = bytes_to_unicode(results)
-        logger.info("generate_new_csr_done:results: results {results}", results=results)
+        logger.debug("generate_new_csr_done: {sslname}", sslname=self.sslname)
+        # logger.info("generate_new_csr_done:results: results {results}", results=results)
         # logger.info("generate_new_csr_done:results: args {results}", results=args)
         self.key_next = results['key']
         self.csr_next = results['csr']
-        # print("generate_new_csr_done csr: %s " % self.csr_next)
         save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.csr_next)
         save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.key_next)
         self.next_created = int(time())
@@ -681,7 +512,8 @@ class SSLCert(object):
         Submit a CSR for signing, only if we have a CSR and KEY.
         :return:
         """
-        # self.next_submitted = int(time())
+
+        self.next_submitted = int(time())
         missing = []
         if self.csr_next is None:
             missing.append("CSR")
@@ -691,12 +523,11 @@ class SSLCert(object):
         # print("sslcert:submit_csr - csr_text: %s" % self.csr_next)
         if len(missing) == 0:
             request = self._ParentLibrary.send_csr_request(self.csr_next, self.sslname)
-            logger.debug("Sending CSR Request from instance. Correlation id: {correlation_id}",
-                         correlation_id=request['properties']['correlation_id'])
             self.next_submitted = int(time())
         else:
             logger.warn("Requested to submit CSR, but these are missing: {missing}", missing=".".join(missing))
             raise YomboWarning("Unable to submit CSR.")
+        logger.debug("Sending CSR Request from instance. Correlation id: {correlation_id}", correlation_id=request['properties']['correlation_id'])
 
     def yombo_csr_response(self, properties, msg, correlation_info):
         """
@@ -717,6 +548,21 @@ class SSLCert(object):
             self.sync_to_file()
             self.check_if_rotate_needed()
         # print("status: %s" % self.__dict__)
+
+    def update_attributes(self, attributes):
+        """
+        Update various attributes. Should only be used by the SQLCerts system when loading updated things from
+        a library or module.
+
+        The attributes have already been screened by the parent.
+
+        :param attributes:
+        :return:
+        """
+        self.manage_requested = True
+        for key, value in attributes.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def get_key(self):
         self.requested_locally = True
@@ -803,6 +649,7 @@ class SSLCert(object):
             'previous_is_valid': self.previous_is_valid,
             'cert_current': self.cert_current,
             'chain_current': self.chain_current,
+            'key_current': self.key_current,
             'key_current': self.key_current,
             'current_created': None if self.current_created is None else int(self.current_created),
             'current_expires': None if self.current_expires is None else int(self.current_expires),
