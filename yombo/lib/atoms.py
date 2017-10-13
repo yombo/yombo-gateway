@@ -424,7 +424,7 @@ class Atoms(YomboLibrary):
                                                                    'gateway_id': gateway_id
                                                                    }
                                                                 )
-        except YomboHookStopProcessing:
+        except Exception as e:
             pass
 
         self.check_trigger(gateway_id, key, value)  # Check if any automation items need to fire!
