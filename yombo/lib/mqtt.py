@@ -466,8 +466,6 @@ class MQTT(YomboLibrary):
                 return page.render(alerts=webinterface.get_alerts(),
                                    )
 
-                return "These stairs lead to the lair of beasts of the mqtt world: "
-
             @webapp.route("/api/v1/mqtt")
             @require_auth()
             @inlineCallbacks
