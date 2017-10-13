@@ -71,6 +71,7 @@ from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, random_string,\
     random_int, get_nested_dict, set_nested_dict
+from yombo.utils.datatypes import coerce_value
 
 logger = get_logger("library.states")
 
@@ -212,12 +213,12 @@ class States(YomboLibrary, object):
         self.db_save_states_data = deque()
         self.db_save_states_loop = LoopingCall(self.db_save_states)
         self.db_save_states_loop.start(random_int(60, .10), False)  # clean the database every 6 hours.
-
-    def _load_(self, **kwargs):
-        self.library_phase = 2
         self.init_deferred = Deferred()
         self.load_states()
         return self.init_deferred
+
+    def _load_(self, **kwargs):
+        self.library_phase = 2
 
     def _start_(self, **kwargs):
         self.module_phase = 3
@@ -252,7 +253,7 @@ class States(YomboLibrary, object):
             if state['name'] not in self.__States[self.gateway_id]:
                 self.__States[self.gateway_id][state['name']] = {
                     'gateway_id': state['gateway_id'],
-                    'value': state['value'],
+                    'value': coerce_value(state['value'], state['value_type']),
                     'value_human': self.convert_to_human(state['value'], state['value_type']),
                     'value_type': state['value_type'],
                     'live': state['live'],
@@ -429,11 +430,17 @@ class States(YomboLibrary, object):
         if key in self.__States[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
+            print("stats key exists for gateway... %s" % key)
             self.__States[gateway_id][key]['updated_at'] = int(round(time()))
+            print("old (%s) == new (%s)" % (self.__States[gateway_id][key]['value'], value))
+
             if self.__States[gateway_id][key]['value'] == value:
+                print("not setting state...it matches....")
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
         else:
+            print("New state: %s=%s" % (key, value))
+            # logger.debug("Saving state: {key} = {value}", key=key, value=value)
             is_new = True
             self.__States[gateway_id][key] = {
                 'gateway_id': gateway_id,
