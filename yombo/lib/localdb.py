@@ -1208,15 +1208,26 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
     ### Statistics  #####
     #####################
     @inlineCallbacks
-    def get_distinct_stat_names(self, get_all=False):
-        if get_all:
-            records = yield self.dbconfig.select('statistics',
-                 select='bucket_name, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_tuime_max',
-                 group='bucket_name')
-        else:
-            records = yield self.dbconfig.select('statistics', where=['bucket_type != ?', 'datapoint'],
-                 select='bucket_name, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_tuime_max',
-                 group='bucket_name')
+    def get_distinct_stat_names(self, name=None, search_name_all=None, search_name_start=None,
+                                search_name_end=None, bucket_type=None):
+        where = {}
+        dictToWhere
+        if bucket_type is not None:
+            where['bucket_type'] = bucket_type
+        if name is not None:
+            where['bucket_name'] = name
+        if search_name_all is not None:
+            where['bucket_name'] = ["%%%s%%" % search_name_all, 'like']
+        if search_name_start is not None:
+            where['bucket_name'] = ["%s%%" % search_name_start, 'like']
+        if search_name_end is not None:
+            where['bucket_name'] = ["%%%s" % search_name_end, 'like']
+
+        print("searching these stats: %s" % dict(where))
+        records = yield self.dbconfig.select('statistics',
+             where=dictToWhere(where),
+             select='bucket_name, bucket_type, bucket_size, bucket_lifetime, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_time_max, count(*) as count',
+             group='bucket_name')
         return records
 
     @inlineCallbacks
