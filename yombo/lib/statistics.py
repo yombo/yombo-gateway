@@ -166,7 +166,7 @@ class Statistics(YomboLibrary):
 
     def _start_(self, **kwargs):
         # self._upload_statistics_loop.start(5, False) # for testing...
-        self._upload_statistics_loop.start(21557, False) # about every 6 hours
+        self._upload_statistics_loop.start(603.1, False) # about every 10 minutes
 
     def _stop_(self, **kwargs):
         """
@@ -602,11 +602,11 @@ class Statistics(YomboLibrary):
         elif anon is False:
             self._averages[bucket['time']][bucket_name]['anon'] = False
 
-    def get_stat(self, bucket_name, type=None):
+    def get_stat(self, bucket_name, bucket_type=None):
         results = []
         # sum(value) as value, bucket_name, type, round(bucket / %s) * %s AS bucket
         find_name = bucket_name.replace('%', '#')
-        if type is None or type is 'counter':
+        if bucket_type is None or bucket_type is 'counter':
             for bucket in self._counters:
                 for stat in pattern_search(find_name, self._counters[bucket]):
                     too_add = self._counters[bucket][stat]
@@ -618,7 +618,7 @@ class Statistics(YomboLibrary):
                     }
                     results.append(new_result)
 
-        if type is None or type is 'average':
+        if bucket_type is None or bucket_type is 'average':
             for bucket in self._averages:
                 for stat in pattern_search(find_name, self._averages[bucket]):
                     too_add = self._averages[bucket][stat]
@@ -630,7 +630,7 @@ class Statistics(YomboLibrary):
                     }
                     results.append(new_result)
 
-        if type is None or type is 'datapoint':
+        if bucket_type is None or bucket_type is 'datapoint':
             for bucket in self._datapoints:
                 for stat in pattern_search(find_name, self._datapoints[bucket]):
                     too_add = self._datapoints[bucket][stat]
