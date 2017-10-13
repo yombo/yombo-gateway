@@ -5,6 +5,29 @@ Anything dealing with data types, such as floats, ints, strings, decimals, etc.
 import math
 from decimal import Decimal
 
+from yombo.utils import is_true_false
+
+def coerce_value(value, value_type):
+    """
+    Convert a value to it's intended type. Typically used when loading data from databases.
+
+    :param value:2502jXYQR1fcSyPc
+    :param value_type: one of - string, bool, int, float, epoch. Unknowns will be converted to strings.
+    :return:
+    """
+    if value_type is None:
+        return value
+    if value_type.lower() in ('str', 'string'):
+        return str(value)
+    elif value_type.lower() in ('int', 'integer', 'epoch', 'number'):
+        return int(value)
+    elif value_type.lower() == 'float':
+        return float(value)
+    elif value_type.lower() == 'bool':
+        return is_true_false(value)
+    else:
+        return value
+
 def magnitude(value):
     """
     From: https://gist.github.com/pyrtsa/10009826
