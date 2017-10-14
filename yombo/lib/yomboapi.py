@@ -1,6 +1,12 @@
 #This file was created by Yombo for use with Yombo Python gateway automation
 #software.  Details can be found at http://yombo.net
 """
+
+.. note::
+
+  For more information see: `YomboAPI @ Module Development <https://docs.yombo.net/Libraries/YomboAPI>`_
+
+
 Manages interactions with api.yombo.net
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -8,10 +14,12 @@ Manages interactions with api.yombo.net
 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/yomboapi.html>`_
 """
 # Import python libraries
 import msgpack
 from hashlib import sha1
+import treq
 
 try: import simplejson as json
 except ImportError: import json
@@ -21,11 +29,8 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from twisted.web.client import Agent
 from twisted.internet import reactor
 
-# import yombo.ext.treq as treq
-import treq
-from yombo.ext.expiringdict import ExpiringDict
-
 # Import Yombo libraries
+from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger

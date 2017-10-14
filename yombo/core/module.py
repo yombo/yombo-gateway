@@ -1,6 +1,12 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Module Core @ Module Development <https://docs.yombo.net/Core/Module>`_
+
+
 Module developers must use the *YomboModule* class as their base class. This class
 gets their module setup and running with basic functions, predefined variables,
 and functions.
@@ -91,6 +97,7 @@ documentation.
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/core/module.html>`_
 """
 from functools import partial
 
@@ -137,7 +144,7 @@ class YomboModule:
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 
     def _is_my_device(self, device):
-        devices = self._devices()
+        devices = self._ModuleDevices()
         if device.device_id in devices and device.gateway_id == self._Devices.gateway_id:
             return True
         else:
@@ -160,7 +167,8 @@ class YomboModule:
         """
         Load some internal items.
         """
-        self._devices = partial(self._Modules.module_devices, self._module_id)
+        pass
+        # self._devices = partial(self._Modules.module_devices, self._module_id)
 
     def _start_(self, **kwargs):
         """

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For developer documentation, see: `Atoms @ Module Development <https://yombo.net/docs/modules/atoms/>`_
+  For developer documentation, see: `Atoms @ Module Development <https://docs.yombo.net/Libraries/Atoms>`_
 
 .. seealso::
 
@@ -27,7 +27,7 @@ For dynamically changing data, use :py:mod:`States <yombo.lib.states>`.
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/atoms.py>`_
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/atoms.html>`_
 """
 # Import python libraries
 try:

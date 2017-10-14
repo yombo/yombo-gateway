@@ -1,6 +1,12 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Validate @ Module Development <https://docs.yombo.net/Libraries/Validate>`_
+
+
 Validates various items. In many causes, it tries to coerce the correct value type and return that. If the item
 is valid, it returns the item. If the item is invalid, and error will be raised.
 
@@ -8,10 +14,11 @@ This file is comprised of various code samples scattered around the internet. Ma
 a derivative from: home assistant's helper file: config_validation.py
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-.. versionadded:: 0.1X.0
+.. versionadded:: 0.14.0
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/validate.html>`_
 """
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json

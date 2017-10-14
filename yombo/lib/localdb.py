@@ -12,10 +12,17 @@ A database API to SQLite3.
    If additional information is needed to/from the database, open a feature
    request at `<https://projects.yombo.net/>` under the Gateway Project.
 
+
+.. note::
+
+  For more information see: `LocalDB @ Module Development <https://docs.yombo.net/Libraries/Local_DB>`_
+
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/localdb.html>`_
 """
 # Import python libraries
 from collections import OrderedDict

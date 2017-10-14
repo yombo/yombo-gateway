@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `MQTT @ Module Development <https://yombo.net/docs/modules/mqtt/>`_
+  For more information see: `MQTT @ Module Development <https://docs.yombo.net/Libraries/MQTT>`_
 
 Implements MQTT. It does 2 things:
 
@@ -35,6 +35,7 @@ Implements MQTT. It does 2 things:
 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/mqtt.html>`_
 """
 # Import python libraries
 

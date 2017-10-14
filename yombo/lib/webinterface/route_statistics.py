@@ -1,3 +1,6 @@
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks
+
 from yombo.lib.webinterface.auth import require_auth, run_first
 
 def route_statistics(webapp):
@@ -9,13 +12,20 @@ def route_statistics(webapp):
 
         @webapp.route('/index')
         @require_auth()
+        @inlineCallbacks
         def page_statistics_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/statistics/index.html')
-            return page.render(alerts=webinterface.get_alerts(),
-                               devices=webinterface._Libraries['devices'].devices,
-                               )
+            system_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='lib.')
+            device_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='devices.')
+            energy_stats = yield webinterface._Libraries['localdb'].get_distinct_stat_names(search_name_start='energy.')
 
-        
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                system_stats=system_stats,
+                device_stats=device_stats,
+                energy_stats=energy_stats,
+            )
+
         @webapp.route('/<string:device_id>/details')
         @require_auth()
         def page_statistics_details(webinterface, request, session, device_id):

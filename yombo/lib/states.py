@@ -4,7 +4,7 @@
 
 .. note::
 
-  For end-user documentation, see: `States @ Module Development <https://yombo.net/docs/modules/states/>`_
+  For end-user documentation, see: `States @ Module Development <https://docs.yombo.net/Libraries/States>`_
 
 .. seealso::
 
@@ -51,6 +51,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/states.html>`_
 """
 # Import python libraries
 from collections import OrderedDict, deque

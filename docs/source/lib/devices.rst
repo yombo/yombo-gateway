@@ -17,12 +17,4 @@ Devices Class
    :private-members:
    :undoc-members:
 
-Device Class
-==================
-.. autoclass:: Device
-   :members:
-   :special-members:
-   :private-members:
-   :undoc-members:
-
 Last updated: |today|

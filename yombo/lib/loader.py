@@ -1,6 +1,12 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Loader @ Module Development <https://docs.yombo.net/Libraries/Loader>`_
+
+
 Responsible for importing, starting, and stopping all libraries and modules.
 
 Starts libraries and modules (components) in the following phases.  These
@@ -31,6 +37,7 @@ Stops components in the following phases. Modules first, then libraries.
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/loader.html>`_
 """
 # Import python libraries
 import asyncio
@@ -549,6 +556,11 @@ class Loader(YomboLibrary, object):
 #                print "library %s" % library
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
+        if 'stoponerror' in kwargs:
+            stoponerror = kwargs['stoponerror']
+        else:
+            kwargs['stoponerror'] = True
+            stoponerror = True
 
         for library_name, library in self.loadedLibraries.items():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
@@ -560,6 +572,8 @@ class Loader(YomboLibrary, object):
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:
+                if stoponerror is not True:
+                    pass
                 e.collected = results
                 e.by_who =  label
                 raise

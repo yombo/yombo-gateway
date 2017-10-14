@@ -1,3 +1,14 @@
+.class {
+
+}
+.class > dt {
+    background: #c0daf1;
+}
+
+.class > dd {
+    margin-left: 1.5em;
+}
+
 .method {
     padding-top: .15em;
     border-top: dashed thin #d2c7cd;
@@ -7,8 +18,8 @@
     /*font-size: 13px;*/
 /*}*/
 
-.method dd {
-    margin-left: 1.5em;
+.method > dd {
+    margin-left: 1.8em;
 }
 
 .exception {

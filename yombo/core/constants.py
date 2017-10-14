@@ -7,6 +7,7 @@ Various constants used throughout the system.
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/core/constants.html>`_
 """
 WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 

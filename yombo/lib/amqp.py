@@ -4,7 +4,7 @@
 
 .. note::
 
-  For developer documentation, see: `AMQP @ Module Development <https://yombo.net/docs/modules/amqp/>`_
+  For developer documentation, see: `AMQP @ Module Development <https://docs.yombo.net/Libraries/AMQP>`_
 
 .. seealso::
 
@@ -24,7 +24,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 
 :copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/amqp.py>`_
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/amqp.html>`_
 """
 # Import python libraries
 import pika

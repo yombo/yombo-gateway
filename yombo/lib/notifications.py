@@ -2,6 +2,11 @@
 # software.  Details can be found at https://yombo.net
 """
 
+.. note::
+
+  For more information see: `Notifications @ Module Development <https://docs.yombo.net/Libraries/Notifications>`_
+
+
 Responsible for receiving and distributing notifications. Typically, they are system messages that need
 attention by the user, this includes alerts for devices, or system settings that need updating.
 
@@ -18,6 +23,7 @@ Priority levels:
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/notifications.html>`_
 """
 from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.

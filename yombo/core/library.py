@@ -1,6 +1,12 @@
 #This file was created by Yombo for use with Yombo Python Gateway automation
 #software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Library Core @ Module Development <https://docs.yombo.net/Core/Library>`_
+
+
 Used by the Yombo Gateway framework to set up it's libraries.
 
 .. warning::
@@ -12,6 +18,7 @@ Used by the Yombo Gateway framework to set up it's libraries.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/core/library.html>`_
 """
 class YomboLibrary:
     """

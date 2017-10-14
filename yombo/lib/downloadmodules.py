@@ -9,6 +9,11 @@ Responsible for downloading and installing any modules as requested by the confi
     and classes **should not** be accessed directly by modules. These are documented here for completeness.
 
 
+.. note::
+
+  For more information see: `Download Modules @ Module Development <https://docs.yombo.net/Libraries/Download_Modules>`_
+
+
 It compares the 'modules' table for columns prod_version and dev_version table
 against 'gitmodules' table.  If the version are the same, then nothing
 happens.  If versions are newer, it downloads newer versions.
@@ -33,6 +38,7 @@ Download Steps:
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/downloadmodules.html>`_
 """
 # Import python libraries
 import os

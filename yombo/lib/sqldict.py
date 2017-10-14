@@ -1,6 +1,12 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `SQLDict @ Module Development <https://docs.yombo.net/Libraries/SQLDict>`_
+
+
 Acts like a persistent dictionary between gateway stop/starts.
 Acts exactly like a dictionary {}, however when the dictionary
 is updated, the correlating database record for the dictionary
@@ -37,6 +43,7 @@ requires the serializer and unserializer to be set inside the get() request.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/sqldict.html>`_
 """
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks

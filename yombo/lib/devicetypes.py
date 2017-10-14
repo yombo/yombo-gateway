@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Device Type @ Module Development <https://yombo.net/docs/modules/device_types/>`_
+  For more information see: `Device Type @ Module Development <https://docs.yombo.net/Libraries/Device_Types>`_
 
 This is a simple helper library to manage device type mapping. This is a mapping between modules, device types,
 and commands.
@@ -16,6 +16,7 @@ This library keeps track of what modules can access what device types, and what 
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/devicetypes.html>`_
 """
 import inspect
 

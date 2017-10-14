@@ -4,7 +4,8 @@
 
 .. note::
 
-  For more information see: `Times @ Module Development <https://yombo.net/docs/modules/times/>`_
+  For more information see: `Times @ Module Development <https://docs.yombo.net/Libraries/Times>`_
+
 
 Sets up various times and events for: dusk, dawn, sunrise, sunset. Also send event messages when a status change
 changes.  It also configures many State items such as times_light, times_dark, times_dawn, times_dusk
@@ -19,15 +20,19 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
        times = self._Libraries['Times']
        moonrise = times.item_rise(dayOffset=1, item='Moon') # 1 - we want the next moon rise
 
+
 .. todo::
 
   Polar region debug (some strange glitches like nowNight message when it is polar day (I think we need variables for
   polar day and night begin/end)
 
+
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/times.html>`_
 """
 # Import python libraries
 import ephem
@@ -64,23 +69,12 @@ class Times(YomboLibrary, object):
         """
         if PatchEnvironment: self.runned_for_tests()
 
-        # These are used below
-        # self.isTwilight = None
-        # self.isLight = None
-        # self.isDark = None
-        # self.isDay = None
-        # self.isNight = None
-        # self.isDawn = None
-        # self.isDusk = None
-        # self.nextSunrise = None
-        # self.nextSunset = None
-        # self.nextMoonrise = None
-        # self.nextMoonset = None
-
         self.obs = ephem.Observer()
         self.obs.lat = str(self._Configs.get('location', 'latitude', 0))
         self.obs.lon = str(self._Configs.get('location', 'longitude', 0))
         self.obs.elevation = int(self._Configs.get('location', 'elevation', 800))
+        print("self.obs.lat: %s" % self._Configs.get('location', 'latitude', 0))
+        print("self.obs.lon: %s" % self._Configs.get('location', 'longitude', 0))
 
         self.obsTwilight = ephem.Observer()
         self.obsTwilight.horizon = str(self._Configs.get('times', 'twilighthorizon', '-6')) # civil = -6, nautical = -12, astronomical = -18
@@ -98,8 +92,45 @@ class Times(YomboLibrary, object):
         self.is_now_init = False
 
     @property
+    def next_new_moon(self):
+        return self._timegm(ephem.next_new_moon(datetime.now()))
+
+    @property
+    def next_first_quarter_moon(self):
+        return self._timegm(ephem.next_first_quarter_moon(datetime.now()))
+
+    @property
+    def next_full_moon(self):
+        return self._timegm(ephem.next_full_moon(datetime.now()))
+
+    @property
+    def next_last_quarter_moon(self):
+        return self._timegm(ephem.next_last_quarter_moon(datetime.now()))
+
+    @property
     def isMoonVisible(self):
         return self.__isMoonVisible
+
+    @property
+    def moonInfo(self):
+        self.obs.date = datetime.utcnow()
+        moon = ephem.Moon()
+        moon.compute(self.obs)
+        return {
+            'phase': moon.phase,
+            'az': str(moon.az),
+            'alt': str(moon.alt),
+        }
+
+    @property
+    def sunInfo(self):
+        self.obs.date = datetime.utcnow()
+        sun = ephem.Sun()
+        sun.compute(self.obs)
+        return {
+            'az': str(sun.az),
+            'alt': str(sun.alt),
+        }
 
     @isMoonVisible.setter
     def isMoonVisible(self, val):
@@ -113,8 +144,9 @@ class Times(YomboLibrary, object):
 
     @isSunVisible.setter
     def isSunVisible(self, val):
-        self._States.set('is.moonvisible', val, 'bool')
+        self._States.set('is.sunvisible', val, 'bool')
         self.__isSunVisible = val
+        print("is sun visable: %s" % val)
         self._Statistics.datapoint("lib.times.is_sunvisible", is_one_zero(val))
 
     @property
@@ -579,23 +611,6 @@ class Times(YomboLibrary, object):
         """
         Returns a dictionary containing the next time twilight starts and ends.
         """
-        # self.obs.date = datetime.utcnow()
-        # self.obsTwilight.date = datetime.utcnow()
-        # if self.isDay:
-        #     end = self._next_setting(self.obsTwilight, ephem.Sun(), use_center=True)
-        #     start = self._next_setting(self.obs, ephem.Sun())
-        # else:
-        #     # if it actually is night (between twilight observer setting and rising)
-        #     if self._previous_rising(self.obsTwilight, ephem.Sun(), use_center=True) < self._previous_setting(
-        #             self.obsTwilight, ephem.Sun(), use_center=True):
-        #         start = self._next_rising(self.obsTwilight, ephem.Sun(), use_center=True)
-        #         end = self._next_rising(self.obs, ephem.Sun())
-        #     else:  # twilight remains
-        #         start = 0
-        #         end = min(self._next_setting(self.obsTwilight, ephem.Sun(), use_center=True),
-        #                   self._next_rising(self.obs, ephem.Sun()))
-        # if self.isTwilight == True:
-        #     start = 0
         if self.isDark:
             type = 'sunrise'
         else:
@@ -630,10 +645,18 @@ class Times(YomboLibrary, object):
         self.obs.date = datetime.utcnow()
 
         # if it is rised and not set, then it is visible
-        if self._previous_rising(self.obs, obj()) > self._previous_setting(self.obs, obj()):
+        print("item_visiable: %s" % item)
+        print("self._previous_rising(self.obs, obj()): %s" % self._timegm(self._previous_rising(self.obs, obj())))
+        print("self._previous_setting(self.obs, obj()): %s" % self._timegm(self._previous_setting(self.obs, obj())))
+        if self._timegm(self._previous_rising(self.obs, obj())) < self._timegm(self._previous_setting(self.obs, obj())):
+            print("nope")
             return False
         else:
+            print("yeap")
             return True
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
 
     def item_rise(self, **kwargs):
         """
@@ -700,8 +723,8 @@ class Times(YomboLibrary, object):
         except AttributeError:
             raise AttributeError("PyEphem doesn't have requested item: %s" % item)
         # we want the date part only, but date.today() isn't UTC.
-        dt = datetime.utcnow() + timedelta(days=dayOffset)
-        self.obs.date = dt
+        self.obs.date = datetime.utcnow() + timedelta(days=dayOffset)
+
         temp = self._next_setting(self.obs, obj())
         return self._timegm(temp)
 
@@ -799,6 +822,7 @@ class Times(YomboLibrary, object):
         if self.is_now_init:
             self.nextMoonrise = moonrise
             self.nextMoonset = moonset
+            print("_setup_moon_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
             self.isMoonVisible = self.item_visible(item='Moon')
 
         if self.item_visible(item='Moon'):
@@ -821,6 +845,8 @@ class Times(YomboLibrary, object):
 
         self._CalcLightDark()
         if self.is_now_init:
+            print("_setup_light_dark_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
+            print("_setup_light_dark_events and is_now_init: moon: %s" % self.item_visible(item='Moon'))
             self.isSunVisible = self.item_visible(item='Sun')
             self.nextDark = sunset
             self.nextLight = sunrise
@@ -998,6 +1024,7 @@ class Times(YomboLibrary, object):
         """
         Called by timer when the sunrises. Called by: _setup_sun_events
         """
+        print("_send_now_day")
         self.isSunVisible = True
         self.nextSunrise = self.item_set(item='Moon')
         self.send_event_hook('now_sunrise')
@@ -1142,7 +1169,8 @@ class Times(YomboLibrary, object):
         """
         Sets up isDay and isNight. Is day if the sun is not below horizon.
         """
-        self.obs.date = self.obsTwilight.date = datetime.utcnow()
+        self.obs.date = datetime.utcnow()
+        self.obsTwilight.date = datetime.utcnow()
         if self._previous_rising(self.obs, ephem.Sun()) < self._previous_setting(self.obs, ephem.Sun()):
             self.isDay = False
             self.isNight = True

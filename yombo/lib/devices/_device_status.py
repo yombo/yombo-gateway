@@ -4,7 +4,8 @@
 
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/modules/devices/>`_
+  For development guides see: `Devices @ Module Development <https://docs.yombo.net/Libraries/Devices>`_
+
 
 The device status class manages a single status entry for a device.
 

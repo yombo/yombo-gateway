@@ -4,8 +4,8 @@
 
 .. currentmodule:: yombo.modules.logwriter
 
-The logwriter module demonstrates using various :ref:`hooks <hooks>` to capture various events and writes them
-to a log file.
+The logwriter module demonstrates using various `hooks <https://docs.yombo.net/Developing_modules/Hooking_into_hooks>_`
+to capture various events and writes them to a log file.
 
 For more on developing modules, visit
 `Yombo.Net - Building Modules <https://yombo.net/docs/modules>`_ .

@@ -2,7 +2,7 @@
 {% extends "!layout.html" %}
 
 {# Custom CSS overrides #}
-{% set bootswatch_css_custom = ['_static/yombo-styles.css'] %}
+{% set css_files = ['_static/yombo-styles.css'] %}
 
 {# Add some extra stuff before and use existing with 'super()' call. #}
 {% block footer %}
@@ -10,12 +10,14 @@
   <div class="container">
     <p class="pull-right">
       <a href="#">Back to top</a><br>
-        &copy; Copyright 2012-2017, Mitch Schwenk.<br/>
+        &copy; Copyright 2012-2017, Yombo<br/>
     </p>
     <p>
       <strong>Other resources</strong>
       <br>
-      <span class="glyphicon glyphicon-chevron-right"></span><a href="https://yombo.net/docs/modules">Developer Guides</a>
+      <span class="glyphicon glyphicon-chevron-right"></span><a href="https://yombo.net">Yombo.net</a><br>
+      <span class="glyphicon glyphicon-chevron-right"></span><a href="https://docs.yombo.net">Documentation</a><br>
+      <span class="glyphicon glyphicon-chevron-right"></span><a href="https://docs.yombo.net/Developing_modules">Developer Guides</a>
     </p>
   </div>
 </footer>
@@ -25,11 +27,8 @@ function offsetAnchor() {
   if (location.hash.length !== 0) {
   $('html, body').animate({
       duration: 100,
-      scrollTop: $(window).scrollTop() - 125
+      scrollTop: $(window).scrollTop() - 120
   });
-//          $(window).scrollTop() - 400;
-//      window.scrollTo(window.scrollX, window.scrollY - 400);
-//    alert("scrolled down 100...")
   }
 }
 

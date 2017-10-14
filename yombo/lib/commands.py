@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `Commands @ command Development <https://yombo.net/docs/modules/commands/>`_
+  For more information see: `Commands @ command Development <https://docs.yombo.net/Libraries/Commands>`_
 
 This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
@@ -14,6 +14,7 @@ The command (singular) class represents one command.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/commands.html>`_
 """
 import inspect
 
@@ -217,16 +218,32 @@ class Commands(YomboLibrary):
         """
         logger.debug("command: {command}", command=command)
 
-        global_invoke_all('_command_before_import_', called_by=self, **{'command': command})
+        try:
+            global_invoke_all('_command_before_import_', called_by=self, **{'command': command})
+        except Exception as e:
+            pass
         command_id = command["id"]
         if command_id not in self.commands:
-            global_invoke_all('_command_before_load_', called_by=self, **{'command': command})
+            try:
+                global_invoke_all('_command_before_load_', called_by=self, **{'command': command})
+            except Exception as e:
+                pass
             self.commands[command_id] = Command(command)
-            global_invoke_all('_command_loaded_', called_by=self, **{'command': self.commands[command_id]})
+            try:
+                global_invoke_all('_command_loaded_', called_by=self, **{'command': self.commands[command_id]})
+            except Exception as e:
+                pass
         elif command_id not in self.commands:
-            global_invoke_all('_command_before_update_', called_by=self, **{'command': command})
+            try:
+                global_invoke_all('_command_before_update_', called_by=self, **{'command': command})
+            except Exception as e:
+                pass
+
             self.commands[command_id].update_attributes(command)
-            global_invoke_all('_command_updated_', called_by=self, **{'command': self.commands[command_id]})
+            try:
+                global_invoke_all('_command_updated_', called_by=self, **{'command': self.commands[command_id]})
+            except Exception as e:
+                pass
 
         if command['voice_cmd'] is not None:
             self.__yombocommandsByVoice[command['voice_cmd']] = self.commands[command_id]

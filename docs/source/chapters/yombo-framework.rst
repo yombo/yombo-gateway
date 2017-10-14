@@ -14,10 +14,9 @@ The gateway framework is split into a few directories:
  * :ref:`Core` - Basic functions used by various libraries.
  * :ref:`Lib` - Libraries provide all the services and tools to manage the system, including sending
    :doc:`commands <../lib/commands>` to :doc:`devices <../lib/devices>`.
-   :doc:`commands <../lib/commands>`.
  * :ref:`Modules` - Extend the features of the Yombo gateway and are located in the modules folder.
  * Usr - User data. Log files, database, cache, ssl keys, etc.
- * :file:`Utils <yombo-framework#Utils>` - Various utilities for getting things done.
+ * :file:`Utils <./yombo-framework#Utils>` - Various utilities for getting things done.
  * :ref:`Ext` - 3rd party extensions.
 
 .. _core:
@@ -31,6 +30,7 @@ features to be used by libraries and modules.
 .. toctree::
    :maxdepth: 1
 
+   ../core/constants.rst
    ../core/exceptions.rst
    ../core/gwservice.rst
    ../core/library.rst
@@ -60,7 +60,7 @@ IoT devices, etc.
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
    ../lib/gpg.rst
-   ../lib/inputtypes.rst
+   ../lib/inputtypes/inputtypes.rst
    ../lib/loader.rst
    ../lib/localdb.rst
    ../lib/localize.rst
@@ -130,11 +130,9 @@ information.
    ../ext/bermiinflector.rst
    ../ext/expiringdict.rst
    ../ext/hashids.rst
-   ../ext/hjson.rst
    ../ext/mqtt.rst
-   ../ext/six.rst
-   ../ext/treq.rst
    ../ext/twistar.rst
    ../ext/totp.rst
+   ../ext/txrdq.rst
    ../ext/umsgpack.rst
    ../ext/validators.rst

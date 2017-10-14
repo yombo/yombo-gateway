@@ -5,7 +5,7 @@
 
 .. note::
 
-  For more information see: `Modules @ Module Features <https://yombo.net/docs/features/modules/>`_
+  For more information see: `Modules @ Module Features <https://docs.yombo.net/Libraries/Modules>`_
 
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
@@ -15,6 +15,7 @@ Also calls module hooks as requested by other libraries and modules.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/modules.html>`_
 """
 # Import python libraries
 import configparser
@@ -738,6 +739,12 @@ class Modules(YomboLibrary):
         results = {}
         # print("aaa: %s" % hook)
         dl_list = []
+        if 'stoponerror' in kwargs:
+            stoponerror = kwargs['stoponerror']
+        else:
+            kwargs['stoponerror'] = True
+            stoponerror = True
+
         for module_id, module in self.modules.items():
             # print("aaa2")
             if module_id in self.disabled_modules:
@@ -762,6 +769,8 @@ class Modules(YomboLibrary):
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:
+                if stoponerror is not True:
+                    pass
                 e.collected = results
                 e.by_who =  label
                 raise

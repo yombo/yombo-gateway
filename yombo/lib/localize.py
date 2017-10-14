@@ -4,19 +4,17 @@
 
 .. note::
 
-  For more information see: `Internationalization @ Module Development <https://yombo.net/docs/modules/internationalization/>`_
+  For more information see: `Internationalization @ Module Development <https://docs.yombo.net/Libraries/Localize>`_
 
 Localization and translation for Yombo Gateway.
 
-This is a new library and currently only supporting translations (i18n). See
-`Internationalization @ Module Development <https://yombo.net/docs/modules/internationalization/>`_ for details on
-usage.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/localize.html>`_
 """
 # Import python libraries
 from time import time

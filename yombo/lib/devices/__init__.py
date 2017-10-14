@@ -4,10 +4,10 @@
 
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/modules/devices/>`_
+  For development guides see: `Devices @ Module Development <https://docs.yombo.net/Libraries/Devices>`_
 
 The devices library is primarily responsible for:
- 
+
 * Keeping track of all devices.
 * Maintaining device state.
 * Routing commands to modules for processing.
@@ -52,6 +52,7 @@ To send a command to a device is simple.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/devices.html>`_
 """
 # Import python libraries
 
@@ -85,9 +86,10 @@ class Devices(YomboLibrary):
     """
     Manages all devices and provides the primary interaction interface. The
     primary functions developers should use are:
-        * :py:meth:`__getitem__ <Devices.__getitem__>` - Get a pointer to a device, using self._Devices as a dictionary of objects.
-        * :py:meth:`command <Devices.command>` - Send a command to a device.
-        * :py:meth:`search <Devices.search>` - Get a pointer to a device, using device_id or device label.
+
+    * :py:meth:`__getitem__ <Devices.__getitem__>` - Get a pointer to a device, using self._Devices as a dictionary of objects.
+    * :py:meth:`command <Devices.command>` - Send a command to a device.
+    * :py:meth:`search <Devices.search>` - Get a pointer to a device, using device_id or device label.
     """
 
     def __contains__(self, device_requested):
@@ -343,9 +345,7 @@ class Devices(YomboLibrary):
 
         **Hooks called**:
 
-        * _device_before_import_ : If added, sends device dictionary as 'device'
         * _device_before_update_ : If updated, sends device dictionary as 'device'
-        * _device_imported_ : If added, send the device instance as 'device'
         * _device_updated_ : If updated, send the device instance as 'device'
 
         :param device: A dictionary of items required to either setup a new device or update an existing one.
@@ -432,7 +432,11 @@ class Devices(YomboLibrary):
 
         else:
             import_state = 'update'
-            global_invoke_all('_device_before_update_', called_by=self, **{'device': device})
+            global_invoke_all('_device_before_update_',
+                              called_by=self,
+                              **{'device': device},
+                              stoponerror=False
+                              )
             self.devices[device_id].update_attributes(device, source)
 
         try:
@@ -445,7 +449,11 @@ class Devices(YomboLibrary):
         # logger.debug("_add_device: {device}", device=device)
 
         if import_state == 'update':
-            global_invoke_all('_device_updated_', called_by=self, **{'device': self.devices[device_id]})
+            global_invoke_all('_device_updated_',
+                              called_by=self,
+                              **{'device': self.devices[device_id]},
+                              stoponerror=False
+                              )
         # if test_device:
         #            return self.devices[device_id]
 
@@ -804,7 +812,9 @@ class Devices(YomboLibrary):
             return results
 
         try:
-            global_invoke_all('_device_before_add_', **{'called_by': self, 'device': api_data})
+            global_invoke_all('_device_before_add_',
+                              **{'called_by': self, 'device': api_data},
+                              stoponerror=False)
         except YomboHookStopProcessing as e:
             raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 

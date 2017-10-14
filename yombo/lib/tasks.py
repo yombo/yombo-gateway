@@ -1,6 +1,12 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Tasks @ Module Development <https://docs.yombo.net/Libraries/Tasks>`_
+
+
 Performs various tasks as needed. Usually used to run various processes at startup.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
@@ -8,6 +14,7 @@ Performs various tasks as needed. Usually used to run various processes at start
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/tasks.html>`_
 """
 from time import time
 # Import twisted libraries

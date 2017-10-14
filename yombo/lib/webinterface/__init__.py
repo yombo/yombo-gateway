@@ -1,12 +1,19 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Web Interface @ Module Development <https://docs.yombo.net/Libraries/Web_Interface>`_
+
+
 Provides web interface for configuration of the Yombo system.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """
 # Import python libraries
 from OpenSSL import crypto
@@ -551,7 +558,9 @@ class WebInterface(YomboLibrary):
 
         nav_side_menu = NAV_SIDE_MENU.copy()
 
-        add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_', called_by=self)
+        add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_',
+                                                           called_by=self,
+                                                           stoponerror=False)
         for component, options in add_on_menus.items():
             if 'nav_side' in options:
                 for new_nav in options['nav_side']:

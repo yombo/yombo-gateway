@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Input Type @ Module Development <https://yombo.net/docs/modules/input_types/>`_
+  For more information see: `Input Type @ Module Development <https://docs.yombo.net/Libraries/Input_Types>`_
 
 This library maintains a list of all available input types. The input types (plural) is a wrapper class and contains all
 the individual input type classes.
@@ -16,6 +16,7 @@ The input type (singular) class represents one input type.
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/inputtypes.html>`_
 """
 from functools import partial
 from time import time

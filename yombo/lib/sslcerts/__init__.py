@@ -4,7 +4,8 @@
 
 .. note::
 
-  For more information see: `Devices @ Module Development <https://yombo.net/docs/sslcerts/>`_
+  For more information see: `Devices @ Module Development <https://docs.yombo.net/Libraries/SSLCerts>`_
+
 
 This library is responsible for managing SSL/TLS certs. It utilizes openssl to
 generate keys and signing requests. It then forwards any signing requests (CSRs)
@@ -24,6 +25,7 @@ needs to return several things:
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/sslcerts.html>`_
 """
 # Import python libraries
 from OpenSSL import crypto

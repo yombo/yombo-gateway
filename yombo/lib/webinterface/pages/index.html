@@ -120,7 +120,7 @@ $(document).ready(function(){
     });
 
     //ajax get data...
-    var url="/api/v1/statistics/echarts/buckets?name=lib.devices.commands_sent&bucket_size=900&last=1209600";
+    var url="/api/v1/statistics/echarts/buckets?chart_label=Commands+Sent&stat_name=lib.devices.commands_sent&bucket_size=900&last=1209600";
     $.ajax({
         type:"post",
         url:url,

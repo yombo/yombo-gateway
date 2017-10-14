@@ -24,8 +24,9 @@ class AutomationExample(YomboModule):
 
     def _load_(self, **kwargs):
         # in 3 seconds from now, change the state - test the trigger
-#        reactor.callLater(3, self.set_low)
-        pass
+        self._States['demo.automationexample'] = 1
+        reactor.callLater(3, self.set_low)
+        # pass
 
     def _automation_rules_list_(self, **kwargs):
         """
@@ -38,8 +39,7 @@ class AutomationExample(YomboModule):
         :return: Returns a dictionary of rules to be parsed.
         :rtype: dict
         """
-        self._States['demo.automationexample'] = 0
-        # return
+        return
         return{'rules': [
             {
                 'name': 'Empty test 0',
@@ -53,46 +53,51 @@ class AutomationExample(YomboModule):
                         'value': 0
                     }
                 },
-                'condition': [
-                    {
-                    'source': {
-                        'platform': 'atoms',
-                        'name': 'kernel',
-                        },
-                    'filter': {
-                        'platform': 'basic_values',
-                        'value': 'Linux'
-                        }
-                    },
-                    {
-                    'source': {
-                        'platform': 'states',
-                        'name': 'is.light',
-                        },
-                    'filter': {
-                        'platform': 'basic_values',
-                        'value': 'false'
-                        }
-                    },
-                ],
+                # 'condition': [
+                #     {
+                #     'source': {
+                #         'platform': 'atoms',
+                #         'name': 'kernel',
+                #         },
+                #     'filter': {
+                #         'platform': 'basic_values',
+                #         'value': 'Linux'
+                #         }
+                #     },
+                #     {
+                #     'source': {
+                #         'platform': 'states',
+                #         'name': 'is.light',
+                #         },
+                #     'filter': {
+                #         'platform': 'basic_values',
+                #         'value': 'false'
+                #         }
+                #     },
+                # ],
                 'action': [
                     {
                         'platform': 'call_function',
                         'component_type': 'module',
                         'component_name': 'AutomationExample',
                         'component_function': 'call_when_low',
-                        'delay': '5s',
+                        'delay': '10s',
                         'arguments': {
                             'argument1': 'somevalue'
                         }
                     },
+                    # {
+                    #     'platform': 'devices',
+                    #     'device': 'hv out 1',
+                    #     'command': 'open',
+                    #     'arguments': {
+                    #         'delay': '10',
+                    #     }
+                    # },
                     {
-                        'platform': 'devices',
-                        'device': 'hv out 1',
-                        'command': 'open',
-                        'arguments': {
-                            'delay': '5',
-                        }
+                        'platform': 'states',
+                        'name': 'is.day',
+                        'value': False
                     }
                 ]
             },
@@ -112,19 +117,23 @@ class AutomationExample(YomboModule):
                     {
                         'platform': 'call_function',
                         'component_callback': self.call_when_high,
-                        'delay': 5,
+                        'delay': 10,
                         'arguments': {
                             'argument1': 'somevalue'
                         }
                     },
-
+                    # {
+                    #     'platform': 'states',
+                    #     'device': 'hv out 1',
+                    #     'command': 'close',
+                    #     'arguments': {
+                    #         'delay': '10',
+                    #     }
+                    # }
                     {
-                        'platform': 'devices',
-                        'device': 'hv out 1',
-                        'command': 'close',
-                        'arguments': {
-                            'delay': '5',
-                        }
+                        'platform': 'states',
+                        'name': 'is.day',
+                        'value': True
                     }
                 ],
             },
@@ -157,10 +166,10 @@ class AutomationExample(YomboModule):
             ]
         }
         
-    def _start_(self, **kwargs):
-        logger.info("States: Is Light: {times_light}", times_light=self._States['is.light'])
-        logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
-        self._States['demo.automationexample'] = 1
+    # def _start_(self, **kwargs):
+        # logger.info("States: Is Light: {times_light}", times_light=self._States['is.light'])
+        # logger.info("Atoms: Kernel: {kernel}", kernel=self._Atoms['kernel'])
+        # self._States['demo.automationexample'] = 1
 
     def set_high(self):
         logger.info("in set_high - setting automationexample = 1")

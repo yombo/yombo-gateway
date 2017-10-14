@@ -1,6 +1,12 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
 """
+
+.. note::
+
+  For more information see: `Statistics @ Module Development <https://docs.yombo.net/Libraries/Statistics>`_
+
+
 Statistics allow the gateway to trace various data points. This can be used to track how much time of a day the
 sun is up, or average temperatures, number of commands sent, etc.  Statistics can be used in conjunction with
 or as a replacement for device status history. Sometimes it's easier to trace device status here so you can get
@@ -78,6 +84,7 @@ the benefits of better averages, but mitigate loss of data. This is at a cost of
 
 :copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
+:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/statistics.html>`_
 """
 # Import python libraries
 
