@@ -4,7 +4,7 @@
 Yombo Automation Python Reference
 =================================
 
-Release v0.13.0 (`Installation <https://docs.yombo.net/Gateway/Getting_started>`_)
+Release v0.14.0 (`Quick Start <https://docs.yombo.net/Gateway/Quick_start>`_)
 
 Python API Documentation
 ========================
@@ -40,10 +40,10 @@ and turns it off at 10:30pm:
 Useful links
 =============
 
-* `Yombo Home <https://yombo.net/>`_
-* `Installation <https://docs.yombo.net/Gateway/Getting_started>`_
+* `Yombo.net <https://yombo.net/>`_
+* `Quick start guide <https://docs.yombo.net/Gateway/Quick_start>`_
 * `End user documentation <https://docs.yombo.net/>`_
-* `Building your first module - a walk complete guide <https://docs.yombo.net/Developing_modules/Building_your_first_module>`_
+* `Building your first module - a complete guide <https://docs.yombo.net/Developing_modules/Building_your_first_module>`_
 
 
 Table of Contents
