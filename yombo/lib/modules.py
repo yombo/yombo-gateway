@@ -583,10 +583,10 @@ class Modules(YomboLibrary):
             module._ModuleType = self._rawModulesList[module_id]['module_type']
 
             module._event_loop = self._Loader.event_loop
-            module._Atoms = self._Loader.loadedLibraries['atoms']
-            module._Automation = self._Loader.loadedLibraries['automation']
             module._AMQP = self._Loader.loadedLibraries['amqp']
             module._AMQPYombo = self._Loader.loadedLibraries['amqpyombo']
+            module._Atoms = self._Loader.loadedLibraries['atoms']
+            module._Automation = self._Loader.loadedLibraries['automation']
             module._Commands = self._Loader.loadedLibraries['commands']
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']

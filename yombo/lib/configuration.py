@@ -15,7 +15,7 @@ If you wish to store persistent data for your module, use the
 
 .. code-block:: python
 
-   latitude = self._Configs.get("location", "latitude")  # also can accept default and if a default value should be saved.
+   latitude = self._Configs.get("location", "latitude", "0", True)  # also can accept default and if a default value should be saved.
    latitude = self._Configs.get("location", "latitude", "0", False)  # example of default and no save if default is used.
    self._Configs.set("location", "latitude", 100)  # Save a new latitude location.
 

@@ -20,7 +20,9 @@ Modules can:
 Documentation
 =============
 
-For new users, check out the quick start guide at https://yombo.net/docs/gateway/getting_started/
+For new users, check out the quick start guide at https://docs.yombo.net/Gateway/Quick_start
+
+Otherwise, full documentation can be found at https://docs.yombo.net/
 
 ============
 Python 3.6.x
@@ -37,10 +39,10 @@ at your favorite place.
 Developing Modules
 ==================
 
-Documentation for developing modules can be found at: https://yombo.net/docs/modules
+Documentation for developing modules can be found at: https://docs.yombo.net/Developing_modules
 
 A quick start guide to developing modules can be found her:
-https://yombo.net/docs/modules/building-your-first-module/
+https://docs.yombo.net/Developing_modules/Building_your_first_module
 
 ===============================
 Getting Help / Other Resources
