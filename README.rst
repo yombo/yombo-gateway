@@ -10,9 +10,9 @@ through the use of modules; such as X10, Z-Wave, Insteon, Zigbee, etc.
 This framework can also act a bridge between vendor protocols. For example,
 an X10 controler can be used to control Z-Wave products.
 
-Modules can:
+`Modules <https://docs.yombo.net/Modules>`_ can:
 
-* Extend the features of the framework throug the use of hooks.
+* Extend the features of the framework through the use of `hooks <https://docs.yombo.net/Hooks>`_.
 * Provide additional API features to other modules.
 * Provide advanced automation rules and tasks.
 
@@ -24,16 +24,21 @@ For new users, check out the quick start guide at https://docs.yombo.net/Gateway
 
 Otherwise, full documentation can be found at https://docs.yombo.net/
 
+To created intermediate to advanced automation rules or to extend the
+capabilites of the gateway, consider `developing a module <https://docs.yombo.net/Developing_modules>`_.
+
 ============
 Python 3.6.x
 ============
 
-It's HIGHLY recommended to use latest Python 3.6 version. A simple script is located in yombo/install.  To execute:
+It's HIGHLY recommended to use latest Python 3.6 version. A simple script is located in yombo/install,
+to setup:
 1) Go to the yombo gateway directory (where this README file is located)
 2) install/setup_pyenv.sh
 
-On a Raspberry Pi 3, this will take quite a while. On a Raspberry Pi Zero, it's best to enjoy some lunch or dinner
-at your favorite place.
+On a Raspberry Pi 3, this will take quite a while. On a Raspberry Pi Zero, it's best to enjoy some
+lunch or dinner at your favorite place or simply use
+`one of our images <https://docs.yombo.net/Gateway/Raspberry_Pi_from_bare_metal>`_.
 
 ==================
 Developing Modules

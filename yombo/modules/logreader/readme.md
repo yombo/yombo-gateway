@@ -3,14 +3,18 @@ Summary
 
 This module extends the capabilities of the Yombo Gateway by adding the ability to monitor a text file for device commands.
 
-Additional details about this module at: https://yombo.net/modules/logreader/
+Additional details about this module at: https://docs.yombo.net/Modules/logreader
 
-Learn about [Yombo Gateway](https://yombo.net/).
+Learn about [Yombo Gateway](https://yombo.net/) or
+[Get started today](https://docs.yombo.net/Gateway/Quick_start)
 
 Usage
 =====
 
-The primary purpose of this module is to demonstrate creating modules and using the Yombo Filereader utility. The [Filereader](https://yombo.net/docs/gateway/utils/filereader/) utility allows for easily monitoring a file for updates and support file skip-ahead when the gateway restarts.
+The primary purpose of this module is to demonstrate creating modules and using
+the Yombo Filereader utility. The
+[Filereader](https://docs.yombo.net/Developing_modules/Utilities) utility allows
+for easily monitoring a file for updates and support file skip-ahead when the gateway restarts.
 
 With this module, you can simple echo in a command to be peformed:
 
@@ -27,7 +31,8 @@ The actual commands are processed by the YomboBot module and is required.
 Installation
 ============
 
-Simply mark this module as being used by the gateway, and the gateway will download and install this module automatically.
+Simply mark this module as being used by the gateway, and the gateway will download
+and install this module automatically.
 
 Requirements
 ============
@@ -37,6 +42,8 @@ YomboBot module is required for parsing the commands.
 License
 =======
 
-The [Yombo](https://yombo.net/) team and other contributors hopes that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+The [Yombo](https://yombo.net/) team and other contributors hopes that it will be
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.
 
 See Yombo Gateway LICENSE file for full details.
