@@ -168,7 +168,7 @@ class Loader(YomboLibrary, object):
     def run_phase(self):
         return (self._run_phase, RUN_PHASE[self._run_phase])
 
-    @operating_mode.setter
+    @run_phase.setter
     def run_phase(self, val):
         if RUN_PHASE[val] > 2:
             self.loadedLibraries['states']['loader.run_phase'] = val
@@ -700,7 +700,7 @@ class Loader(YomboLibrary, object):
 
         if component_type == 'library':
             if component_name not in self.loadedLibraries:
-                logger.info("Library not found: {loadedLibraries}", loadedLibraries=loadedLibraries)
+                logger.info("Library not found: {loadedLibraries}", loadedLibraries=self.loadedLibraries)
                 raise YomboWarning("Cannot library name.")
 
             if isinstance(component_function, list):
