@@ -44,10 +44,9 @@ import asyncio
 from collections import OrderedDict, Callable
 from re import search as ReSearch
 import traceback
-import os.path
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet import reactor
 from twisted.web import client
 from functools import reduce
@@ -63,74 +62,74 @@ import yombo.utils
 logger = get_logger('library.loader')
 
 HARD_LOAD = OrderedDict()
-HARD_LOAD["Validate"] = {'operating_mode':'all'}
-HARD_LOAD["Queue"] = {'operating_mode':'all'}
-HARD_LOAD["Notifications"] = {'operating_mode':'all'}
-HARD_LOAD["LocalDB"] = {'operating_mode':'all'}
-HARD_LOAD["SQLDict"] = {'operating_mode':'all'}
-HARD_LOAD["Configuration"] = {'operating_mode':'all'}
-HARD_LOAD["Atoms"] = {'operating_mode':'all'}
-HARD_LOAD["States"] = {'operating_mode':'all'}
-HARD_LOAD["Statistics"] = {'operating_mode':'all'}
-HARD_LOAD["Startup"] = {'operating_mode':'all'}
-HARD_LOAD["AMQP"] = {'operating_mode':'run'}
-HARD_LOAD["YomboAPI"] = {'operating_mode':'all'}
-HARD_LOAD["GPG"] = {'operating_mode':'all'}
-HARD_LOAD["CronTab"] = {'operating_mode':'all'}
-HARD_LOAD["DownloadModules"] = {'operating_mode':'run'}
-HARD_LOAD["Times"] = {'operating_mode':'all'}
-HARD_LOAD["Commands"] = {'operating_mode':'all'}
-HARD_LOAD["DeviceTypes"] = {'operating_mode':'all'}
-HARD_LOAD["InputTypes"] = {'operating_mode':'all'}
-HARD_LOAD["VoiceCmds"] = {'operating_mode':'all'}
-HARD_LOAD["Variables"] = {'operating_mode':'all'}
-HARD_LOAD["Devices"] = {'operating_mode':'all'}
-HARD_LOAD["Automation"] = {'operating_mode':'all'}
-HARD_LOAD["Modules"] = {'operating_mode':'all'}
-HARD_LOAD["Localize"] = {'operating_mode':'all'}
-HARD_LOAD["AMQPYombo"] = {'operating_mode':'run'}
-HARD_LOAD["Gateways"] = {'operating_mode':'all'}
-HARD_LOAD["Nodes"] = {'operating_mode':'all'}
-HARD_LOAD["Locations"] = {'operating_mode':'all'}
-HARD_LOAD["MQTT"] = {'operating_mode':'run'}
-HARD_LOAD["SSLCerts"] = {'operating_mode':'all'}
-HARD_LOAD["WebInterface"] = {'operating_mode':'all'}
-HARD_LOAD["Tasks"] = {'operating_mode':'all'}
+HARD_LOAD["Validate"] = {'operating_mode': 'all'}
+HARD_LOAD["Queue"] = {'operating_mode': 'all'}
+HARD_LOAD["Notifications"] = {'operating_mode': 'all'}
+HARD_LOAD["LocalDB"] = {'operating_mode': 'all'}
+HARD_LOAD["SQLDict"] = {'operating_mode': 'all'}
+HARD_LOAD["Configuration"] = {'operating_mode': 'all'}
+HARD_LOAD["Atoms"] = {'operating_mode': 'all'}
+HARD_LOAD["States"] = {'operating_mode': 'all'}
+HARD_LOAD["Statistics"] = {'operating_mode': 'all'}
+HARD_LOAD["Startup"] = {'operating_mode': 'all'}
+HARD_LOAD["AMQP"] = {'operating_mode': 'run'}
+HARD_LOAD["YomboAPI"] = {'operating_mode': 'all'}
+HARD_LOAD["GPG"] = {'operating_mode': 'all'}
+HARD_LOAD["CronTab"] = {'operating_mode': 'all'}
+HARD_LOAD["DownloadModules"] = {'operating_mode': 'run'}
+HARD_LOAD["Times"] = {'operating_mode': 'all'}
+HARD_LOAD["Commands"] = {'operating_mode': 'all'}
+HARD_LOAD["DeviceTypes"] = {'operating_mode': 'all'}
+HARD_LOAD["InputTypes"] = {'operating_mode': 'all'}
+HARD_LOAD["VoiceCmds"] = {'operating_mode': 'all'}
+HARD_LOAD["Variables"] = {'operating_mode': 'all'}
+HARD_LOAD["Devices"] = {'operating_mode': 'all'}
+HARD_LOAD["Automation"] = {'operating_mode': 'all'}
+HARD_LOAD["Modules"] = {'operating_mode': 'all'}
+HARD_LOAD["Localize"] = {'operating_mode': 'all'}
+HARD_LOAD["AMQPYombo"] = {'operating_mode': 'run'}
+HARD_LOAD["Gateways"] = {'operating_mode': 'all'}
+HARD_LOAD["Nodes"] = {'operating_mode': 'all'}
+HARD_LOAD["Locations"] = {'operating_mode': 'all'}
+HARD_LOAD["MQTT"] = {'operating_mode': 'run'}
+HARD_LOAD["SSLCerts"] = {'operating_mode': 'all'}
+HARD_LOAD["WebInterface"] = {'operating_mode': 'all'}
+HARD_LOAD["Tasks"] = {'operating_mode': 'all'}
 
 HARD_UNLOAD = OrderedDict()
-HARD_UNLOAD["Gateways"] = {'operating_mode':'all'}
-HARD_UNLOAD["SSLCerts"] = {'operating_mode':'all'}
-HARD_UNLOAD["Tasks"] = {'operating_mode':'all'}
-HARD_UNLOAD["Localize"] = {'operating_mode':'all'}
-HARD_UNLOAD["Startup"] = {'operating_mode':'all'}
-HARD_UNLOAD["YomboAPI"] = {'operating_mode':'all'}
-HARD_UNLOAD["GPG"] = {'operating_mode':'all'}
-HARD_UNLOAD["Automation"] = {'operating_mode':'all'}
-HARD_UNLOAD["CronTab"] = {'operating_mode':'all'}
-HARD_UNLOAD["Times"] = {'operating_mode':'all'}
-HARD_UNLOAD["Commands"] = {'operating_mode':'all'}
-HARD_UNLOAD["DeviceTypes"] = {'operating_mode':'all'}
-HARD_UNLOAD["InputTypes"] = {'operating_mode':'all'}
-HARD_UNLOAD["VoiceCmds"] = {'operating_mode':'all'}
-HARD_UNLOAD["Devices"] = {'operating_mode':'all'}
-HARD_UNLOAD["Locations"] = {'operating_mode':'all'}
-HARD_UNLOAD["Nodes"] = {'operating_mode':'all'}
-HARD_UNLOAD["Atoms"] = {'operating_mode':'all'}
-HARD_UNLOAD["States"] = {'operating_mode':'all'}
-HARD_UNLOAD["WebInterface"] = {'operating_mode':'all'}
-HARD_UNLOAD["Devices"] = {'operating_mode':'all'}
-HARD_UNLOAD["AMQPYombo"] = {'operating_mode':'run'}
-HARD_UNLOAD["Configuration"] = {'operating_mode':'all'}
-HARD_UNLOAD["Statistics"] = {'operating_mode':'all'}
-HARD_UNLOAD["Modules"] = {'operating_mode':'all'}
-HARD_UNLOAD["MQTT"] = {'operating_mode':'run'}
-HARD_UNLOAD["SQLDict"] = {'operating_mode':'all'}
-HARD_UNLOAD["AMQP"] = {'operating_mode':'run'}
-HARD_UNLOAD["Modules"] = {'operating_mode':'all'}
-HARD_LOAD["Variables"] = {'operating_mode':'all'}
-# HARD_UNLOAD["DownloadModules"] = {'operating_mode':'run'}
-HARD_UNLOAD["LocalDB"] = {'operating_mode':'all'}
-HARD_UNLOAD["Queue"] = {'operating_mode':'all'}
+HARD_UNLOAD["Gateways"] = {'operating_mode': 'all'}
+HARD_UNLOAD["SSLCerts"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Tasks"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Localize"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Startup"] = {'operating_mode': 'all'}
+HARD_UNLOAD["YomboAPI"] = {'operating_mode': 'all'}
+HARD_UNLOAD["GPG"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Automation"] = {'operating_mode': 'all'}
+HARD_UNLOAD["CronTab"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Times"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Commands"] = {'operating_mode': 'all'}
+HARD_UNLOAD["DeviceTypes"] = {'operating_mode': 'all'}
+HARD_UNLOAD["InputTypes"] = {'operating_mode': 'all'}
+HARD_UNLOAD["VoiceCmds"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Devices"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Locations"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Nodes"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Atoms"] = {'operating_mode': 'all'}
+HARD_UNLOAD["States"] = {'operating_mode': 'all'}
+HARD_UNLOAD["WebInterface"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Devices"] = {'operating_mode': 'all'}
+HARD_UNLOAD["AMQPYombo"] = {'operating_mode': 'run'}
+HARD_UNLOAD["Configuration"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Statistics"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Modules"] = {'operating_mode': 'all'}
+HARD_UNLOAD["MQTT"] = {'operating_mode': 'run'}
+HARD_UNLOAD["SQLDict"] = {'operating_mode': 'all'}
+HARD_UNLOAD["AMQP"] = {'operating_mode': 'run'}
+HARD_UNLOAD["Modules"] = {'operating_mode': 'all'}
+HARD_LOAD["Variables"] = {'operating_mode': 'all'}
+# HARD_UNLOAD["DownloadModules"] = {'operating_mode': 'run'}
+HARD_UNLOAD["LocalDB"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Queue"] = {'operating_mode': 'all'}
 
 RUN_PHASE = {
     'system_init': 0,
@@ -359,8 +358,8 @@ class Loader(YomboLibrary, object):
         :param msg: Optional message to include.
         :return:
         """
-        logit = func = getattr(logger, level)
-        logit("Loader: {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
+        log = getattr(logger, level)
+        log("Loader: {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
     def import_libraries_failure(self, failure):
         logger.error("Got failure during import of library: {failure}", failure=failure)
@@ -452,6 +451,15 @@ class Loader(YomboLibrary, object):
                 HARD_LOAD[name]['_init_'] = True
             else:
                 logger.error("----==(Library doesn't have init function: {name})==-----", name=name)
+            if hasattr(library, '_init2_') and isinstance(library._init2_, Callable) \
+                    and yombo.utils.get_method_definition_level(library._init2_) != 'yombo.core.module.YomboModule':
+                d = Deferred()
+                d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'About to call _init2_.'))
+                d.addCallback(lambda ignored: maybeDeferred(library._init2_))
+                d.addErrback(self.import_libraries_failure)
+                # d.addCallback(lambda ignored: self._log_loader('debug', name, 'library', 'init', 'Done with call _init2_.'))
+                d.callback(1)
+                yield d
 
     def check_operating_mode(self, allowed):
         """
@@ -501,10 +509,10 @@ class Loader(YomboLibrary, object):
         if cache_key in self._invoke_list_cache:
             if self._invoke_list_cache[cache_key] is False:
                 # logger.warn("Cache hook ({cache_key})...SKIPPED", cache_key=cache_key)
-                returnValue(None) # skip. We already know function doesn't exist.
+                return  # skip. We already know function doesn't exist.
         library = self.loadedLibraries[requested_library]
         if requested_library == 'Loader':
-            returnValue(None)
+            return
         if not (hook.startswith("_") and hook.endswith("_")):
             hook = library._Name.lower() + "_" + hook
         if hasattr(library, hook):
@@ -578,7 +586,7 @@ class Loader(YomboLibrary, object):
                 e.by_who =  label
                 raise
 
-        returnValue(results)
+        return results
 
     def import_component(self, pathName, componentName, componentType, componentUUID=None):
         """
