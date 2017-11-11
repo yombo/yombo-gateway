@@ -231,30 +231,24 @@ class YomboModule:
     #     """
     #     return "Yombo Module: %s:%s - Source: %s" % (self._label, self._module_id. self._load_source)
 
-    def amqp_incoming(self, msg=None, properties=None, deliver=None, correlation=None, **kwargs):
+    def amqp_incoming(self, headers, **kwargs):
         """
         Basic routing of incoming AQMP message packagets to a module. Sends requests to 'amqp_incoming_request'
         and responses to 'amqp_incoming_response'.
-
-        :param deliver:
-        :param properties:
-        :param message:
         """
-#        logger.info("deliver (%s), props (%s), message (%s)" % (deliver, properties, message,))
-#        logger.info("headers... {headers}", headers=properties.headers)
-        if properties.headers['type'] == 'request':
-            if msg['data_type'] == 'object':  # a single response
-                self.amqp_incoming_request(msg=msg, properties=properties, deliver=deliver, correlation=correlation,
-                                           **kwargs)
-            elif msg['data_type'] == 'objects':  # An array of responses
-                for response in msg['request']:
-                    self.amqp_incoming_request(msg=msg, properties=properties, deliver=deliver, correlation=correlation,
-                                               **kwargs)
-        elif properties.headers['type'] == "response":
-            if msg['data_type'] == 'object':  # a single response
-                self.amqp_incoming_response(msg=msg, properties=properties, deliver=deliver, correlation=correlation,
-                                            **kwargs)
-            elif msg['data_type'] == 'objects':  # An array of responses
-                for response in msg['response']:
-                    self.amqp_incoming_response(msg=msg, properties=properties, deliver=deliver,
-                                                correlation=correlation, **kwargs)
+        if headers['message_type'] == 'request':
+            self.amqp_incoming_request(headers=headers, **kwargs)
+        if headers['message_type'] == 'response':
+            self.amqp_incoming_response(headers=headers, **kwargs)
+
+    def amqp_incoming_request(self, headers, body, **kwargs):
+        """
+        This method should be implemented by any modules expecting to receive amqp incoming requests.
+        """
+        pass
+
+    def amqp_incoming_response(self, headers, body, **kwargs):
+        """
+        This method should be implemented by any modules expecting to receive amqp incoming responses.
+        """
+        pass

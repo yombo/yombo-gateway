@@ -53,3 +53,25 @@ class YomboLibrary:
         Called when a library is about to be unloaded. 
         """
         pass
+
+    def amqp_incoming(self, headers, **kwargs):
+        """
+        Basic routing of incoming AQMP message packagets to a module. Sends requests to 'amqp_incoming_request'
+        and responses to 'amqp_incoming_response'.
+        """
+        if headers['message_type'] == 'request':
+            self.amqp_incoming_request(headers=headers, **kwargs)
+        if headers['message_type'] == 'response':
+            self.amqp_incoming_response(headers=headers, **kwargs)
+
+    def amqp_incoming_request(self, headers, body, **kwargs):
+        """
+        This method should be implemented by any modules expecting to receive amqp incoming requests.
+        """
+        pass
+
+    def amqp_incoming_response(self, headers, body, **kwargs):
+        """
+        This method should be implemented by any modules expecting to receive amqp incoming responses.
+        """
+        pass

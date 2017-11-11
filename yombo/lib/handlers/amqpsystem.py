@@ -1,7 +1,7 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-This handler library is responsible for handling control messages received from amqpyombo library.
+This handler library is responsible for handling system messages received from amqpyombo library.
 
 .. warning::
 
@@ -32,7 +32,7 @@ from yombo.core.log import get_logger
 logger = get_logger('library.handler.amqpcontrol')
 
 
-class AmqpControlHandler(YomboLibrary):
+class AmqpSystemHandler(YomboLibrary):
     """
     Handles interactions with Yombo servers through the AMQP library.
     """
@@ -44,26 +44,36 @@ class AmqpControlHandler(YomboLibrary):
         :return:
         """
         self.parent = amqpyombo
-        self._Devices = self.parent._Devices
-
-    def amqp_incoming_request(self, headers, body, **kwargs):
-        request_type = headers['request_type']
-        if request_type == "control":
-            self.process_request_control(headers, **kwargs)
-        else:
-            logger.warn("AMQP:Handler:Control - Received unknown request_type: {request_type}",
-                        request_type=request_type)
-
-
-    def process_request_control(self, deliver, properties, headers, body, **kwargs):
-        logger.warn("recieved device-command request: {body}", body=body)
-        request = body['request']
-        print("Process control: %s" % request)
-        device_id = request['device']['id']
-
-        if device_id in self._Devices:
-            device = self._Devices[request['device']['id']]
-            device.command(request['command']['id'])
 
     def _stop_(self):
         pass
+
+    def amqp_incoming_requests(self, headers, body, properties, **kwargs):
+        """
+        Handles requests from the Yombo server.
+        """
+        request_type = headers['request_type']
+        if request_type == "ping":
+            self.process_request_ping(headers, body, properties, **kwargs)
+        else:
+            logger.warn("AMQP:Handler:System - Received unknown request_type: {response_type}",
+                        request_type=request_type)
+
+    def amqp_incoming_response(self, headers, body, properties, **kwargs):
+        """
+        Handles responses to system calls to yombo servers.
+        """
+
+        response_type = headers['response_type']
+        if response_type == "ping":
+            self.process_response_ping(headers, body, properties, **kwargs)
+        else:
+            logger.warn("AMQP:Handler:System - Received unknown response_type: {response_type}",
+                        response_type=response_type)
+
+    def process_request_ping(self, deliver, properties, headers, body, **kwargs):
+        print("received ping request....")
+
+    def process_response_ping(self, headers, body, properties, **kwargs):
+        print("received ping response....")
+

@@ -607,8 +607,7 @@ class AmqpConfigHandler(YomboLibrary):
             self.init_startup_count = self.init_startup_count + 1
             self.check_download_done_calllater = reactor.callLater(30, self.check_download_done) #
 
-
-    def process_config_response(self, msg=None, properties=None, **kwargs):
+    def amqp_incoming_response(self, headers, body, properties, **kwargs):
         """
         Process configuration information coming from Yombo Servers. After message is validated, the payload is
         delivered here.
@@ -623,13 +622,20 @@ class AmqpConfigHandler(YomboLibrary):
         # logger.info("properties: {properties}", properties=properties)
         # logger.info("headers: {headers}", headers=properties.headers)
 
-        if properties.headers['config_item'] not in self.config_items:
-            raise YomboWarning("Configuration item '%s' not configured." % properties.headers['config_item'])
+        response_type = headers['response_type']
+        # print("!!!!!!!!!!!!!!amqpconfigs got response type: %s" % "get_" + response_type)
+        # print("!!!!!!!!!!!!!!")
+        # print("!!!!!!!!!!!!!!amqpconfigs __pending_updates: %s" % self.__pending_updates)
+        # print("!!!!!!!!!!!!!!")
+        # print("!!!!!!!!!!!!!!amqpconfigs config_items: %s" % self.config_items.keys())
+        if response_type not in self.config_items:
+            raise YomboWarning("Configuration item '%s' not configured." % "get_" + response_type)
         self.__process_queue[random_string(length=10)] = {
-            'msg': bytes_to_unicode(msg),
-            'headers': properties.headers,
-            }
-        self.__pending_updates['get_%s' % properties.headers['config_item']]['status'] = 'received'
+            'msg': body,
+            'headers': headers,
+            'properties': properties,
+        }
+        self.__pending_updates["get_" + response_type]['status'] = 'received'
 
         self.process_config_queue();
 
@@ -647,22 +653,22 @@ class AmqpConfigHandler(YomboLibrary):
             return None
 
         if self.processing_queue == False:
+            logger.debug("Starting process_config_queue.")
             self.processing_queue = True
             # print("self.__process_queue: %s" % self.__process_queue)
             for key in list(self.__process_queue):
                 queue = self.__process_queue[key]
-                # print("processing key: %s" % 'get_%s' % queue['headers']['config_item'])
+                # print("processing queue item: %s" % queue)
                 # if queue['headers']['config_item'] == 'get_gateway_cluster':
                 # print("msg: %s" % queue['msg'])
                 # print("self.__pending_updates: %s" % self.__pending_updates)
-                self.__pending_updates['get_%s' % queue['headers']['config_item']]['status'] = 'processing'
+                self.__pending_updates['get_%s' % queue['headers']['response_type']]['status'] = 'processing'
                 yield self.process_config(queue['msg'],
-                                          queue['headers']['config_item'],
+                                          queue['headers']['response_type'],
                                           queue['headers']['config_type'],
                                           True)
                 del self.__process_queue[key]
             self.processing_queue = False
-
 
     @inlineCallbacks
     def process_config(self, msg, config_item, config_type=None, primary_config_item=None):
@@ -681,7 +687,7 @@ class AmqpConfigHandler(YomboLibrary):
         # print("processing config.... %s" % config_item)
         # print("processing msg.... %s" % msg)
         if msg['code'] != 200:
-            logger.warn("Configuration for configuration '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
+            logger.warn("Configuration errot for '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
             yield self._remove_full_download_dueue("get_" + config_item)
             self.processing = False
             return
@@ -988,22 +994,16 @@ class AmqpConfigHandler(YomboLibrary):
             "get_gateway_locations", # Includes device variable groups/fields/data
             "get_gateway_device_types",
             "get_gateway_modules", # Includes module variable groups/fields/data
-
             "get_gateway_device_type_commands",
             "get_gateway_device_command_inputs",
             "get_gateway_input_types",
             "get_gateway_users",
             "get_gateway_dns_name",
             "get_gateway_cluster",
-
             "get_gateway_nodes",  # Includes module variable groups/fields/data
 
-            # "get_gateway_input_types",
             # "get_gateway_configs",
-
-#            "GetModuleVariables",
-#            "getGatewayUserTokens",
-#            "getGatewayUsers",
+            # "getGatewayUserTokens",
         ]
         self.inital_config_items_requested = len(allCommands)
         cur_time = int(time())
@@ -1017,11 +1017,14 @@ class AmqpConfigHandler(YomboLibrary):
 
             self.parent._Configs.set("amqpyombo_config_times", item, cur_time),
 
-            headers= {
-                "request_type": "config",
-                "config_item"  : item,
-            }
-            request = self.generate_config_request(headers, body)
+            # headers= {
+            #     "config_item": item,
+            # }
+            request = self.generate_config_request(
+                # headers=headers,
+                body=body,
+                request_type=item,
+            )
 
             self.parent.publish(**request)
             self._append_full_download_queue(item)
@@ -1037,12 +1040,17 @@ class AmqpConfigHandler(YomboLibrary):
             "config_item": 'purged_' + config_item,
         }
 
-        request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
-                                                           "yombo.server.configs", headers, body)
+        request_msg = self.parent.generate_message_request(
+            exchange='ysrv.e.gw_config',
+            source='yombo.gateway.lib.amqpyobo',
+            destination='yombo.server.configs',
+            headers=headers,
+            body=body,
+        )
         request_msg['correlation_persistent'] = False
         self.parent.publish(**request_msg)
 
-    def generate_config_request(self, headers, request_data=""):
+    def generate_config_request(self, headers=None, body=None, request_type=None):
         """
         Generate a request specific to this library - configs!
 
@@ -1050,8 +1058,14 @@ class AmqpConfigHandler(YomboLibrary):
         :param request_data:
         :return:
         """
-        request_msg = self.parent.generate_message_request('ysrv.e.gw_config', 'yombo.gateway.lib.amqpyobo',
-                                                    "yombo.server.configs", headers, request_data)
+        request_msg = self.parent.generate_message_request(
+            exchange_name='ysrv.e.gw_config',
+            source='yombo.gateway.lib.amqpyobo',
+            destination="yombo.server.configs",
+            request_type=request_type,
+            headers=headers,
+            body=body,
+        )
         # logger.debug("response: {request_msg}", request_msg=request_msg)
         request_msg['correlation_persistent'] = False
         return request_msg
@@ -1095,10 +1109,10 @@ class AmqpConfigHandler(YomboLibrary):
                     if completed_id in self.db_existing_data[table]:
                         del self.db_existing_data[table][completed_id]
                 for existing_id in list(self.db_existing_data[table].keys()):
-                    print("Left over items: should be deleted.... %s: %s" % (table, existing_id))
+                    # print("Left over items: should be deleted.... %s: %s" % (table, existing_id))
                     records.append(existing_id)
                 if len(records) > 0:
-                    print("%s should be delete_many these records: %s" % (table, records))
+                    # print("%s should be delete_many these records: %s" % (table, records))
                     yield self._LocalDB.delete_many(table, records)
             self.db_existing_data = {}
 

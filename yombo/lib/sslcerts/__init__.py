@@ -418,26 +418,16 @@ class SSLCerts(YomboLibrary):
             "request_type": "sslcert",
             "ssl_item": "csr_request",
         }
-        request = self.generate_sslrequest_request_message(headers, body, self.send_csr_request_response)
 
-        self._AMQPYombo.publish(**request)
-        return request
-
-    def generate_sslrequest_request_message(self, headers, request_data=None, callback=None):
-        """
-        Generate a request specific to this library - configs!
-
-        :param headers:
-        :param request_data:
-        :return:
-        """
-        if request_data is None:
-            request_data = {}
-
-        request_msg = self._AMQPYombo.generate_message_request('ysrv.e.gw_sslcerts', 'yombo.gateway.lib.sslcerts',
-                                                    "yombo.server.sslcerts", headers, request_data, callback)
-        request_msg['routing_key'] = '*'
-        # logger.debug("request_msg: {request_msg}", request_msg=request_msg)
+        request_msg = self._AMQPYombo.generate_message_request(
+            exchange_name='ysrv.e.gw_config',
+            source='yombo.gateway.lib.amqpyobo',
+            destination='yombo.server.configs',
+            request_type='csr_request',
+            headers=headers,
+            body=body,
+        )
+        self._AMQPYombo.publish(**request_msg)
         return request_msg
 
     def send_csr_request_response(self, msg=None, properties=None, correlation_info=None, **kwargs):
