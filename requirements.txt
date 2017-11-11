@@ -34,6 +34,7 @@ cython
 wheel
 certifi
 pyephem
+numpy
 
 #psutil
 #pytest
