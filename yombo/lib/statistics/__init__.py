@@ -673,7 +673,8 @@ class Statistics(YomboLibrary):
         if resolution is None:
             resolution = 300
         if end is None:
-            end = time()
+            end = int(time())
+
         if not is_number(resolution):
             raise ValueError("Resolution should be number, but {} is given".format(type(resolution)))
         if not is_number(start):
@@ -685,11 +686,11 @@ class Statistics(YomboLibrary):
         if not (isinstance(names, (list, tuple)) and all(isinstance(name, str) for name in names)):
             raise ValueError("names must be a string or list/tuple of strings")
 
-        data = yield self._LocalDB.stats_get_range(names, start, end)
-        print("stats get: data: %s" % data)
+        data = yield self._LocalDB.statistic_get_range(names, start, end, minimal=True)
+        # print("stats get: data: %s" % data)
         bm = BucketsManager()
         bm.process(data)
-        stat = bm.stat(resolution, start, end)
+        stat = bm.get_stats(resolution, start, end)
         return stat
 
     @inlineCallbacks

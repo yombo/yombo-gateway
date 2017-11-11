@@ -27,6 +27,7 @@ A database API to SQLite3.
 # Import python libraries
 from collections import OrderedDict
 
+import decimal
 import inspect
 from os import chmod
 import sys
@@ -1242,6 +1243,55 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         find_where = dictToWhere(where)
         records = yield Statistics.find(where=find_where)
         return records
+
+    @inlineCallbacks
+    def statistic_get_range(self, names, start, stop, minimal=None):
+        if isinstance(names, list) is False:
+            raise YomboWarning("statistic_get_range: names argument expects a list.")
+        if isinstance(start, int) is False and isinstance(start, float) is False:
+            raise YomboWarning("statistic_get_range: start argument expects an int or float, got: %s" % start)
+        if isinstance(stop, int) is False and isinstance(stop, float) is False:
+            print("stop is typE: %s" % type(stop))
+            raise YomboWarning("statistic_get_range: stop argument expects an int or float, got: %s" % stop)
+
+        # names_str = ", ".join(map(str, names))
+        names_str = ', '.join('"{0}"'.format(w) for w in names)
+        sql = """SELECT id, bucket_time, bucket_size, bucket_lifetime, bucket_type, bucket_name,
+ bucket_value, bucket_average_data, anon, uploaded, finished, updated_at 
+ FROM  statistics WHERE bucket_name in (%s) AND bucket_time >= %s
+        AND bucket_time <= %s
+        ORDER BY bucket_time""" % (names_str, start, stop)
+        # print("statistic_get_range: %s" % sql)
+        records = yield Registry.DBPOOL.runQuery(sql)
+        results = []
+        for record in records:
+            if minimal in (None, False):
+                results.append({
+                    'id': record[0],
+                    'bucket_time': record[1],
+                    'bucket_size': record[2],
+                    'bucket_lifetime': record[3],
+                    'bucket_type': record[4],
+                    'bucket_name': record[5],
+                    'bucket_value': record[6],
+                    'bucket_average_data': record[7],
+                    'anon': record[8],
+                    'uploaded': record[9],
+                    'finished': record[10],
+                    'updated_at': record[11],
+                })
+            else:
+                results.append({
+                    'id': record[0],
+                    'bucket_time': record[1],
+                    'bucket_size': record[2],
+                    'bucket_lifetime': record[3],
+                    'bucket_type': record[4],
+                    'bucket_name': record[5],
+                    'bucket_value': record[6],
+                })
+
+        return results
 
     @inlineCallbacks
     def get_stat_last_datapoints(self):
