@@ -184,6 +184,7 @@ class Gateways(YomboLibrary):
                 'machine_label': 'local',
                 'label': 'Local',
                 'description': 'Local',
+                'fqdn':'127.0.0.1',
             })
 
         yield self._load_gateways_from_database()
