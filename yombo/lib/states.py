@@ -63,7 +63,7 @@ from time import time
 from functools import partial
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -431,16 +431,16 @@ class States(YomboLibrary, object):
         if key in self.__States[gateway_id]:
             is_new = False
             # If state is already set to value, we don't do anything.
-            print("stats key exists for gateway... %s" % key)
+            # print("stats key exists for gateway... %s" % key)
             self.__States[gateway_id][key]['updated_at'] = int(round(time()))
-            print("old (%s) == new (%s)" % (self.__States[gateway_id][key]['value'], value))
+            # print("old (%s) == new (%s)" % (self.__States[gateway_id][key]['value'], value))
 
             if self.__States[gateway_id][key]['value'] == value:
-                print("not setting state...it matches....")
+                # print("not setting state...it matches....")
                 return
             self._Statistics.increment("lib.states.set.update", bucket_size=60, anon=True)
         else:
-            print("New state: %s=%s" % (key, value))
+            # print("New state: %s=%s" % (key, value))
             # logger.debug("Saving state: {key} = {value}", key=key, value=value)
             is_new = True
             self.__States[gateway_id][key] = {
@@ -462,7 +462,7 @@ class States(YomboLibrary, object):
         except YomboHookStopProcessing as e:
             logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                            state=key, resource=e.by_who)
-            returnValue(None)
+            return None
 
         self.__States[gateway_id][key]['value'] = value
         self.__States[gateway_id][key]['function'] = function
@@ -594,9 +594,9 @@ class States(YomboLibrary, object):
             limit = 1
         results = yield self._LocalDB.get_state_history(key, limit, offset, gateway_id=gateway_id)
         if len(results) >= 1:
-            returnValue(results)
+            return results
         else:
-            returnValue(None)
+            return
 
     def history_length(self, key):
         """
@@ -607,7 +607,7 @@ class States(YomboLibrary, object):
         :rtype: int
         """
         results = yield self._LocalDB.get_state_count(key)
-        returnValue(results)
+        return results
 
     def delete(self, key, gateway_id=None):
         """
