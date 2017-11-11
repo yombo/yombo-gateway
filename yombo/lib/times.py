@@ -73,8 +73,8 @@ class Times(YomboLibrary, object):
         self.obs.lat = str(self._Configs.get('location', 'latitude', 0))
         self.obs.lon = str(self._Configs.get('location', 'longitude', 0))
         self.obs.elevation = int(self._Configs.get('location', 'elevation', 800))
-        print("self.obs.lat: %s" % self._Configs.get('location', 'latitude', 0))
-        print("self.obs.lon: %s" % self._Configs.get('location', 'longitude', 0))
+        # print("self.obs.lat: %s" % self._Configs.get('location', 'latitude', 0))
+        # print("self.obs.lon: %s" % self._Configs.get('location', 'longitude', 0))
 
         self.obsTwilight = ephem.Observer()
         self.obsTwilight.horizon = str(self._Configs.get('times', 'twilighthorizon', '-6')) # civil = -6, nautical = -12, astronomical = -18
@@ -82,14 +82,18 @@ class Times(YomboLibrary, object):
         self.obsTwilight.lon = str(self._Configs.get('location', 'longitude', 0))
         self.obsTwilight.elevation = int(self._Configs.get('location', 'elevation', 800))
 
+        # print("done w times init 55")
         self.is_now_init = True
         self._setup_light_dark_events()
         self._setup_day_night_events()  # includes next sunrise, sunset, is sun visable, etc.
         self._setup_next_twilight_events() # needs to be called before setupNextDawnDuskEvent
+        # print("done w times init 66")
         self._setup_next_dawn_dusk_event()
         self._setup_moon_events()
+        # print("done w times init 77")
         self._setup_weekday_events()
         self.is_now_init = False
+        # print("done w times init")
 
     @property
     def next_new_moon(self):
@@ -146,7 +150,7 @@ class Times(YomboLibrary, object):
     def is_sun_visible(self, val):
         self._States.set('is.sunvisible', val, 'bool')
         self.__is_sun_visible = val
-        print("is sun visable: %s" % val)
+        # print("is sun visable: %s" % val)
         self._Statistics.datapoint("lib.times.is_sunvisible", is_one_zero(val))
 
     @property
@@ -555,7 +559,7 @@ class Times(YomboLibrary, object):
         if a_time[0] < cur_time:
             a_time = self.time_from_string("tomorrow " + some_time)
 
-        if isinstance(int, max) and max > 0:
+        if isinstance(max, int) and max > 0:
             max_time = cur_time + max
             if a_time > max_time:
                 return a_time
@@ -653,14 +657,14 @@ class Times(YomboLibrary, object):
         self.obs.date = datetime.utcnow()
 
         # if it is rised and not set, then it is visible
-        print("item_visiable: %s" % item)
-        print("self._previous_rising(self.obs, obj()): %s" % self._timegm(self._previous_rising(self.obs, obj())))
-        print("self._previous_setting(self.obs, obj()): %s" % self._timegm(self._previous_setting(self.obs, obj())))
+        # print("item_visiable: %s" % item)
+        # print("self._previous_rising(self.obs, obj()): %s" % self._timegm(self._previous_rising(self.obs, obj())))
+        # print("self._previous_setting(self.obs, obj()): %s" % self._timegm(self._previous_setting(self.obs, obj())))
         if self._timegm(self._previous_rising(self.obs, obj())) < self._timegm(self._previous_setting(self.obs, obj())):
-            print("nope")
+            # print("nope")
             return False
         else:
-            print("yeap")
+            # print("yeap")
             return True
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -830,7 +834,7 @@ class Times(YomboLibrary, object):
         if self.is_now_init:
             self.next_moonrise = moonrise
             self.next_moonset = moonset
-            print("_setup_moon_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
+            # print("_setup_moon_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
             self.is_moon_visible = self.item_visible(item='Moon')
 
         if self.item_visible(item='Moon'):
@@ -853,8 +857,8 @@ class Times(YomboLibrary, object):
 
         self._CalcLightDark()
         if self.is_now_init:
-            print("_setup_light_dark_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
-            print("_setup_light_dark_events and is_now_init: moon: %s" % self.item_visible(item='Moon'))
+            # print("_setup_light_dark_events and is_now_init: sunvisiable: %s" % self.item_visible(item='Sun'))
+            # print("_setup_light_dark_events and is_now_init: moon: %s" % self.item_visible(item='Moon'))
             self.is_sun_visible = self.item_visible(item='Sun')
             self.next_dark = sunset
             self.next_light = sunrise
@@ -1032,7 +1036,7 @@ class Times(YomboLibrary, object):
         """
         Called by timer when the sunrises. Called by: _setup_sun_events
         """
-        print("_send_now_day")
+        # print("_send_now_day")
         self.is_sun_visible = True
         self.next_sunrise = self.item_set(item='Moon')
         self.send_event_hook('now_sunrise')
@@ -1207,7 +1211,7 @@ class Times(YomboLibrary, object):
                 return dt
             except (ephem.AlwaysUpError,ephem.NeverUpError):
                 if (observer.date < save_date - 365) or (observer.date > save_date + 365):
-                    print('Could not find daylight bounds, last checked date ', observer.date, ', first checked ', save_date,' - year checked day by day.')
+                    # print('Could not find daylight bounds, last checked date ', observer.date, ', first checked ', save_date,' - year checked day by day.')
                     raise #It is not possible to found setting or rising
                 continue
 
