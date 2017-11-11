@@ -295,14 +295,27 @@ def route_setup_wizard(webapp):
             return page_setup_wizard_4_show_form(webinterface, request, session)
 
         def page_setup_wizard_4_show_form(webinterface, request, session):
+            if 'setup_wizard_gateway_is_master' in session and\
+                            'setup_wizard_gateway_master_gateway' in session:
+                # print("found gateway master session data")
+                is_master = session['setup_wizard_gateway_is_master']
+                master_gateway = session['setup_wizard_gateway_master_gateway']
+            else:
+                master_gateway = session.get('setup_wizard_gateway_master_gateway', 'None')
+                if master_gateway == 'local':
+                    is_master = 1
+                    master_gateway = None
+                else:
+                    is_master = 0
+
             security_items = {
-                'is_master': session.get('setup_wizard_gateway_is_master', '1'),
-                'master_gateway': session.get('setup_wizard_gateway_master_gateway', 'None'),
+                'is_master': is_master,
+                'master_gateway': master_gateway,
                 'status': session.get('setup_wizard_security_status', '1'),
                 'gps_status': session.get('setup_wizard_security_gps_status', '1'),
                 'send_private_stats': session.get('setup_wizard_security_send_private_stats', '1'),
                 'send_anon_stats': session.get('setup_wizard_security_send_anon_stats', '1'),
-            }
+                }
 
             print("security_items: %s" % security_items)
 
@@ -337,53 +350,48 @@ def route_setup_wizard(webapp):
             if session.get('setup_wizard_last_step', 1) not in (4, 5):
                 webinterface.add_alert("Invalid wizard state. Please don't use the browser forward or back buttons.")
                 return webinterface.redirect(request, '/setup_wizard/1')
-            print("aaaa7")
 
             valid_submit = True
-            print("valid: %s" % valid_submit)
-            try:
-                submitted_gateway_is_master = request.args.get('is-master')[0]
-            except:
-                valid_submit = False
-                webinterface.add_alert("Invalid Gateway Is Master")
-
-            print("b12")
-            print("valid: %s" % valid_submit)
             try:
                 submitted_gateway_master_gateway = request.args.get('master-gateway')[0]
+                if submitted_gateway_master_gateway == 'local':
+                    submitted_gateway_is_master = 1
+                    submitted_gateway_master_gateway = None
+                else:
+                    submitted_gateway_is_master = 0
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Master Gateway.")
 
-            print("b13")
-            print("valid: %s" % valid_submit)
+            # print("b13: %s - %s" % (submitted_gateway_is_master, submitted_gateway_master_gateway))
+            # print("valid: %s" % valid_submit)
             try:
                 submitted_security_status = request.args.get('security-status')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Device Send Status.")
 
-            print("b14")
-            print("valid: %s" % valid_submit)
+            # print("b14")
+            # print("valid: %s" % valid_submit)
             try:
                 submitted_security_gps_status = request.args.get('security-gps-status')[0]
             except:
                 valid_submit = False
-                webinterface.add_alert("Invalid Gateway GPS Locations Send Status.")
+                webinterface.add_alert("Invalid GPS Location Send Status value.")
 
             if valid_submit is False:
                 return webinterface.redirect(request, '/setup_wizard/4')
 
-            print("b15")
-            print("valid: %s" % valid_submit)
+            # print("b15")
+            # print("valid: %s" % valid_submit)
             try:
                 submitted_security_send_private_stats = request.args.get('security-send-private-stats')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid send private stats.")
 
-            print("b16")
-            print("valid: %s" % valid_submit)
+            # print("b16")
+            # print("valid: %s" % valid_submit)
             if valid_submit is False:
                 return webinterface.redirect(request, '/setup_wizard/4')
 
@@ -393,8 +401,8 @@ def route_setup_wizard(webapp):
                 valid_submit = False
                 webinterface.add_alert("Invalid send anonymous statistics.")
 
-            print("b17")
-            print("valid: %s" % valid_submit)
+            # print("b17")
+            # print("valid: %s" % valid_submit)
             if valid_submit is False:
                 print("ccc")
                 return webinterface.redirect(request, '/setup_wizard/4')
@@ -544,10 +552,10 @@ def route_setup_wizard(webapp):
 
             # webinterface._Configs.set('core', 'updated', results['data']['updated_at'])
             # webinterface._Configs.set('core', 'created', results['data']['created_at'])
-            print("new gwid: %s" % results['data']['id'])
-            print("got gwid before set: %s" % webinterface._Configs.get('core', 'gwid'))
+            # print("new gwid: %s" % results['data']['id'])
+            # print("got gwid before set: %s" % webinterface._Configs.get('core', 'gwid'))
             webinterface._Configs.set('core', 'gwid', results['data']['id'])
-            print("got gwid after set: %s" % webinterface._Configs.get('core', 'gwid'))
+            # print("got gwid after set: %s" % webinterface._Configs.get('core', 'gwid'))
             webinterface._Configs.set('core', 'gwuuid', results['data']['uuid'])
             webinterface._Configs.set('core', 'machine_label', session['setup_wizard_gateway_machine_label'])
             webinterface._Configs.set('core', 'label', session['setup_wizard_gateway_label'])
@@ -571,10 +579,15 @@ def route_setup_wizard(webapp):
             session['setup_wizard_done'] = True
             session['setup_wizard_last_step'] = 7
 
+            print("gf 1")
             if submitted_gpg_action == 'new':  # make GPG keys!
+                print("gf 2")
                 gpg_info = yield webinterface._GPG.generate_key()
+                print("gf 3")
                 webinterface._Configs.set('gpg', 'keyid', gpg_info['keyid'])
+                print("gf 4")
                 webinterface._Configs.set('gpg', 'keyascii', gpg_info['keypublicascii'])
+                print("gf 5")
             elif submitted_gpg_action == 'import':  # make GPG keys!
                 try:
                     submitted_gpg_private = request.args.get('gpg-private-key')[0]
@@ -596,11 +609,14 @@ def route_setup_wizard(webapp):
                 else:
                     webinterface.add_alert("Existing GPG/PGP key not fount.")
                     return webinterface.redirect(request, '/setup_wizard/5')
+            print("gj 1")
             session['gpg_selected'] = submitted_gpg_action
 
             session['setup_wizard_last_step'] = 6
 
+            print("gj 4")
             results = yield form_setup_wizard_6(webinterface, request, session)
+            print("gj 5")
             return results
 
         @inlineCallbacks

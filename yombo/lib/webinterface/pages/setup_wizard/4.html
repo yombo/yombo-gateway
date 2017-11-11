@@ -94,20 +94,12 @@
                         <h2>Gateway Master / Slave
                             <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
                         </h2>
-                        <p>Determine if this gateway should be considered a master or a slave</p>
+                        <br>
                         <div class="form-group">
-                            <label for="is-master" data-toggle="tooltip" title="Is master gateway">Make this gateway a master gateway</label>
-                            <div class="material-switch pull-right">
-                                <input id="is-master" name="is-master" type="checkbox"{% if security_items.is_master == '1' or security_items.is_master == 1 %} checked {% endif %}/>
-                                <label for="is-master" class="label-primary"></label>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="master-gateway" data-toggle="tooltip" title="If this is a slave gateway, select a master gateway.">If this is a slave gateway, which gateway is the master?</label>
+                            <label for="master-gateway" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
                             <div class="pull-right">
                                 <select name="master-gateway" id="master-gateway" required class="selectpicker show-tick" title="Select...">
-                                    <option value="none" style="background: #e6f7ff; color: #000;"{% if security_items.master_gateway == 'None' %} selected{% endif %}>None</option>
+                                    <option value="local" style="background: #e6f7ff; color: #000;"{% if security_items.master_gateway == 'None' or security_items.is_master == 1 %} selected{% endif %}>I'm the master!</option>
                                     <option data-divider="true"></option>
                                     {% for id, gateway in available_gateways.items() if gateway.is_master == '1' or gateway.is_master == 1  -%}
                                     <option value="{{ gateway.id }}"{% if security_items.master_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
