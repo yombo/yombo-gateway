@@ -109,6 +109,7 @@ from yombo.utils import percentile, global_invoke_all, pattern_search
 from yombo.utils.decorators import memoize_ttl
 from yombo.core.log import get_logger
 
+from yombo.lib.statistics.buckets_manager import BucketsManager
 logger = get_logger('library.statistics')
 
 
@@ -650,6 +651,46 @@ class Statistics(YomboLibrary):
                     results.append(new_result)
 
         return results
+
+    @inlineCallbacks
+    def collect_stats(self, names, start, end=None, resolution=None):
+        """
+        Return statistics based on names, resolution (bucket size), start time, and end time.
+
+        :param names: Either a single statistic name or a list of statistic names.
+        :param start: Time (seconds since epoch) to start the collect stats from.
+        :param end: Time (seconds since epoch) to end the stats (default is current time).
+        :param resolution: How detailed the data should be. This helps to reduce stat size. Default is 300
+        :return:
+        """
+        def is_number(s):
+            try:
+                float(s)
+                return True
+            except ValueError as e:
+                return False
+
+        if resolution is None:
+            resolution = 300
+        if end is None:
+            end = time()
+        if not is_number(resolution):
+            raise ValueError("Resolution should be number, but {} is given".format(type(resolution)))
+        if not is_number(start):
+            raise ValueError("Start should be number, but {} is given".format(type(start)))
+        if not is_number(end):
+            raise ValueError("End should be number, but {} is given".format(type(end)))
+        if isinstance(names, str):
+            names = [names]
+        if not (isinstance(names, (list, tuple)) and all(isinstance(name, str) for name in names)):
+            raise ValueError("names must be a string or list/tuple of strings")
+
+        data = yield self._LocalDB.stats_get_range(names, start, end)
+        print("stats get: data: %s" % data)
+        bm = BucketsManager()
+        bm.process(data)
+        stat = bm.stat(resolution, start, end)
+        return stat
 
     @inlineCallbacks
     def _save_statistics(self, full=False, gateway_stopping=False):
