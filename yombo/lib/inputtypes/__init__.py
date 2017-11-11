@@ -28,7 +28,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all, global_invoke_libraries
+from yombo.utils import search_instance, do_search_instance, global_invoke_all
 import collections
 from functools import reduce
 logger = get_logger('library.inputtypes')
