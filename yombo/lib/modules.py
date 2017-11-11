@@ -19,10 +19,11 @@ Also calls module hooks as requested by other libraries and modules.
 """
 # Import python libraries
 import configparser
-import inspect
-import sys
 import traceback
-from hashlib import md5
+try:
+    from hashlib import sha3_224 as sha224
+except ImportError:
+    from hashlib import sha224
 from functools import partial
 from functools import reduce
 from time import time
@@ -32,7 +33,7 @@ from pyclbr import readmodule
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred, DeferredList
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboCritical
+from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, dict_merge
@@ -44,33 +45,35 @@ import collections
 
 logger = get_logger('library.modules')
 
-SYSTEM_MODULES = {}
-SYSTEM_MODULES['automationhelpers'] = {
-    'id': 'automationhelpers', # module_id
-    'gateway_id': 'local',
-    'module_type': 'logic',
-    'machine_label': 'AutomationHelpers',
-    'label': 'Automation Helpers',
-    'short_description': "Adds basic platforms to the automation rules.",
-    'description': "Adds basic platforms to the automation rules.",
-    'description_formatting': 'text',
-    'install_branch': 'system',
-    'install_count': '',
-    'see_also': '',
-    'prod_branch': '',
-    'dev_branch': '',
-    'prod_version': '',
-    'dev_version': '',
-    'repository_link': '',
-    'issue_tracker_link': '',
-    'doc_link': 'https://yombo.net/docs/features/automation-rules/',
-    'git_link': '',
-    'public': '2',
-    'status': '1',
-    'created_at': int(time()),
-    'updated_at': int(time()),
-    'load_source': 'system modules',
+SYSTEM_MODULES = {
+    'automationhelpers': {
+        'id': 'automationhelpers',  # module_id
+        'gateway_id': 'local',
+        'module_type': 'logic',
+        'machine_label': 'AutomationHelpers',
+        'label': 'Automation Helpers',
+        'short_description': "Adds basic platforms to the automation rules.",
+        'description': "Adds basic platforms to the automation rules.",
+        'description_formatting': 'text',
+        'install_branch': 'system',
+        'install_count': '',
+        'see_also': '',
+        'prod_branch': '',
+        'dev_branch': '',
+        'prod_version': '',
+        'dev_version': '',
+        'repository_link': '',
+        'issue_tracker_link': '',
+        'doc_link': 'https://yombo.net/docs/features/automation-rules/',
+        'git_link': '',
+        'public': '2',
+        'status': '1',
+        'created_at': int(time()),
+        'updated_at': int(time()),
+        'load_source': 'system modules',
+        }
     }
+
 
 class Modules(YomboLibrary):
     """
@@ -105,7 +108,7 @@ class Modules(YomboLibrary):
         try:
             self.get(module_requested)
             return True
-        except:
+        except Exception as e:
             return False
 
     def __getitem__(self, module_requested):
@@ -184,15 +187,6 @@ class Modules(YomboLibrary):
         :rtype: list
         """
         return list(self.modules.items())
-
-    def iteritems(self):
-        return iter(self.modules.items())
-
-    def iterkeys(self):
-        return iter(self.modules.keys())
-
-    def itervalues(self):
-        return iter(self.modules.values())
 
     def values(self):
         return list(self.modules.values())
@@ -373,7 +367,7 @@ class Modules(YomboLibrary):
                 else:
                     mod_doc_link = ""
 
-                newUUID = md5(str(mod_machine_label).encode()).hexdigest()
+                newUUID = sha224(str(mod_machine_label).encode()).hexdigest()
                 self._rawModulesList[newUUID] = {
                   'id': newUUID, # module_id
                   'gateway_id': 'local',
@@ -597,8 +591,8 @@ class Modules(YomboLibrary):
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
             module._Libraries = self._Loader.loadedLibraries
-            module._Libraries = self._Loader.loadedLibraries
             module._Localize = self._Loader.loadedLibraries['localize']
+            module._LocalDB = self._Loader.loadedLibraries['localdb'] # Provided for testing
             module._Modules = self
             module._MQTT = self._Loader.loadedLibraries['mqtt']
             module._Nodes = self._Loader.loadedLibraries['nodes']
@@ -651,7 +645,6 @@ class Modules(YomboLibrary):
         }
         return results
 
-    # @inlineCallbacks
     def module_invoke(self, requested_module, hook, **kwargs):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
