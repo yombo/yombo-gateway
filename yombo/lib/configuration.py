@@ -57,7 +57,10 @@ can simply implement the hook: _configuration_set_:
 """
 # Import python libraries
 import configparser
-import hashlib
+try:
+    from hashlib import sha3_224 as sha224
+except ImportError:
+    from hashlib import sha224
 from time import time, localtime, strftime
 import msgpack
 from base64 import b64encode, b64decode
@@ -781,7 +784,7 @@ class Configuration(YomboLibrary):
         self.configs[section][option] = dict_merge(self.configs[section][option], {
                 'updated_at': int(time()),
                 'value': value,
-                'hash': hashlib.sha224( str(value).encode('utf-8') ).hexdigest(),
+                'hash': sha224( str(value).encode('utf-8') ).hexdigest(),
             })
         self.configs_dirty = True
         if self.loading_yombo_ini is False:
