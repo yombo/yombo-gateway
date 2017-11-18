@@ -197,13 +197,12 @@ class Devices(YomboLibrary):
         """
         return list(self.devices.items())
 
-    def iterkeys(self):
-        return iter(self.devices.keys())
-
-    def itervalues(self):
-        return iter(self.devices.values())
-
     def values(self):
+        """
+        Gets a list of values, or, a list of objects representing all the devices.
+
+        :return:
+        """
         return list(self.devices.values())
 
     def _init_(self, **kwargs):
@@ -236,18 +235,31 @@ class Devices(YomboLibrary):
 
     @inlineCallbacks
     def _load_(self, **kwargs):
+        """
+        Loads the devices from the database and loads device commands.
+
+        :param kwargs:
+        :return:
+        """
         yield self._load_devices_from_database()
         yield self._load_device_commands()
 
-    # @inlineCallbacks
     def _start_(self, **kwags):
+        """
+        Sets up the MQTT listener for IoT interactions.
+
+        :param kwags:
+        :return:
+        """
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-devices-%s' %
                                                                                             self.gateway_id)
 
     def _started_(self, **kwargs):
         """
-        Loads devices from the database and imports them.
+        Sets up the looping call to cleanup device commands. Also, subscribes to
+        MQTT topics for IoT interactions.
+
         :return: 
         """
         self.clean_device_commands_loop = LoopingCall(self.clean_device_commands)
@@ -258,12 +270,19 @@ class Devices(YomboLibrary):
             self.mqtt.subscribe("yombo/devices/+/cmd")
 
     def _modules_started_(self, **kwargs):
+        """
+        Tells any applicable device commands to fire.
+
+        :param kwargs:
+        :return:
+        """
         for request_id, device_command in self.device_commands.items():
             device_command.start()
 
     def _unload_(self, **kwargs):
         """
         Save any device commands that need to be saved.
+
         :return: 
         """
         for device_id, device in self.devices.items():
@@ -284,14 +303,6 @@ class Devices(YomboLibrary):
             self.command(request['device_id'], request['command_id'], not_before=request['not_before'],
                     max_delay=request['max_delay'], **request['kwargs'])
         self.startup_queue.clear()
-
-    # def _statistics_lifetimes_(self, **kwargs):
-    #     """
-    #     For devices, we track statistics down to the nearest 5 minutes, and keep for 1 year.
-    #     """
-    #     return {'devices.#': {'size': 300, 'lifetime': 365},
-    #             'energy.#': {'size': 300, 'lifetime': 365}}
-    #     # we don't keep 6h averages.
 
     @inlineCallbacks
     def _load_devices_from_database(self):
@@ -432,11 +443,16 @@ class Devices(YomboLibrary):
 
         else:
             import_state = 'update'
-            global_invoke_all('_device_before_update_',
-                              called_by=self,
-                              **{'device': device},
-                              stoponerror=False
-                              )
+            try:
+                global_invoke_all('_device_before_import_',
+                                  called_by=self,
+                                  id=device_id,
+                                  data=device,
+                                  stoponerror=False
+                                  )
+            except YomboHookStopProcessing as e:
+                pass
+
             self.devices[device_id].update_attributes(device, source)
 
         try:
@@ -449,11 +465,16 @@ class Devices(YomboLibrary):
         # logger.debug("_add_device: {device}", device=device)
 
         if import_state == 'update':
-            global_invoke_all('_device_updated_',
-                              called_by=self,
-                              **{'device': self.devices[device_id]},
-                              stoponerror=False
-                              )
+            try:
+                global_invoke_all('_device_imported_',
+                                  called_by=self,
+                                  id=device_id,
+                                  data=device,
+                                  stoponerror=False
+                                  )
+            except YomboHookStopProcessing as e:
+                pass
+
         # if test_device:
         #            return self.devices[device_id]
 
@@ -463,6 +484,10 @@ class Devices(YomboLibrary):
 
     @inlineCallbacks
     def _load_device_commands(self):
+        """
+        Actually loads the device commands from the database.
+        :return:
+        """
         where = {
             'finished_at': None,
             'broadcast_at': [time() - 3600, '>'],
@@ -813,8 +838,9 @@ class Devices(YomboLibrary):
 
         try:
             global_invoke_all('_device_before_add_',
-                              **{'called_by': self, 'device': api_data},
-                              stoponerror=False)
+                              called_by=self,
+                              data=api_data,
+                              stoponerror=True)
         except YomboHookStopProcessing as e:
             raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 
@@ -864,7 +890,14 @@ class Devices(YomboLibrary):
         self.import_device(new_device, source)
         self.devices[device_id].add_to_db()
 
-        global_invoke_all('_device_added_', called_by=self, **{'device': self.devices[device_id]})
+        try:
+            global_invoke_all('_device_added_',
+                              called_by=self,
+                              device=self.devices[device_id],
+                              stoponerror=False)
+        except YomboHookStopProcessing as e:
+            pass
+
 
         if results is None:
             results = {
@@ -943,8 +976,8 @@ class Devices(YomboLibrary):
     @inlineCallbacks
     def delete_device(self, device_id, called_from_device=None):
         """
-        So sad to delete, but life goes one. This will delete a device by calling the API to request the device be
-        deleted.
+        So sad to delete, but life goes one. This will delete a device by calling the API to request
+        the device be deleted.
 
         :param device_id: Device ID to delete. Will call API
         :type device_id: string
@@ -952,6 +985,15 @@ class Devices(YomboLibrary):
         """
         if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to delete.", 300, 'delete_device', 'Devices')
+
+        try:
+            global_invoke_all('_device_before_delete_',
+                              called_by=self,
+                              id=device_id,
+                              device=self.devices[device_id],
+                              stoponerror=False)
+        except YomboHookStopProcessing as e:
+            pass
 
         device_results = yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
         # print("deleted device: %s" % device_results)
@@ -969,7 +1011,10 @@ class Devices(YomboLibrary):
             self.devices[device_id].delete(True)
 
         try:
-            yield global_invoke_all('devices_edit', called_by=self, **{'id': device_id})  # call hook "devices_edit" when editing a device.
+            yield global_invoke_all('_device_deleted_',
+                                    called_by=self,
+                                    id=device_id,
+                                    stoponerror=False)
         except Exception as e:
             pass
 
@@ -998,6 +1043,15 @@ class Devices(YomboLibrary):
             raise YomboWarning("device_id doesn't exist. Nothing to edit.", 300, 'edit_device', 'Devices')
 
         device = self.devices[device_id]
+        try:
+            yield global_invoke_all('_device_before_edit_',
+                                    called_by=self,
+                                    id=device_id,
+                                    data=data,
+                                    device=self.devices[device_id],
+                                    stoponerror=False)
+        except Exception as e:
+            pass
 
         try:
             for key in list(data.keys()):
@@ -1065,7 +1119,16 @@ class Devices(YomboLibrary):
             'msg': "Device edited.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_edit', called_by=self, **{'id': device_id})  # call hook "devices_edit" when editing a device.
+        try:
+            yield global_invoke_all('_device_edited_',
+                                    called_by=self,
+                                    id=device_id,
+                                    data=data,
+                                    device=self.devices[device_id],
+                                    stoponerror=False)
+        except Exception as e:
+            pass
+
         return results
 
     @inlineCallbacks
@@ -1102,7 +1165,14 @@ class Devices(YomboLibrary):
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_disabled', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        try:
+            yield global_invoke_all('_device_disabled_',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    stoponerror=False)
+        except Exception as e:
+            pass
         return results
 
     @inlineCallbacks
@@ -1139,7 +1209,14 @@ class Devices(YomboLibrary):
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-        global_invoke_all('devices_disabled', called_by=self, **{'id': device_id})  # call hook "devices_delete" when deleting a device.
+        try:
+            yield global_invoke_all('_device_disabled_',
+                                    called_by=self,
+                                    id=device_id,
+                                    device=self.devices[device_id],
+                                    stoponerror=False)
+        except Exception as e:
+            pass
         return results
 
 
@@ -1272,6 +1349,13 @@ class Devices(YomboLibrary):
          ]
 
     def devices_get_available_devices_callback(self, **kwargs):
+        """
+        Used for the automation platform "devices". It's used to get a list of available
+        devices devices that are usable as automation sources, targets, or conditionals.
+
+        :param kwargs:
+        :return:
+        """
 
         # iterate enabled devices
         # for each device, list available commands (device type commnads)
