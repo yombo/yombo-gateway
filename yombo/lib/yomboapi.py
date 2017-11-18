@@ -18,14 +18,17 @@ Manages interactions with api.yombo.net
 """
 # Import python libraries
 import msgpack
-from hashlib import sha1
+try:
+    from hashlib import sha3_224 as sha224
+except ImportError:
+    from hashlib import sha224
 import treq
 
 try: import simplejson as json
 except ImportError: import json
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.web.client import Agent
 from twisted.internet import reactor
 
@@ -40,7 +43,21 @@ logger = get_logger('library.yomboapi')
 
 class YomboAPI(YomboLibrary):
 
-    # contentType = None
+    @property
+    def valid_login_key(self):
+        return self._States.get('yomboapi.valid_login_key', False)
+
+    @valid_login_key.setter
+    def valid_login_key(self, val):
+        return self._States.set('yomboapi.valid_login_key', val)
+
+    @property
+    def valid_system_session(self):
+        return self._States.get('yomboapi.valid_system_session', False)
+
+    @valid_system_session.setter
+    def valid_system_session(self, val):
+        return self._States.set('yomboapi.valid_system_session', val)
 
     def _init_(self, **kwargs):
         self.custom_agent = Agent(reactor, connectTimeout=20)
@@ -54,81 +71,13 @@ class YomboAPI(YomboLibrary):
         self.valid_login_key = None
         self.session_validation_cache = ExpiringDict()
 
-        try:
-            self.system_session = self._Configs.get('yomboapi', 'auth_session')  # to be encrypted with gpg later
-            self.system_login_key = self._Configs.get('yomboapi', 'login_key')  # to be encrypted with gpg later
-        except KeyError:
-            self.system_session = None
-            self.system_login_key = None
+        self.system_login_key = self._Configs.get('yomboapi', 'login_key', None)  # to be encrypted with gpg later
+        self.system_session = self._Configs.get('yomboapi', 'auth_session', None)  # to be encrypted with gpg later
 
         if self._Loader.operating_mode == 'run':
             self.init_defer = Deferred()
             self.validate_system_login()
             return self.init_defer
-
-    @inlineCallbacks
-    def gateway_index(self, session=None):
-        results = yield self.request("GET", "/v1/gateway", None, session)
-        if results['code'] == 200:
-            returnValue(results)
-        elif results['code'] == 404:
-            raise YomboWarning("Server cannot get gateways")
-        else:
-            if results['content']['message'] == "Invalid Token.":
-                raise YomboWarningCredentails("URI: '%s' requires credentials." % results['content']['response']['uri'])
-            raise YomboWarning("Unknown error: %s" % results['content'])
-
-    @inlineCallbacks
-    def gateway_get(self, gateway_id, session=None):
-        results = yield self.request("GET", "/v1/gateway/%s" % gateway_id, None, session)
-        if results['code'] == 200:
-            returnValue(results)
-        elif results['code'] == 404:
-            raise YomboWarning("Server cannot find requested gateway: %s" % gateway_id)
-        else:
-            raise YomboWarning("Unknown error: %s" % results['content']['message'])
-
-    @inlineCallbacks
-    def gateway_put(self, gateway_id, values, session=None):
-        results = yield self.request("PATCH", "/v1/gateway/%s" % gateway_id, values, session)
-        if results['code'] == 200:
-            returnValue(results)
-        elif results['code'] == 404:
-            raise YomboWarning("Server cannot find requested gateway: %s" % gateway_id)
-        else:
-            raise YomboWarning("Unknown error: %s" % results['content']['message'])
-
-    @inlineCallbacks
-    def gateway__module_get(self, gateway_id, session=None):
-        results = yield self.request("GET", "/v1/gateway/%s/modules" % gateway_id, None, session)
-        if results['code'] == 200:
-            returnValue(results)
-        elif results['code'] == 404:
-            raise YomboWarning("Server cannot find requested gateway: %s" % gateway_id)
-        else:
-            raise YomboWarning("Unknown error: %s" % results['content']['message'])
-
-    @inlineCallbacks
-    def gateway__module_put(self, gateway_id, values, session=None):
-        results = yield self.request("PUT", "/v1/gateway/%s/modules" % gateway_id, values, session)
-        if results['code'] == 200:
-            returnValue(results)
-        elif results['code'] == 404:
-            raise YomboWarning("Server cannot find requested gateway: %s" % gateway_id)
-        else:
-            raise YomboWarning("Unknown error: %s" % results['content']['message'])
-
-    @inlineCallbacks
-    def gateway_config_index(self, gateway_id, session=None):
-        results = yield self.request("GET", "/v1/gateway/%s/config" % gateway_id, None, session)
-        if results['code'] == 200:
-            returnValue(results)
-        elif results['code'] == 404:
-            raise YomboWarning("Server cannot get gateways")
-        else:
-            raise YomboWarning("Unknown error: %s" % results['content']['message'])
-
-    # Below are the core help functions
 
     def save_system_session(self, session):
         self.system_session = session
@@ -147,10 +96,10 @@ class YomboAPI(YomboLibrary):
         return None, None
 
     def clear_session_cache(self, session=None):
-        if (session is None):
+        if session is None:
             self.session_validation_cache.clear()
         else:
-            hashed = sha1(session)
+            hashed = sha224(session)
             if hashed in self.session_validation_cache:
                 del self.session_validation_cache[hashed]  # None works too...
 
@@ -166,24 +115,22 @@ class YomboAPI(YomboLibrary):
 
         :return:
         """
+        # print("!!!!!!!!!!!  starting ytombo api validation")
         if self.allow_system_session is False:
-            self._States.set('yomboapi.valid_system_session', False)
             self.valid_system_session = False
-            self._States.set('yomboapi.valid_login_key', False)
             self.valid_login_key = False
             if self.init_defer is not None:
                 self.init_defer.callback(10)
-            returnValue(False)
+            logger.info("System session has been disabled. Won't be able to update Yombo cloud settings.")
+            return False
 
         if self.system_session is None and self.system_login_key is None:
-            logger.warn("No saved system session information and no login_key. Disabling automated system changes.")
-            self._States.set('yomboapi.valid_system_session', False)
+            logger.info("No saved system session information and no login_key. Won't be able to update Yombo cloud settings.")
             self.valid_system_session = False
-            self._States.set('yomboapi.valid_login_key', False)
             self.valid_login_key = False
             if self.init_defer is not None:
                 self.init_defer.callback(10)
-            returnValue(False)
+            return False
 
         if self.system_login_key is None:
             logger.warn("System doesn't have a login key!")
@@ -191,110 +138,86 @@ class YomboAPI(YomboLibrary):
             results = yield self.do_validate_login_key(self.system_login_key)
             if results is True:
                 logger.debug("System has a valid login key.")
-                self._States.set('yomboapi.valid_login_key', True)
                 self.valid_login_key = True
             else:
                 logger.warn("System has an invalid login key.")
-                self._States.set('yomboapi.valid_login_key', False)
                 self.valid_login_key = False
 
-        self.clear_session_cache()
-        results = yield self.do_validate_session(self.system_session)
-        if results is True:
-            logger.debug("Yombo API has a system session!")
-            self._States.set('yomboapi.valid_system_session', True)
-            self.valid_system_session = True
-            if self.init_defer is not None:
-                self.init_defer.callback(10)
-            returnValue(True)
-        else:  # if invalid, try to get one with the login key!
-            if self.valid_login_key:
-                results = yield self.user_login_with_key(self.system_login_key)
-                if results is not False:
-                    self._Configs.set('yomboapi', 'auth_session', results['session'])  # to be encrypted with gpg later
-                    self.system_session = results['session']
-                    self._States.set('yomboapi.valid_system_session', True)
-                    self.valid_system_session = True
-                    if self.init_defer is not None:
-                        self.init_defer.callback(10)
-                    returnValue(True)
-
-        logger.warn("Yombo API does not have a login system session!")
-        self._States.set('yomboapi.valid_system_session', False)
-        self.valid_system_session = False
+        if self.valid_login_key is None:
+            logger.warn("Cannot get system session token, no login token exists.!")
+        else:
+            if self.system_session is not None:
+                results = yield self.do_validate_session(self.system_session)
+            else:
+                results = False
+            if results is True:
+                logger.debug("System has a valid session token.")
+                self.valid_system_session = True
+                # self._Configs.set('yomboapi', 'auth_session', self.system_session)  # to be encrypted with gpg later
+            else:
+                if self.valid_login_key is True:
+                    new_session = yield self.user_login_with_key(self.system_login_key)
+                    if new_session is False:
+                        self.valid_system_session = False
+                        logger.warn("System has an invalid session token.")
+                    else:
+                        self._Configs.set('yomboapi', 'auth_session', new_session['session'])  # to be encrypted with gpg later
+                        self.valid_system_session = new_session['session']
+                        self.valid_system_session = True
 
         if self.init_defer is not None:
             self.init_defer.callback(10)
-        returnValue(False)
-
-    @inlineCallbacks
-    def validate_session(self, session_id=None, session_key=None, clear_cache=False):
-        session_id, session_key = self.select_session(session_id, session_key)
-        if session_id is None or session_key is None:
-            logger.debug("Yombo API session information is not valid: {id}:{key}", id=session_id, key=session_key)
-
-        hashed = sha1(session_id + session_key)
-        if hashed in self.session_validation_cache:
-            if clear_cache is True:
-                del self.session_validation_cache[hashed]
-            else:
-                returnValue(self.session_validation_cache[hashed])
-
-        results = yield self.do_validate_session(session_id, session_key)
-        self.session_validation_cache[hashed] = results
-        returnValue(results)
 
     @inlineCallbacks
     def do_validate_login_key(self, login_key):
         try:
-            results = yield self.request("GET", "/v1/user/login_key/validate/%s" % login_key)
+            results = yield self.request("POST", "/v1/user/login_key/validate", {'login_key': login_key})
         except Exception as e:
             logger.info("do_validate_login_key API Errror: {error}", error=e)
-            returnValue(False)
+            return False
 
         logger.debug("Login key results: REsults from API: {results}", results=results['content'])
         # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
-            returnValue(False)
+            return False
         else:
-            returnValue(results['content']['response']['login'])
+            return results['content']['response']['login']
 
     @inlineCallbacks
     def do_validate_session(self, session):
         try:
-            results = yield self.request("GET", "/v1/user/session/validate", None, session=session)
+            results = yield self.request("POST", "/v1/user/session/validate", {'session': session})
+            # results = yield self.request("GET", "/v1/user/session/validate", None, session=session)
         except Exception as e:
             logger.debug("$$$1 API Errror: {error}", error=e)
-            returnValue(False)
+            return False
 
         logger.debug("$$$a REsults from API: {results}", results=results['content'])
-# waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
+        # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
-            returnValue(False)
+            return False
         else:
-            returnValue(results['content']['response']['login'])
-
+            return results['content']['response']['login']
 
     @inlineCallbacks
     def user_login_with_key(self, login_key):
-        results = yield self.request("POST", "/v1/user/login", {'login_key': login_key}, False)
         try:
             results = yield self.request("POST", "/v1/user/login", {'login_key': login_key}, False)
         except Exception as e:
             logger.debug("$$$2 API Errror: {error}", error=e)
-            returnValue(False)
+            return False
 
         logger.info("user_login_with_key Results from API for login w key: {results}", results=results['content'])
         # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
-        if (results['content']['code'] != 200):
-            returnValue(False)
-        elif (results['content']['message'] == 'Logged in'):
-            returnValue(results['content']['response']['login'])
+        if results['content']['code'] != 200:
+            return False
+        elif results['content']['message'] != 'Logged in':
+            return False
         else:
-            returnValue(False)
+            return results['content']['response']['login']
 
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
@@ -302,7 +225,12 @@ class YomboAPI(YomboLibrary):
         results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
         logger.info("$$$3 REsults from API login creds: {results}", results=results)
 
-        return results
+        if results['content']['code'] != 200:
+            return False
+        elif results['content']['message'] != 'Logged in':
+            return False
+        else:
+            return results['content']['response']['login']
 
     @inlineCallbacks
     def gateways(self, session_info=None):
@@ -310,16 +238,16 @@ class YomboAPI(YomboLibrary):
         logger.debug("$$$4 REsults from API: {results}", results=results)
 
         if results['Code'] == 200:  # life is good!
-            returnValue(results['Response']['Gateway'])
+            return results['Response']['Gateway']
         else:
-            returnValue(False)
+            return False
 
     def make_headers(self, session):
         headers = {
             'Content-Type': self.contentType,
             'Authorization': 'Yombo-Gateway-v1',
             'x-api-key': self.api_key,
-            'User-Agent': 'yombo-gateway-v0_12_0',
+            'User-Agent': 'yombo-gateway-v0_14_0',
         }
         if session is not None:
             headers['Authorization'] = 'Bearer %s' % session
@@ -365,7 +293,7 @@ class YomboAPI(YomboLibrary):
         else:
             raise Exception("Bad request type?? %s: %s" % (method, path) )
 
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def _get(self, path, headers, args=None):
@@ -375,7 +303,7 @@ class YomboAPI(YomboLibrary):
         content = yield treq.content(response)
         # logger.debug("getting URL: {path}  headers: {headers}", path=path, agent=self.custom_agent, headers=headers)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        returnValue(final_response)
+        return final_response
 
     @inlineCallbacks
     def _patch(self, path, headers, data):
@@ -383,7 +311,7 @@ class YomboAPI(YomboLibrary):
         response = yield treq.patch(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        returnValue(final_response)
+        return final_response
 
     @inlineCallbacks
     def _post(self, path, headers, data):
@@ -393,24 +321,21 @@ class YomboAPI(YomboLibrary):
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
         print("dddd: %s" % final_response)
-        returnValue(final_response)
+        return final_response
 
     @inlineCallbacks
     def _put(self, path, headers, data):
         response = yield treq.put(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        returnValue(final_response)
+        return final_response
 
     @inlineCallbacks
     def _delete(self, path, headers, args={}):
         response = yield treq.delete(path, params=args, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        returnValue(final_response)
-    #
-    # def __encode(self, data):
-    #     return json.dumps(data)
+        return final_response
 
     def response_headers(self, response):
         data = {}
