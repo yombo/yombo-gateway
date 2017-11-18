@@ -5,9 +5,11 @@
 .. currentmodule:: yombo.core.constants
 
 =========================================
-Exceptions (yombo.core.exceptions)
+Constants (yombo.core.constants)
 =========================================
 
 .. automodule:: yombo.core.constants
    :members:
    :private-members:
+
+Last updated: |today|

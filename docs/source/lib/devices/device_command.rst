@@ -1,13 +1,13 @@
-.. index:: inputtype_class
+.. index:: devices_device_status
 
-.. _inputtype_class:
+.. _devices_device_status:
 
-.. currentmodule:: yombo.lib.inputtypes.__init__
+.. currentmodule:: yombo.lib.devices._device_status
 
 =================================================================
-InputType (yombo.lib.inputtypes.__init__)
+Devices::Device Status (yombo.lib.devices._device_status)
 =================================================================
-.. automodule:: yombo.lib.inputtypes.__init__
+.. automodule:: yombo.lib.devices._device_status
    :members:
    :special-members:
    :private-members:

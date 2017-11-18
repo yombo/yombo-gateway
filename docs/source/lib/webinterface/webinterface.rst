@@ -1,12 +1,12 @@
-.. index:: webinterface
+.. index:: webinterface_summary
 
-.. _webinterface::
+.. _webinterface_summary::
 
 .. currentmodule:: yombo.lib.webinterface
 
 
 =======================================
-Web Interface (yombo.lib.webinterface)
+WebInterface (yombo.lib.webinterface)
 =======================================
 
 Provides web interface to the Yombo Gateway. Useful for setting up the gateway and
@@ -14,12 +14,13 @@ interacting with th Yombo API.
 
 The web interface is broken down into several modules. See below for the core module functions.
 
-Primary Class
-=============
+Web Interface Library
+=========================
+
 .. toctree::
    :maxdepth: 1
 
-   class.rst
+   __init__.rst
 
 Helper Files
 ============
@@ -34,6 +35,8 @@ Helper Files
 
 Routes
 =======
+
+Route files handle various URLs for the Web Interface library.
 
 .. toctree::
    :maxdepth: 1
@@ -57,13 +60,5 @@ Routes
    route_statistics.rst
    route_system.rst
    route_voicecmds.rst
-
-Web Interface
-================
-.. autoclass:: WebInterface
-   :members:
-   :special-members:
-   :private-members:
-   :undoc-members:
 
 Last updated: |today|

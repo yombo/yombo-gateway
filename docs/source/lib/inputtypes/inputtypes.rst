@@ -1,6 +1,6 @@
-.. index:: inputtypes
+.. index:: inputtypes_summary
 
-.. _input_types:
+.. _inputtypes_summary:
 
 .. currentmodule:: yombo.lib.inputtypes
 
@@ -11,13 +11,21 @@ Input Types (yombo.lib.inputtypes)
 Input types validate and format user input. See https://docs.yombo.net/Libraries/Input_Types
 for additional information.
 
-InputtType components
-======================
+Input Type Library
+====================
 
 .. toctree::
    :maxdepth: 1
 
-   class.rst
+   __init__.rst
+
+
+Helper files and classes
+========================
+
+.. toctree::
+   :maxdepth: 1
+
    automation_addresses.rst
    basic_addresses.rst
    basic_types.rst
@@ -25,6 +33,5 @@ InputtType components
    ip_address.rst
    latin_alphabet.rst
    yombo_items.rst
-
 
 Last updated: |today|

@@ -56,7 +56,7 @@ IoT devices, etc.
    ../lib/commands.rst
    ../lib/configuration.rst
    ../lib/crontab.rst
-   ../lib/devices.rst
+   ../lib/devices/devices.rst
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
    ../lib/gpg.rst
@@ -70,10 +70,10 @@ IoT devices, etc.
    ../lib/notifications.rst
    ../lib/queue.rst
    ../lib/sqldict.rst
-   ../lib/sslcerts.rst
+   ../lib/sslcerts/sslcerts.rst
    ../lib/startup.rst
    ../lib/states.rst
-   ../lib/statistics.rst
+   ../lib/statistics/statistics.rst
    ../lib/times.rst
    ../lib/variables.rst
    ../lib/webinterface/webinterface.rst
@@ -136,3 +136,5 @@ information.
    ../ext/txrdq.rst
    ../ext/umsgpack.rst
    ../ext/validators.rst
+
+Last updated: |today|

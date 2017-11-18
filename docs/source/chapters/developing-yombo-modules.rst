@@ -29,4 +29,4 @@ Some additional reference modules for examples:
    ../examples/mynightmode
    ../examples/automationexample
 
-
+Last updated: |today|

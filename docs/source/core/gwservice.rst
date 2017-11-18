@@ -5,7 +5,7 @@
 .. currentmodule:: yombo.core.gwservice
 
 =======================================
-GWService (:mod:`yombo.core.gwservice`)
+GWService (yombo.core.gwservice)
 =======================================
 .. automodule:: yombo.core.gwservice
 
