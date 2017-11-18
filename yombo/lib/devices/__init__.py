@@ -1009,11 +1009,10 @@ class Devices(YomboLibrary):
 
         if called_from_device is not True:
             self.devices[device_id].delete(True)
-
         try:
             yield global_invoke_all('_device_deleted_',
                                     called_by=self,
-                                    id=device_id,
+                                    id=self.device_id,
                                     stoponerror=False)
         except Exception as e:
             pass
@@ -1110,15 +1109,6 @@ class Devices(YomboLibrary):
                     }
                     return results
 
-        if source != 'node':
-            device.update_attributes(data, source='parent')
-            device.save_to_db()
-
-        results = {
-            'status': 'success',
-            'msg': "Device edited.",
-            'device_id': device_results['data']['id']
-        }
         try:
             yield global_invoke_all('_device_edited_',
                                     called_by=self,
@@ -1129,6 +1119,15 @@ class Devices(YomboLibrary):
         except Exception as e:
             pass
 
+        if source != 'node':
+            device.update_attributes(data, source='parent')
+            device.save_to_db()
+
+        results = {
+            'status': 'success',
+            'msg': "Device edited.",
+            'device_id': device_results['data']['id']
+        }
         return results
 
     @inlineCallbacks
@@ -1159,20 +1158,19 @@ class Devices(YomboLibrary):
 
         if source != 'node':
             self.devices[device_id].enable(True)
-
+        try:
+            yield global_invoke_all('_device_enabled_',
+                                    called_by=self,
+                                    id=self.device_id,
+                                    stoponerror=False)
+        except Exception as e:
+            pass
         results = {
             'status': 'success',
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-        try:
-            yield global_invoke_all('_device_disabled_',
-                                    called_by=self,
-                                    id=device_id,
-                                    device=self.devices[device_id],
-                                    stoponerror=False)
-        except Exception as e:
-            pass
+
         return results
 
     @inlineCallbacks
@@ -1203,12 +1201,6 @@ class Devices(YomboLibrary):
 
         if source != 'node':
             self.devices[device_id].disable(True)
-
-        results = {
-            'status': 'success',
-            'msg': "Device disabled.",
-            'device_id': device_results['data']['id']
-        }
         try:
             yield global_invoke_all('_device_disabled_',
                                     called_by=self,
@@ -1217,6 +1209,12 @@ class Devices(YomboLibrary):
                                     stoponerror=False)
         except Exception as e:
             pass
+        results = {
+            'status': 'success',
+            'msg': "Device disabled.",
+            'device_id': device_results['data']['id']
+        }
+
         return results
 
 
