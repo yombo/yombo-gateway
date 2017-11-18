@@ -67,6 +67,14 @@ class AMQPYombo(YomboLibrary):
     """
     Handles interactions with Yombo servers through the AMQP library.
     """
+    @property
+    def connected(self):
+        return self._States.get('amqp.amqpyombo.state', None)
+
+    @connected.setter
+    def connected(self, val):
+        return self._States.set('amqp.amqpyombo.state', val)
+
     def _init_(self, **kwargs):
         """
         Loads various variables and calls :py:meth:connect() when it's ready.
@@ -76,11 +84,12 @@ class AMQPYombo(YomboLibrary):
         self.user_id = "gw_" + self._Configs.get('core', 'gwid', 'local', False)
         self.login_gwuuid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
         self.request_configs = False
-
+        print("aaaa");
         self.controlHandler = AmqpControlHandler(self)
         self.configHandler = AmqpConfigHandler(self)
         self.systemHandler = AmqpSystemHandler(self)
 
+        print("aaab");
         self.amqpyombo_options = {   # Stores data from sub-modules
             'connected': [],
             'disconnected': [],
@@ -95,9 +104,13 @@ class AMQPYombo(YomboLibrary):
         self._getAllConfigsLoggerLoop = None
         self.send_local_information_loop = None  # used to periodically send yombo servers updated information
 
-        self._States.set('amqp.amqpyombo.state', False)
+        print("aaae");
+        self.connected = False
+        print("aaae1");
         self.init_deferred = Deferred()
+        print("aaae2");
         self.connect()
+        print("aaae3");
         return self.init_deferred
 
     @inlineCallbacks
@@ -205,7 +218,9 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
-        self._States.set('amqp.amqpyombo.state', True)
+        self.connected = True
+        for the_callback in self.amqpyombo_options['connected']:
+            the_callback()
 
         if self.send_local_information_loop is None:
             self.send_local_information_loop = LoopingCall(self.send_local_information)
@@ -222,7 +237,7 @@ class AMQPYombo(YomboLibrary):
         # logger.info("amqpyombo yombo disconnected: {state}", state=self._States.get('amqp.amqpyombo.state'))
         # If we have at least connected once, then we don't toss errors.  We just wait for reconnection...
 
-        if self._States.get('amqp.amqpyombo.state') is False:
+        if self.connected is False:
             logger.error(
                 "Unable to connect. This may be due to multiple connections or bad gateway hash. See: http://g2.yombo.net/noconnect")
             self._Loader.sigint = True
@@ -230,7 +245,9 @@ class AMQPYombo(YomboLibrary):
             reactor.stop()
             return
 
-        self._States.set('amqp.amqpyombo.state', False)
+        self.connected = False
+        for the_callback in self.amqpyombo_options['disconnected']:
+            the_callback()
         if self.send_local_information_loop is not None and self.send_local_information_loop.running:
             self.send_local_information_loop.stop()
 
@@ -381,8 +398,8 @@ class AMQPYombo(YomboLibrary):
         #     'received_message_meta': received_message_meta,
         #     'sent_message_meta': sent_message_meta,
         # }
-        # print("amqp_incoming................")
-        # print(arguments)
+        print("amqp_incoming................")
+        print(headers)
         ## Valiate that we have the required headers
         if 'message_type' not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
@@ -643,6 +660,7 @@ class AMQPYombo(YomboLibrary):
         create the message.
         :return:
         """
+        logger.debug("about to publish: {kwargs}", kwargs=kwargs)
         if kwargs['meta']['finalized_for_sending'] is False:
             kwargs = self.finalize_message(kwargs)
         if "callback" in kwargs:
