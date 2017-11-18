@@ -292,10 +292,10 @@ class Notifications(YomboLibrary):
         # Call any hooks
         try:
             global_invoke_all('_notification_add_',
-                                    **{'called_by': self,
-                                       'notification': self.notifications[notice['id']],
-                                       }
-                                    )
+                              called_by=self,
+                              notification=self.notifications[notice['id']],
+                              stoponerror=False,
+                              )
         except YomboHookStopProcessing:
             pass
 
@@ -310,11 +310,11 @@ class Notifications(YomboLibrary):
         """
         # Call any hooks
         try:
-            global_invoke_all('_notification_add_',
-                                    **{'called_by': self,
-                                       'notification': self.notifications[notice_id],
-                                       }
-                                    )
+            global_invoke_all('_notification_delete_',
+                              called_by=self,
+                              notification=self.notifications[notice['id']],
+                              stoponerror=False,
+                              )
         except YomboHookStopProcessing:
             pass
 
