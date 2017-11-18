@@ -35,6 +35,46 @@ class Device_Command(object):
     device class. Librarys and modules can use this instance to get the details of a given
     request.
     """
+    status_ids = {
+        'unknown': 0,
+        'new': 10,
+        'accepted': 20,
+        'sent': 30,
+        'received': 40,
+        'pending': 50,
+        'done': 100,
+        'canceled': 200,
+        'failed': 220,
+        'expired': 240,
+    }
+
+    @property
+    def status_id(self):
+        status = self._status.lower()
+        if status not in self.status_ids:
+            logger.warn("Device command {id} has invalid status: {status}",
+                        id=self.request_id, status=self._status)
+            self.status = 'unknown'
+            return 0
+        else:
+            return self.status_ids[status]
+
+    @status_id.setter
+    def status_id(self, val):
+        for key, key_id in self.status_ids.items():
+            if key_id == val:
+                self._status = key
+        raise Exception("Invalid status_id: %s" % val)
+
+    @status_id.setter
+    def status(self, val):
+        status = self._status.lower()
+        if status not in self.status_ids:
+            logger.warn("Device command {id} tried to set an invalid status: {status}",
+                        id=self.request_id, status=val)
+            raise Exception("Invalid status")
+        else:
+            self._status = val
 
     def __init__(self, data, parent, start=None):
         """
@@ -44,6 +84,7 @@ class Device_Command(object):
         :param parent: A pointer to the device types instance.
         """
         # print("new device_comamnd: %s" % data)
+        self._status = 0
         self._Parent = parent
         self.source_gateway_id = data.get('source_gateway_id', self._Parent.gateway_id)
         self.local_gateway_id = self._Parent.gateway_id
@@ -71,6 +112,7 @@ class Device_Command(object):
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
         self.broadcast_at = data.get('broadcast_at', None)  # time when command was sent through hooks.
+        self.accepted_at = data.get('accepted_at', None)  # when a module accepts the device command for processing
         self.sent_at = data.get('sent_at', None)  # when a module or receiver sent the command to final end-point
         self.received_at = data.get('received_at', None)  # when the command was received by the final end-point
         self.pending_at = data.get('pending_at', None)  # if command takes a while to process time, this is the timestamp of last update
@@ -119,6 +161,8 @@ class Device_Command(object):
             self.command_status_received = data['command_status_received']
         if 'broadcast_at' in data:
             self.broadcast_at = data['broadcast_at']
+        if 'accepted_at' in data:
+            self.accepted_at = data['accepted_at']
         if 'sent_at' in data:
             self.sent_at = data['sent_at']
         if 'received_at' in data:
@@ -184,6 +228,16 @@ class Device_Command(object):
         if message is None:
             message='Command broadcasted to hooks and gateway coms.'
         self.history.append((broadcast_at, self.status, message, self.local_gateway_id))
+
+    def set_accepted(self, accepted_at=None, message=None):
+        self._dirty = True
+        if accepted_at is None:
+            accepted_at = time()
+        self.accepted_at = accepted_at
+        self.status = 'accepted'
+        if message is None:
+            message='Command sent to device or processing sub-system.'
+        self.history.append((accepted_at, self.status, message, self.local_gateway_id))
 
     def set_sent(self, sent_at=None, message=None):
         self._dirty = True
@@ -318,6 +372,7 @@ class Device_Command(object):
             "inputs": self.inputs,
             "created_at": self.created_at,
             "broadcast_at": self.broadcast_at,
+            "accepted_at": self.accepted_at,
             "sent_at": self.sent_at,
             "received_at": self.received_at,
             "pending_at": self.pending_at,
