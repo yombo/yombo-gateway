@@ -528,7 +528,7 @@ def create_table_states(Registry, **kwargs):
         `gateway_id` TEXT NOT NULL,
         `name`        TEXT NOT NULL,
         `value_type`  TEXT,
-        `value`       INTEGER NOT NULL,
+        `value`       INTEGER,
         `live`        INTEGER NOT NULL,
         `created_at`  INTEGER NOT NULL,
         `updated_at`  INTEGER NOT NULL);"""
