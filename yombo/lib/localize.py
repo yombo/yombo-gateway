@@ -25,8 +25,11 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from hashlib import md5
-from time import gmtime, strftime
+try:
+    from hashlib import sha3_224 as sha224
+except ImportError:
+    from hashlib import sha224
+# from time import gmtime, strftime
 from os.path import abspath
 import builtins
 import sys
@@ -36,7 +39,7 @@ import traceback
 import yombo.ext.polib as polib
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+# from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.utils import unit_convert
 from yombo.core.log import get_logger
@@ -115,7 +118,7 @@ class Localize(YomboLibrary):
 
         This combines any module .po/.po.head files with the system po files. Then creates .mo binary files.
 
-        Uses a basic MD5 hash to validate if files have changes or not between runs. This prevents the files to be
+        Uses a basic sha224 hash to validate if files have changes or not between runs. This prevents the files to be
         rebuilt on each run.
         :return:
         """
@@ -134,7 +137,7 @@ class Localize(YomboLibrary):
             # print "localize . self.files: %s" % self.files
 
             #always check english. If it gets updated, we need to update them all!
-            hash_obj = md5(open(self.files['en'][0], 'rb').read())
+            hash_obj = sha224(open(self.files['en'][0], 'rb').read())
 
             for fname in self.files['en'][1:]:
                 hash_obj.update(open(fname, 'rb').read())
@@ -145,7 +148,7 @@ class Localize(YomboLibrary):
 
             # Generate/update locale file hashes. If anything changed, add to languages_to_update
             for lang, files in self.files.items():
-                hash_obj = md5(open(files[0], 'rb').read())
+                hash_obj = sha224(open(files[0], 'rb').read())
                 for fname in files[1:]:
                     hash_obj.update(open(fname, 'rb').read())
                 checksum = hash_obj.hexdigest()
