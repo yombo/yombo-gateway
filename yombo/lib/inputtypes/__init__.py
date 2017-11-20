@@ -25,7 +25,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -306,9 +306,17 @@ class InputTypes(YomboLibrary):
             # global_invoke_all('_input_type_loaded_',
             #               **{'input_type': self.input_types[input_type_id]})
         elif input_type_id not in self.input_types:
-            global_invoke_all('_input_type_before_update_', called_by=self, **{'input_type': input_type})
+            global_invoke_all('_input_type_before_update_',
+                              called_by=self,
+                              id=input_type_id,
+                              input_type=self.input_types[input_type_id],
+                              )
             self.input_types[input_type_id].update_attributes(input_type)
-            global_invoke_all('_input_type_updated_', called_by=self, **{'input_type': self.input_types[input_type_id]})
+            global_invoke_all('_input_type_updated_',
+                              called_by=self,
+                              id=input_type_id,
+                              input_type=self.input_types[input_type_id],
+                              )
 
     def get_all(self):
         """
