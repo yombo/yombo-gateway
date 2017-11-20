@@ -186,6 +186,7 @@ def create_table_device_commands(Registry, **kwargs):
         `inputs`            TEXT,
         `created_at`        FLOAT NOT NULL,
         `broadcast_at`      FLOAT,
+        `accepted_at`       FLOAT,
         `sent_at`           FLOAT,
         `received_at`       FLOAT,
         `pending_at`        FLOAT,
