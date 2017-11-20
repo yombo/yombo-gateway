@@ -312,7 +312,7 @@ class Notifications(YomboLibrary):
         try:
             global_invoke_all('_notification_delete_',
                               called_by=self,
-                              notification=self.notifications[notice['id']],
+                              notification=self.notifications[notice_id],
                               stoponerror=False,
                               )
         except YomboHookStopProcessing:
