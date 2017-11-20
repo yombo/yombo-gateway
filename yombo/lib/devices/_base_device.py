@@ -309,7 +309,6 @@ class Base_Device(object):
                                   called_by=self,
                                   id=self.device_id,
                                   device=self,
-                                  stoponerror=False
                                   )
             except YomboHookStopProcessing as e:
                 pass
@@ -620,7 +619,7 @@ class Base_Device(object):
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
         try:
-            results = global_invoke_all('_device_command_', **items)
+            results = yield global_invoke_all('_device_command_', **items)
         except YomboHookStopProcessing as e:
             pass
 
@@ -652,7 +651,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
             device_command.set_received(message=message, received_at=log_time)
@@ -663,7 +662,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -688,7 +687,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -713,7 +712,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -738,7 +737,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -764,7 +763,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -794,7 +793,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -822,7 +821,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -850,7 +849,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
@@ -878,7 +877,7 @@ class Base_Device(object):
                                   status=device_command.status,
                                   status_id=device_command.status_id,
                                   message=message,
-                                  stoponerror=False)
+                                  )
             except YomboHookStopProcessing as e:
                 pass
         else:
