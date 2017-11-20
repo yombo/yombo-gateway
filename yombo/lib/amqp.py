@@ -960,7 +960,7 @@ class PikaProtocol(pika.adapters.twisted_connection.TwistedProtocolConnection):
             # logger.debug("check_delivery_queue already running.. bye....")
             return None
         self.check_delivery_queue_running = True
-        # logger.debug("check_delivery_queue already running.. Go")
+        logger.debug("check_delivery_queue... Go")
 
         while True:
             item = self.get_delivery_item()
