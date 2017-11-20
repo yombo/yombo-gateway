@@ -42,7 +42,7 @@ from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
 from yombo.ext.expiringdict import ExpiringDict
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import save_file, read_file, global_invoke_all, random_int, unicode_to_bytes, bytes_to_unicode
@@ -115,8 +115,9 @@ class SSLCerts(YomboLibrary):
         self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict', 'save_interval',random_int(60*60*24, .1), False))
 
         # Check if any libraries or modules need certs.
-        sslcerts = yield global_invoke_all('_sslcerts_', called_by=self)
-        # print("about to add sslcerts")
+        sslcerts = yield global_invoke_all('_sslcerts_',
+                                           called_by=self,
+                                           )
         yield self._add_sslcerts(sslcerts)
         # print("done...about to add sslcerts: %s" % self.managed_certs['lib_webinterface'].__dict__)
 
@@ -414,17 +415,11 @@ class SSLCerts(YomboLibrary):
             'sslname': sslname,
         }
 
-        headers = {
-            "request_type": "sslcert",
-            "ssl_item": "csr_request",
-        }
-
         request_msg = self._AMQPYombo.generate_message_request(
             exchange_name='ysrv.e.gw_config',
             source='yombo.gateway.lib.amqpyobo',
             destination='yombo.server.configs',
             request_type='csr_request',
-            headers=headers,
             body=body,
         )
         self._AMQPYombo.publish(**request_msg)
