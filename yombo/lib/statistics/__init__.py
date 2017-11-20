@@ -99,7 +99,7 @@ import re
 
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet import reactor
 
 # Import Yombo libraries
@@ -267,7 +267,9 @@ class Statistics(YomboLibrary):
         if self.enabled is not True:
             return
 
-        stat_lifetimes = yield global_invoke_all('_statistics_lifetimes_', called_by=self)
+        stat_lifetimes = yield global_invoke_all('_statistics_lifetimes_',
+                                                 called_by=self,
+                                                 )
         for moduleName, item in stat_lifetimes.items():
             if isinstance(item, dict):
                 for bucket_name, lifetime in item.items():
