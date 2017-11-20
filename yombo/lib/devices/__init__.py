@@ -448,7 +448,6 @@ class Devices(YomboLibrary):
                                   called_by=self,
                                   id=device_id,
                                   data=device,
-                                  stoponerror=False
                                   )
             except YomboHookStopProcessing as e:
                 pass
@@ -470,7 +469,6 @@ class Devices(YomboLibrary):
                                   called_by=self,
                                   id=device_id,
                                   data=device,
-                                  stoponerror=False
                                   )
             except YomboHookStopProcessing as e:
                 pass
@@ -840,7 +838,8 @@ class Devices(YomboLibrary):
             global_invoke_all('_device_before_add_',
                               called_by=self,
                               data=api_data,
-                              stoponerror=True)
+                              stoponerror=True,
+                              )
         except YomboHookStopProcessing as e:
             raise YomboWarning("Adding device was halted by '%s', reason: %s" % (e.name, e.message))
 
@@ -894,7 +893,7 @@ class Devices(YomboLibrary):
             global_invoke_all('_device_added_',
                               called_by=self,
                               device=self.devices[device_id],
-                              stoponerror=False)
+                              )
         except YomboHookStopProcessing as e:
             pass
 
@@ -991,7 +990,7 @@ class Devices(YomboLibrary):
                               called_by=self,
                               id=device_id,
                               device=self.devices[device_id],
-                              stoponerror=False)
+                              )
         except YomboHookStopProcessing as e:
             pass
 
@@ -1013,7 +1012,7 @@ class Devices(YomboLibrary):
             yield global_invoke_all('_device_deleted_',
                                     called_by=self,
                                     id=self.device_id,
-                                    stoponerror=False)
+                                    )
         except Exception as e:
             pass
 
@@ -1048,7 +1047,7 @@ class Devices(YomboLibrary):
                                     id=device_id,
                                     data=data,
                                     device=self.devices[device_id],
-                                    stoponerror=False)
+                                    )
         except Exception as e:
             pass
 
@@ -1115,7 +1114,7 @@ class Devices(YomboLibrary):
                                     id=device_id,
                                     data=data,
                                     device=self.devices[device_id],
-                                    stoponerror=False)
+                                    )
         except Exception as e:
             pass
 
@@ -1162,7 +1161,7 @@ class Devices(YomboLibrary):
             yield global_invoke_all('_device_enabled_',
                                     called_by=self,
                                     id=self.device_id,
-                                    stoponerror=False)
+                                    )
         except Exception as e:
             pass
         results = {
@@ -1206,7 +1205,7 @@ class Devices(YomboLibrary):
                                     called_by=self,
                                     id=device_id,
                                     device=self.devices[device_id],
-                                    stoponerror=False)
+                                    )
         except Exception as e:
             pass
         results = {
