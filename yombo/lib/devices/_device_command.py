@@ -68,13 +68,18 @@ class Device_Command(object):
 
     @status_id.setter
     def status(self, val):
-        status = self._status.lower()
-        if status not in self.status_ids:
+        try:
+            status = self._status.lower()
+            if status not in self.status_ids:
+                logger.warn("Device command {id} tried to set an invalid status: {status}",
+                            id=self.request_id, status=val)
+                self._status = 'unknown'
+            else:
+                self._status = val
+        except AttributeError as e:
             logger.warn("Device command {id} tried to set an invalid status: {status}",
                         id=self.request_id, status=val)
-            raise Exception("Invalid status")
-        else:
-            self._status = val
+            self._status = 'unknown'
 
     def __init__(self, data, parent, start=None):
         """
@@ -388,4 +393,3 @@ class Device_Command(object):
 
     def __repr__(self):
         return "Device command for '%s': %s" % (self.device.label, self.command.label)
-
