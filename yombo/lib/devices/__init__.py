@@ -710,6 +710,24 @@ class Devices(YomboLibrary):
             devices.append(getattr(device, field))
         return devices
 
+    def full_list_devices(self, gateway_id=None):
+        """
+        Return a list of dictionaries representing all known devices. Can be restricted to
+        a single gateway by supplying a gateway_id, use 'local' for the local gateway.
+
+        :param gateway_id: Filter selecting to a specific gateway. Use 'local' for the local gateway.
+        :type gateway_id: string
+        :return:
+        """
+        if gateway_id == 'local':
+            gateway_id = self.gateway_id
+
+        devices = []
+        for device_id, device in self.devices.items():
+            if gateway_id is None or device.gateway_id == gateway_id:
+                devices.append(device.asdict())
+        return devices
+
     def get(self, device_requested, limiter=None, status=None):
         """
         Performs the actual search.

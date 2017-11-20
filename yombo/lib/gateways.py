@@ -1246,6 +1246,16 @@ class Gateways(YomboLibrary):
         }
         return results
 
+    def full_list_gateways(self):
+        """
+        Return a list of dictionaries representing all known commands to this gateway.
+        :return:
+        """
+        items = []
+        for gateway_id, gateway in self.gateways.items():
+            items.append(gateway.asdict())
+        return items
+
 
 class Gateway:
     """
@@ -1386,6 +1396,23 @@ class Gateway:
         """
         return self.gateway_id
 
+    def asdict(self):
+        """
+        Export gateway variables as a dictionary.
+        """
+        return {
+            'gateway_id': str(self.gateway_id),
+            'fqdn': str(self.fqdn),
+            'is_master': self.is_master,
+            'master_gateway': str(self.master_gateway),
+            'machine_label': str(self.machine_label),
+            'label': str(self.label),
+            'description': str(self.description),
+            'status': int(self.status),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
+        }
+
     def __repl__(self):
         """
         Export gateway variables as a dictionary.
@@ -1394,10 +1421,10 @@ class Gateway:
             'gateway_id': str(self.gateway_id),
             'fqdn': str(self.fqdn),
             'is_master': self.is_master,
-            'master_gateway': str(self.master_gatewaymaster_gateway),
+            'master_gateway': str(self.master_gateway),
             'machine_label': str(self.machine_label),
-            'label': int(self.label),
-            'description': int(self.description),
+            'label': str(self.label),
+            'description': str(self.description),
             'status': int(self.status),
             'created_at': int(self.created_at),
             'updated_at': int(self.updated_at),

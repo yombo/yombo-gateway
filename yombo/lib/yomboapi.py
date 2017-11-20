@@ -230,7 +230,8 @@ class YomboAPI(YomboLibrary):
         elif results['content']['message'] != 'Logged in':
             return False
         else:
-            return results['content']['response']['login']
+            return results['content']
+            # return results['content']['response']['login']
 
     @inlineCallbacks
     def gateways(self, session_info=None):

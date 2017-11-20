@@ -27,7 +27,7 @@ from collections import OrderedDict
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboPinCodeError, YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, global_invoke_all, do_search_instance
 from yombo.lib.commands import Command  # used only to determine class type
@@ -304,14 +304,11 @@ class Base_Device(object):
                 self.energy_map = None
 
         if self.device_is_new is True:
-            try:
-                global_invoke_all('_device_updated_',
-                                  called_by=self,
-                                  id=self.device_id,
-                                  device=self,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_updated_',
+                              called_by=self,
+                              id=self.device_id,
+                              device=self,
+                              )
 
         if source != "parent":
             self._Parent.edit_device(device, source="node")
@@ -397,8 +394,8 @@ class Base_Device(object):
                 'voice_cmd_order': str(self.voice_cmd_order),
                 'created_at': int(self.created_at),
                 'updated_at': int(self.updated_at),
-                'device_commands': self.device_commands,
-                'status_history': self.status_history,
+                'device_commands': list(self.device_commands),
+                'status_history': list([sh.asdict() for sh in self.status_history]),
                 }
 
     def to_mqtt_coms(self):
@@ -618,10 +615,7 @@ class Base_Device(object):
         }
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
-        try:
-            results = yield global_invoke_all('_device_command_', **items)
-        except YomboHookStopProcessing as e:
-            pass
+        results = yield global_invoke_all('_device_command_', **items)
 
         device_command.set_broadcast()
         for component, result in results.items():
@@ -644,27 +638,21 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
             device_command.set_received(message=message, received_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -680,16 +668,13 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_accepted(message=message, accepted_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -705,16 +690,13 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_sent(message=message, sent_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -730,16 +712,13 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_received(message=message, received_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -756,16 +735,13 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_pending(message=message, pending_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -786,16 +762,13 @@ class Base_Device(object):
             if message is not None:
                 logger.warn('Device ({label}) command failed: {message}', label=self.label, message=message,
                             state='failed')
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -814,16 +787,13 @@ class Base_Device(object):
             device_command.set_canceled(message=message, finished_at=log_time)
             if message is not None:
                 logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -842,16 +812,13 @@ class Base_Device(object):
             device_command.set_delay_expired(message=message, finished_at=log_time)
             if message is not None:
                 logger.debug('Device ({label}) command failed: {message}', label=self.label, message=message)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -870,16 +837,13 @@ class Base_Device(object):
         if request_id in self._Parent.device_commands:
             device_command = self._Parent.device_commands[request_id]
             device_command.set_finished(message=message, finished_at=log_time)
-            try:
-                global_invoke_all('_device_command_status_',
-                                  called_by=self,
-                                  device_command=device_command,
-                                  status=device_command.status,
-                                  status_id=device_command.status_id,
-                                  message=message,
-                                  )
-            except YomboHookStopProcessing as e:
-                pass
+            global_invoke_all('_device_command_status_',
+                              called_by=self,
+                              device_command=device_command,
+                              status=device_command.status,
+                              status_id=device_command.status_id,
+                              message=message,
+                              )
         else:
             return
 
@@ -1138,7 +1102,6 @@ s
             'request_id': kwargs.get('request_id', None),
             'reported_by': kwargs.get('reported_by', None),
             'gateway_id': kwargs.get('gateway_id', self.gateway_id),
-            'stoponerror': False,
         }
 
         message['status'] = self.status_history[0]
@@ -1147,12 +1110,10 @@ s
         else:
             message['previous_status'] = self.status_history[1]
 
-        try:
-            global_invoke_all('_device_status_',
-                              called_by=self,
-                              **message)
-        except YomboHookStopProcessing as e:
-            pass
+        global_invoke_all('_device_status_',
+                          called_by=self,
+                          **message,
+                          )
 
     def remove_delayed(self):
         """

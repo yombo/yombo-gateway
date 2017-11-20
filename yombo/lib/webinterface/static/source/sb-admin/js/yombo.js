@@ -44,7 +44,7 @@ $(document).ready(function () {
 
 $('.alert').bind('closed.bs.alert', function () {
         var id = $(this).data('the_alert_id');
-        $.get('/api/v1/notifications/'+id+'/ack');
+        $.get('/api/v1/notification/'+id+'/ack');
 });
 
 // Function handles long-click on items.

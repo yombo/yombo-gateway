@@ -95,8 +95,10 @@ def route_home(webapp):
                     return page.render(alerts=webinterface.get_alerts())
 
             results = yield webinterface._YomboAPI.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
-            if (results['code'] == 200):
-                login = results['content']['response']['login']
+            print(results)
+            if results['code'] == 200:
+                login = results['response']['login']
+
                 # print("login was good...")
 
                 if session is False:

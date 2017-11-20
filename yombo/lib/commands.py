@@ -383,7 +383,6 @@ class Commands(YomboLibrary):
                 results[command_id] = command
         return results
 
-
     @inlineCallbacks
     def dev_command_add(self, data, **kwargs):
         """
@@ -547,6 +546,16 @@ class Commands(YomboLibrary):
         }
         returnValue(results)
 
+    def full_list_commands(self):
+        """
+        Return a list of dictionaries representing all known commands to this gateway.
+        :return:
+        """
+        items = []
+        for command_id, command in self.commands.items():
+            items.append(command.asdict())
+        return items
+
 
 class Command:
     """
@@ -607,6 +616,24 @@ class Command:
         :rtype: str
         """
         return self.command_id
+
+    def asdict(self):
+        """
+        Export command variables as a dictionary.
+        """
+        return {
+            'command_id': str(self.command_id),
+            'always_load': str(self.always_load),
+            'voice_cmd': str(self.voice_cmd),
+            'cmd': str(self.cmd),  # AKA machineLabel
+            'label': str(self.label),
+            'machine_label': str(self.machine_label),
+            'description': str(self.description),
+            'public': int(self.public),
+            'status': int(self.status),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
+        }
 
     def __repl__(self):
         """

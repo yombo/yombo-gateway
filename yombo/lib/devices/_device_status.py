@@ -39,7 +39,6 @@ class Device_Status(object):
         """
         return self.human_status
 
-    ## <start dict emulation>
     def __getitem__(self, key):
         return getattr(self, key)
 

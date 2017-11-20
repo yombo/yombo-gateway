@@ -52,25 +52,34 @@ import yombo.utils
 from yombo.lib.webinterface.sessions import Sessions
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 
-from yombo.lib.webinterface.route_atoms import route_atoms
-from yombo.lib.webinterface.route_automation import route_automation
-from yombo.lib.webinterface.route_api_v1 import route_api_v1
-from yombo.lib.webinterface.route_configs import route_configs
-from yombo.lib.webinterface.route_devices import route_devices
-from yombo.lib.webinterface.route_locations import route_locations
-from yombo.lib.webinterface.route_devtools_debug import route_devtools_debug
-from yombo.lib.webinterface.route_devtools_config import route_devtools_config
-from yombo.lib.webinterface.route_gateways import route_gateways
-from yombo.lib.webinterface.route_home import route_home
-from yombo.lib.webinterface.route_misc import route_misc
-from yombo.lib.webinterface.route_modules import route_modules
-from yombo.lib.webinterface.route_notices import route_notices
-from yombo.lib.webinterface.route_panel import route_panel
-from yombo.lib.webinterface.route_statistics import route_statistics
-from yombo.lib.webinterface.route_states import route_states
-from yombo.lib.webinterface.route_system import route_system
-from yombo.lib.webinterface.route_voicecmds import route_voicecmds
-from yombo.lib.webinterface.route_setup_wizard import route_setup_wizard
+from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
+from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
+from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
+from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
+from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
+from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
+from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
+from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
+from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
+
+from yombo.lib.webinterface.routes.atoms import route_atoms
+from yombo.lib.webinterface.routes.automation import route_automation
+from yombo.lib.webinterface.routes.configs import route_configs
+from yombo.lib.webinterface.routes.devices import route_devices
+from yombo.lib.webinterface.routes.locations import route_locations
+from yombo.lib.webinterface.routes.devtools_debug import route_devtools_debug
+from yombo.lib.webinterface.routes.devtools_config import route_devtools_config
+from yombo.lib.webinterface.routes.gateways import route_gateways
+from yombo.lib.webinterface.routes.home import route_home
+from yombo.lib.webinterface.routes.misc import route_misc
+from yombo.lib.webinterface.routes.modules import route_modules
+from yombo.lib.webinterface.routes.notices import route_notices
+from yombo.lib.webinterface.routes.panel import route_panel
+from yombo.lib.webinterface.routes.statistics import route_statistics
+from yombo.lib.webinterface.routes.states import route_states
+from yombo.lib.webinterface.routes.system import route_system
+from yombo.lib.webinterface.routes.voicecmds import route_voicecmds
+from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
 #from yombo.lib.webinterfaceyombosession import YomboSession
@@ -177,9 +186,20 @@ class WebInterface(YomboLibrary):
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
 
+        # Load API routes
+        route_api_v1_automation(self.webapp)
+        route_api_v1_command(self.webapp)
+        route_api_v1_device(self.webapp)
+        route_api_v1_gateway(self.webapp)
+        route_api_v1_module(self.webapp)
+        route_api_v1_notification(self.webapp)
+        route_api_v1_server(self.webapp)
+        route_api_v1_statistics(self.webapp)
+        route_api_v1_system(self.webapp)
+
+        # Load web server routes
         route_atoms(self.webapp)
         route_automation(self.webapp)
-        route_api_v1(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
         route_locations(self.webapp)
@@ -560,7 +580,7 @@ class WebInterface(YomboLibrary):
 
         add_on_menus = yield yombo.utils.global_invoke_all('_webinterface_add_routes_',
                                                            called_by=self,
-                                                           stoponerror=False)
+                                                           )
         for component, options in add_on_menus.items():
             if 'nav_side' in options:
                 for new_nav in options['nav_side']:
