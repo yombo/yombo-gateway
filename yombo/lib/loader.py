@@ -567,8 +567,8 @@ class Loader(YomboLibrary, object):
         if 'stoponerror' in kwargs:
             stoponerror = kwargs['stoponerror']
         else:
-            kwargs['stoponerror'] = True
-            stoponerror = True
+            kwargs['stoponerror'] = False
+            stoponerror = False
 
         for library_name, library in self.loadedLibraries.items():
             # logger.debug("invoke all:{libraryName} -> {hook}", libraryName=library_name, hook=hook )
@@ -580,11 +580,10 @@ class Loader(YomboLibrary, object):
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:
-                if stoponerror is not True:
-                    pass
-                e.collected = results
-                e.by_who =  label
-                raise
+                if stoponerror is True:
+                    e.collected = results
+                    e.by_who = label
+                    raise
 
         return results
 

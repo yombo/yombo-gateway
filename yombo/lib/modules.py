@@ -735,8 +735,8 @@ class Modules(YomboLibrary):
         if 'stoponerror' in kwargs:
             stoponerror = kwargs['stoponerror']
         else:
-            kwargs['stoponerror'] = True
-            stoponerror = True
+            kwargs['stoponerror'] = False
+            stoponerror = False
 
         for module_id, module in self.modules.items():
             # print("aaa2")
@@ -758,15 +758,13 @@ class Modules(YomboLibrary):
                     # print("bbb3 - %s" % d)
                     d.addCallback(add_results, results, label)
                     dl_list.append(d)
-
             except YomboWarning:
                 pass
             except YomboHookStopProcessing as e:
-                if stoponerror is not True:
-                    pass
-                e.collected = results
-                e.by_who =  label
-                raise
+                if stoponerror is True:
+                    e.collected = results
+                    e.by_who = label
+                    raise
             except Exception as e:
                 logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
                             module=module._Name, hook=hook, e=e)
