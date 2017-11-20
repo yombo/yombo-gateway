@@ -1061,7 +1061,7 @@ class AmqpConfigHandler(YomboLibrary):
         request_msg = self.parent.generate_message_request(
             exchange_name='ysrv.e.gw_config',
             source='yombo.gateway.lib.amqpyobo',
-            destination="yombo.server.configs",
+            destination='yombo.server.configs',
             request_type=request_type,
             headers=headers,
             body=body,
