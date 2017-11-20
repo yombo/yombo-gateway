@@ -84,12 +84,10 @@ class AMQPYombo(YomboLibrary):
         self.user_id = "gw_" + self._Configs.get('core', 'gwid', 'local', False)
         self.login_gwuuid = self.user_id + "_" + self._Configs.get("core", "gwuuid")
         self.request_configs = False
-        print("aaaa");
         self.controlHandler = AmqpControlHandler(self)
         self.configHandler = AmqpConfigHandler(self)
         self.systemHandler = AmqpSystemHandler(self)
 
-        print("aaab");
         self.amqpyombo_options = {   # Stores data from sub-modules
             'connected': [],
             'disconnected': [],
@@ -104,13 +102,9 @@ class AMQPYombo(YomboLibrary):
         self._getAllConfigsLoggerLoop = None
         self.send_local_information_loop = None  # used to periodically send yombo servers updated information
 
-        print("aaae");
         self.connected = False
-        print("aaae1");
         self.init_deferred = Deferred()
-        print("aaae2");
         self.connect()
-        print("aaae3");
         return self.init_deferred
 
     @inlineCallbacks
@@ -398,8 +392,8 @@ class AMQPYombo(YomboLibrary):
         #     'received_message_meta': received_message_meta,
         #     'sent_message_meta': sent_message_meta,
         # }
-        print("amqp_incoming................")
-        print(headers)
+        # print("amqp_incoming................")
+        # print(headers)
         ## Valiate that we have the required headers
         if 'message_type' not in headers:
             raise YomboWarning("Discarding request message, header 'message_type' is missing.")
