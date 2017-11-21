@@ -18,7 +18,7 @@ class YomboException(Exception):
     """
     Extends *Exception* - A non-fatal generic gateway exception that is used for minor errors.
     """
-    def __init__(self, message, errorno=1, name="unknown", component="component"):
+    def __init__(self, message, errorno=1, name="unknown", component="component", html_message=None):
         """
         :param message: The error message to log/display.
         :type message: string
@@ -29,8 +29,12 @@ class YomboException(Exception):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        Exception.__init__(self)
+        Exception.__init__(self, message)
         self.message = message
+        if html_message is None:
+            self.html_message = message
+        else:
+            self.html_message = html_message
         self.errorno = errorno
         self.component = component
         self.name = name
@@ -50,7 +54,7 @@ class YomboWarning(YomboException):
     """
     Extends *Exception* - A non-fatal warning gateway exception that is used for items needing user attention.
     """
-    def __init__(self, message, errorno=101, name="unknown", component="component"):
+    def __init__(self, message, errorno=101, name="unknown", component="component", html_message=None):
         """
         Setup the YomboWarning and then pass everying to YomboException
         
@@ -63,7 +67,7 @@ class YomboWarning(YomboException):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        YomboException.__init__(self, message, errorno, component, name)
+        YomboException.__init__(self, message, errorno, name, component, html_message)
 
 
 class Invalid(YomboException):
@@ -84,7 +88,7 @@ class Invalid(YomboException):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        YomboException.__init__(self, message, errorno, component, name)
+        YomboException.__init__(self, message, errorno, name, component)
 
 
 class YomboWarningCredentails(YomboException):
@@ -105,7 +109,7 @@ class YomboWarningCredentails(YomboException):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        YomboException.__init__(self, message, errorno, component, name)
+        YomboException.__init__(self, message, errorno, name, component)
 
 
 class YomboAutomationWarning(YomboWarning):
@@ -125,7 +129,7 @@ class YomboAutomationWarning(YomboWarning):
         :param component: What type of ojbect is calling: component, library, or module
         :type component: string
         """
-        YomboWarning.__init__(self, message, errorno, component, name)
+        YomboWarning.__init__(self, message, errorno, name, component)
 
 
 class YomboCritical(RuntimeWarning):
@@ -244,7 +248,7 @@ class YomboModuleWarning(YomboWarning):
         :param module_obj: The module instance.
         :type module_obj: Module
         """
-        YomboWarning.__init__(self, message, errorno, "module", module_obj._Name)
+        YomboWarning.__init__(self, message, errorno, module_obj._Name, "module")
 
 
 class YomboModuleCritical(YomboCritical):
@@ -261,7 +265,7 @@ class YomboModuleCritical(YomboCritical):
         :param module_obj: Name of the library, component, or module rasing the exception.
         :type module_obj: string
         """
-        YomboCritical.__init__(self, message, errorno, "module", module_obj._Name)
+        YomboCritical.__init__(self, message, errorno, module_obj._Name, "module")
 
 
 class YomboLibraryWarning(YomboWarning):
@@ -269,7 +273,7 @@ class YomboLibraryWarning(YomboWarning):
     Extends :class:`YomboWarning` - Same as calling YomboWarning, but sets component type to "library".
     """
     def __init__(self, message, errorno, module_obj):
-        YomboWarning.__init__(self, message, errorno, "library", module_obj._Name)
+        YomboWarning.__init__(self, message, errorno, module_obj._Name, "library")
 
 
 class YomboLibraryCritical(YomboCritical):
@@ -278,7 +282,7 @@ class YomboLibraryCritical(YomboCritical):
     "library" - **this forces the gateway to quit**.
     """
     def __init__(self, message, errorno, module_obj):
-        YomboCritical.__init__(self, message, errorno, "library", module_obj._Name)
+        YomboCritical.__init__(self, message, errorno, module_obj._Name, "library")
 
 
 class YomboFileError(YomboWarning):

@@ -25,7 +25,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -445,17 +445,17 @@ class InputTypes(YomboLibrary):
             }
             return results
 
-        input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
-        # print("dt_results: %s" % input_type_results)
-
-        if input_type_results['code'] != 200:
+        try:
+            input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't add input type",
-                'apimsg': input_type_results['content']['message'],
-                'apimsghtml': input_type_results['content']['html_message'],
+                'msg': "Couldn't add input type: %s" % e.message,
+                'apimsg': "Couldn't add input type: %s" % e.message,
+                'apimsghtml': "Couldn't add input type: %s" % e.html_message,
             }
             return results
+        # print("dt_results: %s" % input_type_results)
 
         results = {
             'status': 'success',
@@ -492,17 +492,17 @@ class InputTypes(YomboLibrary):
             }
             return results
 
-        input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
-        # print("module edit results: %s" % module_results)
-
-        if input_type_results['code'] != 200:
+        try:
+            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't edit input type",
-                'apimsg': input_type_results['content']['message'],
-                'apimsghtml': input_type_results['content']['html_message'],
+                'msg': "Couldn't edit input type: %s" % e.message,
+                'apimsg': "Couldn't edit input type: %s" % e.message,
+                'apimsghtml': "Couldn't edit input type: %s" % e.html_message,
             }
             return results
+        # print("module edit results: %s" % module_results)
 
         results = {
             'status': 'success',
@@ -520,14 +520,14 @@ class InputTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-        input_type_results = yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id)
-
-        if input_type_results['code'] != 200:
+        try:
+            input_type_results = yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't delete input type",
-                'apimsg': input_type_results['content']['message'],
-                'apimsghtml': input_type_results['content']['html_message'],
+                'msg': "Couldn't delete input type: %s" % e.message,
+                'apimsg': "Couldn't delete input type: %s" % e.message,
+                'apimsghtml': "Couldn't delete input type: %s" % e.html_message,
             }
             return results
 
@@ -552,14 +552,14 @@ class InputTypes(YomboLibrary):
             'status': 1,
         }
 
-        input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
-
-        if input_type_results['code'] != 200:
+        try:
+            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't enable input type",
-                'apimsg': input_type_results['content']['message'],
-                'apimsghtml': input_type_results['content']['html_message'],
+                'msg': "Couldn't enable input type: %s" % e.message,
+                'apimsg': "Couldn't enable input type: %s" % e.message,
+                'apimsghtml': "Couldn't enable input type: %s" % e.html_message,
             }
             return results
 
@@ -584,17 +584,17 @@ class InputTypes(YomboLibrary):
             'status': 0,
         }
 
-        input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
-        # print("disable input_type results: %s" % input_type_results)
-
-        if input_type_results['code'] != 200:
+        try:
+            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable input_type",
-                'apimsg': input_type_results['content']['message'],
-                'apimsghtml': input_type_results['content']['html_message'],
+                'msg': "Couldn't disable input type: %s" % e.message,
+                'apimsg': "Couldn't disable input type: %s" % e.message,
+                'apimsghtml': "Couldn't disable input type: %s" % e.html_message,
             }
             return results
+        # print("disable input_type results: %s" % input_type_results)
 
         results = {
             'status': 'success',

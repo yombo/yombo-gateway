@@ -1,6 +1,7 @@
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
+from yombo.core.exceptions import YomboAPIWarning
 
 def route_devtools_config_device_types(webapp):
     with webapp.subroute("/devtools") as webapp:
@@ -8,18 +9,14 @@ def route_devtools_config_device_types(webapp):
         def root_breadcrumb(webinterface, request):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/devtools/config/", "Config Tools")
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
 
-
-        ####################################
-        # Device Types
-        ####################################
         @webapp.route('/config/device_types/index')
         @require_auth()
         def page_devtools_device_types_index_get(webinterface, request, session):
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/index.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             return page.render(alerts=webinterface.get_alerts(),
                                )
 
@@ -28,28 +25,33 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_command_details_get(webinterface, request, session, device_type_id, command_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            device_command_input_results = yield webinterface._YomboAPI.request(
-                'GET',
-                '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s' % (
-                device_type_id, command_id))
-            if device_command_input_results['code'] > 299:
-                webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
+            try:
+                device_command_input_results = yield webinterface._YomboAPI.request(
+                    'GET',
+                    '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s' % (
+                        device_type_id, command_id)
+                )
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/command_details.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
@@ -66,15 +68,16 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_command_add_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/command_add.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/add" % device_type_id,
@@ -108,41 +111,45 @@ def route_devtools_config_device_types(webapp):
                                '</p>' % (device_type_id, device_type_id, command_id)
             }
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/add" % device_type_id,
-                                            "Add Command")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/add" % device_type_id,
+                                        "Add Command")
 
-            return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+            return page.render(alerts=webinterface.get_alerts(), msg=msg)
 
         @webapp.route('/config/device_types/<string:device_type_id>/command/<string:command_id>/remove_command',
                       methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_remove_command_get(webinterface, request, session, device_type_id, command_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+
+            try:
+                command_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/command_remove.html')
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/remove" % device_type_id,
@@ -177,9 +184,11 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request,
                                              '/devtools/config/device_types/%s/details' % device_type_id)
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             msg = {
@@ -194,20 +203,20 @@ def route_devtools_config_device_types(webapp):
                                '</p>' % device_type_id
             }
 
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
-            if device_type_results['code'] <= 299:
-                root_breadcrumb(webinterface, request)
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
-                    device_type_id, command_id), command_results['data']['label'])
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
+                device_type_id, command_id), command_results['data']['label'])
 
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
@@ -224,20 +233,21 @@ def route_devtools_config_device_types(webapp):
         @inlineCallbacks
         def page_devtools_device_types_command_add_input_get(webinterface, request, session, device_type_id,
                                                              command_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/command_input_add.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/add" % device_type_id,
@@ -255,36 +265,37 @@ def route_devtools_config_device_types(webapp):
         @inlineCallbacks
         def page_devtools_device_types_command_input_add_get(webinterface, request, session, device_type_id, command_id,
                                                              input_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
             root_breadcrumb(webinterface, request)
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
-                        device_type_id, command_id),
-                    "Command")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/add_input" % (
-                        device_type_id, command_id),
-                    "Associate input")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
+                    device_type_id, command_id),
+                "Command")
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/add_input" % (
+                    device_type_id, command_id),
+                "Associate input")
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/input/%s/add_input" % (
-                        device_type_id, command_id, input_type_id),
-                    input_type_results['data']['label'])
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
+            webinterface.add_breadcrumb(
+                request, "/devtools/config/device_types/%s/command/%s/input/%s/add_input" % (
+                    device_type_id, command_id, input_type_id),
+                    input_type_results['data']['label']
+            )
 
             data = {
                 'label': webinterface.request_get_default(request, 'label', ""),
@@ -329,34 +340,38 @@ def route_devtools_config_device_types(webapp):
             results = yield webinterface._DeviceTypes.dev_command_input_add(device_type_id, command_id, input_type_id,
                                                                              data)
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
+
             root_breadcrumb(webinterface, request)
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
-                device_type_id, command_id),
-                                            command_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/add_input" % (
-                device_type_id, command_id),
-                                            "Associate input")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
+            device_type_id, command_id),
+                                        command_results['data']['label'])
+            webinterface.add_breadcrumb(
+                request,
+                "/devtools/config/device_types/%s/command/%s/add_input" % (
+                    device_type_id, command_id),
+                "Associate input"
+            )
 
-            print("results:status: %s" % results['status'])
+            # print("results:status: %s" % results['status'])
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
                 return page_devtools_device_types_command_input_form(
@@ -392,38 +407,38 @@ def route_devtools_config_device_types(webapp):
         @inlineCallbacks
         def page_devtools_device_types_command_input_details_get(webinterface, request, session, device_type_id,
                                                                  command_id, input_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
-            device_command_input_results = yield webinterface._YomboAPI.request(
-                'GET',
-                '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
-                device_type_id,
-                command_id,
-                input_type_id))
-            if device_command_input_results['code'] > 299:
-                webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
+
+            try:
+                device_command_input_results = yield webinterface._YomboAPI.request(
+                    'GET',
+                    '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
+                        device_type_id,
+                        command_id,
+                        input_type_id))
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/command_input_details.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
@@ -446,46 +461,45 @@ def route_devtools_config_device_types(webapp):
         @inlineCallbacks
         def page_devtools_device_types_command_input_edit_get(webinterface, request, session, device_type_id,
                                                               command_id, input_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            device_command_input_results = yield webinterface._YomboAPI.request(
-                'GET',
-                '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
-                device_type_id, command_id,
-                input_type_id))
-            if device_command_input_results['code'] > 299:
-                webinterface.add_alert(device_command_input_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_command_input_results = yield webinterface._YomboAPI.request(
+                    'GET',
+                    '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
+                        device_type_id, command_id,
+                        input_type_id))
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            data = {
-                'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
-                'live_update': webinterface.request_get_default(request, 'live_update', ""),
-                'notes': webinterface.request_get_default(request, 'notes', ""),
-                'value_required': webinterface.request_get_default(request, 'value_required', ""),
-                'value_min': webinterface.request_get_default(request, 'value_min', ""),
-                'value_max': webinterface.request_get_default(request, 'value_max', ""),
-                'value_casing': webinterface.request_get_default(request, 'value_casing', "none"),
-                'encryption': webinterface.request_get_default(request, 'encryption', "nosuggestion"),
-            }
+            # data = {
+            #     'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
+            #     'live_update': webinterface.request_get_default(request, 'live_update', ""),
+            #     'notes': webinterface.request_get_default(request, 'notes', ""),
+            #     'value_required': webinterface.request_get_default(request, 'value_required', ""),
+            #     'value_min': webinterface.request_get_default(request, 'value_min', ""),
+            #     'value_max': webinterface.request_get_default(request, 'value_max', ""),
+            #     'value_casing': webinterface.request_get_default(request, 'value_casing', "none"),
+            #     'encryption': webinterface.request_get_default(request, 'encryption', "nosuggestion"),
+            # }
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
@@ -519,26 +533,27 @@ def route_devtools_config_device_types(webapp):
                 'encryption': webinterface.request_get_default(request, 'encryption', "nosuggestion"),
             }
 
-            results = yield webinterface._DeviceTypes.dev_command_input_edit(device_type_id, command_id, input_type_id,
-                                                                             data)
+            results = yield webinterface._DeviceTypes.dev_command_input_edit(
+                device_type_id, command_id, input_type_id,data
+            )
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -561,7 +576,6 @@ def route_devtools_config_device_types(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/command/%s/details" % (
@@ -594,27 +608,27 @@ def route_devtools_config_device_types(webapp):
         @inlineCallbacks
         def page_devtools_device_types_command_delete_input_get(webinterface, request, session, device_type_id,
                                                                 command_id, input_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/command_input_remove.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request,
@@ -658,17 +672,17 @@ def route_devtools_config_device_types(webapp):
                 return webinterface.redirect(request,
                                              '/devtools/config/device_types/%s/details' % device_type_id)
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/%s/details' % device_type_id)
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             msg = {
                 'header': 'Device Type Deleted',
@@ -684,7 +698,6 @@ def route_devtools_config_device_types(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request,
@@ -703,32 +716,31 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_details_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            category_results = yield webinterface._YomboAPI.request('GET',
-                                                                    '/v1/category/%s' % device_type_results['data'][
-                                                                        'category_id'])
-            if category_results['code'] > 299:
-                webinterface.add_alert(category_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                category_results = yield webinterface._YomboAPI.request('GET',
+                                                                        '/v1/category/%s' % device_type_results['data'][
+                                                                            'category_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
-            device_type_commands_results = yield webinterface._YomboAPI.request('GET',
-                                                                                '/v1/device_type_command/%s' % device_type_id)
-            if device_type_commands_results['code'] > 299:
-                webinterface.add_alert(device_type_commands_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_commands_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/device_type_command/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/details.html')
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
 
@@ -742,11 +754,11 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_delete_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/delete.html')
@@ -793,17 +805,18 @@ def route_devtools_config_device_types(webapp):
                                '</ul></p>' % device_type_id,
             }
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_types/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                           '/v1/device_types/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/delete" % device_type_id,
-                                            "Delete")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/delete" % device_type_id,
+                                        "Delete")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -813,17 +826,16 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_disable_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/disable.html')
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/disable" % device_type_id, "Disable")
@@ -861,18 +873,19 @@ def route_devtools_config_device_types(webapp):
                 'description': '<p>The device type has been disabled.</p><p>Continue to <a href="/devtools/config/device_types/index">device types index</a> or <a href="/devtools/config/device_types/%s/details">view the device type</a>.</p>' % device_type_id,
             }
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/disable" % device_type_id,
-                                            "Disable")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/disable" % device_type_id,
+                                        "Disable")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -882,16 +895,15 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_enable_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/enable.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/disable" % device_type_id, "Disable")
@@ -928,19 +940,19 @@ def route_devtools_config_device_types(webapp):
                 'description': '<p>The device type has been enabled.</p><p>Continue to <a href="/devtools/config/device_types/index">device types index</a> or <a href="/devtools/config/device_types/%s/details">view the device type</a>.</p>' % device_type_id,
             }
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/enable" % device_type_id,
-                                            "Enable")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
-
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/enable" % device_type_id,
+                                        "Enable")
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
                                     )
@@ -949,9 +961,11 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_add_get(webinterface, request, session):
-            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
-            if category_results['code'] > 299:
-                webinterface.add_alert(category_results['content']['html_message'], 'warning')
+            try:
+                category_results = yield webinterface._YomboAPI.request('GET',
+                                                                        '/v1/category?_filters[category_type]=device_type')
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             data = {
@@ -964,7 +978,6 @@ def route_devtools_config_device_types(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/add", "Add")
             return page_devtools_devicestypes_form(webinterface,
                                                    request,
@@ -992,11 +1005,12 @@ def route_devtools_config_device_types(webapp):
 
             if device_type_results['status'] == 'failed':
                 webinterface.add_alert(device_type_results['apimsghtml'], 'warning')
-                category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
-                if category_results['code'] > 299:
-                    webinterface.add_alert(category_results['content']['html_message'], 'warning')
-                    return webinterface.redirect(request,
-                                                 '/devtools/config/device_types/index')
+                try:
+                    category_results = yield webinterface._YomboAPI.request('GET',
+                                                                            '/v1/category?_filters[category_type]=device_type')
+                except YomboAPIWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
+                    return webinterface.redirect(request, '/devtools/config/device_types/index')
                 return page_devtools_devicestypes_form(webinterface,
                                                        request,
                                                        session,
@@ -1014,7 +1028,6 @@ def route_devtools_config_device_types(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -1024,19 +1037,20 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_edit_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
-            category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
-            if category_results['code'] > 299:
-                webinterface.add_alert(category_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request,
-                                             '/devtools/config/device_types/index')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
+
+            try:
+                category_results = yield webinterface._YomboAPI.request('GET',
+                                                                        '/v1/category?_filters[category_type]=device_type')
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/edit" % device_type_id, "Edit")
@@ -1069,11 +1083,12 @@ def route_devtools_config_device_types(webapp):
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 
             if device_type_results['status'] == 'failed':
-                category_results = yield webinterface._YomboAPI.request('GET', '/v1/category?_filters[category_type]=device_type')
-                if category_results['code'] > 299:
-                    webinterface.add_alert(category_results['content']['html_message'], 'warning')
-                    return webinterface.redirect(request,
-                                                 '/devtools/config/device_types/index')
+                try:
+                    category_results = yield webinterface._YomboAPI.request('GET',
+                                                                            '/v1/category?_filters[category_type]=device_type')
+                except YomboAPIWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
+                    return webinterface.redirect(request, '/devtools/config/device_types/index')
 
                 webinterface.add_alert(device_type_results['apimsghtml'], 'warning')
                 return page_devtools_devicestypes_form(webinterface, request, session, 'edit', data,
@@ -1089,18 +1104,18 @@ def route_devtools_config_device_types(webapp):
                                device_type_results['device_type_id'],
             }
 
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/device_types/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
 
-            if device_type_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
-                                            device_type_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/enable" % device_type_id,
-                                            "Enable")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
+                                        device_type_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/enable" % device_type_id,
+                                        "Enable")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -1121,15 +1136,15 @@ def route_devtools_config_device_types(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_device_types_variables_get(webinterface, request, session, device_type_id):
-            device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
-            if device_type_results['code'] > 299:
-                webinterface.add_alert(device_type_results['content']['html_message'], 'warning')
+            try:
+                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % device_type_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/device_types/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/device_types/variable_details.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % device_type_id,
                                         device_type_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/variables" % device_type_id,

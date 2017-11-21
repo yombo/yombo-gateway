@@ -2,8 +2,10 @@ import socket
 from time import time
 
 from twisted.internet.defer import inlineCallbacks
-from yombo.lib.webinterface.auth import require_auth, run_first
-from yombo.utils import random_string, is_true_false
+
+from yombo.core.exceptions import YomboAPIWarning
+from yombo.lib.webinterface.auth import require_auth
+from yombo.utils import random_string
 
 def route_configs(webapp):
     with webapp.subroute("/configs") as webapp:
@@ -214,10 +216,12 @@ def route_configs(webapp):
                 'dns_domain_id': submitted_dns_domain,
             }
 
-            dns_results = yield webinterface._YomboAPI.request('POST', '/v1/gateway/%s/dns_name' % webinterface.gateway_id(), data)
-            if dns_results['code'] > 299 :
-                # print "dns_results: %s" % dns_results
-                webinterface.add_alert(dns_results['content']['html_message'], 'warning')
+            try:
+                dns_results = yield webinterface._YomboAPI.request('POST',
+                                                                   '/v1/gateway/%s/dns_name' % webinterface.gateway_id(),
+                                                                   data)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/configs/dns')
 
             webinterface._Notifications.add({'title': 'Restart Required',

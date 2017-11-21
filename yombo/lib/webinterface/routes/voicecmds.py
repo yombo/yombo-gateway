@@ -1,4 +1,4 @@
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth
 
 def route_voicecmds(webapp):
     with webapp.subroute("/voicecmds") as webapp:

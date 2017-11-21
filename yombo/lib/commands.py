@@ -22,7 +22,7 @@ import inspect
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -413,17 +413,18 @@ class Commands(YomboLibrary):
         :return: Results on the success/fail of the add request.
         :rtype: dict
         """
-        command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
-        # print("command edit results: %s" % command_results)
-
-        if command_results['code']  > 299:
+        try:
+            command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't add command",
-                'apimsg': command_results['content']['message'],
-                'apimsghtml': command_results['content']['html_message'],
+                'msg': "Couldn't add command: %s" % e.message,
+                'apimsg': "Couldn't add command: %s" % e.message,
+                'apimsghtml': "Couldn't add command: %s" % e.html_message,
             }
             return results
+
+        # print("command edit results: %s" % command_results)
 
         results = {
             'status': 'success',
@@ -444,18 +445,18 @@ class Commands(YomboLibrary):
         :return: Results on the success/fail of the request.
         :rtype: dict
         """
-
-        command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
-        # print("command edit results: %s" % command_results)
-
-        if command_results['code']  > 299:
+        try:
+            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't edit command",
-                'apimsg': command_results['content']['message'],
-                'apimsghtml': command_results['content']['html_message'],
+                'msg': "Couldn't edit command: %s" % e.message,
+                'apimsg': "Couldn't edit command: %s" % e.message,
+                'apimsghtml': "Couldn't edit command: %s" % e.html_message,
             }
             return results
+
+        # print("command edit results: %s" % command_results)
 
         results = {
             'status': 'success',
@@ -476,14 +477,14 @@ class Commands(YomboLibrary):
         :return: Results on the success/fail of the request.
         :rtype: dict
         """
-        command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
-
-        if command_results['code']  > 299:
+        try:
+            command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't delete command",
-                'apimsg': command_results['content']['message'],
-                'apimsghtml': command_results['content']['html_message'],
+                'msg': "Couldn't delete command: %s" % e.message,
+                'apimsg': "Couldn't delete command: %s" % e.message,
+                'apimsghtml': "Couldn't delete command: %s" % e.html_message,
             }
             return results
 
@@ -510,14 +511,14 @@ class Commands(YomboLibrary):
             'status': 1,
         }
 
-        command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
-
-        if command_results['code']  > 299:
+        try:
+            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't enable command",
-                'apimsg': command_results['content']['message'],
-                'apimsghtml': command_results['content']['html_message'],
+                'msg': "Couldn't enable command: %s" % e.message,
+                'apimsg': "Couldn't enable command: %s" % e.message,
+                'apimsghtml': "Couldn't enable command: %s" % e.html_message,
             }
             return results
 
@@ -545,15 +546,14 @@ class Commands(YomboLibrary):
             'status': 0,
         }
 
-        command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
- #       print("disable command results: %s" % command_results)
-
-        if command_results['code']  > 299:
+        try:
+            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable command",
-                'apimsg': command_results['content']['message'],
-                'apimsghtml': command_results['content']['html_message'],
+                'msg': "Couldn't disable command: %s" % e.message,
+                'apimsg': "Couldn't disable command: %s" % e.message,
+                'apimsghtml': "Couldn't disable command: %s" % e.html_message,
             }
             return results
 

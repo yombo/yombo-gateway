@@ -21,8 +21,11 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from yombo.lib.webinterface.auth import require_auth, run_first
+
 from twisted.internet.defer import inlineCallbacks
+
+from yombo.lib.webinterface.auth import require_auth
+from yombo.core.exceptions import YomboAPIWarning
 
 def route_locations(webapp):
     """
@@ -62,10 +65,11 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_details_get(webinterface, request, session, location_id):
-            DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            if DL_results['code'] > 299:
+            try:
+                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+            except YomboAPIWarning as e:
                 print(DL_results)
-                webinterface.add_alert(DL_results['content']['html_message'], 'warning')
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
 
             page = webinterface.get_template(request,
@@ -126,10 +130,11 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_edit_get(webinterface, request, session, location_id):
-            DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            if DL_results['code'] > 299:
-                webinterface.add_alert(DL_results['content']['html_message'], 'warning')
-                return webinterface.redirect(request, '/location/index')
+            try:
+                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/locations/index')
 
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/%s/details" % DL_results['data']['id'],
@@ -170,13 +175,13 @@ def route_locations(webapp):
                                DL_results['location_id'],
             }
 
-            DL_api_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            root_breadcrumb(webinterface, request)
-            if DL_api_results['code'] > 299:
-                webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
-                                            DL_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/locations/%s/edit" % location_id, "Edit")
+            # DL_api_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+            # page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            # root_breadcrumb(webinterface, request)
+            # if DL_api_results['code'] > 299:
+            #     webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
+            #                                 DL_results['data']['label'])
+            #     webinterface.add_breadcrumb(request, "/locations/%s/edit" % location_id, "Edit")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -194,9 +199,10 @@ def route_locations(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_location_delete_get(webinterface, request, session, location_id):
-            DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            if DL_results['code'] > 299:
-                webinterface.add_alert(DL_results['content']['html_message'], 'warning')
+            try:
+                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/locations/remove.html')

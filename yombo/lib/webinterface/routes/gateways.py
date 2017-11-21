@@ -1,5 +1,4 @@
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, maybeDeferred
 
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth

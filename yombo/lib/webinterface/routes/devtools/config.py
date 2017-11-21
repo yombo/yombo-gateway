@@ -1,6 +1,4 @@
-from twisted.internet.defer import inlineCallbacks, returnValue
-
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth
 
 def route_devtools_config(webapp):
     with webapp.subroute("/devtools") as webapp:

@@ -3,7 +3,7 @@ from time import time
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboWarningCredentails
+from yombo.core.exceptions import YomboWarningCredentails, YomboAPIWarning
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 from yombo.utils import is_true_false
 
@@ -621,8 +621,12 @@ def route_setup_wizard(webapp):
 
         @inlineCallbacks
         def form_setup_wizard_6(webinterface, request, session):
-            dns_results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/dns_name' % webinterface._Configs.get('core', 'gwid'))
-            if dns_results['code'] != 200:
+            try:
+                dns_results = yield webinterface._YomboAPI.request('GET',
+                                                                   '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
+                                                                       'core', 'gwid'))
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 # webinterface.add_alert(dns_results['content']['html_message'], 'warning')
                 webinterface._Configs.set('dns', 'dns_name', None)
                 webinterface._Configs.set('dns', 'dns_domain', None)
@@ -707,13 +711,16 @@ def route_setup_wizard(webapp):
             }
             print("SW7 - 10: %s" % data)
 
-            dns_results = yield webinterface._YomboAPI.request('POST', '/v1/gateway/%s/dns_name' % webinterface._Configs.get('core', 'gwid'), data)
-            print("SW7 - 11: %s" % dns_results)
-            if dns_results['code'] != 200:
-                print("SW7 - 12")
-                webinterface.add_alert(dns_results['content']['html_message'], 'warning')
-                print("SW7 - 13")
+            try:
+                dns_results = yield webinterface._YomboAPI.request('POST',
+                                                                   '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
+                                                                       'core', 'gwid'), data)
+                print("SW7 - 11: %s" % dns_results)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                print("SW7 - 11: %s" % dns_results)
                 return webinterface.redirect(request, 'pages/setup_wizard/6')
+
             print("SW7 - 12")
 
             session['setup_wizard_last_step'] = 7

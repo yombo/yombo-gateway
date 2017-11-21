@@ -1,4 +1,4 @@
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth
 
 def route_automation(webapp):
     with webapp.subroute("/automation") as webapp:

@@ -28,11 +28,11 @@ import traceback
 import zlib
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, maybeDeferred
+from twisted.internet.defer import inlineCallbacks, maybeDeferred
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep
@@ -1119,14 +1119,14 @@ class Gateways(YomboLibrary):
             api_data['gateway_id'] = self.gateway_id
 
         if source != 'amqp':
-            gateway_results = yield self._YomboAPI.request('POST', '/v1/gateway', api_data)
-
-            if gateway_results['code'] > 299:
+            try:
+                gateway_results = yield self._YomboAPI.request('POST', '/v1/gateway', api_data)
+            except YomboAPIWarning as e:
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't add gateway",
-                    'apimsg': gateway_results['content']['message'],
-                    'apimsghtml': gateway_results['content']['html_message'],
+                    'msg': "Couldn't add gateway: %s" % e.message,
+                    'apimsg': "Couldn't add gateway: %s" % e.message,
+                    'apimsghtml': "Couldn't add gateway: %s" % e.html_message,
                 }
                 return results
             gateway_id = gateway_results['data']['id']
@@ -1149,18 +1149,17 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-
-        gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % (gateway_id), api_data)
-        # print("module edit results: %s" % module_results)
-
-        if gateway_results['code'] > 299:
+        try:
+            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % (gateway_id), api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't edit gateway",
-                'apimsg': gateway_results['content']['message'],
-                'apimsghtml': gateway_results['content']['html_message'],
+                'msg': "Couldn't edit gateway: %s" % e.message,
+                'apimsg': "Couldn't edit gateway: %s" % e.message,
+                'apimsghtml': "Couldn't edit gateway: %s" % e.html_message,
             }
             return results
+        # print("module edit results: %s" % module_results)
 
         results = {
             'status': 'success',
@@ -1183,14 +1182,14 @@ class Gateways(YomboLibrary):
         :param kwargs:
         :return:
         """
-        gateway_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s' % gateway_id)
-
-        if gateway_results['code'] > 299:
+        try:
+            gateway_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s' % gateway_id)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't delete gateway",
-                'apimsg': gateway_results['content']['message'],
-                'apimsghtml': gateway_results['content']['html_message'],
+                'msg': "Couldn't delete gateway: %s" % e.message,
+                'apimsg': "Couldn't delete gateway: %s" % e.message,
+                'apimsghtml': "Couldn't delete gateway: %s" % e.html_message,
             }
             return results
 
@@ -1215,14 +1214,14 @@ class Gateways(YomboLibrary):
             'status': 1,
         }
 
-        gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
-
-        if gateway_results['code'] > 299:
+        try:
+            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't enable gateway",
-                'apimsg': gateway_results['content']['message'],
-                'apimsghtml': gateway_results['content']['html_message'],
+                'msg': "Couldn't enable gateway: %s" % e.message,
+                'apimsg': "Couldn't enable gateway: %s" % e.message,
+                'apimsghtml': "Couldn't enable gateway: %s" % e.html_message,
             }
             return results
 
@@ -1247,15 +1246,14 @@ class Gateways(YomboLibrary):
             'status': 0,
         }
 
-        gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
-        # print("disable gateway results: %s" % gateway_results)
-
-        if gateway_results['code'] > 299:
+        try:
+            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable gateway",
-                'apimsg': gateway_results['content']['message'],
-                'apimsghtml': gateway_results['content']['html_message'],
+                'msg': "Couldn't disable gateway: %s" % e.message,
+                'apimsg': "Couldn't disable gateway: %s" % e.message,
+                'apimsghtml': "Couldn't disable gateway: %s" % e.html_message,
             }
             return results
 

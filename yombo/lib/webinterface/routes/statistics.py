@@ -1,7 +1,7 @@
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.lib.webinterface.auth import require_auth
 
 def route_statistics(webapp):
     with webapp.subroute("/statistics") as webapp:

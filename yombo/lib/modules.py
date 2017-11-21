@@ -33,7 +33,7 @@ from pyclbr import readmodule
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
+from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, dict_merge
@@ -944,18 +944,17 @@ class Modules(YomboLibrary):
             'status': 1,
         }
 
-        module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
-        # print("add module results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't add module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
-                'module_id': data['module_id'],
+                'msg': "Couldn't add module: %s" % e.message,
+                'apimsg': "Couldn't add module: %s" % e.message,
+                'apimsghtml': "Couldn't add module: %s" % e.html_message,
             }
             return results
+        # print("add module results: %s" % module_results)
 
         # print("checking if var data... %s" % data)
         if 'variable_data' in data:
@@ -977,15 +976,14 @@ class Modules(YomboLibrary):
                             'data': value,
                         }
                         # print("post_data: %s" % post_data)
-                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        # print "var_data_results: %s"  % var_data_results
-                        if var_data_results['code']  > 299:
+                        try:
+                            yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        except YomboAPIWarning as e:
                             results = {
                                 'status': 'failed',
-                                'msg': "Couldn't add module variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'module_id': data['module_id']
+                                'msg': "Couldn't add module variables: %s" % e.message,
+                                'apimsg': "Couldn't add module variables: %s" % e.message,
+                                'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
                             }
                             return results
                     else:
@@ -995,16 +993,15 @@ class Modules(YomboLibrary):
                         }
                         # print("posting to: /v1/variable/data/%s" % data_id)
                         # print("post_data: %s" % post_data)
-                        var_data_results = yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id, post_data)
-                        if var_data_results['code']  > 299:
-                            # print("bad results module_results: %s" % module_results)
-                            # print("bad results var_data_results: %s" % var_data_results)
+                        try:
+                            yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
+                                                                            post_data)
+                        except YomboAPIWarning as e:
                             results = {
                                 'status': 'failed',
-                                'msg': "Couldn't add module variables",
-                                'apimsg': var_data_results['content']['message'],
-                                'apimsghtml': var_data_results['content']['html_message'],
-                                'module_id': data['module_id']
+                                'msg': "Couldn't add module variables: %s" % e.message,
+                                'apimsg': "Couldn't add module variables: %s" % e.message,
+                                'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
                             }
                             return results
 
@@ -1029,15 +1026,17 @@ class Modules(YomboLibrary):
             'status': data['status'],
         }
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id), api_data)
-        # print("module edit results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            yield self._YomboAPI.request('PATCH',
+                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
+                                                          api_data)
+        except YomboAPIWarning as e:
+            # print("module edit results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't edit module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't edit module: %s" % e.message,
+                'apimsg': "Couldn't edit module: %s" % e.message,
+                'apimsghtml': "Couldn't edit module: %s" % e.html_message,
             }
             return results
 
@@ -1060,15 +1059,16 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to remove.", 300, 'disable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
-        # print("delete module results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            yield self._YomboAPI.request('DELETE',
+                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't delete module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't delete module: %s" % e.message,
+                'apimsg': "Couldn't delete module: %s" % e.message,
+                'apimsghtml': "Couldn't delete module: %s" % e.html_message,
             }
             return results
 
@@ -1101,15 +1101,17 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id), api_data)
-        # print("enable module results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            yield self._YomboAPI.request('PATCH',
+                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
+                                                          api_data)
+        except YomboAPIWarning as e:
+            # print("module enable results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't enable module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't enable module: %s" % e.message,
+                'apimsg': "Couldn't enable module: %s" % e.message,
+                'apimsghtml': "Couldn't enable module: %s" % e.html_message,
             }
             return results
 
@@ -1139,15 +1141,17 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id), api_data)
-        # print("disable module results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            yield self._YomboAPI.request('PATCH',
+                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
+                                         api_data)
+        except YomboAPIWarning as e:
+            # print("module disable results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't disable module: %s" % e.message,
+                'apimsg': "Couldn't disable module: %s" % e.message,
+                'apimsghtml': "Couldn't disable module: %s" % e.html_message,
             }
             return results
 
@@ -1169,15 +1173,15 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
-        # print("module edit results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
+        except YomboAPIWarning as e:
+            # print("module add results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't add module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't add module: %s" % e.message,
+                'apimsg': "Couldn't add module: %s" % e.message,
+                'apimsghtml': "Couldn't add module: %s" % e.html_message,
             }
             return results
 
@@ -1197,15 +1201,15 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
-        # print("module edit results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
+        except YomboAPIWarning as e:
+            # print("module edit results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't edit module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't edit module: %s" % e.message,
+                'apimsg': "Couldn't edit module: %s" % e.message,
+                'apimsghtml': "Couldn't edit module: %s" % e.html_message,
             }
             return results
 
@@ -1225,14 +1229,15 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
-        module_results = yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id)
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't delete module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't delete module: %s" % e.message,
+                'apimsg': "Couldn't delete module: %s" % e.message,
+                'apimsghtml': "Couldn't delete module: %s" % e.html_message,
             }
             return results
 
@@ -1256,14 +1261,15 @@ class Modules(YomboLibrary):
             'status': 1,
         }
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't enable module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't enable module: %s" % e.message,
+                'apimsg': "Couldn't enable module: %s" % e.message,
+                'apimsghtml': "Couldn't enable module: %s" % e.html_message,
             }
             return results
 
@@ -1288,14 +1294,15 @@ class Modules(YomboLibrary):
             'status': 0,
         }
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't disable module: %s" % e.message,
+                'apimsg': "Couldn't disable module: %s" % e.message,
+                'apimsghtml': "Couldn't disable module: %s" % e.html_message,
             }
             return results
 
@@ -1320,15 +1327,15 @@ class Modules(YomboLibrary):
             'device_type_id': device_type_id,
         }
 
-        module_results = yield self._YomboAPI.request('POST', '/v1/module_device_type', data)
-        # print("module edit results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            yield self._YomboAPI.request('POST', '/v1/module_device_type', data)
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't associate device type to module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't associate device type to module: %s" % e.message,
+                'apimsg': "Couldn't associate device type to module: %s" % e.message,
+                'apimsghtml': "Couldn't associate device type to module: %s" % e.html_message,
             }
             return results
 
@@ -1349,15 +1356,16 @@ class Modules(YomboLibrary):
         :return:
         """
 
-        module_results = yield self._YomboAPI.request('DELETE', '/v1/module_device_type/%s/%s' % (module_id, device_type_id))
-        # print("module edit results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('DELETE',
+                                                          '/v1/module_device_type/%s/%s' % (module_id, device_type_id))
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't remove association device type from module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
+                'msg': "Couldn't remove association device type from module: %s" % e.message,
+                'apimsg': "Couldn't remove association device type from module: %s" % e.message,
+                'apimsghtml': "Couldn't remove association device type from module: %s" % e.html_message,
             }
             return results
 
@@ -1388,16 +1396,16 @@ class Modules(YomboLibrary):
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
-        module_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
-        # print("disable module results: %s" % module_results)
-
-        if module_results['code']  > 299:
+        try:
+            module_results = yield self._YomboAPI.request('PATCH',
+                                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
+        except YomboAPIWarning as e:
+            # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable module",
-                'apimsg': module_results['content']['message'],
-                'apimsghtml': module_results['content']['html_message'],
-                'module_id': module_id,
+                'msg': "Couldn't %s module: %s" % (new_status, e.message),
+                'apimsg': "Couldn't %s module: %s" % (new_status, e.message),
+                'apimsghtml': "Couldn't %s module: %s" % (new_status, e.message),
             }
             return results
 

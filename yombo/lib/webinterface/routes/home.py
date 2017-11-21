@@ -3,12 +3,12 @@ from time import time
 from random import randint
 
 # Import twisted libraries
-from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, Deferred, maybeDeferred
+from twisted.internet.defer import inlineCallbacks
 from twisted.web.static import File
 
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
+from yombo.core.exceptions import YomboAPIWarning
 import yombo.ext.totp
 import yombo.utils
 
@@ -94,8 +94,14 @@ def route_home(webapp):
                     page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
                     return page.render(alerts=webinterface.get_alerts())
 
-            results = yield webinterface._YomboAPI.user_login_with_credentials(submitted_email, submitted_password, submitted_g_recaptcha_response)
-            print(results)
+            try:
+                results = yield webinterface._YomboAPI.user_login_with_credentials(submitted_email, submitted_password,
+                                                                                   submitted_g_recaptcha_response)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
+                return page.render(alerts=webinterface.get_alerts())
+            # print(results)
             if results['code'] == 200:
                 login = results['response']['login']
 

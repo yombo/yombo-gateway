@@ -1,6 +1,7 @@
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
+from yombo.core.exceptions import YomboAPIWarning
 
 def route_devtools_config_commands(webapp):
     with webapp.subroute("/devtools") as webapp:
@@ -8,47 +9,57 @@ def route_devtools_config_commands(webapp):
         def root_breadcrumb(webinterface, request):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/devtools/config/", "Config Tools")
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands", True)
 
         @webapp.route('/config/commands/index')
         @require_auth()
         def page_devtools_commands_index(webinterface, request, session):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/index.html')
+            page = webinterface.get_template(
+                request,
+                webinterface._dir + 'pages/devtools/config/commands/index.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-            return page.render(alerts=webinterface.get_alerts(),
-                               )
+            return page.render(alerts=webinterface.get_alerts())
 
         @webapp.route('/config/commands/<string:command_id>/details', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_details_get(webinterface, request, session, command_id):
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
-            page = webinterface.get_template(request,
-                                             webinterface._dir + 'pages/devtools/config/commands/details.html')
+            page = webinterface.get_template(
+                request,
+                webinterface._dir + 'pages/devtools/config/commands/details.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_results['data']['id'],
-                                        command_results['data']['label'])
+            webinterface.add_breadcrumb(
+                request,
+                "/devtools/config/commands/%s/details" % command_results['data']['id'],
+                command_results['data']['label']
+            )
             return page.render(alerts=webinterface.get_alerts(),
-                                    command=command_results['data'],
-                                    )
+                               command=command_results['data'],
+                               )
 
         @webapp.route('/config/commands/<string:command_id>/delete', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_delete_get(webinterface, request, session, command_id):
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request(
+                    'GET',
+                    '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
-
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/delete.html')
+            page = webinterface.get_template(
+                request,
+                webinterface._dir + 'pages/devtools/config/commands/delete.html'
+            )
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
+
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Delete")
@@ -84,16 +95,17 @@ def route_devtools_config_commands(webapp):
                 'description': '<p>The command has been deleted.</p><p>Continue to <a href="/devtools/config/commands/index">commands index</a> or <a href="/devtools/config/commands/%s/details">view the command</a>.</p>' % command_id,
             }
 
-            command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            try:
+                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/commands/index')
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            if command_api_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
-                                            command_api_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Delete")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
+                                        command_api_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Delete")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -103,14 +115,14 @@ def route_devtools_config_commands(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_disable_get(webinterface, request, session, command_id):
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/disable.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Disable")
@@ -147,32 +159,33 @@ def route_devtools_config_commands(webapp):
                 'description': '<p>The command has been disabled.</p><p>Continue to <a href="/devtools/config/commands/index">commands index</a> or <a href="/devtools/config/commands/%s/details">view the command</a>.</p>' % command_id,
             }
 
-            command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            try:
+                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/commands/index')
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            if command_api_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
-                                            command_api_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Disable")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
+                                        command_api_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Disable")
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/config/commands/<string:command_id>/enable', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_enable_get(webinterface, request, session, command_id):
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/enable.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                         command_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/enable", "Enable")
@@ -208,16 +221,17 @@ def route_devtools_config_commands(webapp):
                 'description': '<p>The command has been enabled.</p><p>Continue to <a href="/devtools/config/commands/index">commands index</a> or <a href="/devtools/config/commands/%s/details">view the command</a>.</p>' % command_id,
             }
 
-            command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            try:
+                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/commands/index')
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            if command_api_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
-                                            command_api_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/enable", "Enable")
-            else:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands", True)
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
+                                        command_api_results['data']['label'])
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/enable", "Enable")
 
             return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
@@ -235,7 +249,6 @@ def route_devtools_config_commands(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
             webinterface.add_breadcrumb(request, "/devtools/config/commands/add", "Add")
             return page_devtools_commands_form(webinterface, request, session, 'add', data,
                                                "Add Command")
@@ -274,26 +287,30 @@ def route_devtools_config_commands(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
             webinterface.add_breadcrumb(request, "/devtools/config/commands/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/config/commands/<string:command_id>/edit', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_commands_edit_get(webinterface, request, session, command_id):
-            command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            if command_results['code'] > 299:
-                webinterface.add_alert(command_results['content']['html_message'], 'warning')
+            try:
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_results['data']['id'],
-                                        command_results['data']['label'])
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/edit", "Edit")
+            webinterface.add_breadcrumb(
+                request,
+                "/devtools/config/commands/%s/details" % command_results['data']['id'],
+                command_results['data']['label'])
+            webinterface.add_breadcrumb(
+                request,
+                "/devtools/config/commands/%s/edit",
+                "Edit")
 
             return page_devtools_commands_form(webinterface,
                                                request,
@@ -323,7 +340,6 @@ def route_devtools_config_commands(webapp):
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
                 root_breadcrumb(webinterface, request)
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
                 webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
                                             data['label'])
                 webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/edit", "Edit")
@@ -339,22 +355,32 @@ def route_devtools_config_commands(webapp):
                 'description': '<p>The command has been updated. If you have requested this command to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/config/commands/index">command index</a> or <a href="/devtools/config/commands/%s/details">view the command</a>.</p>' % command_id,
             }
 
-            command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+            try:
+                command_api_results = yield webinterface._YomboAPI.request(
+                    'GET', '/v1/command/%s' % command_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(
+                    request,'/devtools/config/commands/index')
+
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/devtools/config/commands/index", "Commands")
-            if command_api_results['code'] <= 299:
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/details" % command_id,
-                                            command_api_results['data']['label'])
-                webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/edit", "Edit")
+            webinterface.add_breadcrumb(
+                request,
+                "/devtools/config/commands/%s/details" % command_id,
+                command_api_results['data']['label']
+            )
+            webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/edit", "Edit")
 
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         def page_devtools_commands_form(webinterface, request, session, action_type, command,
                                         header_label):
-            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/config/commands/form.html')
+            page = webinterface.get_template(
+                request,
+                webinterface._dir + 'pages/devtools/config/commands/form.html')
             return page.render(alerts=webinterface.get_alerts(),
                                header_label=header_label,
                                command=command,

@@ -672,18 +672,6 @@ class WebInterface(YomboLibrary):
         request.setHeader('server', 'Yombo/1.0')
         request.redirect(redirect_path)
 
-    @inlineCallbacks
-    def get_api(self, request, method, path, data=None):
-        results = yield self._YomboAPI.request(method, path, data)
-        if results['code'] != 200:
-            request.setResponseCode(results['code'])
-            error = {
-                'message': results['content']['message'],
-                'html_message': results['content']['html_message'],
-            }
-            raise YomboWarning(json.dumps(error))
-        return results
-
     def _tpl_home_gateway_configured(self):
         if not self._home_gateway_configured():
             return "This gateway is not properly configured. Click _here_ to run the configuration wizard."
@@ -728,7 +716,7 @@ class WebInterface(YomboLibrary):
     def home_breadcrumb(self, request):
         self.add_breadcrumb(request, "/?", "Home")
 
-    def add_breadcrumb(self, request, url = None, text = None, show = None, style = None, data = None):
+    def add_breadcrumb(self, request, url=None, text=None, show=None, style=None, data=None):
         if hasattr(request, 'breadcrumb') is False:
             request.breadcrumb = []
             self.misc_wi_data['breadcrumb'] = request.breadcrumb

@@ -1,6 +1,7 @@
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
+from yombo.core.exceptions import YomboAPIWarning
 
 def route_devtools_config_variables(webapp):
     with webapp.subroute("/devtools") as webapp:
@@ -8,51 +9,51 @@ def route_devtools_config_variables(webapp):
         def root_breadcrumb(webinterface, request):
             webinterface.add_breadcrumb(request, "/?", "Home")
             webinterface.add_breadcrumb(request, "/devtools/config/", "Config Tools")
+            webinterface.add_breadcrumb(request, "/devtools/config/modules/index", "Modules", True)
 
         @inlineCallbacks
         def variable_group_breadcrumbs(webinterface, request, parent_id, parent_type):
             if parent_type == 'module':
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % parent_id)
+                try:
+                    module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % parent_id)
+                except YomboAPIWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
+                    return webinterface.redirect(request, '/devtools/config/modules/index')
                 root_breadcrumb(webinterface, request)
+                webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % parent_id,
+                                            module_results['data']['label'])
+                webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/variables" % parent_id,
+                                            "Variable Groups", True)
 
-                if module_results['code'] <= 299:
-                    webinterface.add_breadcrumb(request, "/devtools/config/modules/index", "Modules")
-                    webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/details" % parent_id,
-                                                module_results['data']['label'])
-                    webinterface.add_breadcrumb(request, "/devtools/config/modules/%s/variables" % parent_id,
-                                                "Variable Groups", True)
-                else:
-                    webinterface.add_breadcrumb(request, "/devtools/config/modules/index", "Modules", True)
-
-                returnValue(module_results)
+                return module_results
             elif parent_type == 'device_type':
-                device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % parent_id)
+                try:
+                    device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % parent_id)
+                except YomboAPIWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
+                    return webinterface.redirect(request, '/devtools/config/modules/index')
                 root_breadcrumb(webinterface, request)
-
-                if device_type_results['code'] <= 299:
-                    webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Device Types")
-                    webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % parent_id,
-                                                device_type_results['data']['label'])
-                    webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/variables" % parent_id,
-                                                "Variable Groups", True)
-                else:
-                    webinterface.add_breadcrumb(request, "/devtools/config/device_types/index", "Modules", True)
-                returnValue(device_type_results)
+                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/details" % parent_id,
+                                            device_type_results['data']['label'])
+                webinterface.add_breadcrumb(request, "/devtools/config/device_types/%s/variables" % parent_id,
+                                            "Variable Groups", True)
+                return device_type_results
 
         @webapp.route('/config/variables/group/<string:group_id>/details', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_group_details_get(webinterface, request, session, group_id):
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/by_group/%s' % group_id)
-            if field_results['code'] > 299:
-                webinterface.add_alert(field_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
-                # returnValue(webinterface.redirect(request, '/modules/%s/variables' % module_id))
+            try:
+                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/by_group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
@@ -61,17 +62,16 @@ def route_devtools_config_variables(webapp):
                                         group_results['data']['group_label'])
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/group_details.html')
             # root_breadcrumb(webinterface, request)
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     parent=parent['data'],
                                     group=group_results['data'],
                                     fields=field_results['data']
                                     )
-                        )
 
         @webapp.route('/config/variables/group/add/<string:parent_id>/<string:parent_type>', methods=['GET'])
         @require_auth()
@@ -91,11 +91,10 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Add Variable")
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
-            returnValue(
-                page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'], data,
-                                                   "Add Group Variable to: %s" % parent['data']['label']))
+            return page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'], data,
+                                                   "Add Group Variable to: %s" % parent['data']['label'])
 
         @webapp.route('/config/variables/group/add/<string:parent_id>/<string:parent_type>', methods=['POST'])
         @require_auth()
@@ -115,14 +114,13 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Add Variable")
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             dev_group_results = yield webinterface._Variables.dev_group_add(data)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
-                returnValue(
-                    page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
-                                                       data, "Add Group Variable to: %s" % parent['data']['label']))
+                return page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
+                                                       data, "Add Group Variable to: %s" % parent['data']['label'])
 
             msg = {
                 'header': 'Variable Group Added',
@@ -140,18 +138,19 @@ def route_devtools_config_variables(webapp):
                     'description'] = '<p>Variable group has beed added.</p><p>Continue to:<ul><li><a href="/devtools/config/device_types/index">device types index</a></li><li><a href="/devtools/config/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/config/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (
                 parent_id, parent['data']['label'], parent_id)
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         @webapp.route('/config/variables/group/<string:group_id>/edit', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_group_edit_get(webinterface, request, session, group_id):
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent_type = group_results['data']['relation_type']
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
@@ -159,12 +158,12 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Edit Variable")
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
-            returnValue(page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
+            return page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
                                                            group_results['data'],
                                                            "Edit Group Variable: %s" % group_results['data'][
-                                                               'group_label']))
+                                                               'group_label'])
 
         @webapp.route('/config/variables/group/<string:group_id>/edit', methods=['POST'])
         @require_auth()
@@ -178,10 +177,11 @@ def route_devtools_config_variables(webapp):
                 'status': int(request.args.get('status')[0]),
             }
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent_type = group_results['data']['relation_type']
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
@@ -189,14 +189,13 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Edit Variable")
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             dev_group_results = yield webinterface._Variables.dev_group_edit(group_id, data)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
-                returnValue(
-                    page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
-                                                       data, "Add Group Variable to: %s" % parent['data']['label']))
+                return page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
+                                                       data, "Add Group Variable to: %s" % parent['data']['label'])
 
             msg = {
                 'header': 'Variable Group Edited',
@@ -214,9 +213,9 @@ def route_devtools_config_variables(webapp):
                     'description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/config/device_types/index">device types index</a></li><li><a href="/devtools/config/device_types/%s/details">view the device type: %s</a></li><li><a href="/devtools/config/device_types/%s/variables"> view device type variables</a></li></ul></p>' % (
                 parent['data']['id'], parent['data']['label'], parent['data']['id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         def page_devtools_variables_group_form(webinterface, request, session, parent_type, parent, group,
                                                header_label):
@@ -233,10 +232,11 @@ def route_devtools_config_variables(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_group_enable_get(webinterface, request, session, group_id):
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
             parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
@@ -247,11 +247,10 @@ def route_devtools_config_variables(webapp):
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/group_enable.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     var_group=data,
                                     parent=parent,
                                     )
-                        )
 
         @webapp.route('/config/variables/group/<string:group_id>/enable', methods=['post'])
         @require_auth()
@@ -260,22 +259,23 @@ def route_devtools_config_variables(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             if confirm != "enable":
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the variable group.',
                                        'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/group/%s/enable' % group_id))
+                return webinterface.redirect(request, '/devtools/config/variables/group/%s/enable' % group_id)
 
             dev_group_results = yield webinterface._Variables.dev_group_enable(group_id)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/group/%s/enable' % group_id))
+                return webinterface.redirect(request, '/devtools/config/variables/group/%s/enable' % group_id)
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -309,18 +309,19 @@ def route_devtools_config_variables(webapp):
                                      '</ul>' \
                                      '</p>' % (data['relation_id'], parent['data']['label'], data['relation_id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         @webapp.route('/config/variables/group/<string:group_id>/disable', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_group_disable_get(webinterface, request, session, group_id):
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
             parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
@@ -331,11 +332,10 @@ def route_devtools_config_variables(webapp):
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/group_disable.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     var_group=data,
                                     parent=parent,
                                     )
-                        )
 
         @webapp.route('/config/variables/group/<string:group_id>/disable', methods=['post'])
         @require_auth()
@@ -344,22 +344,23 @@ def route_devtools_config_variables(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             if confirm != "disable":
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the variable group.',
                                        'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/group/%s/disable' % group_id))
+                return webinterface.redirect(request, '/devtools/config/variables/group/%s/disable' % group_id)
 
             dev_group_results = yield webinterface._Variables.dev_group_disable(group_id)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/group/%s/disable' % group_id))
+                return webinterface.redirect(request, '/devtools/config/variables/group/%s/disable' % group_id)
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -393,18 +394,19 @@ def route_devtools_config_variables(webapp):
                                      '</ul>' \
                                      '</p>' % (data['relation_id'], parent['data']['label'], data['relation_id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         @webapp.route('/config/variables/group/<string:group_id>/delete', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_group_delete_get(webinterface, request, session, group_id):
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
             parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
@@ -415,11 +417,10 @@ def route_devtools_config_variables(webapp):
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/group_delete.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     var_group=data,
                                     parent=parent,
                                     )
-                        )
 
         @webapp.route('/config/variables/group/<string:group_id>/delete', methods=['post'])
         @require_auth()
@@ -428,22 +429,23 @@ def route_devtools_config_variables(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             if confirm != "delete":
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the variable group.',
                                        'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/group/%s/delete' % group_id))
+                return webinterface.redirect(request, '/devtools/config/variables/group/%s/delete' % group_id)
 
             dev_group_results = yield webinterface._Variables.dev_group_delete(group_id)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/group/%s/details' % group_id))
+                return webinterface.redirect(request, '/devtools/config/variables/group/%s/details' % group_id)
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -477,9 +479,9 @@ def route_devtools_config_variables(webapp):
                                      '</ul>' \
                                      '</p>' % (data['relation_id'], parent['data']['label'], data['relation_id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         @webapp.route('/config/variables/group/<string:group_id>/new_field', methods=['GET'])
         @require_auth()
@@ -502,40 +504,42 @@ def route_devtools_config_variables(webapp):
                 'multiple': int(webinterface.request_get_default(request, 'multiple', 0)),
             }
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent_type = group_results['data']['relation_type']
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       parent_type)
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
             webinterface.add_breadcrumb(request, "/", "Add Field")
-            returnValue(
-                page_devtools_variables_field_form(webinterface, request, session, parent, group_results['data'], data,
+            return page_devtools_variables_field_form(webinterface, request, session, parent, group_results['data'], data,
                                                    input_type_results['data'],
-                                                   "Add Field Variable to: %s" % group_results['data']['group_label']))
+                                                   "Add Field Variable to: %s" % group_results['data']['group_label'])
 
         @webapp.route('/config/variables/group/<string:group_id>/new_field', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_field_add_post(webinterface, request, session, group_id):
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = {
                 'group_id': group_id,
@@ -560,10 +564,11 @@ def route_devtools_config_variables(webapp):
                 if isinstance(data[data_key], str) and len(data[data_key]) == 0:
                     del data[data_key]
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
@@ -573,20 +578,21 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "New Field")
             if parent['code'] > 299:
                 webinterface.add_alert(parent['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             dev_field_results = yield webinterface._Variables.dev_field_add(data)
             if dev_field_results['status'] == 'failed':
                 webinterface.add_alert(dev_field_results['apimsghtml'], 'warning')
-                returnValue(page_devtools_variables_field_form(webinterface, request, session,
+                return page_devtools_variables_field_form(webinterface, request, session,
                                                                group_results['data']['relation_type'],
                                                                parent['data'], data, input_type_results['data'],
-                                                               "Add Group Variable to: %s" % parent['data']['label']))
+                                                               "Add Group Variable to: %s" % parent['data']['label'])
 
             msg = {
                 'header': 'Variable Field Added',
@@ -615,24 +621,27 @@ def route_devtools_config_variables(webapp):
                                      '/ul></p>' % (group_results['data']['relation_id'], parent['data']['label'],
                                                    group_results['data']['relation_id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         @webapp.route('/config/variables/field/<string:field_id>/delete', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_field_delete_get(webinterface, request, session, field_id):
-            field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
-            if field_results['code'] > 299:
-                webinterface.add_alert(field_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % field_results['data'][
-                'group_id'])
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % field_results['data'][
+                                                                         'group_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent = yield variable_group_breadcrumbs(webinterface, request,
                                                       group_results['data']['relation_id'],
@@ -645,11 +654,10 @@ def route_devtools_config_variables(webapp):
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/field_delete.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     var_field=field_results['data'],
                                     parent=parent,
                                     )
-                        )
 
         @webapp.route('/config/variables/field/<string:field_id>/delete', methods=['post'])
         @require_auth()
@@ -658,28 +666,31 @@ def route_devtools_config_variables(webapp):
             try:
                 confirm = request.args.get('confirm')[0]
             except:
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             if confirm != "delete":
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the variable group.',
                                        'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/feild/%s/delete' % field_id))
+                return webinterface.redirect(request, '/devtools/config/variables/feild/%s/delete' % field_id)
 
-            field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
-            if field_results['code'] > 299:
-                webinterface.add_alert(field_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % field_results['data'][
-                'group_id'])
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % field_results['data'][
+                                                                         'group_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             dev_group_results = yield webinterface._Variables.dev_field_delete(field_id)
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/variables/field/%s/details' % field_id))
+                return webinterface.redirect(request, '/devtools/config/variables/field/%s/details' % field_id)
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
@@ -715,9 +726,9 @@ def route_devtools_config_variables(webapp):
                                      '/p>' % (group_results['data']['relation_id'], parent['data']['label'],
                                               group_results['data']['relation_id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         @webapp.route('/config/variables/field/<string:field_id>/details', methods=['GET'])
         @require_auth()
@@ -726,18 +737,23 @@ def route_devtools_config_variables(webapp):
             field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
             if field_results['code'] > 299:
                 webinterface.add_alert(field_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/modules/%s/variables' % field_id))
+                return webinterface.redirect(request, '/modules/%s/variables' % field_id)
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % field_results['data'][
-                'group_id'])
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/modules/%s/variables' % field_id))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % field_results['data'][
+                                                                         'group_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % field_results['data']['input_type_id'])
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % field_results['data'][
+                                                                              'input_type_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
@@ -748,27 +764,29 @@ def route_devtools_config_variables(webapp):
 
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/field_details.html')
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     var_group=group_results['data'],
                                     var_field=field_results['data'],
                                     input_type=input_type_results['data']
                                     )
-                        )
 
         @webapp.route('/config/variables/field/<string:field_id>/edit', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_field_edit_get(webinterface, request, session, field_id):
-            field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
-            if field_results['code'] > 299:
-                webinterface.add_alert(field_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % field_results['data'][
-                'group_id'])
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % field_results['data'][
+                                                                         'group_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
@@ -778,38 +796,40 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/", "Edit Field")
             if parent['code'] > 299:
                 webinterface.add_alert(parent['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
-            input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
-            if input_type_results['code'] > 299:
-                webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
+            try:
+                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            returnValue(page_devtools_variables_field_form(webinterface,
+            return page_devtools_variables_field_form(webinterface,
                                                            request,
                                                            session,
                                                            group_results['data']['relation_type'],
                                                            parent['data'], field_results['data'],
                                                            input_type_results['data'],
                                                            "Edit Field Variable: %s" %
-                                                           field_results['data']['field_label']))
+                                                           field_results['data']['field_label'])
 
         @webapp.route('/config/variables/field/<string:field_id>/edit', methods=['POST'])
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_field_edit_post(webinterface, request, session, field_id):
-            field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
-            if field_results['code'] > 299:
-                webinterface.add_alert(field_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            group_results = yield webinterface._YomboAPI.request('GET',
-                                                                 '/v1/variable/group/%s' % field_results['data'][
-                                                                     'group_id'])
-
-            if group_results['code'] > 299:
-                webinterface.add_alert(group_results['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+            try:
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % field_results['data'][
+                                                                         'group_id'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
+                return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = {
                 'field_machine_label': webinterface.request_get_default(request, 'field_machine_label', ""),
@@ -840,7 +860,7 @@ def route_devtools_config_variables(webapp):
                                                       group_results['data']['relation_type'])
             if parent['code'] > 299:
                 webinterface.add_alert(parent['content']['html_message'], 'warning')
-                returnValue(webinterface.redirect(request, '/devtools/config/index'))
+                return webinterface.redirect(request, '/devtools/config/index')
 
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
@@ -849,13 +869,14 @@ def route_devtools_config_variables(webapp):
 
             results = yield webinterface._Variables.dev_field_edit(field_id, data)
             if results['status'] == 'failed':
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
-                if input_type_results['code'] > 299:
-                    webinterface.add_alert(input_type_results['content']['html_message'], 'warning')
-                    returnValue(webinterface.redirect(request, '/devtools/config/input_types/index'))
+                try:
+                    input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+                except YomboAPIWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
+                    return webinterface.redirect(request, '/devtools/config/modules/index')
 
                 webinterface.add_alert(results['apimsghtml'], 'warning')
-                returnValue(page_devtools_variables_field_form(webinterface,
+                return page_devtools_variables_field_form(webinterface,
                                                                request,
                                                                session,
                                                                parent['data'],
@@ -863,7 +884,7 @@ def route_devtools_config_variables(webapp):
                                                                field_results['data'],
                                                                input_type_results['data'],
                                                                "Edit Field Variable: %s" % field_results['data'][
-                                                                   'field_label']))
+                                                                   'field_label'])
 
             msg = {
                 'header': 'Variable Field Edited',
@@ -892,9 +913,9 @@ def route_devtools_config_variables(webapp):
                                      '/ul></p>' % (group_results['data']['relation_id'], parent['data']['label'],
                                                    group_results['data']['relation_id'])
 
-            returnValue(page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                     msg=msg,
-                                    ))
+                                    )
 
         def page_devtools_variables_field_form(webinterface, request, session, parent, group, field, input_types,
                                                header_label):

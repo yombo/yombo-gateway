@@ -32,7 +32,7 @@ import msgpack
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
+from yombo.core.exceptions import YomboWarning, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -479,18 +479,19 @@ class Nodes(YomboLibrary):
                 except:
                     pass
 
-            node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
-            print("added node results: %s" % node_results)
-            if node_results['code'] > 299:
+            try:
+                node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
+            except YomboAPIWarning as e:
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't add node",
-                    'data': None,
-                    'node_id': None,
-                    'apimsg': node_results['content']['message'],
-                    'apimsghtml': node_results['content']['html_message'],
+                    'msg': "Couldn't add node: %s" % e.message,
+                    # 'data': None,
+                    # 'node_id': None,
+                    'apimsg': "Couldn't add node: %s" % e.message,
+                    'apimsghtml': "Couldn't add node: %s" % e.html_message,
                 }
                 return results
+            # print("added node results: %s" % node_results)
             node_id = node_results['data']['id']
             new_node = node_results['data']
             new_node['data'] = input_data
@@ -545,20 +546,20 @@ class Nodes(YomboLibrary):
                     api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
                 except:
                     pass
-            node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
-
-            api_data['data'] = input_data
-
-            if node_results['code'] > 299:
+            try:
+                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
+            except YomboAPIWarning as e:
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't edit node",
+                    'msg': "Couldn't edit node: %s" % e.message,
                     'data': None,
                     'node_id': node_id,
-                    'apimsg': node_results['content']['message'],
-                    'apimsghtml': node_results['content']['html_message'],
+                    'apimsg': "Couldn't edit node: %s" % e.message,
+                    'apimsghtml': "Couldn't edit node: %s" % e.html_message,
                 }
                 return results
+
+            api_data['data'] = input_data
 
         node = self.nodes[node_id]
         if source != 'node':
@@ -591,16 +592,16 @@ class Nodes(YomboLibrary):
         """
         results = None
         if source != 'amqp':
-            node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
-
-            if node_results['code'] > 299:
+            try:
+                node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
+            except YomboAPIWarning as e:
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't delete node",
-                    'node_id': node_id,
+                    'msg': "Couldn't delete node: %s" % e.message,
                     'data': None,
-                    'apimsg': node_results['content']['message'],
-                    'apimsghtml': node_results['content']['html_message'],
+                    'node_id': node_id,
+                    'apimsg': "Couldn't delete node: %s" % e.message,
+                    'apimsghtml': "Couldn't delete node: %s" % e.html_message,
                 }
                 return results
 
@@ -643,16 +644,16 @@ class Nodes(YomboLibrary):
         }
 
         if source != 'amqp':
-            node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
-
-            if node_results['code'] > 299:
+            try:
+                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
+            except YomboAPIWarning as e:
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't enable node",
-                    'node_id': node_id,
+                    'msg': "Couldn't enable node: %s" % e.message,
                     'data': None,
-                    'apimsg': node_results['content']['message'],
-                    'apimsghtml': node_results['content']['html_message'],
+                    'node_id': node_id,
+                    'apimsg': "Couldn't enable node: %s" % e.message,
+                    'apimsghtml': "Couldn't enable node: %s" % e.html_message,
                 }
                 return results
 
@@ -690,14 +691,16 @@ class Nodes(YomboLibrary):
         }
 
         if source != 'amqp':
-            node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
-
-            if node_results['code'] > 299:
+            try:
+                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
+            except YomboAPIWarning as e:
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't disable node",
-                    'apimsg': node_results['content']['message'],
-                    'apimsghtml': node_results['content']['html_message'],
+                    'msg': "Couldn't disable node: %s" % e.message,
+                    'data': None,
+                    'node_id': node_id,
+                    'apimsg': "Couldn't disable node: %s" % e.message,
+                    'apimsghtml': "Couldn't disable node: %s" % e.html_message,
                 }
                 return results
 

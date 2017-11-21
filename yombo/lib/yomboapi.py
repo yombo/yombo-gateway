@@ -34,7 +34,7 @@ from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.ext.expiringdict import ExpiringDict
-from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
+from yombo.core.exceptions import YomboWarning, YomboWarningCredentails, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode, unicode_to_bytes
@@ -349,6 +349,7 @@ class YomboAPI(YomboLibrary):
         # print("decode_results headers: %s" % headers)
 
         content_type = headers['content-type'][0]
+        phrase = bytes_to_unicode(phrase)
 
         # print( "######  content: %s" % content)
         if content_type == 'application/json':
@@ -381,6 +382,7 @@ class YomboAPI(YomboLibrary):
             'phrase': phrase,
             'headers': headers,
         }
+
         if content_type == "string":
             results['code'] = 500
             results['data'] = []
@@ -396,5 +398,18 @@ class YomboAPI(YomboLibrary):
                     results['data'] = content['response'][content['response']['locator']]
                 else:
                     results['data'] = []
+
+            # Check if there was any errors, if so, raise something.
+            if code >= 300:
+                print("data: %s" % content)
+                if 'message' in content:
+                    message = content['message']
+                else:
+                    message = phrase
+                if 'html_message' in content:
+                    html_message = content['html_message']
+                else:
+                    message = phrase
+                raise YomboAPIWarning(message, code, html_message=html_message)
             return results
 

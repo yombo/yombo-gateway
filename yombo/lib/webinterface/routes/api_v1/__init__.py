@@ -13,54 +13,54 @@ from yombo.lib.webinterface.auth import require_auth
 
 from yombo.utils import epoch_to_string, bytes_to_unicode
 
-def return_good(request, message=None, payload=None, status=None):
+def return_good(request, message=None, payload=None, code=None):
     request.setHeader('Content-Type', 'application/json')
-    if status is None:
-        status = 200
-    request.setResponseCode(status)
+    if code is None:
+        code = 200
+    request.setResponseCode(code)
     if payload is None:
         payload = {}
     if message is None:
         message = "OK"
     return json.dumps({
-        'status': status,
+        'code': code,
         'message': message,
         'payload': payload,
     })
 
-def return_not_found(request, message=None, status=None):
+def return_not_found(request, message=None, code=None):
     request.setHeader('Content-Type', 'application/json')
-    if status is None:
-        status = 404
-    request.setResponseCode(status)
+    if code is None:
+        code = 404
+    request.setResponseCode(code)
     if message is None:
         message = "Not found"
     return json.dumps({
-        'status': status,
+        'code': code,
         'message': message,
     })
 
-def return_error(request, message=None, status=None):
+def return_error(request, message=None, code=None):
     request.setHeader('Content-Type', 'application/json')
-    if status is None:
-        status = 401
-    request.setResponseCode(status)
+    if code is None:
+        code = 404
+    request.setResponseCode(code)
     if message is None:
         message = "System error"
     return json.dumps({
-        'status': status,
+        'code': code,
         'message': message,
     })
 
-def return_unauthorized(request, message=None, status=None):
+def return_unauthorized(request, message=None, code=None):
     request.setHeader('Content-Type', 'application/json')
-    if status is None:
-        status = 401
-    request.setResponseCode(status)
+    if code is None:
+        code = 401
+    request.setResponseCode(code)
     if message is None:
         message = "Not authorized"
     return json.dumps({
-        'status': status,
+        'code': code,
         'message': message,
         'redirect': "/?",
     })

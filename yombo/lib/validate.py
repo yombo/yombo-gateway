@@ -196,11 +196,13 @@ class Validate(YomboLibrary):
 
     def slugify(self, value):
         """Coerce a value to a slug."""
+        # print("going to try to slugify: %s" % value)
         if value is None:
             raise Invalid('Slug should not be None')
         slg = self._slugify(str(value))
         if slg:
             return slg
+        # print("can't make slug: %s" % slg)
         raise Invalid('Unable to slugify {}'.format(value))
 
     def temperature_unit(self, value) -> str:

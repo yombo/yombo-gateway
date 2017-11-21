@@ -23,11 +23,11 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
-from yombo.lib.webinterface.auth import require_auth, run_first
+from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.route_devices")
@@ -112,7 +112,7 @@ def route_devices(webapp):
                 device_type = webinterface._DeviceTypes[device_type_id]
             except Exception as e:
                 webinterface.add_alert('Device Type ID was not found: %s' % device_type_id, 'warning')
-                returnValue(webinterface.redirect(request, '/devices/add'))
+                return webinterface.redirect(request, '/devices/add')
 
             ok_to_save = True
 
@@ -130,7 +130,7 @@ def route_devices(webapp):
                 if pin_required == 1:
                     if request.args.get('pin_code')[0] == "":
                         webinterface.add_alert('Device requires a pin code, but none was set.', 'warning')
-                        returnValue(webinterface.redirect(request, '/devices'))
+                        return webinterface.redirect(request, '/devices')
             except Exception as e:
                 logger.warn("Processing 'pin_required': {e}", e=e)
                 pin_required = 0
@@ -264,7 +264,7 @@ def route_devices(webapp):
             except Exception as e:
                 print("e: %s" % e)
                 webinterface.add_alert("Cannot find requested id.")
-                returnValue(webinterface.redirect(request, '/devices/device_commands'))
+                return webinterface.redirect(request, '/devices/device_commands')
 
             return page.render(alerts=webinterface.get_alerts(),
                                command=command,
@@ -277,7 +277,7 @@ def route_devices(webapp):
                 device = webinterface._Devices[device_id]
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/devices/details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
@@ -336,10 +336,10 @@ def route_devices(webapp):
             device_results = yield webinterface._Devices.delete_device(device.device_id)
             if device_results['status'] == 'failed':
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
 
             webinterface.add_alert('Device deleted.', 'warning')
-            returnValue(webinterface.redirect(request, '/devices/index'))
+            return webinterface.redirect(request, '/devices/index')
 
         @webapp.route('/<string:device_id>/disable', methods=['GET'])
         @require_auth()
@@ -367,23 +367,23 @@ def route_devices(webapp):
                 device = webinterface._Devices[device_id]
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
             confirm = request.args.get('confirm')[0]
             if confirm != "disable":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/devices/disable.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the device.', 'warning')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
+                return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
                                    devicetypes=webinterface._DeviceTypes,
-                                   ))
+                                   )
 
             device_results = yield webinterface._Devices.disable_device(device.device_id)
             if device_results['status'] == 'failed':
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
 
             webinterface.add_alert('Device disabled.', 'warning')
-            returnValue(webinterface.redirect(request, '/devices/index'))
+            return webinterface.redirect(request, '/devices/index')
 
 
         @webapp.route('/<string:device_id>/enable', methods=['GET'])
@@ -412,31 +412,32 @@ def route_devices(webapp):
                 device = webinterface._Devices[device_id]
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
             confirm = request.args.get('confirm')[0]
             if confirm != "enable":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/devices/enable.html')
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the device.', 'warning')
-                returnValue(page.render(alerts=webinterface.get_alerts(),
+                return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
                                    devicetypes=webinterface._DeviceTypes,
-                                   ))
+                                   )
 
             device_results = yield webinterface._Devices.enable_device(device.device_id)
             if device_results['status'] == 'failed':
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
-                returnValue(webinterface.redirect(request, '/devices/index'))
+                return webinterface.redirect(request, '/devices/index')
 
             webinterface.add_alert('Device enabled.', 'warning')
-            returnValue(webinterface.redirect(request, '/devices/%s/details' % device_id))
+            return webinterface.redirect(request, '/devices/%s/details' % device_id)
 
         @webapp.route('/<string:device_id>/edit', methods=['GET'])
         @require_auth()
         @inlineCallbacks
         def page_devices_edit_get(webinterface, request, session, device_id):
-            device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id)
-            if device_api_results['code'] != 200:
-                webinterface.add_alert(device_api_results['content']['html_message'], 'warning')
+            try:
+                device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id)
+            except YomboAPIWarning as e:
+                webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             device = device_api_results['data']
             device['device_id'] = device['id']

@@ -75,7 +75,7 @@ from twisted.internet.task import LoopingCall
 # Import Yombo libraries
 from ._device import Device
 from ._device_command import Device_Command
-from yombo.core.exceptions import YomboDeviceError, YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboDeviceError, YomboWarning, YomboHookStopProcessing, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import split, global_invoke_all, search_instance, do_search_instance, random_int, get_public_gw_id
@@ -863,19 +863,18 @@ class Devices(YomboLibrary):
 
         if source != 'amqp':
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
-            device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
-            logger.debug("add new device results: {device_results}", device_results=device_results)
-
-            if device_results['code'] > 299:
+            try:
+                device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
+            except YomboAPIWarning as e:
+                logger.warn("add new device results: {device_results}", device_results=device_results)
                 results = {
                     'status': 'failed',
-                    'msg': "Couldn't add device",
-                    'apimsg': device_results['content']['message'],
-                    'apimsghtml': device_results['content']['html_message'],
-                    'device_id': None,
-                    'data': None,
+                    'msg': "Couldn't add device: %s" % e.message,
+                    'apimsg': "Couldn't add device: %s" % e.message,
+                    'apimsghtml': "Couldn't add device: %s" % e.html_message,
                 }
                 return results
+            logger.debug("add new device results: {device_results}", device_results=device_results)
 
             if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
                 # print("data['variable_data']: %s", data['variable_data'])
@@ -946,16 +945,14 @@ class Devices(YomboLibrary):
                         'data': value,
                     }
                     # print("Posting new variable: %s" % post_data)
-
-                    var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                    if var_data_results['code'] > 299:
+                    try:
+                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                    except YomboAPIWarning as e:
                         results = {
                             'status': 'failed',
-                            'msg': "Couldn't add device variables",
-                            'apimsg': var_data_results['content']['message'],
-                            'apimsghtml': var_data_results['content']['html_message'],
-                            'device_id': device_id,
-                            'data': None,
+                            'msg': "Couldn't add device variables: %s" % e.message,
+                            'apimsg': "Couldn't add device variables: %s" % e.message,
+                            'apimsghtml': "Couldn't add device variables: %s" % e.html_message,
                         }
                         return results
                     data = var_data_results['data']
@@ -966,19 +963,18 @@ class Devices(YomboLibrary):
                         'data': value,
                     }
                     # print("PATCHing variable: %s" % post_data)
-                    var_data_results = yield self._YomboAPI.request(
-                        'PATCH',
-                        '/v1/variable/data/%s' % data_id,
-                        post_data
-                    )
-                    # print("var_data_results: %s" % var_data_results)
-                    if var_data_results['code'] > 299:
+                    try:
+                        var_data_results = yield self._YomboAPI.request(
+                            'PATCH',
+                            '/v1/variable/data/%s' % data_id,
+                            post_data
+                        )
+                    except YomboAPIWarning as e:
                         results = {
                             'status': 'failed',
-                            'msg': "Couldn't add device variables",
-                            'apimsg': var_data_results['content']['message'],
-                            'apimsghtml': var_data_results['content']['html_message'],
-                            'device_id': device_id,
+                            'msg': "Couldn't edit device variables: %s" % e.message,
+                            'apimsg': "Couldn't edit device variables: %s" % e.message,
+                            'apimsghtml': "Couldn't edit device variables: %s" % e.html_message,
                         }
                         return results
         # print("var_data_results: %s" % var_data_results)
@@ -1012,15 +1008,14 @@ class Devices(YomboLibrary):
         except YomboHookStopProcessing as e:
             pass
 
-        device_results = yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
-        # print("deleted device: %s" % device_results)
-        if device_results['code'] > 299:
+        try:
+            yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't delete device",
-                'apimsg': device_results['content']['message'],
-                'apimsghtml': device_results['content']['html_message'],
-                'device_id': device_id,
+                'msg': "Couldn't delete device: %s" % e.message,
+                'apimsg': "Couldn't delete device: %s" % e.message,
+                'apimsghtml': "Couldn't delete device: %s" % e.html_message,
             }
             return results
 
@@ -1162,14 +1157,14 @@ class Devices(YomboLibrary):
             'status': 1,
         }
 
-        device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        if device_results['code'] > 299:
+        try:
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable device",
-                'apimsg': device_results['content']['message'],
-                'apimsghtml': device_results['content']['html_message'],
-                'device_id': device_id,
+                'msg': "Couldn't enable device: %s" % e.message,
+                'apimsg': "Couldn't enable device: %s" % e.message,
+                'apimsghtml': "Couldn't enable device: %s" % e.html_message,
             }
             return results
 
@@ -1205,14 +1200,14 @@ class Devices(YomboLibrary):
             'status': 0,
         }
 
-        device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
-        if device_results['code'] > 299:
+        try:
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+        except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
-                'msg': "Couldn't disable device",
-                'apimsg': device_results['content']['message'],
-                'apimsghtml': device_results['content']['html_message'],
-                'device_id': device_id,
+                'msg': "Couldn't disable device: %s" % e.message,
+                'apimsg': "Couldn't disable device: %s" % e.message,
+                'apimsghtml': "Couldn't disable device: %s" % e.html_message,
             }
             return results
 

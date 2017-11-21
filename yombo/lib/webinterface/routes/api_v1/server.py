@@ -8,6 +8,7 @@ from time import time
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
+from yombo.core.exceptions import YomboAPIWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
 from yombo.utils import epoch_to_string, bytes_to_unicode
@@ -36,7 +37,11 @@ def route_api_v1_server(webapp):
             if search is not None:
                 url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
-            results = yield webinterface._YomboAPI.request('GET', url)
+            try:
+                results = yield webinterface._YomboAPI.request('GET', url)
+            except YomboAPIWarning as e:
+                return return_error(request, e.message, e.errorno)
+
             data = {
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
@@ -62,9 +67,9 @@ def route_api_v1_server(webapp):
             # url = '/v1/dns/check_available/sam'
 
             try:
-                results = yield webinterface.get_api(request, "GET", url)
-            except YomboWarning as e:
-                return e.message
+                results = yield webinterface._YomboAPI.request('GET', url)
+            except YomboAPIWarning as e:
+                return return_error(request, e.message, e.errorno)
 
             request.setHeader('Content-Type', 'application/json')
             return json.dumps(results['data'])
@@ -90,7 +95,11 @@ def route_api_v1_server(webapp):
             if search is not None:
                 url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
-            results = yield webinterface._YomboAPI.request('GET', url)
+            try:
+                results = yield webinterface._YomboAPI.request('GET', url)
+            except YomboAPIWarning as e:
+                return return_error(request, e.message, e.errorno)
+
             data = {
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
@@ -119,7 +128,10 @@ def route_api_v1_server(webapp):
             if search is not None:
                 url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
-            results = yield webinterface._YomboAPI.request('GET', url)
+            try:
+                results = yield webinterface._YomboAPI.request('GET', url)
+            except YomboAPIWarning as e:
+                return return_error(request, e.message, e.errorno)
             data = {
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
@@ -148,7 +160,10 @@ def route_api_v1_server(webapp):
             if search is not None:
                 url = url + "&?_filters[label]*%s&_filters[short_description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
-            results = yield webinterface._YomboAPI.request('GET', url)
+            try:
+                results = yield webinterface._YomboAPI.request('GET', url)
+            except YomboAPIWarning as e:
+                return return_error(request, e.message, e.errorno)
             data = {
                 'total': results['content']['pages']['total_items'],
                 'rows': results['data'],
@@ -161,6 +176,10 @@ def route_api_v1_server(webapp):
         @inlineCallbacks
         def apiv1_server_modules_show_one(webinterface, request, session, module_id):
             # action = request.args.get('action')[0]
-            results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            try:
+                results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+            except YomboAPIWarning as e:
+                return return_error(request, e.message, e.errorno)
+
             request.setHeader('Content-Type', 'application/json')
             return json.dumps(results['data'])
