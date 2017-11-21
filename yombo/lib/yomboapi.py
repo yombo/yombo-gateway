@@ -176,7 +176,7 @@ class YomboAPI(YomboLibrary):
             logger.info("do_validate_login_key API Errror: {error}", error=e)
             return False
 
-        logger.debug("Login key results: REsults from API: {results}", results=results['content'])
+        # logger.debug("Login key results: REsults from API: {results}", results=results['content'])
         # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
@@ -193,7 +193,7 @@ class YomboAPI(YomboLibrary):
             logger.debug("$$$1 API Errror: {error}", error=e)
             return False
 
-        logger.debug("$$$a REsults from API: {results}", results=results['content'])
+        # logger.debug("$$$a REsults from API: {results}", results=results['content'])
         # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
@@ -209,7 +209,7 @@ class YomboAPI(YomboLibrary):
             logger.debug("$$$2 API Errror: {error}", error=e)
             return False
 
-        logger.info("user_login_with_key Results from API for login w key: {results}", results=results['content'])
+        # logger.info("user_login_with_key Results from API for login w key: {results}", results=results['content'])
         # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if results['content']['code'] != 200:
@@ -217,21 +217,34 @@ class YomboAPI(YomboLibrary):
         elif results['content']['message'] != 'Logged in':
             return False
         else:
-            return results['content']['response']['login']
+            self._capture_system_login(results['content']['response']['login'])
+            return results['content']
 
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
         # credentials = { 'username':username, 'password':password}
         results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
-        logger.info("$$$3 REsults from API login creds: {results}", results=results)
+        # logger.info("$$$3 REsults from API login creds: {results}", results=results)
 
         if results['content']['code'] != 200:
             return False
         elif results['content']['message'] != 'Logged in':
             return False
         else:
+            self._capture_system_login(results['content']['response']['login'])
             return results['content']
             # return results['content']['response']['login']
+
+    def _capture_system_login(self, data):
+        if self.allow_system_session is False:
+            return
+        captured_id = data['user_id']
+        owner_id = self._Configs.get("core", "owner_id")
+        if captured_id == owner_id:
+            self.save_system_login_key(data['login_key'])
+            self.save_system_session(data['session'])
+            self.valid_system_session = True
+            self.valid_login_key = True
 
     @inlineCallbacks
     def gateways(self, session_info=None):
@@ -253,8 +266,6 @@ class YomboAPI(YomboLibrary):
         if session is not None:
             headers['Authorization'] = 'Bearer %s' % session
 
-        # for k, v in headers.items():
-        #     headers[k] = v.encode('utf-8')
         return headers
 
     def errorHandler(self,result):
@@ -308,7 +319,7 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def _patch(self, path, headers, data):
-        print("yapi patch called. path: %s... headers: %s... data: %s" % (path, headers, data))
+        # print("yapi patch called. path: %s... headers: %s... data: %s" % (path, headers, data))
         response = yield treq.patch(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
@@ -316,12 +327,12 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def _post(self, path, headers, data):
-        print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
+        # print("yapi post called. path: %s... headers: %s... data: %s" % (path, headers, data))
 
         response = yield treq.post(path, data=data, agent=self.custom_agent, headers=headers)
         content = yield treq.content(response)
         final_response = self.decode_results(content, self.response_headers(response), response.code, response.phrase)
-        print("dddd: %s" % final_response)
+        # print("dddd: %s" % final_response)
         return final_response
 
     @inlineCallbacks
@@ -401,7 +412,7 @@ class YomboAPI(YomboLibrary):
 
             # Check if there was any errors, if so, raise something.
             if code >= 300:
-                print("data: %s" % content)
+                # print("data: %s" % content)
                 if 'message' in content:
                     message = content['message']
                 else:
