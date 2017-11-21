@@ -38,10 +38,6 @@ def route_home(webapp):
 
         @require_auth()
         def config_home(webinterface, request, session):
-            # auth = webinterface.require_auth(request)
-            # if auth is not None:
-            #     return auth
-
             page = webinterface.get_template(request, webinterface._dir + 'config_pages/index.html')
             return page.render(alerts=webinterface.get_alerts(),
                                )
@@ -67,7 +63,6 @@ def route_home(webapp):
         @require_auth_pin()
         @inlineCallbacks
         def page_login_user_post(webinterface, request, session):
-            # print("rquest.args: %s"  % request.args)
             if 'g-recaptcha-response' not in request.args:
                 webinterface.add_alert('Captcha Missing', 'warning')
                 return login_redirect(webinterface, request)
@@ -80,12 +75,6 @@ def route_home(webapp):
             submitted_g_recaptcha_response = request.args.get('g-recaptcha-response')[0]
             submitted_email = request.args.get('email')[0]
             submitted_password = request.args.get('password')[0]
-            # print("submitted_email: %s" % submitted_email)
-            # if submitted_pin.isalnum() is False:
-            #     alerts = { '1234': webinterface.make_alert('Invalid authentication.', 'warning')}
-            #     return webinterface.require_auth(request, alerts)
-
-            # print("webinterface.operating_mode: %s" % webinterface.operating_mode)
             if webinterface.operating_mode == 'run':
                 results = yield webinterface._LocalDB.get_gateway_user_by_email(webinterface.gateway_id(), submitted_email)
                 if len(results) != 1:
@@ -95,8 +84,8 @@ def route_home(webapp):
                     return page.render(alerts=webinterface.get_alerts())
 
             try:
-                results = yield webinterface._YomboAPI.user_login_with_credentials(submitted_email, submitted_password,
-                                                                                   submitted_g_recaptcha_response)
+                results = yield webinterface._YomboAPI.user_login_with_credentials(
+                    submitted_email, submitted_password, submitted_g_recaptcha_response)
             except YomboAPIWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
