@@ -50,23 +50,27 @@ class Device_Command(object):
 
     @property
     def status_id(self):
-        status = self._status.lower()
-        if status not in self.status_ids:
+        if self._status not in self.status_ids:
             logger.warn("Device command {id} has invalid status: {status}",
                         id=self.request_id, status=self._status)
             self.status = 'unknown'
             return 0
         else:
-            return self.status_ids[status]
+            return self.status_ids[self._status]
 
     @status_id.setter
     def status_id(self, val):
         for key, key_id in self.status_ids.items():
             if key_id == val:
                 self._status = key
+                break
         raise Exception("Invalid status_id: %s" % val)
 
-    @status_id.setter
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
     def status(self, val):
         try:
             status = self._status.lower()
@@ -75,10 +79,10 @@ class Device_Command(object):
                             id=self.request_id, status=val)
                 self._status = 'unknown'
             else:
-                self._status = val
+                self._status = status
         except AttributeError as e:
-            logger.warn("Device command {id} tried to set an invalid status: {status}",
-                        id=self.request_id, status=val)
+            logger.warn("Error setting device command {id} tried to set an invalid status: {status}, error: {error}",
+                        id=self.request_id, status=val, error=e)
             self._status = 'unknown'
 
     def __init__(self, data, parent, start=None):
