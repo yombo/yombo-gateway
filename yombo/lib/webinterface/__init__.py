@@ -36,7 +36,7 @@ from hashlib import sha256
 # Import twisted libraries
 from twisted.web.server import Site
 from twisted.internet import reactor, ssl
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import 3rd party libraries
@@ -62,13 +62,19 @@ from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
 from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
 from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
 
+from yombo.lib.webinterface.routes.devtools.config import route_devtools_config
+from yombo.lib.webinterface.routes.devtools.config_commands import route_devtools_config_commands
+from yombo.lib.webinterface.routes.devtools.config_device_types import route_devtools_config_device_types
+from yombo.lib.webinterface.routes.devtools.config_input_types import route_devtools_config_input_types
+from yombo.lib.webinterface.routes.devtools.config_modules import route_devtools_config_modules
+from yombo.lib.webinterface.routes.devtools.config_variables import route_devtools_config_variables
+from yombo.lib.webinterface.routes.devtools.debug import route_devtools_debug
+
 from yombo.lib.webinterface.routes.atoms import route_atoms
 from yombo.lib.webinterface.routes.automation import route_automation
 from yombo.lib.webinterface.routes.configs import route_configs
 from yombo.lib.webinterface.routes.devices import route_devices
 from yombo.lib.webinterface.routes.locations import route_locations
-from yombo.lib.webinterface.routes.devtools_debug import route_devtools_debug
-from yombo.lib.webinterface.routes.devtools_config import route_devtools_config
 from yombo.lib.webinterface.routes.gateways import route_gateways
 from yombo.lib.webinterface.routes.home import route_home
 from yombo.lib.webinterface.routes.misc import route_misc
@@ -197,13 +203,21 @@ class WebInterface(YomboLibrary):
         route_api_v1_statistics(self.webapp)
         route_api_v1_system(self.webapp)
 
+        # Load devtool routes
+        route_devtools_config(self.webapp)
+        route_devtools_config_commands(self.webapp)
+        route_devtools_config_device_types(self.webapp)
+        route_devtools_config_input_types(self.webapp)
+        route_devtools_config_modules(self.webapp)
+        route_devtools_config_variables(self.webapp)
+        route_devtools_debug(self.webapp)
+
         # Load web server routes
         route_atoms(self.webapp)
         route_automation(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
         route_locations(self.webapp)
-        route_devtools_debug(self.webapp)
         route_devtools_config(self.webapp)
         route_gateways(self.webapp)
         route_home(self.webapp)
@@ -668,7 +682,7 @@ class WebInterface(YomboLibrary):
                 'html_message': results['content']['html_message'],
             }
             raise YomboWarning(json.dumps(error))
-        returnValue(results)
+        return results
 
     def _tpl_home_gateway_configured(self):
         if not self._home_gateway_configured():
