@@ -298,11 +298,13 @@ class AMQPYombo(YomboLibrary):
         )
         self.publish(**requestmsg)
 
-    def receive_local_information(self, msg=None, properties=None, correlation_info=None,
+    def receive_local_information(self, body=None, properties=None, correlation_info=None,
                                   send_message_meta=None, receied_message_meta=None, **kwargs):
-        # print("receive_local_information............")
         if self.request_configs is False:  # this is where we start requesting information - after we have sent out info.
             self.request_configs = True
+            if 'owner_id' in body:
+                self._Configs.set("core", "owner_id", body['owner_id'])
+
             return self.configHandler.connected()
 
     def amqp_incoming_parse(self, channel, deliver, properties, msg):
