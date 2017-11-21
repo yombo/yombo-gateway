@@ -71,7 +71,7 @@ from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
 from yombo.core.log import get_logger
 from yombo.core.library import YomboLibrary
 from yombo.utils import global_invoke_all, pattern_search, is_true_false, epoch_to_string, random_string,\
-    random_int, get_nested_dict, set_nested_dict
+    random_int, set_nested_dict
 from yombo.utils.datatypes import coerce_value
 
 logger = get_logger("library.states")
@@ -453,12 +453,13 @@ class States(YomboLibrary, object):
 
         # Call any hooks
         try:
-            state_changes = yield global_invoke_all('_states_preset_', **{'called_by': self,
-                                                                          'key': key,
-                                                                          'value': value,
-                                                                          'gateway_id': gateway_id
-                                                                          }
-                                                    )
+            yield global_invoke_all('_states_preset_',
+                                    called_by=self,
+                                    key=key,
+                                    value=value,
+                                    gateway_id=gateway_id,
+                                    stoponerror=True,
+                                    )
         except YomboHookStopProcessing as e:
             logger.warning("Not saving state '{state}'. Resource '{resource}' raised' YomboHookStopProcessing exception.",
                            state=key, resource=e.by_who)
@@ -478,16 +479,13 @@ class States(YomboLibrary, object):
         self.__States[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
-        try:
-            state_changes = yield global_invoke_all('_states_set_',
-                                                    **{'called_by': self,
-                                                       'key': key,
-                                                       'value': value,
-                                                       'value_full': self.__States[gateway_id][key],
-                                                       'gateway_id': gateway_id})
-        except YomboHookStopProcessing:
-            pass
-
+        yield global_invoke_all('_states_set_',
+                                called_by=self,
+                                key=key,
+                                value=value,
+                                value_full=self.__States[gateway_id][key],
+                                gateway_id=gateway_id,
+                                )
 
         if gateway_id == self.gateway_id:
             self.db_save_states_data.append((key, self.__States[gateway_id][key]))
@@ -549,17 +547,13 @@ class States(YomboLibrary, object):
         }
 
         # Call any hooks
-        try:
-            yield global_invoke_all('_states_set_',
-                                    **{'called_by': self,
-                                       'key': key,
-                                       'value': values['value'],
-                                       'value_full': self.__States[gateway_id][key],
-                                       'gateway_id': gateway_id,
-                                       }
-                                    )
-        except YomboHookStopProcessing:
-            pass
+        yield global_invoke_all('_states_set_',
+                                called_by=self,
+                                key=key,
+                                value=values['value'],
+                                value_full=self.__States[gateway_id][key],
+                                gateway_id=gateway_id,
+                                )
 
     def convert_to_human(self, value, value_type):
         if value_type == 'bool':

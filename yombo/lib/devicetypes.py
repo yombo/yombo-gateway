@@ -21,7 +21,7 @@ This library keeps track of what modules can access what device types, and what 
 import inspect
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 #from yombo.utils.decorators import memoize_ttl
@@ -254,22 +254,38 @@ class DeviceTypes(YomboLibrary):
         """
         logger.debug("device_type: {device_type}", device_type=device_type)
 
-        global_invoke_all('_device_types_before_import_', called_by=self, **{'device_type': device_type})
         device_type_id = device_type["id"]
+        global_invoke_all('_device_types_before_import_',
+                          called_by=self,
+                          device_type_id=device_type_id,
+                          device_type=device_type,
+                          )
         if device_type_id not in self.device_types:
-            global_invoke_all('_device_type_before_load_', called_by=self, **{'device_type': device_type})
+            global_invoke_all('_device_type_before_load_',
+                              called_by=self,
+                              device_type_id=device_type_id,
+                              device_type=device_type,
+                              )
             self.device_types[device_type_id] = DeviceType(device_type, self)
             yield self.device_types[device_type_id]._init_()
             global_invoke_all('_device_type_loaded_',
                               called_by=self,
-                              **{'device_type': self.device_types[device_type_id]})
+                              device_type_id=device_type_id,
+                              device_type=self.device_types[device_type_id],
+                              )
         elif device_type_id not in self.device_types:
-            global_invoke_all('_device_type_before_update_', called_by=self, **{'device_type': device_type})
+            global_invoke_all('_device_type_before_update_',
+                              called_by=self,
+                              device_type_id=device_type_id,
+                              device_type=self.device_types[device_type_id],
+                              )
             self.device_types[device_type_id].update_attributes(device_type)
             yield self.device_types[device_type_id]._init_()
             global_invoke_all('_device_type_updated_',
                               called_by=self,
-                              **{'device_type': self.device_types[device_type_id]})
+                              device_type_id=device_type_id,
+                              device_type=self.device_types[device_type_id],
+                              )
 
     def get(self, device_type_requested, limiter=None, status=None):
         """
@@ -480,7 +496,7 @@ class DeviceTypes(YomboLibrary):
                 'apimsghtml': e,
                 'device_id': '',
             }
-            returnValue(results)
+            return results
 
         device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
 
@@ -491,14 +507,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type added.",
             'device_type_id': device_type_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_device_type_edit(self, device_type_id, data, **kwargs):
@@ -527,7 +543,7 @@ class DeviceTypes(YomboLibrary):
                 'apimsghtml': e,
                 'device_id': '',
             }
-            returnValue(results)
+            return results
 
         device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
         # print("module edit results: %s" % module_results)
@@ -539,14 +555,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type edited.",
             'device_type_id': device_type_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_device_type_delete(self, device_type_id, **kwargs):
@@ -566,14 +582,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type deleted.",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_device_type_enable(self, device_type_id, **kwargs):
@@ -597,14 +613,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type enabled.",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_device_type_disable(self, device_type_id, **kwargs):
@@ -628,14 +644,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type disabled.",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_add(self, device_type_id, command_id, **kwargs):
@@ -660,14 +676,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Associated command to device type.",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_input_add(self, device_type_id, command_id, input_type_id, data, **kwargs):
@@ -702,14 +718,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Associated input to device type command",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_input_edit(self, device_type_id, command_id, input_type_id, data, **kwargs):
@@ -746,14 +762,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Updated associated input to device type command",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_input_remove(self, device_type_id, command_id, input_type_id, **kwargs):
@@ -773,14 +789,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Removed input from device type command",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_remove(self, device_type_id, command_id, **kwargs):
@@ -801,14 +817,14 @@ class DeviceTypes(YomboLibrary):
                 'apimsg': device_type_results['content']['message'],
                 'apimsghtml': device_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Removed command from device type.",
             'device_type_id': device_type_id,
         }
-        returnValue(results)
+        return results
 
 class DeviceType(object):
     """

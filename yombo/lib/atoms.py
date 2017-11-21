@@ -415,17 +415,13 @@ class Atoms(YomboLibrary):
             self.__Atoms[gateway_id][key]['value_human'] = self.convert_to_human(value, value_type)
 
         # Call any hooks
-        try:
-            state_changes = yield yombo.utils.global_invoke_all('_atoms_set_',
-                                                                **{'called_by': self,
-                                                                   'key': key,
-                                                                   'value': value,
-                                                                   'value_full': self.__Atoms[gateway_id][key],
-                                                                   'gateway_id': gateway_id
-                                                                   }
-                                                                )
-        except Exception as e:
-            pass
+        yield yombo.utils.global_invoke_all('_atoms_set_',
+                                            called_by=self,
+                                            key=key,
+                                            value=value,
+                                            value_full=self.__Atoms[gateway_id][key],
+                                            gateway_id=gateway_id
+                                            )
 
         self.check_trigger(gateway_id, key, value)  # Check if any automation items need to fire!
 
@@ -450,18 +446,13 @@ class Atoms(YomboLibrary):
             'created_at': values['created_at'],
             'updated_at': values['updated_at'],
         }
-        try:
-            yield yombo.utils.global_invoke_all('_atoms_set_',
-                                                **{'called_by': self,
-                                                   'key': key,
-                                                   'value': values['value'],
-                                                   'value_full': values,
-                                                   'gateway_id': gateway_id,
-                                                   }
-                                                )
-        except YomboHookStopProcessing as e:
-            logger.warn("Issues with set_from_gateway_communications calling _atoms_set_: %s" % e)
-            pass
+        yield yombo.utils.global_invoke_all('_atoms_set_',
+                                            called_by=self,
+                                            key=key,
+                                            value=value,
+                                            value_full=self.__Atoms[gateway_id][key],
+                                            gateway_id=gateway_id
+                                            )
 
     def convert_to_human(self, value, value_type):
         if value_type == 'bool':

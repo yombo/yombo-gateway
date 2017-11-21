@@ -34,7 +34,7 @@ from time import time
 from itertools import islice
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -294,7 +294,6 @@ class Notifications(YomboLibrary):
             global_invoke_all('_notification_add_',
                               called_by=self,
                               notification=self.notifications[notice['id']],
-                              stoponerror=False,
                               )
         except YomboHookStopProcessing:
             pass
@@ -313,7 +312,6 @@ class Notifications(YomboLibrary):
             global_invoke_all('_notification_delete_',
                               called_by=self,
                               notification=self.notifications[notice_id],
-                              stoponerror=False,
                               )
         except YomboHookStopProcessing:
             pass

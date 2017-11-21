@@ -30,7 +30,7 @@ from time import time
 from pyclbr import readmodule
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, maybeDeferred, returnValue, Deferred, DeferredList
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
@@ -955,7 +955,7 @@ class Modules(YomboLibrary):
                 'apimsghtml': module_results['content']['html_message'],
                 'module_id': data['module_id'],
             }
-            returnValue(results)
+            return results
 
         # print("checking if var data... %s" % data)
         if 'variable_data' in data:
@@ -987,7 +987,7 @@ class Modules(YomboLibrary):
                                 'apimsghtml': var_data_results['content']['html_message'],
                                 'module_id': data['module_id']
                             }
-                            returnValue(results)
+                            return results
                     else:
                         post_data = {
                             'data_weight': 0,
@@ -1006,14 +1006,14 @@ class Modules(YomboLibrary):
                                 'apimsghtml': var_data_results['content']['html_message'],
                                 'module_id': data['module_id']
                             }
-                            returnValue(results)
+                            return results
 
         results = {
             'status': 'success',
             'msg': "Module added.",
             'module_id': data['module_id']
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def edit_module(self, module_id, data, **kwargs):
@@ -1039,14 +1039,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module edited.",
             'module_id': module_id
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def remove_module(self, module_id, **kwargs):
@@ -1070,7 +1070,7 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         self._LocalDB.set_module_status(module_id, 2)
         self._LocalDB.del_variables('module', module_id)
@@ -1082,7 +1082,7 @@ class Modules(YomboLibrary):
         }
         #todo: add task to remove files.
         #todo: add system for "do something on next startup..."
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def enable_module(self, module_id, **kwargs):
@@ -1111,7 +1111,7 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         self._LocalDB.set_module_status(module_id, 1)
 
@@ -1120,7 +1120,7 @@ class Modules(YomboLibrary):
             'msg': "Module enabled.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def disable_module(self, module_id, **kwargs):
@@ -1149,7 +1149,7 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         self._LocalDB.set_module_status(module_id, 0)
 
@@ -1158,7 +1158,7 @@ class Modules(YomboLibrary):
             'msg': "Module disabled.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_add(self, data, **kwargs):
@@ -1179,14 +1179,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module added.",
             'module_id': module_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_edit(self, module_id, data, **kwargs):
@@ -1207,14 +1207,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module edited.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_delete(self, module_id, **kwargs):
@@ -1234,14 +1234,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module deleted.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_enable(self, module_id, **kwargs):
@@ -1265,14 +1265,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module enabled.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_disable(self, module_id, **kwargs):
@@ -1297,14 +1297,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module disabled.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_device_type_add(self, module_id, device_type_id):
@@ -1330,14 +1330,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type associated to module.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_module_device_type_remove(self, module_id, device_type_id):
@@ -1359,14 +1359,14 @@ class Modules(YomboLibrary):
                 'apimsg': module_results['content']['message'],
                 'apimsghtml': module_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Device type removed from module.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def _api_change_status(self, module_id, new_status, **kwargs):
@@ -1399,12 +1399,12 @@ class Modules(YomboLibrary):
                 'apimsghtml': module_results['content']['html_message'],
                 'module_id': module_id,
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Module disabled.",
             'module_id': module_id,
         }
-        returnValue(results)
+        return results
 

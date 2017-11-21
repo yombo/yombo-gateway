@@ -55,7 +55,7 @@ except ImportError:
 from twisted.internet.ssl import ClientContextFactory
 from twisted.internet import protocol
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 from twisted.internet.utils import getProcessOutput
 
@@ -70,7 +70,7 @@ from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.lib.webinterface.auth import require_auth
-from yombo.utils import random_string, sleep, unicode_to_bytes, bytes_to_unicode, sleep
+from yombo.utils import random_string, unicode_to_bytes, bytes_to_unicode, sleep
 
 logger = get_logger('library.mqtt')
 
@@ -478,10 +478,10 @@ class MQTT(YomboLibrary):
                 try:
                     yield self.mqtt_local_client.publish(topic, message, qos)
                     results = {'status':200, 'message': 'MQTT message sent successfully.'}
-                    returnValue(json.dumps(results))
+                    return json.dumps(results)
                 except Exception as e:
                     results = {'status':500, 'message': 'MQTT message count not be sent.'}
-                    returnValue(json.dumps(results))
+                    return json.dumps(results)
 
 
     def new(self, server_hostname=None, server_port=None, username=None, password=None, ssl=None,

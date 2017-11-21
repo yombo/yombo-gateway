@@ -357,16 +357,36 @@ class Gateways(YomboLibrary):
         """
         # logger.debug("importing gateway: {gateway}", gateway=gateway)
 
-        global_invoke_all('_gateways_before_import_', called_by=self, **{'gateway': gateway})
         gateway_id = gateway["id"]
+        global_invoke_all('_gateways_before_import_',
+                          called_by=self,
+                          gateway_id=gateway_id,
+                          gateway=gateway,
+                          )
         if gateway_id not in self.gateways:
-            global_invoke_all('_gateway_before_load_', called_by=self, **{'gateway': gateway})
+            global_invoke_all('_gateway_before_load_',
+                              called_by=self,
+                              gateway_id=gateway_id,
+                              gateway=gateway,
+                              )
             self.gateways[gateway_id] = Gateway(self, gateway)
-            global_invoke_all('_gateway_loaded_', called_by=self, **{'gateway': self.gateways[gateway_id]})
+            global_invoke_all('_gateway_loaded_',
+                              called_by=self,
+                              gateway_id=gateway_id,
+                              gateway=self.gateways[gateway_id],
+                              )
         elif gateway_id not in self.gateways:
-            global_invoke_all('_gateway_before_update_', called_by=self, **{'gateway': gateway})
+            global_invoke_all('_gateway_before_update_',
+                              called_by=self,
+                              gateway_id=gateway_id,
+                              gateway=self.gateways[gateway_id],
+                              )
             self.gateways[gateway_id].update_attributes(gateway)
-            global_invoke_all('_gateway_updated_', called_by=self, **{'gateway': self.gateways[gateway_id]})
+            global_invoke_all('_gateway_updated_',
+                              called_by=self,
+                              gateway_id=gateway_id,
+                              gateway=self.gateways[gateway_id],
+                              )
 
     @inlineCallbacks
     def mqtt_incoming(self, topic, raw_payload, qos, retain):

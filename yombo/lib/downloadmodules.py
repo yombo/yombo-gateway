@@ -121,7 +121,7 @@ class DownloadModules(YomboLibrary):
         """
         modules = yield self._LocalDBLibrary.get_modules_view()
         if len(modules) == 0:
-            defer.returnValue(None)
+            return None
 
         deferredList = []
         for module in modules:
@@ -170,7 +170,7 @@ class DownloadModules(YomboLibrary):
                 d.addErrback(self.update_database_failed, data)
 
         self.download_list_deferred = yield defer.DeferredList(self.allDownloads)
-        defer.returnValue(self.download_list_deferred)
+        return self.download_list_deferred
     
     def download_cleanup(self, something):
         """

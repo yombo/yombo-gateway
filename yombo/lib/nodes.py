@@ -29,7 +29,7 @@ except ImportError:
     import json
 import msgpack
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -208,16 +208,36 @@ class Nodes(YomboLibrary):
         """
         logger.debug("node: {node}", node=node)
 
-        global_invoke_all('_nodes_before_import_', called_by=self, **{'node': node})
         node_id = node["id"]
+        global_invoke_all('_nodes_before_import_',
+                          called_by=self,
+                          node_id=node_id,
+                          node=node,
+                          )
         if node_id not in self.nodes:
-            global_invoke_all('_node_before_load_', called_by=self, **{'node': node})
+            global_invoke_all('_node_before_load_',
+                              called_by=self,
+                              node_id=node_id,
+                              node=node,
+                              )
             self.nodes[node_id] = Node(self, node)
-            global_invoke_all('_node_loaded_', called_by=self, **{'node': self.nodes[node_id]})
+            global_invoke_all('_node_loaded_',
+                              called_by=self,
+                              node_id=node_id,
+                              node=self.nodes[node_id],
+                              )
         elif node_id not in self.nodes:
-            global_invoke_all('_node_before_update_', called_by=self, **{'node': node})
+            global_invoke_all('_node_before_update_',
+                              called_by=self,
+                              node_id=node_id,
+                              node=node,
+                              )
             self.nodes[node_id].update_attributes(node, source)
-            global_invoke_all('_node_updated_', called_by=self, **{'node': self.nodes[node_id]})
+            global_invoke_all('_node_updated_',
+                              called_by=self,
+                              node_id=node_id,
+                              node=self.nodes[node_id],
+                              )
 
     def get_all(self):
         """
@@ -481,7 +501,11 @@ class Nodes(YomboLibrary):
 
         self.import_node(new_node, source)
         self.nodes[node_id].add_to_db()
-        global_invoke_all('_node_added_', called_by=self, **{'node': self.nodes[node_id]})
+        global_invoke_all('_node_added_',
+                          called_by=self,
+                          node_id=node_id,
+                          node=self.nodes[node_id],
+                          )
         results = {
             'status': 'success',
             'msg': "Node edited.",
@@ -541,7 +565,11 @@ class Nodes(YomboLibrary):
             node.update_attributes(api_data, source='parent')
             node.save_to_db()
 
-        global_invoke_all('_node_edited_', called_by=self, **{'node': node})
+        global_invoke_all('_node_edited_',
+                          called_by=self,
+                          node_id=node_id,
+                          node=self.nodes[node_id],
+                          )
         results = {
             'status': 'success',
             'msg': "Node edited.",
@@ -583,7 +611,13 @@ class Nodes(YomboLibrary):
         if source != 'node':
             node.update_attributes(api_data, source='parent')
             node.save_to_db()
-        global_invoke_all('_node_deleted_', called_by=self, **{'node': node})
+
+        global_invoke_all('_node_deleted_',
+                          called_by=self,
+                          node_id=node_id,
+                          node=self.nodes[node_id],
+                          )
+
         results = {
             'status': 'success',
             'msg': "Node deleted.",
@@ -626,7 +660,11 @@ class Nodes(YomboLibrary):
         if source != 'node':
             node.update_attributes(api_data, source='parent')
             node.save_to_db()
-        global_invoke_all('_node_enabled_', called_by=self, **{'node': node})
+        global_invoke_all('_node_enabled_',
+                          called_by=self,
+                          node_id=node_id,
+                          node=self.nodes[node_id],
+                          )
         results = {
             'status': 'success',
             'msg': "Node enabled.",
@@ -667,7 +705,11 @@ class Nodes(YomboLibrary):
         if source != 'node':
             node.update_attributes(api_data, source='parent')
             node.save_to_db()
-        global_invoke_all('_node_disabled_', called_by=self, **{'node': node})
+        global_invoke_all('_node_disabled_',
+                          called_by=self,
+                          node_id=node_id,
+                          node=self.nodes[node_id],
+                          )
         results = {
             'status': 'success',
             'msg': "Node disabled.",

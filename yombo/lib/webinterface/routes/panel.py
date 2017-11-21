@@ -9,21 +9,19 @@ This implements the "/panel" sub-route of the web interface.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://github.com/yombo/yombo-gateway/blob/master/yombo/lib/webinterface/route_devices.py>`_
 """
-
-
-from collections import OrderedDict
+# from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+# from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning
-from yombo.lib.webinterface.auth import require_auth, run_first
+# from yombo.core.exceptions import YomboWarning
+from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger
-from yombo.utils import random_string
+# from yombo.utils import random_string
 
 logger = get_logger("library.webinterface.route_devices")
 

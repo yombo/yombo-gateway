@@ -19,7 +19,7 @@ Performs various tasks as needed. Usually used to run various processes at start
 from time import time
 # Import twisted libraries
 from twisted.enterprise import adbapi
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries

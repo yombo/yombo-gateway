@@ -79,7 +79,7 @@ from functools import partial
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
 from random import randint
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, InvalidArgumentError
@@ -695,7 +695,7 @@ class Configuration(YomboLibrary):
 
             elif option in self.configs[section]:
                 self.configs[section][option]['reads'] += 1
-#                returnValue(self.configs[section][option])
+#                return self.configs[section][option]
                 self._Statistics.increment("lib.configuration.get.value", bucket_size=15, anon=True)
                 # print("cfgs: %s:%s = %s" % (section, option, self.configs[section][option]['value']))
                 return self.configs[section][option]['value']
@@ -789,15 +789,19 @@ class Configuration(YomboLibrary):
         self.configs_dirty = True
         if self.loading_yombo_ini is False:
             self.configs[section][option]['writes'] += 1
-            yield global_invoke_all('_configuration_set_', called_by=self,
-                                    **{'section':section, 'option': option, 'value': value, 'action': 'set'})
-
+            yield global_invoke_all('_configuration_set_',
+                                    called_by=self,
+                                    section=section,
+                                    option=option,
+                                    value=value,
+                                    action=set,
+                                    )
 
     def get_meta(self, section, option, meta_type='time'):
         try:
-            returnValue(self.configs_meta[section, option][meta_type])
+            return self.configs_meta[section, option][meta_type]
         except:
-            returnValue(None)
+            return None
 
     @inlineCallbacks
     def delete(self, section, option):
@@ -813,8 +817,13 @@ class Configuration(YomboLibrary):
             if option in self.configs[section]:
                 self.configs_dirty = True
                 del self.configs[section][option]
-                yield global_invoke_all('_configuration_set_', called_by=self,
-                                        **{'section': section, 'option': option, 'value': None, 'action': 'delete'})
+                yield global_invoke_all('_configuration_set_',
+                                        called_by=self,
+                                        section=section,
+                                        option=option,
+                                        value=None,
+                                        action=delete,
+                                        )
 
     ##############################################################################################################
     # The remaining functions implement automation hooks. These should not be called by anything other than the  #
@@ -835,7 +844,7 @@ class Configuration(YomboLibrary):
         input = {'s': section, 'o':option}
         key = json.dumps(input, separators=(',',':') )
         if self._loaded:
-            results = self.automation.triggers_check('configs', key, value)
+            self.automation.triggers_check('configs', key, value)
 
     def _automation_source_list_(self, **kwargs):
         """

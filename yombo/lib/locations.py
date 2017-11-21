@@ -197,16 +197,37 @@ class Locations(YomboLibrary):
         """
         # logger.debug("location: {location}", location=location)
 
-        global_invoke_all('_locations_before_import_', called_by=self, **{'location': location})
         location_id = location["id"]
+        global_invoke_all('_locations_before_import_',
+                          called_by=self,
+                          location_id=location_id,
+                          location=location,
+                          )
         if location_id not in self.locations:
-            global_invoke_all('_location_before_load_', called_by=self, **{'location': location})
+            global_invoke_all('_location_before_load_',
+                              called_by=self,
+                              location_id=location_id,
+                              location=location,
+                              )
             self.locations[location_id] = Location(self, location)
-            global_invoke_all('_location_loaded_', called_by=self, **{'location': self.locations[location_id]})
+            global_invoke_all('_location_loaded_',
+                              called_by=self,
+                              location_id=location_id,
+                              location=self.locations[location_id],
+                              )
         elif location_id not in self.locations:
-            global_invoke_all('_location_before_update_', called_by=self, **{'location': location})
+
+            global_invoke_all('_location_before_update_',
+                              called_by=self,
+                              location_id=location_id,
+                              location=self.locations[location_id],
+                              )
             self.locations[location_id].update_attributes(location)
-            global_invoke_all('_location_updated_', called_by=self, **{'location': self.locations[location_id]})
+            global_invoke_all('_location_updated_',
+                              called_by=self,
+                              location_id=location_id,
+                              location=self.locations[location_id],
+                              )
 
     def remove_location(self, location_id):
         """

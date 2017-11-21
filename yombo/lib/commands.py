@@ -19,10 +19,10 @@ The command (singular) class represents one command.
 import inspect
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboFuzzySearchError
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -196,9 +196,10 @@ class Commands(YomboLibrary):
         commands = yield self._LocalDB.get_commands()
         logger.debug("commands: {commands}", commands=commands)
         for command in commands:
-            self.import_command(command)
+            yield self.import_command(command)
         self.load_deferred.callback(10)
 
+    @inlineCallbacks
     def import_command(self, command, test_command=False):
         """
         Add a new command to memory or update an existing command.
@@ -217,31 +218,48 @@ class Commands(YomboLibrary):
         :returns: Pointer to new device. Only used during unittest
         """
         logger.debug("command: {command}", command=command)
-
-        try:
-            global_invoke_all('_command_before_import_', called_by=self, **{'command': command})
-        except Exception as e:
-            pass
         command_id = command["id"]
+
+        yield global_invoke_all('_command_before_import_',
+                                called_by=self,
+                                command_id=command_id,
+                                command=command,
+                                )
         if command_id not in self.commands:
             try:
-                global_invoke_all('_command_before_load_', called_by=self, **{'command': command})
+                yield global_invoke_all('_command_before_load_',
+                                        called_by=self,
+                                        command_id=command_id,
+                                        command=command,
+                                        )
             except Exception as e:
                 pass
             self.commands[command_id] = Command(command)
             try:
-                global_invoke_all('_command_loaded_', called_by=self, **{'command': self.commands[command_id]})
+                yield global_invoke_all('_command_loaded_',
+                                        called_by=self,
+                                        command_id=command_id,
+                                        command=command,
+                                        )
             except Exception as e:
                 pass
         elif command_id not in self.commands:
             try:
-                global_invoke_all('_command_before_update_', called_by=self, **{'command': command})
+                yield global_invoke_all('_command_before_update_',
+                                        called_by=self,
+                                        command_id=command_id,
+                                        command=command,
+                                        )
             except Exception as e:
                 pass
 
             self.commands[command_id].update_attributes(command)
             try:
-                global_invoke_all('_command_updated_', called_by=self, **{'command': self.commands[command_id]})
+                yield global_invoke_all('_command_updated_',
+                                        called_by=self,
+                                        command_id=command_id,
+                                        command=command,
+                                        )
             except Exception as e:
                 pass
 
@@ -405,14 +423,14 @@ class Commands(YomboLibrary):
                 'apimsg': command_results['content']['message'],
                 'apimsghtml': command_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Command added.",
             'command_id': command_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_edit(self, command_id, data, **kwargs):
@@ -437,14 +455,14 @@ class Commands(YomboLibrary):
                 'apimsg': command_results['content']['message'],
                 'apimsghtml': command_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Command edited.",
             'command_id': command_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_delete(self, command_id, **kwargs):
@@ -467,14 +485,14 @@ class Commands(YomboLibrary):
                 'apimsg': command_results['content']['message'],
                 'apimsghtml': command_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Command deleted.",
             'command_id': command_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_enable(self, command_id, **kwargs):
@@ -501,14 +519,14 @@ class Commands(YomboLibrary):
                 'apimsg': command_results['content']['message'],
                 'apimsghtml': command_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Command enabled.",
             'command_id': command_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_command_disable(self, command_id, **kwargs):
@@ -537,14 +555,14 @@ class Commands(YomboLibrary):
                 'apimsg': command_results['content']['message'],
                 'apimsghtml': command_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Command disabled.",
             'command_id': command_id,
         }
-        returnValue(results)
+        return results
 
     def full_list_commands(self):
         """

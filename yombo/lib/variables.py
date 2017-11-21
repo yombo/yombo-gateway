@@ -26,13 +26,13 @@ from functools import partial
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils.decorators import memoize_ttl
+# from yombo.utils.decorators import memoize_ttl
 
 logger = get_logger('library.devices')
 
@@ -70,7 +70,7 @@ class Variables(YomboLibrary):
             kwargs['data_relation_id'] = data_relation_id
 
         results = yield self._LocalDB.get_variable_data(**kwargs)
-        returnValue(results)
+        return results
 
     # @memoize_ttl(60)
     @inlineCallbacks
@@ -87,7 +87,7 @@ class Variables(YomboLibrary):
         if group_id is not None:
             kwargs['group_id'] = group_id
         results = yield self._LocalDB.get_variable_fields(**kwargs)
-        returnValue(results)
+        return results
 
     # @memoize_ttl(60)
     @inlineCallbacks
@@ -99,7 +99,7 @@ class Variables(YomboLibrary):
         :rtype: list
         """
         results = yield self._LocalDB.get_variable_fields_encrypted()
-        returnValue(results)
+        return results
 
     # @memoize_ttl(60)
     @inlineCallbacks
@@ -121,7 +121,7 @@ class Variables(YomboLibrary):
             kwargs['group_relation_id'] = group_relation_id
 
         results = yield self._LocalDB.get_variable_groups(**kwargs)
-        returnValue(results)
+        return results
 
     # @memoize_ttl(30)
     @inlineCallbacks
@@ -136,7 +136,7 @@ class Variables(YomboLibrary):
         """
         groups = yield self._LocalDB.get_variable_fields_data(**kwargs)
         # print("variables library: get_groups_fields: groups: %s" % groups)
-        returnValue(groups)
+        return groups
 
     def get_variable_fields_data_callable(self, **kwargs):
         """
@@ -172,7 +172,7 @@ class Variables(YomboLibrary):
                     if group['id'] in variable_data:
                         if field['id'] in variable_data[group['id']]:
                             groups[group['id']][field['id']] = variable_data[group['id']][field['id']]
-        returnValue(groups)
+        return groups
 
     # @memoize_ttl(10)
     @inlineCallbacks
@@ -188,7 +188,7 @@ class Variables(YomboLibrary):
         # print("variables library: get_variable_groups_fields_data: kwargs: %s" % kwargs)
         groups = yield self._LocalDB.get_variable_groups_fields_data(**kwargs)
         # print("variables library: get_variable_groups_fields_data: groups: %s" % groups)
-        returnValue(groups)
+        return groups
 
     # @memoize_ttl(10)
     def merge_variable_fields_data_data(self, fields, new_data_items):
@@ -321,7 +321,7 @@ class Variables(YomboLibrary):
                     final_value = yield self._GPG.encrypt(final_value)
                 results[field_id][data_id] = final_value
         # print("extract_variables_from_web_data: %s" % results)
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_group_add(self, data, **kwargs):
@@ -343,14 +343,14 @@ class Variables(YomboLibrary):
                 'apimsg': var_results['content']['message'],
                 'apimsghtml': var_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable group added.",
             'group_id': var_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_group_edit(self, group_id, data, **kwargs):
@@ -371,14 +371,14 @@ class Variables(YomboLibrary):
                 'apimsg': group_results['content']['message'],
                 'apimsghtml': group_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable group edited.",
             'group_id': group_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_group_delete(self, group_id, **kwargs):
@@ -398,14 +398,14 @@ class Variables(YomboLibrary):
                 'apimsg': group_results['content']['message'],
                 'apimsghtml': group_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable group deleted.",
             'group_id': group_id,
         }
-        returnValue(results)
+        return results
 
 
     @inlineCallbacks
@@ -430,14 +430,14 @@ class Variables(YomboLibrary):
                 'apimsg': group_results['content']['message'],
                 'apimsghtml': group_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable group enabled.",
             'group_id': group_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_group_disable(self, group_id, **kwargs):
@@ -461,14 +461,14 @@ class Variables(YomboLibrary):
                 'apimsg': group_results['content']['message'],
                 'apimsghtml': group_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable group disabled.",
             'group_id': group_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_field_add(self, data, **kwargs):
@@ -490,14 +490,14 @@ class Variables(YomboLibrary):
                 'apimsg': var_results['content']['message'],
                 'apimsghtml': var_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable field added.",
             'field_id': var_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_field_edit(self, field_id, data, **kwargs):
@@ -518,14 +518,14 @@ class Variables(YomboLibrary):
                 'apimsg': field_results['content']['message'],
                 'apimsghtml': field_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable field edited.",
             'field_id': field_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_field_delete(self, field_id, **kwargs):
@@ -545,14 +545,14 @@ class Variables(YomboLibrary):
                 'apimsg': field_results['content']['message'],
                 'apimsghtml': field_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable field deleted.",
             'field_id': field_id,
         }
-        returnValue(results)
+        return results
 
 
     @inlineCallbacks
@@ -577,14 +577,14 @@ class Variables(YomboLibrary):
                 'apimsg': field_results['content']['message'],
                 'apimsghtml': field_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable field enabled.",
             'field_id': field_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_field_disable(self, field_id, **kwargs):
@@ -608,11 +608,11 @@ class Variables(YomboLibrary):
                 'apimsg': field_results['content']['message'],
                 'apimsghtml': field_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Variable field disabled.",
             'field_id': field_id,
         }
-        returnValue(results)
+        return results

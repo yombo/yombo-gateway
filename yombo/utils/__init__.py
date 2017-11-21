@@ -36,11 +36,11 @@ import sys
 from time import strftime, localtime
 import zlib
 
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
 from twisted.internet import reactor
-from twisted.internet.task import react
-from twisted.internet import stdio, protocol
+# from twisted.internet.task import react
+# from twisted.internet import stdio, protocol
 from twisted.internet.defer import Deferred
 from twisted.internet.fdesc import readFromFD, setNonBlocking
 
@@ -1224,7 +1224,7 @@ def global_invoke_all(hook, **kwargs):
     """
     lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
-    returnValue(dict_merge(modules_results, lib_results))
+    return dict_merge(modules_results, lib_results)
 
 @inlineCallbacks
 def global_invoke_libraries(hook, **kwargs):
@@ -1237,7 +1237,7 @@ def global_invoke_libraries(hook, **kwargs):
     :return: a dictionary of results.
     """
     lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
-    returnValue(lib_results)
+    return lib_results
 
 @inlineCallbacks
 def global_invoke_modules(hook, **kwargs):
@@ -1250,7 +1250,7 @@ def global_invoke_modules(hook, **kwargs):
     :return: a dictionary of results.
     """
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
-    returnValue(modules_results)
+    return modules_results
 
 @memoize_ttl(3600)
 def get_public_gw_id():

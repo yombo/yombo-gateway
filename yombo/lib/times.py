@@ -1116,7 +1116,11 @@ class Times(YomboLibrary, object):
         """
         if self.is_now_init is False:
             try:
-                state_changes = global_invoke_all('_time_event_', called_by=self, **{'value': event_msg})
+                global_invoke_all('_time_event_',
+                                  called_by=self,
+                                  value=event_msg,
+                                  stoponerror=True,
+                                  )
             except YomboHookStopProcessing:
                 logger.warning("Stopping processing 'send_event_hook' due to YomboHookStopProcessing exception.")
                 return

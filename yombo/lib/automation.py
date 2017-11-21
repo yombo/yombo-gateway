@@ -55,7 +55,7 @@ import msgpack
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor
 
 # Import Yombo libraries
@@ -182,7 +182,8 @@ class Automation(YomboLibrary):
 
         """
         # Collect a list of automation source platforms.
-        automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_', called_by=self)
+        automation_sources = yield yombo.utils.global_invoke_all('_automation_source_list_',
+                                                                 called_by=self)
         # logger.debug("automation_sources: {automation_sources}", automation_sources=automation_sources)
         for component_name, item in automation_sources.items():
             for vals in item:
@@ -192,7 +193,8 @@ class Automation(YomboLibrary):
         # logger.debug("sources: {sources}", sources=self.sources)
 
         # Collect a list of automation filter platforms.
-        automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_', called_by=self)
+        automation_filters = yield yombo.utils.global_invoke_all('_automation_filter_list_',
+                                                                 called_by=self)
         # logger.debug("automation_filters: {automation_sources}", automation_sources=automation_filters)
         for component_name, item in automation_filters.items():
             for vals in item:
@@ -202,7 +204,8 @@ class Automation(YomboLibrary):
         # logger.debug("filters: {filters}", filters=self.filters)
 
         # Collect a list of automation action platforms.
-        automation_actions = yield yombo.utils.global_invoke_all('_automation_action_list_', called_by=self)
+        automation_actions = yield yombo.utils.global_invoke_all('_automation_action_list_',
+                                                                 called_by=self)
 #        logger.info("message: automation_actions: {automation_actions}", automation_actions=automation_actions)
         for component_name, item in automation_actions.items():
             for vals in item:
@@ -211,7 +214,8 @@ class Automation(YomboLibrary):
                     self.actions[vals['platform']] = vals
 
         # Collect a list of automation items, usually from user's custom modules.
-        callback_rules = yield yombo.utils.global_invoke_all('_automation_rules_list_', called_by=self)
+        callback_rules = yield yombo.utils.global_invoke_all('_automation_rules_list_',
+                                                             called_by=self)
         for component_name, component_rules in callback_rules.items():
             if 'rules' in component_rules:
                 for rule in component_rules['rules']:
@@ -223,7 +227,7 @@ class Automation(YomboLibrary):
         # logger.debug("rulesRaw: {rawrules}", rawrules=pprint(self._rulesRaw))
         if 'rules' not in self._rulesRaw:
             logger.warn("No automation rules found.")
-            returnValue(None)
+            return None
 
         # Iterate through the incoming rules, validate, and then enable the rule.
         for rule in self._rulesRaw['rules']:

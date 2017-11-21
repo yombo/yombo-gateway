@@ -22,10 +22,10 @@ from functools import partial
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
+from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboHookStopProcessing
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -443,7 +443,7 @@ class InputTypes(YomboLibrary):
                 'apimsghtml': e,
                 'device_id': '',
             }
-            returnValue(results)
+            return results
 
         input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
         # print("dt_results: %s" % input_type_results)
@@ -455,14 +455,14 @@ class InputTypes(YomboLibrary):
                 'apimsg': input_type_results['content']['message'],
                 'apimsghtml': input_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Input type added.",
             'input_type_id': input_type_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_input_type_edit(self, input_type_id, data, **kwargs):
@@ -490,7 +490,7 @@ class InputTypes(YomboLibrary):
                 'apimsghtml': e,
                 'device_id': '',
             }
-            returnValue(results)
+            return results
 
         input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
         # print("module edit results: %s" % module_results)
@@ -502,14 +502,14 @@ class InputTypes(YomboLibrary):
                 'apimsg': input_type_results['content']['message'],
                 'apimsghtml': input_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Input type edited.",
             'input_type_id': input_type_results['data']['id'],
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_input_type_delete(self, input_type_id, **kwargs):
@@ -529,14 +529,14 @@ class InputTypes(YomboLibrary):
                 'apimsg': input_type_results['content']['message'],
                 'apimsghtml': input_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Input type deleted.",
             'input_type_id': input_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_input_type_enable(self, input_type_id, **kwargs):
@@ -561,14 +561,14 @@ class InputTypes(YomboLibrary):
                 'apimsg': input_type_results['content']['message'],
                 'apimsghtml': input_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Input type enabled.",
             'input_type_id': input_type_id,
         }
-        returnValue(results)
+        return results
 
     @inlineCallbacks
     def dev_input_type_disable(self, input_type_id, **kwargs):
@@ -594,13 +594,13 @@ class InputTypes(YomboLibrary):
                 'apimsg': input_type_results['content']['message'],
                 'apimsghtml': input_type_results['content']['html_message'],
             }
-            returnValue(results)
+            return results
 
         results = {
             'status': 'success',
             'msg': "Input type disabled.",
             'input_type_id': input_type_id,
         }
-        returnValue(results)
+        return results
 
 
