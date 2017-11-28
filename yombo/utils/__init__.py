@@ -661,7 +661,7 @@ def fopen(*args, **kwargs):
     return fhandle
 
 
-def save_file(filename, content, mode = None):
+def save_file(filename, content, mode=None):
     """
     A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
 
