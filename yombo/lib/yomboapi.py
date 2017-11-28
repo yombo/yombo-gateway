@@ -222,9 +222,17 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
-        # credentials = { 'username':username, 'password':password}
-        results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
-        # logger.info("$$$3 REsults from API login creds: {results}", results=results)
+        try:
+            results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
+        except YomboAPIWarning as e:
+            results = {
+                'status': 'failed',
+                'msg': "Couldn't delete command: %s" % e.message,
+                'apimsg': "Couldn't delete command: %s" % e.message,
+                'apimsghtml': "Couldn't delete command: %s" % e.html_message,
+            }
+            return results
+        logger.debug("$$$3 REsults from API login creds: {results}", results=results)
 
         if results['content']['code'] != 200:
             return False
@@ -239,12 +247,16 @@ class YomboAPI(YomboLibrary):
         if self.allow_system_session is False:
             return
         captured_id = data['user_id']
-        owner_id = self._Configs.get("core", "owner_id")
-        if captured_id == owner_id:
-            self.save_system_login_key(data['login_key'])
-            self.save_system_session(data['session'])
-            self.valid_system_session = True
-            self.valid_login_key = True
+        try:
+            owner_id = self._Configs.get("core", "owner_id")
+        except KeyError as e:
+            pass
+        else:
+            if captured_id == owner_id:
+                self.save_system_login_key(data['login_key'])
+                self.save_system_session(data['session'])
+                self.valid_system_session = True
+                self.valid_login_key = True
 
     @inlineCallbacks
     def gateways(self, session_info=None):
@@ -401,7 +413,7 @@ class YomboAPI(YomboLibrary):
                 'message': 'Unknown api error',
                 'html_message': 'Unknown api error',
             }
-            print("Error content: %s" % content)
+            logger.warn("Error content: {content}", content=content)
             return results
         else:
             if 'response' in content:
