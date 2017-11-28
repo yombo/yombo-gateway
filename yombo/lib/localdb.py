@@ -706,12 +706,17 @@ class LocalDB(YomboLibrary):
     ### GPG     #####
     #################
     @inlineCallbacks
+    def delete_gpg_key(self, fingerprint):
+        results = yield self.dbconfig.delete('gpg_keys',
+                                             where=['fingerprint = ?', fingerprint])
+        return results
+
+    @inlineCallbacks
     def get_gpg_key(self, **kwargs):
-        records = None
         if 'gwuuid' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['gwuuid = ?', kwargs['gwuuid']])
+            records = yield self.dbconfig.select("nodes", where=['gwuuid = ?', kwargs['gwuuid']])
         elif 'keyid' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['key_id = ?', kwargs['keyid']])
+            records = yield self.dbconfig.select("gpg_keys", where=['keyid = ?', kwargs['keyid']])
         elif 'fingerprint' in kwargs:
             records = yield self.dbconfig.select("gpg_keys", where=['fingerprint = ?', kwargs['fingerprint']])
         else:
@@ -727,7 +732,11 @@ class LocalDB(YomboLibrary):
                 'publickey': record['publickey'],
                 'length': record['length'],
                 'have_private': record['have_private'],
-                'expires': record['expires'],
+                'ownertrust': record['ownertrust'],
+                'trust': record['trust'],
+                'algo': record['algo'],
+                'type': record['type'],
+                'expires_at': record['expires_at'],
                 'created_at': record['created_at'],
             }
             keys[record['fingerprint']] = key
@@ -741,7 +750,11 @@ class LocalDB(YomboLibrary):
         key.keyid = gwkey['keyid']
         key.publickey = gwkey['publickey']
         key.length = gwkey['length']
-        key.expires = gwkey['expires']
+        key.ownertrust = gwkey['ownertrust']
+        key.trust = gwkey['trust']
+        key.algo = gwkey['algo']
+        key.type = gwkey['type']
+        key.expires_at = gwkey['expires_at']
         key.created_at = gwkey['created_at']
         key.have_private = gwkey['have_private']
         if 'notes' in gwkey:
