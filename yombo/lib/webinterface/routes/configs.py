@@ -298,4 +298,6 @@ def route_configs(webapp):
         @require_auth(login_redirect="/configs/genrate_key_status")
         def page_gpg_keys_generate_key_status(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_generate_key_status.html')
-            return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(), getattr=getattr, type=type)
+            return page.render(atoms=webinterface._Libraries['atoms'].get_atoms(),
+                               getattr=getattr,
+                               type=type)

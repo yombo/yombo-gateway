@@ -2,10 +2,16 @@ from collections import OrderedDict
 from time import time
 
 from twisted.internet.defer import inlineCallbacks
+# from twisted.internet import reactor
 
-from yombo.core.exceptions import YomboWarningCredentails, YomboAPIWarning
+from yombo.core.exceptions import YomboAPIWarning
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 from yombo.utils import is_true_false
+from yombo.core.log import get_logger
+
+logger = get_logger("library.webinterface.routes.setup_wizard")
+
+
 
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
@@ -50,9 +56,12 @@ def route_setup_wizard(webapp):
                     return webinterface.redirect(request, '/setup_wizard/1')
 
             try:
-                results = yield webinterface.api.gateway_index()
-            except YomboWarningCredentails:
-                webinterface.add_alert("System credentails appear to be invalid. Please login as the gateway owner.")
+                results = yield webinterface._YomboAPI.request('GET',
+                                                               '/v1/gateway/',
+                                                               None,
+                                                               session['yomboapi_session'])
+            except YomboAPIWarning as e:
+                webinterface.add_alert("System credentials appear to be invalid. Please login as the gateway owner.")
                 session['auth'] = False
                 return webinterface.redirect(request, '/setup_wizard/2')
             available_gateways = {}
@@ -137,11 +146,17 @@ def route_setup_wizard(webapp):
         def page_setup_wizard_3_show_form(webinterface, request, wizard_gateway_id, available_gateways, session):
             settings = {}
             if wizard_gateway_id != 'new':
-                results = yield webinterface.api.gateway_config_index(wizard_gateway_id)
+                try:
+                    results = yield webinterface._YomboAPI.request("GET",
+                                                                   "/v1/gateway/%s/config" % wizard_gateway_id,
+                                                                   None,
+                                                                   session['yomboapi_session'])
+                except YomboAPIWarning as e:
+                    pass
                 for config in results['data']:
                     if config['section'] not in settings:
                         settings[config['section']] = {}
-                    settings[config['section']][config['option']] = config
+                    settings[config['section']][config['option_name']] = config
 
             if 'location' not in settings:
                 settings['location'] = {}
@@ -513,7 +528,6 @@ def route_setup_wizard(webapp):
             try:
                 submitted_gpg_action = request.args.get('gpg_action')[0]  # underscore here due to jquery
             except:
-                valid_submit = False
                 webinterface.add_alert("Please select an appropriate GPG/PGP Key action.")
                 return webinterface.redirect(request, '/setup_wizard/5')
 
@@ -523,15 +537,12 @@ def route_setup_wizard(webapp):
                     'label': session['setup_wizard_gateway_label'],
                     'description': session['setup_wizard_gateway_description'],
                 }
-                results = yield webinterface.api.request('POST', '/v1/gateway', data)
-                if results['code'] > 299:
-                    webinterface.add_alert(results['content']['html_message'], 'warning')
-                    error_codes = results['content']['error_codes']
-                    if len(error_codes) > 0:
-                        for error_code in error_codes:
-                            if error_code.startswith('duplicate-entry'):
-                                if error_code.endswith('label'):
-                                    return webinterface.redirect(request, '/setup_wizard/3')
+                try:
+                    results = yield webinterface._YomboAPI.request('POST', '/v1/gateway',
+                                                                   data,
+                                                                   session['yomboapi_session'])
+                except YomboAPIWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/setup_wizard/3')
                 session['setup_wizard_gateway_id'] = results['data']['id']
 
@@ -540,12 +551,12 @@ def route_setup_wizard(webapp):
                     'label': session['setup_wizard_gateway_label'],
                     'description': session['setup_wizard_gateway_description'],
                 }
-                results = yield webinterface.api.request('PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'])
+                results = yield webinterface._YomboAPI.request('PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'])
                 if results['code'] > 299:
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
 
-                results = yield webinterface.api.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'])
+                results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'])
                 if results['code'] > 299:
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
@@ -582,12 +593,9 @@ def route_setup_wizard(webapp):
             print("gf 1")
             if submitted_gpg_action == 'new':  # make GPG keys!
                 print("gf 2")
-                gpg_info = yield webinterface._GPG.generate_key()
-                print("gf 3")
-                webinterface._Configs.set('gpg', 'keyid', gpg_info['keyid'])
-                print("gf 4")
-                webinterface._Configs.set('gpg', 'keyascii', gpg_info['keypublicascii'])
-                print("gf 5")
+                logger.info("New gpg key will be generated on next restart.")
+                # reactor.callLater(0.0001, webinterface._GPG.generate_key)
+                # yield webinterface._GPG.generate_key()
             elif submitted_gpg_action == 'import':  # make GPG keys!
                 try:
                     submitted_gpg_private = request.args.get('gpg-private-key')[0]
@@ -605,7 +613,6 @@ def route_setup_wizard(webapp):
                     key_ascii = webinterface._GPG.get_key(submitted_gpg_action)
                     webinterface._Configs.set('gpg', 'keyid', submitted_gpg_action)
                     webinterface._Configs.set('gpg', 'keyascii', key_ascii)
-
                 else:
                     webinterface.add_alert("Existing GPG/PGP key not fount.")
                     return webinterface.redirect(request, '/setup_wizard/5')
@@ -640,28 +647,21 @@ def route_setup_wizard(webapp):
                 webinterface._Configs.set('dns', 'allow_change_at', dns_results['data']['allow_change_at'])
                 webinterface._Configs.set('dns', 'fqdn', dns_results['data']['fqdn'])
 
+            dns_fqdn = webinterface._Configs.get('dns', 'fqdn', None)
             dns_name = webinterface._Configs.get('dns', 'dns_name', None)
             dns_domain = webinterface._Configs.get('dns', 'dns_domain', None)
             allow_change = webinterface._Configs.get('dns', 'allow_change_at', 0)
             fqdn = webinterface._Configs.get('dns', 'fqdn', None, False)
-            if fqdn is not None:
-                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6-dnsexists.html')
-                return page.render(
-                    alerts=webinterface.get_alerts(),
-                    dns_name=dns_name,
-                    dns_domain=dns_domain,
-                    allow_change=allow_change,
-                    fqdn=fqdn,
-                )
-            else:
-                page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6-setdns.html')
-                return page.render(
-                    alerts=webinterface.get_alerts(),
-                    dns_name=dns_name,
-                    dns_domain=dns_domain,
-                    allow_change=allow_change,
-                    fqdn=fqdn,
-                )
+            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/6.html')
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                dns_fqdn=dns_fqdn,
+                dns_name=dns_name,
+                dns_domain=dns_domain,
+                allow_change=allow_change,
+                fqdn=fqdn,
+                current_time=time()
+            )
 
         @webapp.route('/7', methods=['GET'])
         @require_auth()
@@ -678,26 +678,20 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def page_setup_wizard_7_post(webinterface, request, session):
             """
-            Last step is to handle the GPG key. One of: create a new one, import one, or select an existing one.
+            Last step is to handle the DNS. Either create a new one, skip, or edit existing.
 
             :param webinterface:
             :param request:
             :param session:
             :return:
             """
-            result_output = ""
-            print("SW7 - 1")
             try:
-                print("SW7 - 2")
                 submitted_dns_name = request.args.get('dns_name')[0]  # underscore here due to jquery
             except:
-                print("SW7 - 3")
                 webinterface.add_alert("Select a valid dns name.")
                 return webinterface.redirect(request, '/setup_wizard/6')
 
-            print("SW7 - 4")
             try:
-                print("SW7 - 5")
                 submitted_dns_domain = request.args.get('dns_domain_id')[0]  # underscore here due to jquery
             except:
                 print("SW7 - 6")

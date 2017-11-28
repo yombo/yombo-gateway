@@ -50,14 +50,15 @@
                         <h3>Dynamic DNS setup</h3>
                         <p><strong>DNS can only be changed once every 30 days.</strong></p>
                         <ul>
-                            <li>Current FQDN: dns_fqdn </li>
+                            <li>Current FQDN: {{ dns_fqdn }} </li>
                             <li>Current Sub-domain: {{ dns_name }}</li>
                             <li>Current Domain: {{ dns_domain }}</li>
                             <li>Allowed Next Change: {{ allow_change|epoch_to_human }}</li>
                         </ul>
                         <hr>
+                        {% if allow_change < current_time %}
                         <h4>Set new DNS</h4>
-
+                        <p>
                         <input type="hidden" name="dns_domain_id" />
                         <label>Domain prefix: </label>
                         <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
@@ -73,6 +74,9 @@
                             <tr rowspan="2"><td><strong>Search for domains first.</strong></td> </tr>
                         </table>
                         </p>
+                        <hr>
+                        {% endif %}
+                        <a class="btn btn-lg btn-primary" href="/setup_wizard/7">Skip Dynamic DNS <i class="fa fa-chevron-right fa-remove pull-right"></i></a>
                     </div>
                 </div>
             </div>
