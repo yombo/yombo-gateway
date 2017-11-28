@@ -227,9 +227,9 @@ class SSLCert(object):
 
         :return:
         """
+        logger.debug("Checking if I ({sslname}) need to be updated.", sslname=self.sslname)
         # Look for any tasks to do.
         self.check_updated_fqdn()  # if fqdn of cert doesn't match current, get new cert.
-        # print("current_expires: %s - %s" % (self.current_expires, type(self.current_expires)))
 
         # 1) See if we need to generate a new cert.
         if self.csr_next is None or self.next_is_valid is None:
@@ -274,6 +274,7 @@ class SSLCert(object):
                 # print("self.key_current: (should be None): %s" % self.key_current)
                 # print("self.current_expires: (should be not NOne): %s" % self.current_expires)
                 # print("int(time() + (30 * 24 * 60 * 60)): (should be less then above number): %s" % int(time() + (30 * 24 * 60 * 60)))
+                # print("should submit csr 10")
                 self.submit_csr()
         else:
             raise YomboWarning("next_is_valid is in an unknowns state.")
@@ -485,7 +486,7 @@ class SSLCert(object):
                     try:
                         return int(input)
                     except Exception as e:
-                        print("ERROR: Cannot convert to int: %s" % e)
+                        logger.warn("ERROR: Cannot convert to int: {e}", e=e)
                         return input
 
                 if csr_read:
@@ -698,21 +699,22 @@ class SSLCert(object):
             logger.warn("Requested to submit CSR, but these are missing: {missing}", missing=".".join(missing))
             raise YomboWarning("Unable to submit CSR.")
 
-    def yombo_csr_response(self, properties, msg, correlation_info):
+    def yombo_csr_response(self, properties, body, correlation_info):
         """
         A response from a CSR request has been received. Lets process it.
 
         :param properties: Properties of the AQMP message.
-        :param msg: The message itself.
+        :param body: The message itself.
         :param correlation: Any correlation data regarding the AQMP message. We can check for timing, etc.
         :return:
         """
-        if msg['status'] == "signed":
-            self.chain_next = msg['chain_text']
-            self.cert_next = msg['cert_text']
-            self.cert_next = msg['cert_text']
-            self.next_signed = msg['cert_signed']
-            self.next_expires = msg['cert_expires']
+        logger.debug("Got CSR response: {body}", body=body)
+        if body['status'] == "signed":
+            self.chain_next = body['chain_text']
+            self.cert_next = body['cert_text']
+            self.cert_next = body['cert_text']
+            self.next_signed = body['cert_signed']
+            self.next_expires = body['cert_expires']
             self.next_is_valid = True
             self.sync_to_file()
             self.check_if_rotate_needed()

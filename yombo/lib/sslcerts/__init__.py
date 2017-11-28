@@ -112,7 +112,11 @@ class SSLCerts(YomboLibrary):
         :return:
         """
         self.check_if_certs_need_update_loop = LoopingCall(self.check_if_certs_need_update)
-        self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict', 'save_interval',random_int(60*60*24, .1), False))
+        self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict',
+                                                                     'save_interval',
+                                                                     random_int(60*60*24, .1),
+                                                                     False),
+                                                   False)
 
         # Check if any libraries or modules need certs.
         sslcerts = yield global_invoke_all('_sslcerts_',
@@ -196,9 +200,9 @@ class SSLCerts(YomboLibrary):
 
            self._SSLCerts('library_webinterface', self.have_updated_ssl_cert)
         """
-        logger.debug("looking for: {sslname_requested}", sslname_requested=sslname_requested)
+        # logger.debug("looking for: {sslname_requested}", sslname_requested=sslname_requested)
         if sslname_requested in self.managed_certs:
-            logger.debug("found by cert! {sslname_requested}", sslname_requested=sslname_requested)
+            # logger.debug("found by cert! {sslname_requested}", sslname_requested=sslname_requested)
             return self.managed_certs[sslname_requested].get()
         else:
             if sslname_requested != 'selfsigned':
@@ -416,30 +420,31 @@ class SSLCerts(YomboLibrary):
         }
 
         request_msg = self._AMQPYombo.generate_message_request(
-            exchange_name='ysrv.e.gw_config',
+            exchange_name='ysrv.e.gw_sslcerts',
             source='yombo.gateway.lib.amqpyobo',
-            destination='yombo.server.configs',
+            destination='yombo.server.sslcerts',
             request_type='csr_request',
             body=body,
+            callback=self.send_csr_request_response,
         )
         self._AMQPYombo.publish(**request_msg)
         return request_msg
 
-    def send_csr_request_response(self, msg=None, properties=None, correlation_info=None, **kwargs):
+    def send_csr_request_response(self, body=None, properties=None, correlation_info=None, **kwargs):
         """
         Called when we get a signed cert back from a CSR.
         
-        :param msg: 
+        :param body:
         :param properties: 
         :param correlation_info: 
         :param kwargs: 
         :return: 
         """
-        logger.debug("Received CSR response mesage: {msg}", msg=msg)
-        if 'sslname' not in msg:
+        logger.debug("Received CSR response mesage: {body}", body=body)
+        if 'sslname' not in body:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return
-        sslname = bytes_to_unicode(msg['sslname'])
+        sslname = bytes_to_unicode(body['sslname'])
         # print("sslname: %s" % sslname)
         # print("sslname: %s" % type(sslname))
         # print("managed_certs: %s" % self.managed_certs)
@@ -448,22 +453,23 @@ class SSLCerts(YomboLibrary):
             logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes: %s" %
                         sslname)
             if sslname in self.received_message_for_unknown:
-                self.received_message_for_unknown[sslname].append(msg)
+                self.received_message_for_unknown[sslname].append(body)
             else:
-                self.received_message_for_unknown[sslname] = [msg]
+                self.received_message_for_unknown[sslname] = [body]
         else:
-            self.managed_certs[sslname].yombo_csr_response(properties, msg, correlation_info)
+            self.managed_certs[sslname].yombo_csr_response(properties, body, correlation_info)
 
-    def amqp_incoming(self, **kwargs):
+    def amqp_incoming_response(self, headers, body, properties, **kwargs):
         """
-        Currently unused... Will be in the future.
+        Handles responses to system calls to yombo servers.
+        """
 
-        :param properties:
-        :param msg:
-        :param correlation:
-        :return:
-        """
-        pass
+        response_type = headers['response_type']
+        if response_type == "ping":
+            self.process_response_ping(headers, body, properties, **kwargs)
+        else:
+            logger.warn("Received unknown response_type: {response_type}",
+                        response_type=response_type)
 
     def validate_csr_private_certs_match(self, csr_text, key_text):
         csr = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr_text)
