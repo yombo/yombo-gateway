@@ -43,7 +43,7 @@ from twisted.internet.task import LoopingCall
 from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboRestart, YomboCritical, YomboWarning
+from yombo.core.exceptions import YomboRestart, YomboCritical
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 import yombo.ext.totp
@@ -181,7 +181,6 @@ class WebInterface(YomboLibrary):
         self._build_dist()  # Make all the JS and CSS files
         self.secret_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp',
                                      yombo.utils.random_string(length=16, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'))
-        self.api = self._Loader.loadedLibraries['yomboapi']
         self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.misc_wi_data = {}
         self.sessions = Sessions(self._Loader)
