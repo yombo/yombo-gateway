@@ -60,11 +60,6 @@ class Startup(YomboLibrary):
         else:
             master_gateway = self._Configs.get("core", "master_gateway", None, False)
 
-        gpg_key = self._Configs.get("gpg", "keyid", None)
-        gpg_key_ascii = self._Configs.get("gpg", "keyascii", None)
-        if gpg_key is None or gpg_key == '' or gpg_key_ascii is None or gpg_key_ascii == '':
-            items_needed.append("GPG keys")
-
         if len(items_needed) > 0:
             needed_text = '</li><li>'.join(items_needed)
             print("start needetext: %s" % needed_text)
