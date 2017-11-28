@@ -29,7 +29,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
-logger = get_logger('library.handler.amqpcontrol')
+logger = get_logger('library.handler.amqpsystem')
 
 
 class AmqpSystemHandler(YomboLibrary):
