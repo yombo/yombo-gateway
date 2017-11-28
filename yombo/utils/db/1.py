@@ -318,20 +318,26 @@ def create_table_gateways(Registry, **kwargs):
 def create_table_gpg_keys(Registry, **kwargs):
     """ Used for quick access to GPG keys instead of key ring. """
     table = """CREATE TABLE `gpg_keys` (
-        `id`          INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        `notes`       TEXT,
-        `endpoint`    TEXT NOT NULL,
-        `keyid`       TEXT NOT NULL,
-        `fingerprint` TEXT NOT NULL,
-        `length`      INTEGER NOT NULL,
-        `expires`     INTEGER NOT NULL,
-        `publickey`   TEXT NOT NULL,
+        `notes`        TEXT,
+        `endpoint`     TEXT NOT NULL,
+        `keyid`        TEXT NOT NULL,
+        `fingerprint`  TEXT NOT NULL,
+        `length`       INTEGER NOT NULL,
+        `expires_at`   INTEGER NOT NULL,
+        `sigs`         TEXT,
+        `subkeys`      TEXT,
+        `ownertrust`   TEXT NOT NULL,
+        `trust`        TEXT NOT NULL,
+        `algo`         TEXT NOT NULL,
+        `type`         TEXT NOT NULL,
+        `uids`         TEXT,
+        `publickey`    TEXT NOT NULL,
         `have_private` INTEGER NOT NULL,
         `created_at`   INTEGER NOT NULL
         );"""
     yield Registry.DBPOOL.runQuery(table)
-    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'endpoint'))
-    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
+    yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'keyid'))
+    # yield Registry.DBPOOL.runQuery(create_index('gpg_keys', 'fingerprint'))
 
 @inlineCallbacks
 def create_table_input_types(Registry, **kwargs):

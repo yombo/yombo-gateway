@@ -25,21 +25,20 @@ It's important to note that any module within the Yombo system will have access 
 
 # Import python libraries
 import yombo.ext.gnupg as gnupg
-# import os
+import os.path
 from subprocess import Popen, PIPE
-import base64
 from Crypto import Random
 from Crypto.Cipher import AES
 import hashlib
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred, returnValue
-from twisted.internet import reactor, threads
+from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet import threads
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
-from yombo.utils import random_string, bytes_to_unicode
+from yombo.utils import random_string, bytes_to_unicode, read_file, save_file
 
 from yombo.core.log import get_logger
 logger = get_logger('library.gpg')
@@ -48,31 +47,46 @@ class GPG(YomboLibrary):
     """
     Manage all GPG functions.
     """
+    @property
+    def public_key(self):
+        # print("my keys:%s " % self.__gpg_keys)
+        return self.__gpg_keys[self.mykeyid()]['publickey']
+
+    @public_key.setter
+    def public_key(self, val):
+        return
+
+    @property
+    def public_key_id(self):
+        # print("my keys:%s " % self.__gpg_keys)
+        return self.__gpg_keys[self.mykeyid()]['keyid']
+
+    @public_key_id.setter
+    def public_key_id(self, val):
+        return
+
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Get the GnuPG subsystem up and loaded.
         """
         self.aes_blocksize = 32
-        self._key_generation_status = {}
+        self.key_generation_status = None
+        self._generating_key = False
+        self.__gpg_keys = {}
+        self._generating_key_deferred = None
 
         self.gpg = gnupg.GPG(gnupghome="usr/etc/gpg")
-        self.sync_keyring_to_db()
-
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.gwuuid = self._Configs.get2('core', 'gwuuid', None, False)
         self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
-        self.mykeyascii = self._Configs.get2('gpg', 'keyascii', None, False)
+        # self.mypublickey = self._Configs.get2('gpg', 'publickey', None, False)
+        # self.__myprivatekey = self._Configs.get2('gpg', 'privatekey', None, False)
+        self.__mypassphrase = None  # will be loaded by sync_keyring_to_db() calls
 
-        # self.initDefer = Deferred()
-        # self._done_init()
-        # return self.initDefer
-
-#    @inlineCallbacks
-    def _load_(self, **kwargs):
-        """
-        Get the root cert from database and make sure it's in our public keyring.
-        """
-        self._AMQPLibrary = self._Libraries['AMQPYombo']
+        if self._Loader.operating_mode == 'run':
+            yield self.sync_keyring_to_db()
+            yield self.validate_gpg_ready()
 
     def _start_(self, **kwargs):
         """
@@ -85,7 +99,9 @@ class GPG(YomboLibrary):
         """
         We don't do anything, but 'pass' so we don't generate an exception.
         """
-        pass
+        if self._generating_key is True:
+            self._generating_key_deferred = Deferred
+            return self._generating_key_deferred
 
     def _unload_(self, **kwargs):
         """
@@ -95,23 +111,31 @@ class GPG(YomboLibrary):
 
     def _done_init(self):
         self.initDefer.callback(10)
-    #
-    # def _configuration_set_(self, **kwargs):
-    #     """
-    #     Receive configuruation updates and adjust as needed.
-    #
-    #     :param kwargs: section, option(key), value
-    #     :return:
-    #     """
-    #     section = kwargs['section']
-    #     option = kwargs['option']
-    #     value = kwargs['value']
-    #
-    #     if section == 'core':
-    #         if option == 'gwid':
-    #             self.gateway_id = value
-    #         if option == 'gwuuid':
-    #             self.gwuuid = value
+
+    @inlineCallbacks
+    def load_passphrase(self, keyid=None):
+        if keyid is None:
+            keyid = self.mykeyid()
+        if keyid is not None:
+            secret_file = "%s/usr/etc/gpg/%s.pass" % (self._Atoms.get('yombo.path'), keyid)
+            if os.path.exists(secret_file):
+                phrase = yield read_file(secret_file)
+                if keyid == self.mykeyid():
+                    self.__mypassphrase = phrase
+                return bytes_to_unicode(phrase)
+        return None
+
+    @inlineCallbacks
+    def validate_gpg_ready(self):
+        valid = True
+        if self.mykeyid is None:
+            valid = False
+            logger.warn("No GPG keyid found! Unable to process GPG items.")
+        if self.__mypassphrase is None:
+            valid = False
+            logger.warn("No GPG passphrase found! Unable to process GPG items.")
+        if valid is False:
+            yield self.generate_key()
 
     ##########################
     #### Key management  #####
@@ -123,33 +147,67 @@ class GPG(YomboLibrary):
 
         :return:
         """
-        logger.debug("syncing gpg keys into db")
-        self.local_db = self._Libraries['localdb']
+        if self._Loader.operating_mode == 'first_run':
+            logger.info("Not syncing GPG keys to database on first run.")
 
-        db_keys = yield self.local_db.get_gpg_key()
+        db_keys = yield self._LocalDB.get_gpg_key()
+        # logger.debug("db_keys: {db_keys}", db_keys=db_keys)
         gpg_public_keys = yield self.gpg.list_keys()
         gpg_private_keys = yield self.gpg.list_keys(True)
+        # logger.debug("1gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys)
+        # logger.debug("1gpg_private_keys: {gpg_keys}", gpg_keys=gpg_private_keys)
 
         gpg_public_keys = self._format_list_keys(gpg_public_keys)
         gpg_private_keys = self._format_list_keys(gpg_private_keys)
 
-        logger.debug("db_keys: {db_keys}", db_keys=db_keys)
-        logger.debug("gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys)
-        logger.debug("gpg_private_keys: {gpg_keys}", gpg_keys=gpg_private_keys)
+        # logger.debug("2gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys)
+        # logger.debug("2gpg_private_keys: {gpg_keys}", gpg_keys=gpg_private_keys)
 
-        for fingerprint, data in gpg_public_keys.items():
+        for fingerprint in list(gpg_public_keys):
+            data = gpg_public_keys[fingerprint]
+            if int(gpg_public_keys[fingerprint]['length']) < 2048:
+                logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable",
+                             length=gpg_public_keys[fingerprint]['length'])
+                continue
+            data['publickey'] = self.gpg.export_keys(data['fingerprint'])
+            data['notes'] = 'GPG key loaded from keyring'
+            if data['fingerprint'] in gpg_private_keys:
+                data['have_private'] = 1
+            else:
+                data['have_private'] = 0
+            if data['have_private'] == 1:
+                try:
+                    passphrase = yield self.load_passphrase(data['keyid'])
+                    data['privatekey'] = self.gpg.export_keys(data['fingerprint'],
+                                                              secret=True,
+                                                              passphrase=passphrase,
+                                                              expect_passphrase=True)
+                    data['passphrase'] = passphrase
+                except Exception as e:
+                    data['have_private'] = 0
+            else:
+                try:
+                    data['privatekey'] = self.gpg.export_keys(data['fingerprint'],
+                                                              secret=True,
+                                                              expect_passphrase=False)
+                except Exception as e:
+                    data['have_private'] = 0
+
+            # sync to local cache
+            self.__gpg_keys[data['keyid']] = data
+
+            # sync to database
             if fingerprint not in db_keys:
-                if int(gpg_public_keys[fingerprint]['length']) < 2048:
-                    logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable", length=gpg_public_keys[fingerprint]['length'])
-                else:
-                    data['publickey'] = self.gpg.export_keys(data['fingerprint'])
-                    data['notes'] = _('GPG key loaded from keyring')
-                    if data['fingerprint'] in gpg_private_keys:
-                        data['have_private'] = 1
-                    else:
-                        data['have_private'] = 0
-                    logger.debug("Adding key to keyring: {key}", key=data)
-                    yield self.local_db.insert_gpg_key(data)
+                yield self._LocalDB.insert_gpg_key(data)
+            else:
+                del db_keys[fingerprint]
+            # del gpg_public_keys[fingerprint]
+
+        logger.debug("db_keys: {gpg_keys}", gpg_keys=db_keys.keys())
+        logger.debug("gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys.keys())
+
+        for fingerprint in list(db_keys):
+            yield self._LocalDB.delete_gpg_key(fingerprint)
 
     def remote_get_key(self, key_hash, request_id=None):
         """
@@ -299,16 +357,16 @@ class GPG(YomboLibrary):
                 'endpoint': key_comment,
                 'keyid': record['keyid'],
                 'fingerprint': record['fingerprint'],
-                'expires' : record['expires'],
-                'sigs' : record['sigs'],
-                'subkeys' : record['subkeys'],
-                'length' : record['length'],
-                'ownertrust' : record['ownertrust'],
-                'algo' : record['algo'],
-                'created_at' : record['date'],
-                'trust' : record['trust'],
-                'type' : record['type'],
-                'uids' : record['uids'],
+                'expires_at': int(record['expires']),
+                'sigs': record['sigs'],
+                'subkeys': record['subkeys'],
+                'length': int(record['length']),
+                'ownertrust': record['ownertrust'],
+                'algo': record['algo'],
+                'created_at': int(record['date']),
+                'trust': record['trust'],
+                'type': record['type'],
+                'uids': record['uids'],
             }
             key = bytes_to_unicode(key)
             variables[record['fingerprint']] = key
@@ -317,38 +375,45 @@ class GPG(YomboLibrary):
 #  'ownertrust': u'u', 'algo': u'1', 'fingerprint': u'F7ADD4CD09A0DC9CC5F63B5ACDAADDFAA405F78F', 'date': u'1463636545', 'trust': u'u', 'type': u'pub',
 #  'uids': [u'Yombo Gateway (L2rwJHeKuRSUQoxQFOQP7RnB) <L2rwJHeKuRSUQoxQFOQP7RnB@yombo.net>']},
 
-    def generate_key_status(self, request_id):
-        return self._key_generation_status[request_id]
-
     @inlineCallbacks
-    def generate_key(self, request_id = None):
+    def generate_key(self):
         """
-        Generates a new GPG key pair. Updates yombo.ini and marks it to be sent when gateway conencts to server
-        again.
+        Generates a new GPG key pair. Updates yombo.ini and marks it to be sent when gateway
+        connects to server again.
         """
-        if self.gateway_id is 'local' or self.gwuuid is None:
-            self._key_generation_status[request_id] = 'failed-gateway not setup'
+        operating_mode = self._Loader.operating_mode
+        if operating_mode != "run":
+            logger.info("Not creating GPG key, in wrong run mode: {mode}", mode=operating_mode)
+
+        if self._generating_key is True:
             return
+        self._generating_key = True
+        gwid = self.gateway_id()
+        gwuuid = self.gwuuid()
+        if gwid is 'local' or gwuuid is None:
+            self.key_generation_status = 'failed-gateway not setup'
+            self._generating_key = False
+            return
+        passphrase = random_string(length=125)
         input_data = self.gpg.gen_key_input(
-            name_email=self.gwuuid() + "@yombo.net",
+            name_email=gwuuid + "@yombo.net",
             name_real="Yombo Gateway",
-            name_comment="gw_" + self.gwuuid(),
+            name_comment="gw_" + gwuuid,
             key_type='RSA',
-            key_length=2048,
-            expire_date='5y')
+            key_length=4096,
+            expire_date='30y',
+            passphrase=passphrase)
 
-        if request_id is None:
-            request_id = random_string(length=16)
-        self._key_generation_status[request_id] = 'working'
-        newkey = yield self.gpg.gen_key(input_data)
-        self._key_generation_status[request_id] = 'done'
+        self.key_generation_status = 'working'
+        newkey = yield threads.deferToThread(self._gen_key, input_data)
+        # print("bb 3: newkey: %s" % newkey)
+        # print("bb 3: newkey: %s" % newkey.__dict__)
+        # print("bb 3: newkey: %s" % type(newkey))
+        self.key_generation_status = 'done'
 
-        # print("newkey!!!!!! ====")
-        # print(format(newkey))
-        # print("request id =")
-        # print(request_id)
         if newkey == '':
             logger.error("ERROR: Unable to generate GPG keys.... Is GPG installed and configured? Is it in your path?")
+            self._generating_key = False
             raise YomboCritical("Error with python GPG interface.  Is it installed?")
 
         private_keys = self.gpg.list_keys(True)
@@ -356,26 +421,65 @@ class GPG(YomboLibrary):
 
         for key in private_keys:
             if str(key['fingerprint']) == str(newkey):
-                keyid=key['keyid']
+                keyid = key['keyid']
+                # fingerprint = key['fingerprint']
         asciiArmoredPublicKey = self.gpg.export_keys(keyid)
+        self._Configs.set('gpg', 'keyid', keyid)
+        secret_file = "%s/usr/etc/gpg/%s.pass" % (self._Atoms.get('yombo.path'), keyid)
+        yield save_file(secret_file, passphrase)
+        self.__mypassphrase = passphrase
 
         gpg_keys = yield self.gpg.list_keys(keyid)
         keys = self._format_list_keys(gpg_keys)
 
-        # print("keys: %s" % type(keys))
-        # print("keys: %s" % keys)
+        print("keys: %s" % type(keys))
+        print("newkey1: %s" % newkey)
+        print("newkey2: %s" % str(newkey))
+        print("keys: %s" % keys)
 
-        data = keys[format(newkey)]
+        data = keys[str(newkey)]
         data['publickey'] = asciiArmoredPublicKey
         data['notes'] = 'Key generated during wizard setup.'
         data['have_private'] = 1
-        yield self.local_db.insert_gpg_key(data)
+        yield self.sync_keyring_to_db()
 
-        returnValue({'keyid': keyid, 'keypublicascii': asciiArmoredPublicKey})
+        self._generating_key = False
 
-    def get_key(self, keyid):
-        asciiArmoredPublicKey = self.gpg.export_keys(keyid)
-        return asciiArmoredPublicKey
+        self._Configs.set('gpg', 'keyid', keyid)
+        if self._generating_key_deferred is not None and self._generating_key_deferred.called is False:
+            self._generating_key_deferred.callback(1)
+
+        return {'keyid': keyid, 'keypublicascii': asciiArmoredPublicKey}
+
+    def _gen_key(self, input_data):
+        logger.warn("Generating new system GPG key. This can take a little while on slower systems.")
+        newkey = self.gpg.gen_key(input_data)
+        logger.info("Done generating key.")
+        return newkey
+
+    def get_key(self, keyid=None):
+        if keyid is None:
+            keyid = self.mykeyid()
+        key = None
+        if keyid in self.__gpg_keys:
+            key = self.__gpg_keys[keyid].copy()
+        # else:
+        #     for key_id, data in self.__gpg_keys.items():
+        #         if data['']
+
+        if key is None:
+            return
+
+        if 'privatekey' in key:
+            del key['privatekey']
+        if 'passphrase' in key:
+            del key['passphrase']
+        return key
+
+
+    # def get_key(self, keyid):
+    #     asciiArmoredPublicKey = self.gpg.export_keys(keyid)
+    #     return asciiArmoredPublicKey
 
     def display_encrypted(self, in_text):
         """
@@ -451,7 +555,7 @@ class GPG(YomboLibrary):
         returnValue(in_text)
 
     def _gpg_decrypt(self, data):
-        return self.gpg.decrypt(data)
+        return self.gpg.decrypt(data, passphrase=self.__mypassphrase)
 
     def sign(self, in_text, asciiarmor=True):
         """
