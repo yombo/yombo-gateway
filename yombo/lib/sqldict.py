@@ -67,7 +67,6 @@ class SQLDict(YomboLibrary):
         :return:
         """
         self._dictionaries = {}
-        self.unload_defer = None
         self._saveSQLDictLoop = None
 
     def _load_(self, **kwargs):
