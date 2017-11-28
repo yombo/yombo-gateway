@@ -74,6 +74,7 @@ HARD_LOAD["Statistics"] = {'operating_mode': 'all'}
 HARD_LOAD["Startup"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_LOAD["YomboAPI"] = {'operating_mode': 'all'}
+HARD_LOAD["Localize"] = {'operating_mode': 'all'}
 HARD_LOAD["GPG"] = {'operating_mode': 'all'}
 HARD_LOAD["CronTab"] = {'operating_mode': 'all'}
 HARD_LOAD["DownloadModules"] = {'operating_mode': 'run'}
@@ -86,7 +87,6 @@ HARD_LOAD["Variables"] = {'operating_mode': 'all'}
 HARD_LOAD["Devices"] = {'operating_mode': 'all'}
 HARD_LOAD["Automation"] = {'operating_mode': 'all'}
 HARD_LOAD["Modules"] = {'operating_mode': 'all'}
-HARD_LOAD["Localize"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQPYombo"] = {'operating_mode': 'run'}
 HARD_LOAD["Gateways"] = {'operating_mode': 'all'}
 HARD_LOAD["Nodes"] = {'operating_mode': 'all'}
@@ -160,8 +160,9 @@ class Loader(YomboLibrary, object):
 
     @operating_mode.setter
     def operating_mode(self, val):
-        if RUN_PHASE[self._run_phase] > 2:
+        if RUN_PHASE[self._run_phase] > 200:
             self.loadedLibraries['states']['loader.operating_mode'] = val
+            logger.info("Operating mode set to: {mode}", mode=val)
         self._operating_mode = val
 
     @property
@@ -170,7 +171,7 @@ class Loader(YomboLibrary, object):
 
     @run_phase.setter
     def run_phase(self, val):
-        if RUN_PHASE[val] > 2:
+        if RUN_PHASE[val] > 200:
             self.loadedLibraries['states']['loader.run_phase'] = val
         self._run_phase = val
 
