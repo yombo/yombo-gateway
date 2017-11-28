@@ -55,6 +55,8 @@ os.chmod('usr/etc/gpg', 0o700)
 os.chmod('usr/etc/certs', 0o700)
 os.chmod('usr/bak', 0o760)
 
+os.system('gpg-agent --homedir usr/etc/gpg/ --daemon')
+
 try:
     from yombo.core.gwservice import GWService
 except ImportError:

@@ -6,6 +6,26 @@
 {% set progressbar = 90 %}
 
 {% block content %}
+<div class="modal fade" id="confirm-submit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="">Confirm Submit</h4>
+            </div>
+            <div class="modal-body">
+                <p>The DNS can only be changed once every 30 days.</p>
+                <p>New domain: <strong><span id="fqdn"></span></strong></p>
+                <p><strong>Are you sure?</strong></p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <a href="#" id="submit" class="btn btn-success success">Submit</a>
+            </div>
+        </div>
+    </div>
+</div>
     <form action="/setup_wizard/7" method="POST" role="form" id="myForm">
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
@@ -24,19 +44,24 @@
                     </div>
                     <div class="panel-body">
                         <h2>Gateway Setup Complete</h2>
-                        <p>The gateway has been configured and setup.</p>
-                        <p></p>
-                        <h2>Domain Name</h2>
-                        <p>Associate a domain name with this gateway. This is like a dynamic DNS for this gateway and
-                            allows you, and other systems, to find this gateway easier.
-                        </p>
-                        <p>Current DNS FQDN: {{ fqdn }}</p>
+                        <p>The gateway has been configured and setup. This last step configures the optional
+                        dynamic DNS. This allows you to quickly access your gateway using a simple
+                        domain name instead of by IP address and port number.</p>
+                        <h3>Dynamic DNS setup</h3>
+                        <p><strong>DNS can only be changed once every 30 days.</strong></p>
+                        <ul>
+                            <li>Current FQDN: dns_fqdn </li>
+                            <li>Current Sub-domain: {{ dns_name }}</li>
+                            <li>Current Domain: {{ dns_domain }}</li>
+                            <li>Allowed Next Change: {{ allow_change|epoch_to_human }}</li>
+                        </ul>
+                        <hr>
+                        <h4>Set new DNS</h4>
 
                         <input type="hidden" name="dns_domain_id" />
                         <label>Domain prefix: </label>
-                        <input type="text" name="dns_name" id="dns-name" autofocus="autofocus">
+                        <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
                         <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
-<br><strong>Choose carefully: </strong>You must wait 30 days between changing domain names.
                         <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
                           <thead class="thead-default">
                             <tr>
@@ -86,20 +111,28 @@ $('form').on('keyup keypress', function(e) {
 	    return false;
 	}
     e.preventDefault();
-    doSearch();
     return false;
   }
 });
 
-function submitter(btn) {
+function submitter(btn, fqdn) {
     var param = btn.parentElement.parentElement.id;
     var myForm = document.forms["myForm"];
+     $('#fqdn').text(btn.id);
+
     myForm.elements["dns_domain_id"].value = param;
-    myForm.submit();
+    $('#confirm-submit').modal('show');
+//    myForm.submit();
+    return false;
 }
 
+/* when the submit button in the modal is clicked, submit the form */
+$('#submit').click(function(){
+    $('#myForm').submit();
+});
+
 function doSearch() {
-        var val = $('#dns-name').val();
+        var val = $('#dnsname').val();
         if (val == lastSearchSubmit) {
             return;
         } else {
@@ -116,9 +149,8 @@ function doSearch() {
                     if (userData.available == false) {
                         availField = '<button type="button" class="btn btn-sm btn-dangle disabled">Not Available</button>';
                     } else {
-                        availField = '<button type="submit" class="btn btn-sm btn-primary" onclick="submitter(this)">Available</button>';
+                        availField = '<button type="button" class="btn btn-sm btn-primary" onclick="submitter(this); return false;" id="'+val+'.'+userData.domain+'">Use this</button>';
                     }
-
                         trHTML +=
                             '<tr id="' + userData.id + '"><td width="10%">'
                             + availField
@@ -130,10 +162,10 @@ function doSearch() {
             },
             error: function (req, status, err) {
                 var data = req.responseJSON;
-                console.log('something went wrong', status, err);
-                console.log(data);
+//                console.log('something went wrong', status, err);
+//                console.log(data);
                 var mymodal = $('#dns_check_error_modal');
-                mymodal.find('.modal-body').text(data['html_message']);
+                mymodal.find('.modal-body').text(data['message']);
                 mymodal.modal('show');
             }
         });
