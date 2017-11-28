@@ -196,40 +196,41 @@ class Gateways(YomboLibrary):
         self.master_websock_ssl = None
         self.master_websock_port = None
 
-        if self.is_master is True:
-            self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
-            self.master_mqtt_ssl = False
-            self.master_mqtt_port = self.gateways[self.gateway_id].internal_mqtt
-            self.master_mqtt_port_ssl = self.gateways[self.gateway_id].internal_mqtt_le
-            self.master_websock_ssl = False
-            self.master_websock_port = self.gateways[self.gateway_id].internal_mqtt_ws
-            self.master_websock_port_ssl = self.gateways[self.gateway_id].internal_mqtt_ws_le
-        else:
-            master = self.gateways[self.master_gateway()]
-            # print("gateway is looking for master....")
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            result = sock.connect_ex(('i.' + master.fqdn, master.internal_mqtt_ss))
-            if result == 0:
-                self.master_mqtt_host = 'i.' + master.fqdn
-                self.master_mqtt_ssl = True
-                self.master_mqtt_port = master.internal_mqtt_le
-                self.master_mqtt_port_ssl = master.internal_mqtt_le
-                self.master_websock_ssl = True
-                self.master_websock_port = master.internal_mqtt_ws_le
-                self.master_websock_port_ssl = master.internal_mqtt_ws_le
+        if self._Loader.operating_mode == 'run':
+            if self.is_master is True:
+                self.master_mqtt_host = 'i.' + self.gateways[self.gateway_id].fqdn
+                self.master_mqtt_ssl = False
+                self.master_mqtt_port = self.gateways[self.gateway_id].internal_mqtt
+                self.master_mqtt_port_ssl = self.gateways[self.gateway_id].internal_mqtt_le
+                self.master_websock_ssl = False
+                self.master_websock_port = self.gateways[self.gateway_id].internal_mqtt_ws
+                self.master_websock_port_ssl = self.gateways[self.gateway_id].internal_mqtt_ws_le
             else:
+                master = self.gateways[self.master_gateway()]
+                # print("gateway is looking for master....")
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                result = sock.connect_ex(('e.' + master.fqdn, master.external_mqtt_ss))
+                result = sock.connect_ex(('i.' + master.fqdn, master.internal_mqtt_ss))
                 if result == 0:
-                    self.master_mqtt_host = 'e.' + master.fqdn
+                    self.master_mqtt_host = 'i.' + master.fqdn
                     self.master_mqtt_ssl = True
-                    self.master_mqtt_port = master.external_mqtt_le
-                    self.master_mqtt_port_ssl = master.external_mqtt_le
+                    self.master_mqtt_port = master.internal_mqtt_le
+                    self.master_mqtt_port_ssl = master.internal_mqtt_le
                     self.master_websock_ssl = True
-                    self.master_websock_port = master.external_mqtt_ws_le
-                    self.master_websock_port_ssl = master.external_mqtt_ws_le
+                    self.master_websock_port = master.internal_mqtt_ws_le
+                    self.master_websock_port_ssl = master.internal_mqtt_ws_le
                 else:
-                    logger.warn("Cannot find an open MQTT port to the master gateway.")
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    result = sock.connect_ex(('e.' + master.fqdn, master.external_mqtt_ss))
+                    if result == 0:
+                        self.master_mqtt_host = 'e.' + master.fqdn
+                        self.master_mqtt_ssl = True
+                        self.master_mqtt_port = master.external_mqtt_le
+                        self.master_mqtt_port_ssl = master.external_mqtt_le
+                        self.master_websock_ssl = True
+                        self.master_websock_port = master.external_mqtt_ws_le
+                        self.master_websock_port_ssl = master.external_mqtt_ws_le
+                    else:
+                        logger.warn("Cannot find an open MQTT port to the master gateway.")
 
         # save for later use.
         # self.encrypt = self._GPG.encrypt_aes
