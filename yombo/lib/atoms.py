@@ -675,7 +675,7 @@ class Atoms(YomboLibrary):
 
         :return:
         """
-        logger.info("atoms_startup_trigger_callback: {startup_check}",
+        logger.debug("atoms_startup_trigger_callback: {startup_check}",
             startup_check=self.automation_startup_check)
         for gateway_id, keys in self.automation_startup_check.items():
             logger.info("gateway_id: %s" % gateway_id)
