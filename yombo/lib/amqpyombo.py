@@ -679,9 +679,3 @@ class AMQPYombo(YomboLibrary):
     def _local_log(self, level, location, msg=""):
         logit = func = getattr(logger, level)
         logit("In {location} : {msg}", location=location, msg=msg)
-
-results = {
-    'name': 'First Last',
-    'comment': 'id_192743918',
-    'email': '192743918@example.com',
-}
