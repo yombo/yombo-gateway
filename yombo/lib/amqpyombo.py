@@ -95,6 +95,7 @@ class AMQPYombo(YomboLibrary):
                 'config': [self.configHandler.amqp_incoming, ],
                 'control': [self.controlHandler.amqp_incoming, ],
                 'system': [self.systemHandler.amqp_incoming, ],
+                'sslcerts': [self._SSLCerts.amqp_incoming, ],
             },
         }
 
@@ -261,6 +262,8 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         gwid = self._Configs.get('core', 'gwid', 'local', False)
+        gpg_key = self._GPG.get_key()
+        # print("aaaa %s" % gpg_key)
         body = {
             "is_master": self._Configs.get("core", "is_master", True, False),
             "master_gateway": self._Configs.get("core", "master_gateway", gwid, False),
@@ -284,9 +287,11 @@ class AMQPYombo(YomboLibrary):
             "external_mqtt_ws": self._Configs.get("mqtt", "server_listen_port_websockets"),
             "external_mqtt_ws_le": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"),
             "external_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
+            "gpg_key_id": gpg_key['keyid'],
+            "gpg_publickey": gpg_key['publickey'],
         }
 
-        # logger.debug("sending local information.")
+        # logger.info("sending local information: {body}", body=body)
 
         requestmsg = self.generate_message_request(
             exchange_name='ysrv.e.gw_system',
@@ -674,3 +679,9 @@ class AMQPYombo(YomboLibrary):
     def _local_log(self, level, location, msg=""):
         logit = func = getattr(logger, level)
         logit("In {location} : {msg}", location=location, msg=msg)
+
+results = {
+    'name': 'First Last',
+    'comment': 'id_192743918',
+    'email': '192743918@example.com',
+}
