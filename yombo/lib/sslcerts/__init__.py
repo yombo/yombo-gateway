@@ -57,8 +57,31 @@ class SSLCerts(YomboLibrary):
     """
     Responsible for managing various encryption and TLS (SSL) certificates.
     """
-
     managed_certs = {}
+
+    def __contains__(self, cert_requested):
+        """
+        Looks for an sslkey with the given sslname.
+
+            >>> if 'webinterface' in self._SSLCerts['library_webinterface']:  #by uuid
+
+        :param cert_requested: The ssl cert sslname to search for.
+        :type cert_requested: string
+        :return: Returns true if exists, otherwise false.
+        :rtype: bool
+        """
+        if cert_requested in self.managed_certs:
+            return True
+        else:
+            return False
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo sslcerts library"
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -96,11 +119,12 @@ class SSLCerts(YomboLibrary):
         self.self_signed_cert = yield read_file(self.self_signed_cert_file)
         self.self_signed_key = yield read_file(self.self_signed_key_file)
 
-        self.managed_certs = yield self._SQLDict.get(self, "managed_certs", serializer=self.sslcert_serializer,
-                                                     unserializer=self.sslcert_unserializer)
-        # for name, data in self.managed_certs.items():
-        #     print("cert name: %s" % name)
-        #     print("  cert data: %s" % data.__dict__)
+        self.managed_certs = yield self._SQLDict.get(
+            self,
+            "managed_certs",
+            serializer=self.sslcert_serializer,
+            unserializer=self.sslcert_unserializer
+        )
 
         self.check_if_certs_need_update_loop = None
 
@@ -114,7 +138,7 @@ class SSLCerts(YomboLibrary):
         self.check_if_certs_need_update_loop = LoopingCall(self.check_if_certs_need_update)
         self.check_if_certs_need_update_loop.start(self._Configs.get('sqldict',
                                                                      'save_interval',
-                                                                     random_int(60*60*24, .1),
+                                                                     random_int(60*60*2, .2),
                                                                      False),
                                                    False)
 
@@ -138,13 +162,14 @@ class SSLCerts(YomboLibrary):
             for sslname, cert in self.managed_certs.items():
                 cert.stop()
 
+    @inlineCallbacks
     def check_if_certs_need_update(self):
         """
         Called periodically to see if any certs need to be updated. Once a day is enough, we have 30 days to get this
         done.
         """
         for sslname, cert in self.managed_certs.items():
-            cert.check_if_rotate_needed()
+            yield cert.check_if_rotate_needed()
 
     @inlineCallbacks
     def _add_sslcerts(self, sslcerts):
@@ -425,12 +450,12 @@ class SSLCerts(YomboLibrary):
             destination='yombo.server.sslcerts',
             request_type='csr_request',
             body=body,
-            callback=self.send_csr_request_response,
+            callback=self.amqp_incoming_response_csr_request,
         )
         self._AMQPYombo.publish(**request_msg)
         return request_msg
 
-    def send_csr_request_response(self, body=None, properties=None, correlation_info=None, **kwargs):
+    def amqp_incoming_response_csr_request(self, body=None, properties=None, correlation_info=None, **kwargs):
         """
         Called when we get a signed cert back from a CSR.
         
@@ -457,7 +482,7 @@ class SSLCerts(YomboLibrary):
             else:
                 self.received_message_for_unknown[sslname] = [body]
         else:
-            self.managed_certs[sslname].yombo_csr_response(properties, body, correlation_info)
+            self.managed_certs[sslname].amqp_incoming_response_csr_request(properties, body, correlation_info)
 
     def amqp_incoming_response(self, headers, body, properties, **kwargs):
         """
@@ -475,24 +500,3 @@ class SSLCerts(YomboLibrary):
         csr = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr_text)
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, key_text)
         return csr.verify(key)
-
-    def __contains__(self, cert_requested):
-        """
-        Looks for an sslkey with the given sslname.
-
-            >>> if 'webinterface' in self._SSLCerts['library_webinterface']:  #by uuid
-
-        :param cert_requested: The ssl cert sslname to search for.
-        :type cert_requested: string
-        :return: Returns true if exists, otherwise false.
-        :rtype: bool
-        """
-        if cert_requested in self.managed_certs:
-            return True
-        else:
-            return False
-
-    def __str__(self):
-        return "Manages SSL Cert for yombo gateway"
-
-
