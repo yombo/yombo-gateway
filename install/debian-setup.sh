@@ -42,7 +42,7 @@ python python-dev python3-dev gnupg2 rng-tools build-essential git \
 python3-setuptools python3-pip python-pip libyaml-dev libncurses5 \
 libncurses5-dev libncursesw5 libncursesw5-dev xz-utils curl wget llvm \
 tk-dev libbluetooth-dev mosquitto libmosquitto-dev libcurl4-openssl-dev \
-libc-ares-dev uuid-dev daemon quilt -y
+libc-ares-dev uuid-dev daemon quilt dirmngr -y
 
 # we install mosquitto to get the services installed and configs installed.
 # but later we will manually install a version for updated features and
