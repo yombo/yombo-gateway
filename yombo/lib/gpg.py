@@ -97,6 +97,7 @@ class GPG(YomboLibrary):
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.gwuuid = self._Configs.get2('core', 'gwuuid', None, False)
         self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
+        self.debug_mode = self._Configs.get('debug', 'testing', False, False)
         self.mykey_last_sent_yombo = self._Configs.get2('gpg', 'last_sent_yombo', None, False)
         self.mykey_last_sent_keyserver = self._Configs.get2('gpg', 'last_sent_keyserver', None, False)
         self.mykey_last_received_keyserver = self._Configs.get2('gpg', 'last_received_keyserver', None, False)
@@ -547,13 +548,17 @@ class GPG(YomboLibrary):
             self._generating_key = False
             return
         passphrase = random_string(length=120)
+        expire_date = '1y'
+        if self.debug_mode is True:
+            logger.warn('Setting GPG key to expire in one day due to debug mode.')
+            expire_date = '1d'
         input_data = self.gpg.gen_key_input(
             name_email="%s@gw.gpg.yombo.net" % gwuuid,
             name_real="Yombo Gateway",
             name_comment="Created by https://Yombo.net Automation",
             key_type='RSA',
             key_length=4096,
-            expire_date='1d',
+            expire_date=expire_date,
             preferences='SHA512 SHA384 SHA256 SHA224 AES256 AES192 AES CAST5 ZLIB BZIP2 ZIP Uncompressed',
             keyserver='hkp://pool.sks-keyservers.net',
             revoker="1:9C69E1F8A7C39961C223C485BCEAA0E429FA3EF8",
