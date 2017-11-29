@@ -75,6 +75,14 @@ class AMQPYombo(YomboLibrary):
     def connected(self, val):
         return self._States.set('amqp.amqpyombo.state', val)
 
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo amqp yombo library"
+
     def _init_(self, **kwargs):
         """
         Loads various variables and calls :py:meth:connect() when it's ready.
@@ -195,6 +203,8 @@ class AMQPYombo(YomboLibrary):
 
         :return:
         """
+        if self._Loader.operating_mode != 'run':
+            return
         requestmsg = self.generate_message_request(
             exchange_name='ysrv.e.gw_system',
             source='yombo.gateway.lib.amqpyombo',
@@ -262,8 +272,6 @@ class AMQPYombo(YomboLibrary):
         :return:
         """
         gwid = self._Configs.get('core', 'gwid', 'local', False)
-        gpg_key = self._GPG.get_key()
-        # print("aaaa %s" % gpg_key)
         body = {
             "is_master": self._Configs.get("core", "is_master", True, False),
             "master_gateway": self._Configs.get("core", "master_gateway", gwid, False),
@@ -287,8 +295,6 @@ class AMQPYombo(YomboLibrary):
             "external_mqtt_ws": self._Configs.get("mqtt", "server_listen_port_websockets"),
             "external_mqtt_ws_le": self._Configs.get("mqtt", "server_listen_port_websockets_le_ssl"),
             "external_mqtt_ws_ss": self._Configs.get("mqtt", "server_listen_port_websockets_ss_ssl"),
-            "gpg_key_id": gpg_key['keyid'],
-            "gpg_publickey": gpg_key['publickey'],
         }
 
         # logger.info("sending local information: {body}", body=body)
@@ -457,6 +463,8 @@ class AMQPYombo(YomboLibrary):
                                  headers=None, body=None, routing_key=None, callback=None,
                                  correlation_id=None, message_type=None, response_type=None,
                                  data_type=None, previous_properties=None, previous_headers=None):
+        if self._Loader.operating_mode != 'run':
+            return
         if previous_properties is None:
             raise YomboWarning("generate_message_response() requires 'previous_properties' argument.")
         if previous_headers is None:
@@ -493,6 +501,9 @@ class AMQPYombo(YomboLibrary):
                                  headers=None, body=None, routing_key=None, callback=None,
                                  correlation_id=None, message_type=None, request_type=None,
                                  data_type=None):
+        if self._Loader.operating_mode != 'run':
+            return
+
         if message_type is None:
             message_type = "request"
 
@@ -562,6 +573,9 @@ class AMQPYombo(YomboLibrary):
         :return: A dictionary that can be directly returned to Yombo SErvers via AMQP
         :rtype: dict
         """
+        if self._Loader.operating_mode != 'run':
+            return
+
         # print("body: %s" % exchange_name)
         # print("body: %s" % body)
         if routing_key is None:
@@ -595,9 +609,7 @@ class AMQPYombo(YomboLibrary):
                     "msg_created_at": msg_created_at,
                     "data_type": data_type.lower(),
                 },
-                "header_signature": None,
                 "body": body,
-                "body_signature": None,
             },
             "properties": {
                 "user_id": self.user_id,  # system id is required to be able to send it.
@@ -605,7 +617,8 @@ class AMQPYombo(YomboLibrary):
                 "content_encoding": None,
                 "headers": {
                     "yombo_msg_protocol_verion": PROTOCOL_VERSION,
-                    'route': "yombo.gw.amqpyombo:" + self.user_id,
+                    "route": "yombo.gw.amqpyombo:" + self.user_id,
+                    "body_signature": "",
                 },
             },
             "meta": {
@@ -628,11 +641,6 @@ class AMQPYombo(YomboLibrary):
         return request_msg
 
     def finalize_message(self, message):
-        # for name, value in message['properties'].items():
-        #     if name.startswith("content_"):
-        #         continue
-        #     message['body']['headers'][name] = value
-
         if 'correlation_id' in message['body']['headers']:
             message['properties']['correlation_id'] = message['body']['headers']['correlation_id']
         if 'reply_to' in message['body']['headers']:
