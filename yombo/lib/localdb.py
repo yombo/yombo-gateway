@@ -244,6 +244,13 @@ class LocalDB(YomboLibrary):
     """
     Manages all database interactions.
     """
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo local database library"
 
     @inlineCallbacks
     def _init_(self, **kwargs):
@@ -713,20 +720,30 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def get_gpg_key(self, **kwargs):
-        if 'gwuuid' in kwargs:
-            records = yield self.dbconfig.select("nodes", where=['gwuuid = ?', kwargs['gwuuid']])
+        if 'gwid' in kwargs:
+            records = yield self.dbconfig.select(
+                "gpg_keys",
+                where=['endpoint_type = ? endpoint_id = ?', 'gw', kwargs['gwid']]
+            )
         elif 'keyid' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['keyid = ?', kwargs['keyid']])
+            records = yield self.dbconfig.select(
+                "gpg_keys",
+                where=['keyid = ?', kwargs['keyid']])
         elif 'fingerprint' in kwargs:
-            records = yield self.dbconfig.select("gpg_keys", where=['fingerprint = ?', kwargs['fingerprint']])
+            records = yield self.dbconfig.select(
+                "gpg_keys",
+                where=['fingerprint = ?', kwargs['fingerprint']])
         else:
             records = yield self.dbconfig.select("gpg_keys")
 
         keys = {}
         for record in records:
             key = {
-                'notes': record['notes'],
-                'endpoint': record['endpoint'],
+                'fullname': record['fullname'],
+                'comment': record['comment'],
+                'email': record['email'],
+                'endpoint_id': record['endpoint_id'],
+                'endpoint_type': record['endpoint_type'],
                 'fingerprint': record['fingerprint'],
                 'keyid': record['keyid'],
                 'publickey': record['publickey'],
@@ -739,15 +756,19 @@ class LocalDB(YomboLibrary):
                 'expires_at': record['expires_at'],
                 'created_at': record['created_at'],
             }
-            keys[record['fingerprint']] = key
+            keys[record['keyid']] = key
         return keys
 
     @inlineCallbacks
     def insert_gpg_key(self, gwkey, **kwargs):
         key = GpgKey()
-        key.endpoint = gwkey['endpoint']
-        key.fingerprint = gwkey['fingerprint']
         key.keyid = gwkey['keyid']
+        key.fullname = gwkey['fullname']
+        key.comment = gwkey['comment']
+        key.email = gwkey['email']
+        key.endpoint_id = gwkey['endpoint_id']
+        key.endpoint_type = gwkey['endpoint_type']
+        key.fingerprint = gwkey['fingerprint']
         key.publickey = gwkey['publickey']
         key.length = gwkey['length']
         key.ownertrust = gwkey['ownertrust']
