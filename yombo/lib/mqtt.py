@@ -202,7 +202,10 @@ class MQTT(YomboLibrary):
             logger.info("Not managing MQTT broker, we are not the master!")
             if self.mosquitto_enabled is True:
                 logger.info("Disabling mosquitto MQTT broker.")
-                yield getProcessOutput("sudo", ['systemctl', 'disable', 'mosquitto.service'])
+                try:
+                    yield getProcessOutput("sudo", ['systemctl', 'disable', 'mosquitto.service'])
+                except Exception as e:
+                    logger.warn("Error while trying to disable mosquitto (mqtt) service: {e}", e=e)
                 yield self.start_mqtt_broker()
                 logger.info("Sleeping for 2 seconds while MQTT broker stops.")
                 self._Configs.set('mqtt', 'mosquitto_enabled', False)
@@ -335,7 +338,10 @@ class MQTT(YomboLibrary):
 
         if self.mosquitto_enabled is False:
             logger.info("Enabling mosquitto MQTT broker.")
-            yield getProcessOutput("sudo", ['systemctl', 'enable', 'mosquitto.service'])
+            try:
+                yield getProcessOutput("sudo", ['systemctl', 'enable', 'mosquitto.service'])
+            except Exception as e:
+                logger.warn("Error while trying to enable mosquitto (mqtt) service: {e}", e=e)
             self._Configs.set('mqtt', 'mosquitto_enabled', True)
             self.mosquitto_enabled = True
 
@@ -386,7 +392,12 @@ class MQTT(YomboLibrary):
         Checks if the mqtt broker is running.
         :return:
         """
-        process_results = yield getProcessOutput("ps", ["-A"])
+        try:
+            process_results = yield getProcessOutput("ps", ["-A"])
+        except Exception as e:
+            logger.warn("Error while trying to check is mosquitto (mqtt) service is running: {e}", e=e)
+            return None
+
         # print("process results: %s" % process_results)
         if b'mosquitto' in process_results:
             self.mosquitto_running = True
@@ -401,7 +412,11 @@ class MQTT(YomboLibrary):
         Start the mqtt broker. Note: this will sleep for 2 seconds to ensure it starts.
         :return:
         """
-        yield getProcessOutput("sudo", ['systemctl', 'start', 'mosquitto.service'])
+        logger.warn("starting mosquitto service.")
+        try:
+            yield getProcessOutput("sudo", ['systemctl', 'start', 'mosquitto.service'])
+        except Exception as e:
+            logger.warn("Error while trying to start mosquitto (mqtt) service: {e}", e=e)
         yield sleep(0.5)
         running = yield self.check_mqtt_broker_running()
         return running
@@ -412,14 +427,22 @@ class MQTT(YomboLibrary):
         Stop the mqtt broker. Note: This will sleep for 2 seconds to ensure it stops.
         :return:
         """
-        yield getProcessOutput("sudo", ['systemctl', 'stop', 'mosquitto.service'])
+        logger.warn("stopping mosquitto service.")
+        try:
+            yield getProcessOutput("sudo", ['systemctl', 'stop', 'mosquitto.service'])
+        except Exception as e:
+            logger.warn("Error while trying to stop mosquitto (mqtt) service: {e}", e=e)
         yield sleep(0.5)
         running = yield self.check_mqtt_broker_running()
         return running
 
     @inlineCallbacks
     def reload_mqtt_broker(self):
-        yield getProcessOutput("sudo", ['systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
+        logger.warn("Reloading mosquitto service.")
+        try:
+            yield getProcessOutput("sudo", ['systemctl', 'kill', '-s', 'HUP', 'mosquitto.service'])
+        except Exception as e:
+            logger.warn("Error while trying to reload mosquitto (mqtt) service configs: {e}", e=e)
         yield sleep(0.5)
         running = yield self.check_mqtt_broker_running()
         return running
@@ -548,6 +571,7 @@ class MQTT(YomboLibrary):
             if isinstance(mqtt_connected_callback, Callable) is False:
                 raise YomboWarning("If mqtt_connected_callback is set, it must be be callable.", 201, 'new', 'Devices')
 
+        print("mqtt: %s:%s" % (username, password))
         self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, username,
             password, password2, ssl, mqtt_incoming_callback, mqtt_connected_callback, mqtt_connection_lost_callback,
             will_topic, will_message, will_qos, will_retain, clean_start, version, keepalive)
