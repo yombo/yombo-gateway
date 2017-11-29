@@ -42,7 +42,7 @@ except ImportError:  # pragma: no cover
     from cStringIO import StringIO
 
 import codecs
-import locale
+# import locale
 import logging
 import os
 import re
