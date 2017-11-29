@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Validate @ Module Development <https://docs.yombo.net/Libraries/Validate>`_
+  For more information see: `Validate @ Module Development <https://yombo.net/docs/Libraries/Validate>`_
 
 
 Validates various items. In many causes, it tries to coerce the correct value type and return that. If the item
@@ -18,7 +18,7 @@ a derivative from: home assistant's helper file: config_validation.py
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/validate.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/validate.html>`_
 """
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json

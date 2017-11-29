@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Log Core @ Module Development <https://docs.yombo.net/Core/Log>`_
+  For more information see: `Log Core @ Module Development <https://yombo.net/docs/Core/Log>`_
 
 
 Handles logging functions.
@@ -13,7 +13,7 @@ Handles logging functions.
 
 :copyright: Copyright 2012-2015 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/core/module.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
 # Import python libraries
 import configparser

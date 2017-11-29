@@ -4,7 +4,7 @@
 .. note::
 
   For more information see:
-  `Configuration @ Module Development <https://docs.yombo.net/Libraries/Configuration>`_
+  `Configuration @ Module Development <https://yombo.net/docs/Libraries/Configuration>`_
 
 Handles loading, storing, updating, and saving gateway configuration items.
 
@@ -53,7 +53,7 @@ can simply implement the hook: _configuration_set_:
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/configuration.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/configuration.html>`_
 """
 # Import python libraries
 import configparser

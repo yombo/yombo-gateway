@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Variables @ Module Development <https://docs.yombo.net/Libraries/Variables>`_
+  For more information see: `Variables @ Module Development <https://yombo.net/docs/Libraries/Variables>`_
 
 
 A library to get variables in various formats. Also used to send updates to Yombo API.
@@ -14,7 +14,7 @@ A library to get variables in various formats. Also used to send updates to Yomb
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/variables.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/variables.html>`_
 """
 # Import python libraries
 

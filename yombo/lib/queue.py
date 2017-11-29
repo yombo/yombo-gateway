@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Queues @ command Development <https://docs.yombo.net/Libraries/Queues>`_
+  For more information see: `Queues @ command Development <https://yombo.net/docs/Libraries/Queues>`_
 
 This library implements a modified version of a queue developed by Terry Jones
 ( http://blogs.fluidinfo.com/terry/2011/06/27/a-resizable-dispatch-queue-for-twisted/ ).
@@ -14,7 +14,7 @@ This library implements a modified version of a queue developed by Terry Jones
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/queue.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/queue.html>`_
 """
 import traceback
 

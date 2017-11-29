@@ -11,7 +11,7 @@ Responsible for downloading and installing any modules as requested by the confi
 
 .. note::
 
-  For more information see: `Download Modules @ Module Development <https://docs.yombo.net/Libraries/Download_Modules>`_
+  For more information see: `Download Modules @ Module Development <https://yombo.net/docs/Libraries/Download_Modules>`_
 
 
 It compares the 'modules' table for columns prod_version and dev_version table
@@ -38,7 +38,7 @@ Download Steps:
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/downloadmodules.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/downloadmodules.html>`_
 """
 # Import python libraries
 import os

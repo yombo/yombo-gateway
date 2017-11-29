@@ -5,7 +5,7 @@
 .. note::
 
   For more information see:
-  `Voice Commands @ Module Development <https://docs.yombo.net/Libraries/Voice_Cmds>`_
+  `Voice Commands @ Module Development <https://yombo.net/docs/Libraries/Voice_Cmds>`_
 
 The term "Voice commands" may be misleading. Think of voice commands as
 noun/verb or verb/noun pairs to control devices. The verb is the "what",
@@ -84,7 +84,7 @@ the fuzzysearch phase of voice command lookup.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/voicecmds.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/voicecmds.html>`_
 """
 from inspect import isclass
 import re

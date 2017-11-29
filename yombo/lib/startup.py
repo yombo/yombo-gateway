@@ -12,14 +12,14 @@ mode.
 
 .. note::
 
-  For more information see: `Startup @ Module Development <https://docs.yombo.net/Libraries/Startup>`_
+  For more information see: `Startup @ Module Development <https://yombo.net/docs/Libraries/Startup>`_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/startup.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/startup.html>`_
 """
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning

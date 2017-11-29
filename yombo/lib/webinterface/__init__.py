@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Web Interface @ Module Development <https://docs.yombo.net/Libraries/Web_Interface>`_
+  For more information see: `Web Interface @ Module Development <https://yombo.net/docs/Libraries/Web_Interface>`_
 
 
 Provides web interface for configuration of the Yombo system.
@@ -13,7 +13,7 @@ Provides web interface for configuration of the Yombo system.
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """
 # Import python libraries
 from OpenSSL import crypto

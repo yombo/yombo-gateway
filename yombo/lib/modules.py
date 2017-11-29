@@ -5,7 +5,7 @@
 
 .. note::
 
-  For more information see: `Modules @ Module Features <https://docs.yombo.net/Libraries/Modules>`_
+  For more information see: `Modules @ Module Features <https://yombo.net/docs/Libraries/Modules>`_
 
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
@@ -15,7 +15,7 @@ Also calls module hooks as requested by other libraries and modules.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/modules.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/modules.html>`_
 """
 # Import python libraries
 import configparser

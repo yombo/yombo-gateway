@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Internationalization @ Module Development <https://docs.yombo.net/Libraries/Localize>`_
+  For more information see: `Internationalization @ Module Development <https://yombo.net/docs/Libraries/Localize>`_
 
 Localization and translation for Yombo Gateway.
 
@@ -14,7 +14,7 @@ Localization and translation for Yombo Gateway.
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/localize.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/localize.html>`_
 """
 # Import python libraries
 from time import time

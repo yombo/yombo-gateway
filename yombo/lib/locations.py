@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Locations @ Module Development <https://docs.yombo.net/Libraries/Locations>`_
+  For more information see: `Locations @ Module Development <https://yombo.net/docs/Libraries/Locations>`_
 
 
 Stores location and area information in memory.
@@ -14,7 +14,7 @@ Stores location and area information in memory.
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/locations.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/locations.html>`_
 """
 from collections import OrderedDict
 from time import time

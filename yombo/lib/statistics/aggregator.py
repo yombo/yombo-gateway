@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Statistics @ Module Development <https://docs.yombo.net/Libraries/Statistics>`_
+  For more information see: `Statistics @ Module Development <https://yombo.net/docs/Libraries/Statistics>`_
 
 
 .. moduleauthor:: https://github.com/freekotya

@@ -5,10 +5,10 @@ A demonstration module that adds basic ability to send
 events to a log file. This can be used as a foundation for more advanced modules.
 
 Additional details about this module at:
-https://docs.yombo.net/Modules/logwriter
+https://yombo.net/docs/Modules/logwriter
 
 Learn about [Yombo Gateway](https://yombo.net/) or
-[Get started today](https://docs.yombo.net/Gateway/Quick_start)
+[Get started today](https://yombo.net/docs/Gateway/Quick_start)
 
 Usage
 =====

@@ -3,17 +3,17 @@ Summary
 
 This module extends the capabilities of the Yombo Gateway by adding the ability to monitor a text file for device commands.
 
-Additional details about this module at: https://docs.yombo.net/Modules/logreader
+Additional details about this module at: https://yombo.net/docs/Modules/logreader
 
 Learn about [Yombo Gateway](https://yombo.net/) or
-[Get started today](https://docs.yombo.net/Gateway/Quick_start)
+[Get started today](https://yombo.net/docs/Gateway/Quick_start)
 
 Usage
 =====
 
 The primary purpose of this module is to demonstrate creating modules and using
 the Yombo Filereader utility. The
-[Filereader](https://docs.yombo.net/Developing_modules/Utilities) utility allows
+[Filereader](https://yombo.net/docs/Developing_modules/Utilities) utility allows
 for easily monitoring a file for updates and support file skip-ahead when the gateway restarts.
 
 With this module, you can simple echo in a command to be peformed:

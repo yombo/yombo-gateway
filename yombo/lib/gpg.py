@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `GPG @ Module Development <https://docs.yombo.net/Libraries/GPG>`_
+  For more information see: `GPG @ Module Development <https://yombo.net/docs/Libraries/GPG>`_
 
 
 This library handles encrypting and decrypting content. This library allows data at rest to be encrypted, which
@@ -20,7 +20,7 @@ It's important to note that any module within the Yombo system will have access 
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://docs.yombo.net/gateway/html/current/_modules/yombo/lib/gpg.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/gpg.html>`_
 """
 
 # Import python libraries
