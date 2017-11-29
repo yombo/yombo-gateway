@@ -28,6 +28,7 @@ def return_api_error(request, message=None, status=None):
         'message': message,
     })
 
+
 def get_session(roles=None, *args, **kwargs):
 
     def call(f, *args, **kwargs):
@@ -233,14 +234,14 @@ def return_need_login(webinterface, request, session, **kwargs):
         return return_need_pin(webinterface, request, **kwargs)
     else:
         if 'api' in kwargs and kwargs['api'] is True:
-            return return_api_error(request, 'error with request', 500)
+            return return_api_error(request, 'Unauthorized', 401)
     page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
     return page.render(alerts=webinterface.get_alerts())
 
 
 def return_need_pin(webinterface, request, **kwargs):
     if 'api' in kwargs and kwargs['api'] is True:
-        return return_api_error(request, 'submit pin first')
+        return return_api_error(request, 'Unauthorized - Pin required', 401)
     if webinterface._display_pin_console_at < int(time()) - 30:
         webinterface._display_pin_console_at = int(time())
         webinterface.display_pin_console()
