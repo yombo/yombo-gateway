@@ -633,7 +633,7 @@ def route_setup_wizard(webapp):
                                                                    '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
                                                                        'core', 'gwid'))
             except YomboAPIWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
+                # webinterface.add_alert(e.html_message, 'warning')
                 # webinterface.add_alert(dns_results['content']['html_message'], 'warning')
                 webinterface._Configs.set('dns', 'dns_name', None)
                 webinterface._Configs.set('dns', 'dns_domain', None)
@@ -729,7 +729,6 @@ def route_setup_wizard(webapp):
         @webapp.route('/7_restart', methods=['GET'])
         @require_auth()
         def page_setup_wizard_7_restart(webinterface, request, session):
-            print("setting first run to flase!!!!")
             webinterface._Configs.set('core', 'first_run', False)
             return webinterface.restart(request)
     #        auth = webinterface.require_auth(request)  # Notice difference. Now we want to log the user in.
