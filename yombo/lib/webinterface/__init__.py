@@ -169,6 +169,14 @@ class WebInterface(YomboLibrary):
     alerts = OrderedDict()
     starting = True
 
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo web interface library"
+
     def _init_(self, **kwargs):
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:

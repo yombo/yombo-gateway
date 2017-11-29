@@ -61,6 +61,14 @@ class SQLDict(YomboLibrary):
     """
     Provide a database backed persistent dictionary.
     """
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo sql dictionary library"
+
     def _init_(self,):
         """
         Sets up a few variables. Doesn't do much.

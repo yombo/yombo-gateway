@@ -60,6 +60,15 @@ class Times(YomboLibrary, object):
     Provides light/dark/dusk/dawn status, times, and events. Also provides various rise/set of the sun, moon, and all
     things heavenly.
     """
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo times library"
+
     def _init_(self, PatchEnvironment = False):
         """
         Setup various common objects, setup frame work if isday/night/dark/twilight.

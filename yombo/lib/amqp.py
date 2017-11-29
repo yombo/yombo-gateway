@@ -57,6 +57,14 @@ class AMQP(YomboLibrary):
     """
     Base, or root class that manages all AMQP connections.
     """
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo amqp library"
+
     def _init_(self, **kwargs):
         """
         Loads previously saved message information.

@@ -87,6 +87,15 @@ class Automation(YomboLibrary):
     for additional automation rules defined by modules. It also implements various hooks so modules can extend the
     capabilites of the automation system.
     """
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo automation library"
+
     def _init_(self, **kwargs):
         """
         Get the Automation library started. Setups various dictionarys to be used.

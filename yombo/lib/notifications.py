@@ -117,6 +117,14 @@ class Notifications(YomboLibrary):
         except:
             return False
 
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo notifications library"
+
     @property
     def always_show_count(self) -> int:
         always_show_count = 0

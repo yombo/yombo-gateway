@@ -118,13 +118,14 @@ class Nodes(YomboLibrary):
         """
         return len(self.nodes)
 
+
     def __str__(self):
         """
         Returns the name of the library.
         :return: Name of the library
         :rtype: string
         """
-        return self.nodes.__str__()
+        return "Yombo nodes library"
 
     def keys(self):
         """

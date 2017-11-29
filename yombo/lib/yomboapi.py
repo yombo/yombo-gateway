@@ -59,6 +59,14 @@ class YomboAPI(YomboLibrary):
     def valid_system_session(self, val):
         return self._States.set('yomboapi.valid_system_session', val)
 
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo Yombo API library"
+
     def _init_(self, **kwargs):
         self.custom_agent = Agent(reactor, connectTimeout=20)
         self.contentType = self._Configs.get('yomboapi', 'contenttype', 'application/json', False)  # TODO: Msgpack later

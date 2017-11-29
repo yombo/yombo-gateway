@@ -41,6 +41,15 @@ class Variables(YomboLibrary):
     """
     Various variable tools.
     """
+
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo variables library"
+
     def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the

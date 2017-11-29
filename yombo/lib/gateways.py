@@ -135,7 +135,7 @@ class Gateways(YomboLibrary):
         :return: Name of the library
         :rtype: string
         """
-        return self.gateways.__str__()
+        return "Yombo gateway library"
 
     def keys(self):
         """

@@ -115,7 +115,7 @@ class Locations(YomboLibrary):
         :return: Name of the library
         :rtype: string
         """
-        return self.locations.__str__()
+        return "Yombo locations library"
 
     def keys(self):
         """

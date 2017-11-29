@@ -37,6 +37,14 @@ class Queue(YomboLibrary):
     Allows libraries and modules to implement a FIFO queue with various features. See 
     `Queues @ command Development <https://yombo.net/docs/modules/queues/>`_ for full usage.
     """
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo queue library"
+
     def _init_(self, **kwargs):
         """
         Track all the queue created so we can gracefully shut them down.

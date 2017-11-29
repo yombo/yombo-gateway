@@ -53,6 +53,14 @@ class Localize(YomboLibrary):
     """
     MSGCTXT_GLUE = "\004"
 
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo localization and translation library"
+
     def _init_(self, **kwargs):
         self.default_lang = self._Configs.get2('localize', 'default_lang', 'en', False)
 

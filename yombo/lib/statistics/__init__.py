@@ -140,6 +140,14 @@ class Statistics(YomboLibrary):
         'energy.#': {'size': 60, 'lifetime': 0},
     }
 
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo statistics library"
+
     def _init_(self, **kwargs):
         """
         Brings the library module online. Responsible for setting up framework for storing statistics.

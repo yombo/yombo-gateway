@@ -71,6 +71,14 @@ class DownloadModules(YomboLibrary):
     A semaphore is used to allow processing and downloading of 2 modules at
     a time.
     """
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo download modules library"
+
     MAX_PATH = 50
     DL_PATH = "usr/opt/"
     MAX_KEY = 50

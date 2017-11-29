@@ -110,7 +110,6 @@ class Configuration(YomboLibrary):
     configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
     configs_details = {}  # Collected details from libs and modules about configurations
 
-
     def __contains__(self, configuration_requested):
         """
         Checks to if a provided configuration exists.

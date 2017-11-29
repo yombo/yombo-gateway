@@ -115,15 +115,17 @@ class ModuleUnitTest(YomboModule):
         """
         reactor.callLater(1, self.started) # so we can see our results easier
 
+    @inlineCallbacks
     def started(self):
         self.display_results_loop.start(1)
         logger.info("Module unit test running.")
 
-        self.test_crontab()
-        self.test_gpg()
-        self.test_nodes()
-        self.test_states()
-        self.test_queues()
+        yield self.test_statistic_get_range()
+#        self.test_crontab()
+#        self.test_gpg()
+#        self.test_nodes()
+#        self.test_states()
+#        self.test_queues()
         # self.test_times()
 
     def test_times(self):
@@ -133,6 +135,21 @@ class ModuleUnitTest(YomboModule):
         print("tomorrow 10pm get_time: %s" % self._Times.time_from_string("tomorrow 10pm")[0])
         print("1 hour ago get_time): %s" % self._Times.time_from_string("1 hour ago")[0])
         print("10:20:30: %s" % self._Times.time_from_string("10:20:30")[0])
+
+
+    @inlineCallbacks
+    def test_statistic_get_range(self):
+        """
+        Test the crontab library.
+        :return:
+        """
+        stat_names = ['lib.configuration.set.new', 'lib.atoms.get']
+        # results = yield self._LocalDB.statistic_get_range(stat_names,
+        #                                             1506403020,
+        #                                             1606403560
+        #                                             )
+        results = yield self._Statistics.collect_stats(stat_names, 1510020960)
+        # print("stat results: %s" % results)
 
 
     def test_crontab(self):

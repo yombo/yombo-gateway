@@ -62,8 +62,15 @@ TBL_SLUGIFY = {
 class Validate(YomboLibrary):
     """
     Performs various tasks at startup.
-
     """
+    def __str__(self):
+        """
+        Returns the name of the library.
+        :return: Name of the library
+        :rtype: string
+        """
+        return "Yombo validate library"
+
     def _init_(self, **kwargs):
         pass
 
