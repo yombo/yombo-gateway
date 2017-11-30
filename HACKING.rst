@@ -54,8 +54,8 @@ Then::
 Installing Gateway for development
 ----------------------------------
 
-Documention for configuring your machine and downloading the software
-is located here: https://docs.yombo.net
+Documentation for configuring your machine and downloading the software
+is located here: https://yombo.net/docs/
 
 Create a virtual environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

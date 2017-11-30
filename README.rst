@@ -10,9 +10,9 @@ through the use of modules; such as X10, Z-Wave, Insteon, Zigbee, etc.
 This framework can also act a bridge between vendor protocols. For example,
 an X10 controler can be used to control Z-Wave products.
 
-`Modules <https://docs.yombo.net/Modules>`_ can:
+`Modules <https://yombo.net/features/modules/>`_ can:
 
-* Extend the features of the framework through the use of `hooks <https://docs.yombo.net/Hooks>`_.
+* Extend the features of the framework through the use of `hooks <https://yombo.net/docs/Hooks>`_.
 * Provide additional API features to other modules.
 * Provide advanced automation rules and tasks.
 
@@ -20,12 +20,12 @@ an X10 controler can be used to control Z-Wave products.
 Documentation
 =============
 
-For new users, check out the quick start guide at https://docs.yombo.net/Gateway/Quick_start
+For new users, check out the quick start guide at https://yombo.net/docs/Gateway/Quick_start
 
-Otherwise, full documentation can be found at https://docs.yombo.net/
+Otherwise, full documentation can be found at https://yombo.net/docs/
 
 To created intermediate to advanced automation rules or to extend the
-capabilites of the gateway, consider `developing a module <https://docs.yombo.net/Developing_modules>`_.
+capabilites of the gateway, consider `developing a module <https://yombo.net/docs/Developing_modules>`_.
 
 ============
 Python 3.6.x
@@ -38,16 +38,16 @@ to setup:
 
 On a Raspberry Pi 3, this will take quite a while. On a Raspberry Pi Zero, it's best to enjoy some
 lunch or dinner at your favorite place or simply use
-`one of our images <https://docs.yombo.net/Gateway/Raspberry_Pi_from_bare_metal>`_.
+`one of our images <https://yombo.net/docs/Gateway/Raspberry_Pi_from_bare_metal>`_.
 
 ==================
 Developing Modules
 ==================
 
-Documentation for developing modules can be found at: https://docs.yombo.net/Developing_modules
+Documentation for developing modules can be found at: https://yombo.net/docs/Developing_modules
 
 A quick start guide to developing modules can be found her:
-https://docs.yombo.net/Developing_modules/Building_your_first_module
+https://yombo.net/docs/Developing_modules/Building_your_first_module
 
 ===============================
 Getting Help / Other Resources

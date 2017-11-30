@@ -3,6 +3,6 @@ Useful links
 =============
 
 * `Yombo Home <https://yombo.net/>`_
-* `Installation <https://docs.yombo.net/Gateway/Getting_started>`_
-* `End user documentation <https://docs.yombo.net/>`_
-* `Building your first module - a walk complete guide <https://docs.yombo.net/Developing_modules/Building_your_first_module>`_
+* `Installation <https://yombo.net/docs/Gateway/Getting_started>`_
+* `End user documentation <https://yombo.net/docs/>`_
+* `Building your first module - a walk complete guide <https://yombo.net/docs/Developing_modules/Building_your_first_module>`_

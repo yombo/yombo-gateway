@@ -2,7 +2,7 @@
 Yombo Documentation
 ====================
 
-This directory generates the content found at https://docs.yombo.net and is
+This directory generates the content found at https://yombo.net/docs/ and is
 generated from the comments within the source code.
 
 The primary purpose of this documentation to document the various
