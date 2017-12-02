@@ -32,6 +32,7 @@ needs_sphinx = '1.5'
 extensions = [
     # standard sphinx extensions
     'sphinx.ext.autodoc',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.todo',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',

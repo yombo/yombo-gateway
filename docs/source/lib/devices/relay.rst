@@ -12,5 +12,6 @@ Devices::Relay (yombo.lib.devices.relay)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

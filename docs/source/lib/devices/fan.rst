@@ -12,5 +12,6 @@ Devices::Fan (yombo.lib.devices.fan)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

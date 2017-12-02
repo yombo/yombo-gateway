@@ -242,7 +242,7 @@ class WebInterface(YomboLibrary):
         self.web_server_started = False
         self.web_server_ssl_started = False
 
-        self.already_start_web_servers = False
+        self.already_starting_web_servers = False
         self.web_factory = None
 
         # just here to set a password if it doesn't exist.
@@ -354,9 +354,9 @@ class WebInterface(YomboLibrary):
 
     # @inlineCallbacks
     def start_web_servers(self):
-        if self.already_start_web_servers is True:
+        if self.already_starting_web_servers is True:
             return
-        self.already_start_web_servers = True
+        self.already_starting_web_servers = True
         logger.debug("starting web servers")
         if self.web_server_started is False:
             if self.wi_port_nonsecure() == 0:
@@ -415,7 +415,7 @@ class WebInterface(YomboLibrary):
                         "Secure (tls/ssl) web interface is on a new port: {new_port}", new_port=self.wi_port_secure()+port_attempts)
 
         logger.debug("done starting web servers")
-        self.already_start_web_servers = False
+        self.already_starting_web_servers = False
 
     def _configuration_set_(self, **kwargs):
         """
@@ -459,17 +459,21 @@ class WebInterface(YomboLibrary):
         cert['callback'] = self.new_ssl_cert
         return cert
 
+    @inlineCallbacks
     def new_ssl_cert(self, newcert, **kwargs):
         """
-        Called when a requested certificate has been signed or updated. If needed, this funciton
+        Called when a requested certificate has been signed or updated. If needed, this function
         will function will restart the SSL service if the current certificate has expired or is
         a self-signed cert.
 
         :param kwargs:
         :return:
         """
-        logger.warn("Got updated SSL Cert!  Thanks.")
-        pass
+        logger.info("Got a new cert! About to install it.")
+        if self.web_server_ssl_started:
+            yield self.web_interface_ssl_listener.stopListening()
+            self.web_server_ssl_started = False
+        self.start_web_servers()
 
     @inlineCallbacks
     def _unload_(self, **kwargs):

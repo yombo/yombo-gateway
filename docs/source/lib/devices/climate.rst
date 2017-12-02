@@ -12,5 +12,6 @@ Devices::Climate (yombo.lib.devices.climate)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

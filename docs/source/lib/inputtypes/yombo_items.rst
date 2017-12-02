@@ -12,5 +12,6 @@ Yombo Items (yombo.lib.inputtypes.automation_addresses)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

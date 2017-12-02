@@ -40,12 +40,12 @@ from time import time
 # Import twisted libraries
 from twisted.internet import threads
 from twisted.internet import reactor
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
-from yombo.utils import save_file, read_file, bytes_to_unicode, unicode_to_bytes
+from yombo.utils import save_file, read_file, bytes_to_unicode
 import collections
 
 logger = get_logger('library.sslcerts.sslcert')
@@ -80,6 +80,7 @@ class SSLCert(object):
     def __str__(self):
         """
         Returns the name of the library.
+
         :return: Name of the library
         :rtype: string
         """
@@ -88,6 +89,8 @@ class SSLCert(object):
 
     def __init__(self, source, sslcert, _parent_library):
         """
+        Setup basic properties and populate values from the 'sslcert' incoming argument.
+
         :param source: *(source)* - One of: 'sql', 'sslcerts', or 'sqldict'
         :param sslcert: *(dictionary)* - A dictionary of the attributes to setup the class.
         :ivar sslname: *(string)* - The name of base file. The archive name will be based off this.
@@ -143,12 +146,15 @@ class SSLCert(object):
 
     @inlineCallbacks
     def start(self):
-        # print("!!!!!  starting ssl cert")
-        # SQLDict means it came from the database, so only scan the files otherwise.
+        """
+        Called by the parent, SSLCerts, to load any data from the filesystem and then validate
+        if the cert if valid.
+
+        :return:
+        """
+        # SQLDict means it came from the database, so only scan the filesystem.
         if self.source != 'sqldict':
-            # print("about to sync from filesystem: %s" % self.current_key)
             yield self.sync_from_filesystem()
-            # print("done about to sync from filesystem: %s" % self.current_key)
 
         self.check_is_valid()
         # print("status: %s" % self.__dict__)
@@ -270,38 +276,6 @@ class SSLCert(object):
         if self.dirty:
             yield self.sync_to_filesystem()
 
-    def update_requester(self):
-        """
-        Used to notify the library or module that requested this certificate that we have an updated
-        cert for usage. However, most time, the system will need to be recycled to take affect - we
-        leave that up the library or module to ask/notify to recycle the system.
-
-        :return:
-        """
-        logger.debug("Update any requesters about new certs...")
-
-        method = None
-        if self.current_is_valid is not True:
-            logger.warn("Asked to update the requester or new cert, but current cert isn't valid!")
-            return
-
-        if self.update_callback is not None and isinstance(self.update_callback, collections.Callable):
-            method = self.update_callback
-        elif self.update_callback_type is not None and \
-                self.update_callback_component is not None and \
-                self.update_callback_function is not None:
-            try:
-                method = self._ParentLibrary._Loader.find_function(
-                    self.update_callback_type,
-                    self.update_callback_component,
-                    self.update_callback_function,
-                )
-            except YomboWarning as e:
-                logger.warn("Invalid update_callback information provided: %s" % e)
-
-        if method is not None:
-            method(self.get())  # tell the requester that they have a new cert. YAY
-
     def make_next_be_current(self):
         """
         Makes the next cert become the current cert. Then calls 'clean_section()'.
@@ -343,7 +317,7 @@ class SSLCert(object):
 
         # now the the variables are deleted, lets delete the matching files
         for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
-            logger.warn("Removing bad file: %s" % file_to_delete)
+            logger.debug("Removing ssl file file: %s" % file_to_delete)
             os.remove(file_to_delete)
 
         self.dirty = True
@@ -393,24 +367,12 @@ class SSLCert(object):
                     getattr(self, "%s_chain" % label) is not None:
                 setattr(self, "%s_is_valid" % label, True)
             else:
-                # print("Setting %s_is_valid to false" % label)
-                # print("expires: %s" % getattr(self, "%s_expires" % label))
-                # print("time   : %s" % int(time()))
-                # print("signed: %s" % getattr(self, "%s_signed" % label))
-                # print("key_: %s" % getattr(self, "%s_key" % label))
-                # print("cert_: %s" % getattr(self, "%s_cert" % label))
-                # print("chain_: %s" % getattr(self, "%s_chain" % label))
                 setattr(self, "%s_is_valid" % label, False)
-
-                # print("key_: %s" % getattr(self, "%s_key" % label))
-                # print("cert_: %s" % getattr(self, "%s_cert" % label))
-                # print("chain_: %s" % getattr(self, "%s_chain" % label))
                 if label != "next":
                     if getattr(self, "%s_key" % label) is None or \
                             getattr(self, "%s_cert" % label) is None or \
                             getattr(self, "%s_chain" % label) is None or \
                             getattr(self, "%s_created" % label) is None:
-                        # print("calling clean section from check_is_valid for non-next")
                         self.clean_section(label)
                 else:
                     # print("next_csr: %s" % getattr(self, "%s_csr" % label))
@@ -431,13 +393,13 @@ class SSLCert(object):
 
         :return:
         """
-        logger.info("Inspecting file system for certs.")
+        logger.info("Inspecting file system for certs, and loading them.")
 
         for label in ['current', 'next']:
             setattr(self, "%s_is_valid" % label, None)
 
             if os.path.exists('usr/etc/certs/%s.%s.meta' % (self.sslname, label)):
-                logger.info("SSL Meta found for: {label} - {sslname}", label=label, sslname=self.sslname)
+                logger.debug("SSL Meta found for: {label} - {sslname}", label=label, sslname=self.sslname)
                 file_content = yield read_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label))
                 meta = json.loads(file_content)
                 # print("meta: %s" % meta)
@@ -631,7 +593,7 @@ class SSLCert(object):
                 else:
                     self.submit_csr()
             else:
-                logger.info("Was asked to generatre CSR, but we don't need it.")
+                logger.info("Was asked to generate CSR, but we don't need it for: {sslname}", sslname=self.sslname)
             return
 
         logger.warn("generate_new_csr: {sslname}.  Submit: {submit}", sslname=self.sslname, submit=submit)
@@ -683,9 +645,9 @@ class SSLCert(object):
         :param submit: True if we should submit it to yombo for signing.
         :return:
         """
-        logger.warn("generate_new_csr_done: {sslname}", sslname=self.sslname)
+        # logger.warn("generate_new_csr_done: {sslname}", sslname=self.sslname)
         results = bytes_to_unicode(results)
-        logger.info("generate_new_csr_done:results: results {results}", results=results)
+        # logger.info("generate_new_csr_done:results: results {results}", results=results)
         # logger.info("generate_new_csr_done:results: args {results}", results=args)
         self.next_key = results['key']
         self.next_csr = results['csr']
@@ -725,7 +687,7 @@ class SSLCert(object):
         self.dirty = True
 
     @inlineCallbacks
-    def amqp_incoming_response_csr_request(self, properties, body, correlation_info):
+    def amqp_incoming_response_to_csr_request(self, properties, body, correlation_info):
         """
         A response from a CSR request has been received. Lets process it.
 
@@ -734,17 +696,51 @@ class SSLCert(object):
         :param correlation: Any correlation data regarding the AQMP message. We can check for timing, etc.
         :return:
         """
-        logger.debug("Got CSR response: {body}", body=body)
+        logger.info("Received a signed SSL/TLS certificate for: {sslname}", sslname=self.sslname)
         if body['status'] == "signed":
             self.next_chain = body['chain_text']
-            self.next_cert = body['cert_text']
             self.next_cert = body['cert_text']
             self.next_signed = body['cert_signed']
             self.next_expires = body['cert_expires']
             self.next_is_valid = True
             self.dirty = True
-            yield self.check_if_rotate_needed()
-        # print("status: %s" % self.__dict__)
+            yield self.check_if_rotate_needed()  # this will rotate next into current
+
+
+        method = None
+        if self.current_is_valid is not True:
+            logger.warn("Asked to update the requester or new cert, but current cert isn't valid!")
+            return
+
+        if self.update_callback is not None and isinstance(self.update_callback, collections.Callable):
+            method = self.update_callback
+        elif self.update_callback_type is not None and \
+                self.update_callback_component is not None and \
+                self.update_callback_function is not None:
+            try:
+                method = self._ParentLibrary._Loader.find_function(
+                    self.update_callback_type,
+                    self.update_callback_component,
+                    self.update_callback_function,
+                )
+            except YomboWarning as e:
+                logger.warn("Invalid update_callback information provided: %s" % e)
+
+        if method is not None and isinstance(method, collections.Callable):
+            logger.debug("About to tell the SSL/TLS cert requester know we have a new cert, from: {sslname}",
+                        sslname=self.sslname)
+
+            d = Deferred()
+            temp = self.get()
+            d.addCallback(lambda ignored: maybeDeferred(method, temp))
+            d.addErrback(self.tell_requester_failure)
+            d.callback(1)
+            yield d
+
+            method(self.get())  # tell the requester that they have a new cert. YAY
+
+    def tell_requester_failure(self, failure):
+        logger.error("Got failure when telling SSL/TLS dependents we have a cert: {failure}", failure=failure)
 
     # def get_key(self):
     #     self.requested_locally = True

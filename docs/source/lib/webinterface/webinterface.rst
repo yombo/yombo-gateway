@@ -14,6 +14,14 @@ interacting with th Yombo API.
 
 The web interface is broken down into several modules. See below for the core module functions.
 
+Routes
+=======
+
+Route files handle various URLs for the Web Interface library. Currently, the
+documentation system is unable to automatically generate easily viewable
+documentation. Please view the
+`source code for the routes <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/routes>`_ .
+
 Web Interface Library
 =========================
 
@@ -32,33 +40,5 @@ Helper Files
    constants.rst
    logevents.rst
    sessions.rst
-
-Routes
-=======
-
-Route files handle various URLs for the Web Interface library.
-
-.. toctree::
-   :maxdepth: 1
-
-   route_api_v1.rst
-   route_atoms.rst
-   route_automation.rst
-   route_configs.rst
-   route_devices.rst
-   route_devtools_config.rst
-   route_devtools_debug.rst
-   route_gateways.rst
-   route_home.rst
-   route_locations.rst
-   route_misc.rst
-   route_modules.rst
-   route_notices.rst
-   route_panel.rst
-   route_setup_wizard.rst
-   route_states.rst
-   route_statistics.rst
-   route_system.rst
-   route_voicecmds.rst
 
 Last updated: |today|

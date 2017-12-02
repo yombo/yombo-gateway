@@ -1207,7 +1207,7 @@ class Times(YomboLibrary, object):
     def _previous_rising(self, observer, item, use_center=False):
         return self._riset_wrapper(observer,'previous_rising',item,use_center=use_center)
 
-    def _previous_setting(self, observer, item, use_center=False):
+    def _previous_setting(self, observer: dict(type=float, help='the dividend'), item, use_center=False):
         return self._riset_wrapper(observer,'previous_setting',item,use_center=use_center)
 
     def _next_rising(self, observer, item, use_center=False):

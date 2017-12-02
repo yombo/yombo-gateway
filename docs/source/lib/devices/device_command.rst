@@ -12,5 +12,6 @@ Devices::Device Status (yombo.lib.devices._device_status)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

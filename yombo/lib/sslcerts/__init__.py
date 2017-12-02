@@ -325,7 +325,7 @@ class SSLCerts(YomboLibrary):
 
         :return:
         """
-        logger.info("Generate_CSR called with args: {args}", args=args)
+        logger.debug("Generate_CSR called with args: {args}", args=args)
         kwargs = self.check_csr_input(args)
 
         if kwargs['key_type'] == 'rsa':
@@ -435,7 +435,7 @@ class SSLCerts(YomboLibrary):
         :param sslname: Name of the ssl for tracking.
         :return:
         """
-        logger.debug("send_csr_request, preparing to send CSR: %s" % sslname)
+        logger.info("Sending CSR request for cert: {sslname}", sslname=sslname)
         if len(sslname) > 100:
             raise YomboWarning("'sslname' too long, limit is 100 characters.")
 
@@ -450,12 +450,12 @@ class SSLCerts(YomboLibrary):
             destination='yombo.server.sslcerts',
             request_type='csr_request',
             body=body,
-            callback=self.amqp_incoming_response_csr_request,
+            callback=self.amqp_incoming_response_to_csr_request,
         )
         self._AMQPYombo.publish(**request_msg)
         return request_msg
 
-    def amqp_incoming_response_csr_request(self, body=None, properties=None, correlation_info=None, **kwargs):
+    def amqp_incoming_response_to_csr_request(self, body=None, properties=None, correlation_info=None, **kwargs):
         """
         Called when we get a signed cert back from a CSR.
         
@@ -469,11 +469,8 @@ class SSLCerts(YomboLibrary):
         if 'sslname' not in body:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return
+        logger.info("Received a new signed SSL/TLS certificate for: {sslname}", sslname=body['sslname'])
         sslname = bytes_to_unicode(body['sslname'])
-        # print("sslname: %s" % sslname)
-        # print("sslname: %s" % type(sslname))
-        # print("managed_certs: %s" % self.managed_certs)
-        # print("managed_certs: %s" % type(self.managed_certs))
         if sslname not in self.managed_certs:
             logger.warn("It doesn't appear we have a managed cert for the given SSL name. Lets store it for a few minutes: %s" %
                         sslname)
@@ -482,7 +479,7 @@ class SSLCerts(YomboLibrary):
             else:
                 self.received_message_for_unknown[sslname] = [body]
         else:
-            self.managed_certs[sslname].amqp_incoming_response_csr_request(properties, body, correlation_info)
+            self.managed_certs[sslname].amqp_incoming_response_to_csr_request(properties, body, correlation_info)
 
     def amqp_incoming_response(self, headers, body, properties, **kwargs):
         """

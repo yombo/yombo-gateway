@@ -12,5 +12,6 @@ Devices::Sensor (yombo.lib.devices.sensor)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

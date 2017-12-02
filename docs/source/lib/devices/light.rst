@@ -12,5 +12,6 @@ Devices::Light (yombo.lib.devices.light)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

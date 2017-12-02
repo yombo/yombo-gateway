@@ -35,7 +35,7 @@ from time import time
 
 # Import twisted libraries
 from twisted.internet import threads
-from twisted.internet.defer import inlineCallbacks, returnValue, Deferred
+from twisted.internet.defer import inlineCallbacks, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries
@@ -673,7 +673,7 @@ class GPG(YomboLibrary):
         :raises: YomboException - If encryption failed.
         """
         if in_text.startswith('-----BEGIN PGP MESSAGE-----'):
-            returnValue(in_text)
+            return in_text
 
         if destination is None:
             destination = self.mykeyid()
@@ -684,7 +684,7 @@ class GPG(YomboLibrary):
             # output = self.gpg.encrypt(in_text, destination)
             if output.status != "encryption ok":
                 raise YomboWarning("Unable to encrypt string. Error 1.")
-            returnValue(output.data)
+            return output.data
         except Exception as e:
             raise YomboWarning("Unable to encrypt string. Error 2.: %s" % e)
 
@@ -707,14 +707,14 @@ class GPG(YomboLibrary):
         """
         if in_text.startswith('-----BEGIN PGP SIGNED MESSAGE-----'):
             verify = yield self.verify_asymmetric(in_text)
-            returnValue(verify)
+            return verify
         elif in_text.startswith('-----BEGIN PGP MESSAGE-----'):
             try:
                 output = yield threads.deferToThread(self._gpg_decrypt, in_text)
-                returnValue(output.data)
+                return output.data
             except Exception as e:
                 raise YomboWarning("Unable to decrypt string. Reason: {e}", e)
-        returnValue(in_text)
+        return in_text
 
     def _gpg_decrypt(self, data):
         return self.gpg.decrypt(data, passphrase=self.__mypassphrase)

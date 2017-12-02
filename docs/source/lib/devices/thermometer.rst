@@ -12,5 +12,6 @@ Devices::Thermometer (yombo.lib.devices.thermometer)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

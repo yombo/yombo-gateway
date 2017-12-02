@@ -1,6 +1,6 @@
 .. index:: wi_logevents
 
-.. _wi_auth:
+.. _wi_logevents:
 
 .. currentmodule:: yombo.lib.webinterface.logevents
 

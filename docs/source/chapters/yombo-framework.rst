@@ -11,15 +11,15 @@ Navigating the framework
 
 The gateway framework is split into a few directories:
 
- * :ref:`Core` - Basic functions used by various libraries.
- * :ref:`Lib` - Libraries provide all the services and tools to manage the system, including sending
-   :doc:`commands <../lib/commands>` to :doc:`devices <../lib/devices>`.
- * :ref:`Modules` - Extend the features of the Yombo gateway and are located in the modules folder.
+ * :ref:`framework_core` - Basic functions used by various libraries.
+ * :ref:`framework_lib` - Libraries provide all the services and tools to manage the system, including sending
+   :doc:`commands <../lib/commands>` to :doc:`devices <../lib/devices/devices>`.
+ * :ref:`framework_modules` - Extend the features of the Yombo gateway and are located in the modules folder.
  * Usr - User data. Log files, database, cache, ssl keys, etc.
- * :file:`Utils <./yombo-framework#Utils>` - Various utilities for getting things done.
- * :ref:`Ext` - 3rd party extensions.
+ * :ref:`framework_utils` - Various utilities for getting things done.
+ * :ref:`framework_ext` - 3rd party extensions.
 
-.. _core:
+.. _framework_core:
 
 Core
 =====
@@ -37,7 +37,7 @@ features to be used by libraries and modules.
    ../core/log.rst
    ../core/module.rst
 
-.. _lib:
+.. _framework_lib:
 
 Lib
 =====
@@ -75,12 +75,13 @@ IoT devices, etc.
    ../lib/states.rst
    ../lib/statistics/statistics.rst
    ../lib/times.rst
+   ../lib/validate.rst
    ../lib/variables.rst
    ../lib/webinterface/webinterface.rst
    ../lib/yomboapi.rst
 
 
-.. _system_modules:
+.. _framework_modules:
 
 Modules
 =======
@@ -89,6 +90,8 @@ System modules, user modules, and downloaded modules go into the modules folder.
 the capabilites of the gateway and provide the gateway the ability to communicate with
 various devices over various protocols.
 
+For a list of modules available to be installed by end users: `Available Modules <https://yombo.net/docs/Modules>`_
+
 A list of system modules:
 
 .. toctree::
@@ -96,7 +99,7 @@ A list of system modules:
 
    ../modules/automationhelpers.rst
 
-.. _util:
+.. _framework_utils:
 
 Utils
 =====
@@ -114,7 +117,7 @@ Various utilities to help the Yombo Gateway get things done.
    ../utils/maxdict.rst
    ../utils/utils.rst
 
-.. _ext:
+.. _framework_ext:
 
 Ext
 ===

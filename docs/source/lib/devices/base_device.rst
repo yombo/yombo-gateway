@@ -12,5 +12,6 @@ Devices::Base Device (yombo.lib.devices._base_device)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

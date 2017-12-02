@@ -12,5 +12,6 @@ Devices::Appliance (yombo.lib.devices.appliance)
    :special-members:
    :private-members:
    :undoc-members:
+   :noindex:
 
 Last updated: |today|

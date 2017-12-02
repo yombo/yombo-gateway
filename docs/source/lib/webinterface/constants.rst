@@ -1,6 +1,6 @@
 .. index:: wi_constants
 
-.. _wi_auth:
+.. _wi_constants:
 
 .. currentmodule:: yombo.lib.webinterface.constants
 

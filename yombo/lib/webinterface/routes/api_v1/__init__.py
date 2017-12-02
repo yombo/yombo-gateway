@@ -13,6 +13,7 @@ from yombo.lib.webinterface.auth import require_auth
 
 from yombo.utils import epoch_to_string, bytes_to_unicode
 
+
 def return_good(request, message=None, payload=None, code=None):
     request.setHeader('Content-Type', 'application/json')
     if code is None:
@@ -28,6 +29,7 @@ def return_good(request, message=None, payload=None, code=None):
         'payload': payload,
     })
 
+
 def return_not_found(request, message=None, code=None):
     request.setHeader('Content-Type', 'application/json')
     if code is None:
@@ -40,6 +42,7 @@ def return_not_found(request, message=None, code=None):
         'message': message,
     })
 
+
 def return_error(request, message=None, code=None):
     request.setHeader('Content-Type', 'application/json')
     if code is None:
@@ -51,6 +54,7 @@ def return_error(request, message=None, code=None):
         'code': code,
         'message': message,
     })
+
 
 def return_unauthorized(request, message=None, code=None):
     request.setHeader('Content-Type', 'application/json')

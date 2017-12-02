@@ -42,7 +42,7 @@ Useful links
 
 * `Yombo.net <https://yombo.net/>`_
 * `Quick start guide <https://yombo.net/docs/Gateway/Quick_start>`_
-* `End user documentation <https://yombo.net/docs/>`_
+* `End user documentation <https://yombo.net/docs/Main_Page>`_
 * `Building your first module - a complete guide <https://yombo.net/docs/Developing_modules/Building_your_first_module>`_
 
 
