@@ -231,7 +231,16 @@ class YomboAPI(YomboLibrary):
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
         try:
-            results = yield self.request("POST", "/v1/user/login", {'username':username, 'password':password, 'g-recaptcha-response': g_recaptcha_response}, False)
+            results = yield self.request(
+                "POST",
+                "/v1/user/login",
+                {
+                    'username': username,
+                    'password':password,
+                    'g-recaptcha-response': g_recaptcha_response
+                },
+                False
+            )
         except YomboAPIWarning as e:
             results = {
                 'status': 'failed',
@@ -240,8 +249,9 @@ class YomboAPI(YomboLibrary):
                 'apimsghtml': "Couldn't delete command: %s" % e.html_message,
             }
             return results
-        logger.debug("$$$3 REsults from API login creds: {results}", results=results)
+        logger.info("$$$3 REsults from API login creds: {results}", results=results)
 
+#        if results['content']['code'] != 200:
         if results['content']['code'] != 200:
             return False
         elif results['content']['message'] != 'Logged in':
@@ -295,7 +305,7 @@ class YomboAPI(YomboLibrary):
     def request(self, method, path, data=None, session=None):
         path = self.base_url + path
 
-        logger.debug("{method}: {path}", method=method, path=path)
+        logger.info("{method}: {path}", method=method, path=path)
         # if session is False:
         #     session = None
         if session is None:
@@ -379,6 +389,7 @@ class YomboAPI(YomboLibrary):
     def decode_results(self, content, headers, code, phrase):
         # print("decode_results headers: %s" % headers)
 
+        print(content)
         content_type = headers['content-type'][0]
         phrase = bytes_to_unicode(phrase)
 
