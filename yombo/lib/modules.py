@@ -5,7 +5,7 @@
 
 .. note::
 
-  For more information see: `Modules @ Module Features <https://yombo.net/docs/Libraries/Modules>`_
+  For more information see: `Modules @ Module Features <https://yombo.net/Docs/Libraries/Modules>`_
 
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 
@@ -15,7 +15,7 @@ Also calls module hooks as requested by other libraries and modules.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/modules.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/modules.html>`_
 """
 # Import python libraries
 import configparser
@@ -64,7 +64,7 @@ SYSTEM_MODULES = {
         'dev_version': '',
         'repository_link': '',
         'issue_tracker_link': '',
-        'doc_link': 'https://yombo.net/docs/features/automation-rules/',
+        'doc_link': 'https://yombo.net/Docs/features/automation-rules/',
         'git_link': '',
         'public': '2',
         'status': '1',

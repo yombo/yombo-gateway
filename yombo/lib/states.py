@@ -4,7 +4,7 @@
 
 .. note::
 
-  For end-user documentation, see: `States @ Module Development <https://yombo.net/docs/Libraries/States>`_
+  For end-user documentation, see: `States @ Module Development <https://yombo.net/Docs/Libraries/States>`_
 
 .. seealso::
 
@@ -51,7 +51,7 @@ Example states: times_dark, weather_raining, alarm_armed, yombo_service_connecti
 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/states.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/states.html>`_
 """
 # Import python libraries
 from collections import OrderedDict, deque
@@ -624,7 +624,7 @@ class States(YomboLibrary, object):
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
-        Processes incoming MQTT requests. See `MQTT @ Module Development <https://yombo.net/docs/modules/mqtt/>`_
+        Processes incoming MQTT requests. See `MQTT @ Module Development <https://yombo.net/Docs/modules/mqtt/>`_
 
         Examples:
 

@@ -15,7 +15,7 @@ This module demonstrates two features of the Yombo Gateway:
    other processes to trigger actions, such as "open garage door".
 
 For more on developing modules, visit
-`Yombo.Net - Building Modules <https://yombo.net/docs/modules>`_ .
+`Yombo.Net - Building Modules <https://yombo.net/Docs/modules>`_ .
 
 
 ========================================================

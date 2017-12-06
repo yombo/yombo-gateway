@@ -15,14 +15,14 @@ A database API to SQLite3.
 
 .. note::
 
-  For more information see: `LocalDB @ Module Development <https://yombo.net/docs/Libraries/Local_DB>`_
+  For more information see: `LocalDB @ Module Development <https://yombo.net/Docs/Libraries/Local_DB>`_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/localdb.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/localdb.html>`_
 """
 # Import python libraries
 from collections import OrderedDict

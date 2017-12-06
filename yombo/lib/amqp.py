@@ -4,7 +4,7 @@
 
 .. note::
 
-  For developer documentation, see: `AMQP @ Module Development <https://yombo.net/docs/Libraries/AMQP>`_
+  For developer documentation, see: `AMQP @ Module Development <https://yombo.net/Docs/Libraries/AMQP>`_
 
 .. seealso::
 
@@ -24,7 +24,7 @@ Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this
 
 :copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/amqp.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/amqp.html>`_
 """
 # Import python libraries
 from collections import deque

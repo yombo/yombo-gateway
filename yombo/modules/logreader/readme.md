@@ -13,7 +13,7 @@ Usage
 
 The primary purpose of this module is to demonstrate creating modules and using
 the Yombo Filereader utility. The
-[Filereader](https://yombo.net/docs/Developing_modules/Utilities) utility allows
+[Filereader](https://yombo.net/Docs/Developing_modules/Utilities) utility allows
 for easily monitoring a file for updates and support file skip-ahead when the gateway restarts.
 
 With this module, you can simple echo in a command to be peformed:

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Loader @ Module Development <https://yombo.net/docs/Libraries/Loader>`_
+  For more information see: `Loader @ Module Development <https://yombo.net/Docs/Libraries/Loader>`_
 
 
 Responsible for importing, starting, and stopping all libraries and modules.
@@ -37,7 +37,7 @@ Stops components in the following phases. Modules first, then libraries.
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/loader.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/loader.html>`_
 """
 # Import python libraries
 import asyncio

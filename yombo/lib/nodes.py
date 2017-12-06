@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Nodes @ Module Development <https://yombo.net/docs/Libraries/Nodes>`_
+  For more information see: `Nodes @ Module Development <https://yombo.net/Docs/Libraries/Nodes>`_
 
 
 Nodes store generic information and are used to store information that doesn't need specific database needs.
@@ -20,7 +20,7 @@ for local data.
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/nodes.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/nodes.html>`_
 """
 import base64
 try:  # Prefer simplejson if installed, otherwise json will work swell.

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `CronTab @ Module Development <https://yombo.net/docs/Libraries/Cron_Tab>`_
+  For more information see: `CronTab @ Module Development <https://yombo.net/Docs/Libraries/Cron_Tab>`_
 
 Cron like library that can be used to perform scheduled actions. Can be used by modules to call a function at set times.
 
@@ -56,7 +56,7 @@ Usage example
 
 :copyright: Copyright 2013-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/crontab.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/crontab.html>`_
 """
 # Import python libraries
 from datetime import datetime, timedelta

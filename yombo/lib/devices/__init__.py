@@ -4,7 +4,7 @@
 
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/Libraries/Devices>`_
+  For development guides see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/Devices>`_
 
 The devices library is primarily responsible for:
 
@@ -52,7 +52,7 @@ To send a command to a device is simple.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/devices.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devices.html>`_
 """
 # Import python libraries
 

@@ -90,7 +90,7 @@ System modules, user modules, and downloaded modules go into the modules folder.
 the capabilites of the gateway and provide the gateway the ability to communicate with
 various devices over various protocols.
 
-For a list of modules available to be installed by end users: `Available Modules <https://yombo.net/docs/Modules>`_
+For a list of modules available to be installed by end users: `Available Modules <https://yombo.net/Docs/Modules>`_
 
 A list of system modules:
 

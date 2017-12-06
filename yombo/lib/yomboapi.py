@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `YomboAPI @ Module Development <https://yombo.net/docs/Libraries/YomboAPI>`_
+  For more information see: `YomboAPI @ Module Development <https://yombo.net/Docs/Libraries/YomboAPI>`_
 
 
 Manages interactions with api.yombo.net
@@ -14,7 +14,7 @@ Manages interactions with api.yombo.net
 
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/yomboapi.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/yomboapi.html>`_
 """
 # Import python libraries
 import msgpack

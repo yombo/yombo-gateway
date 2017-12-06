@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Tasks @ Module Development <https://yombo.net/docs/Libraries/Tasks>`_
+  For more information see: `Tasks @ Module Development <https://yombo.net/Docs/Libraries/Tasks>`_
 
 
 Performs various tasks as needed. Usually used to run various processes at startup.
@@ -14,7 +14,7 @@ Performs various tasks as needed. Usually used to run various processes at start
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/tasks.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/tasks.html>`_
 """
 from time import time
 # Import twisted libraries

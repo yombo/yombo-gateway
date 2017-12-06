@@ -4,7 +4,7 @@
 
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/Libraries/Devices>`_
+  For development guides see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/Devices>`_
 
 The device class is responsible for managing a single device.
 

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Times @ Module Development <https://yombo.net/docs/Libraries/Times>`_
+  For more information see: `Times @ Module Development <https://yombo.net/Docs/Libraries/Times>`_
 
 
 Sets up various times and events for: dusk, dawn, sunrise, sunset. Also send event messages when a status change
@@ -32,7 +32,7 @@ above or below the horizon (saturn, moon, sun, etc), and then they will transiti
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/times.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/times.html>`_
 """
 # Import python libraries
 import ephem

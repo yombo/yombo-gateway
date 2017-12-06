@@ -5,9 +5,9 @@ Developing Modules
 Extending the Yombo Gateway is easy!
 
 Full documentation is located at
-`Yombo.Net - Module Development <https://yombo.net/docs/Developing_modules>`_, including
+`Yombo.Net - Module Development <https://yombo.net/Docs/Developing_modules>`_, including
 a complete example on
-`building your first module <https://yombo.net/docs/Developing_modules/Building_your_first_module>_`.
+`building your first module <https://yombo.net/Docs/Developing_modules/Building_your_first_module>_`.
 
 An :ref:`empty <emptymodule>` module is included with the gateway to get you quickly started. Simply make a copy
 of the empty module to use a framework.

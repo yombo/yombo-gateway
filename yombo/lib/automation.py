@@ -4,7 +4,7 @@
 .. note::
 
   For more information see:
-  `Atoms @ Module Development <https://yombo.net/docs/Libraries/Automation>`_
+  `Atoms @ Module Development <https://yombo.net/Docs/Libraries/Automation>`_
 
 The automation library provides users an easy method to setup simple automation rules and tasks without the need to
 write a single line of code. It can also be extended by modules to include additional platforms. See link above for
@@ -45,7 +45,7 @@ Developers should review the following modules for examples of implementation:
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/automation.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/automation.html>`_
 """
 # Import python libraries
 from functools import reduce  # forward compatibility for Python 3

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/docs/Libraries/Devices>`_
+  For development guides see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/Devices>`_
 
 A device class to be inherited by all device types.
 

@@ -14,7 +14,7 @@ This library utilizes the amqp library to handle the low level handling.
 
 .. note::
 
-  For developer documentation, see: `AMQPYombo @ Module Development <https://yombo.net/docs/Libraries/AMQPYombo>`_
+  For developer documentation, see: `AMQPYombo @ Module Development <https://yombo.net/Docs/Libraries/AMQPYombo>`_
 
 This connection should be maintained 100% of the time. This allows control messages to be received by your devices
 or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
@@ -27,7 +27,7 @@ or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
 :copyright: Copyright 2015-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/amqpyombo.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/amqpyombo.html>`_
 """
 
 # Import python libraries

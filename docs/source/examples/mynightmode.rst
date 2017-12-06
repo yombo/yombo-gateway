@@ -6,8 +6,8 @@
 MyNightMode
 ===========
 
-At `Yombo - Module Development <https://yombo.net/docs/modules>`_ there is a more complex module example
-under the heading of "`Building Your First Module <https://yombo.net/docs/modules/building-your-first-module/>`_".
+At `Yombo - Module Development <https://yombo.net/Docs/modules>`_ there is a more complex module example
+under the heading of "`Building Your First Module <https://yombo.net/Docs/modules/building-your-first-module/>`_".
 
 Otherwise, review one of these more simple modules:
 

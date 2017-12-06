@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `SQLDict @ Module Development <https://yombo.net/docs/Libraries/SQLDict>`_
+  For more information see: `SQLDict @ Module Development <https://yombo.net/Docs/Libraries/SQLDict>`_
 
 
 Acts like a persistent dictionary between gateway stop/starts.
@@ -43,7 +43,7 @@ requires the serializer and unserializer to be set inside the get() request.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/sqldict.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/sqldict.html>`_
 """
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks

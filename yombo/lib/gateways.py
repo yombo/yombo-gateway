@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Gateways @ Module Development <https://yombo.net/docs/Libraries/Gateways>`_
+  For more information see: `Gateways @ Module Development <https://yombo.net/Docs/Libraries/Gateways>`_
 
 Handles inter-gateway communications. Any gateway within an account can communicate with another
 gateway using any master gateway's mqtt broker service.
@@ -18,7 +18,7 @@ a remote gateway, that automation rule should only fire on the master server.
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/gateways.html>`_
 """
 from collections import deque
 import msgpack

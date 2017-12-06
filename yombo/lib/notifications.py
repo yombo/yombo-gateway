@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Notifications @ Module Development <https://yombo.net/docs/Libraries/Notifications>`_
+  For more information see: `Notifications @ Module Development <https://yombo.net/Docs/Libraries/Notifications>`_
 
 
 Responsible for receiving and distributing notifications. Typically, they are system messages that need
@@ -23,7 +23,7 @@ Priority levels:
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/notifications.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/notifications.html>`_
 """
 from collections import OrderedDict
 try:  # Prefer simplejson if installed, otherwise json will work swell.
