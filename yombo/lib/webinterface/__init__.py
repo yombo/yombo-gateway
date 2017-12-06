@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Web Interface @ Module Development <https://yombo.net/docs/Libraries/Web_Interface>`_
+  For more information see: `Web Interface @ Module Development <https://yombo.net/Docs/Libraries/Web_Interface>`_
 
 
 Provides web interface for configuration of the Yombo system.
@@ -13,7 +13,7 @@ Provides web interface for configuration of the Yombo system.
 
 :copyright: Copyright 2016-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/webinterface.html>`_
 """
 # Import python libraries
 from OpenSSL import crypto
@@ -384,19 +384,9 @@ class WebInterface(YomboLibrary):
             else:
                 self.web_server_ssl_started = True
                 cert = self._SSLCerts.get('lib_webinterface')
-                # print("wb init: cert: %s" % cert)
-
-                privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
-                certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
-                if cert['chain'] is not None:
-                    chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
-                    # chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
-                else:
-                    chainpyssl = None
-                # chainpyssl = None
-                contextFactory = ssl.CertificateOptions(privateKey=privkeypyssl,
-                                                        certificate=certpyssl,
-                                                        extraCertChain=chainpyssl)
+                contextFactory = ssl.CertificateOptions(privateKey=cert['key_crypt'],
+                                                        certificate=cert['cert_crypt'],
+                                                        extraCertChain=cert['chain_crypt'])
 
                 port_attempts = 0
                 while port_attempts < 100:

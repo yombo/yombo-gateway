@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Devices @ Module Development <https://yombo.net/docs/Libraries/SSLCerts>`_
+  For more information see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/SSLCerts>`_
 
 
 This module provides support to the SSLCerts library. It's responsible for
@@ -24,7 +24,7 @@ and then can find the certificate for use in the usr/etc/certs directory.
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/sslcerts.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/sslcerts.html>`_
 """
 try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
@@ -36,6 +36,7 @@ from hashlib import sha256
 import os
 import os.path
 from time import time
+from OpenSSL import crypto
 
 # Import twisted libraries
 from twisted.internet import threads
@@ -115,8 +116,11 @@ class SSLCert(object):
         self.key_type = None
 
         self.current_cert = None
+        self.current_cert_crypt = None
         self.current_chain = None
+        self.current_chain_crypt = None
         self.current_key = None
+        self.current_key_crypt = None
         self.current_created = None
         self.current_expires = None
         self.current_signed = None
@@ -198,10 +202,13 @@ class SSLCert(object):
 
         if 'current_cert' in attributes:
             self.current_cert = attributes['current_cert']
+            self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
         if 'current_chain' in attributes:
             self.current_chain = attributes['current_chain']
+            self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
         if 'current_key' in attributes:
             self.current_key = attributes['current_key']
+            self.current_key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.current_key),
         if 'current_created' in attributes:
             self.current_created = int(attributes['current_created']) if attributes['current_created'] else None
         if 'current_expires' in attributes:
@@ -285,6 +292,9 @@ class SSLCert(object):
         self.current_cert = self.next_cert
         self.current_chain = self.next_chain
         self.current_key = self.next_key
+        self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
+        self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
+        self.current_key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.current_key),
         self.current_created = self.next_created
         self.current_expires = self.next_expires
         self.current_signed = self.next_signed
@@ -742,10 +752,6 @@ class SSLCert(object):
     def tell_requester_failure(self, failure):
         logger.error("Got failure when telling SSL/TLS dependents we have a cert: {failure}", failure=failure)
 
-    # def get_key(self):
-    #     self.requested_locally = True
-    #     return self.key
-
     def get(self):
         """
         Returns a signed cert, the key, and the chain.
@@ -754,8 +760,11 @@ class SSLCert(object):
             logger.debug("Sending public signed cert details for {sslname}", sslname=self.sslname)
             return {
                 'key': self.current_key,
+                'key_crypt': self.current_key_crypt,
                 'cert': self.current_cert,
+                'cert_crypt': self.current_cert_crypt,
                 'chain': self.current_chain,
+                'chain_crypt': self.current_chain_crypt,
                 'expires': self.current_expires,
                 'created': self.current_created,
                 'signed': self.current_signed,

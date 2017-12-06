@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Devices @ Module Development <https://yombo.net/docs/Libraries/SSLCerts>`_
+  For more information see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/SSLCerts>`_
 
 
 This library is responsible for managing SSL/TLS certs. It utilizes openssl to
@@ -25,7 +25,7 @@ needs to return several things:
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/lib/sslcerts.html>`_
+:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/sslcerts.html>`_
 """
 # Import python libraries
 from OpenSSL import crypto
@@ -143,6 +143,10 @@ class SSLCerts(YomboLibrary):
                                                    False)
 
         # Check if any libraries or modules need certs.
+        fqdn = self._Configs.get('dns', 'fqdn', None, False)
+        if fqdn is None:
+            logger.warn("Unable to create webinterface SSL cert: DNS not set properly.")
+            return
         sslcerts = yield global_invoke_all('_sslcerts_',
                                            called_by=self,
                                            )
@@ -236,6 +240,9 @@ class SSLCerts(YomboLibrary):
                 'key': self.self_signed_key,
                 'cert': self.self_signed_cert,
                 'chain': None,
+                'key_crypt': crypto.load_privatekey(crypto.FILETYPE_PEM, self.self_signed_key),
+                'cert_crypt': crypto.load_certificate(crypto.FILETYPE_PEM, self.self_signed_cert),
+                'chain_crypt': None,
                 'expires': self.self_signed_expires,
                 'created': self.self_signed_created,
                 'signed': self.self_signed_created,
