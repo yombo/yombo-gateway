@@ -6,7 +6,7 @@ unit tests in your module...
 The goal of this module is to test all frame libraries and core functions.
 
 Learn about [Yombo Gateway](https://yombo.net/) or
-[Get started today](https://yombo.net/Docs/Gateway/Quick_start)
+[Get started today](https://yombo.net/docs/gateway/quick_start)
 
 ToDo List
 ===========

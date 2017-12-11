@@ -10,9 +10,9 @@ through the use of modules; such as X10, Z-Wave, Insteon, Zigbee, etc.
 This framework can also act a bridge between vendor protocols. For example,
 an X10 controler can be used to control Z-Wave products.
 
-`Modules <https://yombo.net/features/modules/>`_ can:
+`Modules <https://yg2.in/about_modules>`_ can:
 
-* Extend the features of the framework through the use of `hooks <https://yombo.net/Docs/Hooks>`_.
+* Extend the features of the framework through the use of `hooks <https://yg2.in/hooks>`_.
 * Provide additional API features to other modules.
 * Provide advanced automation rules and tasks.
 
@@ -20,12 +20,12 @@ an X10 controler can be used to control Z-Wave products.
 Documentation
 =============
 
-For new users, check out the quick start guide at https://yombo.net/Docs/Gateway/Quick_start
+For new users, check out the quick start guide at https://yg2.in/start
 
-Otherwise, full documentation can be found at https://yombo.net/Docs/
+Otherwise, full documentation can be found at https://yg2.in/docs
 
 To created intermediate to advanced automation rules or to extend the
-capabilites of the gateway, consider `developing a module <https://yombo.net/Docs/Developing_modules>`_.
+capabilites of the gateway, consider `developing a module <https://yg2.in/dev>`_.
 
 ============
 Python 3.6.x
@@ -38,16 +38,16 @@ to setup:
 
 On a Raspberry Pi 3, this will take quite a while. On a Raspberry Pi Zero, it's best to enjoy some
 lunch or dinner at your favorite place or simply use
-`one of our images <https://yombo.net/Docs/Gateway/Raspberry_Pi_from_bare_metal>`_.
+`one of our images <https://yg2.in/install_rpi>`_.
 
 ==================
 Developing Modules
 ==================
 
-Documentation for developing modules can be found at: https://yombo.net/Docs/Developing_modules
+Documentation for developing modules can be found at: https://yg2.in/dev
 
 A quick start guide to developing modules can be found her:
-https://yombo.net/Docs/Developing_modules/Building_your_first_module
+https://yg2.in/dev1
 
 ===============================
 Getting Help / Other Resources
@@ -60,7 +60,7 @@ For issue (tickets), feature requests, and roadmaps, visit
 Privacy Policy
 ==============
 
-The full privacy policy is located here: https://yombo.net/policies/privacy
+The full privacy policy is located here: https://yombo.net/policies/privacy_policy
 
 In short: It's your data. We don't sell it or give it away, unless required to
 do so by court order.
@@ -76,9 +76,3 @@ access or use this softare.
 The Yombo Gateway source and/or binaries is governed by the Yombo Reciprocal
 Public License Version 1.6. A copy is included in the LICENSE file distributed
 with this software.
-
-If you do not wish to release your source code of the software you build using Yombo
-Gateway as the base, you may use Yombo Gateway source and/or binaries under the Yombo
-Gateway Private License as described here:
-
-https://yombo.net/policies/private-license

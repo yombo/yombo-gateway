@@ -9,7 +9,7 @@ Statistics (yombo.lib.statistics)
 =====================================================
 
 This library is responsible for handling system statistics.
-See https://yombo.net/Docs/Libraries/Statistics for additional information.
+See https://yombo.net/docs/libraries/statistics for additional information.
 
 Statistics Library
 =========================

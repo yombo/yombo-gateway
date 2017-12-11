@@ -10,7 +10,7 @@ Devices (yombo.lib.devices)
 
 Devices are controllable items (lamps, fans, thermostats) as well as virtual or types of items.
 
-See the `developer documentation <https://yombo.net/Docs/Libraries/Devices>`_ for additional
+See the `developer documentation <https://yombo.net/docs/libraries/devices>`_ for additional
 details.
 
 Devices Library

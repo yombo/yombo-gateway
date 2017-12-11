@@ -5,7 +5,7 @@ Hooks
 ##################
 
 For details on implementing new module hooks, or how to access the system hooks, review the module development
-documentation on `hooks <https://yombo.net/Docs/modules/hooks/>`_.
+documentation on `hooks <https://yg2.in/dev_hooks>`_.
 
 
 List of system hooks

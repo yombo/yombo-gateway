@@ -4,13 +4,13 @@
 Yombo Automation Python Reference
 =================================
 
-Release v0.14.0 (`Quick Start <https://yombo.net/Docs/Gateway/Quick_start>`_)
+Release v0.14.0 (`Quick Start <https://yombo.net/docs/gateway/quick_start>`_)
 
 Python API Documentation
 ========================
 
 This site is for those who wish to tinker with writing logic to manage their automation system. For code samples
-and getting started guides, visit the `Yombo Development Documentation <https://yombo.net/Docs/Developing_modules>`_
+and getting started guides, visit the `Yombo Development Documentation <https://yombo.net/docs/developing_modules>`_
 
 Overview
 ========
@@ -41,9 +41,9 @@ Useful links
 =============
 
 * `Yombo.net <https://yombo.net/>`_
-* `Quick start guide <https://yombo.net/Docs/Gateway/Quick_start>`_
-* `End user documentation <https://yombo.net/Docs/Main_Page>`_
-* `Building your first module - a complete guide <https://yombo.net/Docs/Developing_modules/Building_your_first_module>`_
+* `Quick start guide <https://yombo.net/docs/gateway/quick_start>`_
+* `End user documentation <https://yombo.net/docs>`_
+* `Building your first module - a complete guide <https://yombo.net/docs/developing_modules/building_your_first_module>`_
 
 
 Table of Contents

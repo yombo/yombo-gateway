@@ -10,7 +10,7 @@ started.
 
 
 For more on developing modules, visit
-`Yombo.Net - Building Modules <https://yombo.net/Docs/modules>`_ .
+`Yombo.Net - Building Modules <https://yg2.in/f_gdoc_modules>`_ .
 
 Empty Module (yombo.modules.empty)
 ==========================================

@@ -64,7 +64,7 @@ SYSTEM_MODULES = {
         'dev_version': '',
         'repository_link': '',
         'issue_tracker_link': '',
-        'doc_link': 'https://yombo.net/Docs/features/automation-rules/',
+        'doc_link': 'https://yg2.in/about_rules',
         'git_link': '',
         'public': '2',
         'status': '1',
