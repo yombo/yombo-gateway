@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `SQLDict @ Module Development <https://yombo.net/Docs/Libraries/SQLDict>`_
+  For more information see: `SQLDict @ Module Development <https://yombo.net/docs/libraries/sqldict>`_
 
 
 Acts like a persistent dictionary between gateway stop/starts.

@@ -4,7 +4,7 @@
 .. note::
 
   For more information see:
-  `Configuration @ Module Development <https://yombo.net/Docs/Libraries/Configuration>`_
+  `Configuration @ Module Development <https://yombo.net/docs/libraries/configuration>`_
 
 Handles loading, storing, updating, and saving gateway configuration items.
 

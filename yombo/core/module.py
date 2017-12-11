@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Module Core @ Module Development <https://yombo.net/Docs/Core/Module>`_
+  For more information see: `Module Core @ Module Development <https://yombo.net/docs/core/module>`_
 
 
 Module developers must use the *YomboModule* class as their base class. This class
@@ -97,7 +97,7 @@ documentation.
 
 :copyright: Copyright 2012-2016 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/core/module.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
 from functools import partial
 

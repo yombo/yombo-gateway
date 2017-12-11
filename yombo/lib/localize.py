@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Internationalization @ Module Development <https://yombo.net/Docs/Libraries/Localize>`_
+  For more information see: `Internationalization @ Module Development <https://yombo.net/docs/libraries/localize>`_
 
 Localization and translation for Yombo Gateway.
 

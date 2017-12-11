@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `GPG @ Module Development <https://yombo.net/Docs/Libraries/GPG>`_
+  For more information see: `GPG @ Module Development <https://yombo.net/docs/libraries/gpg>`_
 
 
 This library handles encrypting and decrypting content. This library allows data at rest to be encrypted, which

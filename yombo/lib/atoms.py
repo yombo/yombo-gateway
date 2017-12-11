@@ -4,7 +4,7 @@
 
 .. note::
 
-  For developer documentation, see: `Atoms @ Module Development <https://yombo.net/Docs/Libraries/Atoms>`_
+  For developer documentation, see: `Atoms @ Module Development <https://yombo.net/docs/libraries/atoms>`_
 
 .. seealso::
 

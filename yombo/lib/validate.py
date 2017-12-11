@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Validate @ Module Development <https://yombo.net/Docs/Libraries/Validate>`_
+  For more information see: `Validate @ Module Development <https://yombo.net/docs/libraries/validate>`_
 
 
 Validates various items. In many causes, it tries to coerce the correct value type and return that. If the item

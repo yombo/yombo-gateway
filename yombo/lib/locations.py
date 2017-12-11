@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Locations @ Module Development <https://yombo.net/Docs/Libraries/Locations>`_
+  For more information see: `Locations @ Module Development <https://yombo.net/docs/libraries/locations>`_
 
 
 Stores location and area information in memory.

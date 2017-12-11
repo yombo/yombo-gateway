@@ -11,7 +11,7 @@ Responsible for downloading and installing any modules as requested by the confi
 
 .. note::
 
-  For more information see: `Download Modules @ Module Development <https://yombo.net/Docs/Libraries/Download_Modules>`_
+  For more information see: `Download Modules @ Module Development <https://yombo.net/docs/libraries/download_modules>`_
 
 
 It compares the 'modules' table for columns prod_version and dev_version table

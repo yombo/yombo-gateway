@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/SSLCerts>`_
+  For more information see: `Devices @ Module Development <https://yombo.net/docs/libraries/sslcerts>`_
 
 
 This module provides support to the SSLCerts library. It's responsible for

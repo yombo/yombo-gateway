@@ -5,7 +5,7 @@
 
 .. note::
 
-  For more information see: `Modules @ Module Features <https://yombo.net/Docs/Libraries/Modules>`_
+  For more information see: `Modules @ Module Features <https://yombo.net/docs/libraries/modules>`_
 
 Manages all modules within the system. Provides a single reference to perform module lookup functions, etc.
 

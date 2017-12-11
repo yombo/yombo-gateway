@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/SSLCerts>`_
+  For more information see: `Devices @ Module Development <https://yombo.net/docs/libraries/sslcerts>`_
 
 
 This library is responsible for managing SSL/TLS certs. It utilizes openssl to

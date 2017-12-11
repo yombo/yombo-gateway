@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Variables @ Module Development <https://yombo.net/Docs/Libraries/Variables>`_
+  For more information see: `Variables @ Module Development <https://yombo.net/docs/libraries/variables>`_
 
 
 A library to get variables in various formats. Also used to send updates to Yombo API.

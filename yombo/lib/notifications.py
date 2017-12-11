@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Notifications @ Module Development <https://yombo.net/Docs/Libraries/Notifications>`_
+  For more information see: `Notifications @ Module Development <https://yombo.net/docs/libraries/notifications>`_
 
 
 Responsible for receiving and distributing notifications. Typically, they are system messages that need

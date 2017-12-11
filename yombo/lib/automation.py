@@ -4,7 +4,7 @@
 .. note::
 
   For more information see:
-  `Atoms @ Module Development <https://yombo.net/Docs/Libraries/Automation>`_
+  `Atoms @ Module Development <https://yombo.net/docs/libraries/automation>`_
 
 The automation library provides users an easy method to setup simple automation rules and tasks without the need to
 write a single line of code. It can also be extended by modules to include additional platforms. See link above for

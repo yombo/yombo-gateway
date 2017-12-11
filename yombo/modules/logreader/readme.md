@@ -6,14 +6,14 @@ This module extends the capabilities of the Yombo Gateway by adding the ability 
 Additional details about this module at: https://yombo.net/Modules/logreader
 
 Learn about [Yombo Gateway](https://yombo.net/) or
-[Get started today](https://yombo.net/Docs/Gateway/Quick_start)
+[Get started today](https://yg2.in/start)
 
 Usage
 =====
 
 The primary purpose of this module is to demonstrate creating modules and using
 the Yombo Filereader utility. The
-[Filereader](https://yombo.net/Docs/Developing_modules/Utilities) utility allows
+[Filereader](https://yg2.in/dev_util) utility allows
 for easily monitoring a file for updates and support file skip-ahead when the gateway restarts.
 
 With this module, you can simple echo in a command to be peformed:

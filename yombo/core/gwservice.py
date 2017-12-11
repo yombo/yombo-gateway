@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `GW Service Core @ Module Development <https://yombo.net/Docs/Core/GWService>`_
+  For more information see: `GW Service Core @ Module Development <https://yombo.net/docs/core/gwservice>`_
 
 
 This is the main class the is responsible for getting everything started.
@@ -13,7 +13,7 @@ This is the main class the is responsible for getting everything started.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/core/module.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
 # Import twisted libraries
 from twisted.internet import reactor

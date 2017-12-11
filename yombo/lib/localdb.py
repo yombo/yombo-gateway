@@ -15,7 +15,7 @@ A database API to SQLite3.
 
 .. note::
 
-  For more information see: `LocalDB @ Module Development <https://yombo.net/Docs/Libraries/Local_DB>`_
+  For more information see: `LocalDB @ Module Development <https://yombo.net/docs/libraries/localdb>`_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>

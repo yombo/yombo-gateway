@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Input Type @ Module Development <https://yombo.net/Docs/Libraries/Input_Types>`_
+  For more information see: `Input Type @ Module Development <https://yombo.net/docs/libraries/input_types>`_
 
 This library maintains a list of all available input types. The input types (plural) is a wrapper class and contains all
 the individual input type classes.

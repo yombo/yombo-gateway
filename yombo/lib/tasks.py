@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Tasks @ Module Development <https://yombo.net/Docs/Libraries/Tasks>`_
+  For more information see: `Tasks @ Module Development <https://yombo.net/docs/libraries/tasks>`_
 
 
 Performs various tasks as needed. Usually used to run various processes at startup.

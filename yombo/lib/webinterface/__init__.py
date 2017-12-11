@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Web Interface @ Module Development <https://yombo.net/Docs/Libraries/Web_Interface>`_
+  For more information see: `Web Interface @ Module Development <https://yombo.net/docs/libraries/web_interface>`_
 
 
 Provides web interface for configuration of the Yombo system.

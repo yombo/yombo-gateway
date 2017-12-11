@@ -4,7 +4,7 @@
 
 .. note::
 
-  For end-user documentation, see: `States @ Module Development <https://yombo.net/Docs/Libraries/States>`_
+  For end-user documentation, see: `States @ Module Development <https://yombo.net/docs/libraries/states>`_
 
 .. seealso::
 
@@ -624,7 +624,7 @@ class States(YomboLibrary, object):
 
     def mqtt_incoming(self, topic, payload, qos, retain):
         """
-        Processes incoming MQTT requests. See `MQTT @ Module Development <https://yombo.net/Docs/modules/mqtt/>`_
+        Processes incoming MQTT requests. See `MQTT @ Module Development <https://yombo.net/docs/libraries/mqtt>`_
 
         Examples:
 

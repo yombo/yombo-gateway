@@ -1077,7 +1077,6 @@ def get_external_ip_address_v4():
     """
     import treq
 
-#    response = yield treq.get("https://yombo.net/tools/clientip.php") # fails check on older systems due to wildcard
     response = yield treq.get("https://api.ipify.org")
     content = yield treq.content(response)
     return content.decode().strip()

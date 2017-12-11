@@ -4,7 +4,7 @@
 
 .. note::
 
-  For development guides see: `Devices @ Module Development <https://yombo.net/Docs/Libraries/Devices>`_
+  For development guides see: `Devices @ Module Development <https://yombo.net/docs/libraries/devices>`_
 
 The devices library is primarily responsible for:
 

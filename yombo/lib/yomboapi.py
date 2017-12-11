@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `YomboAPI @ Module Development <https://yombo.net/Docs/Libraries/YomboAPI>`_
+  For more information see: `YomboAPI @ Module Development <https://yombo.net/docs/libraries/yomboapi>`_
 
 
 Manages interactions with api.yombo.net

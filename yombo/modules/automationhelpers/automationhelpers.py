@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `Automation Rules @ Yombo.net <https://yombo.net/Docs/features/automation-rules/>`_
+  For more information see: `Automation Rules @ Yombo.net <https://yombo.net/features/automation_rules>`_
 
 Helpers for automation items. Adds some core platforms to the source, filters, and actions systems. See
 :py:mod:`yombo.lib.automation` for additional details.

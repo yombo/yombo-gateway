@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `Commands @ command Development <https://yombo.net/Docs/Libraries/Commands>`_
+  For more information see: `Commands @ command Development <https://yombo.net/docs/libraries/commands>`_
 
 This library maintains a list of all available commands. The commands (plural) is a wrapper class and contains all
 the individual command classes.
@@ -407,7 +407,7 @@ class Commands(YomboLibrary):
         Used to interact with the Yombo API to add a new command. This doesn't add a new command
         to the local gateway.
 
-        :param data: Fields to send to the Yombo API. See https://yombo.net/Docs/api/#commands for details.
+        :param data: Fields to send to the Yombo API. See https://yg2.in/api for details.
         :type data: dict
         :param kwargs: Currently unused.
         :return: Results on the success/fail of the add request.
@@ -439,7 +439,7 @@ class Commands(YomboLibrary):
         Used to interact with the Yombo API to edit a command. This doesn't edit the command
         on the local gateway.
 
-        :param data: Fields to send to the Yombo API. See https://yombo.net/Docs/api/#commands for details.
+        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
         :type data: dict
         :param kwargs: Currently unused.
         :return: Results on the success/fail of the request.
@@ -471,7 +471,7 @@ class Commands(YomboLibrary):
         Used to interact with the Yombo API to delete a command. This doesn't delete the command
         on the local gateway.
 
-        :param data: Fields to send to the Yombo API. See https://yombo.net/Docs/api/#commands for details.
+        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
         :type data: dict
         :param kwargs: Currently unused.
         :return: Results on the success/fail of the request.
@@ -501,7 +501,7 @@ class Commands(YomboLibrary):
         Used to interact with the Yombo API to enable a command. This doesn't enable the command
         on the local gateway.
 
-        :param data: Fields to send to the Yombo API. See https://yombo.net/Docs/api/#commands for details.
+        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
         :type data: dict
         :param kwargs: Currently unused.
         :return: Results on the success/fail of the request.
@@ -535,7 +535,7 @@ class Commands(YomboLibrary):
         Used to interact with the Yombo API to disable a command. This doesn't diable the command
         on the local gateway.
 
-        :param data: Fields to send to the Yombo API. See https://yombo.net/Docs/api/#commands for details.
+        :param data: Fields to send to the Yombo API. See https://yombo.net/API:Commands for details.
         :type data: dict
         :param kwargs: Currently unused.
         :return: Results on the success/fail of the request.

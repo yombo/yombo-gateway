@@ -12,7 +12,7 @@ mode.
 
 .. note::
 
-  For more information see: `Startup @ Module Development <https://yombo.net/Docs/Libraries/Startup>`_
+  For more information see: `Startup @ Module Development <https://yombo.net/docs/libraries/startup>`_
 
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>

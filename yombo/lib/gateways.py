@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Gateways @ Module Development <https://yombo.net/Docs/Libraries/Gateways>`_
+  For more information see: `Gateways @ Module Development <https://yombo.net/docs/libraries/gateways>`_
 
 Handles inter-gateway communications. Any gateway within an account can communicate with another
 gateway using any master gateway's mqtt broker service.

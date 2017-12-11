@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Nodes @ Module Development <https://yombo.net/Docs/Libraries/Nodes>`_
+  For more information see: `Nodes @ Module Development <https://yombo.net/docs/libraries/nodes>`_
 
 
 Nodes store generic information and are used to store information that doesn't need specific database needs.

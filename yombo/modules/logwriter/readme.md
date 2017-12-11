@@ -8,7 +8,7 @@ Additional details about this module at:
 https://yombo.net/Modules/logwriter
 
 Learn about [Yombo Gateway](https://yombo.net/) or
-[Get started today](https://yombo.net/Docs/Gateway/Quick_start)
+[Get started today](https://yg2.in/start)
 
 Usage
 =====

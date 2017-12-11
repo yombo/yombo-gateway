@@ -3,7 +3,7 @@
 """
 .. note::
 
-  For more information see: `MQTT @ Module Development <https://yombo.net/Docs/Libraries/MQTT>`_
+  For more information see: `MQTT @ Module Development <https://yombo.net/docs/libraries/mqtt>`_
 
 Implements MQTT. It does 2 things:
 

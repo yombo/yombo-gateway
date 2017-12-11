@@ -67,11 +67,11 @@
 	                        <i class="fa fa-user fa-fw"></i>  <i class="fa fa-caret-down"></i>
 	                    </a>
 	                    <ul class="dropdown-menu dropdown-user">
-	                        <li><a href="https://my.yombo.net"><i class="fa fa-user fa-fw"></i> User Profile</a>
+	                        <li><a href="https://yg2.in/f_gw_my_account"><i class="fa fa-user fa-fw"></i> User Profile</a>
 	                        </li>
-	                        <li><a href="https://yombo.net/documents/"><i class="fa fa-file-text fa-fw"></i> Documentation</a>
+	                        <li><a href="https://yg2.in/f_gw_docs"><i class="fa fa-file-text fa-fw"></i> Documentation</a>
 	                        </li>
-	                        <li><a href="https://yombo.net/"><i class="fa fa-globe fa-fw"></i> Yombo.Net</a>
+	                        <li><a href="https://yg2.in/f_gw_yombonet"><i class="fa fa-globe fa-fw"></i> Yombo.Net</a>
 	                        </li>
 	                        <li class="divider"></li>
 	                        <li><a class="confirm-logout" href="#"><i class="fa fa-sign-out fa-fw"></i> Logout</a>

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Times @ Module Development <https://yombo.net/Docs/Libraries/Times>`_
+  For more information see: `Times @ Module Development <https://yombo.net/docs/libraries/times>`_
 
 
 Sets up various times and events for: dusk, dawn, sunrise, sunset. Also send event messages when a status change

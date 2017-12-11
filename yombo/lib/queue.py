@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Queues @ command Development <https://yombo.net/Docs/Libraries/Queues>`_
+  For more information see: `Queues @ command Development <https://yombo.net/docs/libraries/queues>`_
 
 This library implements a modified version of a queue developed by Terry Jones
 ( http://blogs.fluidinfo.com/terry/2011/06/27/a-resizable-dispatch-queue-for-twisted/ ).
@@ -35,7 +35,7 @@ logger = get_logger('library.queue')
 class Queue(YomboLibrary):
     """
     Allows libraries and modules to implement a FIFO queue with various features. See 
-    `Queues @ command Development <https://yombo.net/Docs/modules/queues/>`_ for full usage.
+    `Queues @ command Development <https://yombo.net/docs/libraries/queues>`_ for full usage.
     """
     def __str__(self):
         """

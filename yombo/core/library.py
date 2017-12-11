@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Library Core @ Module Development <https://yombo.net/Docs/Core/Library>`_
+  For more information see: `Library Core @ Module Development <https://yombo.net/docs/core/library>`_
 
 
 Used by the Yombo Gateway framework to set up it's libraries.
@@ -18,7 +18,7 @@ Used by the Yombo Gateway framework to set up it's libraries.
 
 :copyright: Copyright 2012-2017 by Yombo.
 :license: LICENSE for details.
-:view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/core/library.html>`_
+:view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library.html>`_
 """
 class YomboLibrary:
     """

@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `CronTab @ Module Development <https://yombo.net/Docs/Libraries/Cron_Tab>`_
+  For more information see: `CronTab @ Module Development <https://yombo.net/docs/libraries/crontab>`_
 
 Cron like library that can be used to perform scheduled actions. Can be used by modules to call a function at set times.
 

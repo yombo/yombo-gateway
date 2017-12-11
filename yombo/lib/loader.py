@@ -4,7 +4,7 @@
 
 .. note::
 
-  For more information see: `Loader @ Module Development <https://yombo.net/Docs/Libraries/Loader>`_
+  For more information see: `Loader @ Module Development <https://yombo.net/docs/libraries/loader>`_
 
 
 Responsible for importing, starting, and stopping all libraries and modules.
