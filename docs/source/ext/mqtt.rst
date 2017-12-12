@@ -1,6 +1,6 @@
 .. index:: mqtt
 
-.. _mqtt:
+.. _ext_mqtt:
 
 .. currentmodule:: yombo.ext.mqtt
 

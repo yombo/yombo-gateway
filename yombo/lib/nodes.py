@@ -253,13 +253,13 @@ class Nodes(YomboLibrary):
 
         .. note::
 
-        Can use the built in methods below or use get_meta/get to include 'node_type' limiter:
+            Can use the built in methods below or use get_meta/get to include 'node_type' limiter:
 
-            >>> self._Nodes['13ase45']
+                >>> self._Nodes['13ase45']
 
-        or:
+            or:
 
-            >>> self._Nodes['numeric']
+                >>> self._Nodes['numeric']
 
         :raises YomboWarning: For invalid requests.
         :raises KeyError: When item requested cannot be found.

@@ -1,6 +1,6 @@
 .. index:: totp
 
-.. _totp:
+.. _ext_totp:
 
 .. currentmodule:: yombo.ext.totp
 

@@ -1,13 +1,13 @@
-.. index:: inputtype_yombo_items
+.. index:: devices_device_status
 
-.. _inputtype_yombo_items:
+.. _devices_device_status:
 
-.. currentmodule:: yombo.lib.inputtypes.yombo_items
+.. currentmodule:: yombo.lib.devices.fan
 
 =================================================================
-Yombo Items (yombo.lib.inputtypes.yombo_items)
+Devices::Device Status (yombo.lib.devices._device_status)
 =================================================================
-.. automodule:: yombo.lib.inputtypes.yombo_items
+.. automodule:: yombo.lib.devices._device_status
    :members:
    :special-members:
    :private-members:

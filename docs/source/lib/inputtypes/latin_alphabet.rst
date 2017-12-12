@@ -1,13 +1,13 @@
-.. index:: inputtype_automation_addresses
+.. index:: inputtype_latin_alphabet
 
-.. _inputtype_automation_addresses:
+.. _inputtype_latin_alphabet:
 
-.. currentmodule:: yombo.lib.inputtypes.automation_addresses
+.. currentmodule:: yombo.lib.inputtypes.latin_alphabet
 
 =================================================================
-Latin Alphabet (yombo.lib.inputtypes.automation_addresses)
+Latin Alphabet (yombo.lib.inputtypes.latin_alphabet)
 =================================================================
-.. automodule:: yombo.lib.inputtypes.automation_addresses
+.. automodule:: yombo.lib.inputtypes.latin_alphabet
    :members:
    :special-members:
    :private-members:

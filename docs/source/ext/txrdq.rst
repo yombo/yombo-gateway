@@ -1,6 +1,6 @@
 .. index:: txrdq
 
-.. _txrdq:
+.. _ext_txrdq:
 
 .. currentmodule:: yombo.ext.txrdq
 

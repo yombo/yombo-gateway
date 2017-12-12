@@ -11,5 +11,7 @@ Constants (yombo.core.constants)
 .. automodule:: yombo.core.constants
    :members:
    :private-members:
+   :special-members:
+   :undoc-members:
 
 Last updated: |today|

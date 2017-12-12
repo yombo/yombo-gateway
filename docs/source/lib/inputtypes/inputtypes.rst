@@ -8,8 +8,10 @@
 Input Types (yombo.lib.inputtypes)
 =====================================================
 
-Input types validate and format user input. See https://yombo.net/docs/libraries/input_types
-for additional information.
+Input types validate and format user input.
+
+**See the `input types developer docs <https://yombo.net/docs/libraries/input_types`_ for more
+details.**
 
 Input Type Library
 ====================

@@ -1,6 +1,6 @@
 .. index:: devices_appliance
 
-.. _devices_device:
+.. _devices_appliance:
 
 .. currentmodule:: yombo.lib.devices.appliance
 

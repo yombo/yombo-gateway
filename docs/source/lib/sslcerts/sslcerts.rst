@@ -8,8 +8,10 @@
 SSLCerts (yombo.lib.sslcerts)
 =====================================================
 
-This library is responsible for managing SSL/TLS certs. See https://yombo.net/docs/libraries/sslcerts
-for additional information.
+This library is responsible for managing SSL/TLS certs.
+
+**See the `sslcerts developer docs <https://yombo.net/docs/libraries/sslcerts`_ for more
+details.**
 
 SSL Certificates Library
 =========================

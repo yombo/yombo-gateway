@@ -1,6 +1,6 @@
 .. index:: hashids
 
-.. _hashids:
+.. _ext_hashids:
 
 .. currentmodule:: yombo.ext.hashids
 

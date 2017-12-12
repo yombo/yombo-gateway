@@ -5,7 +5,7 @@ A demonstration module that adds basic ability to send
 events to a log file. This can be used as a foundation for more advanced modules.
 
 Additional details about this module at:
-https://yombo.net/Modules/logwriter
+https://yombo.net/modules/logwriter
 
 Learn about [Yombo Gateway](https://yombo.net/) or
 [Get started today](https://yg2.in/start)

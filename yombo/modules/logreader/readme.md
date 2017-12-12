@@ -3,7 +3,7 @@ Summary
 
 This module extends the capabilities of the Yombo Gateway by adding the ability to monitor a text file for device commands.
 
-Additional details about this module at: https://yombo.net/Modules/logreader
+Additional details about this module at: https://yombo.net/modules/logreader
 
 Learn about [Yombo Gateway](https://yombo.net/) or
 [Get started today](https://yg2.in/start)

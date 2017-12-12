@@ -1,6 +1,6 @@
 .. index:: validators
 
-.. _validators:
+.. _ext_validators:
 
 .. currentmodule:: yombo.ext.validators
 

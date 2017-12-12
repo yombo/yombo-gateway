@@ -1,6 +1,6 @@
 .. index:: bermiinflector
 
-.. _bermiinflector:
+.. _ext_bermiinflector:
 
 .. currentmodule:: yombo.ext.bermiinflector
 

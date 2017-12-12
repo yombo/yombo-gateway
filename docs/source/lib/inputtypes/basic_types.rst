@@ -1,13 +1,13 @@
-.. index:: inputtype_automation_addresses
+.. index:: inputtype_basic_types
 
-.. _inputtype_automation_addresses:
+.. _inputtype_basic_types:
 
-.. currentmodule:: yombo.lib.inputtypes.automation_addresses
+.. currentmodule:: yombo.lib.inputtypes.basic_types
 
 =================================================================
-Basic Types (yombo.lib.inputtypes.automation_addresses)
+Basic Types (yombo.lib.inputtypes.basic_types)
 =================================================================
-.. automodule:: yombo.lib.inputtypes.automation_addresses
+.. automodule:: yombo.lib.inputtypes.basic_types
    :members:
    :special-members:
    :private-members:

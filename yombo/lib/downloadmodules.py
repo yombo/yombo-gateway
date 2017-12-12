@@ -31,7 +31,7 @@ Download Steps:
 .. warning::
 
    Module developers and users should not access any of these functions
-   or variables.  This is listed here for completeness. Use a :ref:`Helpers`
+   or variables.  This is listed here for completeness. Use a :ref:`framework_utils`
    function to get what is needed.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>

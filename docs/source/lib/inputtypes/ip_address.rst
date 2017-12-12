@@ -1,13 +1,13 @@
-.. index:: inputtype_automation_addresses
+.. index:: inputtype_ip_address
 
-.. _inputtype_automation_addresses:
+.. _inputtype_ip_address:
 
-.. currentmodule:: yombo.lib.inputtypes.automation_addresses
+.. currentmodule:: yombo.lib.inputtypes.ip_address
 
 =================================================================
-IP Address (yombo.lib.inputtypes.automation_addresses)
+IP Address (yombo.lib.inputtypes.ip_address)
 =================================================================
-.. automodule:: yombo.lib.inputtypes.automation_addresses
+.. automodule:: yombo.lib.inputtypes.ip_address
    :members:
    :special-members:
    :private-members:

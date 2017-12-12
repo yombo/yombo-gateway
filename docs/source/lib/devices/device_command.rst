@@ -1,13 +1,13 @@
-.. index:: devices_device_status
+.. index:: devices_device_command
 
-.. _devices_device_status:
+.. _devices_device_command
 
-.. currentmodule:: yombo.lib.devices._device_status
+.. currentmodule:: yombo.lib.devices._device_command
 
 =================================================================
-Devices::Device Status (yombo.lib.devices._device_status)
+Devices::Device Command (yombo.lib.devices._device_command)
 =================================================================
-.. automodule:: yombo.lib.devices._device_status
+.. automodule:: yombo.lib.devices._device_command
    :members:
    :special-members:
    :private-members:

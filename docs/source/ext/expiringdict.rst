@@ -1,6 +1,6 @@
 .. index:: expiringdict
 
-.. _expiringdict:
+.. _ext_expiringdict:
 
 .. currentmodule:: yombo.ext.expiringdict
 

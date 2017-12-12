@@ -14,6 +14,9 @@ interacting with th Yombo API.
 
 The web interface is broken down into several modules. See below for the core module functions.
 
+**See the `Web Interface developer docs <https://yombo.net/docs/libraries/web_interface`_ for more
+details.**
+
 Routes
 =======
 

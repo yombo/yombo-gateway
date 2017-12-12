@@ -77,6 +77,7 @@ IoT devices, etc.
    ../lib/times.rst
    ../lib/validate.rst
    ../lib/variables.rst
+   ../lib/voicecmds.rst
    ../lib/webinterface/webinterface.rst
    ../lib/yomboapi.rst
 
@@ -137,7 +138,6 @@ information.
    ../ext/twistar.rst
    ../ext/totp.rst
    ../ext/txrdq.rst
-   ../ext/umsgpack.rst
    ../ext/validators.rst
 
 Last updated: |today|

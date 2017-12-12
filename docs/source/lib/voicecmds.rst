@@ -1,6 +1,6 @@
 .. index:: voicecmds
 
-.. _voice-commands::
+.. _voice_commands::
 
 .. currentmodule:: yombo.lib.voicecmds
 
