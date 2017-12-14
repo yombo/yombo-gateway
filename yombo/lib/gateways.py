@@ -36,6 +36,7 @@ from yombo.core.exceptions import YomboWarning, YomboAPIWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep
+from yombo.core.constants import VERSION
 
 logger = get_logger('library.gateways')
 
@@ -184,7 +185,8 @@ class Gateways(YomboLibrary):
                 'machine_label': 'local',
                 'label': 'Local',
                 'description': 'Local',
-                'fqdn':'127.0.0.1',
+                'fqdn': '127.0.0.1',
+                'version': VERSION,
             })
 
         yield self._load_gateways_from_database()
@@ -359,6 +361,8 @@ class Gateways(YomboLibrary):
         # logger.debug("importing gateway: {gateway}", gateway=gateway)
 
         gateway_id = gateway["id"]
+        if gateway_id == self.gateway_id:
+            gateway['version'] = VERSION
         global_invoke_all('_gateways_before_import_',
                           called_by=self,
                           gateway_id=gateway_id,
@@ -1335,6 +1339,7 @@ class Gateway:
         self.status = None
         self.updated_at = None
         self.created_at = None
+        self.version = None
 
         # communications information
         self.last_communications = deque([], 30)  # stores times and topics of the last few communications
@@ -1407,6 +1412,8 @@ class Gateway:
             self.created_at = gateway['created_at']
         if 'updated_at' in gateway:
             self.updated_at = gateway['updated_at']
+        if 'version' in gateway:
+            self.version = gateway['version']
 
     def __str__(self):
         """
