@@ -54,23 +54,21 @@ class Queue(YomboLibrary):
     def _stop_(self, **kwargs):
         self.unload_deferred = Deferred()
         to_stop = []
-        logger.info("Stopping queues. Waiting for in-flight jobs to finish.")
         try:
             for name, queue in self.queues.items():
-                to_stop.append(queue.stop())
+                queue_size = queue.size()
                 if queue.stopped is True:
+                    print("queue stopped")
                     continue
-                # print "stopping queue: %s " % name
-                # print queue.size()
-                # pending = queue.pending()
-                # if len(pending) > 0:
-                #     for job in pending:
-                #         print "job in queue jobarg: %s" % job.__repr__()
-
-            dl = DeferredList(to_stop)
-            dl.addCallback(self.unload_deferred.callback)
-            # self.unload_deferred.callback(1)
-            return self.unload_deferred
+                if queue_size[0] == 0 and queue_size[1] == 0:
+                    continue
+                to_stop.append(queue.stop())
+            if len(to_stop) > 0:
+                logger.info("Stopping queues. Waiting for in-flight jobs to finish.")
+                dl = DeferredList(to_stop)
+                dl.addCallback(self.unload_deferred.callback)
+                # self.unload_deferred.callback(1)
+                return self.unload_deferred
 
         except Exception as e:
             logger.error("---------------==(Traceback)==--------------------------")
