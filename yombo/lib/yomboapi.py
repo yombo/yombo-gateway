@@ -181,7 +181,7 @@ class YomboAPI(YomboLibrary):
         try:
             results = yield self.request("POST", "/v1/user/login_key/validate", {'login_key': login_key})
         except Exception as e:
-            logger.info("do_validate_login_key API Errror: {error}", error=e)
+            logger.debug("do_validate_login_key API Errror: {error}", error=e)
             return False
 
         # logger.debug("Login key results: REsults from API: {results}", results=results['content'])
@@ -249,7 +249,7 @@ class YomboAPI(YomboLibrary):
                 'apimsghtml': "Couldn't delete command: %s" % e.html_message,
             }
             return results
-        logger.info("$$$3 REsults from API login creds: {results}", results=results)
+        # logger.info("$$$3 REsults from API login creds: {results}", results=results)
 
 #        if results['content']['code'] != 200:
         if results['content']['code'] != 200:
@@ -305,7 +305,7 @@ class YomboAPI(YomboLibrary):
     def request(self, method, path, data=None, session=None):
         path = self.base_url + path
 
-        logger.info("{method}: {path}", method=method, path=path)
+        logger.debug("{method}: {path}", method=method, path=path)
         # if session is False:
         #     session = None
         if session is None:
@@ -389,7 +389,7 @@ class YomboAPI(YomboLibrary):
     def decode_results(self, content, headers, code, phrase):
         # print("decode_results headers: %s" % headers)
 
-        print(content)
+        # print(content)
         content_type = headers['content-type'][0]
         phrase = bytes_to_unicode(phrase)
 
