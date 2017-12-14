@@ -10,13 +10,16 @@ from twisted.internet.defer import inlineCallbacks
 
 from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.sessions import Session
+from yombo.lib.webinterface.api_auth import ApiAuth
+
+# from yombo.lib.webinterface.api_auth import ApiAuths
 from yombo.utils import get_local_network_info, ip_addres_in_local_network, bytes_to_unicode
 
 from yombo.core.log import get_logger
 logger = get_logger('library.webinterface.auth')
 
 
-def return_api_error(request, message=None, status=None):
+def return_api_error(request, message=None, status=None, details=None):
     request.setHeader('Content-Type', 'application/json')
     if status is None:
         status = 401
@@ -26,6 +29,7 @@ def return_api_error(request, message=None, status=None):
     return json.dumps({
         'status': status,
         'message': message,
+        'details':details,
     })
 
 
@@ -57,13 +61,7 @@ def update_request(webinterface, request):
     request.setHeader('Expires', '0')
 
 
-def run_first(*args, **kwargs):
-    # print("run first.... 1")
-    # for arg in args:
-    #     print("arg: %s" % arg)
-    # print("run first.... 2 %s" % kwargs)
-    # for kwarg, value in kwargs.items():
-    #     print("kwarg: %s -> " % (kwarg, value))
+def run_first(create_session=None, *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -76,11 +74,18 @@ def run_first(*args, **kwargs):
 
             request.auth_id = None
             try:
-                session = yield webinterface.sessions.load(request)
+                session = yield webinterface.sessions.get(request)
+                session.auth_type = "session"
             except YomboWarning as e:
-                logger.warn("Discarding request, appears to be malformed session id.")
-                page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
-                return page.render(alerts=webinterface.get_alerts())
+                try:
+                    session = yield webinterface.apiauths.get(request)
+                    session.auth_type = "api_auth"
+                    session.touch()
+                except YomboWarning as e:
+                    session = False
+
+            if create_session is True:
+                session = webinterface.apiauths.create(request)
 
             if session is not False:
                 if 'auth' in session:
@@ -89,7 +94,6 @@ def run_first(*args, **kwargs):
                         request.auth_id = session['auth_id']
 
             return call(f, webinterface, request, session, *a, **kw)
-            # return call(f, webinterface, request, *a, **kw)
         return wrapped_f
     return deco
 
@@ -106,7 +110,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             host = request.getHeader('host')
             if host is None:
-                logger.warn("Discarding request, appears to be malformed session id.")
+                logger.info("Discarding request, appears to be malformed session id from require_auth")
                 return return_need_login(webinterface, request, False, **kwargs)
             host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
@@ -120,26 +124,37 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                 request.breadcrumb = []
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
-            try:
-                session = yield webinterface.sessions.load(request)
-            except YomboWarning as e:
-                logger.warn("Discarding request, appears to be malformed session id.")
-                return return_need_login(webinterface, request, False, **kwargs)
+            if 'api' not in kwargs or kwargs['api'] is not True:
+                try:
+                    session = yield webinterface.sessions.get(request)
+                except YomboWarning as e:
+                    logger.warn("Discarding request, appears to be malformed session id, non-api: {e}", e=e)
+                    return return_need_login(webinterface, request, False, **kwargs)
+            else:
+                try:
+                    session = yield webinterface.apiauths.get(request)
+                    session.touch()
+                except YomboWarning as e:
+                    logger.info("API request doesn't have api key. Checking for cookie session...")
+                    try:
+                        session = yield webinterface.sessions.get(request)
+                    except YomboWarning as e:
+                        logger.info("API request doesn't have session cookie. Bye bye: {e}", e=e)
+                        return return_need_login(webinterface, request, False, **kwargs)
 
             if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
                 if 'auth' in session:
                     if session['auth'] is True:
                         session.touch()
                         request.auth_id = session['auth_id']
-                        try:
-                            results = yield call(f, webinterface, request, session, *a, **kw)
-                            return results
-                        except Exception as e: # catch anything here...so can display details.
-                            logger.error("---------------==(Traceback)==--------------------------")
-                            logger.error("{trace}", trace=traceback.format_exc())
-                            logger.error("--------------------------------------------------------")
-                            page = webinterface.get_template(request, webinterface._dir + 'pages/misc/traceback.html')
-                            return page.render(traceback=traceback.format_exc())
+            elif isinstance(session, ApiAuth):  # If we have an API session, we are good if it's valid.
+                if session.is_valid is not True:
+                    return return_need_login(webinterface,
+                                             request,
+                                             False,
+                                             api_messag="API Key isn't valid anymore.",
+                                             **kwargs)
+
             else:  # session doesn't exist
                 if login_redirect is not None: # only create a new session if we need too
                     if session is False:
@@ -156,13 +171,25 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         session['yomboapi_login_key'] = ''
                         request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
                     session['login_redirect'] = login_redirect
+                return return_need_login(webinterface, request, session, **kwargs)
 
-            return return_need_login(webinterface, request, session, **kwargs)
+            try:
+                results = yield call(f, webinterface, request, session, *a, **kw)
+                return results
+            except Exception as e:  # catch anything here...so can display details.
+                logger.error("---------------==(Traceback)==--------------------------")
+                logger.error("Function: {f}", f=f)
+                logger.error("Request: {request}", request=request)
+                logger.error("{trace}", trace=traceback.format_exc())
+                logger.error("--------------------------------------------------------")
+                page = webinterface.get_template(request, webinterface._dir + 'pages/misc/traceback.html')
+                return page.render(traceback=traceback.format_exc())
+
         return wrapped_f
     return deco
 
 
-def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
+def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args, **kwargs):
     def call(f, *args, **kwargs):
         return f(*args, **kwargs)
 
@@ -174,10 +201,10 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
             request.auth_id = None
 
             host = request.getHeader('host')
-            host_info = host.split(':')
             if host is None:
-                logger.warn("Discarding request, appears to be malformed session id.")
+                logger.info("Discarding request, appears to be malformed session id from require_auth_pin")
                 return return_need_login(webinterface, request, False, **kwargs)
+            host_info = host.split(':')
             request.requestHeaders.setRawHeaders('host_name', [host_info[0]])
 
             if len(host_info) > 1:
@@ -190,10 +217,13 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             try:
-                session = yield webinterface.sessions.load(request)  # will be None if nothing found.
+                session = yield webinterface.sessions.get(request)
             except YomboWarning as e:
-                logger.warn("Discarding request, appears to be malformed session id.")
-                return return_need_pin(webinterface, request, **kwargs)
+                logger.warn("No session found: {e}", e=e)
+                if create_session is True:
+                    session = yield webinterface.sessions.create(request)
+                else:
+                    session = None
 
             if check_needs_web_pin(webinterface, request, session):
                 if isinstance(session, Session):  # if we have a session, then inspect to see if it's valid.
@@ -220,21 +250,20 @@ def require_auth_pin(roles=None, login_redirect=None, *args, **kwargs):
                             session['yomboapi_login_key'] = ''
                             request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
                         session['login_redirect'] = login_redirect
+                return return_need_pin(webinterface, request, **kwargs)
             else:
                 results = yield call(f, webinterface, request, session, *a, **kw)
                 return results
-
-            return return_need_pin(webinterface, request, **kwargs)
         return wrapped_f
     return deco
 
 
-def return_need_login(webinterface, request, session, **kwargs):
+def return_need_login(webinterface, request, session, api_message=None, **kwargs):
     if check_needs_web_pin(webinterface, request, session):
         return return_need_pin(webinterface, request, **kwargs)
     else:
         if 'api' in kwargs and kwargs['api'] is True:
-            return return_api_error(request, 'Unauthorized', 401)
+            return return_api_error(request, 'Unauthorized', 401, api_message)
     page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
     return page.render(alerts=webinterface.get_alerts())
 
@@ -259,7 +288,8 @@ def check_needs_web_pin(webinterface, request, session):
     :param request:
     :return:
     """
-    if webinterface.auth_pin_required is False:  # if user has configured gateway to require a pin
+    # return True
+    if webinterface.auth_pin_required is False:  # if user has configured gateway to not require a pin
         return False
 
     client_ip = request.getClientIP()

@@ -48,6 +48,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.core.exceptions import YomboWarning
 from yombo.utils import clean_dict, instance_properties, data_pickle, data_unpickle, bytes_to_unicode
+from yombo.utils.datatypes import coerce_value
 
 logger = get_logger('lib.localdb')
 
@@ -199,8 +200,10 @@ class VariableGroups(DBObject):
 class VariableFieldDataView(DBObject):
     TABLENAME = 'variable_field_data_view'
 
+
 class VariableGroupFieldView(DBObject):
     TABLENAME = 'variable_group_field_view'
+
 
 class VariableGroupFieldDataView(DBObject):
     TABLENAME = 'variable_group_field_data_view'
@@ -209,8 +212,14 @@ class VariableGroupFieldDataView(DBObject):
 #     TABLENAME='variables'
 #     BELONGSTO = ['devices', 'modules']
 
+
+class ApiAuth(DBObject):
+    TABLENAME = 'webinterface_api_auth'
+
+
 class Sessions(DBObject):
     TABLENAME = 'webinterface_sessions'
+
 
 class WebinterfaceLogs(DBObject):
     TABLENAME = 'webinterface_logs'
@@ -1021,40 +1030,151 @@ class LocalDB(YomboLibrary):
 
         return items
 
+    #########################
+    ###  API AUTH       #####
+    #########################
+    @inlineCallbacks
+    def get_api_auth(self, api_auth_id=None):
+        if api_auth_id is None:
+            records = yield ApiAuth.all()
+            if len(records) == 0:
+                raise YomboWarning("No API Keys found.")
+            output = []
+            for record in records:
+                record.api_auth_data = data_unpickle(record.api_auth_data)
+                record.permissions = data_unpickle(record.permissions)
+                output.append({
+                    'api_auth_id': record.id,
+                    'label': record.label,
+                    'description': record.description,
+                    'permissions': record.permissions,
+                    'is_valid': coerce_value(record.is_valid, 'bool'),
+                    'gateway_id': record.gateway_id,
+                    'api_auth_data': record.api_auth_data,
+                    'created_at': record.created_at,
+                    'last_access': record.last_access,
+                    'updated_at': record.updated_at,
+                })
+            return records
+        else:
+            # print("looking for api_auth_id: %s" % api_auth_id)
+            record = yield ApiAuth.find(api_auth_id, where=['is_valid = 1'])
+            # print("get_api_auth - find - %s" % record)
+            if record is None:
+                raise YomboWarning("No API Keys found.")
+            record.api_auth_data = data_unpickle(record.api_auth_data)
+            record.permissions = data_unpickle(record.permissions)
+            return {
+                'api_auth_id': record.id,
+                'label': record.label,
+                'description': record.description,
+                'permissions': record.permissions,
+                'is_valid': coerce_value(record.is_valid, 'bool'),
+                'gateway_id': record.gateway_id,
+                'api_auth_data': record.api_auth_data,
+                'created_at': record.created_at,
+                'last_access': record.last_access,
+                'updated_at': record.updated_at,
+            }
+
+    @inlineCallbacks
+    def save_api_auth(self, api_auth):
+        # print("save_session: %s" % session_data)
+        args = {
+            'id': api_auth.api_auth_id,
+            'label': api_auth.label,
+            'description': api_auth.description,
+            'permissions': data_pickle(api_auth.permissions),
+            'is_valid': coerce_value(api_auth.is_valid, 'int'),
+            'gateway_id': api_auth.gateway_id,
+            'api_auth_data': data_pickle(api_auth.api_auth_data),
+            'created_at': api_auth.created_at,
+            'last_access': api_auth.last_access,
+            'updated_at': api_auth.updated_at,
+        }
+        # print("saving new api auth key: %s" % args)
+        yield self.dbconfig.insert('webinterface_api_auth', args, None, 'OR IGNORE')
+
+    @inlineCallbacks
+    def update_api_auth(self, api_auth):
+        args = {
+            'label': api_auth.label,
+            'description': api_auth.description,
+            'api_auth_data': data_pickle(api_auth.api_auth_data),
+            'permissions': data_pickle(api_auth.permissions),
+            'is_valid': coerce_value(api_auth.is_valid, 'bool'),
+            'last_access': api_auth.last_access,
+            'updated_at': api_auth.updated_at,
+            }
+        yield self.dbconfig.update('webinterface_api_auth', args, where=['id = ?', api_auth.api_auth_id])
+
+    @inlineCallbacks
+    def delete_api_auth(self, api_auth_id):
+        yield self.dbconfig.delete('webinterface_api_auth', where=['id = ?', api_auth_id])
 
     #########################
     ###    Sessions     #####
     #########################
     @inlineCallbacks
     def get_session(self, session_id=None):
-        record = yield Sessions.find(session_id, where=['is_valid = 1'])
-        if record is None:
-            return None
-        record.session_data = data_unpickle(record.session_data)
-        return record
+        if session_id is None:
+            records = yield Sessions.all()
+            if len(records) == 0:
+                raise YomboWarning("No API Keys found.")
+            output = []
+            for record in records:
+                record.session_data = data_unpickle(record.data)
+                output.append({
+                    'id': record.id,
+                    'is_valid': coerce_value(record.is_valid, 'bool'),
+                    'gateway_id': record.gateway_id,
+                    'session_data': record.session_data,
+                    'created_at': record.created_at,
+                    'last_access': record.last_access,
+                    'updated_at': record.updated_at,
+                })
+            return records
+        else:
+            # print("looking for session_id: %s" % session_id)
+
+#            record = yield Sessions.find(session_id, where=['is_valid = 1'])
+            record = yield Sessions.find(session_id)
+            # print("get_api_auth - find - %s" % record)
+            if record is None:
+                raise YomboWarning("No API Keys found.")
+            record.session_data = data_unpickle(record.session_data)
+            return {
+                'id': record.id,
+                'is_valid': coerce_value(record.is_valid, 'bool'),
+                'gateway_id': record.gateway_id,
+                'session_data': record.session_data,
+                'created_at': record.created_at,
+                'last_access': record.last_access,
+                'updated_at': record.updated_at,
+            }
 
     @inlineCallbacks
-    def save_session(self, session_id, gateway_id, session_data):
-        # print("save_session: %s" % session_data)
+    def save_session(self, session):
         args = {
-            'id': session_id,
-            'is_valid': session_data['is_valid'],
-            'gateway_id': gateway_id,
-            'session_data': data_pickle(session_data),
-            'created_at': session_data['created_at'],
-            'last_access': session_data['last_access'],
-            'updated_at': session_data['updated_at'],
+            'id': session.session_id,
+            'is_valid': coerce_value(session.is_valid, 'int'),
+            'gateway_id': session.gateway_id,
+            'session_data': data_pickle(session.session_data),
+            'created_at': session.created_at,
+            'last_access': session.last_access,
+            'updated_at': session.updated_at,
         }
         yield self.dbconfig.insert('webinterface_sessions', args, None, 'OR IGNORE')
 
     @inlineCallbacks
-    def update_session(self, session_id, session_data):
-        args = {'is_valid':session_data['is_valid'],
-                'session_data': data_pickle(session_data),
-                'last_access': session_data['last_access'],
-                'updated_at': session_data['updated_at'],
-                }
-        yield self.dbconfig.update('webinterface_sessions', args, where=['id = ?', session_id])
+    def update_session(self, session):
+        args = {
+            'is_valid': coerce_value(session.is_valid, 'int'),
+            'session_data': data_pickle(session.session_data),
+            'last_access': session.last_access,
+            'updated_at': session.updated_at,
+            }
+        yield self.dbconfig.update('webinterface_sessions', args, where=['id = ?', session.session_id])
 
     @inlineCallbacks
     def delete_session(self, session_id):
@@ -1265,7 +1385,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         if search_name_end is not None:
             where['bucket_name'] = ["%%%s" % search_name_end, 'like']
 
-        print("searching these stats: %s" % dict(where))
+        # print("searching these stats: %s" % dict(where))
         records = yield self.dbconfig.select('statistics',
              where=dictToWhere(where),
              select='bucket_name, bucket_type, bucket_size, bucket_lifetime, MIN(bucket_time) as bucket_time_min, MAX(bucket_time) as bucket_time_max, count(*) as count',
@@ -1285,7 +1405,7 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         if isinstance(start, int) is False and isinstance(start, float) is False:
             raise YomboWarning("statistic_get_range: start argument expects an int or float, got: %s" % start)
         if isinstance(stop, int) is False and isinstance(stop, float) is False:
-            print("stop is typE: %s" % type(stop))
+            # print("stop is typE: %s" % type(stop))
             raise YomboWarning("statistic_get_range: stop argument expects an int or float, got: %s" % stop)
 
         # names_str = ", ".join(map(str, names))

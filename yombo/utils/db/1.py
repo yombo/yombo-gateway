@@ -42,6 +42,7 @@ def new_db_file(Registry, **kwargs):
     yield create_table_tasks(Registry)
     yield create_table_users(Registry)
     yield create_table_user_permission(Registry)
+    yield create_table_webinterface_api_auth(Registry)
     yield create_table_webinterface_sessions(Registry)
     yield create_table_webinterface_logs(Registry)
     yield create_table_variable_groups(Registry)
@@ -628,6 +629,26 @@ def create_table_permissions(Registry, **kwargs):
         `created_at` INTEGER NOT NULL );"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('permissions', 'id', unique=True))
+
+@inlineCallbacks
+def create_table_webinterface_api_auth(Registry, **kwargs):
+    """  """
+    # Nearly the same as webinterface_sessions, but for api keys
+    table = """CREATE TABLE `webinterface_api_auth` (
+        `id`           TEXT NOT NULL, /* moduleUUID */
+        `label`        TEXT NOT NULL,
+        `description`  TEXT NOT NULL,
+        `permissions`  TEXT NOT NULL,
+        `is_valid`     INTEGER NOT NULL,
+        `gateway_id`   TEXT NOT NULL,
+        `api_auth_data` TEXT NOT NULL,
+        `created_at`   INTEGER NOT NULL,
+        `last_access`  INTEGER NOT NULL,
+        `updated_at`   INTEGER NOT NULL,
+        PRIMARY KEY(id));"""
+    yield Registry.DBPOOL.runQuery(table)
+    yield Registry.DBPOOL.runQuery(create_index('webinterface_api_auth', 'created_at'))
+    yield Registry.DBPOOL.runQuery(create_index('webinterface_api_auth', 'updated_at'))
 
 @inlineCallbacks
 def create_table_webinterface_sessions(Registry, **kwargs):

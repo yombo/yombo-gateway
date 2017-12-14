@@ -50,6 +50,7 @@ import yombo.ext.totp
 import yombo.utils
 
 from yombo.lib.webinterface.sessions import Sessions
+from yombo.lib.webinterface.api_auth import ApiAuths
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
@@ -70,6 +71,7 @@ from yombo.lib.webinterface.routes.devtools.config_modules import route_devtools
 from yombo.lib.webinterface.routes.devtools.config_variables import route_devtools_config_variables
 from yombo.lib.webinterface.routes.devtools.debug import route_devtools_debug
 
+from yombo.lib.webinterface.routes.apiauth import route_apiauth
 from yombo.lib.webinterface.routes.atoms import route_atoms
 from yombo.lib.webinterface.routes.automation import route_automation
 from yombo.lib.webinterface.routes.configs import route_configs
@@ -192,12 +194,16 @@ class WebInterface(YomboLibrary):
         self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.misc_wi_data = {}
         self.sessions = Sessions(self._Loader)
+        self.apiauths = ApiAuths(self._Loader)
 
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
 
         self.webapp.templates = jinja2.Environment(loader=jinja2.FileSystemLoader(self._current_dir))
         self.setup_basic_filters()
+
+        self.web_interface_listener = None
+        self.web_interface_ssl_listener = None
 
         # Load API routes
         route_api_v1_automation(self.webapp)
@@ -220,6 +226,7 @@ class WebInterface(YomboLibrary):
         route_devtools_debug(self.webapp)
 
         # Load web server routes
+        route_apiauth(self.webapp)
         route_atoms(self.webapp)
         route_automation(self.webapp)
         route_configs(self.webapp)
@@ -259,6 +266,8 @@ class WebInterface(YomboLibrary):
     def _load_(self, **kwargs):
         if hasattr(self, 'sessions'):
             yield self.sessions.init()
+        if hasattr(self, 'apiauths'):
+            yield self.apiauths.init()
 
         if hasattr(self, 'sessions') is False:
             return
@@ -295,7 +304,6 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['devices'] = self._Devices
         self.webapp.templates.globals['gateways'] = self._Gateways
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
-        self.webapp.templates.globals['devices'] = self._Devices
         # self.webapp.templates.globals['func'] = self.functions
 
         self.starting = False
@@ -384,13 +392,38 @@ class WebInterface(YomboLibrary):
             else:
                 self.web_server_ssl_started = True
                 cert = self._SSLCerts.get('lib_webinterface')
+                privkeypyssl = crypto.load_privatekey(crypto.FILETYPE_PEM, cert['key'])
+                certpyssl = crypto.load_certificate(crypto.FILETYPE_PEM, cert['cert'])
+                if cert['chain'] is not None:
+                    chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+                else:
+                    chainpyssl = None
+                # print("web ssl cert: key_crypt %s" % cert['key_crypt'])
+                # print("web ssl cert: key_crypt type %s" % type(cert['key_crypt']))
+                # # print("web ssl cert: key_crypt type %s" % type(cert['key_crypt'][0]))
+                # # print("web ssl cert: key_crypt type %s" % type(cert['key_crypt'][1]))
+                # print("web ssl cert: privkeypyssl %s" % privkeypyssl)
+                # print("web ssl cert: privkeypyssl type: %s" % type(privkeypyssl))
+                # print("web ssl cert: privkeypyssl.serial: %s" % privkeypyssl.__dict__)
+                #
+                # print("web ssl cert: cert_crypt %s" % cert['cert_crypt'])
+                # print("web ssl cert: cert_crypt.type %s" % type(cert['cert_crypt']))
+                # print("web ssl cert: certpyssl %s" % certpyssl)
+                # print("web ssl cert: certpyssl.type %s" % type(certpyssl))
+                # print("web ssl cert: chain_crypt %s" % cert['chain_crypt'])
+                # print("web ssl cert: chain_crypt.type %s" % type(cert['chain_crypt']))
+                # print("web ssl cert: chainpyssl %s" % certpyssl)
+                # print("web ssl cert: chainpyssl.type %s" % type(certpyssl))
+                #
+                #     # chainpyssl = [crypto.load_certificate(crypto.FILETYPE_PEM, cert['chain'])]
+                # # chainpyssl = None
                 contextFactory = ssl.CertificateOptions(privateKey=cert['key_crypt'],
                                                         certificate=cert['cert_crypt'],
                                                         extraCertChain=cert['chain_crypt'])
-
                 port_attempts = 0
                 while port_attempts < 100:
                     try:
+                        # print("about to start ssl listener on port: %s" % self.wi_port_secure())
                         self.web_interface_ssl_listener = reactor.listenSSL(self.wi_port_secure(), self.web_factory,
                                                                             contextFactory)
                         break
@@ -460,7 +493,7 @@ class WebInterface(YomboLibrary):
         :return:
         """
         logger.info("Got a new cert! About to install it.")
-        if self.web_server_ssl_started:
+        if self.web_server_ssl_started is not None:
             yield self.web_interface_ssl_listener.stopListening()
             self.web_server_ssl_started = False
         self.start_web_servers()
@@ -473,6 +506,8 @@ class WebInterface(YomboLibrary):
         if hasattr(self, 'sessions'):
             if self.sessions is not None:
                 yield self.sessions._unload_()
+            if self.apiauths is not None:
+                yield self.apiauths._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
     #     return [{'webinterface': {

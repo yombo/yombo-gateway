@@ -147,6 +147,16 @@ NAV_SIDE_MENU = [
     },
     {
         'label1': 'System Settings',
+        'label2': 'API Auth',
+        'priority1': 3500,
+        'priority2': 1250,
+        'icon': 'fa fa-wrench fa-fw',
+        'url': '/apiauth/index',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+    {
+        'label1': 'System Settings',
         'label2': 'Basic Settings',
         'priority1': 3500,
         'priority2': 1500,

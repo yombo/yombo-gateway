@@ -1,0 +1,105 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
+
+{% block content %}
+<!-- Modal -->
+<div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Manage API Auth keys</h4>
+      </div>
+      <div class="modal-body">
+          <p>
+          </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">{{ _('webinterface_api_auth', 'API Auth') }}
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+  <p>
+      API Auth keys are used as credentials to access the gateway's
+      API from various scripts. They replace the need the for a username/password.
+  </p><p>
+      When making requests with an HTTP client, set the header for 'x-api-auth'
+      to the API Auth key you wish to use. Alternatively, this can be added as
+      a query string parameter:<br>
+      https://localhost:8443/api/vi/someurl?_api_auth=KEYVALUE
+  </p><br>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <a href="/apiauth/add" class="btn btn-md btn-primary">Add New</a>
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="dataTable_wrapper">
+                    <table width="100%" class="table table-striped table-bordered table-hover" id="location-area">
+                        <thead>
+                            <tr>
+                                <th>Label</th><th>Description</th><th>Is Valid</th><th>API Auth</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>{% for api_auth in apiauths %}
+                             <tr>
+                                <td>
+                                    <a href="/apiauth/{{ api_auth.id }}/details">{{ api_auth.label }}</a>
+                                </td>
+                                <td>{{ api_auth.description }}</td>
+                                <td>{{ api_auth.is_valid }}</td>
+                                <td>{{ api_auth.id|truncate(15) }}...</td>
+                                <td>
+                                 <a href="/apiauth/{{ api_auth.id }}/edit">Edit</a>
+                                 <a class="alert-danger" href="/apiauth/{{ api_auth.id }}/delete">Delete</a>
+                                </td>
+                             </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+{% endblock %}
+
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+    $(document).ready(function() {
+        $('#location-area').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50,
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 3 ] }
+                    ]
+        });
+        $('#location-location').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50,
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 3 ] }
+                    ]
+        });
+    });
+    </script>
+{% endblock %}
+
