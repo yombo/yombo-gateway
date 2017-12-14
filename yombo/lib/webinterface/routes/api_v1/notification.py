@@ -13,12 +13,12 @@ def route_api_v1_notification(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route('/notification', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         def apiv1_notifications_get(webinterface, request, session):
             return return_good(request, ''. webinterface.notifications.notifications)
 
         @webapp.route('/notification/<string:notification_id>/ack', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         def apiv1_notifications_ack_get(webinterface, request, session, notification_id):
             try:
                 webinterface._Notifications.ack(notification_id)

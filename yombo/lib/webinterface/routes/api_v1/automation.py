@@ -13,7 +13,7 @@ def route_api_v1_automation(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route('/automation/list/items', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         def apiv1_automation_list_items_get(webinterface, request, session):
             try:
                 platform = request.args.get('platform')[0]

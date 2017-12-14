@@ -17,7 +17,7 @@ def route_api_v1_server(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route('/server/commands/index', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_commands_index(webinterface, request, session):
             try:
@@ -59,7 +59,7 @@ def route_api_v1_server(webapp):
         #     return results['content']
 
         @webapp.route('/server/dns/check_available/<string:dnsname>', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_dns_check_available(webinterface, request, session, dnsname):
 
@@ -75,7 +75,7 @@ def route_api_v1_server(webapp):
             return json.dumps(results['data'])
 
         @webapp.route('/server/devicetypes/index', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_devicetypes_index(webinterface, request, session):
             try:
@@ -108,7 +108,7 @@ def route_api_v1_server(webapp):
             return json.dumps(data)
 
         @webapp.route('/server/input_type/index', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_inputtypes_index(webinterface, request, session):
             try:
@@ -140,7 +140,7 @@ def route_api_v1_server(webapp):
             return json.dumps(data)
 
         @webapp.route('/server/modules/index', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_modules_index(webinterface, request, session):
             try:
@@ -172,7 +172,7 @@ def route_api_v1_server(webapp):
             return json.dumps(data)
 
         @webapp.route('/server/modules/show/<string:module_id>', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_server_modules_show_one(webinterface, request, session, module_id):
             # action = request.args.get('action')[0]

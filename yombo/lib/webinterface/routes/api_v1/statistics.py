@@ -16,7 +16,7 @@ def route_api_v1_statistics(webapp):
     with webapp.subroute("/api/v1") as webapp:
 
         @webapp.route('/statistics/names', methods=['GET'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_statistics_names(webinterface, request, session):
             records = yield webinterface._Libraries['localdb'].get_distinct_stat_names()
@@ -24,7 +24,7 @@ def route_api_v1_statistics(webapp):
             return json.dumps(records)
 
         @webapp.route('/statistics/echarts/buckets', methods=['GET', 'POST'])
-        @require_auth()
+        @require_auth(api=True)
         @inlineCallbacks
         def apiv1_statistics_echarts_buckets(webinterface, request, session):
             requested_stats = []
