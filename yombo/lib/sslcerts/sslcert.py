@@ -202,13 +202,29 @@ class SSLCert(object):
 
         if 'current_cert' in attributes:
             self.current_cert = attributes['current_cert']
-            self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
+            if self.current_cert is not None:
+                self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
+                if isinstance(self.current_cert_crypt, tuple):
+                    self.current_cert_crypt = self.current_cert_crypt[0]
+            else:
+                self.current_cert_crypt = None
         if 'current_chain' in attributes:
             self.current_chain = attributes['current_chain']
-            self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
+            if self.current_chain is not None:
+                self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
+                if isinstance(self.current_chain_crypt, tuple):
+                    self.current_chain_crypt = self.current_chain_crypt[0]
+            else:
+                self.current_chain_crypt = None
         if 'current_key' in attributes:
             self.current_key = attributes['current_key']
-            self.current_key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.current_key),
+            if self.current_key is not None:
+                self.current_key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.current_key),
+                if isinstance(self.current_key_crypt, tuple):
+                    self.current_key_crypt = self.current_key_crypt[0]
+            else:
+                self.current_key_crypt = None
+
         if 'current_created' in attributes:
             self.current_created = int(attributes['current_created']) if attributes['current_created'] else None
         if 'current_expires' in attributes:
@@ -292,9 +308,15 @@ class SSLCert(object):
         self.current_cert = self.next_cert
         self.current_chain = self.next_chain
         self.current_key = self.next_key
-        self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
-        self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
         self.current_key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self.current_key),
+        if isinstance(self.current_key_crypt, tuple):
+            self.current_key_crypt = self.current_key_crypt[0]
+        self.current_cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self.current_cert),
+        if isinstance(self.current_cert_crypt, tuple):
+            self.current_cert_crypt = self.current_cert_crypt[0]
+        self.current_chain_crypt = [crypto.load_certificate(crypto.FILETYPE_PEM, self.current_chain)],
+        if isinstance(self.current_chain_crypt, tuple):
+            self.current_chain_crypt = self.current_chain_crypt[0]
         self.current_created = self.next_created
         self.current_expires = self.next_expires
         self.current_signed = self.next_signed
@@ -419,7 +441,10 @@ class SSLCert(object):
                     logger.debug("Looking for 'next' information.")
                     if os.path.exists('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label)):
                         if getattr(self, "%s_csr" % label) is None:
-                            csr = yield read_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label))
+                            csr = yield read_file(
+                                'usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label),
+                                True,
+                            )
                             if sha256(str(csr).encode('utf-8')).hexdigest() == meta['csr']:
                                 csr_read = True
                             else:
@@ -437,9 +462,14 @@ class SSLCert(object):
                 if getattr(self, "%s_cert" % label) is None:
                     if os.path.exists('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label)):
                         # print("setting cert!!!")
-                        cert = yield read_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label))
+                        cert = yield read_file(
+                            'usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label),
+                            True
+                        )
                         cert_read = True
+                        # print("testing with this cert: %s" % cert)
                         if sha256(str(cert).encode('utf-8')).hexdigest() != meta['cert']:
+                            # print("%s != %s" % (sha256(str(cert).encode('utf-8')).hexdigest(), meta['cert']))
                             logger.warn("Appears that the file system has bad meta signatures (cert). Purging.")
                             for file_to_delete in glob.glob("usr/etc/certs/%s.%s.*" % (self.sslname, label)):
                                 logger.warn("Removing bad file: %s" % file_to_delete)
@@ -450,7 +480,10 @@ class SSLCert(object):
                 if getattr(self, "%s_chain" % label) is None:
                     if os.path.exists('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label)):
                         # print("setting chain!!!")
-                        chain = yield read_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label))
+                        chain = yield read_file(
+                            'usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label),
+                            True
+                        )
                         chain_read = True
                         if sha256(str(chain).encode('utf-8')).hexdigest() != meta['chain']:
                             logger.warn("Appears that the file system has bad meta signatures (chain). Purging.")
@@ -462,7 +495,10 @@ class SSLCert(object):
                 key_read = False
                 if getattr(self, "%s_key" % label) is None:
                     if os.path.exists('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label)):
-                        key = yield read_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label))
+                        key = yield read_file(
+                            'usr/etc/certs/%s.%s.key.pem' % (self.sslname, label),
+                            True
+                        )
                         key_read = True
                         if sha256(str(key).encode('utf-8')).hexdigest() != meta['key']:
                             logger.warn("Appears that the file system has bad meta signatures (key). Purging.")
@@ -477,7 +513,6 @@ class SSLCert(object):
                     try:
                         return int(the_input)
                     except Exception as e:
-                        logger.warn("ERROR: Cannot convert to int: {e}", e=e)
                         return the_input
 
                 if csr_read:
@@ -779,10 +814,15 @@ class SSLCert(object):
             if self._ParentLibrary.self_signed_created is None:
                 raise YomboWarning("Self signed cert not avail. Try restarting gateway.")
             else:
+                key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self._ParentLibrary.self_signed_key)
+                cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self._ParentLibrary.self_signed_cert)
                 return {
                     'key': self._ParentLibrary.self_signed_key,
                     'cert': self._ParentLibrary.self_signed_cert,
                     'chain': None,
+                    'key_crypt': key_crypt[0],
+                    'cert_crypt': cert_crypt[0],
+                    'chain_crypt': None,
                     'expires': self._ParentLibrary.self_signed_expires,
                     'created': self._ParentLibrary.self_signed_created,
                     'signed': self._ParentLibrary.self_signed_created,
