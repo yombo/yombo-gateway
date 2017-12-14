@@ -56,7 +56,7 @@ logger = get_logger('utils.__init__')
 from yombo.core.exceptions import YomboWarning
 
 @inlineCallbacks
-def read_file(filename):
+def read_file(filename, convert_to_unicode=None):
     """
     Read a file, non-blocking.
     Based from: https://stackoverflow.com/questions/1720816/non-blocking-file-access-with-twisted
@@ -73,6 +73,8 @@ def read_file(filename):
             return d
 
     contents = yield getFile(filename)
+    if convert_to_unicode is True:
+        return bytes_to_unicode(contents)
     return contents
 
 def get_nested_dict(data_dict, map_list):
