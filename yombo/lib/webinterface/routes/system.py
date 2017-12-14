@@ -10,10 +10,8 @@ def route_system(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_system_index(webinterface, request, session):
-            gwid = webinterface.gateway_id()
             page = webinterface.get_template(request, webinterface._dir + 'pages/system/index.html')
             return page.render(alerts=webinterface.get_alerts(),
-                               gwid=gwid(),
                               )
 
         @webapp.route('/control')
