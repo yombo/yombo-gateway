@@ -84,10 +84,10 @@
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
     <script type="text/javascript" src="/static/js/jquery.serializejson.min.js"></script>
     <script>
-        $("#moduleedit").submit(function(event) {
+        $("#locationedit").submit(function(event) {
 //            event.preventDefault();
 
-            var rawData = $('#moduleedit').serializeJSON();
+            var rawData = $('#locationedit').serializeJSON();
             var formData = JSON.stringify(rawData);
             console.log(formData);
             $('#json_output').val(formData)

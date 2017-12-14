@@ -571,7 +571,7 @@ class MQTT(YomboLibrary):
             if isinstance(mqtt_connected_callback, Callable) is False:
                 raise YomboWarning("If mqtt_connected_callback is set, it must be be callable.", 201, 'new', 'Devices')
 
-        print("mqtt: %s:%s" % (username, password))
+        # print("mqtt: %s:%s" % (username, password))
         self.client_connections[client_id] = MQTTClient(self, client_id, server_hostname, server_port, username,
             password, password2, ssl, mqtt_incoming_callback, mqtt_connected_callback, mqtt_connection_lost_callback,
             will_topic, will_message, will_qos, will_retain, clean_start, version, keepalive)

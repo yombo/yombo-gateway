@@ -34,7 +34,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string
 
-logger = get_logger('library.logevents')
+logger = get_logger('library.webinterface.logevents')
 
 class LogEvents(YomboLibrary):
     """
