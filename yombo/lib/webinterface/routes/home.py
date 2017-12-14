@@ -60,7 +60,7 @@ def route_home(webapp):
             return webinterface.redirect(request, '/?')
 
         @webapp.route('/login/user', methods=['POST'])
-        @require_auth_pin()
+        @require_auth_pin(create_session=True)
         @inlineCallbacks
         def page_login_user_post(webinterface, request, session):
             if 'g-recaptcha-response' not in request.args:
@@ -96,9 +96,9 @@ def route_home(webapp):
 
                 # print("login was good...")
 
-                if session is False:
-                    session = webinterface.sessions.create(request)
-
+                # if session is False:
+                #     session = webinterface.sessions.create(request)
+                #
                 session['auth'] = True
                 session['auth_pin'] = True
                 session['auth_id'] = submitted_email
@@ -131,7 +131,7 @@ def route_home(webapp):
             return webinterface.redirect(request, '/?')
 
         @webapp.route('/login/pin', methods=['POST'])
-        @run_first()
+        @run_first(create_session=True)
         def page_login_pin_post(webinterface, request, session):
             submitted_pin = request.args.get('authpin')[0]
 
@@ -139,16 +139,16 @@ def route_home(webapp):
                 webinterface.add_alert('Invalid authentication.', 'warning')
                 return webinterface.redirect(request, '/login/pin')
 
-            def create_pin_session(webinterface, request, session):
-                if session is False:
-                    session = webinterface.sessions.create(request)
-                session['auth_pin'] = True
-                session['auth'] = False
-                session['auth_id'] = ''
-                session['auth_at'] = 0
-                session['yomboapi_session'] = ''
-                session['yomboapi_login_key'] = ''
-                request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
+            def create_pin_session(l_webinterface, l_request, l_session):
+                # if session is False:
+                #     session = webinterface.sessions.create(request)
+                l_session['auth_pin'] = True
+                l_session['auth'] = False
+                l_session['auth_id'] = ''
+                l_session['auth_at'] = 0
+                l_session['yomboapi_session'] = ''
+                l_session['yomboapi_login_key'] = ''
+                request.received_cookies[l_webinterface.sessions.config.cookie_session_name] = l_session.session_id
 
             if webinterface.auth_pin_type() == 'pin':
                 # print("pins: %s == %s" % (submitted_pin, webinterface.auth_pin()))
