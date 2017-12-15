@@ -245,7 +245,7 @@ class Loader(YomboLibrary, object):
                 return
             self._log_loader('debug', name, 'library', 'modules_imported', 'About to call _modules_imported_.')
             if self.check_operating_mode(config['operating_mode']):
-                libraryName =  name.lower()
+                libraryName = name.lower()
                 yield self.library_invoke(libraryName, "_modules_imported_", called_by=self)
                 HARD_LOAD[name]['_modules_imported_'] = True
             else:

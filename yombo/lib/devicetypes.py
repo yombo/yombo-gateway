@@ -327,6 +327,7 @@ class DeviceTypes(YomboLibrary):
         elif limiter < .10:
             limiter = .10
 
+        # logger.info("self.device_types: {ee}", ee=)
         if device_type_requested in self.device_types:
             item = self.device_types[device_type_requested]
             if status is not None and item.status != status:
