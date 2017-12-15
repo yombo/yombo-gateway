@@ -1,5 +1,6 @@
 # This file was created by Yombo for use with Yombo Python gateway automation
 # software.  Details can be found at https://yombo.net
+from twisted.internet.defer import inlineCallbacks
 """
 
 .. note::
@@ -131,7 +132,7 @@ class YomboModule:
     :ivar _Libraries: (dict) A dictionary of all modules. Returns pointers.
     :ivar _Modules: (object/dict) The Modules Library, can be access as dictionary or object. Returns a pointer.
     :ivar _ModuleType: (string) Type of module (Interface, Command, Logic, Other).
-    :ivar _ModuleVariables: (dict) Dictionary of the module level variables as defined online
+    :ivar _module_variables_cached: (dict) Dictionary of the module level variables as defined online
       and set as per the user.
     :ivar _States: (object/dict) The Yombo States library, but can accessed as a dictionary or object.
     """
@@ -144,8 +145,7 @@ class YomboModule:
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 
     def _is_my_device(self, device):
-        devices = self._ModuleDevices()
-        if device.device_id in devices and device.gateway_id == self._Devices.gateway_id:
+        if device.device_id in self._module_devices_cached and device.gateway_id == self._Devices.gateway_id:
             return True
         else:
             return False
@@ -192,6 +192,7 @@ class YomboModule:
         """
         pass
 
+    @inlineCallbacks
     def _dump(self):
         """
         Returns a dictionary of core attributes about this module. Usually used for debugging.
@@ -199,29 +200,49 @@ class YomboModule:
         :return: A dictionary of core attributes.
         :rtype: dict
         """
+        module_variables = yield self._module_variables()
+        module_device_types = yield self._module_device_types()
+        module_devices = yield self._module_devices()
+        devices = {}
+        for device_id, device in module_devices.items():
+            devices[device_id] = {
+                'device_id': device_id,
+                'label': device.label,
+                'machine_label': device.machine_label,
+            }
+        # device_types = []
+        # for device_type_id in module_device_types:
+        #     device_types.append(device_type_id)
+
         return {
             '_Name': self._Name,
             '_FullName': self._FullName,
-            '_ModuleType': self._ModuleType,
-            '_Devices': self._Devices,
-            '_DeviceTypes': self._DeviceTypes,
-            '_ModuleVariables': self._ModuleVariables,
             '_module_id': str(self._module_id),
+            '_module_type': str(self._module_type),
+            '_install_count': self._install_count,
+            '_issue_tracker_link': self._issue_tracker_link,
             '_label': str(self._label),
+            '_machine_label': str(self._machine_label),
+            '_short_description': str(self._short_description),
             '_description': str(self._description),
+            '_description_formatting': str(self._description_formatting),
+            '_see_also': self._see_also,
             '_doc_link': str(self._doc_link),
             '_git_link': str(self._git_link),
+            '_repository_link': self._repository_link,
             '_install_branch': str(self._install_branch),
             '_prod_branch': str(self._prod_branch),
             '_dev_branch': str(self._dev_branch),
             '_prod_version': str(self._prod_version),
             '_dev_version': str(self._dev_version),
-            '_always_load': int(self._always_load),
             '_public': int(self._public),
             '_status': int(self._status),
-            '_created': int(self._created),
-            '_updated': int(self._updated),
+            '_created_at': int(self._created_at),
+            '_updated_at': int(self._updated_at),
             '_load_source': str(self._load_source),
+            '_device_types': module_device_types,
+            '_module_variables': module_variables,
+            '_module_devices': devices,
         }
 
     # def __repr__(self):
@@ -252,3 +273,11 @@ class YomboModule:
         This method should be implemented by any modules expecting to receive amqp incoming responses.
         """
         pass
+
+    @inlineCallbacks
+    def asdict(self):
+        """
+        Export module information as a dictionary.
+        """
+        values = yield self._dump()
+        return values
