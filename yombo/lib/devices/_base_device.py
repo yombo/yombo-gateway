@@ -507,7 +507,7 @@ class Base_Device(object):
                     search_device_command.cancel(message="This device command was superseded by a new persistent request.")
 
         if request_id is None:
-            request_id = random_string(length=15, char_set='extended')  # print("in device command: rquest_id 2: %s" % request_id)
+            request_id = random_string(length=18)  # print("in device command: request_id 2: %s" % request_id)
 
         device_command['request_id'] = request_id
 
@@ -615,9 +615,8 @@ class Base_Device(object):
         }
         # logger.debug("calling _device_command_, request_id: {request_id}", request_id=device_command.request_id)
         # print(self._Parent.device_commands)
-        results = yield global_invoke_all('_device_command_', **items)
-
         device_command.set_broadcast()
+        results = yield global_invoke_all('_device_command_', **items)
         for component, result in results.items():
             if result is True:
                 device_command.set_received(message="Received by: %s" % component,)
