@@ -1116,7 +1116,7 @@ def random_string(**kwargs):
     if 'char_set' in kwargs:
         char_set = kwargs['char_set']
         if char_set == 'extended':
-            letters = "abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!$%()*-;<=>@^-{}|~"
+            letters = "abcdefghijklmnopqrstuvwxyABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!%()*-;<=>^-{}~"
     else:
         letters = kwargs.get('letters', None)
 
