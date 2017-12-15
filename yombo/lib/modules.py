@@ -210,8 +210,8 @@ class Modules(YomboLibrary):
 
     @inlineCallbacks
     def init_modules(self):
-        # Init
         yield self._Loader.library_invoke_all("_modules_created_", called_by=self)
+        logger.debug("starting modules::init....")
         yield self.module_init_invoke()  # Call "_init_" of modules
         yield self._Loader.library_invoke_all("_modules_inited_", called_by=self)
 
@@ -238,7 +238,7 @@ class Modules(YomboLibrary):
 
         :return:
         """
-        logger.debug("starting modules::init....")
+        yield self.update_module_cache()
 
         # Pre-Load
         logger.debug("starting modules::pre-load....")
@@ -474,6 +474,7 @@ class Modules(YomboLibrary):
             self.modules[module_id]._hooks_called = {}
             self.modules[module_id]._module_id = module['id']
             self.modules[module_id]._module_type = module['module_type']
+            # self.modules[module_id]._module_variables = []
             self.modules[module_id]._machine_label = module['machine_label']
             self.modules[module_id]._label = module['label']
             self.modules[module_id]._short_description = module['short_description']
@@ -495,7 +496,13 @@ class Modules(YomboLibrary):
             self.modules[module_id]._created_at = module['created_at']
             self.modules[module_id]._updated_at = module['updated_at']
             self.modules[module_id]._load_source = module['load_source']
-            self.modules[module_id]._device_types = []  # populated by Modules::module_init_invoke
+            self.modules[module_id]._device_types = None  # populated by Modules::module_init_invoke
+
+            #  The following caches are built on module_init_invoke and whenever the
+            #  non-cached version of the function is called.
+            self.modules[module_id]._module_device_types_cached = []  # populated by Modules::module_init_invoke
+            self.modules[module_id]._module_devices_cached = {}
+            self.modules[module_id]._module_variables_cached = {}
             # print "loading modules: %s" % self.modules[module_id]._machine_label
             # print "loading modules: %s" % self.modules[module_id]._status
 
@@ -518,26 +525,10 @@ class Modules(YomboLibrary):
                 except Exception as e:
                     pass
 
-            self.modules[module_id]._ModuleDeviceTypes = partial(
-                self.module_device_types,
-                module_id,
-            )
-
-    @inlineCallbacks
-    def get_module_variables(self, module_name, module_id):
-        variables = yield self._Variables.get_variable_fields_data(
-            group_relation_type='module',
-            group_relation_id=module_id,
-            data_relation_id=module_id,
-        )
-            #
-            # data_relation_type=data_relation_type,
-            # data_relation_id=data_relation_id)
-
-        if module_name in self._localModuleVars:
-            return dict_merge(variables, self._localModuleVars[module_name])
-
-        return variables
+            # self.modules[module_id]._ModuleDeviceTypes = partial(
+            #     self.module_device_types,
+            #     module_id,
+            # )
 
     def module_invoke_failure(self, failure, module_name, hook_name):
         logger.warn("---==(failure during module invoke for hook ({module_name}::{hook_name})==----",
@@ -556,25 +547,37 @@ class Modules(YomboLibrary):
 
         for module_id, module in self.modules.items():
 
-            module_device_types = yield self._LocalDB.get_module_device_types(module_id)
-            for module_device_type in module_device_types:
-                if module_device_type.id in self._Loader.loadedLibraries['devicetypes']:
-                    self.modules[module_id]._device_types.append(module_device_type.id)
-                else:
-                    logger.info("Module '{module}' has no device types.", module=module._label)
+            # module_device_types = yield self._LocalDB.get_module_device_types(module_id)
+            # for module_device_type in module_device_types:
+            #     if module_device_type.id in self._Loader.loadedLibraries['devicetypes']:
+            #         self.modules[module_id]._device_types.append(module_device_type.id)
+            #     else:
+            #         logger.info("Module '{module}' has no device types.", module=module._label)
 
             logger.debug("Starting module_init_invoke for module: {module}", module=module)
-            module._ModuleVariables = yield self.get_module_variables(
+            # module._ModuleVariables = yield self.module_variables(
+            #     module._Name,
+            #     module_id,
+            #     )
+            module._module_variables = partial(
+                self.module_variables,
                 module._Name,
                 module_id,
-                )
+            )
 
-            module._ModuleDevices = partial(
+            module._module_devices = partial(
                 self.module_devices,
                 module_id,
                 self.gateway_id,
             )
-            module._ModuleType = self._rawModulesList[module_id]['module_type']
+
+            module._module_device_types = partial(
+                self.module_device_types,
+                module_id,
+            )
+
+            yield self.do_update_module_cache(module)
+            # module._ModuleType = self._rawModulesList[module_id]['module_type']
 
             module._event_loop = self._Loader.event_loop
             module._AMQP = self._Loader.loadedLibraries['amqp']
@@ -644,6 +647,25 @@ class Modules(YomboLibrary):
             'called_by': calling_component,
         }
         return results
+
+    @inlineCallbacks
+    def update_module_cache(self, **kwargs):
+        # print("starting update_module_cache: %0.3f " % time())
+        for module_id, module in self.modules.items():
+            yield self.do_update_module_cache(module)
+        # print("done update_module_cache: %0.3f " % time())
+
+    @inlineCallbacks
+    def do_update_module_cache(self, module):
+        """
+        Updates various cache items. Can't replace the variable, want to keep the same
+        memory pointer. So, we empty it and then append new entries to it.
+        :param module:
+        :return:
+        """
+        yield module._module_device_types()
+        yield module._module_variables()
+        yield module._module_devices()
 
     def module_invoke(self, requested_module, hook, **kwargs):
         """
@@ -885,7 +907,8 @@ class Modules(YomboLibrary):
         logit = getattr(logger, level)
         logit("({log_source}) {label}({type})::{method} - {msg}", label=label, type=type, method=method, msg=msg)
 
-    @memoize_ttl(30)
+    # @memoize_ttl(30)
+    @inlineCallbacks
     def module_devices(self, module_id, gateway_id=None):
         """
         A list of devices for a given module id.
@@ -902,32 +925,62 @@ class Modules(YomboLibrary):
         if gateway_id is None:
             gateway_id = self.gateway_id
         temp = {}
-        for dt in self.module_device_types(module_id):
-            temp.update(self._DeviceTypes[dt].get_devices(gateway_id=gateway_id))
+        module_device_types = yield self.module_device_types(module_id)
+        for dt in module_device_types:
+            temp.update(self._DeviceTypes[dt['id']].get_devices(gateway_id=gateway_id))
 
-        return temp
+        module = self.modules[module_id]
+        module._module_devices_cached.clear()
+        module._module_devices_cached.update(temp)
+        # for device_id, device in temp.items():
+        #     module._module_devices_cached[device_id] = device
 
-    @memoize_ttl(5)
-    def module_device_types(self, module_id, return_value=None):
-        if return_value is None:
-            return_value = 'dict'
-        elif return_value not in (['id', 'dict']):
-            raise YomboWarning("module_device_types 'return_value' accepts: 'id' or 'dict'")
+        return module._module_devices_cached
 
-        if module_id not in self.modules:
-            if return_value == 'id':
-                return []
-            elif return_value == 'dict':
-                return {}
+    # @memoize_ttl(5)
+    @inlineCallbacks
+    def module_device_types(self, module_id):
+        module_device_types = yield self._LocalDB.get_module_device_types(module_id)
+        module = self.modules[module_id]
+        del module._module_device_types_cached[:]
+        for dt_id in module_device_types:
+            module._module_device_types_cached.append(dt_id)
+        return module._module_device_types_cached
 
-        if return_value == 'id':
-            return self.modules[module_id]._device_types
-        elif return_value == 'dict':
-            results = {}
-            for device_type_id in self.modules[module_id]._device_types:
-                results[device_type_id] = self._DeviceTypes[device_type_id]
-            return results
+    @inlineCallbacks
+    def module_variables(self, module_name, module_id):
+        variables = yield self._Variables.get_variable_fields_data(
+            group_relation_type='module',
+            group_relation_id=module_id,
+            data_relation_id=module_id,
+        )
+            #
+            # data_relation_type=data_relation_type,
+            # data_relation_id=data_relation_id)
 
+        if module_name in self._localModuleVars:
+            variables = dict_merge(variables, self._localModuleVars[module_name])
+
+        module = self.modules[module_id]
+        module._module_variables_cached.clear()
+        module._module_variables_cached.update(variables)
+        # print("module_variables: variable: %s" % variables)
+        # for label, data in variables:
+        #     module._module_variables_cached['label'] = data
+
+        return module._module_variables_cached
+
+    @inlineCallbacks
+    def full_list_modules(self):
+        """
+        Return a list of dictionaries representing all known commands to this gateway.
+        :return:
+        """
+        items = []
+        for module_id, module in self.modules.items():
+            module_data = yield module.asdict()
+            items.append(module_data)
+        return items
 
     @inlineCallbacks
     def add_module(self, data, **kwargs):
