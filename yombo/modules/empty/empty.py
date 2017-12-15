@@ -47,13 +47,13 @@ class Empty(YomboModule):
            :lines: 35,49-62
         """
         logger.debug("Empty module is loading.")
-        if self._ModuleVariables != {}:
+        if self._module_variables_cached != {}:
             logger.info("Empty module has the following module variables:")
-            for variable in self._ModuleVariables:
+            for variable in self._module_variables_cached:
                 # Remember, each variable can be multi-valued. Within each variable, contains a lot of additional
                 # information, such as when it was created, last updated, etc.
-                logger.info("{key} = {value}", key=variable, value=self._ModuleVariables[variable][0]['value'])
-                logger.info("Full dictionary of data: {data}", data=self._ModuleVariables[variable][0])
+                logger.info("{key} = {value}", key=variable, value=self._module_variables_cached[variable][0]['value'])
+                logger.info("Full dictionary of data: {data}", data=self._module_variables_cached[variable][0])
         else:
             logger.info("Empty module has no defined variables.")
 
