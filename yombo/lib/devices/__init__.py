@@ -487,9 +487,10 @@ class Devices(YomboLibrary):
         :return:
         """
         where = {
-            'finished_at': None,
-            'broadcast_at': [time() - 3600, '>'],
-            'source_gateway_id': self.gateway_id,
+#            'finished_at': None,
+#            'broadcast_at': [time() - 3600, '>'],
+#            'source_gateway_id': self.gateway_id,
+            'created_at': [time() - 60*60*24, '>'],
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
@@ -506,7 +507,7 @@ class Devices(YomboLibrary):
         for request_id in list(self.device_commands.keys()):
             device_command = self.device_commands[request_id]
             if device_command.finished_at is not None:
-                if device_command.finished_at > cur_time - (60*45):  # keep 45 minutes worth.
+                if device_command.finished_at > cur_time - (60*60*24):  # keep 45 minutes worth.
                     found_dc = False
                     for device_id, device in self.devices.items():
                         if request_id in device.device_commands:
