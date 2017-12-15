@@ -636,7 +636,12 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def get_module_device_types(self, module_id):
-        records = yield ModuleDeviceTypesView.find(where=['module_id = ?', module_id])
+        results = yield ModuleDeviceTypesView.find(where=['module_id = ?', module_id])
+        records = []
+        for item in results:
+            temp = clean_dict(item.__dict__)
+            del temp['errors']
+            records.append(temp)
         return records
 
     @inlineCallbacks
