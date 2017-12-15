@@ -121,7 +121,6 @@ def route_modules(webapp):
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
 
             if ok_to_save:
-                # print "jsonoutput = %s" % json_output
                 if 'vars' in json_output:
                     variable_data = yield webinterface._Variables.extract_variables_from_web_data(
                         json_output.get('vars', {}))
@@ -151,7 +150,6 @@ def route_modules(webapp):
                     }
                     return page.render(alerts=webinterface.get_alerts(), msg=msg)
                 else:
-                    # print "failed to submit new module: %s" % results
                     webinterface.add_alert(results['apimsghtml'], 'warning')
                     variable_groups = yield webinterface._Variables.get_variable_groups_fields(
                         group_relation_type='device_type',
@@ -253,19 +251,14 @@ def route_modules(webapp):
         @inlineCallbacks
         def page_modules_details(webinterface, request, session, module_id):
             try:
-                module = webinterface._Modules.get(module_id)
-                # module = webinterface._Modules[module_id]
+                module = webinterface._Modules[module_id]
             except Exception as e:
-                print("Module find errr: %s" % e)
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
-            # print "webinterface._Modules[module_id]._dump: %s" % webinterface._Modules[module_id]._dump()
-            # print "webinterface._Modules[module_id]._ModuleVariables: %s" % webinterface._Modules[module_id]._ModuleVariables
             device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
-            module_variables = module._ModuleVariables
+            module_variables = yield module._module_variables()
             # print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -280,14 +273,11 @@ def route_modules(webapp):
         @require_auth()
         def page_modules_disable_get(webinterface, request, session, module_id):
             try:
-                module = webinterface._Modules.get(module_id)
-                # module = webinterface._Modules[module_id]
+                module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            # print "module: %s " % module._ModuleVariables
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -304,7 +294,6 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -354,9 +343,7 @@ def route_modules(webapp):
         def page_modules_edit_get(webinterface, request, session, module_id):
             try:
                 module = webinterface._Modules.get(module_id)
-                # module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -366,7 +353,7 @@ def route_modules(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            module_variables = module._ModuleVariables
+            module_variables = yield module._module_variables()
             device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
             webinterface.home_breadcrumb(request)
@@ -384,11 +371,9 @@ def route_modules(webapp):
         @require_auth()
         @inlineCallbacks
         def page_modules_edit_post(webinterface, request, session, module_id):
-            module = webinterface._Modules.get(module_id)
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -464,14 +449,11 @@ def route_modules(webapp):
         @require_auth()
         def page_modules_enable_get(webinterface, request, session, module_id):
             try:
-                module = webinterface._Modules.get(module_id)
-                # module = webinterface._Modules[module_id]
+                module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            # print "module: %s " % module._ModuleVariables
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -488,7 +470,6 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -536,14 +517,11 @@ def route_modules(webapp):
         @require_auth()
         def page_modules_remove_get(webinterface, request, session, module_id):
             try:
-                module = webinterface._Modules.get(module_id)
-                # module = webinterface._Modules[module_id]
+                module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
-            # print "module: %s " % module._ModuleVariables
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
@@ -561,7 +539,6 @@ def route_modules(webapp):
             try:
                 module = webinterface._Modules[module_id]
             except Exception as e:
-                # print "Module find errr: %s" % e
                 webinterface.add_alert('Module ID was not found.', 'warning')
                 return webinterface.redirect(request, '/modules/index')
 

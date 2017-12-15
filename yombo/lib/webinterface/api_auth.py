@@ -38,6 +38,7 @@ class ApiAuths(object):
         self._Gateways = self.loader.loadedLibraries['gateways']
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
         self.active_api_auth = {}
+        self.session_type = "apiauth"
         # self.active_api_auth_cache = ExpiringDict(200, 5)  # keep 200 entries, for at most 1 second...???
 
     def __delitem__(self, key):
@@ -361,6 +362,11 @@ class ApiAuth(object):
     #         self.is_dirty = 200
     #         return val
     #     raise KeyError("ApiAuth doesn't have key: %s" % key)
+
+
+    @property
+    def user_id(self) -> str:
+        return "apiauth:%s..." % self.api_auth_id[20:]
 
     def delete(self, key):
         if key in self:

@@ -396,6 +396,8 @@ class Session(object):
         else:
             self.in_db = False
 
+        self.session_type = "session"
+
         self.gateway_id = record['gateway_id']
         self.session_id = record['id']
         self.last_access = int(time())
@@ -494,3 +496,9 @@ class Session(object):
         logger.info("Expiring session: {session}", session=self.session_id)
         self.is_valid = False
         self.is_dirty = 20000
+
+    @property
+    def user_id(self) -> str:
+        if 'auth_id' in self.session_data:
+            return self.session_data['auth_id']
+        return None

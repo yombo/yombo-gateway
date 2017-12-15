@@ -56,6 +56,7 @@ from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_firs
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
 from yombo.lib.webinterface.routes.api_v1.command import route_api_v1_command
 from yombo.lib.webinterface.routes.api_v1.device import route_api_v1_device
+from yombo.lib.webinterface.routes.api_v1.device_command import route_api_v1_device_command
 from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
 from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
@@ -209,6 +210,7 @@ class WebInterface(YomboLibrary):
         route_api_v1_automation(self.webapp)
         route_api_v1_command(self.webapp)
         route_api_v1_device(self.webapp)
+        route_api_v1_device_command(self.webapp)
         route_api_v1_gateway(self.webapp)
         route_api_v1_module(self.webapp)
         route_api_v1_notification(self.webapp)

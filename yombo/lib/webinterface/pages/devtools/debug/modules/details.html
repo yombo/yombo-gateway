@@ -25,7 +25,7 @@
                             <div class="panel-body">
                                 <label style="margin-top: 0px; margin-bottom: 0px">Device types and associated devices: </label><br>
                                 <ul>
-                                {% for device_type in module._device_types %}
+                                {% for device_type in module._device_types()%}
                                 <li><a href="/devtools/debug/device_types/{{ device_types[device_type].device_type_id }}/details">{{ device_types[device_type].label }}</a><br></li>
                                     <ul>
                                         {% if device_types[device_type].registered_devices|length == 0 %}
