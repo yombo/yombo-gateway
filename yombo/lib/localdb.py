@@ -298,13 +298,17 @@ class LocalDB(YomboLibrary):
                 imported_file = __import__("yombo.utils.db." + str(z), globals(), locals(), ['upgrade'], 0)
                 results = yield imported_file.upgrade(Registry)
 
-                self.dbconfig.update("schema_version", {'table_name': 'core', 'version': z})
+                self.dbconfig.update("schema_version",
+                                     {'version': z},
+                                     where=['table_name = ?', 'core'])
                 # results = yield Schema_Version.all()
         else:
             # if new, we will just install the latest meta in the lastest version file.
             results = yield self.current_db_meta_file.new_db_file(Registry)
 
-            self.dbconfig.update("schema_version", {'table_name': 'core', 'version': LATEST_SCHEMA_VERSION})
+            self.dbconfig.update("schema_version",
+                                 {'version': LATEST_SCHEMA_VERSION},
+                                 where=['table_name = ?', 'core'])
             # results = yield Schema_Version.all()
 
         chmod('usr/etc/yombo.db', 0o600)
@@ -367,7 +371,7 @@ class LocalDB(YomboLibrary):
         device = yield Device.find('device1')
         # results = yield Variable.find(where=['variable_type = ? AND foreign_id = ?', 'device', device.id])
 
-    #          results = yield DeviceType.find(where=['id = ?', device.device_variables.get()
+    #          results = yield DeviceType.find(where=['id = ?', device.device_variables().get()
 
     @inlineCallbacks
     def get_dbitem_by_id(self, dbitem, id, status=None):
@@ -1964,6 +1968,11 @@ ORDER BY id desc"""
         results = yield self.dbconfig.insert('variable_data', args, None, 'OR IGNORE')
         return results
 
+    @inlineCallbacks
+    def edit_variable_data(self, data_id, value):
+        yield self.dbconfig.update("variable_data",
+                                   {'data': value, 'updated_at': time()},
+                                   where=['id = ?', data_id])
 
     @inlineCallbacks
     def get_variable_groups(self, group_relation_type, group_relation_id):
