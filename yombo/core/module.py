@@ -192,59 +192,6 @@ class YomboModule:
         """
         pass
 
-    @inlineCallbacks
-    def _dump(self):
-        """
-        Returns a dictionary of core attributes about this module. Usually used for debugging.
-
-        :return: A dictionary of core attributes.
-        :rtype: dict
-        """
-        module_variables = yield self._module_variables()
-        module_device_types = yield self._module_device_types()
-        module_devices = yield self._module_devices()
-        devices = {}
-        for device_id, device in module_devices.items():
-            devices[device_id] = {
-                'device_id': device_id,
-                'label': device.label,
-                'machine_label': device.machine_label,
-            }
-        # device_types = []
-        # for device_type_id in module_device_types:
-        #     device_types.append(device_type_id)
-
-        return {
-            '_Name': self._Name,
-            '_FullName': self._FullName,
-            '_module_id': str(self._module_id),
-            '_module_type': str(self._module_type),
-            '_install_count': self._install_count,
-            '_issue_tracker_link': self._issue_tracker_link,
-            '_label': str(self._label),
-            '_machine_label': str(self._machine_label),
-            '_short_description': str(self._short_description),
-            '_description': str(self._description),
-            '_description_formatting': str(self._description_formatting),
-            '_see_also': self._see_also,
-            '_doc_link': str(self._doc_link),
-            '_git_link': str(self._git_link),
-            '_repository_link': self._repository_link,
-            '_install_branch': str(self._install_branch),
-            '_prod_branch': str(self._prod_branch),
-            '_dev_branch': str(self._dev_branch),
-            '_prod_version': str(self._prod_version),
-            '_dev_version': str(self._dev_version),
-            '_public': int(self._public),
-            '_status': int(self._status),
-            '_created_at': int(self._created_at),
-            '_updated_at': int(self._updated_at),
-            '_load_source': str(self._load_source),
-            '_device_types': module_device_types,
-            '_module_variables': module_variables,
-            '_module_devices': devices,
-        }
-
     # def __repr__(self):
     #     """
     #     Print a string when printing the class.  This will return the cmdUUID so that
@@ -277,7 +224,48 @@ class YomboModule:
     @inlineCallbacks
     def asdict(self):
         """
-        Export module information as a dictionary.
+        Returns a dictionary of core attributes about this module.
+
+        :return: A dictionary of core attributes.
+        :rtype: dict
         """
-        values = yield self._dump()
-        return values
+        module_variables = yield self._module_variables()
+        module_device_types = yield self._module_device_types()
+        module_devices = yield self._module_devices()
+        devices = {}
+        for device_id, device in module_devices.items():
+            devices[device_id] = {
+                'device_id': device_id,
+                'label': device.label,
+                'machine_label': device.machine_label,
+            }
+        return {
+            '_Name': self._Name,
+            '_FullName': self._FullName,
+            '_module_id': str(self._module_id),
+            '_module_type': str(self._module_type),
+            '_install_count': self._install_count,
+            '_issue_tracker_link': self._issue_tracker_link,
+            '_label': str(self._label),
+            '_machine_label': str(self._machine_label),
+            '_short_description': str(self._short_description),
+            '_description': str(self._description),
+            '_description_formatting': str(self._description_formatting),
+            '_see_also': self._see_also,
+            '_doc_link': str(self._doc_link),
+            '_git_link': str(self._git_link),
+            '_repository_link': self._repository_link,
+            '_install_branch': str(self._install_branch),
+            '_prod_branch': str(self._prod_branch),
+            '_dev_branch': str(self._dev_branch),
+            '_prod_version': str(self._prod_version),
+            '_dev_version': str(self._dev_version),
+            '_public': int(self._public),
+            '_status': int(self._status),
+            '_created_at': int(self._created_at),
+            '_updated_at': int(self._updated_at),
+            '_load_source': str(self._load_source),
+            '_device_types': module_device_types,
+            '_module_variables': module_variables,
+            '_module_devices': devices,
+        }
