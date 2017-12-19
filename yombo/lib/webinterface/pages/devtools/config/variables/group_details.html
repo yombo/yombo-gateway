@@ -6,7 +6,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header has-buttons-under"><a class="success" href="{%
-                    if group.relation_type == "module"
+                    if group.relation_type in ('module', 'all_devices', 'all_modules')
                         %}/devtools/config/modules/{{group.relation_id}}/variables{%
                         elif group.relation_type == "device_type"
                         %}/devtools/config/device_types/{{group.relation_id}}/variables{%
@@ -42,6 +42,8 @@
                             {{ group.group_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine: </label><br>
                             {{ group.group_machine_label }}<br>
+                            <label style="margin-top: 15px; margin-bottom: 0px">Relation Type: </label><br>
+                            {{ group.relation_type_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             {{ group.group_description|format_markdown() }}
                             <label style="margin-top: 15px; margin-bottom: 0px">Weight: </label><br>

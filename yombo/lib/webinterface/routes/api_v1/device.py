@@ -12,9 +12,9 @@ from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_no
 from yombo.utils import epoch_to_string, bytes_to_unicode, sleep
 
 def route_api_v1_device(webapp):
-    with webapp.subroute("/api/v1/device") as webapp:
+    with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route('/', methods=['GET'])
+        @webapp.route('/device', methods=['GET'])
         @require_auth(api=True)
         def apiv1_device_get(webinterface, request, session):
             return return_good(
@@ -22,7 +22,25 @@ def route_api_v1_device(webapp):
                 payload=webinterface._Devices.full_list_devices(),
             )
 
-        @webapp.route('/<string:device_id>/command/<string:command_id>', methods=['GET', 'POST'])
+        @webapp.route('/device/<string:device_id>', methods=['GET'])
+        @require_auth(api=True)
+        def apiv1_device_details_get(webinterface, request, session, device_id):
+            arguments = args_to_dict(request.args)
+
+            if device_id in webinterface._Devices:
+                device = webinterface._Devices[device_id]
+            else:
+                return return_not_found(request, 'device not found')
+
+            payload = device.asdict()
+            if 'item' in arguments:
+                payload = payload[arguments['item']]
+            return return_good(
+                request,
+                payload=payload
+            )
+
+        @webapp.route('/device/<string:device_id>/command/<string:command_id>', methods=['GET', 'POST'])
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_device_command_get_post(webinterface, request, session, device_id, command_id):

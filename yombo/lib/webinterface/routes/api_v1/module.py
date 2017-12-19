@@ -12,9 +12,9 @@ from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_no
 from yombo.utils import epoch_to_string, bytes_to_unicode
 
 def route_api_v1_module(webapp):
-    with webapp.subroute("/api/v1/module") as webapp:
+    with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route('/', methods=['GET'])
+        @webapp.route('/module', methods=['GET'])
         @require_auth(api=True)
         @inlineCallbacks
         def apiv1_module_get(webinterface, request, session):

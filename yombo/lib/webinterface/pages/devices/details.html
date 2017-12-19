@@ -72,7 +72,7 @@
                         <div class="panel-body">
                             {% for command_id in device.available_commands() %}
                             <label style="margin-top: 0px; margin-bottom: 0px">
-                                <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/devices/{{ device.device_id }}/command/{{ command_id }}">{{ commands[command_id].label }}</a>
+                                <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}">{{ commands[command_id].label }}</a>
                             </label>&nbsp;&nbsp;
                             <div class="modal fade" id="modal_cmd_{{command_id}}" tabindex="-1" role="dialog">
                               <div class="modal-dialog" role="document">
@@ -81,7 +81,7 @@
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                     <h4 class="modal-title">Command Details</h4>
                                   </div>
-                                  <form id="form-cmd-{{command_id}}" action="/api/v1/devices/{{ device.device_id }}/command/{{ command_id }}" method="POST">
+                                  <form id="form-cmd-{{command_id}}" action="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}" method="POST">
                                   <div class="modal-body">
                                         <fieldset>
                                           {% for input_label, input in device_types[device.device_type_id].commands[command_id]['inputs'].items()%}
@@ -106,7 +106,7 @@
                             {%- endfor %}
                             {%- if device.can_toggle() %}
                             <label style="margin-top: 0px; margin-bottom: 0px">
-                                <!--<a class="deviceCmd" data-doc_value="{{ special_toggle }}" href="/api/v1/devices/{{ device.device_id }}/command/special__toggle">Toggle</a>-->
+                                <!--<a class="deviceCmd" data-doc_value="{{ special_toggle }}" href="/api/v1/device/{{ device.device_id }}/command/special__toggle">Toggle</a>-->
                             </label>&nbsp;&nbsp;
 
                             {%- endif %}

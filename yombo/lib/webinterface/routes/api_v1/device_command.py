@@ -10,9 +10,9 @@ from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_no
 from yombo.utils import epoch_to_string, bytes_to_unicode
 
 def route_api_v1_device_command(webapp):
-    with webapp.subroute("/api/v1/device_command") as webapp:
+    with webapp.subroute("/api/v1") as webapp:
 
-        @webapp.route('/<string:device_command_id>', methods=['GET'])
+        @webapp.route('/device_command/<string:device_command_id>', methods=['GET'])
         @require_auth(api=True)
         def apiv1_device_do_command_get_post(webinterface, request, session, device_command_id):
             if device_command_id in webinterface._Devices.device_commands:

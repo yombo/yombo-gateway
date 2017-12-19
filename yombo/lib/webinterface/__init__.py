@@ -36,7 +36,7 @@ from hashlib import sha256
 # Import twisted libraries
 from twisted.web.server import Site
 from twisted.internet import reactor, ssl
-from twisted.internet.defer import inlineCallbacks
+from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred
 from twisted.internet.task import LoopingCall
 
 # Import 3rd party libraries
@@ -61,6 +61,8 @@ from yombo.lib.webinterface.routes.api_v1.gateway import route_api_v1_gateway
 from yombo.lib.webinterface.routes.api_v1.module import route_api_v1_module
 from yombo.lib.webinterface.routes.api_v1.notification import route_api_v1_notification
 from yombo.lib.webinterface.routes.api_v1.server import route_api_v1_server
+from yombo.lib.webinterface.routes.api_v1.stream import broadcast as route_api_v1_stream_broadcast
+from yombo.lib.webinterface.routes.api_v1.stream import route_api_v1_stream
 from yombo.lib.webinterface.routes.api_v1.statistics import route_api_v1_statistics
 from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
 
@@ -171,6 +173,8 @@ class WebInterface(YomboLibrary):
     visits = 0
     alerts = OrderedDict()
     starting = True
+    already_starting_web_servers = False
+    hook_listeners = {}  # special way to toss hook calls to routes.
 
     def __str__(self):
         """
@@ -206,6 +210,8 @@ class WebInterface(YomboLibrary):
         self.web_interface_listener = None
         self.web_interface_ssl_listener = None
 
+        self.api_stream_spectators = {}
+
         # Load API routes
         route_api_v1_automation(self.webapp)
         route_api_v1_command(self.webapp)
@@ -216,6 +222,7 @@ class WebInterface(YomboLibrary):
         route_api_v1_notification(self.webapp)
         route_api_v1_server(self.webapp)
         route_api_v1_statistics(self.webapp)
+        route_api_v1_stream(self.webapp, self)
         route_api_v1_system(self.webapp)
 
         # Load devtool routes
@@ -251,7 +258,6 @@ class WebInterface(YomboLibrary):
         self.web_server_started = False
         self.web_server_ssl_started = False
 
-        self.already_starting_web_servers = False
         self.web_factory = None
 
         # just here to set a password if it doesn't exist.
@@ -330,6 +336,43 @@ class WebInterface(YomboLibrary):
         self._display_pin_console_at = int(time())
         self.display_pin_console()
         self._Notifications.delete('webinterface:starting')
+        self.send_hook_listeners_ping_loop = LoopingCall(self.send_hook_listeners_ping_loop)
+        self.send_hook_listeners_ping_loop.start(55, True)
+
+    def send_hook_listeners_ping_loop(self):
+        route_api_v1_stream_broadcast(self, 'ping', int(time()))
+
+    def register_hook(self, name, thecallback):
+        if name not in self.hook_listeners:
+            self.hook_listeners[name] = []
+        self.hook_listeners[name].append(thecallback)
+
+    @inlineCallbacks
+    def _yombo_universal_hook_(self, hook_name=None, **kwargs):
+        """
+        Implements the universal hook.
+
+        :param kwargs:
+        :return:
+        """
+        # print("web uni hook: %s" % hook_name)
+        if hook_name in self.hook_listeners:
+            for a_callback in self.hook_listeners[hook_name]:
+                # print("web uni hook a_callback: %s" % a_callback)
+                d = Deferred()
+                d.addCallback(lambda ignored: maybeDeferred(a_callback, self, hook_name=hook_name, **kwargs))
+                d.addErrback(self.yombo_universal_hook_failure, hook_name, a_callback)
+                d.callback(1)
+                yield d
+
+    def yombo_universal_hook_failure(self, failure, hook_name, acallback):
+        logger.warn("---==(failure WI:universal hook for hook ({hook_name})==----",
+                    hook_name=hook_name)
+        logger.warn("--------------------------------------------------------")
+        logger.warn("{acallback}", acallback=acallback)
+        logger.warn("{failure}", failure=failure)
+        logger.warn("--------------------------------------------------------")
+        raise RuntimeError("failure during module invoke for hook: %s" % failure)
 
     def check_have_required_nodes(self):
         try:

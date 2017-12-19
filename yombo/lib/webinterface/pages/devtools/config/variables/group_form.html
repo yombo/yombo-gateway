@@ -5,7 +5,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/config/{%
-                    if parent_type == 'module'
+                    if parent_type in ('module', 'all_devices', 'all_modules')
                        %}modules/{{ parent.id }}/details{%
                     elif parent_type == 'device_type'
                        %}/device_type/{{parent.id}}/details{%

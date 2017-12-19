@@ -13,7 +13,7 @@ def route_devtools_config_variables(webapp):
 
         @inlineCallbacks
         def variable_group_breadcrumbs(webinterface, request, parent_id, parent_type):
-            if parent_type == 'module':
+            if parent_type in ('module', 'all_devices', 'all_modules'):
                 try:
                     module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % parent_id)
                 except YomboAPIWarning as e:
@@ -67,6 +67,14 @@ def route_devtools_config_variables(webapp):
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/group_details.html')
             # root_breadcrumb(webinterface, request)
+            if group_results['data']['relation_type'] == "module":
+                group_results['data']['relation_type_label'] = "Local Module"
+            elif group_results['data']['relation_type'] == "device_type":
+                group_results['data']['relation_type_label'] = "Device Type"
+            elif group_results['data']['relation_type'] == "all_devices":
+                group_results['data']['relation_type_label'] = "All Devices"
+            elif group_results['data']['relation_type'] == "all_modules":
+                group_results['data']['relation_type_label'] = "All Modules"
             return page.render(alerts=webinterface.get_alerts(),
                                     parent=parent['data'],
                                     group=group_results['data'],
@@ -129,7 +137,7 @@ def route_devtools_config_variables(webapp):
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            if parent_type == 'module':
+            if parent_type in ('module', 'all_devices', 'all_modules'):
                 msg[
                     'description'] = '<p>Variable group has beed added.</p><p>Continue to:<ul><li><a href="/devtools/config/modules/index">modules index</a></li><li><a href="/devtools/config/modules/%s/details">view the module</a></li><li><a href="/devtools/config/modules/%s/variables"> view module variables</a></li></ul></p>' % (
                 parent_id, parent_id)
@@ -204,7 +212,7 @@ def route_devtools_config_variables(webapp):
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            if parent_type == 'module':
+            if parent_type in ('module', 'all_devices', 'all_modules'):
                 msg[
                     'description'] = '<p>Variable group has beed edited.</p><p>Continue to:<ul><li><a href="/devtools/config/modules/index">modules index</a></li><li><a href="/devtools/config/modules/%s/details">view the module</a></li><li><a href="/devtools/config/modules/%s/variables"> view module variables</a></li></ul></p>' % (
                 parent['data']['id'], parent['data']['id'])
@@ -291,7 +299,7 @@ def route_devtools_config_variables(webapp):
                 'description': '',
             }
 
-            if data['relation_type'] == 'module':
+            if data['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed enabled.</p>' \
                                      '<p>Continue to:' \
                                      '<ul>' \
@@ -376,7 +384,7 @@ def route_devtools_config_variables(webapp):
                 'description': 'disable'
             }
 
-            if data['relation_type'] == 'module':
+            if data['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed disabled.</p>' \
                                      '<p>Continue to:' \
                                      '<ul>' \
@@ -461,7 +469,7 @@ def route_devtools_config_variables(webapp):
                 'description': '',
             }
 
-            if data['relation_type'] == 'module':
+            if data['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed deleted.</p>' \
                                      '<p>Continue to:' \
                                      '<ul>' \
@@ -601,7 +609,7 @@ def route_devtools_config_variables(webapp):
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            if group_results['data']['relation_type'] == 'module':
+            if group_results['data']['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed added.</p>' \
                                      '<p>Continue to:' \
                                      '<ul>' \
@@ -706,7 +714,7 @@ def route_devtools_config_variables(webapp):
                 'description': '',
             }
 
-            if group_results['data']['relation_type'] == 'module':
+            if group_results['data']['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable field has beed deleted.</p><p>Continue to:' \
                                      '<ul>' \
                                      '<li><a href="/devtools/config/modules/index">Modules index</a></li>' \
@@ -893,7 +901,7 @@ def route_devtools_config_variables(webapp):
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            if group_results['data']['relation_type'] == 'module':
+            if group_results['data']['relation_type'] in ('module', 'all_devices', 'all_modules'):
                 msg['description'] = '<p>Variable group has beed edited.</p>' \
                                      '<p>Continue to:' \
                                      '<ul>' \

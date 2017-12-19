@@ -8,7 +8,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header has-buttons-under"><a class="success" href="/devtools/config/{%
-                    if parent == 'module'
+                    if parent_type in ('module', 'all_devices', 'all_modules')
                        %}modules{%
                     elif parent == 'device_type'
                        %}device_types{%
@@ -245,7 +245,7 @@
 
                          </div> <!-- /.row -->
                         <a class="btn btn-md btn-danger" href="/devtools/config/{%
-                    if group.relation_type == 'module'
+                    if parent_type in ('module', 'all_devices', 'all_modules')
                        %}modules/{{ group.relation_id }}/details{%
                     elif parent_type == 'device_type'
                        %}/device_type/{{group.relation_id}}/details{%
