@@ -154,7 +154,7 @@ def route_devices(webapp):
 
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
             device = {
-                'garage_id': json_output.get('garage_id', ""),
+                # 'garage_id': json_output.get('garage_id', ""),
                 'location_id': json_output.get('location_id', ""),
                 'area_id': json_output.get('area_id', ""),
                 'machine_label': json_output.get('machine_label', ""),
@@ -262,7 +262,6 @@ def route_devices(webapp):
             try:
                 command = webinterface._Devices.device_commands[device_command_id]
             except Exception as e:
-                print("e: %s" % e)
                 webinterface.add_alert("Cannot find requested id.")
                 return webinterface.redirect(request, '/devices/device_commands')
 
@@ -272,6 +271,7 @@ def route_devices(webapp):
 
         @webapp.route('/<string:device_id>/details')
         @require_auth()
+        @inlineCallbacks
         def page_devices_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
@@ -282,7 +282,7 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             add_devices_breadcrumb(webinterface, request, device_id)
-            device_variables = device.device_variables
+            device_variables = yield device.device_variables()
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                device_variables=device_variables,
@@ -453,7 +453,6 @@ def route_devices(webapp):
                                         webinterface._Locations.area_label(device['area_id'], device['label']))
             webinterface.add_breadcrumb(request, "/devices/%s/edit" % device_id, "Edit")
             variable_data = yield webinterface._Variables.get_variable_data('device', device['device_id'])
-            # print("variable_data: %s" % variable_data)
             page = yield page_devices_edit_form(
                 webinterface,
                 request,
@@ -511,7 +510,7 @@ def route_devices(webapp):
             # print("energy_map: %s " % energy_map)
             variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output['vars'])
             data = {
-                'garage_id': request.args.get('garage_id', ""),
+                # 'garage_id': request.args.get('garage_id', ""),
                 'location_id': request.args.get('location_id')[0],
                 'area_id': request.args.get('area_id')[0],
                 'machine_label': request.args.get('machine_label')[0],
