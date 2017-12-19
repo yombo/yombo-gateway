@@ -207,7 +207,7 @@ class SSLCerts(YomboLibrary):
         :param item:
         :return:
         """
-        return item._dump()
+        return item.asdict()
 
     @inlineCallbacks
     def sslcert_unserializer(self, item):

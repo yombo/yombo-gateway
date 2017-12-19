@@ -832,7 +832,7 @@ class SSLCert(object):
                     'chain_file': None,
                 }
 
-    def _dump(self):
+    def asdict(self):
         """
         Returns a dictionary of the current attributes. This should only be used internally.
 
