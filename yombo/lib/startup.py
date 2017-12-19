@@ -26,6 +26,12 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
+# Import twisted libraries
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet.task import LoopingCall
+
+from yombo.utils import sleep
+
 logger = get_logger('library.startup')
 
 class Startup(YomboLibrary):
@@ -82,3 +88,52 @@ class Startup(YomboLibrary):
             self._Loader.operating_mode = 'config'
         else:
             self._Loader.operating_mode = 'run'
+
+        self.cache_updater_running = False
+        self.system_stopping = False
+
+    def _start_(self, **kwargs):
+        """
+        Handles making sure caches are regularly updated and cleaned.
+        :return:
+        """
+        self.update_caches_loop = LoopingCall(self.update_caches)
+        self.update_caches_loop.start(60*60*6, False)
+
+    def _stop_(self, **kwargs):
+        self.system_stopping = True
+
+    @inlineCallbacks
+    def update_caches(self, force=None, quick=False):
+        """
+        Iterates through all libraries to update the cache, then tells the modules to do the same.
+        :return:
+        """
+        if self.cache_updater_running is True and force is True:
+            self.cache_updater_running == None
+            return
+
+        if self._Loader.operating_mode != 'run' or self.cache_updater_running is not False or \
+                self.system_stopping is True:
+            return
+
+        logger.info("Starting cache updates.")
+
+        # Copied from Modules library, but with sleeps and checks.
+        for module_id, module in self._Modules.modules.items():
+            if self.cache_updater_running is None or self.system_stopping is True:
+                self.cache_updater_running = False
+                self.update_caches_loop.reset()
+                return
+
+            yield self._Modules.do_update_module_cache(module)
+            yield sleep(1)
+
+        for device_id, device in self._Devices.devices.items():
+            if self.cache_updater_running is None or self.system_stopping is True:
+                self.cache_updater_running = False
+                self.update_caches_loop.reset()
+                return
+
+            yield device.device_variables()
+            yield sleep(0.5)
