@@ -1,5 +1,4 @@
 from yombo.lib.devices._device import Device
-from yombo.core.exceptions import YomboWarning
 import yombo.utils.color as color_util
 
 # Brightness of the light, 0..255 or percentage
@@ -24,14 +23,12 @@ class Light(Device):
     """
     A generic light device.
     """
-
     PLATFORM = "light"
-    STATUS_EXTRA = {}
 
     TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
 
-    def _start_(self):
-        super(Light, self)._start_()
+    def _start_(self, **kwargs):
+        super()._start_()
         self.FEATURES['brightness'] = True
         self.FEATURES['color_temp'] = False
         self.FEATURES['effect'] = False
@@ -39,14 +36,18 @@ class Light(Device):
         self.FEATURES['xy_color'] = False
         self.FEATURES['transition'] = False
         self.FEATURES['white_value'] = False
-        self.FEATURES['number_of_steps'] = 256
+        self.FEATURES['number_of_steps'] = 255
 
     @property
     def brightness(self):
         """
         Return the brightness of this light between 0..255.
         """
-        return self.status
+        if len(self.status_history) > 0:
+            status_current = self.status_history[0]
+            return status_current.machine_status
+
+        return None
 
     @property
     def xy_color(self):
@@ -132,3 +133,23 @@ class Light(Device):
 
     def turn_off(self, cmd, **kwargs):
         return self.command('off', **kwargs)
+
+
+class Color_Light(Light):
+    """
+    A generic light device.
+    """
+    PLATFORM = "light"
+
+    TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+
+    def _start_(self, **kwargs):
+        super()._start_()
+        self.FEATURES['brightness'] = True
+        self.FEATURES['color_temp'] = False
+        self.FEATURES['effect'] = False
+        self.FEATURES['rgb_color'] = True
+        self.FEATURES['xy_color'] = False
+        self.FEATURES['transition'] = False
+        self.FEATURES['white_value'] = False
+        self.FEATURES['number_of_steps'] = 255

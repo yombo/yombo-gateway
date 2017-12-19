@@ -1,6 +1,6 @@
 from yombo.lib.devices._device import Device
 
-
+#TODO: rename to switch
 class Appliance(Device):
     """
     A generic appliance device.

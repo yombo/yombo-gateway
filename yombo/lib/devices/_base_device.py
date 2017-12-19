@@ -160,7 +160,7 @@ class Base_Device(object):
 
         self.device_variables = {}
 
-        #The following items are set from the databsae or AMQP service.
+        #The following items are set from the databsae, module, or AMQP service.
         self.device_type_id = None
         self.gateway_id = None
         self.location_id = None
@@ -185,6 +185,9 @@ class Base_Device(object):
         self.energy_map = None
         self.energy_type = None
         self.device_is_new = True
+        self.device_serial = None
+        self.device_mfg = None
+        self.device_model = None
 
         self.update_attributes(device, source='parent')
 
@@ -213,6 +216,14 @@ class Base_Device(object):
             self.device_is_new = False
             yield self.load_status_history(35)
             yield self.load_device_commands_history(35)
+
+    def _start_(self, **kwargs):
+        """
+        This is called by the devices library when a new device is loaded.
+        :param kwargs:
+        :return:
+        """
+        pass
 
     def _unload_(self, **kwargs):
         """
@@ -378,25 +389,57 @@ class Base_Device(object):
         """
         Export device variables as a dictionary.
         """
-        return {'device_id': str(self.device_id),
-                'device_type_id': str(self.device_type_id),
-                'machine_label': str(self.machine_label),
-                'label': str(self.label),
-                'description': str(self.description),
-                'statistic_label': str(self.statistic_label),
-                'statistic_type': str(self.statistic_type),
-                'statistic_bucket_size': str(self.statistic_bucket_size),
-                'statistic_lifetime': str(self.statistic_lifetime),
-                'pin_code': "********",
-                'pin_required': int(self.pin_required),
-                'pin_timeout': self.pin_timeout,
-                'voice_cmd': str(self.voice_cmd),
-                'voice_cmd_order': str(self.voice_cmd_order),
-                'created_at': int(self.created_at),
-                'updated_at': int(self.updated_at),
-                'device_commands': list(self.device_commands),
-                'status_history': list([sh.asdict() for sh in self.status_history]),
-                }
+        if len(self.status_history) > 0:
+            status_current = self.status_history[0].asdict()
+        else:
+            status_current = None
+
+        if len(self.status_history) > 1:
+            status_previous = self.status_history[1].asdict()
+        else:
+            status_previous = None
+        # print("device commands: %s" % self.device_commands)
+        # out_device_commands = {}
+        # for device_command_id in list(self.device_commands):
+        #     command = self._Commands[device_command_id]
+        #     out_device_commands[device_command_id] = {
+        #         'machine_label': command['machine_label'],
+        #         'label': command['label'],
+        #     }
+        return {
+            'area': self.area,
+            'location': self.location,
+            'area_label': self.area_label,
+            'full_label': self.full_label,
+            'device_id': str(self.device_id),
+            'device_type_id': str(self.device_type_id),
+            'device_type_label': self._DeviceTypes[self.device_type_id].machine_label,
+            'machine_label': str(self.machine_label),
+            'label': str(self.label),
+            'description': str(self.description),
+            'statistic_label': str(self.statistic_label),
+            'statistic_type': str(self.statistic_type),
+            'statistic_bucket_size': str(self.statistic_bucket_size),
+            'statistic_lifetime': str(self.statistic_lifetime),
+            'pin_code': "********",
+            'pin_required': int(self.pin_required),
+            'pin_timeout': self.pin_timeout,
+            'voice_cmd': str(self.voice_cmd),
+            'voice_cmd_order': str(self.voice_cmd_order),
+            'created_at': int(self.created_at),
+            'updated_at': int(self.updated_at),
+            'device_commands': list(self.device_commands),
+            'status_current': status_current,
+            'status_previous': status_previous,
+            # 'status_history': list([sh.asdict() for sh in self.status_history]),
+            'device_serial': self.device_serial,
+            'device_mfg': self.device_mfg,
+            'device_model': self.device_model,
+            'device_platform': self.PLATFORM,
+            'device_sub_platform': self.SUB_PLATFORM,
+            'device_features': self.FEATURES,
+            'device_variables': self.device_variables,
+            }
 
     def to_mqtt_coms(self):
         """
@@ -1078,7 +1121,7 @@ class Base_Device(object):
 
         Calls the _device_status_ hook to send current device status. Useful if you just want to send a status of
         a device without actually changing the status.
-s
+
         :param kwargs:
         :return:
         """
@@ -1095,15 +1138,39 @@ s
         else:
             command = None
 
+        try:
+            previous_status = self.status_history[1].asdict()
+        except Exception as e:
+            previous_status = None
+        device_type = self._Parent._DeviceTypes[self.device_type_id]
+
         message = {
             'device': self,
             'command': command,
             'request_id': kwargs.get('request_id', None),
             'reported_by': kwargs.get('reported_by', None),
             'gateway_id': kwargs.get('gateway_id', self.gateway_id),
+            'event': {
+                'area': self.area,
+                'location': self.location,
+                'area_label': self.area_label,
+                'full_label': self.full_label,
+                'device_id': self.device_id,
+                'device_label': self.label,
+                'device_machine_label': self.machine_label,
+                'device_type_id': self.device_type_id,
+                'device_type_label': device_type.machine_label,
+                'device_type_machine_label': device_type.machine_label,
+                'command_id': command.command_id,
+                'command_label': command.label,
+                'command_machine_label': command.machine_label,
+                'status_current': self.status_history[0].asdict(),
+                'status_previous': previous_status,
+                'gateway_id': kwargs.get('gateway_id', self.gateway_id),
+                'device_features': self.FEATURES,
+            },
         }
 
-        message['status'] = self.status_history[0]
         if len(self.status_history) == 1:
             message['previous_status'] = None
         else:
@@ -1255,10 +1322,9 @@ s
             del self.FEATURES[features]
 
     def add_status_extra_allow(self, status, values):
-        if status in self.STATUS_EXTRA:
-            if isinstance(self.STATUS_EXTRA[status], list) is False:
-                logger.info("Converting status_extra to a list: {status}", status=status)
-                self.STATUS_EXTRA[status] = ()
+        if status not in self.STATUS_EXTRA:
+            self.STATUS_EXTRA[status] = []
+
         if isinstance(values, list):
             for value in values:
                 self.STATUS_EXTRA[status].append(value)

@@ -233,7 +233,7 @@ class Devices(YomboLibrary):
 
         self.mqtt = None
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def _load_(self, **kwargs):
         """
         Loads the devices from the database and loads device commands.
@@ -241,9 +241,11 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
-        yield self._load_devices_from_database()
-        yield self._load_device_commands()
+        # yield self._load_devices_from_database()
+        # yield self._load_device_commands()
+        pass
 
+    @inlineCallbacks
     def _start_(self, **kwags):
         """
         Sets up the MQTT listener for IoT interactions.
@@ -251,6 +253,8 @@ class Devices(YomboLibrary):
         :param kwags:
         :return:
         """
+        yield self._load_devices_from_database()
+        yield self._load_device_commands()
         if self._States['loader.operating_mode'] == 'run':
             self.mqtt = self._MQTT.new(mqtt_incoming_callback=self.mqtt_incoming, client_id='Yombo-devices-%s' %
                                                                                             self.gateway_id)
@@ -325,17 +329,33 @@ class Devices(YomboLibrary):
                     new_map[float(key)] = float(value)
                 record['energy_map'] = new_map
                 logger.debug("Loading device: {record}", record=record)
-                yield self.import_device(record, source='database')
+                device_id = yield self.import_device(record, source='database')
+                d = Deferred()
+                d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
+                d.addErrback(self.import_device_failure, self.devices[device_id])
+                d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
+                d.addErrback(self.import_device_failure, self.devices[device_id])
+                d.callback(1)
+                yield d
+                try:
+                    global_invoke_all('_device_imported_',
+                                      called_by=self,
+                                      id=device_id,
+                                      device=self.devices[device_id],
+                                      )
+                except YomboHookStopProcessing as e:
+                    pass
 
-        # print("devices: %s" % self.devices )
-        for device_id, device in self.devices.items():
-            d = Deferred()
-            d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
-            d.addErrback(self.import_device_failure, device)
-            # d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
-            # d.addErrback(self.import_device_failure, device)
-            d.callback(1)
-            yield d
+
+                        # print("devices: %s" % self.devices )
+        # for device_id, device in self.devices.items():
+        #     d = Deferred()
+        #     d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._init_))
+        #     d.addErrback(self.import_device_failure, device)
+        #     # d.addCallback(lambda ignored: maybeDeferred(self.devices[device_id]._start_))
+        #     # d.addErrback(self.import_device_failure, device)
+        #     d.callback(1)
+        #     yield d
 
     def sorted(self, key=None):
         """
@@ -406,8 +426,7 @@ class Devices(YomboLibrary):
             klass._Commands = self._Loader.loadedLibraries['commands']
             klass._Configs = self._Loader.loadedLibraries['configuration']
             klass._CronTab = self._Loader.loadedLibraries['crontab']
-            klass._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-            klass._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
+            klass._Devices = self
             klass._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             klass._Gateways = self._Loader.loadedLibraries['gateways']
             klass._GPG = self._Loader.loadedLibraries['gpg']
@@ -415,7 +434,7 @@ class Devices(YomboLibrary):
             klass._Libraries = self._Loader.loadedLibraries
             klass._Libraries = self._Loader.loadedLibraries
             klass._Localize = self._Loader.loadedLibraries['localize']
-            klass._klasss = self
+            klass._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
             klass._MQTT = self._Loader.loadedLibraries['mqtt']
             klass._Nodes = self._Loader.loadedLibraries['nodes']
             klass._Notifications = self._Loader.loadedLibraries['notifications']
@@ -432,6 +451,7 @@ class Devices(YomboLibrary):
             klass._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
             try:
                 self.devices[device_id] = klass(device, self)
+                # self.devices[device_id]._start_()
             except Exception as e:
                 logger.error("Error while creating device instance: {e}", e=e)
                 logger.error("-------==(Error: While saving new config data)==--------")
@@ -462,21 +482,22 @@ class Devices(YomboLibrary):
                          voice_cmd=device["voice_cmd"])
 
         # logger.debug("_add_device: {device}", device=device)
-
         if import_state == 'update':
             try:
-                global_invoke_all('_device_imported_',
+                global_invoke_all('_device_updated_',
                                   called_by=self,
                                   id=device_id,
-                                  data=device,
+                                  device=self.devices[device_id],
                                   )
             except YomboHookStopProcessing as e:
                 pass
+        return device_id
 
-        # if test_device:
+                # if test_device:
         #            return self.devices[device_id]
 
     def import_device_failure(self, failure, device):
+        print("ERRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
         logger.error("Got failure while creating device instance for '{label}': {failure}", failure=failure,
                      label=device['label'])
 

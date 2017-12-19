@@ -37,9 +37,9 @@ logger = get_logger('library.devicetypes')
 BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices._device': ['Device'],
     'yombo.lib.devices.appliance': ['Appliance'],
-    'yombo.lib.devices.light': ['Light'],
+    'yombo.lib.devices.light': ['Light', 'Color_Light'],
     'yombo.lib.devices.relay': ['Relay'],
-    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor'],
+    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor', 'Door'],
     'yombo.lib.devices.thermometer': ['Thermometer'],
 }
 
@@ -997,6 +997,9 @@ class DeviceType(object):
         the device type can be identified and referenced easily.
         """
         return self.device_type_id
+
+    def asdict(self):
+        return self.__repl__()
 
     def __repl__(self):
         """

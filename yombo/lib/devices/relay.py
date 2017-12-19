@@ -5,11 +5,7 @@ class Relay(Appliance):
     """
     A generic relay device.
     """
-
     PLATFORM = "relay"
-
-    SUPPORT_ALL_ON = False
-    SUPPORT_ALL_OFF = False
 
     TOGGLE_COMMANDS = ['open', 'close']  # Put two command machine_labels in a list to enable toggling.
 
@@ -43,3 +39,4 @@ class Relay(Appliance):
         elif machine_status == int(0):
             return self._Commands['off']
         return None
+

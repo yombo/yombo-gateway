@@ -5,11 +5,7 @@ class Sensor(Device):
     """
     A generic Sensor
     """
-
     PLATFORM = "sensor"
-
-    SUPPORT_ALL_ON = False
-    SUPPORT_ALL_OFF = False
 
     TOGGLE_COMMANDS = []
 
@@ -47,3 +43,11 @@ class Digital_Sensor(Sensor):
     """
 
     SUB_PLATFORM = "digital_sensor"
+
+
+class Door(Sensor):
+    """
+    A sensor that will be either high or low.
+    """
+
+    SUB_PLATFORM = "door"

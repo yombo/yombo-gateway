@@ -8,9 +8,6 @@ class Thermometer(Device):
 
     PLATFORM = "thermometer"
 
-    SUPPORT_ALL_ON = False
-    SUPPORT_ALL_OFF = False
-
     TOGGLE_COMMANDS = []
 
     # Features this device can support

@@ -42,10 +42,11 @@ class Device(Base_Device):
         'sends_updates': True
     }
 
-    STATUS_EXTRA = {
-        'mode': ('auto', 'on', 'off'),
-        'running': ('auto', 'on', 'off'),
-    }
+    STATUS_EXTRA = {}
+    # STATUS_EXTRA = {
+    #     'mode': ['auto', 'on', 'off'],
+    #     'running': ['auto', 'on', 'off'],
+    # }
 
     @property
     def area(self) -> str:
@@ -55,14 +56,13 @@ class Device(Base_Device):
         :return:
         """
         locations = self._Parent._Locations.locations
-        area = ""
-        if self.area_id in locations:
+        try:
             area = locations[self.area_id].label
             if area.lower() == "none":
                 return ""
             else:
                 return area
-        else:
+        except Exception as e:
             return ""
 
     @property
@@ -73,14 +73,13 @@ class Device(Base_Device):
         :return:
         """
         locations = self._Parent._Locations.locations
-        area = ""
-        if self.area_id in locations:
+        try:
             location = locations[self.location_id].label
             if location.lower() == "none":
                 return ""
             else:
                 return location
-        else:
+        except Exception as e:
             return ""
 
     @property
@@ -90,13 +89,14 @@ class Device(Base_Device):
         :return:
         """
         locations = self._Parent._Locations.locations
-        area = ""
-        if self.area_id in locations:
+        try:
             area = locations[self.area_id].label
             if area.lower() == "none":
                 area = ""
             else:
                 area = area + " "
+        except Exception as e:
+            area = ""
         return "%s%s" % (area, self.label)
 
     @property
@@ -106,20 +106,23 @@ class Device(Base_Device):
         :return:
         """
         locations = self._Parent._Locations.locations
-        location = ""
-        area = ""
-        if self.location_id in locations:
+        try:
             location = locations[self.location_id].label
             if location.lower() == "none":
                 location = ""
             else:
                 location = location + " "
-        if self.area_id in locations:
+        except Exception as e:
+            location = ""
+
+        try:
             area = locations[self.area_id].label
             if area.lower() == "none":
                 area = ""
             else:
                 area = area + " "
+        except Exception as e:
+            area = ""
         return "%s%s%s" % (location, area, self.label)
 
     @property
@@ -142,11 +145,11 @@ class Device(Base_Device):
                     if len(new_label) > 0:
                         new_label = new_label + "." + self._Validate.slugify(location)
                     else:
-                       new_label = self._Validate.slugify(location)
+                        new_label = self._Validate.slugify(location)
             if len(new_label) > 0:
                 new_label = new_label + "." + self._Validate.slugify(self.machine_label)
             else:
-               new_label = self._Validate.slugify(self.machine_label)
+                new_label = self._Validate.slugify(self.machine_label)
             return new_label
         else:
             return self.statistic_label
@@ -156,7 +159,7 @@ class Device(Base_Device):
         """
         Return True if the device needs to be polled to get current status.
         False if devices push status updates.
-        
+
         In most cases, the module handling the device will automatically poll the device periodically. For these
         devices and for devices that don't send updates or are not polled, should return True.
         """
