@@ -219,6 +219,17 @@ class Notifications(YomboLibrary):
         if acknowledged_at is None:
             acknowledged_at = time()
         self.notifications[notice_id].set_ack(acknowledged_at, new_ack)
+        try:
+            global_invoke_all('_notification_acked_',
+                              called_by=self,
+                              notification=self.notifications[notice_id],
+                              event={
+                                  'notification_id': notice_id,
+                              }
+                              )
+        except YomboHookStopProcessing:
+            pass
+
 
     def add(self, notice, from_db=None, create_event=None):
         """
@@ -302,6 +313,7 @@ class Notifications(YomboLibrary):
             global_invoke_all('_notification_add_',
                               called_by=self,
                               notification=self.notifications[notice['id']],
+                              event=self.notifications[notice['id']].asdict()
                               )
         except YomboHookStopProcessing:
             pass
@@ -320,6 +332,9 @@ class Notifications(YomboLibrary):
             global_invoke_all('_notification_delete_',
                               called_by=self,
                               notification=self.notifications[notice_id],
+                              event={
+                                  'notification_id': notice_id,
+                              }
                               )
         except YomboHookStopProcessing:
             pass
@@ -431,7 +446,7 @@ class Notification:
                 continue
             setattr(self, key, value)
 
-    def dump(self):
+    def asdict(self):
         """
         Export command variables as a dictionary.
         """
@@ -441,9 +456,9 @@ class Notification:
             'type' : str(self.type),
             'priority': str(self.priority),
             'source': str(self.source),
-            'expire_at': str(self.expire_at),
+            'expire_at': None if self.expire_at is None else float(self.expire_at),
             'acknowledged': self.acknowledged,
-            'acknowledged_at': float(self.acknowledged_at),
+            'acknowledged_at': None if self.acknowledged_at is None else float(self.acknowledged_at),
             'title': str(self.title),
             'message': str(self.message),
             'meta': str(self.meta),
@@ -451,5 +466,5 @@ class Notification:
             'always_show_allow_clear': str(self.always_show_allow_clear),
             'persist': str(self.persist),
             'local': self.local,
-            'created_at': str(self.created_at),
+            'created_at': int(self.created_at),
         }
