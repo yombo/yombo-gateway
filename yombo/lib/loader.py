@@ -84,9 +84,9 @@ HARD_LOAD["DeviceTypes"] = {'operating_mode': 'all'}
 HARD_LOAD["InputTypes"] = {'operating_mode': 'all'}
 HARD_LOAD["VoiceCmds"] = {'operating_mode': 'all'}
 HARD_LOAD["Variables"] = {'operating_mode': 'all'}
+HARD_LOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["Devices"] = {'operating_mode': 'all'}
 HARD_LOAD["Automation"] = {'operating_mode': 'all'}
-HARD_LOAD["Modules"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQPYombo"] = {'operating_mode': 'run'}
 HARD_LOAD["Gateways"] = {'operating_mode': 'all'}
 HARD_LOAD["Nodes"] = {'operating_mode': 'all'}
@@ -494,7 +494,7 @@ class Loader(YomboLibrary, object):
                      failure=failure)
 
     @inlineCallbacks
-    def library_invoke(self, requested_library, hook, **kwargs):
+    def library_invoke(self, requested_library, hook_name, **kwargs):
         """
         Invokes a hook for a a given library. Passes kwargs in, returns the results to caller.
         """
@@ -503,53 +503,61 @@ class Loader(YomboLibrary, object):
             raise YomboWarning('Requested library is missing: %s' % requested_library)
 
         if 'called_by' not in kwargs:
-            raise YomboWarning("Unable to call hook '%s:%s', missing 'called_by' named argument." % (requested_library, hook))
+            raise YomboWarning("Unable to call hook '%s:%s', missing 'called_by' named argument." % (requested_library, hook_name))
         calling_component = kwargs['called_by']
+        final_results = None
 
-        cache_key = requested_library + hook
-        if cache_key in self._invoke_list_cache:
-            if self._invoke_list_cache[cache_key] is False:
-                # logger.warn("Cache hook ({cache_key})...SKIPPED", cache_key=cache_key)
-                return  # skip. We already know function doesn't exist.
-        library = self.loadedLibraries[requested_library]
-        if requested_library == 'Loader':
-            return
-        if not (hook.startswith("_") and hook.endswith("_")):
-            hook = library._Name.lower() + "_" + hook
-        if hasattr(library, hook):
-            method = getattr(library, hook)
-            if isinstance(method, Callable):
-                if library._Name not in self.hook_counts:
-                    self.hook_counts[library._Name] = {}
-                if hook not in self.hook_counts:
-                    self.hook_counts[library._Name][hook] = {'Total Count': {'count': 0}}
-                # print "hook counts: %s" % self.hook_counts
-                # print "hook counts: %s" % self.hook_counts[library._Name][hook]
-                if calling_component not in self.hook_counts[library._Name][hook]:
-                    self.hook_counts[library._Name][hook][calling_component] = {'count': 0}
-                self.hook_counts[library._Name][hook][calling_component]['count'] = self.hook_counts[library._Name][hook][calling_component]['count'] + 1
-                self.hook_counts[library._Name][hook]['Total Count']['count'] = self.hook_counts[library._Name][hook]['Total Count']['count'] + 1
-                self._invoke_list_cache[cache_key] = True
+        for hook in [hook_name, '_yombo_universal_hook_']:
+            cache_key = requested_library + hook
+            if cache_key in self._invoke_list_cache:
+                if self._invoke_list_cache[cache_key] is False:
+                    # logger.warn("Cache hook ({cache_key})...SKIPPED", cache_key=cache_key)
+                    continue  # skip. We already know function doesn't exist.
+            library = self.loadedLibraries[requested_library]
+            if requested_library == 'Loader':
+                return
+            if not (hook.startswith("_") and hook.endswith("_")):
+                hook = library._Name.lower() + "_" + hook
+            kwargs['hook_name'] = hook_name
+            # print("lib hook: %s -> %s" % (hook, hook_name))
 
-                try:
-                    d = Deferred()
-                    d.addCallback(lambda ignored: self._log_loader('debug', library._Name, 'library', hook,
-                                                                   'About to call %s' % hook))
-                    # print("calling %s:%s" % (library._Name, hook))
-                    d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
-                    d.addErrback(self.library_invoke_failure, requested_library, hook)
-                    d.callback(1)
-                    results = yield d
-                    return results
-                except RuntimeWarning as e:
-                    pass
+            if hasattr(library, hook):
+                method = getattr(library, hook)
+                if isinstance(method, Callable):
+                    if library._Name not in self.hook_counts:
+                        self.hook_counts[library._Name] = {}
+                    if hook not in self.hook_counts:
+                        self.hook_counts[library._Name][hook] = {'Total Count': {'count': 0}}
+                    # print "hook counts: %s" % self.hook_counts
+                    # print "hook counts: %s" % self.hook_counts[library._Name][hook]
+                    if calling_component not in self.hook_counts[library._Name][hook]:
+                        self.hook_counts[library._Name][hook][calling_component] = {'count': 0}
+                    self.hook_counts[library._Name][hook][calling_component]['count'] = self.hook_counts[library._Name][hook][calling_component]['count'] + 1
+                    self.hook_counts[library._Name][hook]['Total Count']['count'] = self.hook_counts[library._Name][hook]['Total Count']['count'] + 1
+                    self._invoke_list_cache[cache_key] = True
+
+                    try:
+                        d = Deferred()
+                        d.addCallback(lambda ignored: self._log_loader('debug', library._Name, 'library', hook,
+                                                                       'About to call %s' % hook))
+                        # print("calling %s:%s" % (library._Name, hook))
+                        d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
+                        d.addErrback(self.library_invoke_failure, requested_library, hook)
+                        d.callback(1)
+                        if hook == '_yombo_universal_hook_':
+                            yield d
+                        else:
+                            final_results = yield d
+                    except RuntimeWarning as e:
+                        pass
+                else:
+                    logger.debug("Cache library hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+                    logger.debug("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
+                    raise YomboWarning("Hook is not callable: %s" % hook)
             else:
-                logger.debug("Cache library hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
-                logger.debug("----==(Library {library} doesn't have a callable function: {function})==-----", library=library._FullName, function=hook)
-                raise YomboWarning("Hook is not callable: %s" % hook)
-        else:
-#            logger.debug("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
-            self._invoke_list_cache[cache_key] = False
+    #            logger.debug("Cache hook ({library}:{hook})...setting false", library=library._FullName, hook=hook)
+                self._invoke_list_cache[cache_key] = False
+        return final_results
 
     @inlineCallbacks
     def library_invoke_all(self, hook, fullName=False, **kwargs):
