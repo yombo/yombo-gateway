@@ -19,9 +19,9 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-from collections import deque
+from collections import deque, OrderedDict
+from functools import partial
 from time import time
-from collections import OrderedDict
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
@@ -107,7 +107,7 @@ class Base_Device(object):
         :ivar created_at: *(int)* - When the device was created; in seconds since EPOCH.
         :ivar updated_at: *(int)* - When the device was last updated; in seconds since EPOCH.
         :ivar status_history: *(dict)* - A dictionary of strings for current and up to the last 30 status values.
-        :ivar device_variables: *(dict)* - The device variables as defined by various modules, with
+        :ivar device_variables_cached: *(dict)* - The device variables as defined by various modules, with
             values entered by the user.
         :ivar available_commands: *(list)* - A list of command_id's that are valid for this device.
         """
@@ -158,7 +158,9 @@ class Base_Device(object):
             self.device_commands = deque({}, sizes['local_device_commands'])
             self.status_history = deque({}, sizes['local_status_history'])
 
-        self.device_variables = {}
+        self.device_variables_cached = {}
+        # self.device_variables = self.device_variables
+        # self.device_variables = partial(self.device_variables)
 
         #The following items are set from the databsae, module, or AMQP service.
         self.device_type_id = None
@@ -199,8 +201,8 @@ class Base_Device(object):
         :return:
         """
         # print("getting device variables for: %s" % self.device_id)
-        yield self.import_device_variables()
-        self.device_variables = yield self._Parent._Variables.get_variable_fields_data(
+        yield self.device_variables()
+        self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
             group_relation_type='device_type',
             group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
@@ -236,12 +238,13 @@ class Base_Device(object):
             status.save_to_db()
 
     @inlineCallbacks
-    def import_device_variables(self):
-        self.device_variables = yield self._Parent._Variables.get_variable_fields_data(
+    def device_variables(self):
+        self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
             group_relation_type='device_type',
             group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
         )
+        return self.device_variables_cached
 
     def update_attributes(self, device, source=None):
         """
@@ -438,7 +441,7 @@ class Base_Device(object):
             'device_platform': self.PLATFORM,
             'device_sub_platform': self.SUB_PLATFORM,
             'device_features': self.FEATURES,
-            'device_variables': self.device_variables,
+            'device_variables': self.device_variables_cached,
             }
 
     def to_mqtt_coms(self):

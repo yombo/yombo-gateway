@@ -22,7 +22,6 @@ class Climate(Device):
             'cool_source', 'cool2_delivery', 'cool2_source', 'cool3_delivery', 'cool3_source', 'away_enabled',
             'away_temp_high', 'away_temp_low'))
         self.temperature_unit = 'c'  # what temperature unit the device works in.
-        print("climate IS BEING CALLED!  Set it! zzzz")
 
     @property
     def current_mode(self):

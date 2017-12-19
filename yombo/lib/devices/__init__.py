@@ -951,7 +951,7 @@ class Devices(YomboLibrary):
     #todo: convert to use a deferred semaphore
     @inlineCallbacks
     def set_device_variables(self, device_id, variables, action_type=None, source=None):
-        # print("set variables: %s" % variables)
+        print("set variables: %s" % variables)
         for field_id, data in variables.items():
             # print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.items():
@@ -984,7 +984,7 @@ class Devices(YomboLibrary):
                         'data_weight': 0,
                         'data': value,
                     }
-                    # print("PATCHing variable: %s" % post_data)
+                    print("PATCHing variable: %s" % post_data)
                     try:
                         var_data_results = yield self._YomboAPI.request(
                             'PATCH',
@@ -999,6 +999,10 @@ class Devices(YomboLibrary):
                             'apimsghtml': "Couldn't edit device variables: %s" % e.html_message,
                         }
                         return results
+                    self._LocalDB.edit_variable_data(data_id, value)
+
+        if device_id in self.devices:
+            yield self.devices[device_id].device_variables()
         # print("var_data_results: %s" % var_data_results)
         return {
             'status': 'success',
@@ -1157,6 +1161,8 @@ class Devices(YomboLibrary):
             device.update_attributes(data, source='parent')
             device.save_to_db()
 
+        yield device.device_variables()
+
         results = {
             'status': 'success',
             'msg': "Device edited.",
@@ -1204,6 +1210,7 @@ class Devices(YomboLibrary):
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
+        yield self.devices[device_id].device_variables()
 
         return results
 
