@@ -24,8 +24,7 @@ try:
     from hashlib import sha3_224 as sha224
 except ImportError:
     from hashlib import sha224
-from functools import partial
-from functools import reduce
+from functools import partial, reduce
 from time import time
 from pyclbr import readmodule
 
