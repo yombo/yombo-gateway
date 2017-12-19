@@ -757,19 +757,9 @@ class Gateways(YomboLibrary):
         else:
             previous_status_out = None
 
-        message = {
-            'device_id': device_id,
-            'command_id': command_id,
-            'status': kwargs['status'].asdict(),
-            'previous_status': previous_status_out,
-            'request_id': kwargs['request_id'],
-            'reported_by': kwargs['reported_by'],
-            'gateway_id': kwargs['gateway_id']
-        }
-
         topic = "lib/device_status/" + device_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
-        self.publish_data('all', topic, message)
+        self.publish_data('all', topic, kwargs['event'])
 
     def _notification_add_(self, **kwargs):
         """
