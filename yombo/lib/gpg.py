@@ -41,7 +41,7 @@ from twisted.internet.task import LoopingCall
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning, YomboCritical
 from yombo.core.library import YomboLibrary
-from yombo.utils import random_string, bytes_to_unicode, read_file, save_file, random_int
+from yombo.utils import random_string, bytes_to_unicode, unicode_to_bytes, read_file, save_file, random_int
 
 from yombo.core.log import get_logger
 logger = get_logger('library.gpg')
@@ -651,7 +651,8 @@ class GPG(YomboLibrary):
         :param in_text:
         :return:
         """
-        if in_text.startswith('-----BEGIN PGP MESSAGE-----'):
+        in_text_search = unicode_to_bytes(in_text)
+        if in_text_search.startswith(b'-----BEGIN PGP MESSAGE-----'):
             return "-----ENCRYPTED DATA-----"
         else:
             return in_text
