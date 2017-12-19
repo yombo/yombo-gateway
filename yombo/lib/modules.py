@@ -575,7 +575,7 @@ class Modules(YomboLibrary):
                 self.module_device_types,
                 module_id,
             )
-
+            # print("calling do update module for module: %s" % module._label)
             yield self.do_update_module_cache(module)
             # module._ModuleType = self._rawModulesList[module_id]['module_type']
 
@@ -588,7 +588,6 @@ class Modules(YomboLibrary):
             module._Configs = self._Loader.loadedLibraries['configuration']
             module._CronTab = self._Loader.loadedLibraries['crontab']
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
-            module._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
             module._Gateways = self._Loader.loadedLibraries['gateways']
             module._GPG = self._Loader.loadedLibraries['gpg']
@@ -596,6 +595,7 @@ class Modules(YomboLibrary):
             module._Libraries = self._Loader.loadedLibraries
             module._Localize = self._Loader.loadedLibraries['localize']
             module._LocalDB = self._Loader.loadedLibraries['localdb'] # Provided for testing
+            module._Locations = self._Loader.loadedLibraries['locations']  # Basically, all devices
             module._Modules = self
             module._MQTT = self._Loader.loadedLibraries['mqtt']
             module._Nodes = self._Loader.loadedLibraries['nodes']
@@ -667,7 +667,7 @@ class Modules(YomboLibrary):
         yield module._module_variables()
         yield module._module_devices()
 
-    def module_invoke(self, requested_module, hook, **kwargs):
+    def module_invoke(self, requested_module, hook_name, **kwargs):
         """
         Invokes a hook for a a given module. Passes kwargs in, returns the results to caller.
         """
@@ -675,62 +675,70 @@ class Modules(YomboLibrary):
             raise YomboWarning('Requested library is missing: %s' % requested_module)
 
         if 'called_by' not in kwargs:
-            raise YomboWarning("Unable to call hook '%s:%s', missing 'called_by' named argument." % (requested_module, hook))
+            raise YomboWarning("Unable to call hook '%s:%s', missing 'called_by' named argument." % (requested_module, hook_name))
         calling_component = kwargs['called_by']
+        final_results = None
 
-        cache_key = requested_module + hook
-        if cache_key in self._invoke_list_cache:
-            if self._invoke_list_cache[cache_key] is False:
-                return  # skip. We already know function doesn't exist.
-        module = self.get(requested_module)
-        if module._Name == 'yombo.core.module.YomboModule':
-            self._invoke_list_cache[cache_key] is False
-            # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
-            return None
-            # raise YomboWarning("Cannot call YomboModule hooks")
-        if not (hook.startswith("_") and hook.endswith("_")):
-            hook = module._Name.lower() + "_" + hook
-        # self.modules_invoke_log('info', requested_module, 'module', hook, 'About to call.')
-        if hasattr(module, hook):
-            method = getattr(module, hook)
-            if isinstance(method, collections.Callable):
-                if module._Name not in self.hook_counts:
-                    self.hook_counts[module._Name] = {}
-                if hook not in self.hook_counts[module._Name]:
-                    self.hook_counts[module._Name][hook] = {'Total Count': {'count': 0}}
-                if calling_component not in self.hook_counts[module._Name][hook]:
-                    self.hook_counts[module._Name][hook][calling_component] = {'count': 0}
-                self.hook_counts[module._Name][hook][calling_component]['count'] = self.hook_counts[module._Name][hook][calling_component]['count'] + 1
-                self.hook_counts[module._Name][hook]['Total Count']['count'] = self.hook_counts[module._Name][hook]['Total Count']['count'] + 1
+        for hook in [hook_name, '_yombo_universal_hook_']:
+        # for hook in [hook_name]:
+            # if hook == '_yombo_universal_hook_':
+            cache_key = requested_module + hook
+            if cache_key in self._invoke_list_cache:
+                if self._invoke_list_cache[cache_key] is False:
+                    continue  # skip. We already know function doesn't exist.
+            module = self.get(requested_module)
+            if module._Name == 'yombo.core.module.YomboModule':
+                self._invoke_list_cache[cache_key] is False
+                # logger.warn("Cache module hook ({cache_key})...SKIPPED", cache_key=cache_key)
+                return None
+                # raise YomboWarning("Cannot call YomboModule hooks")
+            if not (hook.startswith("_") and hook.endswith("_")):
+                hook = module._Name.lower() + "_" + hook
+            kwargs['hook_name'] = hook
+            # self.modules_invoke_log('info', requested_module, 'module', hook, 'About to call.')
+            if hasattr(module, hook):
+                method = getattr(module, hook)
+                if isinstance(method, collections.Callable):
+                    if module._Name not in self.hook_counts:
+                        self.hook_counts[module._Name] = {}
+                    if hook not in self.hook_counts[module._Name]:
+                        self.hook_counts[module._Name][hook] = {'Total Count': {'count': 0}}
+                    if calling_component not in self.hook_counts[module._Name][hook]:
+                        self.hook_counts[module._Name][hook][calling_component] = {'count': 0}
+                    self.hook_counts[module._Name][hook][calling_component]['count'] = self.hook_counts[module._Name][hook][calling_component]['count'] + 1
+                    self.hook_counts[module._Name][hook]['Total Count']['count'] = self.hook_counts[module._Name][hook]['Total Count']['count'] + 1
 
-                try:
-                    # self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call %s.' % hook)
-                    # d = maybeDeferred(method, **kwargs)
-                    # d.addErrback(self.module_invoke_failure, module._Name, hook)
-                    # results = yield d
-                    d = Deferred()
-                    d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call %s' % hook))
-                    d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
-                    d.addErrback(self.module_invoke_failure, module._Name, hook)
-                    d.addCallback(self._log_hook_called, module._Name + ":" + hook, module, hook, calling_component)
-                    # d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', hook, 'Finished call to %s' % hook))
-                    d.callback(1)
-                    return d
-                    # results = yield d
-                    # return results
+                    try:
+                        # self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call %s.' % hook)
+                        # d = maybeDeferred(method, **kwargs)
+                        # d.addErrback(self.module_invoke_failure, module._Name, hook)
+                        # results = yield d
+                        d = Deferred()
+                        d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', hook, 'About to call %s' % hook))
+                        d.addCallback(lambda ignored: maybeDeferred(method, **kwargs))
+                        d.addErrback(self.module_invoke_failure, module._Name, hook)
+                        d.addCallback(self._log_hook_called, module._Name + ":" + hook, module, hook, calling_component)
+                        # d.addCallback(lambda ignored: self.modules_invoke_log('debug', module._label, 'module', hook, 'Finished call to %s' % hook))
+                        d.callback(1)
+                        return d
+                        # if hook == '_yombo_universal_hook_':
+                        #     yield d
+                        # else:
+                        #     final_results = d
 
-                except Exception as e:
-                    if kwargs['allow_disable'] is True:
-                        logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
-                                    module=module._Name, hook=hook, e=e)
-                        self.disabled_modules[module._module_id] = "Caught exception during call '%s': %s" % (e, hook)
+                    except Exception as e:
+                        if kwargs['allow_disable'] is True:
+                            logger.warn("Disabling module '{module}' due to exception from hook ({hook}): {e}",
+                                        module=module._Name, hook=hook, e=e)
+                            self.disabled_modules[module._module_id] = "Caught exception during call '%s': %s" % (e, hook)
 
+                else:
+                    pass
+                    # logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
             else:
-                pass
-                # logger.debug("----==(Module {module} doesn't have a callable function: {function})==-----", module=module._FullName, function=hook)
-        else:
-            self._invoke_list_cache[cache_key] = False
-            # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
+                self._invoke_list_cache[cache_key] = False
+                # logger.debug("Cache module hook ({library}:{hook})...setting false", library=module._FullName, hook=hook)
+            return final_results
 
     @inlineCallbacks
     def module_invoke_all(self, hook, full_name=None, allow_disable=None, **kwargs):
