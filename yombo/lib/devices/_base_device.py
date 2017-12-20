@@ -434,7 +434,6 @@ class Base_Device(object):
             'device_commands': list(self.device_commands),
             'status_current': status_current,
             'status_previous': status_previous,
-            # 'status_history': list([sh.asdict() for sh in self.status_history]),
             'device_serial': self.device_serial,
             'device_mfg': self.device_mfg,
             'device_model': self.device_model,

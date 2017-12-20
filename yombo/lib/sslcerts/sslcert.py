@@ -568,7 +568,7 @@ class SSLCert(object):
                     os.remove(file)
             else:
                 meta['cert'] = sha256(str(getattr(self, "%s_cert" % label)).encode('utf-8')).hexdigest()
-                save_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label),  getattr(self, "%s_cert" % label))
+                yield save_file('usr/etc/certs/%s.%s.cert.pem' % (self.sslname, label),  getattr(self, "%s_cert" % label))
 
             if getattr(self, "%s_chain" % label) is None:
                 meta['chain'] = None
@@ -577,7 +577,7 @@ class SSLCert(object):
                     os.remove(file)
             else:
                 meta['chain'] = sha256(str(getattr(self, "%s_chain" % label)).encode('utf-8')).hexdigest()
-                save_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label), getattr(self, "%s_chain" % label))
+                yield save_file('usr/etc/certs/%s.%s.chain.pem' % (self.sslname, label), getattr(self, "%s_chain" % label))
 
             if getattr(self, "%s_key" % label) is None:
                 meta['key'] = None
@@ -586,7 +586,7 @@ class SSLCert(object):
                     os.remove(file)
             else:
                 meta['key'] = sha256(str(getattr(self, "%s_key" % label)).encode('utf-8')).hexdigest()
-                save_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label), getattr(self, "%s_key" % label))
+                yield save_file('usr/etc/certs/%s.%s.key.pem' % (self.sslname, label), getattr(self, "%s_key" % label))
 
             if label == 'next':
                 if getattr(self, "%s_csr" % label) is None:
@@ -596,12 +596,12 @@ class SSLCert(object):
                         os.remove(file)
                 else:
                     meta['csr'] = sha256(str(getattr(self, "%s_csr" % label)).encode('utf-8')).hexdigest()
-                    save_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label), getattr(self, "%s_csr" % label))
+                    yield save_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label), getattr(self, "%s_csr" % label))
 
-            save_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label),
+            yield save_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label),
                       json.dumps(meta, indent=4))
 
-            save_file('usr/etc/certs/%s.meta' % self.sslname,
+            yield save_file('usr/etc/certs/%s.meta' % self.sslname,
                       json.dumps({
                           'sans': self.sans,
                           'cn': self.cn,
@@ -697,8 +697,8 @@ class SSLCert(object):
         self.next_key = results['key']
         self.next_csr = results['csr']
         # print("generate_new_csr_done csr: %s " % self.next_csr)
-        save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.next_csr)
-        save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.next_key)
+        yield save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.next_csr)
+        yield save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.next_key)
         self.next_created = int(time())
         self.dirty = True
         self.next_csr_generation_in_progress = False

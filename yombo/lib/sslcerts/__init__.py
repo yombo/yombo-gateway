@@ -371,9 +371,9 @@ class SSLCerts(YomboLibrary):
         key_file = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
         if kwargs['csr_file'] is not None:
-            save_file(kwargs['csr_file'], csr)
+            yield save_file(kwargs['csr_file'], csr)
         if kwargs['key_file'] is not None:
-            save_file(kwargs['key_file'], key_file)
+            yield save_file(kwargs['key_file'], key_file)
 
         return {
                 'csr': csr,
@@ -411,8 +411,8 @@ class SSLCerts(YomboLibrary):
         csr_key = crypto.dump_certificate(crypto.FILETYPE_PEM, req)
         key_file = crypto.dump_privatekey(crypto.FILETYPE_PEM, key)
 
-        save_file(self.self_signed_cert_file, csr_key)
-        save_file(self.self_signed_key_file, key_file)
+        yield save_file(self.self_signed_cert_file, csr_key)
+        yield save_file(self.self_signed_key_file, key_file)
 
         return {
                 'csr_key': csr_key,

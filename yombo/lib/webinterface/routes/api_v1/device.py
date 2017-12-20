@@ -81,10 +81,23 @@ def route_api_v1_device(webapp):
                     yield sleep(.075)
                     if DC.status_id >= 100:
                         exit_while = True
+            if len(device.status_history) > 0:
+                status_current = device.status_history[0].asdict()
+            else:
+                status_current = None
+
+            if len(device.status_history) > 1:
+                status_previous = device.status_history[1].asdict()
+            else:
+                status_previous = None
+
             return return_good(
                 request,
                 payload={
                     'device_command_id': request_id,
                     'device_command': DC.asdict(),
+                    'status_current': status_current,
+                    'status_previous': status_previous,
+
                 }
             )
