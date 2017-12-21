@@ -640,8 +640,7 @@ def create_table_webinterface_api_auth(Registry, **kwargs):
         `description`  TEXT NOT NULL,
         `permissions`  TEXT NOT NULL,
         `is_valid`     INTEGER NOT NULL,
-        `gateway_id`   TEXT NOT NULL,
-        `api_auth_data` TEXT NOT NULL,
+        `auth_data` TEXT NOT NULL,
         `created_at`   INTEGER NOT NULL,
         `last_access`  INTEGER NOT NULL,
         `updated_at`   INTEGER NOT NULL,
@@ -658,6 +657,7 @@ def create_table_webinterface_sessions(Registry, **kwargs):
         `id`           TEXT NOT NULL, /* moduleUUID */
         `is_valid`     INTEGER NOT NULL,
         `gateway_id`   TEXT NOT NULL,
+        `permissions`  TEXT,
         `session_data` TEXT NOT NULL,
         `created_at`   INTEGER NOT NULL,
         `last_access`  INTEGER NOT NULL,

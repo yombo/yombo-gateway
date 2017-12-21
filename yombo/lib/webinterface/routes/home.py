@@ -8,7 +8,7 @@ from twisted.web.static import File
 
 # Import Yombo libraries
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 import yombo.ext.totp
 import yombo.utils
 
@@ -49,7 +49,7 @@ def route_home(webapp):
         @run_first()
         def page_logout_get(webinterface, request, session):
             try:
-                webinterface.sessions.close_session(request)
+                webinterface._WebSessions.close_session(request)
             except:
                 pass
             return webinterface.redirect(request, "/?")
@@ -76,7 +76,10 @@ def route_home(webapp):
             submitted_email = request.args.get('email')[0]
             submitted_password = request.args.get('password')[0]
             if webinterface.operating_mode == 'run':
-                results = yield webinterface._LocalDB.get_gateway_user_by_email(webinterface.gateway_id(), submitted_email)
+                results = yield webinterface._LocalDB.get_gateway_user_by_email(
+                    webinterface.gateway_id(),
+                    submitted_email
+                )
                 if len(results) != 1:
                     webinterface.add_alert('Email address not allowed to access gateway.', 'warning')
                     #            webinterface.sessions.load(request)
@@ -86,12 +89,11 @@ def route_home(webapp):
             try:
                 results = yield webinterface._YomboAPI.user_login_with_credentials(
                     submitted_email, submitted_password, submitted_g_recaptcha_response)
-            except YomboAPIWarning as e:
-                webinterface.add_alert(e.html_message, 'warning')
+            except YomboWarning as e:
+                webinterface.add_alert("%s: %s" % (e.errorno, e.message), 'warning')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
-            # print(results)
-            if results['code'] == 200:
+            if results['status'] == 'ok':
                 login = results['response']['login']
 
                 # print("login was good...")
@@ -105,14 +107,14 @@ def route_home(webapp):
                 session['auth_at'] = time()
                 session['yomboapi_session'] = login['session']
                 session['yomboapi_login_key'] = login['login_key']
-                request.received_cookies[webinterface.sessions.config.cookie_session_name] = session.session_id
+                request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
                 # print("session saved...")
                 if webinterface.operating_mode == 'first_run':
                     webinterface._YomboAPI.save_system_login_key(login['login_key'])
                     webinterface._YomboAPI.save_system_session(login['session'])
                 return login_redirect(webinterface, request, session)
             else:
-                webinterface.add_alert(results['content']['message'], 'warning')
+                webinterface.add_alert(results['msg'], 'warning')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
 
@@ -148,7 +150,7 @@ def route_home(webapp):
                 l_session['auth_at'] = 0
                 l_session['yomboapi_session'] = ''
                 l_session['yomboapi_login_key'] = ''
-                request.received_cookies[l_webinterface.sessions.config.cookie_session_name] = l_session.session_id
+                request.received_cookies[l_webinterface._WebSessions.config.cookie_session_name] = l_session.session_id
 
             if webinterface.auth_pin_type() == 'pin':
                 # print("pins: %s == %s" % (submitted_pin, webinterface.auth_pin()))

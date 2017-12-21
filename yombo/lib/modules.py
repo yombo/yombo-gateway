@@ -581,6 +581,7 @@ class Modules(YomboLibrary):
             module._event_loop = self._Loader.event_loop
             module._AMQP = self._Loader.loadedLibraries['amqp']
             module._AMQPYombo = self._Loader.loadedLibraries['amqpyombo']
+            module._APIAuth = self._Loader.loadedLibraries['apiauth']
             module._Atoms = self._Loader.loadedLibraries['atoms']
             module._Automation = self._Loader.loadedLibraries['automation']
             module._Commands = self._Loader.loadedLibraries['commands']
@@ -610,6 +611,7 @@ class Modules(YomboLibrary):
             module._Variables = self._Loader.loadedLibraries['variables']
             module._Validate = self._Loader.loadedLibraries['validate']
             module._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
+            module._WebSessions = self._Loader.loadedLibraries['websessions']
 
             module._hooks_called['_init_'] = 0
             if int(module._status) != 1:

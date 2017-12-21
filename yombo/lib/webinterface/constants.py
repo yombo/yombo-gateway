@@ -130,7 +130,7 @@ NAV_SIDE_MENU = [
         'label2': 'Locations',
         'priority1': 3500,
         'priority2': 500,
-        'icon': 'fa fa-map-marker fa-fw',
+        'icon': 'fa fa-gear fa-fw',
         'url': '/locations/index',
         'tooltip': 'Show Locations',
         'opmode': 'run',

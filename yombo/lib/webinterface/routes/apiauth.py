@@ -92,7 +92,6 @@ def route_apiauth(webapp):
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'permissions': webinterface.request_get_default(request, 'permissions', {}),
                 'is_valid': webinterface.request_get_default(request, 'is_valid', True),
-                'gateway_id': webinterface.request_get_default(request, 'gateway_id', webinterface.gateway_id()),
             }
 
             root_breadcrumb(webinterface, request)
@@ -109,12 +108,12 @@ def route_apiauth(webapp):
                 'description': webinterface.request_get_default(request, 'description', ""),
                 'permissions': webinterface.request_get_default(request, 'permissions', {}),
                 'is_valid': webinterface.request_get_default(request, 'is_valid', True),
-                'gateway_id': webinterface.request_get_default(request, 'gateway_id', webinterface.gateway_id()),
             }
 
             api_auth = yield webinterface.apiauths.create(
-                request,
-                data=data,
+                label=data['label'],
+                description=data['description'],
+                permissions=data['permissions'],
             )
 
             if api_auth is None:

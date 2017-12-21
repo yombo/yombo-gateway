@@ -10,6 +10,7 @@ import os
 from time import time
 from random import randint
 import hashlib
+
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -17,6 +18,7 @@ from twisted.internet.defer import inlineCallbacks, Deferred
 # from yombo.ext.expiringdict import ExpiringDict
 
 # Import Yombo libraries
+from yombo.core.library import YomboLibrary
 from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
@@ -26,7 +28,7 @@ from yombo.utils.datatypes import coerce_value
 
 logger = get_logger("library.webinterface.apiauth")
 
-class ApiAuths(object):
+class ApiAuths(YomboLibrary):
     """
     Session management.
     """
@@ -84,7 +86,7 @@ class ApiAuths(object):
     # @inlineCallbacks
     def init(self):
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(random_int(60, .7))  # Every 60-ish seconds. Save to disk, or remove from memory.
+        self._periodic_clean_sessions.start(random_int(60*60*2, .7))  # Every 60-ish seconds. Save to disk, or remove from memory.
 
     def _unload_(self):
         self.unload_deferred = Deferred()
@@ -206,24 +208,23 @@ class ApiAuths(object):
         """
         for api_auth_id in list(self.active_api_auth.keys()):
             if self.active_api_auth[api_auth_id].check_valid() is False or self.active_api_auth[api_auth_id].is_valid is False:
-                logger.info("Removing invalid api auth: %s" % api_auth_id)
+                logger.debug("Removing invalid api auth: %s" % api_auth_id)
                 del self.active_api_auth[api_auth_id]
                 yield self._LocalDB.delete_api_auth(api_auth_id)
-        # logger.debug("Deleted {count} sessions from the session store.", count=count)
 
         for api_auth_id in list(self.active_api_auth):
             session = self.active_api_auth[api_auth_id]
             if session.is_dirty >= 200 or close_deferred is not None or session.last_access < int(time() - (60*5)):
                 if session.in_db:
-                    logger.info("updating old db api auth record: {id}", id=api_auth_id)
+                    logger.debug("updating old db api auth record: {id}", id=api_auth_id)
                     yield self._LocalDB.update_api_auth(session)
                 else:
-                    logger.info("creating new db api auth record: {id}", id=api_auth_id)
+                    logger.debug("creating new db api auth record: {id}", id=api_auth_id)
                     yield self._LocalDB.save_api_auth(session)
                     session.in_db = True
                 session.is_dirty = 0
                 if session.last_access < int(time() - (60*60*3)):   # delete session from memory after 3 hours
-                    logger.info("Deleting session from memory: {api_auth_id}", api_auth_id=api_auth_id)
+                    logger.debug("Deleting session from memory: {api_auth_id}", api_auth_id=api_auth_id)
                     del self.active_api_auth[api_auth_id]
 
         # print("api auth clean sessions...: %s" % close_deferred)

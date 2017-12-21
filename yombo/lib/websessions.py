@@ -23,58 +23,19 @@ import hashlib
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
 
-# from yombo.ext.expiringdict import ExpiringDict
-
 # Import Yombo libraries
+from yombo.core.library import YomboLibrary
 from yombo.utils.dictobject import DictObject
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, random_int, sleep
-# from yombo.utils.decorators import memoize_ttl
-from yombo.utils.datatypes import coerce_value
 
-logger = get_logger("library.webinterface.sessions")
+logger = get_logger("library.websessions")
 
-class Sessions(object):
+class WebSessions(YomboLibrary):
     """
     Session management.
     """
-    def __init__(self, loader):  # we do some simulation of a Yombo Library...
-        self.loader = loader
-        self._FullName = "yombo.gateway.lib.webinterface.sessions"
-        self._Configs = self.loader.loadedLibraries['configuration']
-        self._LocalDB = self.loader.loadedLibraries['localdb']
-        self._Gateways = self.loader.loadedLibraries['gateways']
-        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        cookie_id = hashlib.sha224( str(self._Gateways.get_master_gateway_id()).encode('utf-8') ).hexdigest()
-        # print("session-cookie_id, get_master_gateway_id: %s = %s" % (self._Gateways.get_master_gateway_id(), cookie_id))
-
-        self.config = DictObject({
-            'cookie_session_name': 'yombo_' + cookie_id,
-            'cookie_path' : '/',
-            'max_session': 15552000,  # How long session can be good for: 180 days
-            'max_idle': 5184000,  # Max idle timeout: 60 days
-            'max_session_no_auth': 600,  # If not auth in 10 mins, delete session
-            'ignore_expiry': True,
-            'ignore_change_ip': True,
-            'expired_message': 'Session expired',
-            'httponly': True,
-            'secure': False,  # will change to true after SSL system/dns complete. - Mitch
-        })
-        self.active_sessions = {}
-        # self.active_sessions_cache = ExpiringDict(200, 5)  # keep 200 entries, for at most 1 second...???
-
-    # @inlineCallbacks
-    def init(self):
-        self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(random_int(60, .7))  # Every 60-ish seconds. Save to disk, or remove from memory.
-
-    def _unload_(self):
-        logger.debug("sessions:_unload_")
-        self.unload_deferred = Deferred()
-        self.clean_sessions(self.unload_deferred)
-        return self.unload_deferred
-
     def __delitem__(self, key):
         if key in self.active_sessions:
             self.active_sessions[key].expire_session()
@@ -97,39 +58,79 @@ class Sessions(object):
             return True
         return False
 
-    def __delitem__(self, key):
-        if key in self.active_sessions:
-            self.active_sessions[key].expire_session()
-        return
-
-    def __getitem__(self, key):
-        return self.active_sessions[key]
-
-    def __len__(self):
-        return len(self.active_sessions)
-
-    def __setitem__(self, key, value):
-        raise YomboWarning("Cannot set a session using this method.")
-
-    def __contains__(self, key):
-        if key in self.active_sessions:
-            return True
-        return False
-
-    @inlineCallbacks
-    def get_all(self):
+    def keys(self):
         """
-        Returns the api auths from DB.
+        Returns the keys (command ID's) that are configured.
 
         :return: A list of command IDs.
         :rtype: list
         """
-        yield self.clean_sessions(True)
-        sessions = yield self._LocalDB.get_session()
-        return sessions
+        return list(self.active_sessions.keys())
+
+    def items(self):
+        """
+        Gets a list of tuples representing the commands configured.
+
+        :return: A list of tuples.
+        :rtype: list
+        """
+        return list(self.active_sessions.items())
+
+    def _init_(self, **kwargs):
+        self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
+        cookie_id = hashlib.sha224( str(self._Gateways.get_master_gateway_id()).encode('utf-8') ).hexdigest()
+
+        self.config = DictObject({
+            'cookie_session_name': 'yombo_' + cookie_id,
+            'cookie_path' : '/',
+            'max_session': 15552000,  # How long session can be good for: 180 days
+            'max_idle': 5184000,  # Max idle timeout: 60 days
+            'max_session_no_auth': 600,  # If not auth in 10 mins, delete session
+            'ignore_expiry': True,
+            'ignore_change_ip': True,
+            'expired_message': 'Session expired',
+            'httponly': True,
+            'secure': False,  # will change to true after SSL system/dns complete. - Mitch
+        })
+        self.active_sessions = {}
+        self.clean_sessions_loop = LoopingCall(self.clean_sessions)
+        self.clean_sessions_loop.start(random_int(60*60, .2))  # Every hour-ish. Save to disk, or remove from memory.
+
+    def _stop_(self, **kwargs):
+        self.unload_deferred = Deferred()
+        self.clean_sessions(self.unload_deferred)
+        return self.unload_deferred
 
     @inlineCallbacks
-    def get(self, request=None, session_id=None):
+    def get_all(self):
+        """
+        Returns the sessions from DB.
+
+        :return: A list of dictionaries containting the sessions
+        :rtype: list
+        """
+        yield self.clean_sessions(True)
+        sessions = yield self._LocalDB.get_web_sessions()
+        return sessions
+
+    def get(self, key):
+        if key in self.active_sessions:
+            return self.active_sessions[key]
+        raise KeyError("Cannot find web session: %s" % key)
+
+    def close_session(self, request):
+        if self.has_session(request):
+            cookie_session_name = self.config.cookie_session_name
+            if cookie_session_name in request.received_cookies:
+                session_id = request.received_cookies[cookie_session_name]
+            if session_id in self.active_sessions:
+                self.active_sessions[session_id].expire_session()
+            request.addCookie(cookie_session_name, 'LOGOFF', domain=self.get_cookie_domain(request),
+                          path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
+                          secure=self.config.secure, httpOnly=self.config.httponly)
+
+    @inlineCallbacks
+    def check_web_request(self, request=None):
         """
         Checks the request for an x-api-auth header and then tries to validate it.
 
@@ -139,7 +140,8 @@ class Sessions(object):
         :param request: The request instance.
         :return: bool
         """
-        if session_id is None and request is not None:
+        session_id = None
+        if request is not None:
             cookie_session_name = self.config.cookie_session_name
             cookies = request.received_cookies
             # logger.debug("has_session is looking for cookie: {cookie_session_name}", cookie_session_name=cookie_session_name)
@@ -164,10 +166,10 @@ class Sessions(object):
                 raise YomboWarning("Invalid session is no longer valid.")
         else:
             try:
-                db_session = yield self._LocalDB.get_session(session_id)
+                db_session = yield self._LocalDB.get_web_session(session_id)
             except Exception as e:
                 raise YomboWarning("Cannot find session id.")
-            self.active_sessions[session_id] = Session(self, db_session, source='database')
+            self.active_sessions[session_id] = Auth(self, db_session, source='database')
             return self.active_sessions[session_id]
         raise YomboWarning("Unknown session lookup error..")
 
@@ -182,15 +184,6 @@ class Sessions(object):
             return fqdn
         else:
             return host
-
-    def close(self, request):
-        if self.has_session(request):
-            cookie_session_name = self.config.cookie_session_name
-            session_id = request.received_cookies[cookie_session_name]
-            self.active_sessions[session_id].expire_session()
-            request.addCookie(cookie_session_name, 'LOGOFF', domain=self.get_cookie_domain(request),
-                          path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
-                          secure=self.config.secure, httpOnly=self.config.httponly)
 
     # @memoize_ttl(30)  # memoize for 5 seconds
     @inlineCallbacks
@@ -221,7 +214,7 @@ class Sessions(object):
         else:
             return False
 
-    def create(self, request=None, data=None):
+    def create_from_request(self, request=None, data=None):
         """
         Creates a new session.
         :param request:
@@ -241,7 +234,7 @@ class Sessions(object):
                               path=self.config.cookie_path, max_age=self.config.max_session,
                               secure=self.config.secure, httpOnly=self.config.httponly)
 
-        self.active_sessions[data['id']] = Session(self, data)
+        self.active_sessions[data['id']] = Auth(self, data)
         return self.active_sessions[data['id']]
 
     def set(self, request, name, value):
@@ -305,7 +298,7 @@ class Sessions(object):
         for session_id in list(self.active_sessions.keys()):
             if self.active_sessions[session_id].check_valid() is False or self.active_sessions[session_id].is_valid is False:
                 del self.active_sessions[session_id]
-                yield self._LocalDB.delete_session(session_id)
+                yield self._LocalDB.delete_web_session(session_id)
                 count += 1
         # logger.debug("Deleted {count} sessions from the session store.", count=count)
 
@@ -315,10 +308,10 @@ class Sessions(object):
                 if session.in_db:
                     # session.in_db = True
                     logger.debug("updating old db session record: {id}", id=session_id)
-                    yield self._LocalDB.update_session(session)
+                    yield self._LocalDB.update_web_session(session)
                 else:
                     logger.debug("creating new db session record: {id}", id=session_id)
-                    yield self._LocalDB.save_session(session)
+                    yield self._LocalDB.save_web_session(session)
                     session.in_db = True
                 session.is_dirty = 0
                 if session.last_access < int(time() - (60*60*3)):   # delete session from memory after 3 hours
@@ -329,7 +322,8 @@ class Sessions(object):
             yield sleep(0.1)
             close_deferred.callback(1)
 
-class Session(object):
+
+class Auth(object):
     """
     A single session.
     """
@@ -387,8 +381,8 @@ class Session(object):
         """
         return self.session_data.keys()
 
-    def __init__(self, Sessions, record, source=None):
-        self._Sessions = Sessions
+    def __init__(self, WebSessions, record, source=None):
+        self._Parent = WebSessions
         self.is_valid = True
         self.is_dirty = 0
         if source == 'database':
@@ -396,7 +390,7 @@ class Session(object):
         else:
             self.in_db = False
 
-        self.session_type = "session"
+        self.session_type = "websession"
 
         self.gateway_id = record['gateway_id']
         self.session_id = record['id']
@@ -412,7 +406,7 @@ class Session(object):
         }
         self.update_attributes(record, True)
 
-    def update_attributes(self, record=None, called_from_init=None):
+    def update_attributes(self, record=None, stay_clean=None):
         """
         Update various attributes
         
@@ -432,8 +426,12 @@ class Session(object):
         if 'session_data' in record:
             if isinstance(record, dict):
                 self.session_data.update(record['session_data'])
-        if called_from_init is not True:
+        if stay_clean is not True:
             self.is_dirty = 2000
+
+    @property
+    def user_id(self) -> str:
+        return self.session_data['auth_id']
 
     def get(self, key, default="BRFEqgdgLgI0I8QM2Em2nWeJGEuY71TTo7H08uuT"):
         if key in self.session_data:
@@ -475,20 +473,20 @@ class Session(object):
         if self.is_valid is False:
             return False
 
-        if self.created_at < (int(time() - self._Sessions.config.max_session)):
+        if self.created_at < (int(time() - self._Parent.config.max_session)):
             self.expire_session()
             return False
 
-        if self.last_access < (int(time() - self._Sessions.config.max_idle)):
+        if self.last_access < (int(time() - self._Parent.config.max_idle)):
             self.expire_session()
             return False
 
         if 'auth_id' in self.session_data:
-            if self.session_data['auth_id'] is None and self.last_access < (int(time() - self._Sessions.config.max_session_no_auth)):
+            if self.session_data['auth_id'] is None and self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
                 self.expire_session()
                 return False
         else:
-            if self.last_access < (int(time() - self._Sessions.config.max_session_no_auth)):
+            if self.last_access < (int(time() - self._Parent.config.max_session_no_auth)):
                 self.expire_session()
         return True
 

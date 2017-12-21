@@ -93,6 +93,8 @@ HARD_LOAD["Nodes"] = {'operating_mode': 'all'}
 HARD_LOAD["Locations"] = {'operating_mode': 'all'}
 HARD_LOAD["MQTT"] = {'operating_mode': 'run'}
 HARD_LOAD["SSLCerts"] = {'operating_mode': 'all'}
+HARD_LOAD["APIAuth"] = {'operating_mode': 'all'}
+HARD_LOAD["WebSessions"] = {'operating_mode': 'all'}
 HARD_LOAD["WebInterface"] = {'operating_mode': 'all'}
 HARD_LOAD["Tasks"] = {'operating_mode': 'all'}
 
@@ -117,6 +119,8 @@ HARD_UNLOAD["Nodes"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Atoms"] = {'operating_mode': 'all'}
 HARD_UNLOAD["States"] = {'operating_mode': 'all'}
 HARD_UNLOAD["WebInterface"] = {'operating_mode': 'all'}
+HARD_UNLOAD["APIAuth"] = {'operating_mode': 'all'}
+HARD_UNLOAD["WebSessions"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Devices"] = {'operating_mode': 'all'}
 HARD_UNLOAD["AMQPYombo"] = {'operating_mode': 'run'}
 HARD_UNLOAD["Configuration"] = {'operating_mode': 'all'}
@@ -396,6 +400,7 @@ class Loader(YomboLibrary, object):
             library._event_loop = self.event_loop
             library._AMQP = self.loadedLibraries['amqp']
             library._AMQPYombo = self.loadedLibraries['amqpyombo']
+            library._APIAuth = self.loadedLibraries['apiauth']
             library._Atoms = self.loadedLibraries['atoms']
             library._Automation = self.loadedLibraries['automation']
             library._Commands = self.loadedLibraries['commands']
@@ -424,6 +429,7 @@ class Loader(YomboLibrary, object):
             library._YomboAPI = self.loadedLibraries['yomboapi']
             library._Variables = self.loadedLibraries['variables']
             library._Validate = self.loadedLibraries['validate']
+            library._WebSessions = self.loadedLibraries['websessions']
             if hasattr(library, '_init_') and isinstance(library._init_, Callable) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = Deferred()

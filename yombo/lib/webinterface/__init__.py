@@ -49,8 +49,6 @@ from yombo.core.log import get_logger
 import yombo.ext.totp
 import yombo.utils
 
-from yombo.lib.webinterface.sessions import Sessions
-from yombo.lib.webinterface.api_auth import ApiAuths
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 
 from yombo.lib.webinterface.routes.api_v1.automation import route_api_v1_automation
@@ -198,8 +196,6 @@ class WebInterface(YomboLibrary):
                                      yombo.utils.random_string(length=16, letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'))
         self._VoiceCmds = self._Loader.loadedLibraries['voicecmds']
         self.misc_wi_data = {}
-        self.sessions = Sessions(self._Loader)
-        self.apiauths = ApiAuths(self._Loader)
 
         self.wi_port_nonsecure = self._Configs.get2('webinterface', 'nonsecure_port', 8080)
         self.wi_port_secure = self._Configs.get2('webinterface', 'secure_port', 8443)
@@ -270,15 +266,7 @@ class WebInterface(YomboLibrary):
     def operating_mode(self):
         return self._Loader.operating_mode
 
-    @inlineCallbacks
     def _load_(self, **kwargs):
-        if hasattr(self, 'sessions'):
-            yield self.sessions.init()
-        if hasattr(self, 'apiauths'):
-            yield self.apiauths.init()
-
-        if hasattr(self, 'sessions') is False:
-            return
         if not self.enabled:
             return
 
@@ -548,11 +536,6 @@ class WebInterface(YomboLibrary):
         if hasattr(self, 'web_factory'):
             if self.web_factory is not None:
                 yield self.web_factory.save_log_queue()
-        if hasattr(self, 'sessions'):
-            if self.sessions is not None:
-                yield self.sessions._unload_()
-            if self.apiauths is not None:
-                yield self.apiauths._unload_()
 
     # def WebInterface_configuration_details(self, **kwargs):
     #     return [{'webinterface': {

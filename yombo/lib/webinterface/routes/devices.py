@@ -322,7 +322,10 @@ def route_devices(webapp):
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
-            confirm = request.args.get('confirm')[0]
+            try:
+                confirm = request.args.get('confirm')[0]
+            except Exception:
+                confirm = None
             if confirm != "delete":
                 page = webinterface.get_template(request, webinterface._dir + 'pages/devices/delete.html')
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the device.', 'warning')
