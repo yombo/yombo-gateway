@@ -7,6 +7,9 @@
                     <h1 class="page-header">
                         <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
                         Module Information<br>
+                     {% if moduleID in webinterface.module_config_links %}
+                          <a class="btn btn-md btn-primary" href="{{webinterface.module_config_links[moduleID]}}" class="btn btn-primary ">Module Settings</a>
+                     {% endif %}
                     {% if module._status == 0 -%}
                       <a class="btn btn-md btn-primary" href="/modules/{{  module._module_id }}/edit" class="btn btn-primary ">Edit Module</a>
                       <a class="btn btn-md btn-success" href="/modules/{{  module._module_id }}/enable" class="btn btn-primary ">Enable Module</a>

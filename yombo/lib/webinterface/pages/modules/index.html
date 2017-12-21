@@ -60,13 +60,12 @@
                                     </thead>
                                     <tbody>{% for moduleID, module in modules.items() %}
                                          <tr>
-                                             {% if module._load_source == 'sql' -%}
                                              <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a></td>
-                                             {% else %}
-                                             <td>{{ module._label }}</td>
-                                             {% endif %}
                                              <td>{{ module._short_description }}</td>
                                              <td>
+                                                 {% if moduleID in webinterface.module_config_links %}
+                                                 <a href="{{webinterface.module_config_links[moduleID]}}">Settings</a>
+                                                 {% endif %}
                                              {% if module._load_source == 'sql' -%}
                                                 {% if module._status == 0 -%}
                                              <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/modules/{{ moduleID }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/modules//{{ moduleID }}remove">Remove</a>
@@ -75,6 +74,8 @@
                                                 {% elif module._status == 2 -%}
                                              <a class="alert-success" href="/modules/{{ moduleID }}/disable">Enable</a>
                                                 {% endif %}
+                                             {% elif module._load_source == 'system modules'%}
+                                                 System module, cannot modify.
                                              {% else %}
                                                  Module not loaded from cloud. Cannot modify.
                                              {% endif %}

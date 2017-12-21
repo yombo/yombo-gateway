@@ -270,6 +270,8 @@ class WebInterface(YomboLibrary):
         if not self.enabled:
             return
 
+        self.module_config_links = {}
+
         self.auth_pin = self._Configs.get2('webinterface', 'auth_pin',
               yombo.utils.random_string(length=4, letters=yombo.utils.human_alpabet()).lower())
         self.auth_pin_totp = self._Configs.get2('webinterface', 'auth_pin_totp', yombo.utils.random_string(length=16))
@@ -300,11 +302,13 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['devices'] = self._Devices
         self.webapp.templates.globals['gateways'] = self._Gateways
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
+        self.webapp.templates.globals['webinterface'] = self
         # self.webapp.templates.globals['func'] = self.functions
 
         self.starting = False
         self.start_web_servers()
 
+    @inlineCallbacks
     def _start_(self, **kwargs):
         self._Notifications.add({
             'title': 'System still starting',
@@ -318,6 +322,13 @@ class WebInterface(YomboLibrary):
         })
         added_notification = True
         self._get_nav_side_items()
+        module_configs = yield yombo.utils.global_invoke_all('_webinterface_module_config_',
+                                                           called_by=self,
+                                                           )
+        for component_label, link in module_configs.items():
+            component = self._Loader.get_loaded_component(component_label)
+            self.module_config_links[component._module_id] = link
+        print("Module_configs: %s" % self.module_config_links)
 
     def _started_(self, **kwargs):
         # if self.operating_mode != 'run':
