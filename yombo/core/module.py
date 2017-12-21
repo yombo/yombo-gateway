@@ -100,14 +100,14 @@ documentation.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/module.html>`_
 """
-from functools import partial
 
 # Import Yombo libraries
+from yombo.core.entity import Entity
 from yombo.core.log import get_logger
 logger = get_logger('core.module')
 
 
-class YomboModule:
+class YomboModule(Entity):
     """
     This class quickly integrates user developed modules into the Yombo framework. It also sets up various
     predefined various and functions.
@@ -141,6 +141,8 @@ class YomboModule:
         Setup basic class items. See variables list for specific information
         variable information.
         """
+        super().__init__()
+        self._Entity_type = "yombo_library"
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.modules.%s" % (self.__class__.__name__)
 

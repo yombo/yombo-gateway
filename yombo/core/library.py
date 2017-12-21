@@ -20,12 +20,17 @@ Used by the Yombo Gateway framework to set up it's libraries.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/library.html>`_
 """
-class YomboLibrary:
+from yombo.core.entity import Entity
+
+
+class YomboLibrary(Entity):
     """
     Define a basic class that setup basic library class variables.
     """
 
     def __init__(self):
+        super().__init__()
+        self._Entity_type = "yombo_library"
         self._Name = self.__class__.__name__
         self._FullName = "yombo.gateway.lib.%s" % (self.__class__.__name__)
 
