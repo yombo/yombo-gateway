@@ -399,29 +399,46 @@ class Modules(YomboLibrary):
                 for item in options:
                     logger.info("Adding module from localmodule.ini: {item}", item=mod_machine_label)
                     if item not in self._localModuleVars[mod_label]:
-                        self._localModuleVars[mod_label][item] = []
+                        self._localModuleVars[mod_label][item] = {}
                     values = ini.get(section, item)
                     values = values.split(":::")
+                    data = {}
                     for value in values:
-                        variable = {
-                            'data_relation_id': newUUID,
-                            'data_relation_type': 'module',
-                            'field_machine_label': item,
-                            'field_label': item,
-                            'value': value,
-                            'data_weight': 0,
-                            'field_weight': 0,
-                            'encryption': "nosuggestion",
-                            'input_min': -8388600,
-                            'input_max': 8388600,
-                            'input_casing': 'none',
-                            'input_required': 0,
-                            'input_type_id': "any",
-                            'variable_id': 'xxx',
+                        value_hash = sha224(str(value).encode()).hexdigest()
+                        data[value_hash] = {
+                            'id': value_hash,
+                            'weight': 0,
                             'created_at': int(time()),
                             'updated_at': int(time()),
+                            'relation_id': newUUID,
+                            'relation_type': 'module',
+                            'value': value,
+                            'value_display': value,
+                            'value_orig': value,
                         }
-                        self._localModuleVars[mod_label][variable['field_machine_label']].append(variable)
+
+                    variable = {
+                        'data_relation_id': newUUID,
+                        'data_relation_type': 'module',
+                        'field_machine_label': item,
+                        'field_label': item,
+                        'data': data,
+                        'values': [value, ],
+                        'values_display': [value, ],
+                        'values_orig': [value, ],
+                        'data_weight': 0,
+                        'field_weight': 0,
+                        'encryption': "nosuggestion",
+                        'input_min': -8388600,
+                        'input_max': 8388600,
+                        'input_casing': 'none',
+                        'input_required': 0,
+                        'input_type_id': "any",
+                        'variable_id': 'xxx',
+                        'created_at': int(time()),
+                        'updated_at': int(time()),
+                    }
+                    self._localModuleVars[mod_label][variable['field_machine_label']] = variable
 
                 # print("done importing variables frmom localmodule.ini")
 #            logger.debug("localmodule vars: {lvars}", lvars=self._localModuleVars)
