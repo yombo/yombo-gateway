@@ -34,7 +34,7 @@ from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.ext.expiringdict import ExpiringDict
-from yombo.core.exceptions import YomboWarning, YomboWarningCredentails, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode, unicode_to_bytes
@@ -230,25 +230,24 @@ class YomboAPI(YomboLibrary):
 
     @inlineCallbacks
     def user_login_with_credentials(self, username, password, g_recaptcha_response):
-        try:
-            results = yield self.request(
-                "POST",
-                "/v1/user/login",
-                {
-                    'username': username,
-                    'password':password,
-                    'g-recaptcha-response': g_recaptcha_response
-                },
-                False
-            )
-        except YomboAPIWarning as e:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't delete command: %s" % e.message,
-                'apimsg': "Couldn't delete command: %s" % e.message,
-                'apimsghtml': "Couldn't delete command: %s" % e.html_message,
-            }
-            return results
+        results = yield self.request(
+            "POST",
+            "/v1/user/login",
+            {
+                'username': username,
+                'password':password,
+                'g-recaptcha-response': g_recaptcha_response
+            },
+            False
+        )
+        # except YomboWarning as e:
+        #     results = {
+        #         'status': 'failed',
+        #         'msg': "Couldn't delete command: %s" % e.message,
+        #         'apimsg': "Couldn't delete command: %s" % e.message,
+        #         'apimsghtml': "Couldn't delete command: %s" % e.html_message,
+        #     }
+        #     return results
         # logger.info("$$$3 REsults from API login creds: {results}", results=results)
 
 #        if results['content']['code'] != 200:
@@ -417,7 +416,12 @@ class YomboAPI(YomboLibrary):
                 except Exception:
                     content_type = "string"
 
+        if code < 200:
+            status = 'ok'
+        else:
+            status = 'error'
         results = {
+            'status': status,
             'content': content,
             'content_type': content_type,
             'code': code,
@@ -452,6 +456,6 @@ class YomboAPI(YomboLibrary):
                     html_message = content['html_message']
                 else:
                     message = phrase
-                raise YomboAPIWarning(message, code, html_message=html_message)
+                raise YomboWarning(message, code, html_message=html_message)
             return results
 
