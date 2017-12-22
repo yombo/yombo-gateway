@@ -25,7 +25,7 @@ except ImportError:
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 
 def route_locations(webapp):
     """
@@ -67,7 +67,7 @@ def route_locations(webapp):
         def page_lib_location_details_get(webinterface, request, session, location_id):
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 print(DL_results)
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
@@ -132,7 +132,7 @@ def route_locations(webapp):
         def page_lib_location_edit_get(webinterface, request, session, location_id):
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
 
@@ -201,7 +201,7 @@ def route_locations(webapp):
         def page_lib_location_delete_get(webinterface, request, session, location_id):
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
 

@@ -29,7 +29,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 # from yombo.utils.decorators import memoize_ttl
@@ -343,7 +343,7 @@ class Variables(YomboLibrary):
         """
         try:
             var_results = yield self._YomboAPI.request('POST', '/v1/variable/group', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add variable group: %s" % e.message,
@@ -372,7 +372,7 @@ class Variables(YomboLibrary):
         """
         try:
             yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % (group_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit variable group: %s" % e.message,
@@ -401,7 +401,7 @@ class Variables(YomboLibrary):
         """
         try:
             yield self._YomboAPI.request('DELETE', '/v1/variable/group/%s' % group_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete variable group: %s" % e.message,
@@ -433,7 +433,7 @@ class Variables(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable variable group: %s" % e.message,
@@ -464,7 +464,7 @@ class Variables(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('PATCH', '/v1/variable/group/%s' % group_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable variable group: %s" % e.message,
@@ -491,7 +491,7 @@ class Variables(YomboLibrary):
         """
         try:
             var_results = yield self._YomboAPI.request('POST', '/v1/variable/field', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add variable field: %s" % e.message,
@@ -520,7 +520,7 @@ class Variables(YomboLibrary):
         """
         try:
             yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % (field_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit variable field: %s" % e.message,
@@ -549,7 +549,7 @@ class Variables(YomboLibrary):
         """
         try:
             yield self._YomboAPI.request('DELETE', '/v1/variable/field/%s' % field_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete variable field: %s" % e.message,
@@ -581,7 +581,7 @@ class Variables(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable variable field: %s" % e.message,
@@ -612,7 +612,7 @@ class Variables(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('PATCH', '/v1/variable/field/%s' % field_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable variable field: %s" % e.message,

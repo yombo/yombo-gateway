@@ -326,6 +326,8 @@ class WebInterface(YomboLibrary):
                                                            called_by=self,
                                                            )
         for component_label, link in module_configs.items():
+            if link is None:
+                continue
             component = self._Loader.get_loaded_component(component_label)
             self.module_config_links[component._module_id] = link
         print("Module_configs: %s" % self.module_config_links)

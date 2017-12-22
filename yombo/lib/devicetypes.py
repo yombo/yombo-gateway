@@ -25,7 +25,7 @@ from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
 #from yombo.utils.decorators import memoize_ttl
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -501,7 +501,7 @@ class DeviceTypes(YomboLibrary):
 
         try:
             device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add device type: %s" % e.message,
@@ -548,7 +548,7 @@ class DeviceTypes(YomboLibrary):
 
         try:
             device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit device type: %s" % e.message,
@@ -575,7 +575,7 @@ class DeviceTypes(YomboLibrary):
         """
         try:
             yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete device type: %s" % e.message,
@@ -606,7 +606,7 @@ class DeviceTypes(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable device type: %s" % e.message,
@@ -637,7 +637,7 @@ class DeviceTypes(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable device type: %s" % e.message,
@@ -670,7 +670,7 @@ class DeviceTypes(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('POST', '/v1/device_type_command', api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't associate command to device typ: %s" % e.message,
@@ -713,7 +713,7 @@ class DeviceTypes(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('POST', '/v1/device_command_input', api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't associate input to device type command: %s" % e.message,
@@ -761,7 +761,7 @@ class DeviceTypes(YomboLibrary):
                     device_type_id, command_id, input_type_id),
                 api_data
            )
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't update device type command input: %s" % e.message,
@@ -790,7 +790,7 @@ class DeviceTypes(YomboLibrary):
         try:
             yield self._YomboAPI.request('DELETE', '/v1/device_command_input/%s/%s/%s' % (
                 device_type_id, command_id, input_type_id))
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't remove input from device type command: %s" % e.message,
@@ -819,7 +819,7 @@ class DeviceTypes(YomboLibrary):
         try:
             device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (
             device_type_id, command_id))
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't remove command from device type: %s" % e.message,

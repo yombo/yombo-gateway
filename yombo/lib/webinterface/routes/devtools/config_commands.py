@@ -1,7 +1,7 @@
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 
 def route_devtools_config_commands(webapp):
     with webapp.subroute("/devtools") as webapp:
@@ -26,7 +26,7 @@ def route_devtools_config_commands(webapp):
         def page_devtools_commands_details_get(webinterface, request, session, command_id):
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -51,7 +51,7 @@ def route_devtools_config_commands(webapp):
                 command_results = yield webinterface._YomboAPI.request(
                     'GET',
                     '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
             page = webinterface.get_template(
@@ -97,7 +97,7 @@ def route_devtools_config_commands(webapp):
 
             try:
                 command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -117,7 +117,7 @@ def route_devtools_config_commands(webapp):
         def page_devtools_commands_disable_get(webinterface, request, session, command_id):
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -161,7 +161,7 @@ def route_devtools_config_commands(webapp):
 
             try:
                 command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -180,7 +180,7 @@ def route_devtools_config_commands(webapp):
         def page_devtools_commands_enable_get(webinterface, request, session, command_id):
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -223,7 +223,7 @@ def route_devtools_config_commands(webapp):
 
             try:
                 command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -298,7 +298,7 @@ def route_devtools_config_commands(webapp):
         def page_devtools_commands_edit_get(webinterface, request, session, command_id):
             try:
                 command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
 
@@ -358,7 +358,7 @@ def route_devtools_config_commands(webapp):
             try:
                 command_api_results = yield webinterface._YomboAPI.request(
                     'GET', '/v1/command/%s' % command_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(
                     request,'/devtools/config/commands/index')

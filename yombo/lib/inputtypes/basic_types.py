@@ -13,7 +13,29 @@ class _Any(Input_Type):
 
 class _Bool(Input_Type):
     """
-    Validation if integers. Will try to coerce to int if it's not.
+    Validation of a bool. Tries to coerce to bool if it's not.
+    """
+    MIN = None
+    MAX = None
+
+    def validate(self, value: Any, **kwargs) -> bool:
+        """Validate and coerce a boolean value."""
+        if isinstance(value, bool):
+            return value
+        if self.CONVERT is False:
+            raise AssertionError("Value is not a boolean.")
+
+        value = value.lower()
+        if value in (1, '1', 'true', 'yes', 'on', 'enable'):
+            return True
+        if value in (0, '0', 'false', 'no', 'off', 'disable'):
+            return False
+        raise AssertionError("Value is not a boolean.")
+
+
+class _Checkbox(Input_Type):
+    """
+    AKA bool, but for people.
     """
     MIN = None
     MAX = None

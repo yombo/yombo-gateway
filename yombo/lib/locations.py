@@ -23,7 +23,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -383,7 +383,7 @@ class Locations(YomboLibrary):
         """
         try:
             location_results = yield self._YomboAPI.request('POST', '/v1/location', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add location: %s" % e.message,
@@ -415,7 +415,7 @@ class Locations(YomboLibrary):
         """
         try:
             location_results = yield self._YomboAPI.request('PATCH', '/v1/location/%s' % (location_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit location: %s" % e.message,
@@ -447,7 +447,7 @@ class Locations(YomboLibrary):
         """
         try:
             location_results = yield self._YomboAPI.request('DELETE', '/v1/location/%s' % location_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete location: %s" % e.message,

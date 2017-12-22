@@ -8,7 +8,7 @@ from time import time
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
 from yombo.utils import epoch_to_string, bytes_to_unicode
@@ -39,7 +39,7 @@ def route_api_v1_server(webapp):
 
             try:
                 results = yield webinterface._YomboAPI.request('GET', url)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
             data = {
@@ -68,7 +68,7 @@ def route_api_v1_server(webapp):
 
             try:
                 results = yield webinterface._YomboAPI.request('GET', url)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
             request.setHeader('Content-Type', 'application/json')
@@ -97,7 +97,7 @@ def route_api_v1_server(webapp):
 
             try:
                 results = yield webinterface._YomboAPI.request('GET', url)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
             data = {
@@ -130,7 +130,7 @@ def route_api_v1_server(webapp):
 
             try:
                 results = yield webinterface._YomboAPI.request('GET', url)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
             data = {
                 'total': results['content']['pages']['total_items'],
@@ -162,7 +162,7 @@ def route_api_v1_server(webapp):
 
             try:
                 results = yield webinterface._YomboAPI.request('GET', url)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
             data = {
                 'total': results['content']['pages']['total_items'],
@@ -178,7 +178,7 @@ def route_api_v1_server(webapp):
             # action = request.args.get('action')[0]
             try:
                 results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
             request.setHeader('Content-Type', 'application/json')

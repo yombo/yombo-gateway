@@ -25,7 +25,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -44,6 +44,7 @@ BASE_VALIDATORS = [
     ['yombo.lib.inputtypes.basic_addresses', 'URL'],
     ['yombo.lib.inputtypes.basic_types', '_Any'],
     ['yombo.lib.inputtypes.basic_types', '_Bool'],
+    ['yombo.lib.inputtypes.basic_types', '_Checkbox'],
     ['yombo.lib.inputtypes.basic_types', '_Float'],
     ['yombo.lib.inputtypes.basic_types', 'Filename'],
     ['yombo.lib.inputtypes.basic_types', '_Integer'],
@@ -447,7 +448,7 @@ class InputTypes(YomboLibrary):
 
         try:
             input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add input type: %s" % e.message,
@@ -494,7 +495,7 @@ class InputTypes(YomboLibrary):
 
         try:
             input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit input type: %s" % e.message,
@@ -522,7 +523,7 @@ class InputTypes(YomboLibrary):
         """
         try:
             input_type_results = yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete input type: %s" % e.message,
@@ -554,7 +555,7 @@ class InputTypes(YomboLibrary):
 
         try:
             input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable input type: %s" % e.message,
@@ -586,7 +587,7 @@ class InputTypes(YomboLibrary):
 
         try:
             input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable input type: %s" % e.message,

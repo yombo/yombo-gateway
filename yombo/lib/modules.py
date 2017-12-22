@@ -32,7 +32,7 @@ from pyclbr import readmodule
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, dict_merge
@@ -1025,7 +1025,7 @@ class Modules(YomboLibrary):
 
         try:
             module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add module: %s" % e.message,
@@ -1057,7 +1057,7 @@ class Modules(YomboLibrary):
                         # print("post_data: %s" % post_data)
                         try:
                             yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
-                        except YomboAPIWarning as e:
+                        except YomboWarning as e:
                             results = {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables: %s" % e.message,
@@ -1075,7 +1075,7 @@ class Modules(YomboLibrary):
                         try:
                             yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
                                                                             post_data)
-                        except YomboAPIWarning as e:
+                        except YomboWarning as e:
                             results = {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables: %s" % e.message,
@@ -1109,7 +1109,7 @@ class Modules(YomboLibrary):
             yield self._YomboAPI.request('PATCH',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
                                                           api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module edit results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1141,7 +1141,7 @@ class Modules(YomboLibrary):
         try:
             yield self._YomboAPI.request('DELETE',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1184,7 +1184,7 @@ class Modules(YomboLibrary):
             yield self._YomboAPI.request('PATCH',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
                                                           api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module enable results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1224,7 +1224,7 @@ class Modules(YomboLibrary):
             yield self._YomboAPI.request('PATCH',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
                                          api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module disable results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1254,7 +1254,7 @@ class Modules(YomboLibrary):
         """
         try:
             module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module add results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1282,7 +1282,7 @@ class Modules(YomboLibrary):
         """
         try:
             module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module edit results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1310,7 +1310,7 @@ class Modules(YomboLibrary):
         """
         try:
             module_results = yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',

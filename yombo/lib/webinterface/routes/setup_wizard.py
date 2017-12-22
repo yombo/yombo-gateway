@@ -4,7 +4,7 @@ from time import time
 from twisted.internet.defer import inlineCallbacks
 # from twisted.internet import reactor
 
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
 from yombo.utils import is_true_false
 from yombo.core.log import get_logger
@@ -60,7 +60,7 @@ def route_setup_wizard(webapp):
                                                                '/v1/gateway/',
                                                                None,
                                                                session['yomboapi_session'])
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert("System credentials appear to be invalid. Please login as the gateway owner.")
                 session['auth'] = False
                 return webinterface.redirect(request, '/setup_wizard/2')
@@ -151,7 +151,7 @@ def route_setup_wizard(webapp):
                                                                    "/v1/gateway/%s/config" % wizard_gateway_id,
                                                                    None,
                                                                    session['yomboapi_session'])
-                except YomboAPIWarning as e:
+                except YomboWarning as e:
                     pass
                 for config in results['data']:
                     if config['section'] not in settings:
@@ -541,7 +541,7 @@ def route_setup_wizard(webapp):
                     results = yield webinterface._YomboAPI.request('POST', '/v1/gateway',
                                                                    data,
                                                                    session['yomboapi_session'])
-                except YomboAPIWarning as e:
+                except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/setup_wizard/3')
                 session['setup_wizard_gateway_id'] = results['data']['id']
@@ -632,7 +632,7 @@ def route_setup_wizard(webapp):
                 dns_results = yield webinterface._YomboAPI.request('GET',
                                                                    '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
                                                                        'core', 'gwid'))
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 # webinterface.add_alert(e.html_message, 'warning')
                 # webinterface.add_alert(dns_results['content']['html_message'], 'warning')
                 webinterface._Configs.set('dns', 'dns_name', None)
@@ -710,7 +710,7 @@ def route_setup_wizard(webapp):
                                                                    '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
                                                                        'core', 'gwid'), data)
                 print("SW7 - 11: %s" % dns_results)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 print("SW7 - 11: %s" % dns_results)
                 return webinterface.redirect(request, 'pages/setup_wizard/6')

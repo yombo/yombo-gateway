@@ -304,7 +304,7 @@ class YomboAPI(YomboLibrary):
     def request(self, method, path, data=None, session=None):
         path = self.base_url + path
 
-        logger.debug("{method}: {path}", method=method, path=path)
+        logger.info("{method}: {path}: {data}", method=method, path=path, data=data)
         # if session is False:
         #     session = None
         if session is None:
@@ -430,14 +430,8 @@ class YomboAPI(YomboLibrary):
         }
 
         if content_type == "string":
-            results['code'] = 500
-            results['data'] = []
-            results['content'] = {
-                'message': 'Unknown api error',
-                'html_message': 'Unknown api error',
-            }
             logger.warn("Error content: {content}", content=content)
-            return results
+            raise YomboWarning('Unknown api error', 500, html_message='Unknown api error')
         else:
             if 'response' in content:
                 if 'locator' in content['response']:
@@ -455,7 +449,7 @@ class YomboAPI(YomboLibrary):
                 if 'html_message' in content:
                     html_message = content['html_message']
                 else:
-                    message = phrase
+                    html_message = phrase
                 raise YomboWarning(message, code, html_message=html_message)
             return results
 

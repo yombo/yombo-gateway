@@ -3,7 +3,7 @@ from time import time
 
 from twisted.internet.defer import inlineCallbacks
 
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.utils import random_string
 
@@ -220,7 +220,7 @@ def route_configs(webapp):
                 dns_results = yield webinterface._YomboAPI.request('POST',
                                                                    '/v1/gateway/%s/dns_name' % webinterface.gateway_id(),
                                                                    data)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/configs/dns')
 

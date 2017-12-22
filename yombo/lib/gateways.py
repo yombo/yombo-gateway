@@ -32,7 +32,7 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred
 from twisted.internet import reactor
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep
@@ -1116,7 +1116,7 @@ class Gateways(YomboLibrary):
         if source != 'amqp':
             try:
                 gateway_results = yield self._YomboAPI.request('POST', '/v1/gateway', api_data)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't add gateway: %s" % e.message,
@@ -1146,7 +1146,7 @@ class Gateways(YomboLibrary):
         """
         try:
             gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % (gateway_id), api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit gateway: %s" % e.message,
@@ -1179,7 +1179,7 @@ class Gateways(YomboLibrary):
         """
         try:
             gateway_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s' % gateway_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete gateway: %s" % e.message,
@@ -1211,7 +1211,7 @@ class Gateways(YomboLibrary):
 
         try:
             gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable gateway: %s" % e.message,
@@ -1243,7 +1243,7 @@ class Gateways(YomboLibrary):
 
         try:
             gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable gateway: %s" % e.message,

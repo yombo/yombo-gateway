@@ -32,7 +32,7 @@ import msgpack
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -482,7 +482,7 @@ class Nodes(YomboLibrary):
 
             try:
                 node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't add node: %s" % e.message,
@@ -549,7 +549,7 @@ class Nodes(YomboLibrary):
                     pass
             try:
                 node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't edit node: %s" % e.message,
@@ -595,7 +595,7 @@ class Nodes(YomboLibrary):
         if source != 'amqp':
             try:
                 node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't delete node: %s" % e.message,
@@ -647,7 +647,7 @@ class Nodes(YomboLibrary):
         if source != 'amqp':
             try:
                 node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't enable node: %s" % e.message,
@@ -694,7 +694,7 @@ class Nodes(YomboLibrary):
         if source != 'amqp':
             try:
                 node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 results = {
                     'status': 'failed',
                     'msg': "Couldn't disable node: %s" % e.message,

@@ -26,7 +26,7 @@ except ImportError:
 from twisted.internet.defer import inlineCallbacks
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.core.log import get_logger
 
@@ -439,7 +439,7 @@ def route_devices(webapp):
         def page_devices_edit_get(webinterface, request, session, device_id):
             try:
                 device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devices/index')
             device = device_api_results['data']

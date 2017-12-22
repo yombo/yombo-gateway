@@ -22,7 +22,7 @@ import inspect
 from twisted.internet.defer import inlineCallbacks, Deferred
 
 # Import Yombo libraries
-from yombo.core.exceptions import YomboWarning, YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, global_invoke_all
@@ -415,7 +415,7 @@ class Commands(YomboLibrary):
         """
         try:
             command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't add command: %s" % e.message,
@@ -447,7 +447,7 @@ class Commands(YomboLibrary):
         """
         try:
             command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit command: %s" % e.message,
@@ -479,7 +479,7 @@ class Commands(YomboLibrary):
         """
         try:
             command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't delete command: %s" % e.message,
@@ -513,7 +513,7 @@ class Commands(YomboLibrary):
 
         try:
             command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't enable command: %s" % e.message,
@@ -548,7 +548,7 @@ class Commands(YomboLibrary):
 
         try:
             command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             results = {
                 'status': 'failed',
                 'msg': "Couldn't disable command: %s" % e.message,

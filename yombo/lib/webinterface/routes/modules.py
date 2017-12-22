@@ -25,7 +25,7 @@ except ImportError:
 from twisted.internet.defer import inlineCallbacks
 
 from yombo.lib.webinterface.auth import require_auth
-from yombo.core.exceptions import YomboAPIWarning
+from yombo.core.exceptions import YomboWarning
 
 def route_modules(webapp):
     """
@@ -72,7 +72,7 @@ def route_modules(webapp):
         def page_modules_details_from_server(webinterface, request, session, module_id):
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -92,7 +92,7 @@ def route_modules(webapp):
         def page_modules_add(webinterface, request, session, module_id):
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -349,7 +349,7 @@ def route_modules(webapp):
 
             try:
                 module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-            except YomboAPIWarning as e:
+            except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
 
@@ -392,7 +392,7 @@ def route_modules(webapp):
 
                 try:
                     results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-                except YomboAPIWarning as e:
+                except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/modules/index')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
