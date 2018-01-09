@@ -462,7 +462,8 @@ class AMQPYombo(YomboLibrary):
     def generate_message_response(self, exchange_name=None, source=None, destination=None,
                                  headers=None, body=None, routing_key=None, callback=None,
                                  correlation_id=None, message_type=None, response_type=None,
-                                 data_type=None, previous_properties=None, previous_headers=None):
+                                 data_type=None, route=None, previous_properties=None,
+                                 previous_headers=None):
         if self._Loader.operating_mode != 'run':
             return
         if previous_properties is None:
@@ -491,6 +492,7 @@ class AMQPYombo(YomboLibrary):
                                             callback=callback,
                                             correlation_id=correlation_id,
                                             headers=headers,
+                                            route=route,
                                             )
         if response_type is not None:
             response_msg['body']['headers']['response_type'] = response_type
@@ -500,7 +502,7 @@ class AMQPYombo(YomboLibrary):
     def generate_message_request(self, exchange_name=None, source=None, destination=None,
                                  headers=None, body=None, routing_key=None, callback=None,
                                  correlation_id=None, message_type=None, request_type=None,
-                                 data_type=None):
+                                 data_type=None, route=None):
         if self._Loader.operating_mode != 'run':
             return
 
@@ -517,6 +519,7 @@ class AMQPYombo(YomboLibrary):
                                             callback=callback,
                                             correlation_id=correlation_id,
                                             headers=headers,
+                                            route=route,
                                             )
         if request_type is not None:
             request_msg['body']['headers']['request_type'] = request_type
@@ -525,7 +528,7 @@ class AMQPYombo(YomboLibrary):
 
     def generate_message(self, exchange_name, source, destination, message_type, data_type=None,
                          body=None, routing_key=None, callback=None, correlation_id=None,
-                         headers=None, reply_to=None):
+                         headers=None, reply_to=None, route=None):
         """
         When interacting with Yombo AMQP servers, we use a standard messaging layout. The format
         below helps other functions and libraries conform to this standard.
@@ -595,6 +598,12 @@ class AMQPYombo(YomboLibrary):
             else:
                 data_type = 'object'
 
+        if route is None:
+            route = ["yombo.gw.amqpyombo:" + self.user_id]
+        else:
+            route.append("yombo.gw.amqpyombo:" + self.user_id)
+
+
         msg_created_at = float(time())
         request_msg = {
             "exchange_name": exchange_name,
@@ -608,6 +617,7 @@ class AMQPYombo(YomboLibrary):
                     "correlation_id": correlation_id,
                     "msg_created_at": msg_created_at,
                     "data_type": data_type.lower(),
+                    "route": route,
                 },
                 "body": body,
             },
