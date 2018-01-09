@@ -29,6 +29,8 @@ class APIAuth(YomboLibrary):
     """
     API Key management.
     """
+    active_api_auth = {}
+
     def __delitem__(self, key):
         if key in self.active_api_auth:
             self.active_api_auth[key].expire_session()
@@ -70,7 +72,6 @@ class APIAuth(YomboLibrary):
 
     def _init_(self, **kwargs):
         self.session_type = "apiauth"
-        self.active_api_auth = {}
         self.active_api_auth_by_label = {}
         # self.active_api_auth_cache = ExpiringDict(200, 5)  # keep 200 entries, for at most 1 second...???
         self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
@@ -131,7 +132,7 @@ class APIAuth(YomboLibrary):
         return
 
     @inlineCallbacks
-    def check_web_request(self, request=None):
+    def get_session_from_request(self, request=None):
         """
         Called by the web interface auth system to check if the provided request
         has an API key. Can be in the query string as '?_api_auth=key' or in

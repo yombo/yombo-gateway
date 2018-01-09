@@ -22,6 +22,7 @@ import hashlib
 # Import twisted libraries
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
@@ -36,6 +37,8 @@ class WebSessions(YomboLibrary):
     """
     Session management.
     """
+    active_sessions = {}
+
     def __delitem__(self, key):
         if key in self.active_sessions:
             self.active_sessions[key].expire_session()
@@ -92,7 +95,7 @@ class WebSessions(YomboLibrary):
             'httponly': True,
             'secure': False,  # will change to true after SSL system/dns complete. - Mitch
         })
-        self.active_sessions = {}
+        # self.active_sessions = {}
         self.clean_sessions_loop = LoopingCall(self.clean_sessions)
         self.clean_sessions_loop.start(random_int(60*60, .2))  # Every hour-ish. Save to disk, or remove from memory.
 
@@ -119,20 +122,32 @@ class WebSessions(YomboLibrary):
         raise KeyError("Cannot find web session: %s" % key)
 
     def close_session(self, request):
-        if self.has_session(request):
-            cookie_session_name = self.config.cookie_session_name
-            if cookie_session_name in request.received_cookies:
-                session_id = request.received_cookies[cookie_session_name]
-            if session_id in self.active_sessions:
-                self.active_sessions[session_id].expire_session()
+        cookie_session_name = self.config.cookie_session_name
+        cookies = request.received_cookies
+        if cookie_session_name in cookies:
             request.addCookie(cookie_session_name, 'LOGOFF', domain=self.get_cookie_domain(request),
                           path=self.config.cookie_path, expires='Thu, 01 Jan 1970 00:00:00 GMT',
                           secure=self.config.secure, httpOnly=self.config.httponly)
 
+        reactor.callLater(.01, self.do_close_session, request)
+
     @inlineCallbacks
-    def check_web_request(self, request=None):
+    def do_close_session(self, request):
+        print("dp checking to close sssion....1")
+        print(self.active_sessions)
+        try:
+            print("do checking to close sssion....2")
+            session = yield self.get_session_from_request(request)
+            print("do checking to close sssion....3: %s" % session)
+        except YomboWarning as e:
+            return
+        session.expire_session()
+        print("do checking to close sssion....4")
+
+    @inlineCallbacks
+    def get_session_from_request(self, request=None):
         """
-        Checks the request for an x-api-auth header and then tries to validate it.
+        Checks the request for a valid session cookie and then tries to validate it.
 
         Returns True if everything is good, otherwise raises YomboWarning with
         status reason.
@@ -161,6 +176,7 @@ class WebSessions(YomboLibrary):
             raise YomboWarning("Invalid session id.")
         if session_id in self.active_sessions:
             if self.active_sessions[session_id].is_valid is True:
+                print("returning valid session....")
                 return self.active_sessions[session_id]
             else:
                 raise YomboWarning("Invalid session is no longer valid.")
