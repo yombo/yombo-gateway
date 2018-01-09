@@ -52,8 +52,10 @@ SYSTEM_MODULES = {
         'machine_label': 'AutomationHelpers',
         'label': 'Automation Helpers',
         'short_description': "Adds basic platforms to the automation rules.",
+        'medium_description': "Adds basic platforms to the automation rules.",
         'description': "Adds basic platforms to the automation rules.",
-        'description_formatting': 'text',
+        'medium_description_html': "Adds basic platforms to the automation rules.",
+        'description_html': "Adds basic platforms to the automation rules.",
         'install_branch': 'system',
         'install_count': '',
         'see_also': '',
@@ -199,7 +201,7 @@ class Modules(YomboLibrary):
         self.hook_counts = {}  # keep track of hook names, and how many times it's called.
         self.hooks_called = MaxDict(200, {})
         self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
-            'short_description', 'description_formatting', '_public', '_status']
+            '_short_description', '_medium_description', '_public', '_status']
         self.disabled_modules = {}
 
     @inlineCallbacks
@@ -330,17 +332,29 @@ class Modules(YomboLibrary):
                 else:
                     mod_short_description = section
 
+                if 'mod_medium_description' in options:
+                    mod_medium_description = ini.get(section, 'mod_medium_description')
+                    options.remove('mod_medium_description')
+                else:
+                    mod_medium_description = section
+
                 if 'mod_description' in options:
                     mod_description = ini.get(section, 'mod_description')
                     options.remove('mod_description')
                 else:
                     mod_description = section
 
-                if 'mod_description_formatting' in options:
-                    mod_description_formatting = ini.get(section, 'mod_description_formatting')
-                    options.remove('mod_description_formatting')
+                if 'mod_medium_description_html' in options:
+                    mod_medium_description_html = ini.get(section, 'mod_medium_description_html')
+                    options.remove('mod_medium_description_html')
                 else:
-                    mod_description_formatting = 'text'
+                    mod_medium_description_html = mod_medium_description
+
+                if 'mod_description_html' in options:
+                    mod_description_html = ini.get(section, 'mod_description_html')
+                    options.remove('mod_description_html')
+                else:
+                    mod_description_html = mod_description
 
                 if 'mod_module_type' in options:
                     mod_module_type = ini.get(section, 'mod_module_type')
@@ -374,8 +388,10 @@ class Modules(YomboLibrary):
                   'machine_label': mod_machine_label,
                   'label': mod_label,
                   'short_description': mod_short_description,
+                  'medium_description': mod_medium_description,
                   'description': mod_description,
-                  'description_formatting': mod_description_formatting,
+                  'medium_description_html': mod_medium_description_html,
+                  'description_html': mod_description_html,
                   'see_also': mod_see_also,
                   'install_count': 1,
                   'install_branch': '',
@@ -494,8 +510,10 @@ class Modules(YomboLibrary):
             self.modules[module_id]._machine_label = module['machine_label']
             self.modules[module_id]._label = module['label']
             self.modules[module_id]._short_description = module['short_description']
+            self.modules[module_id]._medium_description = module['medium_description']
             self.modules[module_id]._description = module['description']
-            self.modules[module_id]._description_formatting = module['description_formatting']
+            self.modules[module_id]._medium_description_html = module['medium_description_html']
+            self.modules[module_id]._description_html = module['description_html']
             self.modules[module_id]._install_count = module['install_count']
             self.modules[module_id]._see_also = module['see_also']
             self.modules[module_id]._repository_link = module['repository_link']

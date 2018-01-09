@@ -413,29 +413,31 @@ def create_table_modules(Registry, **kwargs):
     """  """
     # Stores module information
     table = """CREATE TABLE `modules` (
-        `id`             TEXT NOT NULL, /* moduleUUID */
-        `gateway_id`     TEXT NOT NULL,
-        `machine_label`  TEXT NOT NULL,
-        `module_type`    TEXT NOT NULL,
-        `label`          TEXT NOT NULL,
-        `short_description`       TEXT,
-        `description`             TEXT,
-        `description_formatting`  TEXT,
+        `id`                 TEXT NOT NULL, /* moduleUUID */
+        `gateway_id`         TEXT NOT NULL,
+        `machine_label`      TEXT NOT NULL,
+        `module_type`        TEXT NOT NULL,
+        `label`              TEXT NOT NULL,
+        `short_description`  TEXT,
+        `medium_description` TEXT,
+        `description`        TEXT,
+        `medium_description_html` TEXT,
+        `description_html`   TEXT,
         `see_also`           TEXT,
         `repository_link`    TEXT,
         `issue_tracker_link` TEXT,
-        `install_count`  INTEGER DEFAULT 0,
-        `doc_link`       TEXT,
-        `git_link`       TEXT,
-        `install_branch` TEXT NOT NULL,
-        `prod_branch`    TEXT NOT NULL,
-        `dev_branch`     TEXT,
-        `prod_version`   TEXT,
-        `dev_version`    TEXT,
-        `public`         INTEGER NOT NULL,
-        `status`         INTEGER NOT NULL, /* disabled, enabled, deleted */
-        `created_at`     INTEGER NOT NULL,
-        `updated_at`     INTEGER NOT NULL,
+        `install_count`      INTEGER DEFAULT 0,
+        `doc_link`           TEXT,
+        `git_link`           TEXT,
+        `install_branch`     TEXT NOT NULL,
+        `prod_branch`        TEXT NOT NULL,
+        `dev_branch`         TEXT,
+        `prod_version`       TEXT,
+        `dev_version`        TEXT,
+        `public`             INTEGER NOT NULL,
+        `status`             INTEGER NOT NULL, /* disabled, enabled, deleted */
+        `created_at`         INTEGER NOT NULL,
+        `updated_at`         INTEGER NOT NULL,
         PRIMARY KEY(id));"""
     yield Registry.DBPOOL.runQuery(table)
     yield Registry.DBPOOL.runQuery(create_index('modules', 'machine_label'))
@@ -475,13 +477,14 @@ def create_table_nodes(Registry, **kwargs):
     table = """CREATE TABLE `nodes` (
         `id`                TEXT NOT NULL,
         `parent_id`         TEXT,
-        `gateway_id`        TEXT NOT NULL,
+        `user_id`           TEXT NOT NULL,
+        `gateway_id`        TEXT,
         `node_type`         TEXT NOT NULL,
         `weight`            INTEGER NOT NULL,
         `label`             TEXT,
         `machine_label`     TEXT,
-        `always_load`       INTEGER NOT NULL,
-        `destination`       TEXT NOT NULL,
+        `always_load`       INTEGER,
+        `destination`       TEXT,
         `data`              BLOB,
         `data_content_type` TEXT NOT NULL,
         `status`            INTEGER NOT NULL, /* Timestemp when msg was ack'd by the user. */
