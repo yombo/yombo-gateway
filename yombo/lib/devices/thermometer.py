@@ -5,19 +5,17 @@ class Thermometer(Device):
     """
     A generic Sensor
     """
-
-    PLATFORM = "thermometer"
-
-    TOGGLE_COMMANDS = []
-
-    # Features this device can support
-    FEATURES = {
-        'all_on': False,
-        'all_off': False,
-        'pingable': False,
-        'pollable': True,
-        'sends_updates': False
-    }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "thermometer"
+        self.TOGGLE_COMMANDS = []
+        self.FEATURES.update({
+            'all_on': False,
+            'all_off': False,
+            'pingable': False,
+            'pollable': True,
+            'sends_updates': False
+        })
 
     def can_toggle(self):
         return False

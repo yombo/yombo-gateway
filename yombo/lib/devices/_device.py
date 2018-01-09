@@ -28,25 +28,27 @@ class Device(Base_Device):
     """
     The parent to all child device types.
     """
+    def __init__(self, *args, **kwargs):
+        # Features this device can support
+        self.FEATURES = {
+            'power_control': True,
+            'all_on': False,
+            'all_off': False,
+            'pingable': True,
+            'pollable': True,
+            'sends_updates': True
+        }
 
-    PLATFORM = "device"
-    SUB_PLATFORM = None
-    TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
+        self.PLATFORM = "device"
+        self.SUB_PLATFORM = None
+        self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
-    # Features this device can support
-    FEATURES = {
-        'all_on': False,
-        'all_off': False,
-        'pingable': True,
-        'pollable': True,
-        'sends_updates': True
-    }
-
-    STATUS_EXTRA = {}
-    # STATUS_EXTRA = {
-    #     'mode': ['auto', 'on', 'off'],
-    #     'running': ['auto', 'on', 'off'],
-    # }
+        self.STATUS_EXTRA = {}
+        # self.STATUS_EXTRA = {
+        #     'mode': ['auto', 'on', 'off'],
+        #     'running': ['auto', 'on', 'off'],
+        # }
+        super().__init__(*args, **kwargs)
 
     @property
     def area(self) -> str:

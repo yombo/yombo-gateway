@@ -187,20 +187,19 @@ class Base_Device(object):
         self.energy_map = None
         self.energy_type = None
         self.device_is_new = True
-        self.device_serial = None
-        self.device_mfg = None
-        self.device_model = None
+        self.device_serial = device["id"]
+        self.device_mfg = "Yombo"
+        self.device_model = "Yombo"
 
         self.update_attributes(device, source='parent')
 
     @inlineCallbacks
-    def _init_(self, **kwargs):
+    def _init0_(self, **kwargs):
         """
-        Performs items that require deferreds.
+        Performs items that require deferreds. This is for system use only.
 
         :return:
         """
-        # print("getting device variables for: %s" % self.device_id)
         yield self.device_variables()
         self.device_variables_cached = yield self._Parent._Variables.get_variable_fields_data(
             group_relation_type='device_type',
@@ -219,9 +218,28 @@ class Base_Device(object):
             yield self.load_status_history(35)
             yield self.load_device_commands_history(35)
 
+    def _init_(self, **kwargs):
+        """
+        Used by devices to run their init. This is called after the system _init0_ is called.
+
+        :return:
+        """
+        pass
+
+    def _start0_(self, **kwargs):
+        """
+        This is called by the devices library when a new device is loaded for system use only.
+
+        :param kwargs:
+        :return:
+        """
+        pass
+
     def _start_(self, **kwargs):
         """
-        This is called by the devices library when a new device is loaded.
+        This is called by the devices library when a new device is loaded and is used by devices that need
+        to run any start up items.
+
         :param kwargs:
         :return:
         """
@@ -441,6 +459,7 @@ class Base_Device(object):
             'device_sub_platform': self.SUB_PLATFORM,
             'device_features': self.FEATURES,
             'device_variables': self.device_variables_cached,
+            'enabled_status': self.enabled_status,
             }
 
     def to_mqtt_coms(self):

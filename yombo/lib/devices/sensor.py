@@ -5,18 +5,18 @@ class Sensor(Device):
     """
     A generic Sensor
     """
-    PLATFORM = "sensor"
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "sensor"
+        self.TOGGLE_COMMANDS = []  # Put two command machine_labels in a list to enable toggling.
+        self.FEATURES.update({
+            'all_on': False,
+            'all_off': False,
+            'pingable': False,
+            'pollable': True,
+            'number_of_steps': 2,
 
-    TOGGLE_COMMANDS = []
-
-    # Features this device can support
-    FEATURES = {
-        'all_on': False,
-        'all_off': False,
-        'pingable': False,
-        'pollable': True,
-        'sends_updates': False
-    }
+        })
 
     def can_toggle(self):
         return False
@@ -41,13 +41,15 @@ class Digital_Sensor(Sensor):
     """
     A sensor that will be either high or low.
     """
-
-    SUB_PLATFORM = "digital_sensor"
+    def _init_(self):
+        self.SUB_PLATFORM = "digital_sensor"
+        super()._init_()
 
 
 class Door(Sensor):
     """
     A sensor that will be either high or low.
     """
-
-    SUB_PLATFORM = "door"
+    def _init_(self):
+        self.SUB_PLATFORM = "door"
+        super()._init_()

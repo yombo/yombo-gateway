@@ -1,22 +1,22 @@
-from yombo.lib.devices.appliance import Appliance
+from yombo.lib.devices.switch import Switch
 
 
-class Relay(Appliance):
+class Relay(Switch):
     """
     A generic relay device.
     """
-    PLATFORM = "relay"
-
-    TOGGLE_COMMANDS = ['open', 'close']  # Put two command machine_labels in a list to enable toggling.
-
     # Features this device can support
-    FEATURES = {
-        'all_on': False,
-        'all_off': False,
-        'pingable': False,
-        'pollable': False,
-        'sends_updates': False
-    }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "relay"
+        self.TOGGLE_COMMANDS = ['open', 'close']  # Put two command machine_labels in a list to enable toggling.
+        self.FEATURES.update({
+            'all_on': False,
+            'all_off': False,
+            'pingable': False,
+            'pollable': False,
+            'sends_updates': False
+        })
 
     def can_toggle(self):
         return True

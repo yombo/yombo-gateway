@@ -13,13 +13,10 @@ class Fan(Device):
     """
     A generic fan device.
     """
-
-    PLATFORM = "fan"
-
-    TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
-
-    def _start_(self):
-        super(Light, self)._start_()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "fan"
+        self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES['brightness'] = True
         self.FEATURES['color_temp'] = False
         self.FEATURES['effect'] = False

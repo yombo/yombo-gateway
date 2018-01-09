@@ -1,20 +1,11 @@
-from yombo.lib.devices._device import Device
+from yombo.lib.devices.switch import Switch
 
 #TODO: rename to switch
-class Appliance(Device):
+class Appliance(Switch):
     """
-    A generic appliance device.
+    A generic appliance device, acts like a switch.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "appliance"
 
-    PLATFORM = "appliance"
-
-    TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
-
-    def can_toggle(self):
-        return True
-
-    def toggle(self):
-        if self.status_history[0].machine_state == 0:
-            return self.command('on')
-        else:
-            return self.command('off')

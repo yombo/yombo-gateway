@@ -23,20 +23,21 @@ class Light(Device):
     """
     A generic light device.
     """
-    PLATFORM = "light"
 
-    TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
-
-    def _start_(self, **kwargs):
-        super()._start_()
-        self.FEATURES['brightness'] = True
-        self.FEATURES['color_temp'] = False
-        self.FEATURES['effect'] = False
-        self.FEATURES['rgb_color'] = False
-        self.FEATURES['xy_color'] = False
-        self.FEATURES['transition'] = False
-        self.FEATURES['white_value'] = False
-        self.FEATURES['number_of_steps'] = 255
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "light"
+        self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+        self.FEATURES.update({
+            'brightness': True,
+            'color_temp': False,
+            'effect': False,
+            'rgb_color': False,
+            'xy_color': False,
+            'white_value': False,
+            'transition': False,
+            'number_of_steps': 255
+        })
 
     @property
     def brightness(self):
