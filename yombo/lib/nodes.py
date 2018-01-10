@@ -27,7 +27,6 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
     import simplejson as json
 except ImportError:
     import json
-import msgpack
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -38,30 +37,9 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import bytes_to_unicode, do_search_instance, global_invoke_all, data_unpickle, data_pickle
+from yombo.utils.triggerdict import TriggerDict
 
 logger = get_logger('library.nodes')
-
-
-class TriggeringDict(dict):
-    def __init__(self, *args, callback=None, **kwargs):
-
-        print("!!!!!!! setting args:")
-        print(args)
-        print("!!!!!!! setting triggercallback: %s" % callback)
-        print("!!!!!!! setting kwargs: %s" % kwargs)
-        self.callback = callback
-        dict.__init__(self, *args, **kwargs)
-
-    def __setitem__(self, item, value):
-        print("a You are changing the value of %s to %s!!" % (item, value))
-        super().__setitem__(item, value)
-        print("b %s" % self.callback)
-        if self.callback is not None:
-            print("c You are changing the value of %s to %s!!" % (item, value))
-            self.callback(item,  value)
-
-    def set_callback(self, callback):
-        self.callback = callback
 
 
 class Nodes(YomboLibrary):
@@ -188,11 +166,6 @@ class Nodes(YomboLibrary):
         self._load_nodes_from_database()
         return self.load_deferred
 
-    # def _load_(self):
-    #     """
-    #     Loads all nodes from DB to various arrays for quick lookup.
-    #     """
-
     def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
@@ -200,6 +173,8 @@ class Nodes(YomboLibrary):
         if hasattr(self, 'load_deferred'):
             if self.load_deferred is not None and self.load_deferred.called is False:
                 self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+        for node_id, node in self.nodes.items():
+            node._stop_()
 
     @inlineCallbacks
     def _load_nodes_from_database(self):
@@ -540,7 +515,7 @@ class Nodes(YomboLibrary):
 
         # This fancy inline just removed None and '' values.
         results = yield self.add_node({k: v for k, v in api_data.items() if v})
-        print("create results: %s" % results)
+        # print("create results: %s" % results)
         return self.nodes[results['node_id']]
 
     @inlineCallbacks
@@ -609,15 +584,17 @@ class Nodes(YomboLibrary):
     @inlineCallbacks
     def edit_node(self, node_id, api_data, source=None, **kwargs):
         """
-        Edit a node at the Yombo server level, not at the local gateway level. To edit
-        at the gateway level, simply edit the node directly. It will automatically
-        update the server and local database.
+        This is used to save or update node information for nodes NOT in memory. This will call
+        the Yombo API to update the node remotely.
+
+        To update a local node that is in memory, simply just update it. It will automatically
+        update Yombo API and local database needed.
 
         :param data:
         :param kwargs:
         :return:
         """
-        print("editing node: %s" % node_id)
+        # print("editing node: %s" % node_id)
         if isinstance(api_data, Node):
             api_data = api_data.asdict()
 
@@ -627,7 +604,7 @@ class Nodes(YomboLibrary):
             if 'data' not in api_data:
                 raise YomboWarning("Cannot edit node, 'data' not found")
             api_data['data'] = data_pickle(api_data['data'], api_data['data_content_type'])
-            print("new node data: %s" % api_data)
+            # print("new node data: %s" % api_data)
             try:
                 api_to_send = {k: v for k, v in bytes_to_unicode(api_data).items() if v}
                 node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_to_send)
@@ -651,7 +628,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-            node.save_to_db()
+                node.save_to_db()
 
         global_invoke_all('_node_edited_',
                           called_by=self,
@@ -699,7 +676,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-            node.save_to_db()
+                node.save_to_db()
 
         global_invoke_all('_node_deleted_',
                           called_by=self,
@@ -749,7 +726,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-            node.save_to_db()
+                node.save_to_db()
 
         global_invoke_all('_node_enabled_',
                           called_by=self,
@@ -839,14 +816,11 @@ class Node(object):
 
         """
         logger.debug("node info: {node}", node=node)
-        # object.__setattr__(self, '_instance', {})
-        # object.__setattr__/(self, '__update_calllater', None)
         self._startup = True
         self._update_calllater = None
         self._Parent = parent
         self.node_id = node['id']
         self.machine_label = node.get('machine_label', None)
-        # self._instance_data = {}
 
         # below are configure in update_attributes()
         self.parent_id = None
@@ -864,27 +838,53 @@ class Node(object):
         self._startup = True
 
     def __setattr__(self, key, value):
-        print("node settr called: %s = %s" % (key, value))
+        # print("node settr called: %s = %s" % (key, value))
         if key == 'data':
             if isinstance(value, dict):
-                value = TriggeringDict(value, callback=self._on_change)
+                value = TriggerDict(value, callback=self._on_change)
         object.__setattr__(self, key, value)
         # self.key = value
         if self._startup is not True:
             self._on_change()
 
-    def _on_change(self, *args, **kwargs):
-        print("%s: _on_change called" % self.node_id)
+    def _stop_(self):
+        """
+        Called when the system is shutting down. If a save is pending, we save the current state to Yombo API
+        and SQL.
+
+        :return:
+        """
         if self._update_calllater is not None and self._update_calllater.active():
             self._update_calllater.cancel()
-        object.__setattr__(self, '_update_calllater', reactor.callLater(2, self.save))
-        # if object.__getattribute__(self, '__update_calllater') is not None and object.__getattribute__(self, '__update_calllater').active():
-        #     object.__getattribute__(self, '__update_calllater').canel()
-        #     object.__setattr__(self, '__update_calllater', reactor.callLater(2, self.save_node))
+            self.save()
+            object.__setattr__(self, '_update_calllater', None)
 
+    def _on_change(self, *args, **kwargs):
+        """
+        This function is called whenever something changes. We 10 seconds of no updates, or 120 seconds with
+        continious updates, we will update the Yombo API as well as save to disk.
+
+        Simply calls self.save() when it's time to do the actual save.
+
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        # print("%s: _on_change called" % self.node_id)
+        if self._update_calllater is not None and self._update_calllater.active():
+            self._update_calllater.cancel()
+            object.__setattr__(self, '_update_calllater', None)
+        object.__setattr__(self, '_update_calllater', reactor.callLater(10, self.save))
+
+    @inlineCallbacks
     def save(self):
-        print("%s: save" % self.node_id)
-        self._Parent.edit_node(self.node_id, self, source="node")
+        """
+        Updates the Yombo API and saves the current information to the SQL database.
+
+        :return:
+        """
+        # print("%s: save" % self.node_id)
+        yield self._Parent.edit_node(self.node_id, self, source="node")
         self.save_to_db()
 
     def update_attributes(self, new_data, source=None):
@@ -913,7 +913,7 @@ class Node(object):
             self.destination = new_data['destination']
         if 'data' in new_data:
             if isinstance(new_data['data'], dict):
-                self.data = TriggeringDict(new_data['data'], callback=self._on_change)
+                self.data = TriggerDict(new_data['data'], callback=self._on_change)
             else:
                 self.data = new_data['data']
         if 'data_content_type' in new_data:
@@ -932,11 +932,13 @@ class Node(object):
             self._Parent._LocalDB.add_node(self)
 
     def save_to_db(self):
-        if self._Parent.gateway_id == self.gateway_id:
+        # print("save_to_db called")
+        if self._Parent.gateway_id() == self.gateway_id:
+            # print("save_to_db called....saving node to local sql now...")
             self._Parent._LocalDB.update_node(self)
 
     def delete_from_db(self):
-        if self._Parent.gateway_id == self.gateway_id:
+        if self._Parent.gateway_id() == self.gateway_id:
             self._Parent._LocalDB.delete_node(self)
 
     def __str__(self):

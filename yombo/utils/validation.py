@@ -1,7 +1,7 @@
 """
 Helpers for validating things. In many causes, it tries to coerce the correct value tye.
 """
-"""Helpers for config validation using voluptuous."""
+
 from datetime import timedelta, datetime as datetime_sys
 import os
 import re
