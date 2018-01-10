@@ -28,16 +28,41 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 import msgpack
+
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet import reactor
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, global_invoke_all
+from yombo.utils import bytes_to_unicode, do_search_instance, global_invoke_all, data_unpickle, data_pickle
 
 logger = get_logger('library.nodes')
+
+
+class TriggeringDict(dict):
+    def __init__(self, *args, callback=None, **kwargs):
+
+        print("!!!!!!! setting args:")
+        print(args)
+        print("!!!!!!! setting triggercallback: %s" % callback)
+        print("!!!!!!! setting kwargs: %s" % kwargs)
+        self.callback = callback
+        dict.__init__(self, *args, **kwargs)
+
+    def __setitem__(self, item, value):
+        print("a You are changing the value of %s to %s!!" % (item, value))
+        super().__setitem__(item, value)
+        print("b %s" % self.callback)
+        if self.callback is not None:
+            print("c You are changing the value of %s to %s!!" % (item, value))
+            self.callback(item,  value)
+
+    def set_callback(self, callback):
+        self.callback = callback
+
 
 class Nodes(YomboLibrary):
     """
@@ -157,7 +182,8 @@ class Nodes(YomboLibrary):
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.nodes = {}
         self.node_search_attributes = ['node_id', 'gateway_id', 'node_type', 'machine_label', 'destination',
-            'data_type', 'status']
+                                       'data_type', 'status',
+                                      ]
         self.load_deferred = Deferred()
         self._load_nodes_from_database()
         return self.load_deferred
@@ -320,7 +346,7 @@ class Nodes(YomboLibrary):
             except YomboWarning as e:
                 raise KeyError('Searched for %s, but had problems: %s' % (node_requested, e))
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def get(self, node_requested, node_type=None, limiter=None, status=None):
         """
         Returns a deferred! Looking for a node id in memory and in the database.
@@ -354,7 +380,7 @@ class Nodes(YomboLibrary):
             raise YomboWarning("Cannot find requested node...")
         return node
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def get_parent(self, node_requested, limiter=None):
         """
         Returns a deferred! Gets the parent of a provided node.
@@ -379,7 +405,7 @@ class Nodes(YomboLibrary):
         else:
             raise YomboWarning("Parent ID not found.")
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def get_siblings(self, node_requested, limiter=None):
         """
         Returns a deferred! A sibling is defined as nodes having the same parent id.
@@ -408,7 +434,7 @@ class Nodes(YomboLibrary):
         else:
             raise YomboWarning("Node has no parent_id.")
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def get_children(self, node_requested, limiter=None):
         """
         Returns a deferred! A sibling is defined as nodes having the same parent id.
@@ -446,9 +472,76 @@ class Nodes(YomboLibrary):
             for key, value in criteria.items():
                 if key not in self.node_search_attributes:
                     continue
+
+                # print("searching: %s" % node._instance)
+                # if value == node._instance[key]:
                 if value == getattr(node, key):
                     results[node_id] = node
         return results
+
+    @inlineCallbacks
+    def create(self, data=None, data_content_type=None, node_type=None, gateway_id=None, weight=None, label=None,
+               machine_label=None, parent_node=None, parent_id=None, destination=None, status=None):
+        """
+        A helper function to easily create new nodes. Simply submit what you have, and will pass on whatever
+        that can to add_node().
+
+        :param data:
+        :param gateway_id:
+        :param data_content_type:
+        :param weight:
+        :param label:
+        :param machine_label:
+        :param parent_node:
+        :param parent_id:
+        :param destination:
+        :param status:
+        :return:
+        """
+        if data is None:
+            data = []
+
+        if data_content_type is None:
+            if isinstance(data, dict) or isinstance(data, list):
+                data_content_type = 'msgpack_base85'
+            elif isinstance(data, bool):
+                data_content_type = 'bool'
+            else:
+                data_content_type = 'string'
+
+        if weight is None:
+            weight = 0
+
+        if parent_node is None and parent_id is None:
+            parent_id = None
+        elif parent_node is not None and isinstance(Node, parent_node):
+            parent_id = parent_node.node_id
+
+        if destination == 'gw' and gateway_id is None:
+            gateway_id = self.gateway_id()
+        elif destination is None and gateway_id is not None:
+            destination = 'gw'
+
+        if status is None:
+            status = 1
+
+        api_data = {
+            'gateway_id': gateway_id,
+            'data': data,
+            'data_content_type': data_content_type,
+            'node_type': node_type,
+            'weight': weight,
+            'label': label,
+            'machine_label': machine_label,
+            'parent_id': parent_id,
+            'destination': destination,
+            'status': status,
+        }
+
+        # This fancy inline just removed None and '' values.
+        results = yield self.add_node({k: v for k, v in api_data.items() if v})
+        print("create results: %s" % results)
+        return self.nodes[results['node_id']]
 
     @inlineCallbacks
     def add_node(self, api_data, source=None, **kwargs):
@@ -469,19 +562,11 @@ class Nodes(YomboLibrary):
 
         if source != 'amqp':
             input_data = api_data['data'].copy()
-            if api_data['data_content_type'] == 'json':
-                try:
-                    api_data['data'] = json.dumps(api_data['data'])
-                except:
-                    pass
-            elif api_data['data_content_type'] == 'msgpack_base85':
-                try:
-                    api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
-                except:
-                    pass
+            api_data['data'] = data_pickle(api_data['data'], api_data['data_content_type'])
 
             try:
-                node_results = yield self._YomboAPI.request('POST', '/v1/node', api_data)
+                api_to_send = {k: v for k, v in bytes_to_unicode(api_data).items() if v}
+                node_results = yield self._YomboAPI.request('POST', '/v1/node', api_to_send)
             except YomboWarning as e:
                 results = {
                     'status': 'failed',
@@ -501,18 +586,21 @@ class Nodes(YomboLibrary):
             node_id = api_data['id']
             new_node = api_data
 
-        self.import_node(new_node, source)
-        self.nodes[node_id].add_to_db()
-        global_invoke_all('_node_added_',
-                          called_by=self,
-                          node_id=node_id,
-                          node=self.nodes[node_id],
-                          )
+        if 'destination' in api_data:
+            if api_data['destination'] == 'gw':
+                self.import_node(new_node, source)
+                self.nodes[node_id].add_to_db()
+                global_invoke_all('_node_added_',
+                                  called_by=self,
+                                  node_id=node_id,
+                                  node=self.nodes[node_id],
+                                  )
+                return self.nodes[node_id]
         results = {
             'status': 'success',
-            'msg': "Node edited.",
+            'msg': "Node added.",
             'node_id': node_id,
-            'data': self.nodes[node_id].dump(),
+            'data': api_data,
             'apimsg': "Node edited.",
             'apimsghtml': "Node edited.",
         }
@@ -521,34 +609,29 @@ class Nodes(YomboLibrary):
     @inlineCallbacks
     def edit_node(self, node_id, api_data, source=None, **kwargs):
         """
-        Edit a node at the Yombo server level, not at the local gateway level.
+        Edit a node at the Yombo server level, not at the local gateway level. To edit
+        at the gateway level, simply edit the node directly. It will automatically
+        update the server and local database.
 
         :param data:
         :param kwargs:
         :return:
         """
-        results = None
-        node = self.nodes[node_id]
-        for key, value in api_data.items():
-            setattr(node, key, value)
+        print("editing node: %s" % node_id)
+        if isinstance(api_data, Node):
+            api_data = api_data.asdict()
 
         if source != 'amqp':
-            input_data = api_data['data'].copy()
-            print("input_data- %s " % type(input_data))
             if 'data_content_type' not in api_data:
-                api_data['data_content_type'] = node.data_content_type
-            if api_data['data_content_type'] == 'json':
-                try:
-                    api_data['data'] = json.dumps(api_data['data'])
-                except:
-                    pass
-            elif api_data['data_content_type'] == 'msgpack_base85':
-                try:
-                    api_data['data'] = base64.b85encode(msgpack.dumps(api_data['data']))
-                except:
-                    pass
+                raise YomboWarning("Cannot edit node, 'data_content_type' not found")
+            if 'data' not in api_data:
+                raise YomboWarning("Cannot edit node, 'data' not found")
+            api_data['data'] = data_pickle(api_data['data'], api_data['data_content_type'])
+            print("new node data: %s" % api_data)
             try:
-                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_data)
+                api_to_send = {k: v for k, v in bytes_to_unicode(api_data).items() if v}
+                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_to_send)
+                # print("node edit results: %s" % node_results)
             except YomboWarning as e:
                 results = {
                     'status': 'failed',
@@ -558,13 +641,16 @@ class Nodes(YomboLibrary):
                     'apimsg': "Couldn't edit node: %s" % e.message,
                     'apimsghtml': "Couldn't edit node: %s" % e.html_message,
                 }
+                logger.warn("Couldn't save node: {e}", e=e)
                 return results
 
-            api_data['data'] = input_data
+            api_data['data'] = node_results['data']
 
-        node = self.nodes[node_id]
-        if source != 'node':
-            node.update_attributes(api_data, source='parent')
+
+        if node_id in self.nodes:
+            node = self.nodes[node_id]
+            if source != 'node':
+                node.update_attributes(api_data, source='parent')
             node.save_to_db()
 
         global_invoke_all('_node_edited_',
@@ -576,7 +662,7 @@ class Nodes(YomboLibrary):
             'status': 'success',
             'msg': "Node edited.",
             'node_id': node_id,
-            'data': node.dump(),
+            'data': node_results['data'],
             'apimsg': "Node edited.",
             'apimsghtml': "Node edited.",
             }
@@ -609,9 +695,10 @@ class Nodes(YomboLibrary):
         api_data = {
             'status': 2,
         }
-        node = self.nodes[node_id]
-        if source != 'node':
-            node.update_attributes(api_data, source='parent')
+        if node_id in self.nodes:
+            node = self.nodes[node_id]
+            if source != 'node':
+                node.update_attributes(api_data, source='parent')
             node.save_to_db()
 
         global_invoke_all('_node_deleted_',
@@ -624,7 +711,7 @@ class Nodes(YomboLibrary):
             'status': 'success',
             'msg': "Node deleted.",
             'node_id': node_id,
-            'data': node.dump(),
+            'data': None,
             'apimsg': "Node deleted.",
             'apimsghtml': "Node deleted.",
             }
@@ -658,10 +745,12 @@ class Nodes(YomboLibrary):
                 }
                 return results
 
-        node = self.nodes[node_id]
-        if source != 'node':
-            node.update_attributes(api_data, source='parent')
+        if node_id in self.nodes:
+            node = self.nodes[node_id]
+            if source != 'node':
+                node.update_attributes(api_data, source='parent')
             node.save_to_db()
+
         global_invoke_all('_node_enabled_',
                           called_by=self,
                           node_id=node_id,
@@ -705,9 +794,10 @@ class Nodes(YomboLibrary):
                 }
                 return results
 
-        node = self.nodes[node_id]
-        if source != 'node':
-            node.update_attributes(api_data, source='parent')
+        if node_id in self.nodes:
+            node = self.nodes[node_id]
+            if source != 'node':
+                node.update_attributes(api_data, source='parent')
             node.save_to_db()
         global_invoke_all('_node_disabled_',
                           called_by=self,
@@ -725,7 +815,7 @@ class Nodes(YomboLibrary):
         return results
 
 
-class Node:
+class Node(object):
     """
     A class to manage a single node.
     :ivar node_id: (string) The unique ID.
@@ -749,10 +839,14 @@ class Node:
 
         """
         logger.debug("node info: {node}", node=node)
-
+        # object.__setattr__(self, '_instance', {})
+        # object.__setattr__/(self, '__update_calllater', None)
+        self._startup = True
+        self._update_calllater = None
         self._Parent = parent
         self.node_id = node['id']
         self.machine_label = node.get('machine_label', None)
+        # self._instance_data = {}
 
         # below are configure in update_attributes()
         self.parent_id = None
@@ -767,6 +861,31 @@ class Node:
         self.updated_at = None
         self.created_at = None
         self.update_attributes(node, source='parent')
+        self._startup = True
+
+    def __setattr__(self, key, value):
+        print("node settr called: %s = %s" % (key, value))
+        if key == 'data':
+            if isinstance(value, dict):
+                value = TriggeringDict(value, callback=self._on_change)
+        object.__setattr__(self, key, value)
+        # self.key = value
+        if self._startup is not True:
+            self._on_change()
+
+    def _on_change(self, *args, **kwargs):
+        print("%s: _on_change called" % self.node_id)
+        if self._update_calllater is not None and self._update_calllater.active():
+            self._update_calllater.cancel()
+        object.__setattr__(self, '_update_calllater', reactor.callLater(2, self.save))
+        # if object.__getattribute__(self, '__update_calllater') is not None and object.__getattribute__(self, '__update_calllater').active():
+        #     object.__getattribute__(self, '__update_calllater').canel()
+        #     object.__setattr__(self, '__update_calllater', reactor.callLater(2, self.save_node))
+
+    def save(self):
+        print("%s: save" % self.node_id)
+        self._Parent.edit_node(self.node_id, self, source="node")
+        self.save_to_db()
 
     def update_attributes(self, new_data, source=None):
         """
@@ -788,12 +907,15 @@ class Node:
             self.label = new_data['label']
         if 'machine_label' in new_data:
             self.machine_label = new_data['machine_label']
-        if 'gw_always_load' in new_data:
-            self.gw_always_load = new_data['gw_always_load']
+        if 'always_load' in new_data:
+            self.always_load = new_data['always_load']
         if 'destination' in new_data:
             self.destination = new_data['destination']
         if 'data' in new_data:
-            self.data = new_data['data']
+            if isinstance(new_data['data'], dict):
+                self.data = TriggeringDict(new_data['data'], callback=self._on_change)
+            else:
+                self.data = new_data['data']
         if 'data_content_type' in new_data:
             self.data_content_type = new_data['data_content_type']
         if 'status' in new_data:
@@ -803,7 +925,7 @@ class Node:
         if 'updated_at' in new_data:
             self.updated_at = new_data['updated_at']
         if source != "parent":
-            self._Parent.edit_node(new_data, source="node")
+            self.save_node()
 
     def add_to_db(self):
         if self._Parent.gateway_id() == self.gateway_id:
@@ -817,26 +939,25 @@ class Node:
         if self._Parent.gateway_id == self.gateway_id:
             self._Parent._LocalDB.delete_node(self)
 
-
     def __str__(self):
         """
         Print a string when printing the class.  This will return the node id so that
         the node can be identified and referenced easily.
         """
-        return self.node_id
+        return "Node %s: %s" % (self.node_id, self.label)
 
-    def dump(self):
+    def asdict(self):
         """
         Export node variables as a dictionary.
         """
         return {
             'node_id': str(self.node_id),
-            'parent_id': self.parent_id,
+            'parent_id': str(self.parent_id),
             'node_type': str(self.node_type),
             'weight': int(self.weight),
             'label': self.label,
             'machine_label': self.machine_label,
-            'gw_always_load': self.gw_always_load,
+            'always_load': self.always_load,
             'gateway_id': str(self.gateway_id),
             'destination': self.destination,
             'data': self.data,
@@ -845,3 +966,4 @@ class Node:
             'created_at': int(self.created_at),
             'updated_at': int(self.updated_at),
         }
+
