@@ -159,6 +159,14 @@ def data_pickle(data, encoder=None, zip_level=None):
             return base64.b85encode(zlib.compress(msgpack.packb(data), zip_level))
         except:
             pass
+    elif encoder == 'zip':
+        if isinstance(zip_level, int) is False:
+            zip_level = 5
+        try:
+            return base64.b85encode(zlib.compress(data))
+        except:
+            pass
+    return data
 
 def data_unpickle(data, encoder=None, zip_level=None):
     """
@@ -200,6 +208,12 @@ def data_unpickle(data, encoder=None, zip_level=None):
             return msgpack.unpackb(zlib.decompress(base64.b85decode(data)), encoding='utf-8')
         except:
             pass
+    elif encoder == 'zip':
+        try:
+            return zlib.decompress(base64.b85decode(data))
+        except:
+            pass
+    return data
 
 def instance_properties(obj, startswith_filter=None, endwith_filter=None):
     """
