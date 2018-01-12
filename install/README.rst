@@ -2,7 +2,8 @@
 Install Directory
 =====================
 
-Various files to get Yombo Gateway installed on various platforms.
+Various files to get Yombo Gateway installed on various platforms. To get started
+and information on installation, visit: https://yombo.net/docs/gateway/quick_start
 
 
 Debian

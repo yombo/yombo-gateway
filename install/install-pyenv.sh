@@ -9,7 +9,7 @@ if [ "$(id -u)" -e 0 ]; then
     exit
 fi
 
-echo "This will download and install pyenv as well as python 3.6.3."
+echo "This will download and install pyenv as well as python 3.6.4."
 echo ""
 echo "This will take a while due to compiling the needed requirements."
 while true; do
@@ -43,7 +43,7 @@ export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 
-pyenv install 3.6.3
-pyenv local 3.6.3
+pyenv install 3.6.4
+pyenv local 3.6.4
 mv .python-version ../
-pip install -r ../requirements.txt
+pip3 install -r ../requirements.txt

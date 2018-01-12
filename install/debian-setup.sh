@@ -27,7 +27,7 @@ echo ""
 echo "If you forked your own copy of the Yombo Gateway repository, enter it below. Otherwise,"
 echo "the default Yombo Gateway git respository will be installed."
 echo ""
-read -e -p "Git Repo: " -i "https://bitbucket.org/yombo/yombo-gateway.git" repolocation
+read -e -p "Git Repo: " -i "https://github.com/yombo/yombo-gateway.git" repolocation
 
 echo ""
 echo "Using git repo location: $repolocation";
