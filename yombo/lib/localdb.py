@@ -891,7 +891,7 @@ class LocalDB(YomboLibrary):
 
     @inlineCallbacks
     def get_nodes(self):
-        records = yield self.dbconfig.select('nodes')
+        records = yield self.dbconfig.select('nodes', where=['destination = ?', 'gw'])
         for record in records:
             record['data'] = data_unpickle(record['data'], record['data_content_type'])
         return records
@@ -952,11 +952,11 @@ class LocalDB(YomboLibrary):
             'destination': node.destination,
             'data': data_pickle(node.data, node.data_content_type),
             'data_content_type': node.data_content_type,
-            'status': node.enabled_status,
+            'status': node.status,
             'created_at': node.created_at,
             'updated_at': node.updated_at,
         }
-        results = yield self.dbconfig.update('nodes', args, where=['id = ?', node.device_id])
+        results = yield self.dbconfig.update('nodes', args, where=['id = ?', node.node_id])
         return results
 
 
