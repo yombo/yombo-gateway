@@ -793,7 +793,6 @@ class Configuration(YomboLibrary):
                                     section=section,
                                     option=option,
                                     value=value,
-                                    action=set,
                                     )
 
     def get_meta(self, section, option, meta_type='time'):
@@ -816,12 +815,11 @@ class Configuration(YomboLibrary):
             if option in self.configs[section]:
                 self.configs_dirty = True
                 del self.configs[section][option]
-                yield global_invoke_all('_configuration_set_',
+                yield global_invoke_all('_configuration_delete_',
                                         called_by=self,
                                         section=section,
                                         option=option,
                                         value=None,
-                                        action=delete,
                                         )
 
     ##############################################################################################################
