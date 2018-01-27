@@ -19,25 +19,11 @@ echo
 
 echo -n "Continue? [Y/n] ?"
 
-echo "Copying init script to /etc/init.d/yombo"
-cp yombo-init /etc/init.d/yombo
-DAEMON=SOURCE__DAEMON
+echo "Copying init script to /etc/systemd/system"
+cp yombo-systemd /etc/systemd/system/yombo.service
+sudo chmod 755 /etc/systemd/system/yombo.service
 
-_scriptLocation="$(readlink -f ${BASH_SOURCE[0]})"
- YOMBO_PARENTDIR="$(dirname $_scriptLocation)"
-
-SEDCOMMAND="sed -i s#DAEMON=SOURCE__DAEMON#DAEMON=$YOMBO_PARENTDIR/yombo.sh# /etc/init.d/yombo"
-$SEDCOMMAND
-SEDCOMMAND="sed -i s#SERVICE_DIR=SOURCE__DIRECTORY#SERVICE_DIR=$YOMBO_PARENTDIR# /etc/init.d/yombo"
-$SEDCOMMAND
-SEDCOMMAND="sed -i s#USER=SOURCE__USER#USER=$SUDO_USER# /etc/init.d/yombo"
-$SEDCOMMAND
-
-echo "Making scripts excutable..."
-chmod +x /etc/init.d/yombo
-
-echo "Setting Yombo to start from run level 3"
-ln -s ../init.d/yombo /etc/rc3.d/S99yombo
+systemctl enable yombo
 
 echo "Yombo installed. To start: `service yombo start`"
 echo "To run without daemon, execute: './yombo.sh'"
