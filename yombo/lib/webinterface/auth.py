@@ -67,14 +67,13 @@ def run_first(create_session=None, *args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             # request._ = webinterface.i18n(request)
-
             request.auth_id = None
             try:
-                session = yield webinterface._WebSessions.check_web_request(request)
+                session = yield webinterface._WebSessions.get_session_from_request(request)
                 session.auth_type = "session"
             except YomboWarning as e:
                 try:
-                    session = yield webinterface._APIAuth.check_web_request(request)
+                    session = yield webinterface._APIAuth.get_session_from_request(request)
                     session.auth_type = "api_auth"
                     session.touch()
                 except YomboWarning as e:
@@ -122,18 +121,18 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
 
             if 'api' not in kwargs or kwargs['api'] is not True:
                 try:
-                    session = yield webinterface._WebSessions.check_web_request(request)
+                    session = yield webinterface._WebSessions.get_session_from_request(request)
                 except YomboWarning as e:
                     logger.warn("Discarding request, appears to be malformed session id, non-api: {e}", e=e)
                     return return_need_login(webinterface, request, False, **kwargs)
             else:
                 try:
-                    session = yield webinterface._APIAuth.check_web_request(request)
+                    session = yield webinterface._APIAuth.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
                     logger.info("API request doesn't have api key. Checking for cookie session...")
                     try:
-                        session = yield webinterface._WebSessions.check_web_request(request)
+                        session = yield webinterface._WebSessions.get_session_from_request(request)
                     except YomboWarning as e:
                         logger.info("API request doesn't have session cookie. Bye bye: {e}", e=e)
                         return return_need_login(webinterface, request, False, **kwargs)
@@ -213,7 +212,7 @@ def require_auth_pin(roles=None, login_redirect=None, create_session=None, *args
                 webinterface.misc_wi_data['breadcrumb'] = request.breadcrumb
 
             try:
-                session = yield webinterface._WebSessions.check_web_request(request)
+                session = yield webinterface._WebSessions.get_session_from_request(request)
             except YomboWarning as e:
                 logger.warn("No session found: {e}", e=e)
                 if create_session is True:

@@ -297,6 +297,7 @@ class WebInterface(YomboLibrary):
         # self.functions = {
         #     'yes_no': yombo.utils.is_yes_no,
         # }
+        self.webapp.templates.globals['yombo'] = self
         self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
         self.webapp.templates.globals['commands'] = self._Commands
         self.webapp.templates.globals['devices'] = self._Devices
@@ -308,7 +309,7 @@ class WebInterface(YomboLibrary):
         self.starting = False
         self.start_web_servers()
 
-    @inlineCallbacks
+    # @inlineCallbacks
     def _start_(self, **kwargs):
         self._Notifications.add({
             'title': 'System still starting',
@@ -320,17 +321,8 @@ class WebInterface(YomboLibrary):
             'always_show_allow_clear': False,
             'id': 'webinterface:starting',
         })
-        added_notification = True
         self._get_nav_side_items()
-        module_configs = yield yombo.utils.global_invoke_all('_webinterface_module_config_',
-                                                           called_by=self,
-                                                           )
-        for component_label, link in module_configs.items():
-            if link is None:
-                continue
-            component = self._Loader.get_loaded_component(component_label)
-            self.module_config_links[component._module_id] = link
-        print("Module_configs: %s" % self.module_config_links)
+        # print("Module_configs: %s" % self.module_config_links)
 
     def _started_(self, **kwargs):
         # if self.operating_mode != 'run':
@@ -655,7 +647,10 @@ class WebInterface(YomboLibrary):
                    ],
                    'routes': [
                        self.web_interface_routes,
-                  ],
+                   ],
+                   'configs' {
+                        'settings_link': '/modules/tester/index',
+                   },
                }
 
         """
@@ -684,6 +679,10 @@ class WebInterface(YomboLibrary):
             if 'routes' in options:
                 for new_route in options['routes']:
                     new_route(self.webapp)
+            if 'configs' in options:
+                if 'settings_link' in options['configs']:
+                    component = self._Loader.get_loaded_component(component)
+                    self.module_config_links[component._module_id] = options['configs']['settings_link']
 
         # build menu tree
         self.misc_wi_data['nav_side'] = OrderedDict()
