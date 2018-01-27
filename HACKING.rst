@@ -3,10 +3,10 @@ Developing Gateway
 
 We welcome contributions to the Yombo Gateway and modules. to get started
 
-Sending a bitbucket pull request
+Sending a github pull request
 ---------------------------------
 
-This is the preferred method for contributions, simply create a BitBucket
+This is the preferred method for contributions, simply create a GitHub
 fork, commit your changes to the fork, and then open up a pull request.
 
 Posting patches https://projects.yombo.net/projects/gateway/issues/new
