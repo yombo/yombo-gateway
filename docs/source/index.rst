@@ -4,7 +4,7 @@
 Yombo Automation Python Reference
 =================================
 
-Release v0.14.0 (`Quick Start <https://yombo.net/docs/gateway/quick_start>`_)
+Release v0.15.0 (`Quick Start <https://yombo.net/docs/gateway/quick_start>`_)
 
 Python API Documentation
 ========================
@@ -77,7 +77,7 @@ updated from the source code.
 .. rubric:: License Information
 
 :Homepage: https://yombo.net/
-:Copyright: 2013-2017 Yombo
-:License: For the open source license, see the LICENSE file
+:Copyright: 2013-2018 Yombo
+:License: For the open source license, see the `LICENSE <https://github.com/yombo/yombo-gateway/blob/master/LICENSE>`_ file
 
 Last updated: |today|

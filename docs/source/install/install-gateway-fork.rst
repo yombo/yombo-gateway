@@ -14,9 +14,7 @@ This assumes that you already have
 installed.
 
 Everyone is welcome and encouraged to contribute code, no matter how big
-or small.  To make it easy, Yombo uses bitbucket and 
-`Yombo Projects <https://projects.yombo.net>`_
-to track issues and feature requests.
+or small.  To make it easy, Yombo uses GitHub to track issues and feature requests.
 
 Summary of steps
 ================
