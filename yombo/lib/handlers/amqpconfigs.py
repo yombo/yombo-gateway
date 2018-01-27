@@ -690,7 +690,7 @@ class AmqpConfigHandler(YomboLibrary):
         # print("processing config.... %s" % config_item)
         # print("processing msg.... %s" % msg)
         if msg['code'] != 200:
-            logger.warn("Configuration errot for '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
+            logger.warn("Configuration error for '{type}' received an error ({code}): {error}", type=config_item, code=msg['code'], error=msg['message'])
             yield self._remove_full_download_dueue("get_" + config_item)
             self.processing = False
             return
@@ -1044,7 +1044,7 @@ class AmqpConfigHandler(YomboLibrary):
         }
 
         request_msg = self.parent.generate_message_request(
-            exchange='ysrv.e.gw_config',
+            exchange_name='ysrv.e.gw_config',
             source='yombo.gateway.lib.amqpyobo',
             destination='yombo.server.configs',
             headers=headers,
