@@ -64,7 +64,7 @@
                                              <td>{{ module._short_description }}</td>
                                              <td>
                                                  {% if moduleID in webinterface.module_config_links %}
-                                                 <a href="{{webinterface.module_config_links[moduleID]}}">Settings</a>
+                                                 <a  class="alert-success" href="{{webinterface.module_config_links[moduleID]}}">Settings</a>
                                                  {% endif %}
                                              {% if module._load_source == 'sql' -%}
                                                 {% if module._status == 0 -%}

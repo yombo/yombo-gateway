@@ -74,6 +74,14 @@
                             <div class="input-group">
                                 <input type="text" tabindex="2" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'Bedroom light', 'Living room fan'" value="{{ device.machine_label }}" autofocus required>
                             </div>
+                            <label style="margin-top: 20px; margin-bottom: 0px">Device Type: </label><br>
+                            <div class="input-group">
+                                <select class="selectpicker show-tick form-control" tabindex="3" required name="gateway_id" id="gateway_id">
+                                {% for device_type_id, device_type in yombo._DeviceTypes.device_types.items() %}
+                                    <option value="{{device_type_id}}" {% if device.device_type_id == device_type_id %} selected{% endif %} data-subtext="{{device_type_id}}">{{device_type.label}}</option>
+                                {% endfor %}
+                                </select>
+                            </div>
                             <label style="margin-top: 20px; margin-bottom: 0px">Gateway: </label><br>
                             <div class="input-group">
                                 <select class="selectpicker show-tick form-control" tabindex="3" required name="gateway_id" id="gateway_id">

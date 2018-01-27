@@ -81,7 +81,7 @@
                                 <label style="margin-top: 20px; margin-bottom: 0px">Short Description: </label>
                                 <a href="#" data-toggle="modal" data-target="#modalshortdescription"><i class="fa fa-question fa-lg"></i></a>
                                 {{ macros.modal("modalshortdescription", 'Short Description', '
-                                <p>An excerpt of the description. Between 140 and 160 characters long.</p>
+                                <p>An excerpt of the medium description. Between 140 and 160 characters long.</p>
                                 ') }}
                                 <br>
                                 <div class="input-group">
@@ -94,36 +94,29 @@
                             </div>
 
                             <div class="form-group">
-                                <label style="margin-top: 20px; margin-bottom: 0px">Description: </label>
+                                <label style="margin-top: 20px; margin-bottom: 0px">Medium Description: </label>
                                 <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modaldescription", 'Short Description', '
-                                <p>A detailed description of the module. Usually a copy of the readme.rst or readme.md file.</p>
+                                {{ macros.modal("modaldescription", 'Medium Description', '
+                                <p>Provides some details, including summary and usage details. Installation details, implementation
+                                   and other information should be left for the full description. THis is usually an excerpt of the full
+                                   description. Mediawiki style markup is supported.</p>
                                 ') }}
                                 <br>
                                 <div class="input-group">
-                                    <textarea tabindex="5" class="form-control" rows="30" cols="80" name="description" id="description" placeholder="Detailed description">{{ module.description }}</textarea>
+                                    <textarea tabindex="5" class="form-control" rows="5" cols="80" name="medium_description" id="medium_description" placeholder="Medium description">{{ module.medium_description }}</textarea>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label style="margin-top: 20px; margin-bottom: 0px">Description Formatting: </label>
-                                <a href="#" data-toggle="modal" data-target="#modaldescriptionformatting"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("modaldescriptionformatting", 'Description Formatting', '
-                                <p>Descriptions can be formatted in markdown or restructured formatting. Most modules uses markdown due to it\'s simplicitiy.</p>
-                                <p>
-                                    <ol>
-                                        <li><strong>markdown</strong> - <a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet" target="_blank">Documentation</a></li>
-                                        <li><strong>restructured</strong> - <a href="http://docutils.sourceforge.net/docs/user/rst/quickref.html" target="_blank">Documentation</a><li>
-                                        <li><strong>text</strong> - No formatting applied.</li>
-                                    </ol>
-                                </p>
+                                <label style="margin-top: 20px; margin-bottom: 0px">Description: </label>
+                                <a href="#" data-toggle="modal" data-target="#modaldescription"><i class="fa fa-question fa-lg"></i></a>
+                                {{ macros.modal("modaldescription", 'Full Description', '
+                                <p>A detailed description of the module. Includes and expands on the contents of the medium description.
+                                Mediawiki style markup is supported.</p>
                                 ') }}
+                                <br>
                                 <div class="input-group">
-                                    <select tabindex="6" class="selectpicker show-tick form-control" name="description_formatting" id="description_formatting">
-                                        <option value="markdown"{% if module.status == "markdown" %} selected{% endif %}>Markdown</option>
-                                        <option value="restructured"{% if module.status == "restructured" %} selected{% endif %}>Restructured</option>
-                                        <option value="text"{% if module.status == "text" %} selected{% endif %}>Text</option>
-                                    </select>
+                                    <textarea tabindex="5" class="form-control" rows="30" cols="80" name="description" id="description" placeholder="Detailed description">{{ module.description }}</textarea>
                                 </div>
                             </div>
 
@@ -345,6 +338,11 @@
                 maxlength: 156,
                 required: true,
             },
+            medium_description: {
+                minlength: 150,
+                maxlength: 2048,
+                required: true,
+            },
             description: {
                 minlength: 5,
                 required: true,
@@ -361,7 +359,7 @@
                 url: true
             },
             git_link: {
-                minlength: 8,
+                minlength: 5,
                 maxlength: 255,
                 url: true,
                 required: true,

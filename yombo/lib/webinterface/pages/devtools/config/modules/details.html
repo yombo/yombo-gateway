@@ -39,8 +39,6 @@
                             {{ module.machine_label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Module Type: </label><br>
                             {{ module.module_type }}<br>
-                            <label style="margin-top: 15px; margin-bottom: 0px">Description Formatting: </label><br>
-                            {{ module.description_formatting }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Documentation Link: </label><br>
                             {{ module.doc_link|make_link("Link", "_blank") }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Respository Link: </label><br>
@@ -82,11 +80,20 @@
                     </div>
                     <div class="panel panel-default">
                         <div class="panel-heading">
+                            <label>Medium Description / Excerpt</label>
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            {{ module.medium_description_html }}<br>
+                        </div>
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
                             <label>Description</label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body" style="max-height: 40em;overflow-y: scroll;">
-                            {{ module.description|format_markdown(module.description_formatting) }}<br>
+                            {{ module.description_html }}<br>
                         </div>
                     </div>
                     <!-- /.panel-body -->

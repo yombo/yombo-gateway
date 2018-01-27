@@ -110,11 +110,11 @@
                     <div class="col-lg-9 col-md-7">
                         <div class="panel panel-default">
                             <div class="panel-heading">
-                                <label>Description</label>
+                                <label>Description</label><br>
                             </div>
                             <!-- /.panel-heading -->
                             <div class="panel-body" style="max-height: 40em;overflow-y: scroll;">
-                                {{ module._description|format_markdown(module._description_formatting) }}<br>
+                                {{ module._description_html }}<br>
                             </div>
                         </div>
                         <!-- /.panel-body -->
