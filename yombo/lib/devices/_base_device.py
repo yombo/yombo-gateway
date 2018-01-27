@@ -20,7 +20,7 @@ try:  # Prefer simplejson if installed, otherwise json will work swell.
 except ImportError:
     import json
 from collections import deque, OrderedDict
-from functools import partial
+from datetime import datetime
 from time import time
 
 # Import twisted libraries
@@ -116,6 +116,7 @@ class Base_Device(object):
         self._Parent = _Parent
         self.call_before_command = []
         self.call_after_command = []
+        self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
 
         self.device_id = device["id"]
         if test_device is None:
@@ -344,7 +345,6 @@ class Base_Device(object):
 
         if source != "parent":
             self._Parent.edit_device(device, source="node")
-
 
     def add_to_db(self):
         if self._Parent.gateway_id == self.gateway_id:
@@ -1093,7 +1093,7 @@ class Base_Device(object):
             'set_at': set_at,
             'energy_usage': energy_usage,
             'energy_type': energy_type,
-            'human_status':human_status,
+            'human_status': human_status,
             'human_message': human_message,
             'machine_status': machine_status,
             'machine_status_extra': machine_status_extra,
@@ -1105,6 +1105,25 @@ class Base_Device(object):
             'uploadable': uploadable,
             }
         )
+        if self._security_send_device_status() is True:
+            # print("SHOULD SEND UPDATED DEVIE STATUS!!!!!!")
+            request_msg = self._Parent._AMQPYombo.generate_message_request(
+                exchange_name='ysrv.e.gw_device_status',
+                source='yombo.gateway.lib.devices.base_device',
+                destination='yombo.server.device_status',
+                body={
+                    'status_set_at': datetime.fromtimestamp(time()).strftime("%Y-%m-%d %H:%M:%S.%f"),
+                    'device_id': self.device_id,
+                    'energy_usage': energy_usage,
+                    'energy_type': energy_type,
+                    'human_status': human_status,
+                    'human_message': human_message,
+                    'machine_status': machine_status,
+                    'machine_status_extra': machine_status_extra,
+                },
+                request_type='save_device_status',
+            )
+            self._Parent._AMQPYombo.publish(**request_msg)
         self.status_history.appendleft(new_status)
         # if self.test_device is False:
         #     save_status = new_status.asdict()

@@ -15,7 +15,6 @@ class Sensor(Device):
             'pingable': False,
             'pollable': True,
             'number_of_steps': 2,
-
         })
 
     def can_toggle(self):
@@ -42,8 +41,8 @@ class Digital_Sensor(Sensor):
     A sensor that will be either high or low.
     """
     def _init_(self):
-        self.SUB_PLATFORM = "digital_sensor"
         super()._init_()
+        self.PLATFORM = "digital_sensor"
 
 
 class Door(Sensor):
@@ -51,5 +50,30 @@ class Door(Sensor):
     A sensor that will be either high or low.
     """
     def _init_(self):
-        self.SUB_PLATFORM = "door"
         super()._init_()
+        self.PLATFORM = "door"
+
+class Thermometer(Device):
+    """
+    A generic Sensor
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "thermometer"
+
+    def command_from_status(self, machine_status, machine_status_extra=None):
+        """
+        Attempt to find a command based on the status of a device.
+        :param machine_status:
+        :return:
+        """
+        return None
+
+class Window(Sensor):
+    """
+    A sensor that will be either high or low.
+    """
+    def _init_(self):
+        super()._init_()
+        self.PLATFORM = "window"
+
