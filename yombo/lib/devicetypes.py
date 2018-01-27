@@ -18,6 +18,7 @@ This library keeps track of what modules can access what device types, and what 
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/devicetypes.html>`_
 """
+from collections import OrderedDict
 import inspect
 
 # Import twisted libraries
@@ -38,9 +39,8 @@ BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices._device': ['Device'],
     'yombo.lib.devices.appliance': ['Appliance'],
     'yombo.lib.devices.light': ['Light', 'Color_Light'],
-    'yombo.lib.devices.relay': ['Relay'],
-    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor', 'Door'],
-    'yombo.lib.devices.thermometer': ['Thermometer'],
+    'yombo.lib.devices.switch': ['Switch', 'Relay'],
+    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor', 'Door', 'Thermometer', 'Window'],
 }
 
 
@@ -188,9 +188,9 @@ class DeviceTypes(YomboLibrary):
         """
         yield self._load_device_types_from_database()
         self.load_platforms(BASE_DEVICE_TYPE_PLATFORMS)
-        platforms = yield global_invoke_all('_device_platforms_', called_by=self)
-        for component, item in platforms.items():
-            self.load_platforms(item)
+        # platforms = yield global_invoke_all('_device_platforms_', called_by=self)
+        # for component, item in platforms.items():
+        #     self.load_platforms(item)
 
     def _stop_(self, **kwargs):
         """
@@ -198,6 +198,19 @@ class DeviceTypes(YomboLibrary):
         """
         if self.load_deferred is not None and self.load_deferred.called is False:
             self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+
+    def sorted(self, key=None):
+        """
+        Returns an OrderedDict, sorted by key.  If key is not set, then default is 'label'.
+
+        :param key: Attribute contained in a device to sort by.
+        :type key: str
+        :return: All devices, sorted by key.
+        :rtype: OrderedDict
+        """
+        if key is None:
+            key = 'label'
+        return OrderedDict(sorted(iter(self.device_types.items()), key=lambda i: getattr(i[1], key)))
 
     @inlineCallbacks
     def _load_device_types_from_database(self):
