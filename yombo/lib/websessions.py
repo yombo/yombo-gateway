@@ -176,7 +176,7 @@ class WebSessions(YomboLibrary):
             raise YomboWarning("Invalid session id.")
         if session_id in self.active_sessions:
             if self.active_sessions[session_id].is_valid is True:
-                print("returning valid session....")
+                # print("returning valid session....")
                 return self.active_sessions[session_id]
             else:
                 raise YomboWarning("Invalid session is no longer valid.")
