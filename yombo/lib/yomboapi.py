@@ -304,7 +304,7 @@ class YomboAPI(YomboLibrary):
     def request(self, method, path, data=None, session=None):
         path = self.base_url + path
 
-        logger.info("{method}: {path}: {data}", method=method, path=path, data=data)
+        logger.debug("{method}: {path}: {data}", method=method, path=path, data=data)
         # if session is False:
         #     session = None
         if session is None:
@@ -314,10 +314,10 @@ class YomboAPI(YomboLibrary):
             session = self.system_session
         if session is False:
             session = None
-        results = None
         headers = self.make_headers(session)
 
         if data is not None:
+            # print(" got data: %s" % data)
             data = json.dumps(data).encode()
         logger.debug("yombo api request data: {data}", data=data)
 
@@ -415,13 +415,23 @@ class YomboAPI(YomboLibrary):
                     content_type = "dict"
                 except Exception:
                     content_type = "string"
+        # print("decode content: %s" % content)
+        content = bytes_to_unicode(content)
 
-        if code < 200:
-            status = 'ok'
-        else:
-            status = 'error'
+        if code >= 300:
+            print("error with request: %s" % content)
+            if 'message' in content:
+                message = content['message']
+            else:
+                message = phrase
+            if 'html_message' in content:
+                html_message = content['html_message']
+            else:
+                html_message = phrase
+
+            raise YomboWarning(message, code, 'decode_results', 'Yomboapi', html_message=html_message)
         results = {
-            'status': status,
+            'status': 'ok',
             'content': content,
             'content_type': content_type,
             'code': code,
@@ -431,7 +441,7 @@ class YomboAPI(YomboLibrary):
 
         if content_type == "string":
             logger.warn("Error content: {content}", content=content)
-            raise YomboWarning('Unknown api error', 500, html_message='Unknown api error')
+            raise YomboWarning('Unknown api error', content['code'], html_message='Unknown api error')
         else:
             if 'response' in content:
                 if 'locator' in content['response']:
@@ -440,16 +450,5 @@ class YomboAPI(YomboLibrary):
                     results['data'] = []
 
             # Check if there was any errors, if so, raise something.
-            if code >= 300:
-                # print("data: %s" % content)
-                if 'message' in content:
-                    message = content['message']
-                else:
-                    message = phrase
-                if 'html_message' in content:
-                    html_message = content['html_message']
-                else:
-                    html_message = phrase
-                raise YomboWarning(message, code, html_message=html_message)
             return results
 
