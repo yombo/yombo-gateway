@@ -63,16 +63,20 @@ class _Integer(Input_Type):
     MAX = None
 
     def validate(self, value, **kwargs):
-        if isinstance(value, int) is False:
-            if self.CONVERT is True:
-                try:
-                    value = int(value)
-                except:
-                    if value == "":
-                        return None
-                    raise AssertionError("Input is not an int.")
+        if isinstance(value, int) is True:
+            self.check_min_max(value, **kwargs)
+            return value
+        if self.CONVERT is False:
+            raise AssertionError("Value is not an int.")
+        try:
+            value = int(value)
+        except:
+            if value == "":
+                return None
+            raise AssertionError("Input is not an int.")
         self.check_min_max(value, **kwargs)
         return value
+
 
 class Filename(Input_Type):
     """
@@ -104,13 +108,16 @@ class _Float(Input_Type):
     Validation of floats. Optionally, will try to convert the input to a float if allowed.
     """
     def validate(self, value, **kwargs):
-        if isinstance(value, float) is False:
-            if self.CONVERT is True:
-                try:
-                    value = float(value)
-                except:
-                    raise AssertionError("Input is not a float.")
-        self.check_min_max( value, **kwargs)
+        if isinstance(value, float) is True:
+            self.check_min_max(value, **kwargs)
+            return value
+        if self.CONVERT is False:
+            raise AssertionError("Input is not a float.")
+        try:
+            value = float(value)
+        except:
+            raise AssertionError("Input is not a float.")
+        self.check_min_max(value, **kwargs)
         return value
 
 
@@ -136,7 +143,7 @@ class Number(_Integer):
     def validate(self, value, **kwargs):
         if isinstance(value, int) is False and isinstance(value, float) is False:
             if self.CONVERT is False:
-                raise AssertionError("Input is not a percent, must be an int or float.")
+                raise AssertionError("Input is not an int or float.")
             try:
                 value = int(value)
             except:
@@ -190,14 +197,6 @@ class _String(Input_Type):
                     raise AssertionError("Input is not a string.")
         self.check_min_max(value, **kwargs)
         return value
-
-
-class Filename(_String):
-    MIN = 1
-    MAX = 256
-
-    def validate(self, value, **kwargs):
-        return super(Filename, self).validate(value, **kwargs)
 
 
 class Password(_String):

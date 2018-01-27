@@ -1,4 +1,6 @@
 import re
+from string import hexdigits
+
 from yombo.lib.inputtypes.input_type import Input_Type
 from yombo.lib.inputtypes.basic_types import _Integer, _String
 
@@ -51,7 +53,7 @@ class X10_Unit(_Integer):
 
 
 class Insteon_Address(_String):
-    MIN = 0
+    MIN = 8
     MAX = 8
     CONVERT = False
 
@@ -62,8 +64,7 @@ class Insteon_Address(_String):
         for part in parts:
             if len(part) != 2:
                 AssertionError("Insteon address has three hex parts of 2 characters. Example: 5D.E1.94")
-            try:
-                int(part, 16)
-            except:
+            if all(c in hexdigits for c in part) is False:
                 AssertionError("Insteon address has three hex parts of 2 characters, must be in hex range (0-F)")
+        self.check_min_max(value, **kwargs)
         return value
