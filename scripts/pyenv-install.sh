@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 if [ "$(id -u)" -e 0 ]; then
-    echo "This must NOT be run with sudo, instead run as the user running the Yombo Gateway"
-    echo "softgware. For security, it is recommended to run this software as a dedicated user."
-    echo "Create a new account 'yombo' and run this command: 'sudo bash ./setup-debian.sh'"
+    echo "This must NOT be run as root, instead run as the user running the Yombo Gateway"
+    echo "software. Then:"
     echo ""
     echo "> sudo bash ./setup-debian.sh"
     echo ""
