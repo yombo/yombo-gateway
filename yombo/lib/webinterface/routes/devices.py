@@ -517,6 +517,7 @@ def route_devices(webapp):
                 'location_id': request.args.get('location_id')[0],
                 'area_id': request.args.get('area_id')[0],
                 'machine_label': request.args.get('machine_label')[0],
+                'device_type_id': request.args.get('device_type_id')[0],
                 'label': request.args.get('label')[0],
                 'description': request.args.get('description')[0],
                 'status': status,

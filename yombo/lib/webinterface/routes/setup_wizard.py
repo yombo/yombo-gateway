@@ -574,7 +574,7 @@ def route_setup_wizard(webapp):
             webinterface._Configs.set('core', 'gwhash', results['data']['hash'])
             webinterface._Configs.set('core', 'is_master', is_true_false(session['setup_wizard_gateway_is_master']))
             webinterface._Configs.set('core', 'master_gateway', session['setup_wizard_gateway_master_gateway'])
-            webinterface._Configs.set('security', 'amqpsendstatus', session['setup_wizard_security_status'])
+            webinterface._Configs.set('security', 'amqpsenddevicestatus', session['setup_wizard_security_status'])
             webinterface._Configs.set('security', 'amqpsendgpsstatus', session['setup_wizard_security_gps_status'])
             webinterface._Configs.set('security', 'amqpsendprivatestats', session['setup_wizard_security_send_private_stats'])
             webinterface._Configs.set('security', 'amqpsendanonstats', session['setup_wizard_security_send_anon_stats'])

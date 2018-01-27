@@ -47,11 +47,21 @@ def route_home(webapp):
 
         @webapp.route('/logout')
         @run_first()
+        # @inlineCallbacks
         def page_logout_get(webinterface, request, session):
+            print("page logout get 1: %s" % session)
+            # if session is False:
+            #     print("page logout no session.. redirecting to home...")
+            #     # return request.redirect("/")
+            #     return webinterface.redirect(request, "/?")
             try:
+                print("page logout get 2")
                 webinterface._WebSessions.close_session(request)
+                print("page logout get 3")
             except:
                 pass
+            print("page logout get 4")
+            return request.redirect("/")
             return webinterface.redirect(request, "/?")
 
         @webapp.route('/login/user', methods=['GET'])
@@ -93,7 +103,8 @@ def route_home(webapp):
                 webinterface.add_alert("%s: %s" % (e.errorno, e.message), 'warning')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
                 return page.render(alerts=webinterface.get_alerts())
-            if results['status'] == 'ok':
+            print("results: %s" % results)
+            if results['code'] == 200:
                 login = results['response']['login']
 
                 # print("login was good...")
