@@ -22,11 +22,11 @@ for local data.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/nodes.html>`_
 """
-import base64
-try:  # Prefer simplejson if installed, otherwise json will work swell.
-    import simplejson as json
-except ImportError:
-    import json
+# try:  # Prefer simplejson if installed, otherwise json will work swell.
+#     import simplejson as json
+# except ImportError:
+#     import json
+from time import time
 
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks, Deferred
@@ -817,6 +817,7 @@ class Node(object):
         """
         logger.debug("node info: {node}", node=node)
         self._startup = True
+        self._update_calllater_time = None
         self._update_calllater = None
         self._Parent = parent
         self.node_id = node['id']
@@ -870,11 +871,21 @@ class Node(object):
         :param kwargs:
         :return:
         """
-        # print("%s: _on_change called" % self.node_id)
+        # print("%s: _on_change called: %s" % (self.node_id, self._update_calllater))
         if self._update_calllater is not None and self._update_calllater.active():
+            # print("%s: _on_change called.. still active.")
             self._update_calllater.cancel()
             object.__setattr__(self, '_update_calllater', None)
-        object.__setattr__(self, '_update_calllater', reactor.callLater(10, self.save))
+            if self._update_calllater_time is not None and self._update_calllater_time < time() - 120:
+                # print("forcing save now..!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                self._update_calllater_time = None
+                self.save()
+            else:
+                # print("saving node later..")
+                object.__setattr__(self, '_update_calllater', reactor.callLater(10, self.save))
+        else:
+            self._update_calllater_time = time()
+            object.__setattr__(self, '_update_calllater', reactor.callLater(10, self.save))
 
     @inlineCallbacks
     def save(self):
