@@ -31,7 +31,7 @@ class Switch(Device):
         return True
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             return self.command('on')
         else:
             return self.command('off')
@@ -67,7 +67,7 @@ class Relay(Switch):
         self.TOGGLE_COMMANDS = ['open', 'close']  # Put two command machine_labels in a list to enable toggling.
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             return self.command('open')
         else:
             return self.command('close')

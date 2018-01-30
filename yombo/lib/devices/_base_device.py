@@ -957,6 +957,29 @@ class Base_Device(object):
         """
         return self.device_commands[history]
 
+    def set_status_process(self, **kwargs):
+        """
+        A place for modules to process any status updates. Make any last minute changes before it's saved and
+        distributed.
+
+        :param kwargs:
+        :return:
+        """
+        if len(self.status_history) == 0:
+            previous_extra = {}
+        else:
+            previous_extra = self.status_history[0].machine_status_extra
+
+        if isinstance(previous_extra, dict) is False:
+            previous_extra = {}
+
+        new_extra = kwargs.get('machine_status_extra', {})
+        for key, value in new_extra.items():
+            previous_extra['key'] = value
+
+        kwargs['machine_status_extra'] = previous_extra
+        return kwargs
+
     def set_status(self, **kwargs):
         """
         Usually called by the device's command/logic module to set/update the
@@ -980,10 +1003,18 @@ class Base_Device(object):
         """
         # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         kwargs = self.set_status_process(**kwargs)
-
         kwargs, status_id = self._set_status(**kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
+
+    def generate_human_status(self, machine_status, machine_status_extra):
+        return machine_status
+
+    def generate_human_message(self, machine_status, machine_status_extra):
+        return "%s is now %s" % (self.area_label, machine_status)
+
+    def set_status_machine_extra(self, **kwargs):
+        pass
 
     def _set_status(self, **kwargs):
         """
@@ -996,8 +1027,8 @@ class Base_Device(object):
         command = None
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', {})
-        human_status = kwargs.get('human_status', machine_status)
-        human_message = kwargs.get('human_message', human_status)
+        human_status = kwargs.get('human_status', self.generate_human_status(machine_status, machine_status_extra))
+        human_message = kwargs.get('human_message', self.generate_human_message(machine_status, machine_status_extra))
         uploaded = kwargs.get('uploaded', 0)
         uploadable = kwargs.get('uploadable', 1)
         set_at = kwargs.get('set_at', time())
@@ -1033,48 +1064,20 @@ class Base_Device(object):
             else:
                 # print("trying to get command_from_Status")
                 command = self.command_from_status(machine_status, machine_status_extra)
+        else:
+            # print("set status - command found!")
+            kwargs['command'] = command
+
+        energy_usage, energy_type = self.energy_calc(command=command,
+                                                     machine_status=machine_status,
+                                                     machine_status_extra=machine_status_extra,
+                                                     )
 
         kwargs['request_id'] = request_id
         kwargs['requested_by'] = requested_by
 
         reported_by = kwargs.get('reported_by', 'Unknown')
-
         kwargs['reported_by'] = reported_by
-
-        mqtt_message = {
-            'device_id': self.device_id,
-            'device_machine_label': self.machine_label,
-            'device_label': self.label,
-            'machine_status': machine_status,
-            'machine_status_extra': machine_status_extra,
-            'human_message': human_message,
-            'human_status': human_status,
-            'time': set_at,
-            'gateway_id': kwargs['gateway_id'],
-            'requested_by': requested_by,
-            'reported_by': reported_by,
-        }
-
-        if command is not None:
-            # print("set status - command found!")
-            kwargs['command'] = command
-            mqtt_message['command_id'] = command.command_id
-            mqtt_message['command_machine_label'] = command.machine_label
-            energy_usage, energy_type = self.energy_calc(command=command,
-                                                         machine_status=machine_status,
-                                                         machine_status_extra=machine_status_extra,
-                                                         )
-        else:
-            # print("set status - no command found!")
-            kwargs['command'] = None
-            mqtt_message['command_id'] = None
-            mqtt_message['command_machine_label'] = None
-            energy_usage, energy_type = self.energy_calc(machine_status=machine_status,
-                                                         machine_status_extra=machine_status_extra,
-                                                         )
-
-        mqtt_message['energy_usage'] = energy_usage
-        mqtt_message['energy_type'] = energy_type
 
         if self.statistic_type not in (None, "", "None", "none"):
             if self.statistic_type.lower() == "datapoint" or self.statistic_type.lower() == "average":
@@ -1105,6 +1108,9 @@ class Base_Device(object):
             'uploadable': uploadable,
             }
         )
+        self.status_history.appendleft(new_status)
+        self.set_status_machine_extra(**kwargs)
+
         if self._security_send_device_status() is True:
             # print("SHOULD SEND UPDATED DEVIE STATUS!!!!!!")
             request_msg = self._Parent._AMQPYombo.generate_message_request(
@@ -1124,7 +1130,6 @@ class Base_Device(object):
                 request_type='save_device_status',
             )
             self._Parent._AMQPYombo.publish(**request_msg)
-        self.status_history.appendleft(new_status)
         # if self.test_device is False:
         #     save_status = new_status.asdict()
         #     save_status['machine_status_extra'] = data_pickle(save_status['machine_status_extra'])
@@ -1135,6 +1140,29 @@ class Base_Device(object):
         self._Parent.check_trigger(self.device_id, new_status)
 
         if self._Parent.mqtt != None:
+            mqtt_message = {
+                'device_id': self.device_id,
+                'device_machine_label': self.machine_label,
+                'device_label': self.label,
+                'machine_status': machine_status,
+                'machine_status_extra': machine_status_extra,
+                'human_message': human_message,
+                'human_status': human_status,
+                'time': set_at,
+                'gateway_id': kwargs['gateway_id'],
+                'requested_by': requested_by,
+                'reported_by': reported_by,
+                'energy_usage': energy_usage,
+                'energy_type': energy_type,
+            }
+
+            if command is not None:
+                mqtt_message['command_id'] = command.command_id
+                mqtt_message['command_machine_label'] = command.machine_label
+            else:
+                # print("set status - no command found!")
+                mqtt_message['command_id'] = None
+                mqtt_message['command_machine_label'] = None
             self._Parent.mqtt.publish("yombo/devices/%s/status" % self.machine_label, json.dumps(mqtt_message), 1)
         return kwargs, new_status['status_id']
 
@@ -1351,10 +1379,22 @@ class Base_Device(object):
         self.enabled_status = 0
 
     def add_features(self, features):
+        """
+        Adds additional features to a device.
+
+        :param features: A dictionary of additional features.
+        :return:
+        """
         for feature in features:
             self.FEATURES[feature[0]] = feature[1]
 
     def delete_features(self, features):
+        """
+        Removes features from a device. Accepts a list or a string for a single item.
+
+        :param features: A list of features to remove from device.
+        :return:
+        """
         if isinstance(features, list):
             for feature in features:
                 del self.FEATURES[feature[0]]
@@ -1364,6 +1404,9 @@ class Base_Device(object):
     def add_status_extra_allow(self, status, values):
         if status not in self.STATUS_EXTRA:
             self.STATUS_EXTRA[status] = []
+        else:
+            if isinstance(self.STATUS_EXTRA[status], list) is False:
+                self.STATUS_EXTRA[status] = []
 
         if isinstance(values, list):
             for value in values:

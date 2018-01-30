@@ -13,21 +13,6 @@ class Climate(Device):
         self.FEATURES['number_of_steps'] = 99
         self.temperature_unit = 'c'  # what temperature unit the device works in.
 
-    def _start_(self, **kwargs):
-        super()._start_()
-        self.add_status_extra_allow('mode', ('heat', 'cool'))
-        self.add_status_extra_allow('running', ('heat', 'heat2', 'heat3', 'heat_aux', 'cool', 'cool2', 'cool3', 'heat-cool',
-            'idle', 'auto', 'dry', 'fan_only'))
-        self.add_status_extra_allow('hold', ('away', 'home'))
-
-        self.add_status_extra_any(('temperature', 'humidity', 'fan', 'target_temp', 'target_temp_high',
-            'target_temp_low', 'target_temp_step', 'away_mode',
-            'aux_heat', 'fan_list', 'target_humidity', 'max_humidity', 'min_humidity', 'hold_mode', 'operation_mode',
-            'operation_list', 'swing_mode', 'swing_list', 'heat_delivery', 'heat_source', 'heat2_delivery',
-            'heat2_source', 'heat3_delivery', 'heat3_source', 'heat_aux_delivery', 'heat_aux_source', 'cool_delivery',
-            'cool_source', 'cool2_delivery', 'cool2_source', 'cool3_delivery', 'cool3_source', 'away_enabled',
-            'away_temp_high', 'away_temp_low'))
-
     @property
     def current_mode(self):
         """

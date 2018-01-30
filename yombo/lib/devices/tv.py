@@ -15,7 +15,7 @@ class TV(Device):
         self.FEATURES['input_control'] = True
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             return self.command('on')
         else:
             return self.command('off')

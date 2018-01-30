@@ -1,5 +1,6 @@
 from yombo.lib.devices._device import Device
 import yombo.utils.color as color_util
+from yombo.utils import translate_int_value
 
 # Brightness of the light, 0..255 or percentage
 ATR_BRIGHTNESS = "brightness"
@@ -38,16 +39,22 @@ class Light(Device):
             'transition': False,
             'number_of_steps': 255
         })
+        self.STATUS_EXTRA['brightness'] = True
 
     @property
     def brightness(self):
         """
-        Return the brightness of this light between 0..255.
+        Return the brightness of this light. Returns a range between 0 and 100, converts based on the
+        'number_of_steps'.
         """
         if len(self.status_history) > 0:
-            status_current = self.status_history[0]
-            return status_current.machine_status
-
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if 'brightness' in machine_status_extra:
+                return machine_status_extra['brightness']
+            else:
+                return translate_int_value(self.status_history[0].machine_status,
+                                           0, self.FEATURES['number_of_steps'],
+                                           0, 100)
         return None
 
     @property
@@ -124,7 +131,7 @@ class Light(Device):
         return data
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             return self.command('on')
         else:
             return self.command('off')
@@ -135,6 +142,21 @@ class Light(Device):
     def turn_off(self, cmd, **kwargs):
         return self.command('off', **kwargs)
 
+    def generate_human_status(self, machine_status, machine_status_extra):
+        return str(round(translate_int_value(machine_status, 0, self.FEATURES['number_of_steps'], 0, 100), 1)) + '%'
+
+    def generate_human_message(self, machine_status, machine_status_extra):
+        human_status = str(round(translate_int_value(machine_status, 0, self.FEATURES['number_of_steps'], 0, 100), 1))
+        return "%s is now %s%%" % (self.area_label, human_status)
+
+    def set_status_machine_extra(self, **kwargs):
+        super().set_status_machine_extra(**kwargs)
+        self.status_history[0].machine_status
+        if len(self.status_history) > 0:
+            self.status_history[0].machine_status_extra['brightness'] =\
+                translate_int_value(self.status_history[0].machine_status,
+                                    0, self.FEATURES['number_of_steps'],
+                                    0, 100)
 
 class Color_Light(Light):
     """

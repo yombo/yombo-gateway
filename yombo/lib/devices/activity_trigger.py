@@ -15,7 +15,7 @@ class ActivityTrigger(Device):
         self.FEATURES['number_of_steps'] = 2  # 0 = off, 1 = on
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             return self.command('on')
         else:
             return self.command('off')

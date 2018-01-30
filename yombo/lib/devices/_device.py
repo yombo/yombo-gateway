@@ -279,6 +279,15 @@ class Device(Base_Device):
         """
         return self._Parent._DeviceTypes[self.device_type_id]
 
+    def generate_human_status(self, machine_status, machine_status_extra):
+        if machine_status == 1:
+            return "On"
+        return "Off"
+
+    def generate_human_message(self, machine_status, machine_status_extra):
+        human_status = self.generate_human_status(machine_status, machine_status_extra)
+        return "%s is now %s" % (self.area_label, human_status)
+
     def get_toggle_command(self):
         """
         If a device is toggleable, return True. It's toggleable if a device only has two commands.
@@ -296,29 +305,6 @@ class Device(Base_Device):
             else:
                 raise YomboWarning("Device cannot be toggled, device is in unknown state.")
         raise YomboWarning("Device cannot be toggled, it's not enabled for this device.")
-
-    def set_status_process(self, **kwargs):
-        """
-        A place for modules to process any status updates. Make any last minute changes before it's saves and
-        distributed.
-
-        :param kwargs:
-        :return:
-        """
-        if len(self.status_history) == 0:
-            previous_extra = {}
-        else:
-            previous_extra = self.status_history[0].machine_status_extra
-
-        if isinstance(previous_extra, dict) is False:
-            previous_extra = {}
-
-        new_extra = kwargs.get('machine_status_extra', {})
-        for key, value in new_extra.items():
-            previous_extra['key'] = value
-
-        kwargs['machine_status_extra'] = previous_extra
-        return kwargs
 
     def available_status_modes_values(self):
         return instance_properties(self, startswith_filter='STATUS_MODES_')

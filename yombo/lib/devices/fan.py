@@ -27,7 +27,7 @@ class Fan(Device):
         self.FEATURES['number_of_steps'] = 4  # 0 = off, 4 = high
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             if 'previous_on_speed' in self.meta:
                 return self.command('on', inputs={'speed': self.meta['previous_on_speed']})
             else:

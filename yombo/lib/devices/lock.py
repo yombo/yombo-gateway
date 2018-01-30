@@ -13,7 +13,7 @@ class Lock(Device):
         self.TOGGLE_COMMANDS = ['lock', 'unlock']  # Put two command machine_labels in a list to enable toggling.
 
     def toggle(self):
-        if self.status_history[0].machine_state == 0:
+        if self.status_history[0].machine_status == 0:
             return self.command('lock')
         else:
             return self.command('unlock')
@@ -23,3 +23,12 @@ class Lock(Device):
 
     def turn_off(self, cmd, **kwargs):
         return self.command('unlock', **kwargs)
+
+    def generate_human_status(self, machine_status, machine_status_extra):
+        if machine_status == 1:
+            return "Locked"
+        return "Unlocked"
+
+    def generate_human_message(self, machine_status, machine_status_extra):
+        human_status = self.generate_human_status(machine_status, machine_status_extra)
+        return "%s is now %s" % (self.area_label, human_status)
