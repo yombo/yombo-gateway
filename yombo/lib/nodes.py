@@ -895,6 +895,8 @@ class Node(object):
         :return:
         """
         # print("%s: save" % self.node_id)
+        if self._update_calllater is not None and self._update_calllater.active():
+            self._update_calllater.cancel()
         yield self._Parent.edit_node(self.node_id, self, source="node")
         self.save_to_db()
 
