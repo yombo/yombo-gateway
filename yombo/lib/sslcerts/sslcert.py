@@ -815,13 +815,17 @@ class SSLCert(object):
                 raise YomboWarning("Self signed cert not avail. Try restarting gateway.")
             else:
                 key_crypt = crypto.load_privatekey(crypto.FILETYPE_PEM, self._ParentLibrary.self_signed_key)
+                if isinstance(key_crypt, tuple):
+                    key_crypt = key_crypt[0]
                 cert_crypt = crypto.load_certificate(crypto.FILETYPE_PEM, self._ParentLibrary.self_signed_cert)
+                if isinstance(cert_crypt, tuple):
+                    cert_crypt = cert_crypt[0]
                 return {
                     'key': self._ParentLibrary.self_signed_key,
                     'cert': self._ParentLibrary.self_signed_cert,
                     'chain': None,
-                    'key_crypt': key_crypt[0],
-                    'cert_crypt': cert_crypt[0],
+                    'key_crypt': key_crypt, ####
+                    'cert_crypt': cert_crypt,
                     'chain_crypt': None,
                     'expires': self._ParentLibrary.self_signed_expires,
                     'created': self._ParentLibrary.self_signed_created,
