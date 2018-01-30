@@ -58,7 +58,7 @@ def route_apiauth(webapp):
             root_breadcrumb(webinterface, request)
             # print("webinterface._Locations.locations: %s" % webinterface._Locations.locations)
             try:
-                api_auths = yield webinterface.apiauths.get_all()
+                api_auths = yield webinterface._APIAuth.get_all()
             except YomboWarning as e:
                 api_auths = []
             return page.render(alerts=webinterface.get_alerts(),
@@ -69,7 +69,7 @@ def route_apiauth(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_apiauth_details_get(webinterface, request, session, apiauth_id):
-            api_auth = yield webinterface.apiauths.get(api_auth_id=apiauth_id)
+            api_auth = yield webinterface._APIAuth.get(apiauth_id)
             if api_auth is None:
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
@@ -80,7 +80,7 @@ def route_apiauth(webapp):
             webinterface.add_breadcrumb(request, "/apiauth/%s/details" % apiauth_id,
                                         api_auth.label)
             return page.render(alerts=webinterface.get_alerts(),
-                               apiauths=webinterface.apiauths,
+                               apiauths=webinterface._APIAuth,
                                apiauth=api_auth,
                                )
 
@@ -110,7 +110,7 @@ def route_apiauth(webapp):
                 'is_valid': webinterface.request_get_default(request, 'is_valid', True),
             }
 
-            api_auth = yield webinterface.apiauths.create(
+            api_auth = yield webinterface._APIAuth.create(
                 label=data['label'],
                 description=data['description'],
                 permissions=data['permissions'],
@@ -126,7 +126,7 @@ def route_apiauth(webapp):
                 'label': 'New API auth added successfully',
                 'description': '<p>New API Auth key: <strong>%s</strong></p>'
                                '<p>Continue to <strong><a href="/apiauth/index">API Auth key index</a></strong> or <a href="/apiauth/%s/details">View new API Auth Key</a>.</p>' %
-                               (api_auth.api_auth_id, api_auth.api_auth_id),
+                               (api_auth.auth_id, api_auth.auth_id),
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -140,13 +140,13 @@ def route_apiauth(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_apiauth_edit_get(webinterface, request, session, apiauth_id):
-            api_auth = yield webinterface.apiauths.get(api_auth_id=apiauth_id)
+            api_auth = yield webinterface._APIAuth.get(apiauth_id)
             if api_auth is None:
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
 
             root_breadcrumb(webinterface, request)
-            webinterface.add_breadcrumb(request, "/apiauth/%s/details" % api_auth.api_auth_id,
+            webinterface.add_breadcrumb(request, "/apiauth/%s/details" % api_auth.auth_id,
                                         api_auth.label)
             webinterface.add_breadcrumb(request, "/apiauth/%s/edit", "Edit")
 
@@ -157,7 +157,7 @@ def route_apiauth(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_apiauth_edit_post(webinterface, request, session, apiauth_id):
-            api_auth = yield webinterface.apiauths.get(api_auth_id=apiauth_id)
+            api_auth = yield webinterface._APIAuth.get(apiauth_id)
             if api_auth is None:
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
@@ -198,7 +198,7 @@ def route_apiauth(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_apiauth_delete_get(webinterface, request, session, apiauth_id):
-            api_auth = yield webinterface.apiauths.get(api_auth_id=apiauth_id)
+            api_auth = yield webinterface._APIAuth.get(apiauth_id)
             if api_auth is None:
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')
@@ -217,7 +217,7 @@ def route_apiauth(webapp):
         @require_auth()
         @inlineCallbacks
         def page_lib_apiauth_delete_post(webinterface, request, session, apiauth_id):
-            api_auth = yield webinterface.apiauths.get(api_auth_id=apiauth_id)
+            api_auth = yield webinterface._APIAuth.get(apiauth_id)
             if api_auth is None:
                 webinterface.add_alert('Invalid API Auth Key id: %s' % apiauth_id, 'warning')
                 return webinterface.redirect(request, '/apiauth/index')

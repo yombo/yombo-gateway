@@ -55,14 +55,14 @@
                         <tbody>{% for api_auth in apiauths %}
                              <tr>
                                 <td>
-                                    <a href="/apiauth/{{ api_auth.id }}/details">{{ api_auth.label }}</a>
+                                    <a href="/apiauth/{{ api_auth.auth_id }}/details">{{ api_auth.label }}</a>
                                 </td>
                                 <td>{{ api_auth.description }}</td>
                                 <td>{{ api_auth.is_valid }}</td>
                                 <td>{{ api_auth.id|truncate(15) }}...</td>
                                 <td>
-                                 <a href="/apiauth/{{ api_auth.id }}/edit">Edit</a>
-                                 <a class="alert-danger" href="/apiauth/{{ api_auth.id }}/delete">Delete</a>
+                                 <a href="/apiauth/{{ api_auth.auth_id }}/edit">Edit</a>
+                                 <a class="alert-danger" href="/apiauth/{{ api_auth.auth_id }}/delete">Delete</a>
                                 </td>
                              </tr>{% endfor %}
                         </tbody>
