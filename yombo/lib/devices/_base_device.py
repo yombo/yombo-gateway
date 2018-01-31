@@ -1193,11 +1193,13 @@ class Base_Device(object):
         :param kwargs:
         :return:
         """
-        # print("send status keys: %s" % kwargs.keys())
         if 'command' in kwargs:
-            # print("has command..")
             command = kwargs['command']
-            # print("command: %s" % command)
+            if isinstance(command, str):
+                try:
+                    command = self._Parent._Commands[command]
+                except Exception as e:
+                    command = None
         elif 'command_id' in kwargs:
             try:
                 command = self._Parent._Commands[kwargs['command_id']]
@@ -1205,6 +1207,11 @@ class Base_Device(object):
                 command = None
         else:
             command = None
+
+        if command is not None:
+            command_id = command.command_id
+            command_label = command.label
+            command_machine_label = command.machine_label
 
         try:
             previous_status = self.status_history[1].asdict()
@@ -1229,9 +1236,9 @@ class Base_Device(object):
                 'device_type_id': self.device_type_id,
                 'device_type_label': device_type.machine_label,
                 'device_type_machine_label': device_type.machine_label,
-                'command_id': command.command_id,
-                'command_label': command.label,
-                'command_machine_label': command.machine_label,
+                'command_id': command_id,
+                'command_label': command_label,
+                'command_machine_label': command_machine_label,
                 'status_current': self.status_history[0].asdict(),
                 'status_previous': previous_status,
                 'gateway_id': kwargs.get('gateway_id', self.gateway_id),
