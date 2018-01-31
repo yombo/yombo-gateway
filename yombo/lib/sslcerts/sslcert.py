@@ -287,13 +287,13 @@ class SSLCert(object):
                     self.submit_csr()
                 else:
                     # print("requesting new cert....1")
-                    self.generate_new_csr(submit=True)
+                    yield self.request_new_csr(submit=True)
                     new_cert_requested = True
 
         # Prepare a next cert if it's missing and one hasn't already been requested.
         if self.next_csr is None and new_cert_requested is False:
             # print("requesting new cert....2")
-            self.generate_new_csr(submit=False)
+            yield self.request_new_csr(submit=False)
 
         # print("check if rotated.... dirty: %s" % self.dirty)
         if self.dirty:
@@ -607,8 +607,8 @@ class SSLCert(object):
                           'cn': self.cn,
                       }, indent=4))
 
-
-    def generate_new_csr(self, submit=False, force_new=False):
+    @inlineCallbacks
+    def request_new_csr(self, submit=False, force_new=False):
         """
         Requests a new csr to be generated. This uses the base class to do the heavy lifting.
 
@@ -627,10 +627,8 @@ class SSLCert(object):
         if force_new is True:
             self.clean_section('next')
         else:
-            # print("calling check is valid from generate new csr")
             self.check_is_valid('next')
 
-        # print("2 calling local generate_new_csr. Force: %s.  Is valid: %s" % (force_new, self.next_is_valid))
         if self.next_is_valid is not None:
             if submit is True:
                 if self.next_csr_generation_in_progress is True:
@@ -650,9 +648,8 @@ class SSLCert(object):
             'cn': self.cn,
             'sans': self.sans
         }
-        # end local function defs
 
-        if self.next_csr_generation_in_progress is True: # don't run twice!
+        if self.next_csr_generation_in_progress is True:  # don't run twice!
             if submit is True:  # but if previously, we weren't going to submit it, we will now if requested.
                 self.next_csr_submit_after_generation = True
             return
@@ -665,15 +662,15 @@ class SSLCert(object):
         logger.debug("About to generate new csr request: {request}", request=request)
 
         try:
-            self._ParentLibrary.generate_csr_queue.put(request, done_callback=self.generate_new_csr_done, done_arg={'submit':submit})
+            the_job = yield self._ParentLibrary.generate_csr_queue.put(request)
+            results = the_job.result
             self.next_fqdn = self._ParentLibrary.fqdn()
-            return True
         except Exception as e:
             self.next_csr_generation_error_count += 1
             if self.next_csr_generation_error_count < 5:
                 logger.warn("Error generating new CSR for '{sslname}'. Will retry in 15 seconds. Exception : {failure}",
                             sslname=self.sslname, failure=e)
-                reactor.callLater(15, self.generate_new_csr)
+                reactor.callLater(15, self.request_new_csr, submit, force_new)
             else:
                 logger.error(
                     "Error generating new CSR for '{sslname}'. Too many retries, perhaps something wrong with our request. Exception : {failure}",
@@ -681,29 +678,17 @@ class SSLCert(object):
                 self.next_csr_generation_in_progress = False
             return False
 
-    def generate_new_csr_done(self, results, args):
-        """
-        Our CSR has been generated. Lets save it, and maybe submit it.
-
-        :param results: The CSR and KEY.
-        :param args: Any args from the queue.
-        :param submit: True if we should submit it to yombo for signing.
-        :return:
-        """
-        # logger.warn("generate_new_csr_done: {sslname}", sslname=self.sslname)
+        logger.debug("request_new_csr: {sslname}", sslname=self.sslname)
         results = bytes_to_unicode(results)
-        # logger.info("generate_new_csr_done:results: results {results}", results=results)
-        # logger.info("generate_new_csr_done:results: args {results}", results=args)
         self.next_key = results['key']
         self.next_csr = results['csr']
-        # print("generate_new_csr_done csr: %s " % self.next_csr)
+        # print("request_new_csr csr: %s " % self.next_csr)
         yield save_file('usr/etc/certs/%s.next.csr.pem' % self.sslname, self.next_csr)
         yield save_file('usr/etc/certs/%s.next.key.pem' % self.sslname, self.next_key)
         self.next_created = int(time())
         self.dirty = True
         self.next_csr_generation_in_progress = False
-        logger.debug("generate_new_csr_done:args: {args}", args=args)
-        if args['submit'] is True:
+        if submit is True:
             # print("calling submit_csr from generate_new_csr_done")
             self.submit_csr()
 
@@ -741,7 +726,7 @@ class SSLCert(object):
         :param correlation: Any correlation data regarding the AQMP message. We can check for timing, etc.
         :return:
         """
-        logger.info("Received a signed SSL/TLS certificate for: {sslname}", sslname=self.sslname)
+        logger.debug("Received a signed SSL/TLS certificate for: {sslname}", sslname=self.sslname)
         if body['status'] == "signed":
             self.next_chain = body['chain_text']
             self.next_cert = body['cert_text']
@@ -771,18 +756,18 @@ class SSLCert(object):
             except YomboWarning as e:
                 logger.warn("Invalid update_callback information provided: %s" % e)
 
+        logger.info("Method to notify ssl requester that there's a new cert: {method}", method=method)
+
         if method is not None and isinstance(method, collections.Callable):
-            logger.debug("About to tell the SSL/TLS cert requester know we have a new cert, from: {sslname}",
+            logger.info("About to tell the SSL/TLS cert requester know we have a new cert, from: {sslname}",
                         sslname=self.sslname)
 
+            the_cert = self.get()
             d = Deferred()
-            temp = self.get()
-            d.addCallback(lambda ignored: maybeDeferred(method, temp))
+            d.addCallback(lambda ignored: maybeDeferred(method, the_cert))
             d.addErrback(self.tell_requester_failure)
             d.callback(1)
             yield d
-
-            method(self.get())  # tell the requester that they have a new cert. YAY
 
     def tell_requester_failure(self, failure):
         logger.error("Got failure when telling SSL/TLS dependents we have a cert: {failure}", failure=failure)

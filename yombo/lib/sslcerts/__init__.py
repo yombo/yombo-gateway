@@ -423,11 +423,12 @@ class SSLCerts(YomboLibrary):
         """
         This is a blocking function and should only be called by the sslcerts library. This is called
         in a seperate thread.
-        
+
         Responsible for generating a key and csr.
 
         :return:
         """
+        # logger.debug("About to generate key: {kwargs}", kwargs=kwargs)
         key = crypto.PKey()
         key.generate_key(kwargs['key_type'], kwargs['key_size'])
         return key
@@ -457,10 +458,28 @@ class SSLCerts(YomboLibrary):
             destination='yombo.server.sslcerts',
             request_type='csr_request',
             body=body,
-            callback=self.amqp_incoming_response_to_csr_request,
         )
         self._AMQPYombo.publish(**request_msg)
         return request_msg
+
+    def amqp_incoming_request(self, headers, body, **kwargs):
+        """
+        Signed SSL certs comes as requests, even though it's really a response. This avoids the requirement
+        that all 'responses' have a sent correlation ID.
+
+        :param headers:
+        :param body:
+        :param kwargs:
+        :return:
+        """
+        request_type = headers['request_type']
+        kwargs['headers'] = headers
+        kwargs['body'] = body
+        if request_type == "csr_response":
+            self.amqp_incoming_response_to_csr_request(**kwargs)
+        else:
+            logger.warn("AMQP:Handler:Control - Received unknown request_type: {request_type}",
+                        request_type=request_type)
 
     def amqp_incoming_response_to_csr_request(self, body=None, properties=None, correlation_info=None, **kwargs):
         """
@@ -472,7 +491,7 @@ class SSLCerts(YomboLibrary):
         :param kwargs: 
         :return: 
         """
-        logger.debug("Received CSR response mesage: {body}", body=body)
+        # logger.debug("Received CSR response message: {body}", body=body)
         if 'sslname' not in body:
             logger.warn("Discarding response, doesn't have an sslname attached.") # can't raise exception due to AMPQ processing.
             return
@@ -487,18 +506,6 @@ class SSLCerts(YomboLibrary):
                 self.received_message_for_unknown[sslname] = [body]
         else:
             self.managed_certs[sslname].amqp_incoming_response_to_csr_request(properties, body, correlation_info)
-
-    def amqp_incoming_response(self, headers, body, properties, **kwargs):
-        """
-        Handles responses to system calls to yombo servers.
-        """
-
-        response_type = headers['response_type']
-        if response_type == "ping":
-            self.process_response_ping(headers, body, properties, **kwargs)
-        else:
-            logger.warn("Received unknown response_type: {response_type}",
-                        response_type=response_type)
 
     def validate_csr_private_certs_match(self, csr_text, key_text):
         csr = crypto.load_certificate_request(crypto.FILETYPE_PEM, csr_text)
