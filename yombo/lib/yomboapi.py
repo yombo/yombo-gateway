@@ -123,6 +123,7 @@ class YomboAPI(YomboLibrary):
 
         :return:
         """
+        logger.debug("About to validate system login.")
         # print("!!!!!!!!!!!  starting ytombo api validation")
         if self.allow_system_session is False:
             self.valid_system_session = False
@@ -151,11 +152,12 @@ class YomboAPI(YomboLibrary):
                 logger.warn("System has an invalid login key.")
                 self.valid_login_key = False
 
-        if self.valid_login_key is None:
+        if self.valid_login_key is not True:
             logger.warn("Cannot get system session token, no login token exists.!")
         else:
             if self.system_session is not None:
                 results = yield self.do_validate_session(self.system_session)
+                logger.debug("Do Validate Session results: {results}", results=results)
             else:
                 results = False
             if results is True:
@@ -163,12 +165,16 @@ class YomboAPI(YomboLibrary):
                 self.valid_system_session = True
                 # self._Configs.set('yomboapi', 'auth_session', self.system_session)  # to be encrypted with gpg later
             else:
+                logger.debug("System doesn't have a valid sesson token, will attempt to get one.")
                 if self.valid_login_key is True:
-                    new_session = yield self.user_login_with_key(self.system_login_key)
+                    results = yield self.user_login_with_key(self.system_login_key)
+                    logger.debug("User login with key full results: {results}", results=results)
+                    new_session = results['response']['login']
                     if new_session is False:
                         self.valid_system_session = False
                         logger.warn("System has an invalid session token.")
                     else:
+                        logger.debug("System now has a valid session token.")
                         self._Configs.set('yomboapi', 'auth_session', new_session['session'])  # to be encrypted with gpg later
                         self.valid_system_session = new_session['session']
                         self.valid_system_session = True
@@ -201,7 +207,7 @@ class YomboAPI(YomboLibrary):
             logger.debug("$$$1 API Errror: {error}", error=e)
             return False
 
-        # logger.debug("$$$a REsults from API: {results}", results=results['content'])
+        # logger.debug("do_validate_session full results: {results}", results=results['content'])
         # waiting on final API.yombo.com to complete this.  If we get something, we are good for now.
 
         if (results['content']['code'] != 200):
@@ -451,4 +457,3 @@ class YomboAPI(YomboLibrary):
 
             # Check if there was any errors, if so, raise something.
             return results
-
