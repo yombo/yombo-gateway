@@ -156,9 +156,9 @@ class Nodes(YomboLibrary):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
+        self.nodes = {}
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
-        self.nodes = {}
         self.node_search_attributes = ['node_id', 'gateway_id', 'node_type', 'machine_label', 'destination',
                                        'data_type', 'status',
                                       ]
