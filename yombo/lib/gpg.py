@@ -25,6 +25,7 @@ It's important to note that any module within the Yombo system will have access 
 
 # Import python libraries
 import yombo.ext.gnupg as gnupg
+# import gnupg
 import os.path
 from subprocess import Popen, PIPE
 from Crypto import Random
@@ -87,6 +88,7 @@ class GPG(YomboLibrary):
         self.__gpg_keys = {}
         self._generating_key_deferred = None
         self.sks_pools = [  # Send to a few to ensure we get our key seeded
+            'gpg.nebrwesleyan.edu',
             'na.pool.sks-keyservers.net',
             'eu.pool.sks-keyservers.net',
             'oc.pool.sks-keyservers.net',
@@ -107,6 +109,13 @@ class GPG(YomboLibrary):
         if self._Loader.operating_mode == 'run':
             yield self.sync_keyring_to_db()  # must sync first. Loads various data.
             yield self.validate_gpg_ready()
+
+        # This feature isn't working in the GNUPG library, or library alternatives.
+        # print("checking if gpg key is old... %s" % self.mykeyid())
+        # print("checking if gpg key is old..  %s < %s " % (self.gpg_key_full['expires_at'], (time() - (60*60*24*90))))
+        # if self.gpg_key_full['expires_at'] < (time() + (60*60*24*90)):
+        #     print("GPG key is older, going to renew.")
+        #     yield self.renew_expiration()
 
     def _start_(self, **kwargs):
         """
@@ -144,9 +153,10 @@ class GPG(YomboLibrary):
             secret_file = "%s/usr/etc/gpg/%s.pass" % (self._Atoms.get('yombo.path'), keyid)
             if os.path.exists(secret_file):
                 phrase = yield read_file(secret_file)
+                phrase = bytes_to_unicode(phrase)
                 if keyid == self.mykeyid():
                     self.__mypassphrase = phrase
-                return bytes_to_unicode(phrase)
+                return phrase
         return None
 
     @inlineCallbacks
@@ -236,6 +246,7 @@ class GPG(YomboLibrary):
         self._Configs.set('gpg', 'last_sent_keyserver', int(time()))
 
     def _send_my_gpg_key_to_keyserver(self, server, gpg_key_id):
+        print("sending key to server: %s -> %s" % (gpg_key_id, server))
         return self.gpg.send_keys("hkp://%s" % server, gpg_key_id)
 
     def get_my_gpg_key_from_keyserver(self):
@@ -248,7 +259,7 @@ class GPG(YomboLibrary):
         yield threads.deferToThread(self._get_my_gpg_key_from_keyserver,
                                     self.sks_pools[0],
                                     self.gpg_key_id)
-        results = self.gpg.recv_keys('hkp://pool.sks-keyservers.net', self.gpg_key_id)
+        results = self.gpg.recv_keys('hkp://gpg.nebrwesleyan.edu', self.gpg_key_id)
         logger.info("Asking GPG key servers for any updates.")
 
         self._Configs.set('gpg', 'last_received_keyserver', int(time()))
@@ -453,12 +464,29 @@ class GPG(YomboLibrary):
             results = {'status' : 'Failed'}
         return results
 
+    @inlineCallbacks
+    def renew_expiration(self, expire_time='1y'):
+        """
+        Renew the expiration time of the certificate
+
+        """
+        logger.info("Extending GPG key: +%s" % expire_time)
+        keyid = self.mykeyid()
+        yield threads.deferToThread(self._renew_expiration, keyid, expire_time, passphrase=self.__mypassphrase)
+        yield self.send_my_gpg_key_to_keyserver()
+
+    def _renew_expiration(self, keyid, expire_time, passphrase):
+        print("keyid: (%s) %s" % (keyid, type(keyid)))
+        print("expire_time: (%s) %s" % (expire_time, type(expire_time)))
+        print("passphrase: (%s) %s" % (passphrase, type(passphrase)))
+        return self.gpg.expire(keyid, '6', passphrase)
+
     ##########################
     ###  Helper Functions  ###
     ##########################
 
     @inlineCallbacks
-    def get_keyring_keys(self, secret=False, keys=None):
+    def get_keyring_keys(self, secret=False):
         """
         Gets the keys in the keyring and formats it nicely.
 
@@ -466,7 +494,7 @@ class GPG(YomboLibrary):
         :param keys:
         :return:
         """
-        input_keys = yield self.gpg.list_keys(secret=secret, keys=keys)
+        input_keys = yield self.gpg.list_keys(secret=secret)
 
         output_key = {}
 
@@ -548,10 +576,10 @@ class GPG(YomboLibrary):
             self._generating_key = False
             return
         passphrase = random_string(length=120)
-        expire_date = '1y'
-        if self.debug_mode is True:
-            logger.warn('Setting GPG key to expire in one day due to debug mode.')
-            expire_date = '1d'
+        expire_date = '5y'
+        # if self.debug_mode is True:
+        #     logger.warn('Setting GPG key to expire in one day due to debug mode.')
+        #     expire_date = '1d'
         input_data = self.gpg.gen_key_input(
             name_email="%s@gw.gpg.yombo.net" % gwuuid,
             name_real="Yombo Gateway",
@@ -560,7 +588,7 @@ class GPG(YomboLibrary):
             key_length=4096,
             expire_date=expire_date,
             preferences='SHA512 SHA384 SHA256 SHA224 AES256 AES192 AES CAST5 ZLIB BZIP2 ZIP Uncompressed',
-            keyserver='hkp://pool.sks-keyservers.net',
+            keyserver='hkp://gpg.nebrwesleyan.edu',
             revoker="1:9C69E1F8A7C39961C223C485BCEAA0E429FA3EF8",
             passphrase=passphrase)
 
@@ -679,10 +707,13 @@ class GPG(YomboLibrary):
         if destination is None:
             destination = self.mykeyid()
 
+        print("gpg encrypt destination: %s" % destination)
         try:
             # output = self.gpg.encrypt(in_text, destination, sign=self.mykeyid())
             output = yield threads.deferToThread(self._gpg_encrypt, in_text, destination)
             # output = self.gpg.encrypt(in_text, destination)
+            print("gpg output: %s" % output)
+            print("gpg output: %s" % output.status)
             if output.status != "encryption ok":
                 raise YomboWarning("Unable to encrypt string. Error 1.")
             return output.data
