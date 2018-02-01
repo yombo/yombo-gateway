@@ -1,4 +1,3 @@
-hbmqtt
 Twisted
 asyncio
 parsedatetime
@@ -37,6 +36,7 @@ pyephem
 numpy
 logger
 
+#hbmqtt
 #psutil
 #pytest
 #arrow

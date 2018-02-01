@@ -19,6 +19,8 @@ Also calls module hooks as requested by other libraries and modules.
 """
 # Import python libraries
 import configparser
+import pip
+import os.path
 import traceback
 try:
     from hashlib import sha3_224 as sha224
@@ -35,7 +37,8 @@ from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, Def
 from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.utils import search_instance, do_search_instance, dict_merge
+from yombo.utils import search_instance, do_search_instance, dict_merge, read_file, bytes_to_unicode,\
+    get_python_package_info
 from yombo.utils.decorators import memoize_ttl
 
 from yombo.utils.maxdict import MaxDict
@@ -484,11 +487,54 @@ class Modules(YomboLibrary):
 
 #        logger.debug("Complete list of modules, before import: {rawModules}", rawModules=self._rawModulesList)
 
+    @inlineCallbacks
     def do_import_modules(self):
         # logger.debug("Import modules: self._rawModulesList: {_rawModulesList}", _rawModulesList=self._rawModulesList)
+
+
         for module_id, module in self._rawModulesList.items():
             pathName = "yombo.modules.%s" % module['machine_label']
-            # print "loading: %s" % pathName
+            reqs_file = 'yombo/modules/%s/requirements.txt' % module['machine_label'].lower()
+            if os.path.isfile(reqs_file):
+                try:
+                    input = yield read_file(reqs_file)
+                except Exception as e:
+                    logger.warn("Unable to process requirements file for module '{module}', reason: {e}",
+                                module=module['machine_label'], e=e)
+                else:
+                    requirements = bytes_to_unicode(input.splitlines())
+                    for line in requirements:
+                        pkg_info = get_python_package_info(line)
+                        if pkg_info is None:
+                            logger.info("Attempting to install missing requirement: {line}", line=line)
+                            try:
+                                pip_results = pip.main(['install', line])
+                                if pip_results != 0:
+                                    logger.info("Unable to install '%s'" % line)
+                            except Exception as e:
+                                logger.info("Unable to install python package '{line}', reason: {e}",
+                                            line=line, e=e)
+                            else:
+                                pkg_info = get_python_package_info(line)
+
+                        if line not in self._Loader.requirements:
+                            if pkg_info is None:
+                                self._Loader.requirements[line] = {
+                                    'name': line,
+                                    'version': 'Invalid python module',
+                                    'path': 'Invalid module',
+                                    'used_by': [module['machine_label']],
+                                }
+                            else:
+                                self._Loader.requirements[line] = {
+                                    'name': pkg_info.project_name,
+                                    'version': pkg_info._version,
+                                    'path': pkg_info.location,
+                                    'used_by': [module['machine_label']],
+                                }
+                        else:
+                            self._Loader.requirements[line]['used_by'].append()
+
             try:
                 module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
             except ImportError as e:
@@ -1360,7 +1406,7 @@ class Modules(YomboLibrary):
 
         try:
             module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1393,7 +1439,7 @@ class Modules(YomboLibrary):
 
         try:
             module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1426,7 +1472,7 @@ class Modules(YomboLibrary):
 
         try:
             yield self._YomboAPI.request('POST', '/v1/module_device_type', data)
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1456,7 +1502,7 @@ class Modules(YomboLibrary):
         try:
             module_results = yield self._YomboAPI.request('DELETE',
                                                           '/v1/module_device_type/%s/%s' % (module_id, device_type_id))
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',
@@ -1496,7 +1542,7 @@ class Modules(YomboLibrary):
         try:
             module_results = yield self._YomboAPI.request('PATCH',
                                                           '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
-        except YomboAPIWarning as e:
+        except YomboWarning as e:
             # print("module delete results: %s" % module_results)
             results = {
                 'status': 'failed',

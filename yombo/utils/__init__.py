@@ -27,6 +27,8 @@ import msgpack
 import netifaces
 import netaddr
 import os
+import pkg_resources
+from pkg_resources import DistributionNotFound, VersionConflict
 import random
 import re
 import socket
@@ -55,6 +57,20 @@ logger = get_logger('utils.__init__')
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
 
+
+def get_python_package_info(package_name):
+    """
+    Checks if a given python package name is installed. If so, returns it's info, otherwise returns None.
+
+    :param package_name:
+    :return:
+    """
+    print("looking for: %s" % package_name)
+    try:
+        return pkg_resources.require([package_name])[0]
+    except DistributionNotFound as e:
+        return None
+
 @inlineCallbacks
 def read_file(filename, convert_to_unicode=None):
     """
@@ -76,6 +92,26 @@ def read_file(filename, convert_to_unicode=None):
     if convert_to_unicode is True:
         return bytes_to_unicode(contents)
     return contents
+
+def save_file(filename, content, mode=None):
+    """
+    A quick function to save data to a file. Defaults to overwrite, us mode 'a' to append.
+
+    Don't use this for saving large files.
+
+    :param filename: Full path to save to.
+    :param content: Content to save.
+    :param mode: File open mode, default to 'w'.
+    :return:
+    """
+    def writeFile(filename, content, mode):
+        if mode is None:
+            mode = 'w'
+        with open(filename, mode) as f:
+            fd = f.fileno()
+            setNonBlocking(fd)
+            writeToFD(fd, content)
+    writeFile(filename, unicode_to_bytes(content), mode)
 
 def get_nested_dict(data_dict, map_list):
     """
@@ -243,14 +279,14 @@ def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
     .. code-block:: python
 
        human_status = translate_int_value(127.5, 0, 255, 0, 100)
-    
+
     From: https://stackoverflow.com/questions/1969240/mapping-a-range-of-values-to-another
     :param value: The value to translate
     :param leftMin: The 'from' range, starting position.
     :param leftMax: The 'from' range, ending position.
     :param rightMin: The 'to' range, starting position.
     :param rightMax: The 'to' range, ending position.
-    :return: 
+    :return:
     """
     # Figure out how 'wide' each range is
     leftSpan = leftMax - leftMin
@@ -407,7 +443,7 @@ def bytes_to_unicode(input):
 
     :param input: Convert strings to unicode.
     :type input: dict, list, str
-    :return: 
+    :return:
     """
     if isinstance(input, dict):
         return dict((bytes_to_unicode(key), bytes_to_unicode(value)) for key, value in input.items())
@@ -424,8 +460,8 @@ def unicode_to_bytes(input):
     Converts strings, lists, and dictionarys to strings. Handles nested items too. Non-strings are untouched.
     Inspired by: http://stackoverflow.com/questions/13101653/python-convert-complex-dictionary-of-strings-from-unicode-to-ascii
 
-    :param input: 
-    :return: 
+    :param input:
+    :return:
     """
     if isinstance(input, dict):
         return dict((unicode_to_bytes(key), unicode_to_bytes(value)) for key, value in input.items())
@@ -766,7 +802,7 @@ def search_instance(arguments, haystack, allowed_keys, limiter, operation):
 
 
 def do_search_instance(attributes, haystack, allowed_keys, limiter=None, operation=None, status_field=None, status_value=None):
-    """        
+    """
     Does the actual search of the devices. It scans through each item in haystack, and searches for any
     supplied attributes.
 

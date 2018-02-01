@@ -42,6 +42,7 @@ Stops components in the following phases. Modules first, then libraries.
 # Import python libraries
 import asyncio
 from collections import OrderedDict, Callable
+import os.path
 from re import search as ReSearch
 import traceback
 
@@ -203,6 +204,8 @@ class Loader(YomboLibrary, object):
         self._moduleLibrary = None
         YomboLibrary.__init__(self)
 
+        self.requirements = {}  # Track which python modules are required
+
         self.loadedComponents = FuzzySearch({self._FullName.lower(): self}, .95)
         self.loadedLibraries = FuzzySearch({self._Name.lower(): self}, .95)
         self.libraryNames = {}
@@ -230,6 +233,28 @@ class Loader(YomboLibrary, object):
         this function will load all the components and modules of the gateway.
         """
         logger.info("Importing libraries, this can take a few moments.")
+
+        if os.path.isfile('requirements.txt'):
+            print("found reqs file...")
+            try:
+                input = yield yombo.utils.read_file('requirements.txt')
+            except Exception as e:
+                logger.warn("Unable to process requirements file for module '{module}', reason: {e}",
+                            module=module['machine_label'], e=e)
+            else:
+                requirements = yombo.utils.bytes_to_unicode(input.splitlines())
+                for line in requirements:
+                    line = line.strip()
+                    if len(line) == 0 or line.startswith('#'):
+                        continue
+                    pkg_info = yombo.utils.get_python_package_info(line)
+                    if pkg_info is not None:
+                        self.requirements[line] = {
+                            'name': pkg_info.project_name,
+                            'version': pkg_info._version,
+                            'path': pkg_info.location,
+                            'used_by': ['Yombo framework'],
+                        }
 
         # Get a reference to the asyncio event loop.
         yield yombo.utils.sleep(0.01)  # kick the asyncio event loop
