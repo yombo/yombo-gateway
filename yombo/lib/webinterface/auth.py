@@ -73,7 +73,7 @@ def run_first(create_session=None, *args, **kwargs):
                 session.auth_type = "session"
             except YomboWarning as e:
                 try:
-                    session = yield webinterface._APIAuth.get_session_from_request(request)
+                    session = webinterface._APIAuth.get_session_from_request(request)
                     session.auth_type = "api_auth"
                     session.touch()
                 except YomboWarning as e:
@@ -127,7 +127,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                     return return_need_login(webinterface, request, False, **kwargs)
             else:
                 try:
-                    session = yield webinterface._APIAuth.get_session_from_request(request)
+                    session = webinterface._APIAuth.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
                     logger.info("API request doesn't have api key. Checking for cookie session...")
