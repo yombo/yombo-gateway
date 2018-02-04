@@ -34,6 +34,7 @@ from time import time
 from itertools import islice
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
@@ -143,8 +144,9 @@ class Notifications(YomboLibrary):
         # self.init_deferred = Deferred()  # Prevents loader from moving on past _load_ until we are done.
         self.notifications = SlicableOrderedDict()
         self.gateway_id = 'local'
-        # return self.init_deferred
+        self.notification_targets = {}  # tracks available notification targets. This allows subscribers to know whats possible.
 
+    @inlineCallbacks
     def _load_(self, **kwargs):
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
 
@@ -152,6 +154,24 @@ class Notifications(YomboLibrary):
         self._checkExpiredLoop = LoopingCall(self.check_expired)
         self._checkExpiredLoop.start(self._Configs.get('notifications', 'check_expired', 121, False), False)
         self.load_notifications()
+        results = yield global_invoke_all('_notification_get_targets_',
+                                           called_by=self,
+                                           )
+
+        for component_name, data in results.items():
+            logger.debug("Adding notification target: %s" % component_name)
+            if isinstance(data, dict) is False:
+                continue
+            for target, description in data.items():
+                if target not in self.notification_targets:
+                    self.notification_targets[target] = []
+
+                self.notification_targets[target].append({
+                    'description': description,
+                    'component': component_name,
+                    }
+                )
+
 
     def _stop_(self, **kwargs):
         if self.init_deferred is not None and self.init_deferred.called is False:
@@ -160,6 +180,12 @@ class Notifications(YomboLibrary):
     def _reload_(self):
         self.notifications.clear()
         self.load_notifications()
+
+    def _notification_get_targets_(self, **kwargs):
+        """ Hosting here since loader isn't properly called... """
+        return {
+            'system_startup_complete': 'System startup complete',
+        }
 
     def get_important(self):
         items = {}
@@ -198,7 +224,15 @@ class Notifications(YomboLibrary):
             notice = notice.__dict__
             if notice['expire_at'] < time():
                 continue
-            notice['meta'] = json.loads(notice['meta'])
+            try:
+                notice['meta'] = json.loads(notice['meta'])
+            except:
+                notice['meta'] = {}
+            try:
+                notice['targets'] = json.loads(notice['targets'])
+            except:
+                notice['targets'] = {}
+
             self.add(notice, from_db=True)
         logger.debug("Done load_notifications: {notifications}", notifications=self.notifications)
         # self.init_deferred.callback(10)
@@ -273,6 +307,10 @@ class Notifications(YomboLibrary):
             notice['meta'] = {}
         if 'user' not in notice:
             notice['user'] = None
+        if 'targets' not in notice:  # tags on where to send notifications
+            notice['targets'] = []
+        if isinstance(notice['targets'], str):
+            notice['targets'] = [notice['targets']]
         if 'local' not in notice:
             notice['local'] = False
 
@@ -318,6 +356,15 @@ class Notifications(YomboLibrary):
         except YomboHookStopProcessing:
             pass
 
+        for target in notice['targets']:
+            reactor.callLater(.0001,
+                              global_invoke_all,
+                              '_notification_target_',
+                              called_by=self,
+                              notification=self.notifications[notice['id']],
+                              target=target,
+                              event=self.notifications[notice['id']].asdict()
+                              )
         return notice['id']
 
     def delete(self, notice_id):
@@ -334,8 +381,7 @@ class Notifications(YomboLibrary):
                               notification=self.notifications[notice_id],
                               event={
                                   'notification_id': notice_id,
-                              }
-                              )
+                              })
         except YomboHookStopProcessing:
             pass
 
@@ -409,6 +455,7 @@ class Notification:
         self.user = notice['user']
         self.title = notice['title']
         self.message = notice['message']
+        self.targets = notice['targets']
         self.meta = notice['meta']
         self.always_show = notice['always_show']
         self.always_show_allow_clear = notice['always_show_allow_clear']
@@ -452,8 +499,8 @@ class Notification:
         """
         return {
             'notification_id': str(self.notification_id),
-            'gateway_id' : str(self.gateway_id),
-            'type' : str(self.type),
+            'gateway_id': str(self.gateway_id),
+            'type': str(self.type),
             'priority': str(self.priority),
             'source': str(self.source),
             'expire_at': None if self.expire_at is None else float(self.expire_at),
@@ -461,6 +508,7 @@ class Notification:
             'acknowledged_at': None if self.acknowledged_at is None else float(self.acknowledged_at),
             'title': str(self.title),
             'message': str(self.message),
+            'targets': str(self.targets),
             'meta': str(self.meta),
             'always_show': str(self.always_show),
             'always_show_allow_clear': str(self.always_show_allow_clear),

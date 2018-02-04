@@ -477,7 +477,6 @@ def create_table_nodes(Registry, **kwargs):
     table = """CREATE TABLE `nodes` (
         `id`                TEXT NOT NULL,
         `parent_id`         TEXT,
-        `user_id`           TEXT NOT NULL,
         `gateway_id`        TEXT,
         `node_type`         TEXT NOT NULL,
         `weight`            INTEGER NOT NULL,
@@ -512,6 +511,7 @@ def create_table_notifications(Registry, **kwargs):
         `title`                   TEXT,
         `message`                 TEXT,
         `meta`                    TEXT, /* Any extra meta data. JSON format */
+        `targets`                 TEXT, /* Any extra meta data. JSON format */
         `local`                   BOOL,
         `expire_at`               INTEGER, /* timestamp when msg should expire */
         `created_at`              INTEGER NOT NULL);"""

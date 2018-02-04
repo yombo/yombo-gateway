@@ -1003,6 +1003,7 @@ class LocalDB(YomboLibrary):
             'title': notice['title'],
             'message': notice['message'],
             'local': notice['local'],
+            'targets': data_pickle(notice['targets'], encoder='json'),
             'meta': data_pickle(notice['meta'], encoder='json'),
             'created_at': notice['created_at'],
         }
@@ -1024,6 +1025,7 @@ class LocalDB(YomboLibrary):
             'title': notice.title,
             'message': notice.message,
             'meta': data_pickle(notice.meta, encoder='json'),
+            'targets': data_pickle(notice.targets, encoder='json'),
         }
         # print("saving notice: %s" %args)
         results = yield self.dbconfig.update('notifications', args, where=['id = ?', notice.notification_id])
@@ -1959,6 +1961,7 @@ ORDER BY id desc"""
 
     @inlineCallbacks
     def add_variable_data(self, data, **kwargs):
+        print("add_variable_data: data: %s" % data)
         args = {
             'id': data['id'],
             'field_id': data['field_id'],
