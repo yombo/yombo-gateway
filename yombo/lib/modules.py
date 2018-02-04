@@ -592,7 +592,7 @@ class Modules(YomboLibrary):
 
             #  The following caches are built on module_init_invoke and whenever the
             #  non-cached version of the function is called.
-            self.modules[module_id]._module_device_types_cached = []  # populated by Modules::module_init_invoke
+            self.modules[module_id]._module_device_types_cached = {}  # populated by Modules::module_init_invoke
             self.modules[module_id]._module_devices_cached = {}
             self.modules[module_id]._module_variables_cached = {}
             # print "loading modules: %s" % self.modules[module_id]._machine_label
@@ -1028,8 +1028,8 @@ class Modules(YomboLibrary):
             gateway_id = self.gateway_id
         temp = {}
         module_device_types = yield self.module_device_types(module_id)
-        for dt in module_device_types:
-            temp.update(self._DeviceTypes[dt['id']].get_devices(gateway_id=gateway_id))
+        for device_type_id, device_type in module_device_types.items():
+            temp.update(self._DeviceTypes[device_type_id].get_devices(gateway_id=gateway_id))
 
         module = self.modules[module_id]
         module._module_devices_cached.clear()
@@ -1044,9 +1044,10 @@ class Modules(YomboLibrary):
     def module_device_types(self, module_id):
         module_device_types = yield self._LocalDB.get_module_device_types(module_id)
         module = self.modules[module_id]
-        del module._module_device_types_cached[:]
-        for dt_id in module_device_types:
-            module._module_device_types_cached.append(dt_id)
+        module._module_device_types_cached.clear()
+        for device_type_db in module_device_types:
+            id = device_type_db['id']
+            module._module_device_types_cached[id] = self._DeviceTypes.get(id)
         return module._module_device_types_cached
 
     @inlineCallbacks
