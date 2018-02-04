@@ -165,6 +165,29 @@ msgstr[1] "There are devices turned on!!!!!"
 msgid "Available automation rules"
 msgstr ""
 
+#: defined in web interface library
+msgctxt "webinterface_label"
+msgid "Devices"
+msgstr "Devices"
+
+## Begin core items
+
+#: defined in startup library
+msgctxt "config_section"
+msgid "core"
+msgstr "Core components of the gateway. Required items needed to run ths system, most with no defaults"
+
+#: defined in web interface library
+msgctxt "config_item"
+msgid "core:gwid"
+msgstr "An ID that identifies this gateway to anyone. Notice: This ID change."
+
+#: defined in web interface library
+msgctxt "config_item"
+msgid "core:gwuuid"
+msgstr "An ID that indentifies this gateway to it's immediate peers. Don't share, never changes."
+
+## End core items
 ## Begin amqp library
 
 #: defined in amqp library
@@ -633,20 +656,28 @@ msgstr "When the next moon set is."
 ## END time library
 ## Begin web interface library
 
-#: defined in web interface library
-msgctxt "config_item"
-msgid "core:gwid"
-msgstr "An ID that identifies this gateway to anyone. Notice: This ID change."
+#: defined in yomboapi library
+msgctxt "config_section"
+msgid "webinterface"
+msgstr "Web interface configuration."
 
 #: defined in web interface library
 msgctxt "config_item"
-msgid "core:gwuuid"
-msgstr "An ID that indentifies this gateway to it's immediate peers. Don't share, never changes."
+msgid "webinterface:enabled"
+msgstr "If True (or: on, 1), then the web interface will be started."
 
 #: defined in web interface library
-msgctxt "webinterface_label"
-msgid "Devices"
-msgstr "Devices"
+msgctxt "config_item"
+msgid "webinterface:auth_pin_totp"
+msgstr "When using TOTP for additional security, it's token is stored here."
+
+#: defined in web interface library
+msgctxt "config_item"
+msgid "webinterface:cookie_session"
+msgstr "Name of the cookie used in browsers."
+
+## END web interface library
+## Begin yomboapi library
 
 #: defined in yomboapi library
 msgctxt "config_section"
@@ -684,8 +715,3 @@ msgstr "When allow_system_session is true, this is used for logging into the API
 msgctxt "config_item"
 msgid "yomboapi:api_key"
 msgstr "API Key to use when making requests. Note: This key will rotate to prevent abuse as needed."
-
-#: defined in startup library
-msgctxt "config_section"
-msgid "core"
-msgstr "Core components of the gateway. Required items needed to run ths system, most with no defaults"
