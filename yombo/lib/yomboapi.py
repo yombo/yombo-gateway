@@ -425,7 +425,7 @@ class YomboAPI(YomboLibrary):
         content = bytes_to_unicode(content)
 
         if code >= 300:
-            print("error with request: %s" % content)
+            logger.warn("error with request: {content}", content=content)
             if 'message' in content:
                 message = content['message']
             else:
