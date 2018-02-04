@@ -299,8 +299,9 @@ class WebInterface(YomboLibrary):
         # }
         self.webapp.templates.globals['yombo'] = self
         self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
-        self.webapp.templates.globals['commands'] = self._Commands
         self.webapp.templates.globals['devices'] = self._Devices
+        self.webapp.templates.globals['commands'] = self._Commands
+        self.webapp.templates.globals['modules'] = self._Modules
         self.webapp.templates.globals['gateways'] = self._Gateways
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         self.webapp.templates.globals['webinterface'] = self
@@ -329,6 +330,7 @@ class WebInterface(YomboLibrary):
         self._display_pin_console_at = int(time())
         self.display_pin_console()
         self._Notifications.delete('webinterface:starting')
+
         self.send_hook_listeners_ping_loop = LoopingCall(self.send_hook_listeners_ping_loop)
         self.send_hook_listeners_ping_loop.start(55, True)
 
@@ -656,7 +658,7 @@ class WebInterface(YomboLibrary):
         """
         # first, lets get the top levels already defined so children don't re-arrange ours.
         top_levels = {}
-        temp_list = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2'))
+        temp_list = sorted(NAV_SIDE_MENU, key=itemgetter('priority1', 'priority2', 'label2'))
         for item in temp_list:
             label1 = item['label1']
             if label1 not in temp_list:
@@ -673,7 +675,7 @@ class WebInterface(YomboLibrary):
                     if isinstance(new_nav['priority1'], int) is False:
                         new_nav['priority1'] = top_levels[new_nav['label1']]
                     nav_side_menu.append(new_nav)
-            if 'menu_priorities' in options:  # allow modules to change the ording of top level menus
+            if 'menu_priorities' in options:  # allow modules to change the ordering of top level menus
                 for label, priority in options['menu_priorities'].items():
                     top_levels[label] = priority
             if 'routes' in options:
@@ -687,7 +689,7 @@ class WebInterface(YomboLibrary):
         # build menu tree
         self.misc_wi_data['nav_side'] = OrderedDict()
 
-        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2'))
+        temp_list = sorted(nav_side_menu, key=itemgetter('priority1', 'priority2', 'label2'))
         for item in temp_list:
             label1 = item['label1']
             if label1 not in self.misc_wi_data['nav_side']:
