@@ -6,7 +6,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">Gateways</h1>
-                    View details about gateways. <a href="/devices/add" class="btn btn-md btn-primary">Add New Device</a>
+                    Configured peer gateways. Only gateways connected to the same master gateway will be visible here.
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -34,7 +34,6 @@
                                              <td>{{ gateway.com_status|capitalize }}</td>
                                              <td>{{ gateway.last_scene|epoch_to_human }}</td>
                                              <td>{{ gateway.last_communications|length }}</td>
-
                                          </tr>{% endfor %}
                                     </tbody>
                                 </table>
