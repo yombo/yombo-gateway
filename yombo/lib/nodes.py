@@ -952,7 +952,7 @@ class Node(object):
         # print("save_to_db called")
         if self._Parent.gateway_id() == self.gateway_id:
             # print("save_to_db called....saving node to local sql now...")
-            self._Parent._LocalDB.update_node(self)
+            yield self._Parent._LocalDB.update_node(self)
 
     def delete_from_db(self):
         if self._Parent.gateway_id() == self.gateway_id:
