@@ -46,6 +46,8 @@ class Nodes(YomboLibrary):
     """
     Manages nodes for a gateway.
     """
+    nodes = {}
+
     def __contains__(self, node_requested):
         """
         .. note:: The node must be enabled in order to be found using this method.
@@ -156,7 +158,6 @@ class Nodes(YomboLibrary):
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        self.nodes = {}
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.node_search_attributes = ['node_id', 'gateway_id', 'node_type', 'machine_label', 'destination',
@@ -166,6 +167,7 @@ class Nodes(YomboLibrary):
         self._load_nodes_from_database()
         return self.load_deferred
 
+    @inlineCallbacks
     def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
@@ -174,7 +176,7 @@ class Nodes(YomboLibrary):
             if self.load_deferred is not None and self.load_deferred.called is False:
                 self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
         for node_id, node in self.nodes.items():
-            node._stop_()
+            yield node._stop_()
 
     @inlineCallbacks
     def _load_nodes_from_database(self):
@@ -628,7 +630,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-                node.save_to_db()
+                yield node.save_to_db()
 
         global_invoke_all('_node_edited_',
                           called_by=self,
@@ -676,7 +678,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-                node.save_to_db()
+                yield node.save_to_db()
 
         global_invoke_all('_node_deleted_',
                           called_by=self,
@@ -726,7 +728,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-                node.save_to_db()
+                yield node.save_to_db()
 
         global_invoke_all('_node_enabled_',
                           called_by=self,
@@ -775,7 +777,7 @@ class Nodes(YomboLibrary):
             node = self.nodes[node_id]
             if source != 'node':
                 node.update_attributes(api_data, source='parent')
-            node.save_to_db()
+            yield node.save_to_db()
         global_invoke_all('_node_disabled_',
                           called_by=self,
                           node_id=node_id,
@@ -848,6 +850,7 @@ class Node(object):
         if self._startup is not True:
             self._on_change()
 
+    @inlineCallbacks
     def _stop_(self):
         """
         Called when the system is shutting down. If a save is pending, we save the current state to Yombo API
@@ -857,7 +860,7 @@ class Node(object):
         """
         if self._update_calllater is not None and self._update_calllater.active():
             self._update_calllater.cancel()
-            self.save()
+            yield self.save()
             object.__setattr__(self, '_update_calllater', None)
 
     def _on_change(self, *args, **kwargs):
@@ -898,7 +901,7 @@ class Node(object):
         if self._update_calllater is not None and self._update_calllater.active():
             self._update_calllater.cancel()
         yield self._Parent.edit_node(self.node_id, self, source="node")
-        self.save_to_db()
+        yield self.save_to_db()
 
     def update_attributes(self, new_data, source=None):
         """
@@ -944,6 +947,7 @@ class Node(object):
         if self._Parent.gateway_id() == self.gateway_id:
             self._Parent._LocalDB.add_node(self)
 
+    @inlineCallbacks
     def save_to_db(self):
         # print("save_to_db called")
         if self._Parent.gateway_id() == self.gateway_id:
