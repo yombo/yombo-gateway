@@ -231,7 +231,7 @@ class APIAuth(YomboLibrary):
         """
         for auth_id, session in self.active_api_auth.items():
             if session.is_dirty >= 200 or force is True:
-                session.save()
+                yield session.save()
 
 
 class Auth(object):
@@ -407,13 +407,20 @@ class Auth(object):
         self.is_valid = False
         self.save()
 
+    @inlineCallbacks
     def save(self, timeout=None):
         if timeout is None:
             timeout = 0.05
         if self.in_db:
-            reactor.callLater(timeout, self._Parent._LocalDB.update_api_auth, self)
+            if timeout > 0:
+                reactor.callLater(timeout, self._Parent._LocalDB.update_api_auth, self)
+            else:
+                yield self._Parent._LocalDB.update_api_auth(self)
         else:
-            reactor.callLater(timeout, self._Parent._LocalDB.save_api_auth, self)
+            if timeout > 0:
+                reactor.callLater(timeout, self._Parent._LocalDB.save_api_auth, self)
+            else:
+                yield self._Parent._LocalDB.save_api_auth(self)
             self.in_db = True
         self.is_dirty = 0
 
