@@ -31,6 +31,7 @@ from subprocess import Popen, PIPE
 from Crypto import Random
 from Crypto.Cipher import AES
 import hashlib
+from os.path import dirname, abspath
 import re
 from time import time
 
@@ -96,6 +97,17 @@ class GPG(YomboLibrary):
         ]
 
         self.gpg = gnupg.GPG(gnupghome="usr/etc/gpg")
+
+        self.__mypassphrase = None  # will be loaded by sync_keyring_to_db() calls
+        yombo_path = dirname(dirname(dirname(abspath(__file__))))
+
+        secret_file = "%s/usr/etc/gpg/last.pass" % yombo_path
+        if os.path.exists(secret_file):
+            phrase = yield read_file(secret_file)
+            self.__mypassphrase = bytes_to_unicode(phrase)
+
+    @inlineCallbacks
+    def _init_from_config_(self, **kwargs):
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.gwuuid = self._Configs.get2('core', 'gwuuid', None, False)
         self.mykeyid = self._Configs.get2('gpg', 'keyid', None, False)
@@ -103,8 +115,6 @@ class GPG(YomboLibrary):
         self.mykey_last_sent_yombo = self._Configs.get2('gpg', 'last_sent_yombo', None, False)
         self.mykey_last_sent_keyserver = self._Configs.get2('gpg', 'last_sent_keyserver', None, False)
         self.mykey_last_received_keyserver = self._Configs.get2('gpg', 'last_received_keyserver', None, False)
-        # self.__myprivatekey = self._Configs.get2('gpg', 'privatekey', None, False)
-        self.__mypassphrase = None  # will be loaded by sync_keyring_to_db() calls
 
         if self._Loader.operating_mode == 'run':
             yield self.sync_keyring_to_db()  # must sync first. Loads various data.
@@ -617,6 +627,8 @@ class GPG(YomboLibrary):
         secret_file = "%s/usr/etc/gpg/%s.pass" % (self._Atoms.get('yombo.path'), newkeyid)
         # print("saveing pass to : %s" % secret_file)
         yield save_file(secret_file, passphrase)
+        secret_file = "%s/usr/etc/gpg/last.pass" % self._Atoms.get('yombo.path')
+        yield save_file(secret_file, passphrase)
         self.__mypassphrase = passphrase
 
         self._Configs.set('gpg', 'last_sent_yombo', None)
@@ -689,7 +701,7 @@ class GPG(YomboLibrary):
     ###  Encrypt / Decrypt / Sign / Verify  ###
     ###########################################
     @inlineCallbacks
-    def encrypt(self, in_text, destination=None, ):
+    def encrypt(self, in_text, destination=None, unicode=None):
         """
         Encrypt text and output as ascii armor text.
 
@@ -707,16 +719,18 @@ class GPG(YomboLibrary):
         if destination is None:
             destination = self.mykeyid()
 
-        print("gpg encrypt destination: %s" % destination)
+        # print("gpg encrypt destination: %s" % destination)
         try:
             # output = self.gpg.encrypt(in_text, destination, sign=self.mykeyid())
             output = yield threads.deferToThread(self._gpg_encrypt, in_text, destination)
             # output = self.gpg.encrypt(in_text, destination)
-            print("gpg output: %s" % output)
-            print("gpg output: %s" % output.status)
+            # print("gpg output: %s" % output)
+            # print("gpg %s: %s" % (in_text, output.status))
             if output.status != "encryption ok":
                 raise YomboWarning("Unable to encrypt string. Error 1.")
-            return output.data
+            if unicode is False:
+                return output.data
+            return bytes_to_unicode(output.data)
         except Exception as e:
             raise YomboWarning("Unable to encrypt string. Error 2.: %s" % e)
 
@@ -724,7 +738,7 @@ class GPG(YomboLibrary):
         return self.gpg.encrypt(data, destination)
 
     @inlineCallbacks
-    def decrypt(self, in_text):
+    def decrypt(self, in_text, unicode=None):
         """
         Decrypt a PGP / GPG ascii armor text.  If passed in string/text is not detected as encrypted,
         will simply return the input.
@@ -743,7 +757,9 @@ class GPG(YomboLibrary):
         elif in_text.startswith('-----BEGIN PGP MESSAGE-----'):
             try:
                 output = yield threads.deferToThread(self._gpg_decrypt, in_text)
-                return output.data
+                if unicode is False:
+                    return output.data
+                return bytes_to_unicode(output.data)
             except Exception as e:
                 raise YomboWarning("Unable to decrypt string. Reason: {e}", e)
         return in_text
