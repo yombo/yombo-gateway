@@ -68,6 +68,7 @@ HARD_LOAD["Queue"] = {'operating_mode': 'all'}
 HARD_LOAD["Notifications"] = {'operating_mode': 'all'}
 HARD_LOAD["LocalDB"] = {'operating_mode': 'all'}
 HARD_LOAD["SQLDict"] = {'operating_mode': 'all'}
+HARD_LOAD["GPG"] = {'operating_mode': 'all'}
 HARD_LOAD["Configuration"] = {'operating_mode': 'all'}
 HARD_LOAD["Atoms"] = {'operating_mode': 'all'}
 HARD_LOAD["States"] = {'operating_mode': 'all'}
@@ -76,7 +77,6 @@ HARD_LOAD["Startup"] = {'operating_mode': 'all'}
 HARD_LOAD["AMQP"] = {'operating_mode': 'run'}
 HARD_LOAD["YomboAPI"] = {'operating_mode': 'all'}
 HARD_LOAD["Localize"] = {'operating_mode': 'all'}
-HARD_LOAD["GPG"] = {'operating_mode': 'all'}
 HARD_LOAD["CronTab"] = {'operating_mode': 'all'}
 HARD_LOAD["DownloadModules"] = {'operating_mode': 'run'}
 HARD_LOAD["Times"] = {'operating_mode': 'all'}
@@ -235,7 +235,6 @@ class Loader(YomboLibrary, object):
         logger.info("Importing libraries, this can take a few moments.")
 
         if os.path.isfile('requirements.txt'):
-            print("found reqs file...")
             try:
                 input = yield yombo.utils.read_file('requirements.txt')
             except Exception as e:
@@ -342,11 +341,15 @@ class Loader(YomboLibrary, object):
             else:
                 HARD_LOAD[name]['_started_'] = False
 
-        self.loadedLibraries['notifications'].add({'title': 'System started',
-            'message': 'System successfully started.', 'timeout': 300, 'source': 'Yombo Gateway System',
-            'persist': False,
-            'always_show': False,
-        })
+        self.loadedLibraries['notifications'].add(
+            {'title': 'System started',
+             'message': 'System successfully started.',
+             'timeout': 300,
+             'source': 'Yombo Gateway System',
+             'persist': False,
+             'always_show': False,
+             'targets': 'system_startup_complete',
+             })
 
         logger.info("Yombo Gateway started.")
 
