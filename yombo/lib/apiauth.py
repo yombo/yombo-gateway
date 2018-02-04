@@ -10,8 +10,9 @@ from time import time
 from random import randint
 
 # Import twisted libraries
+from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 
 # from yombo.ext.expiringdict import ExpiringDict
 
@@ -46,11 +47,11 @@ class APIAuth(YomboLibrary):
         raise YomboWarning("Cannot set a session using this method.")
 
     def __contains__(self, key):
-        if key in self.active_api_auth:
+        try:
+            self.get(key)
             return True
-        elif key in self.active_api_auth_by_label:
-            return True
-        return False
+        except KeyError as e:
+            return False
 
     def keys(self):
         """
@@ -70,41 +71,23 @@ class APIAuth(YomboLibrary):
         """
         return list(self.active_api_auth.items())
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         self.session_type = "apiauth"
-        self.active_api_auth_by_label = {}
-        # self.active_api_auth_cache = ExpiringDict(200, 5)  # keep 200 entries, for at most 1 second...???
-        self._periodic_clean_sessions = LoopingCall(self.clean_sessions)
-        self._periodic_clean_sessions.start(random_int(60*60, .2))  # Every hours-ish. Save or update
+        yield self.load_sessions()
+        self._periodic_save_apiauths = LoopingCall(self.save_apiauths)
+        self._periodic_save_apiauths.start(random_int(60*60*4, .2))  # Every four-ish. Save api auth records.
 
+    @inlineCallbacks
     def _unload_(self, **kwargs):
-        self.unload_deferred = Deferred()
-        self.clean_sessions(self.unload_deferred)
-        return self.unload_deferred
+        yield self.save_apiauths(force=True)
 
     @inlineCallbacks
-    def search(self, key):
-        auths = yield self.get_all()
-
-    @inlineCallbacks
-    def get_all(self, key=None):
-        """
-        A list of dictionaries containing all API Auth keys
-
-        :return: A list of dictionaries containing all API Auth keys.
-        :rtype: list
-        """
-        yield self.clean_sessions(True)
+    def load_sessions(self):
         api_auths = yield self._LocalDB.get_api_auth()
-        if key is not None:
-            for auth in api_auths:
-                print("apiauth: auth: %s" % auth)
-                if auth['auth_id'] == key or auth['label'] == key:
-                    self.active_api_auth[auth['auth_id']] = Auth(self, auth, source='database')
-                    self.active_api_auth_by_label[auth['label']] = auth['auth_id']
-                    return self.active_api_auth[auth['auth_id']]
-            raise KeyError
-        return api_auths
+        for auth in api_auths:
+            # print("apiauth: auth: %s" % auth)
+            self.active_api_auth[auth['auth_id']] = Auth(self, auth, source='database')
 
     def get(self, key):
         """
@@ -112,26 +95,22 @@ class APIAuth(YomboLibrary):
         :param key:
         :return:
         """
-        print("Auth key search: %s" % key)
+        # print("Auth key search: %s" % key)
         if key in self.active_api_auth:
-            print("Auth key search - found by keyid")
+            # print("Auth key search - found by keyid")
             return self.active_api_auth[key]
-        elif key in self.active_api_auth_by_label:
-            id = self.active_api_auth_by_label[key]
-            if id in self.active_api_auth:
-                return self.active_api_auth_by_label[id]
-            else:
-                del self.active_api_auth_by_label[key]
-            return self.active_api_auth_by_label[id]
-        print("Auth key search - not FOUND!")
-        print("Auth key labels: %s" % self.active_api_auth_by_label)
+        else:
+            for auth_id, auth in self.active_api_auth.items():
+                # print("Checking auth: %s = %s" % (auth.label, key))
+                if auth.label.lower() == key.lower():
+                    return auth
 
+        # print("Auth key search - not FOUND!")
         raise KeyError("Cannot find api auth key: %s" % key)
 
     def close_session(self, request):
         return
 
-    @inlineCallbacks
     def get_session_from_request(self, request=None):
         """
         Called by the web interface auth system to check if the provided request
@@ -157,21 +136,10 @@ class APIAuth(YomboLibrary):
         if self.validate_auth_id(auth_id) is False:
             raise YomboWarning("api auth key has invalid characters.")
 
-        if auth_id in self.active_api_auth:
-            if self.active_api_auth[auth_id].is_valid is True:
-                return self.active_api_auth[auth_id]
-            else:
-                raise YomboWarning("api auth key is no longer valid.")
-        else:
-            logger.debug("has_session is looking in database for session...")
-            try:
-                db_api_auth = yield self._LocalDB.get_api_auth(auth_id)
-            except Exception as e:
-                raise YomboWarning("api auth isn't found")
-            self.active_api_auth[auth_id] = Auth(self, db_api_auth, source='database')
-            self.active_api_auth_by_label[self.active_api_auth[auth_id].label] = auth_id
-            return self.active_api_auth[auth_id]
-        raise YomboWarning("x-api-auth header is invalid, other reasons.")
+        try:
+            return self.get(auth_id)
+        except KeyError as e:
+            raise YomboWarning("api auth isn't found")
 
     @inlineCallbacks
     def create(self, label, description=None, permissions=None, auth_data=None, is_valid=None):
@@ -179,9 +147,10 @@ class APIAuth(YomboLibrary):
         Creates a new session.
         :return:
         """
-        all_auths = yield self.get_all()
-        for auth in all_auths:
-            if auth.label.lower() == label.lower():
+        # print("about to create new apiauth")
+        # all_auths = yield self.get_all()
+        for auth_id, auth in self.active_api_auth:
+            if auth['label'].lower() == label.lower():
                 raise YomboWarning("Already exists.")
 
         if description is None:
@@ -205,10 +174,8 @@ class APIAuth(YomboLibrary):
         }
 
         self.active_api_auth[auth_id] = Auth(self, data)
-        self.active_api_auth_by_label[self.active_api_auth[auth_id].label] = auth_id
         return self.active_api_auth[auth_id]
 
-    @inlineCallbacks
     def rotate(self, auth_id):
         """
         Rotates an API Auth key for security.
@@ -216,12 +183,12 @@ class APIAuth(YomboLibrary):
         :return:
         """
         auth = self.get(auth_id)
-        old_auth_id = auth.auth_id
-        auth.auth_id = random_string(length=randint(50, 55))
-        yield self._LocalDB.rotate_api_auth(old_auth_id, auth.auth_id)
-
-        self.active_api_auth_by_label[auth.label] = auth.auth_id
+        auth.rotate()
         return auth
+
+    def finish_rotate_key(self, old, new, auth):
+        self.active_api_auth[new] = auth
+        del self.active_api_auth[old]
 
     @inlineCallbacks
     def update(self, id=None, data=None):
@@ -256,45 +223,15 @@ class APIAuth(YomboLibrary):
         return True
 
     @inlineCallbacks
-    def clean_sessions(self, close_deferred=None):
+    def save_apiauths(self, force=None):
         """
-        Called by loopingcall.
+        Called by loopingcall and when exiting.
 
-        Cleanup the stored sessions
+        Saves session information to disk.
         """
-        for auth_id in list(self.active_api_auth.keys()):
-            if self.active_api_auth[auth_id].check_valid() is False or self.active_api_auth[auth_id].is_valid is False:
-                logger.debug("Removing invalid api auth: %s" % auth_id)
-                try:
-                    del self.active_api_auth_by_label[self.active_api_auth[auth_id].label]
-                except Exception:
-                    pass
-                del self.active_api_auth[auth_id]
-                yield self._LocalDB.delete_api_auth(auth_id)
-
-        for auth_id in list(self.active_api_auth):
-            session = self.active_api_auth[auth_id]
-            if session.is_dirty >= 200 or close_deferred is not None or session.last_access < int(time() - (60*5)):
-                if session.in_db:
-                    logger.debug("updating old db api auth record: {auth_id}", auth_id=auth_id)
-                    yield self._LocalDB.update_api_auth(session)
-                else:
-                    logger.debug("creating new db api auth record: {auth_id}", auth_id=auth_id)
-                    yield self._LocalDB.save_api_auth(session)
-                    session.in_db = True
-                session.is_dirty = 0
-                if session.last_access < int(time() - (60*60*3)):   # delete session from memory after 3 hours
-                    logger.debug("Deleting session from memory: {auth_id}", auth_id=auth_id)
-                    try:
-                        del self.active_api_auth_by_label[self.active_api_auth[auth_id].label]
-                    except Exception:
-                        pass
-                    del self.active_api_auth[auth_id]
-
-        # print("api auth clean sessions...: %s" % close_deferred)
-        if close_deferred is not None and close_deferred is not True and close_deferred is not False:
-            yield sleep(0.1)
-            close_deferred.callback(1)
+        for auth_id, session in self.active_api_auth.items():
+            if session.is_dirty >= 200 or force is True:
+                session.save()
 
 
 class Auth(object):
@@ -406,7 +343,7 @@ class Auth(object):
             if isinstance(record['auth_data'], dict):
                 self.auth_data.update(record['auth_data'])
         if stay_clean is not True:
-            self.is_dirty = 2000
+            self.save()
 
     @property
     def user_id(self) -> str:
@@ -456,9 +393,29 @@ class Auth(object):
             self.expire_session()
             return False
 
+    def rotate(self):
+        old_auth_id = self.auth_id
+        self.auth_id = random_string(length=randint(50, 55))
+        self._Parent.finish_rotate_key(old_auth_id, self.auth_id, self)
+        reactor.callLater(1, self._Parent._LocalDB.rotate_api_auth, old_auth_id, self.auth_id)
+
+    def enable(self):
+        self.is_valid = True
+        self.save()
+
     def expire_session(self):
         self.is_valid = False
-        self.is_dirty = 20000
+        self.save()
+
+    def save(self, timeout=None):
+        if timeout is None:
+            timeout = 0.05
+        if self.in_db:
+            reactor.callLater(timeout, self._Parent._LocalDB.update_api_auth, self)
+        else:
+            reactor.callLater(timeout, self._Parent._LocalDB.save_api_auth, self)
+            self.in_db = True
+        self.is_dirty = 0
 
     def __str__(self):
         return "APIAuth - %s" % self.label
