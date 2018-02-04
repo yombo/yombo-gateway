@@ -26,8 +26,8 @@ from time import time
 import traceback
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import LoopingCall
 
 # Import Yombo libraries

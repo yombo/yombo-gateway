@@ -65,7 +65,6 @@ def get_python_package_info(package_name):
     :param package_name:
     :return:
     """
-    print("looking for: %s" % package_name)
     try:
         return pkg_resources.require([package_name])[0]
     except DistributionNotFound as e:
@@ -1275,6 +1274,7 @@ def global_invoke_all(hook, **kwargs):
     :param kwargs: kwargs to send to the function.
     :return: a dictionary of results.
     """
+    # print("global_invoke will call: %s" % hook)
     lib_results = yield get_component('yombo.gateway.lib.loader').library_invoke_all(hook, True, **kwargs)
     modules_results = yield get_component('yombo.gateway.lib.modules').module_invoke_all(hook, True, **kwargs)
     return dict_merge(modules_results, lib_results)

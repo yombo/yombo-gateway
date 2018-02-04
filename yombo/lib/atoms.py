@@ -36,7 +36,6 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-# import distro
 from os.path import dirname, abspath
 import platform
 import re
