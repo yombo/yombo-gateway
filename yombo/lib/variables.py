@@ -32,7 +32,6 @@ from twisted.internet.defer import inlineCallbacks
 from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-# from yombo.utils.decorators import memoize_ttl
 
 logger = get_logger('library.devices')
 
@@ -305,12 +304,13 @@ class Variables(YomboLibrary):
 
         # print("extract_variables_from_web_data: %s" % encrypt_fields)
         results = new_data_items.copy()
-        # print("extract_variables_from_web_data1: %s" % data)
+        # print("extract_variables_from_web_data1: %s" % new_data_items)
 
         for field_id, data in results.items():
             for data_id, value in data.items():
                 final_value = ""
                 if isinstance(value, dict):
+                    # print("processing from dict..")
                     if value['input'] == '-----ENCRYPTED DATA-----':
                         # print("encry: %s" % value['orig'].startswith('-----BEGIN PGP MESSAGE-----'))
                         # print("encry: %s" % value['orig'])
@@ -323,7 +323,7 @@ class Variables(YomboLibrary):
                         # print("final_value: value['input']")
                         final_value = value['input']
                 else:
-                    # print("final_value: value")
+                    # print("processing else")
                     final_value = value
                 # print("final_value: %s" % final_value)
                 if field_id in encrypt_fields:
