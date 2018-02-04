@@ -11,18 +11,20 @@
         <h4 class="modal-title" id="myModalLabel">Manage Automation Devices</h4>
       </div>
       <div class="modal-body">
-          <p>Devices are automation devices that can be controled by an automation protocol, such as ZWave, Insteon, or X10.
-              Automation devices can be physical or virtual, this includes IO ports such as GPIO ports on a Raspberry PI,
-              network attached endpoints such as API's, files, a twitter account, jabber account, email addresses, etc.
+          <p>Devices typically represent automation devices such as ZWave, Insteon, IO ports of a Raspberry PI, or X10.
+              They they can also represent other things like scenes, phones, or other virtual items such as files,
+              a Twitter account, an email address, etc.
           </p>
           <p>
-              This section manages devices available to the gateway. Any additions, deletions, or changes requires a restart
-              of the Yombo Gateway - don't worry, a page will be displayed when this action is required.
+              This section manages devices available to the local gateway as well as any connect peer gateways within
+              the same cluster. Currently, any additions, deletions, or changes requires a restart of the software. A
+              page will be displayed when this action is required.
           </p>
           <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
               <h4>Must have modules first</h4>
-              <p>Device types are defined by which modules are installed. Devices cannot be added until a module is installed
-                  that knows how to handle that device. Visit the <a href="/modules/index">modules page</a> to add modules first.
+              <p>Device types that are available are defined by which modules are installed. Devices cannot be added
+                  until a module is installed that implements the device type you are looking for.
+                  Visit the <a href="/modules/index">modules page</a> to add modules first.
               </p>
           </div>
       </div>
@@ -35,7 +37,8 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">{{ _('webinterface_label', 'Devices') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
+                    <h1 class="page-header">{{ _('webinterface_label', 'Devices') }}
+                        nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -45,10 +48,13 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
+                            {% if modules|length > 1 and devicetypes|length > 1 %}
                             <a href="/devices/add" class="btn btn-md btn-primary">Add New Device</a>
+                            {% endif %}
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
+                        {% if modules|length > 1 or devicetypes|length > 1 %}
                             <div class="devices devices-tabs" role="tabpanel" data-example-id="togglable-tabs">
                               <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
                                 <li role="presentation" class="active bg-success">
@@ -164,6 +170,11 @@
                                 </div>
                               </div>
                             </div>
+                        {% else %}
+                            There are currently no device device types. Before you can add new devices, you must
+                            <strong><a href="/modules/server_index">add some modules</a></strong> that implement new
+                            device types.
+                        {% endif %}
 
                         </div>
                     </div>

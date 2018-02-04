@@ -149,6 +149,8 @@
                                         {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
                                         <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ device_types.get(device.device_type_id).label }}</a><br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
+                                        {{device.PLATFORM}} -> {{device.SUB_PLATFORM}}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Type: </label><br>
                                         {{ device.statistic_type }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Label: </label><br>
