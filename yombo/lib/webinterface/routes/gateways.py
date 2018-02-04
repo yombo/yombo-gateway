@@ -17,7 +17,6 @@ def route_gateways(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gateways/index", "Gateways")
             return page.render(alerts=webinterface.get_alerts(),
-                               gateways=webinterface._Gateways.get_gateways(),
                                )
 
         @webapp.route('/<string:gateway_id>/details')
@@ -28,16 +27,12 @@ def route_gateways(webapp):
             except Exception as e:
                 print("gatew find error: %s" % e)
                 webinterface.add_alert('Gateway was not found.  %s' % gateway_id, 'warning')
-                redirect = webinterface.redirect(request, '/gateways/index')
-                return redirect
+                return webinterface.redirect(request, '/gateways/index')
             page = webinterface.get_template(request, webinterface._dir + 'pages/gateways/details.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gateways/index", "Gateways")
             webinterface.add_breadcrumb(request, "/gateways/%s/details" % gateway_id, gateway.label)
-            page = page.render(alerts=webinterface.get_alerts(),
+            return page.render(alerts=webinterface.get_alerts(),
                                gateway=gateway,
-                               gateways=webinterface._Gateways.get_gateways(),
-                               # devices=webinterface._Devices.devices,
                                devicetypes=webinterface._DeviceTypes.device_types,
                                )
-            return page

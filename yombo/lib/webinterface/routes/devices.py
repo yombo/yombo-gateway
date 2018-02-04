@@ -74,7 +74,6 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             return page.render(
                 alerts=webinterface.get_alerts(),
-                # devices=webinterface._Devices.devices,
                 devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
                 locations=webinterface._Locations.locations,
@@ -100,7 +99,7 @@ def route_devices(webapp):
 
             return page.render(
                 alerts=webinterface.get_alerts(),
-                device_types = device_types,
+                device_types=device_types,
             )
 
 
