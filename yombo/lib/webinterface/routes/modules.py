@@ -189,7 +189,7 @@ def route_modules(webapp):
                 return webinterface.redirect(request, '/modules/index')
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/modules/details.html')
-            device_types = yield webinterface._LocalDB.get_module_device_types(module_id)
+            module_device_types = yield webinterface._Modules.module_device_types(module_id)
             module_variables = yield module._module_variables()
             # print("module_variables: %s" % module_variables)
             webinterface.home_breadcrumb(request)
@@ -198,7 +198,7 @@ def route_modules(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                module=module,
                                module_variables=module_variables,
-                               device_types=device_types,
+                               module_device_types=module_device_types,
                                )
 
         @webapp.route('/<string:module_id>/disable', methods=['GET'])
