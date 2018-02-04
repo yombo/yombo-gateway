@@ -21,6 +21,7 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <label>Basic Information</label>
+                            {{location}}
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -50,12 +51,12 @@
                                 </ul>
                                 ") }}
                             <div class="input-group">
-                                <input tabindex="2" type="text" class="form-control" name="label" id="label" size="15" placeholder="'Shed', 'Main House'" value="{{ location.label|hide_none }}" autofocus required>
+                                <input tabindex="2" type="text" class="form-control" name="label" id="label" size="15" placeholder="'Shed', 'Main House'" value="{{ location.label|hide_none(True) }}" autofocus required>
                             </div>
                             <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label>
                             <a href="#" data-toggle="modal" data-target="#modallabel"><i class="fa fa-question fa-lg"></i></a> <br>
                             <div class="input-group">
-                                <input tabindex="3" type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'house', 'shed', 'pool_house'" value="{{ location.machine_label|hide_none }}" required>
+                                <input tabindex="3" type="text" class="form-control" name="machine_label" id="machine_label" size="15" placeholder="'house', 'shed', 'pool_house'" value="{{ location.machine_label|hide_none(True) }}" required>
                             </div>
                             <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                             <div class="input-group">

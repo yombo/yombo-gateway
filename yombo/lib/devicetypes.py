@@ -397,6 +397,7 @@ class DeviceTypes(YomboLibrary):
     def addable(self):
         """
         Get a list of addable device types.
+
         :return:
         """
         device_types = yield self._LocalDB.get_addable_device_types()

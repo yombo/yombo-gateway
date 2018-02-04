@@ -298,12 +298,37 @@ class WebInterface(YomboLibrary):
         #     'yes_no': yombo.utils.is_yes_no,
         # }
         self.webapp.templates.globals['yombo'] = self
-        self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
-        self.webapp.templates.globals['devicetypes'] = self._DeviceTypes
-        self.webapp.templates.globals['devices'] = self._Devices
-        self.webapp.templates.globals['commands'] = self._Commands
-        self.webapp.templates.globals['modules'] = self._Modules
-        self.webapp.templates.globals['gateways'] = self._Gateways
+        self.webapp.templates.globals['_local_gateway'] = self._Gateways.get_local()
+        self.webapp.templates.globals['_amqp'] = self._AMQP
+        self.webapp.templates.globals['_amqpyombo'] = self._AMQPYombo
+        self.webapp.templates.globals['_apiauth'] = self._APIAuth
+        self.webapp.templates.globals['_atoms'] = self._Atoms
+        self.webapp.templates.globals['_automation'] = self._Automation
+        self.webapp.templates.globals['_commands'] = self._Commands
+        self.webapp.templates.globals['_configs'] = self._Configs
+        self.webapp.templates.globals['_crontab'] = self._CronTab
+        self.webapp.templates.globals['_devices'] = self._Devices
+        self.webapp.templates.globals['_devicetypes'] = self._DeviceTypes
+        self.webapp.templates.globals['_gateways'] = self._Gateways
+        self.webapp.templates.globals['_gpg'] = self._GPG
+        self.webapp.templates.globals['_inputtypes'] = self._InputTypes
+        self.webapp.templates.globals['_libraries'] = self._Libraries
+        self.webapp.templates.globals['_localize'] = self._Localize
+        self.webapp.templates.globals['_locations'] = self._Locations
+        self.webapp.templates.globals['_modules'] = self._Modules
+        self.webapp.templates.globals['_mqtt'] = self._MQTT
+        self.webapp.templates.globals['_nodes'] = self._Nodes
+        self.webapp.templates.globals['_notifiticaions'] = self._Notifications
+        self.webapp.templates.globals['_queue'] = self._Queue
+        self.webapp.templates.globals['_sqldict'] = self._SQLDict
+        self.webapp.templates.globals['_sslcerts'] = self._SSLCerts
+        self.webapp.templates.globals['_states'] = self._States
+        self.webapp.templates.globals['_statistics'] = self._Statistics
+        self.webapp.templates.globals['_tasks'] = self._Tasks
+        self.webapp.templates.globals['_times'] = self._Times
+        self.webapp.templates.globals['_variables'] = self._Variables
+        self.webapp.templates.globals['_validate'] = self._Validate
+        self.webapp.templates.globals['_voicecmds'] = self._VoiceCmds
         self.webapp.templates.globals['misc_wi_data'] = self.misc_wi_data
         self.webapp.templates.globals['webinterface'] = self
         # self.webapp.templates.globals['func'] = self.functions
@@ -867,10 +892,12 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted
         self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
 
-    def dispay_hide_none(self, input):
+    def dispay_hide_none(self, input, allow_string=None):
         if input is None:
             return ""
         if isinstance(input, str):
+            if allow_string is True:
+                return input
             if input.lower() == "none":
                 return ""
         return input

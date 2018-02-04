@@ -58,7 +58,6 @@ def route_locations(webapp):
             root_breadcrumb(webinterface, request)
             # print("webinterface._Locations.locations: %s" % webinterface._Locations.locations)
             return page.render(alerts=webinterface.get_alerts(),
-                               locations=webinterface._Locations.locations,
                                )
 
         @webapp.route('/<string:location_id>/details', methods=['GET'])
@@ -68,7 +67,7 @@ def route_locations(webapp):
             try:
                 DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
             except YomboWarning as e:
-                print(DL_results)
+                print(e)
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
 
@@ -106,25 +105,24 @@ def route_locations(webapp):
                 'label': webinterface.request_get_default(request, 'label', ""),
             }
 
-            DL_results = yield webinterface._Locations.add_location(data)
-
-            if DL_results['status'] == 'failed':
-                webinterface.add_alert(DL_results['apimsghtml'], 'warning')
+            results = yield webinterface._Locations.add_location(data)
+            if results['status'] == 'failed':
+                webinterface.add_alert(results['apimsghtml'], 'warning')
                 return page_lib_location_form(webinterface, request, session, 'add', data, "Add Location")
 
             msg = {
                 'header': 'Location Added',
                 'label': 'Location added successfully',
                 'description': '<p>The location has been added.<p>Continue to <a href="/locations/index">Locations index</a> or <a href="/locations/%s/details">View new Location</a>.</p>' %
-                               DL_results['location_id'],
+                               results['location_id'],
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/locations/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/<string:location_id>/edit', methods=['GET'])
         @require_auth()
@@ -141,8 +139,9 @@ def route_locations(webapp):
                                         DL_results['data']['label'])
             webinterface.add_breadcrumb(request, "/locations/%s/edit", "Edit")
 
-            return page_lib_location_form(webinterface, request, session, 'edit', DL_results['data'],
-                                             "Edit Location: %s" % DL_results['data']['label'])
+            return page_lib_location_form(webinterface,
+                                          request, session, 'edit', DL_results['data'],
+                                          "Edit Location: %s" % DL_results['data']['label'])
 
         @webapp.route('/<string:location_id>/edit', methods=['POST'])
         @require_auth()
@@ -176,16 +175,16 @@ def route_locations(webapp):
             }
 
             # DL_api_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
-            # page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            # root_breadcrumb(webinterface, request)
-            # if DL_api_results['code'] > 299:
-            #     webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
-            #                                 DL_results['data']['label'])
-            #     webinterface.add_breadcrumb(request, "/locations/%s/edit" % location_id, "Edit")
+            page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
+            root_breadcrumb(webinterface, request)
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/locations/%s/details" % location_id,
+                                        data['label'])
+            webinterface.add_breadcrumb(request, "/locations/%s/edit", "Edit")
 
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         def page_lib_location_form(webinterface, request, session, action_type, location, header_label):
             page = webinterface.get_template(request, webinterface._dir + 'pages/locations/form.html')
@@ -211,8 +210,8 @@ def route_locations(webapp):
                                         DL_results['data']['label'])
             webinterface.add_breadcrumb(request, "/locations/%s/delete" % location_id, "Delete")
             return page.render(alerts=webinterface.get_alerts(),
-                                    location=DL_results['data'],
-                                    )
+                               location=DL_results['data'],
+                               )
 
         @webapp.route('/<string:location_id>/delete', methods=['POST'])
         @require_auth()

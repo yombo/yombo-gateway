@@ -21,7 +21,8 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                             <label style="margin-top: 0px; margin-bottom: 0px">Gateway: </label><br>
-                            {{ atom.gateway_id }} -> {{gateways[atom.gateway_id].label}}<br>
+                            {{_gateways[atom.gateway_id].label}} <br>
+                            {{ atom.gateway_id }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Value: </label><br>
                             {{ atom.value }}<br>
 

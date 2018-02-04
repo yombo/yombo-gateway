@@ -20,8 +20,6 @@ def route_states(webapp):
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/states/index", "States")
             return page.render(alerts=webinterface.get_alerts(),
-                               states=webinterface._States.get_states(),
-                               gateways=webinterface._Gateways.get_gateways(),
                                )
 
         @webapp.route('/<string:gateway_id>/<string:state_name>/details')

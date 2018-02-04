@@ -29,11 +29,7 @@ def route_home(webapp):
             page = webinterface.webapp.templates.get_template(webinterface._dir + 'pages/index.html')
             delayed_device_commands = webinterface._Devices.get_delayed_commands()
             return page.render(alerts=webinterface.get_alerts(),
-                               device_commands_delayed = delayed_device_commands,
-                               automation_rules = len(webinterface._Loader.loadedLibraries['automation'].rules),
-                               devices=webinterface._Libraries['devices'].devices,
-                               modules=webinterface._Libraries['modules'].modules,
-                               # states=webinterface._Libraries['states'].get_states(),
+                               device_commands_delayed=delayed_device_commands,
                                )
 
         @require_auth()

@@ -60,7 +60,7 @@
                                             <th>Name</th><th>Description</th><th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for moduleID, module in modules.items() %}
+                                    <tbody>{% for moduleID, module in _modules.items() %}
                                          <tr>
                                              <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a><br>
                                               {% if moduleID in webinterface.module_config_links %}

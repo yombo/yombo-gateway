@@ -39,11 +39,4 @@ def route_panel(webapp):
             page = webinterface.get_template(request, webinterface._dir + 'pages/panel/index.html')
             return page.render(
                 alerts=webinterface.get_alerts(),
-                commands=webinterface._Commands.commands,
-                devices=webinterface._Devices.devices,
-                devicetypes=webinterface._DeviceTypes.device_types,
-                request=request,
-                mqtt_lib=webinterface._MQTT,
-                gateway_lib=webinterface._Gateways,
-                # mqtt_port = webinterface._Configs.get('mqtt', 'server_listen_port_websockets_ssl'),
                 )

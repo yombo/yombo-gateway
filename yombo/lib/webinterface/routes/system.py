@@ -12,7 +12,7 @@ def route_system(webapp):
         def page_system_index(webinterface, request, session):
             page = webinterface.get_template(request, webinterface._dir + 'pages/system/index.html')
             return page.render(alerts=webinterface.get_alerts(),
-                              )
+                               )
 
         @webapp.route('/control')
         @require_auth()

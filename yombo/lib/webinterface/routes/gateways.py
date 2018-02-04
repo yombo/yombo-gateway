@@ -34,5 +34,4 @@ def route_gateways(webapp):
             webinterface.add_breadcrumb(request, "/gateways/%s/details" % gateway_id, gateway.label)
             return page.render(alerts=webinterface.get_alerts(),
                                gateway=gateway,
-                               devicetypes=webinterface._DeviceTypes.device_types,
                                )

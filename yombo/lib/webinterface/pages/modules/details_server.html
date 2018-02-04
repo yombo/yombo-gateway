@@ -5,12 +5,11 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header"> Module: {{ server_module.label }}</h1>
-                    <h3>
-                                {% if server_module.id in modules %}
-                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/{{ server_module.id }}/edit" class="btn btn-primary ">Manage Module</a>
-                                {% else %}
-                                    <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/{{ server_module.id }}/add" class="btn btn-primary ">Add module to gateway</a>
-                        {% endif %}</h3>
+                        {% if server_module.id in _modules %}
+                            <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/{{ server_module.id }}/edit" class="btn btn-primary ">Manage Module</a>
+                        {% else %}
+                            <a style="padding-left: 1em; padding-left: 1em; margin-left: 2em;" href="/modules/{{ server_module.id }}/add" class="btn btn-primary ">Add module to gateway</a>
+                        {% endif %}
 
                     <p></p>
                 </div>

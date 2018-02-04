@@ -15,7 +15,6 @@ def route_atoms(webapp):
             webinterface.add_breadcrumb(request, "/info", "Info")
             webinterface.add_breadcrumb(request, "/atoms/index", "Atoms")
             return page.render(alerts=webinterface.get_alerts(),
-                               atoms=webinterface._Libraries['atoms'].get_atoms(),
                                )
 
         @webapp.route('/<string:gateway_id>/<string:atom_name>/details')

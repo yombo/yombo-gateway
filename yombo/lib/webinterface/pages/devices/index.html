@@ -38,7 +38,7 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">{{ _('webinterface_label', 'Devices') }}
-                        nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
+                    <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -48,13 +48,13 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            {% if modules|length > 1 and devicetypes|length > 1 %}
+                            {% if _modules|length > 0 and _devicetypes|length > 0 %}
                             <a href="/devices/add" class="btn btn-md btn-primary">Add New Device</a>
                             {% endif %}
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                        {% if modules|length > 1 or devicetypes|length > 1 %}
+                        {% if _modules|length > 0 or _devicetypes|length > 0 %}
                             <div class="devices devices-tabs" role="tabpanel" data-example-id="togglable-tabs">
                               <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
                                 <li role="presentation" class="active bg-success">
@@ -83,15 +83,15 @@
                                                     <th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.items() if device.enabled_status == 1 and device.gateway_id == local_gateway.gateway_id%}
+                                            <tbody>{% for device_id, device in _devices.items() if device.enabled_status == 1 and device.gateway_id == _local_gateway.gateway_id%}
                                                  <tr>
                                                     <td data-priority="1">
-                                                        <a href="/devices/{{ device.device_id }}/details">{{ locations[device.area_id].label|hide_none }} {{ device.label }}</a>
+                                                        <a href="/devices/{{ device.device_id }}/details">{{ _locations.locations[device.area_id].label|hide_none }} {{ device.label }}</a>
                                                     </td>
                                                     <td data-priority="4">{{ device.location }}</td>
                                                     <td data-priority="3">{{ device.area }}</td>
                                                     <td data-priority="5">{{ device.description }}</td>
-                                                    <td data-priority="6">{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
                                                     <td data-priority="2">{{ device.status_all.human_status }}</td>
                                                     <td data-priority="2">
                                                         {% if device.enabled_status == 0 -%}
@@ -117,16 +117,16 @@
                                                     <th>Gateway</th><th>Name</th><th>Location</th><th>Area</th><th>Description</th><th>Device Type</th><th>Device Status</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.items() if device.gateway_id != local_gateway.gateway_id %}
+                                            <tbody>{% for device_id, device in _devices.items() if device.gateway_id != _local_gateway.gateway_id %}
                                                  <tr>
-                                                    <td>{{ gateways[device.gateway_id].label }}</td>
+                                                    <td>{{ _gateways[device.gateway_id].label }}</td>
                                                     <td>
                                                         <a href="/devices/{{ device.device_id }}/details">{{ device.area_label }}</a>
                                                     </td>
                                                     <td>{{ device.location }}</td>
                                                     <td>{{ device.area }}</td>
                                                     <td>{{ device.description }}</td>
-                                                    <td>{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td>{{ _devicetypes[device.device_type_id].label }}</td>
                                                     <td>{{ device.status_all.human_status }}</td>
                                                  </tr>{% endfor %}
                                             </tbody>
@@ -142,16 +142,16 @@
                                                     <th>Name</th><th>Gateway</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.items() if device.enabled_status == 0 %}
+                                            <tbody>{% for deviceID, device in _devices.items() if device.enabled_status == 0 %}
                                                  <tr>
                                                     <td data-priority="1">
-                                                        <a href="/devices/{{ device.device_id }}/details">{{ locations[device.area_id].label|hide_none }} {{ device.label }}</a>
+                                                        <a href="/devices/{{ device.device_id }}/details">{{ _locations[device.area_id].label|hide_none }} {{ device.label }}</a>
                                                     </td>
-                                                    <td data-priority="3">{{ gateways[device.gateway_id].label }}</td>
+                                                    <td data-priority="3">{{ _gateways[device.gateway_id].label }}</td>
                                                     <td data-priority="3">{{ device.area }}</td>
                                                     <td data-priority="4">{{ device.location }}</td>
                                                     <td data-priority="5">{{ device.description }}</td>
-                                                    <td data-priority="6">{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
                                                     <td data-priority="2">{{ device.status_all.human_status }}</td>
                                                     <td data-priority="2">
                                                         {% if device.enabled_status == 0 -%}

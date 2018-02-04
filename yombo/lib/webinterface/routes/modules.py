@@ -54,8 +54,6 @@ def route_modules(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
-                               # modules=webinterface._Modules.modules,
-                               devicetypes=webinterface._DeviceTypes.device_types,
                                )
 
         @webapp.route('/server_index')
@@ -83,9 +81,8 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/server_index", "Server Modules")
             webinterface.add_breadcrumb(request, "/modules/%s/server_details" % module_results['data']['id'], module_results['data']['label'])
             return page.render(alerts=webinterface.get_alerts(),
-                                    server_module=module_results['data'],
-                                    # modules=webinterface._Modules.modules,
-                                    )
+                               server_module=module_results['data'],
+                               )
 
         @webapp.route('/<string:module_id>/add', methods=['POST', 'GET'])
         @require_auth()
@@ -174,7 +171,7 @@ def route_modules(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                server_module=module_results['data'],
                                variable_groups=variable_groups,
-                               input_types=webinterface._InputTypes.input_types,
+                               # input_types=webinterface._InputTypes.input_types,
                                module_data=data,
                                )
 
@@ -422,8 +419,8 @@ def route_modules(webapp):
 
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        )
+                                   module=module,
+                                   )
 
             webinterface._Notifications.add({'title': 'Restart Required',
                                              'message': 'Module enabled. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',

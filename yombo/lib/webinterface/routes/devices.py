@@ -74,9 +74,7 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             return page.render(
                 alerts=webinterface.get_alerts(),
-                devicetypes=webinterface._DeviceTypes.device_types,
                 request=request,
-                locations=webinterface._Locations.locations,
             )
 
         @webapp.route('/add')
@@ -95,7 +93,6 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Select Device Type")
             device_types = yield webinterface._DeviceTypes.addable()
-            print("device_types %s" % device_types)
 
             return page.render(
                 alerts=webinterface.get_alerts(),
@@ -231,8 +228,6 @@ def route_devices(webapp):
                                # devices=webinterface._Devices.devices,
                                device_variables=device_variables,
                                device_type=device_type,
-                               commands=webinterface._Commands,
-                               input_types=webinterface._InputTypes.input_types,
                                locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#")
                                )
@@ -285,9 +280,6 @@ def route_devices(webapp):
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                device_variables=device_variables,
-                               device_types=webinterface._DeviceTypes,
-                               commands=webinterface._Commands,
-                               locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#")
                                )
 
@@ -306,8 +298,6 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/%s/delete" % device_id, "Delete")
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               devicetypes=webinterface._DeviceTypes,
-                               locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#")
                                )
 
@@ -330,8 +320,6 @@ def route_devices(webapp):
                 webinterface.add_alert('Must enter "delete" in the confirmation box to delete the device.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
-                                   devicetypes=webinterface._DeviceTypes,
-                                   locations=webinterface._Locations.locations_sorted,
                                    states=webinterface._States.get("#")
                                    )
 
@@ -358,7 +346,6 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/%s/disable" % device_id, "Disable")
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               devicetypes=webinterface._DeviceTypes,
                                )
 
         @webapp.route('/<string:device_id>/disable', methods=['POST'])
@@ -376,7 +363,6 @@ def route_devices(webapp):
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the device.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
-                                   devicetypes=webinterface._DeviceTypes,
                                    )
 
             device_results = yield webinterface._Devices.disable_device(device.device_id)
@@ -403,7 +389,6 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/%s/enable" % device_id, "Enable")
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               devicetypes=webinterface._DeviceTypes,
                                )
 
         @webapp.route('/<string:device_id>/enable', methods=['POST'])
@@ -421,7 +406,6 @@ def route_devices(webapp):
                 webinterface.add_alert('Must enter "enable" in the confirmation box to enable the device.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
                                    device=device,
-                                   devicetypes=webinterface._DeviceTypes,
                                    )
 
             device_results = yield webinterface._Devices.enable_device(device.device_id)
@@ -585,10 +569,6 @@ def route_devices(webapp):
 
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               # devices=webinterface._Devices.devices,
                                device_variables=device_variables,
-                               commands=webinterface._Commands,
-                               input_types=webinterface._InputTypes.input_types,
-                               locations=webinterface._Locations.locations_sorted,
                                states=webinterface._States.get("#"),
                                )

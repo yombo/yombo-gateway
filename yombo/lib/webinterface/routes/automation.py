@@ -10,9 +10,10 @@ def route_automation(webapp):
         @webapp.route('/index')
         @require_auth()
         def page_automation_index(webinterface, request, session):
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/automation/index", "Automation")
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/index.html')
             return page.render(alerts=webinterface.get_alerts(),
-                               rules=webinterface._Loader.loadedLibraries['automation'].rules,
                                )
 
         
@@ -20,42 +21,40 @@ def route_automation(webapp):
         @require_auth()
         def page_automation_details(webinterface, request, session, automation_id):
             try:
-                device = webinterface._DevicesLibrary[automation_id]
+                device = webinterface._Devices[automation_id]
             except:
                 webinterface.add_alert('Device ID was not found.', 'warning')
                 return webinterface.redirect(request, '/automation/index')
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/automation/index", "Automation")
+            webinterface.add_breadcrumb(request, "/automation/add_rul", "Rule details")
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/device.html')
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
-                               commands=webinterface._Commands,
                                )
 
         @webapp.route('/platforms')
         @require_auth()
         def page_automation_platforms(webinterface, request, session):
-
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/automation/index", "Automation")
+            webinterface.add_breadcrumb(request, "/automation/platforms", "Platforms")
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/platforms.html')
-            sources = webinterface._Loader.loadedLibraries['automation'].sources  # List of source processors
-            filters = webinterface._Loader.loadedLibraries['automation'].filters # List of filter processors
-            actions = webinterface._Loader.loadedLibraries['automation'].actions  # List of actionprocessors
-
             return page.render(alerts=webinterface.get_alerts(),
-                               source_platforms=sources,
-                               filter_platforms=filters,
-                               action_platforms=actions,
+                               source_platforms=webinterface._Automation.sources,  # List of source processors,
+                               filter_platforms=webinterface._Automation.filters,  # List of filter processors,
+                               action_platforms=webinterface._Automation.actions,  # List of actionprocessors,
                                )
 
         @webapp.route('/add_rule')
         @require_auth()
         def page_automation_add_new(webinterface, request, session):
-
+            webinterface.home_breadcrumb(request)
+            webinterface.add_breadcrumb(request, "/automation/index", "Automation")
+            webinterface.add_breadcrumb(request, "/automation/add_rule", "Add rule")
             page = webinterface.get_template(request, webinterface._dir + 'pages/automation/add_rule.html')
-            sources = webinterface._Loader.loadedLibraries['automation'].sources  # List of source processors
-            filters = webinterface._Loader.loadedLibraries['automation'].filters # List of filter processors
-            actions = webinterface._Loader.loadedLibraries['automation'].actions  # List of actionprocessors
-
             return page.render(alerts=webinterface.get_alerts(),
-                               source_platforms=sources,
-                               filter_platforms=filters,
-                               action_platforms=actions,
+                               source_platforms=webinterface._Automation.sources,  # List of source processors,
+                               filter_platforms=webinterface._Automation.filters,  # List of filter processors,
+                               action_platforms=webinterface._Automation.actions,  # List of actionprocessors,
                                )

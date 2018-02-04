@@ -25,7 +25,7 @@ def route_voicecmds(webapp):
             webinterface.add_breadcrumb(request, "/voicecmds", "Voice Commands")
             webinterface.add_breadcrumb(request, "/voicecmds/%s/details" % voicecmd_id, "Details")
             return page.render(alerts=webinterface.get_alerts(),
-                               commands=webinterface._Commands.get_public_commands(),
+                               # commands=webinterface._Commands.get_public_commands(),
                                page_label='Public Commands',
                                page_description='Puiblicly available commands.'
                                )

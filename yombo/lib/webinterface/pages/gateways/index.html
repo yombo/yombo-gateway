@@ -27,7 +27,7 @@
                                             <tr><th>Label</th><th>Description</th><th>Status</th><th>Last Scene</th><th>Communications<br>Count</th></tr>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for gateway_id, gateway in gateways.items() %}
+                                    <tbody>{% for gateway_id, gateway in _gateways.items() %}
                                          <tr>
                                              <td><a href="/gateways/{{ gateway_id }}/details">{{ gateway.label }}</a></td>
                                              <td>{{ gateway.description }}</td>

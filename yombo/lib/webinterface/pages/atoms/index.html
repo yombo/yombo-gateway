@@ -6,7 +6,9 @@
             <div class="row">
                 <div class="col-lg-12">
                     <h1 class="page-header">Atoms</h1>
-                    Atoms represent facts about the system.
+                    Atoms provide information regarding the Yombo Gateway system and are relatively static in nature.
+                    However, if the system environment changes and is detected, the atom should be updated. For
+                    example, if the IP address changes, the atom data should be refreshed.
                     <p></p>
                 </div>
                 <!-- /.col-lg-12 -->
@@ -16,7 +18,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            Available Atoms
+                            <label>Available Atoms</label>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
@@ -44,7 +46,7 @@
                                                     <tr><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for atom_name, atom in atoms[local_gateway.gateway_id].items() %}
+                                            <tbody>{% for atom_name, atom in _atoms.get_atoms(_local_gateway.gateway_id).items() %}
                                                  <tr>
                                                      <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
                                                      <td>{{ atom['value_human'] }}</td>
@@ -64,13 +66,13 @@
                                                 <tr><th>Gateway</th><th>Name</th><th>Value</th><th>Last Updated</th><th>Description</th></tr>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for gateway_id, gateway_atoms in atoms.items() if gateway_id != local_gateway.gateway_id%}
-                                                    {% for atom_name, atom in gateway_atoms.items()%}
+                                            <tbody>{% for gateway_id, atoms in _atoms._Atoms__Atoms.items() if gateway_id != _local_gateway.gateway_id %}
+                                                    {% for atom_name, data in atoms.items()%}
                                                  <tr>
-                                                     <td>{{ gateways[atom['gateway_id']].label }}</td>
-                                                     <td><a href="/atoms/{{ atom.gateway_id }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
-                                                     <td>{{ atom['value_human'] }}</td>
-                                                     <td>{{ atom['updated_at']|epoch_to_human }}</td>
+                                                     <td><a href="/atoms/{{ atom }}/{{ atom_name }}/details">{{ atom_name }}</a></td>
+                                                     <td>{{ _gateways[gateway_id].label }}</td>
+                                                     <td>{{ data['value_human'] }}</td>
+                                                     <td>{{ data['updated_at']|epoch_to_human }}</td>
                                                      <td>{% if _('atoms:::' + atom_name) != 'atoms:::' + atom_name %}{{ _('atoms:::' + atom_name) }} {% endif %}</td>
                                                  </tr>{% endfor %} {% endfor %}
                                             </tbody>

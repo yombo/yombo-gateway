@@ -432,7 +432,7 @@ class Locations(YomboLibrary):
 
         if location_id in self.locations:
             self.locations[location_id].update_attributes(data)
-            self.locations[location_id].save_to_db(data)
+            self.locations[location_id].save_to_db()
 
         return results
 

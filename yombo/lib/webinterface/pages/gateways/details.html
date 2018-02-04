@@ -38,7 +38,7 @@
                                 {%if gateway.is_master == True %}
                                 None
                                 {%elif gateway.master_gateway != ""%}
-                                {{ gateways[gateway.master_gateway].label }}
+                                {{ _gateways[gateway.master_gateway].label }}
                                 {%else%}
                                 Error with master gateway selection
                                 {%endif%}
@@ -104,7 +104,7 @@
                                                     <th>Name</th><th>Area</th><th>Location</th><th>Description</th><th>Device Type</th><th>Device Status</th><th>Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>{% for deviceID, device in devices.items() if device.gateway_id == gateway.gateway_id %}
+                                            <tbody>{% for deviceID, device in _devices.items() if device.gateway_id == gateway.gateway_id %}
                                                  <tr>
                                                     <td data-priority="1">
                                                         <a href="/devices/{{ device.device_id }}/details">{{ device.area_label }}</a>
@@ -112,7 +112,7 @@
                                                     <td data-priority="3">{{ device.area }}</td>
                                                     <td data-priority="4">{{ device.location }}</td>
                                                     <td data-priority="5">{{ device.description }}</td>
-                                                    <td data-priority="6">{{ devicetypes[device.device_type_id].label }}</td>
+                                                    <td data-priority="6">{{ _devicetypes[device.device_type_id].label }}</td>
                                                     <td data-priority="2">{{ device.status_all.human_status }}</td>
                                                     <td data-priority="2">
                                                         {% if device.enabled_status == 0 -%}
@@ -147,7 +147,7 @@
                                                         <th>Time</th><th>Direction</th><th>Topic</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody>{% for history in gateways[gateway.gateway_id].last_communications %}
+                                                <tbody>{% for history in _gateways[gateway.gateway_id].last_communications %}
                                                      <tr>
                                                         <td> {{ history.time|epoch_to_human }}</td>
                                                         <td> {{ history.direction }}</td>

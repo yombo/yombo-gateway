@@ -74,7 +74,6 @@ def route_apiauth(webapp):
             webinterface.add_breadcrumb(request, "/apiauth/%s/details" % apiauth_id,
                                         api_auth.label)
             return page.render(alerts=webinterface.get_alerts(),
-                               apiauths=webinterface._APIAuth,
                                apiauth=api_auth,
                                )
 
@@ -127,8 +126,8 @@ def route_apiauth(webapp):
             root_breadcrumb(webinterface, request)
             webinterface.add_breadcrumb(request, "/apiauth/add", "Add")
             return page.render(alerts=webinterface.get_alerts(),
-                                msg=msg,
-                                )
+                               msg=msg,
+                               )
 
         @webapp.route('/<string:apiauth_id>/edit', methods=['GET'])
         @require_auth()
@@ -161,7 +160,6 @@ def route_apiauth(webapp):
                 if temp != "":
                     data[attr] = temp
 
-            # print("updatinga ttributes: %s" % data)
             api_auth.update_attributes(data)
 
             msg = {

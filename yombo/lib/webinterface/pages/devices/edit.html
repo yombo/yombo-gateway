@@ -85,7 +85,7 @@
                             <label style="margin-top: 20px; margin-bottom: 0px">Gateway: </label><br>
                             <div class="input-group">
                                 <select class="selectpicker show-tick form-control" tabindex="3" required name="gateway_id" id="gateway_id">
-                                {% for gateway_id, gateway in gateways.items() %}
+                                {% for gateway_id, gateway in _gateways.items() %}
                                     <option value="{{gateway_id}}" {% if device.gateway_id == gateway_id %} selected{% endif %} data-subtext="{{gateway.gateway_id}}">{{gateway.label}}</option>
                                 {% endfor %}
                                 </select>
@@ -316,7 +316,7 @@
                                     ") }}
                                     <br>
                                     <div class="input-group">
-                                    {{macros.form_select_device(devices, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
+                                    {{macros.form_select_device(_devices, 'energy_tracker_device', 'energy_tracker_device', device.energy_tracker_device)}}
                                     </div>
                                 </div>
                                 <div id="div_energy_tracker_state">
@@ -396,7 +396,7 @@
                         <br>
                         </div>
                         <div class="panel-body">
-{{macros.edit_item_variables(devices, device, input_types, device_variables)}}
+{{macros.edit_item_variables(_devices, device, input_types, device_variables)}}
                         </div>
                     </div>
                 </div>

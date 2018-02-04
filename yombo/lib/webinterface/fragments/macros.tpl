@@ -116,6 +116,6 @@
         </div>
         {%- endfor %}
     {% else %}
-        <h4>No Variables</h4>
+        <h4>No variables defined.</h4>
     {%- endif %}
 {%- endmacro %}
