@@ -782,10 +782,10 @@ class Gateways(YomboLibrary):
 
         message = {
             'action': 'add',
-            'notice': notice,
+            'notice': kwargs['event'],
         }
 
-        topic = "lib/notification/" + notice['id']
+        topic = "lib/notification/" + notice.notification_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
         self.publish_data('all', topic, message)
 
@@ -810,10 +810,10 @@ class Gateways(YomboLibrary):
 
         message = {
             'action': 'delete',
-            'id': notice['id'],
+            'notice': kwargs['event'],
         }
 
-        topic = "lib/notification/" + notice['id']
+        topic = "lib/notification/" + notice.notification_id
         # print("sending _device_status_: %s -> %s" % (topic, message))
         self.publish_data('all', topic, message)
 
