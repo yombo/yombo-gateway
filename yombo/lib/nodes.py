@@ -516,6 +516,8 @@ class Nodes(YomboLibrary):
         # This fancy inline just removed None and '' values.
         results = yield self.add_node({k: v for k, v in api_data.items() if v})
         # print("create results: %s" % results)
+        if results['status'] != 'success':
+            return None
         return self.nodes[results['node_id']]
 
     @inlineCallbacks
@@ -556,7 +558,6 @@ class Nodes(YomboLibrary):
             node_id = node_results['data']['id']
             new_node = node_results['data']
             new_node['data'] = input_data
-
         else:
             node_id = api_data['id']
             new_node = api_data
@@ -570,7 +571,6 @@ class Nodes(YomboLibrary):
                                   node_id=node_id,
                                   node=self.nodes[node_id],
                                   )
-                return self.nodes[node_id]
         results = {
             'status': 'success',
             'msg': "Node added.",
@@ -863,7 +863,7 @@ class Node(object):
     def _on_change(self, *args, **kwargs):
         """
         This function is called whenever something changes. We 10 seconds of no updates, or 120 seconds with
-        continious updates, we will update the Yombo API as well as save to disk.
+        continuous updates, we will update the Yombo API as well as save to disk.
 
         Simply calls self.save() when it's time to do the actual save.
 
@@ -871,7 +871,7 @@ class Node(object):
         :param kwargs:
         :return:
         """
-        # print("%s: _on_change called: %s" % (self.node_id, self._update_calllater))
+        # print("Node oncahnge: %s: _on_change called: %s" % (self.node_id, self._update_calllater))
         if self._update_calllater is not None and self._update_calllater.active():
             # print("%s: _on_change called.. still active.")
             self._update_calllater.cancel()
