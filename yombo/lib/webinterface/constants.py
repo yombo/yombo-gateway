@@ -21,17 +21,6 @@ NAV_SIDE_MENU = [
     },
 
     {
-        'label1': 'Device Tools',
-        'label2': 'Device Commands',
-        'priority1': 600,
-        'priority2': 1000,
-        'icon': 'fa fa-info fa-fw',
-        'url': '/devices/device_commands',
-        'tooltip': '',
-        'opmode': 'run',
-    },
-
-    {
         'label1': 'Modules',
         'label2': 'Modules',
         'priority1': 800,
@@ -54,9 +43,20 @@ NAV_SIDE_MENU = [
     },
     {
         'label1': 'Info',
-        'label2': 'States',
+        'label2': 'Device Commands',
         'priority1': 1000,
         'priority2': 3000,
+        'icon': 'fa fa-info fa-fw',
+        'url': '/devices/device_commands',
+        'tooltip': '',
+        'opmode': 'run',
+    },
+
+    {
+        'label1': 'Info',
+        'label2': 'States',
+        'priority1': 1000,
+        'priority2': 4000,
         'icon': 'fa fa-info fa-fw',
         'url': '/states/index',
         'tooltip': '',
@@ -66,7 +66,7 @@ NAV_SIDE_MENU = [
         'label1': 'Info',
         'label2': 'Voice Commands',
         'priority1': 1000,
-        'priority2': 4000,
+        'priority2': 5000,
         'icon': 'fa fa-info fa-fw',
         'url': '/voicecmds/index',
         'tooltip': '',
