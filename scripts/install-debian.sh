@@ -62,7 +62,7 @@ python python-dev python3-dev gnupg2 rng-tools build-essential cmake git \
 python3-setuptools python3-pip python-pip libyaml-dev libncurses5 \
 libncurses5-dev libncursesw5 libncursesw5-dev xz-utils curl wget llvm tk-dev libbluetooth-dev \
 mosquitto libmosquitto-dev libcurl4-openssl-dev libc-ares-dev uuid-dev daemon quilt dirmngr \
-libavahi-compat-libdnssd-dev nodejs -y
+libavahi-compat-libdnssd-dev nodejs libbluetooth3 libboost-thread-dev libglib2.0 -y
 
 log Installing homebridge incase it's going to be used later.
 
