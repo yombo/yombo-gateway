@@ -54,7 +54,8 @@ def route_modules(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             return page.render(alerts=webinterface.get_alerts(),
-                               modules=webinterface._Libraries['modules'].modules,
+                               # modules=webinterface._Modules.modules,
+                               devicetypes=webinterface._DeviceTypes.device_types,
                                )
 
         @webapp.route('/server_index')
@@ -83,7 +84,7 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/%s/server_details" % module_results['data']['id'], module_results['data']['label'])
             return page.render(alerts=webinterface.get_alerts(),
                                     server_module=module_results['data'],
-                                    modules=webinterface._Modules.modules,
+                                    # modules=webinterface._Modules.modules,
                                     )
 
         @webapp.route('/<string:module_id>/add', methods=['POST', 'GET'])
@@ -104,6 +105,7 @@ def route_modules(webapp):
                 data = {
                     'status': json_output['status'],
                     'module_id': json_output['module_id'],
+                    'module_label': json_output['module_label'],
                     'install_branch': json_output['install_branch'],
                 }
                 if 'first_time' in json_output:
@@ -118,7 +120,6 @@ def route_modules(webapp):
                 json_output = {}
                 ok_to_save = False
 
-            variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
 
             if ok_to_save:
                 if 'vars' in json_output:
@@ -171,80 +172,11 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/index", "Modules")
             webinterface.add_breadcrumb(request, "/modules/index", "Add Module")
             return page.render(alerts=webinterface.get_alerts(),
-                                    server_module=module_results['data'],
-                                    variable_groups=variable_groups,
-                                    input_types=webinterface._InputTypes.input_types,
-                                    module_data=data,
-                                    )
-
-        # @webapp.route('/<string:module_id>/add', methods=['POST'])
-        # @require_auth()
-        # @inlineCallbacks
-        # def page_modules_add_post(webinterface, request, session, module_id):
-        #     json_output = json.loads(request.args.get('json_output')[0])
-        #
-        #     data = {
-        #         'status': json_output['status'],
-        #         'module_id': json_output['module_id'],
-        #         'install_branch': json_output['install_branch'],
-        #     }
-        #     # print "jsonoutput = %s" % json_output
-        #     if 'vars' in json_output:
-        #         variable_data = yield webinterface._Variables.extract_variables_from_web_data(json_output.get('vars', {}))
-        #         data['variable_data'] = variable_data
-        #
-        #     results = yield webinterface._Modules.add_module(data)
-        #     if results['status'] == 'failed':
-        #         module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-        #         if module_results['code'] != 200:
-        #             webinterface.add_alert(module_results['content']['html_message'], 'warning')
-        #             returnValue(webinterface.redirect(request, '/modules/index'))
-        #
-        #         # print "failed to submit new module: %s" % results
-        #         webinterface.add_alert(results['apimsghtml'], 'warning')
-        #         module_variables = yield webinterface._Variables.get_variable_groups_fields(
-        #             group_relation_type='device_type',
-        #             group_relation_id='device_type_id',
-        #         )
-        #
-        #         if device['variable_data'] is not None:
-        #             device_variables = yield webinterface._Variables.merge_variable_groups_fields_data_data(
-        #                 device_variables,
-        #                 json_output.get('vars', {})
-        #             )
-        #
-        #         results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
-        #         page = webinterface.get_template(request, webinterface._dir + 'pages/modules/add.html')
-        #         returnValue(page.render(alerts=webinterface.get_alerts(),
-        #                                 server_module=results['data'],
-        #                                 input_types=webinterface._InputTypes.input_types,
-        #                                 module_data=data,
-        #                                 ))
-        #
-        #     msg = {
-        #         'header': 'Module Added',
-        #         'label': 'Module configuration updated successfully',
-        #         'description': '',
-        #     }
-        #
-        #     webinterface._Notifications.add({'title': 'Restart Required',
-        #                                      'message': 'Module added. A system <strong><a  class="confirm-restart" href="#" title="Restart Yombo Gateway">restart is required</a></strong> to take affect.',
-        #                                      'source': 'Web Interface',
-        #                                      'persist': False,
-        #                                      'priority': 'high',
-        #                                      'always_show': True,
-        #                                      'always_show_allow_clear': False,
-        #                                      'id': 'reboot_required',
-        #                                      'local': True,
-        #                                      })
-        #
-        #     page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
-        #     returnValue(page.render(alerts=webinterface.get_alerts(),
-        #                             msg=msg,
-        #                             ))
-        #
-        #     webinterface.add_alert("Module configuratiuon updated. A restart is required to take affect.", 'warning')
-        #     returnValue(webinterface.redirect(request, '/modules/index'))
+                               server_module=module_results['data'],
+                               variable_groups=variable_groups,
+                               input_types=webinterface._InputTypes.input_types,
+                               module_data=data,
+                               )
 
         @webapp.route('/<string:module_id>/details')
         @require_auth()
@@ -284,8 +216,8 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
             webinterface.add_breadcrumb(request, "/modules/%s/disable" % module._module_id, "Disable")
             return page.render(alerts=webinterface.get_alerts(),
-                                    module=module,
-                                    )
+                               module=module,
+                               )
 
         @webapp.route('/<string:module_id>/disable', methods=['POST'])
         @require_auth()
@@ -302,8 +234,8 @@ def route_modules(webapp):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to disable the module.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        )
+                                   module=module,
+                                   )
 
             results = yield webinterface._Modules.disable_module(module._module_id)
 
@@ -312,8 +244,8 @@ def route_modules(webapp):
 
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/disable.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        )
+                                   module=module,
+                                   )
 
             msg = {
                 'header': 'Module Disabled',
@@ -334,8 +266,8 @@ def route_modules(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/<string:module_id>/edit', methods=['GET'])
         @require_auth()
@@ -361,11 +293,11 @@ def route_modules(webapp):
             webinterface.add_breadcrumb(request, "/modules/%s/details" % module._module_id, module._label)
             webinterface.add_breadcrumb(request, "/modules/%s/edit" % module._module_id, "Edit")
             return page.render(alerts=webinterface.get_alerts(),
-                                    server_module=module_results['data'],
-                                    module=module,
-                                    module_variables=module_variables,
-                                    device_types=device_types,
-                                    )
+                               server_module=module_results['data'],
+                               module=module,
+                               module_variables=module_variables,
+                               device_types=device_types,
+                               )
 
         @webapp.route('/<string:module_id>/edit', methods=['POST'])
         @require_auth()
@@ -383,8 +315,11 @@ def route_modules(webapp):
                 'status': json_output['status'],
                 'module_id': json_output['module_id'],
                 'install_branch': json_output['install_branch'],
-                'variable_data': json_output['vars'],
             }
+
+            variable_data = yield webinterface._Variables.extract_variables_from_web_data(
+                json_output.get('vars', {}))
+            data['variable_data'] = variable_data
 
             results = yield webinterface._Modules.edit_module(module_id, data)
             if results['status'] == 'failed':
@@ -397,9 +332,9 @@ def route_modules(webapp):
                     return webinterface.redirect(request, '/modules/index')
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/edit.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        server_module=results['data'],
-                                        module=module,
-                                        )
+                                   server_module=results['data'],
+                                   module=module,
+                                   )
 
             msg = {
                 'header': 'Module Updated',
@@ -420,8 +355,8 @@ def route_modules(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @inlineCallbacks
         def page_modules_edit_form(webinterface, request, session, device, variable_data=None):
@@ -439,10 +374,9 @@ def route_modules(webapp):
                     variable_data
                 )
             return page.render(alerts=webinterface.get_alerts(),
-                                    device=device,
-                                    device_variables=device_variables,
-                                    commands=webinterface._Commands,
-                                    )
+                               device=device,
+                               device_variables=device_variables,
+                               )
 
 
         @webapp.route('/<string:module_id>/enable', methods=['GET'])
@@ -478,8 +412,8 @@ def route_modules(webapp):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/enable.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to enable the module.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        )
+                                   module=module,
+                                   )
 
             results = yield webinterface._Modules.enable_module(module._module_id)
 
@@ -510,8 +444,8 @@ def route_modules(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/<string:module_id>/remove', methods=['GET'])
         @require_auth()
@@ -547,8 +481,8 @@ def route_modules(webapp):
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
                 webinterface.add_alert('Must enter "disable" in the confirmation box to remove the module.', 'warning')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        )
+                                   module=module,
+                                   )
 
             results = yield webinterface._Modules.remove_module(module._module_id)
 
@@ -557,8 +491,8 @@ def route_modules(webapp):
 
                 page = webinterface.get_template(request, webinterface._dir + 'pages/modules/remove.html')
                 return page.render(alerts=webinterface.get_alerts(),
-                                        module=module,
-                                        )
+                                   module=module,
+                                   )
 
             msg = {
                 'header': 'Module Removed',
@@ -579,5 +513,5 @@ def route_modules(webapp):
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/reboot_needed.html')
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )

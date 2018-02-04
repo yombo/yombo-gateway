@@ -8,7 +8,12 @@
                 <div class="col-lg-12">
                     <h1 class="page-header">
                         <a class="success" href="/modules/index" aria-label="Delete"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
-                        Edit Module: {{ module._label }}</h1>
+                        Edit Module: {{ module._label }}
+                          {% if server_module.id in webinterface.module_config_links %}
+<br><a class="btn btn-md btn-primary" href="{{webinterface.module_config_links[server_module.id]}}" class="btn btn-primary ">Additional Module Settings</a>
+                          {% endif %}
+                    </h1>
+
                     {{ module._short_description }}
                     <hr>
                     <p></p>
@@ -93,13 +98,13 @@
                                             <tbody>
                                                  <tr>
                                                     <td><b>{{ field.field_label }}</b><br>{{ field.field_description }}</td>
-                                                    <td>{%- if module_variables[field.field_machine_label]['data']|length > 0 -%}
+                                                    <td>{%- if field.field_machine_label in module_variables and module_variables[field.field_machine_label]['data']|length > 0 -%}
                                                              {%- for data_id, data in module_variables[field.field_machine_label]['data'].items() %}
-                                                                <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}]" id="vars[{{ field.id }}][{{ data_id }}]['input']" value="{{data['value'] }}"
+                                                                <input type="text" class="form-control" name="vars[{{ field.id }}][{{ data_id }}][input]" id="vars[{{ field.id }}][{{ data_id }}][input]" value="{{data['value'] }}"
                                                                 {%- if field.required %} required{% endif -%}>
-                                                                <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}]" id="vars[{{ field.id }}][{{ data_id }}]['orig']" value="{{data['value'] }}">
+                                                                <input type="hidden" name="vars[{{ field.id }}][{{ data_id }}][orig]" id="vars[{{ field.id }}][{{ data_id }}][orig]" value="{{data['value'] }}">
                                                              {%- endfor -%}
-                                                        {%- elif module_variables[field.field_machine_label]['data']|length == 0 or field.multiple -%}
+                                                        {%- elif field.field_machine_label not in module_variables or module_variables[field.field_machine_label]['data']|length == 0 or field.multiple -%}
                                                              <input type="text" class="form-control" name="vars[{{ field.id }}][new_1]" id="vars[{{ field.id }}][new_1]" value=""
                                                              {%- if field.required %} required{% endif -%}>
                                                         {%- endif %}

@@ -24,7 +24,7 @@
               <h4>Performance with many modules</h4>
               <p>
                   We have not found any run time performance issues with large numbers of modules, however startup times
-                  can be affected as the python modules are compiled at run-time.
+                  can be slightly affected as the python modules are compiled at run-time.
               </p>
           </div>
       </div>
@@ -37,7 +37,9 @@
 
             <div class="row">
                 <div class="col-lg-12">
-                    <h1 class="page-header">{{ _('webinterface_label', 'Installed Modules') }}&nbsp;&nbsp;&nbsp;<a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question"></i></a></h1>
+                    <h1 class="page-header">{{ _('webinterface_label', 'Installed Modules') }}
+                    <a href="#" data-toggle=modal data-target=#localModal><i class="fa fa-question pull-right"></i></a></h1>
+                    A list of currently installed modules.
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
@@ -46,7 +48,7 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <h4>Configured Modules</h4>
+                            <h4>Installed Modules</h4>
                                 <a href="/modules/server_index" class="btn btn-md btn-primary">Add New Module</a>
                         </div>
                         <!-- /.panel-heading -->
@@ -60,12 +62,13 @@
                                     </thead>
                                     <tbody>{% for moduleID, module in modules.items() %}
                                          <tr>
-                                             <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a></td>
+                                             <td><a href="/modules/{{ moduleID }}/details">{{ module._label }}</a><br>
+                                              {% if moduleID in webinterface.module_config_links %}
+                                                 <a  class="alert-success" href="{{webinterface.module_config_links[moduleID]}}">More Settings</a>
+                                              {% endif %}
+                                            </td>
                                              <td>{{ module._short_description }}</td>
                                              <td>
-                                                 {% if moduleID in webinterface.module_config_links %}
-                                                 <a  class="alert-success" href="{{webinterface.module_config_links[moduleID]}}">Settings</a>
-                                                 {% endif %}
                                              {% if module._load_source == 'sql' -%}
                                                 {% if module._status == 0 -%}
                                              <a href="/modules/{{ moduleID }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/modules/{{ moduleID }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/modules//{{ moduleID }}remove">Remove</a>
