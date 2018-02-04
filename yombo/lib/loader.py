@@ -433,7 +433,9 @@ class Loader(YomboLibrary, object):
             library._Automation = self.loadedLibraries['automation']
             library._Commands = self.loadedLibraries['commands']
             library._Configs = self.loadedLibraries['configuration']
+            library._CronTab = self.loadedLibraries['crontab']
             library._Devices = self.loadedLibraries['devices']
+            library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Locations = self.loadedLibraries['locations']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Gateways = self.loadedLibraries['gateways']
@@ -441,12 +443,13 @@ class Loader(YomboLibrary, object):
             library._InputTypes = self.loadedLibraries['inputtypes']
             library._Libraries = self.loadedLibraries
             library._Loader = self
+            library._Localize = self.loadedLibraries['localize']
             library._LocalDB = self.loadedLibraries['localdb']
+            library._Locations = self.loadedLibraries['locations']
             library._Modules = self._moduleLibrary
+            library._MQTT = self.loadedLibraries['mqtt']
             library._Nodes = self.loadedLibraries['nodes']
             library._Notifications = self.loadedLibraries['notifications']
-            library._Localize = self.loadedLibraries['localize']
-            library._MQTT = self.loadedLibraries['mqtt']
             library._Queue = self.loadedLibraries['queue']
             library._SQLDict = self.loadedLibraries['sqldict']
             library._SSLCerts = self.loadedLibraries['sslcerts']
