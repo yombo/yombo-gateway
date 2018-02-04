@@ -52,9 +52,20 @@
     </select>
 {%- endmacro %}
 
+{% macro form_select_users(users, input_name, input_id, selected_item) -%}
+    <select class="selectpicker show-tick form-control" lass="selectpicker show-tick" title="Select..." name="{{input_name}}" id="{{input_id}}">
+        <option value="" data-subtext="No user selected">None</option>
+    {%- for user_id, user in users.items() %}
+        <option value="{{user_id}}"{% if selected_item == user_id %} selected{% endif %} data-subtext="{{user.machine_label}}">{{device.full_label}}</option>
+    {%- endfor %}
+    </select>
+{%- endmacro %}
+
 {% macro form_input_type(items, item, input_types, field, input_name, input_id, value="") -%}
     {%- if input_types[field.input_type_id].machine_label == "yombo_device" %}
     {{form_select_device(items, input_name, input_id, value)}}
+    {%- elif input_types[field.input_type_id].machine_label == "password" %}
+    <input type="password" class="form-control" name="{{input_name}}" id="{{input_id}}" value="^^USE^ORIG^^"
     {%- else -%}
     <input type="text" class="form-control" name="{{input_name}}" id="{{input_id}}" value="{{value}}"
     {%- if field.required %} required{% endif %}>
