@@ -31,6 +31,34 @@
 </div>
 <div class="row">
     <div class="col-lg-12">
+        <h3>Notification targets</h3>
+        <div class="dataTable_wrapper">
+            <table width="100%" class="table table-striped table-bordered table-hover" id="notiftargets">
+                <thead>
+                    <tr>
+                        <th>Target name</th><th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for target, data in yombo._Notifications.notification_targets.items() %}
+                     <tr>
+                         <td> {{target}} </td>
+                         <td>
+                         {% for line in data %}
+                             {{line.description}} ({{line.component}})
+                         {% endfor %}
+                     </tr>
+                 {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
         <h3>Currently required python modules</h3>
         <div class="dataTable_wrapper">
             <table width="100%" class="table table-striped table-bordered table-hover" id="requirements">
@@ -66,12 +94,17 @@
         $('#statusinfo').DataTable({
                 responsive: true,
                 paging: true,
-                iDisplayLength: 25
+                iDisplayLength: 10
+        });
+        $('#notiftargets').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 10
         });
         $('#requirements').DataTable({
                 responsive: true,
                 paging: true,
-                iDisplayLength: 50
+                iDisplayLength: 10
         });
     });
     </script>
