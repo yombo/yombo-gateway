@@ -299,6 +299,7 @@ class WebInterface(YomboLibrary):
         # }
         self.webapp.templates.globals['yombo'] = self
         self.webapp.templates.globals['local_gateway'] = self._Gateways.get_local()
+        self.webapp.templates.globals['devicetypes'] = self._DeviceTypes
         self.webapp.templates.globals['devices'] = self._Devices
         self.webapp.templates.globals['commands'] = self._Commands
         self.webapp.templates.globals['modules'] = self._Modules
