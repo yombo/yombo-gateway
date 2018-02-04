@@ -31,6 +31,8 @@ from time import time
 from pyclbr import readmodule
 
 # Import twisted libraries
+from twisted.internet import reactor
+
 from twisted.internet.defer import inlineCallbacks, maybeDeferred, Deferred, DeferredList
 
 # Import Yombo libraries
@@ -38,7 +40,7 @@ from yombo.core.exceptions import YomboHookStopProcessing, YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import search_instance, do_search_instance, dict_merge, read_file, bytes_to_unicode,\
-    get_python_package_info
+    get_python_package_info, global_invoke_all
 from yombo.utils.decorators import memoize_ttl
 
 from yombo.utils.maxdict import MaxDict
@@ -206,6 +208,16 @@ class Modules(YomboLibrary):
         self.module_search_attributes = ['_module_id', '_module_type', '_label', '_machine_label', '_description',
             '_short_description', '_medium_description', '_public', '_status']
         self.disabled_modules = {}
+
+    def _notification_get_targets_(self, **kwargs):
+        """ Hosting here since loader isn't properly called... """
+        return {
+            'module_updated': 'Module information updated.',
+            'module_added': 'Module added, will work on next restart.',
+            'module_enabled': 'Module has been enabled.',
+            'module_disabled': 'Module has been disabled.',
+            'module_removed': 'Module to be removed from system.',
+        }
 
     @inlineCallbacks
     def import_modules(self):
@@ -1088,7 +1100,7 @@ class Modules(YomboLibrary):
         }
 
         try:
-            module_results = yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
+            yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
         except YomboWarning as e:
             results = {
                 'status': 'failed',
@@ -1153,6 +1165,27 @@ class Modules(YomboLibrary):
             'msg': "Module added.",
             'module_id': data['module_id']
         }
+        module = self.get(data['module_id'])
+        reactor.callLater(.0001,
+                          global_invoke_all,
+                          '_module_added_',
+                          called_by=self,
+                          module_id=data['module_id'],
+                          module=module,
+                          )
+        if 'module_label' in data:
+            label = data['module_label']
+        else:
+            label = data['module_id']
+        self._Notifications.add(
+            {'title': 'Module added: %s' % label,
+             'message': "The module '%s' has been disabled and will take affect on next reboot." % label,
+             'timeout': 3600,
+             'source': 'Modules Library',
+             'persist': False,
+             'always_show': False,
+             'targets': 'module_updated',
+             })
         return results
 
     @inlineCallbacks
@@ -1164,6 +1197,7 @@ class Modules(YomboLibrary):
         :param kwargs:
         :return:
         """
+        logger.debug("Editing module: {module_id} == {data}", module_id=module_id, data=data)
         api_data = {
             'install_branch': data['install_branch'],
             'status': data['status'],
@@ -1174,7 +1208,6 @@ class Modules(YomboLibrary):
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
                                                           api_data)
         except YomboWarning as e:
-            # print("module edit results: %s" % module_results)
             results = {
                 'status': 'failed',
                 'msg': "Couldn't edit module: %s" % e.message,
@@ -1183,11 +1216,78 @@ class Modules(YomboLibrary):
             }
             return results
 
+        if 'variable_data' in data:
+            logger.debug("editing variable data...")
+            variable_data = data['variable_data']
+            for field_id, var_data in variable_data.items():
+                # print("field_id: %s" % field_id)
+                # print("var_data: %s" % var_data)
+                for data_id, value in var_data.items():
+                    print("data_id: %s" % data_id)
+                    print("data_id: %s" % type(data_id))
+                    if data_id.startswith('new_') or data_id is None or data_id.lower() == 'none':
+                        print("data_id starts with new...")
+                        post_data = {
+                            'gateway_id': self.gateway_id,
+                            'field_id': field_id,
+                            'relation_id': data['module_id'],
+                            'relation_type': 'module',
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        # print("post_data: %s" % post_data)
+                        try:
+                            yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        except YomboWarning as e:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add module variables: %s" % e.message,
+                                'apimsg': "Couldn't add module variables: %s" % e.message,
+                                'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
+                            }
+                            return results
+                    else:
+                        post_data = {
+                            'data_weight': 0,
+                            'data': value,
+                        }
+                        # print("posting to: /v1/variable/data/%s" % data_id)
+                        # print("post_data: %s" % post_data)
+                        try:
+                            yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
+                                                                            post_data)
+                        except YomboWarning as e:
+                            results = {
+                                'status': 'failed',
+                                'msg': "Couldn't add module variables: %s" % e.message,
+                                'apimsg': "Couldn't add module variables: %s" % e.message,
+                                'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
+                            }
+                            return results
+
         results = {
             'status': 'success',
             'msg': "Module edited.",
             'module_id': module_id
         }
+        module = self.get(module_id)
+        reactor.callLater(.0001,
+                          global_invoke_all,
+                          '_module_updated_',
+                          called_by=self,
+                          module_id=module_id,
+                          module=module,
+                          )
+        self._Notifications.add(
+            {'title': 'Module edited: %s' % module._label,
+             'message': "The module '%s' has been edited." % module._label,
+             'timeout': 3600,
+             'source': 'Modules Library',
+             'persist': False,
+             'always_show': False,
+             'targets': 'module_updated',
+             })
+
         return results
 
     @inlineCallbacks
@@ -1223,6 +1323,24 @@ class Modules(YomboLibrary):
             'msg': "Module deleted.",
             'module_id': module_id,
         }
+        module = self.get(module_id)
+        reactor.callLater(.0001,
+                          global_invoke_all,
+                          '_module_removed_',
+                          called_by=self,
+                          module_id=module_id,
+                          module=module,
+                          )
+        self._Notifications.add(
+            {'title': 'Module removed: %s' % module._label,
+             'message': "The module '%s' has been removed and will take affect on next reboot." % module._label,
+             'timeout': 3600,
+             'source': 'Modules Library',
+             'persist': False,
+             'always_show': False,
+             'targets': 'module_updated',
+             })
+
         #todo: add task to remove files.
         #todo: add system for "do something on next startup..."
         return results
@@ -1265,6 +1383,23 @@ class Modules(YomboLibrary):
             'msg': "Module enabled.",
             'module_id': module_id,
         }
+        module = self.get(module_id)
+        reactor.callLater(.0001,
+                          global_invoke_all,
+                          '_module_enabled_',
+                          called_by=self,
+                          module_id=module_id,
+                          module=module,
+                          )
+        self._Notifications.add(
+            {'title': 'Module enabled: %s' % module._label,
+             'message': "The module '%s' has been enabled and will take affect on next reboot." % module._label,
+             'timeout': 3600,
+             'source': 'Modules Library',
+             'persist': False,
+             'always_show': False,
+             'targets': 'module_updated',
+             })
         return results
 
     @inlineCallbacks
@@ -1305,6 +1440,23 @@ class Modules(YomboLibrary):
             'msg': "Module disabled.",
             'module_id': module_id,
         }
+        module = self.get(module_id)
+        reactor.callLater(.0001,
+                          global_invoke_all,
+                          '_module_disabled_',
+                          called_by=self,
+                          module_id=module_id,
+                          module=module,
+                          )
+        self._Notifications.add(
+            {'title': 'Module disabled: %s' % module._label,
+             'message': "The module '%s' has been disabled and will take affect on next reboot." % module._label,
+             'timeout': 3600,
+             'source': 'Modules Library',
+             'persist': False,
+             'always_show': False,
+             'targets': 'module_updated',
+             })
         return results
 
     @inlineCallbacks
