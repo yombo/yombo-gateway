@@ -31,14 +31,21 @@
 <div class="row">
     <div class="col-lg-12">
   <p>
-      API Auth keys are used as credentials to access the gateway's
-      API from various scripts. They replace the need the for a username/password.
+      API Auth keys are used as alternative to username & password and are used by scripts, tools, and
+      applications to authenticate to the gateway. These API Auth keys can only be used to access this gateway,
+      however, any gateway can receive and process commands for any device within it's cluster.
   </p><p>
-      When making requests with an HTTP client, set the header for 'x-api-auth'
-      to the API Auth key you wish to use. Alternatively, this can be added as
-      a query string parameter:<br>
+      To use the API Auth, simply set the HTTP header 'x-api-auth' with the value of an API Auth key <strong>or</strong>
+      include it in the query string paramenter named '_api_auth' like this:<br>
       https://localhost:8443/api/vi/someurl?_api_auth=KEYVALUE
-  </p><br>
+  </p><p>
+        Some modules automatically create API Auth keys, don't use these for your own scripts as they may change or
+        go away. Be sure to create your own API Auth keys for your scripts or other applications.  It's recommended to
+        periodically 'Rotate' your keys for security.
+  </p><p>
+        <strong>Be sure to keep these keys safe and secure. These keys can grant full access to the gateway and any
+        devices connected.</strong>
+    </p><br>
         <div class="panel panel-default">
             <div class="panel-heading">
                 <a href="/apiauth/add" class="btn btn-md btn-primary">Add New</a>
@@ -52,17 +59,18 @@
                                 <th>Label</th><th>Description</th><th>Is Valid</th><th>API Auth</th><th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>{% for api_auth in apiauths %}
+                        <tbody>{% for auth_id, api_auth in apiauths.items() %}
                              <tr>
                                 <td>
-                                    <a href="/apiauth/{{ api_auth.auth_id }}/details">{{ api_auth.label }}</a>
+                                    <a href="/apiauth/{{ api_auth.label }}/details">{{ api_auth.label }}</a>
                                 </td>
                                 <td>{{ api_auth.description }}</td>
                                 <td>{{ api_auth.is_valid }}</td>
-                                <td>{{ api_auth.id|truncate(15) }}...</td>
+                                <td>{{ api_auth.auth_id|truncate(10) }}...</td>
                                 <td>
-                                 <a href="/apiauth/{{ api_auth.auth_id }}/edit">Edit</a>
-                                 <a class="alert-danger" href="/apiauth/{{ api_auth.auth_id }}/delete">Delete</a>
+                                 <a href="/apiauth/{{ api_auth.label }}/rotate">Rotate</a>
+                                 <a href="/apiauth/{{ api_auth.label }}/edit">Edit</a>
+                                 <a class="alert-danger" href="/apiauth/{{ api_auth.label }}/delete">Delete</a>
                                 </td>
                              </tr>{% endfor %}
                         </tbody>
