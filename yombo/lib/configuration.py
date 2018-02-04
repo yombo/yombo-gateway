@@ -108,7 +108,29 @@ class Configuration(YomboLibrary):
         'version': '0.12.0',
     }
     configs = {'core': {}, 'zz_configmetadata': {}}  # Contains all the config items
-    configs_details = {}  # Collected details from libs and modules about configurations
+    configs_details = {
+        'core': {
+            'gwhash': {
+                'encrypt': True
+            }
+        },
+        'webinterface': {
+            'cookie_session': {
+                'encrypt': True
+            },
+            'cookie_pin': {
+                'encrypt': True
+            },
+        },
+        'yomboapi': {
+            'login_key': {
+                'encrypt': True
+            },
+            'auth_session': {
+                'encrypt': True
+            },
+        }
+    }  # Collected details from libs and modules about configurations
 
     def __contains__(self, configuration_requested):
         """
@@ -246,10 +268,9 @@ class Configuration(YomboLibrary):
                 self.restore_backup_yombi_ini()
 
         self.loading_yombo_ini = True
-        self.last_yombo_ini_read = self.read_yombo_ini()
+        self.last_yombo_ini_read = yield self.read_yombo_ini()
         if self.last_yombo_ini_read is False:
             self._Loader.operating_mode = 'first_run'
-
 
         logger.debug("done parsing yombo.ini. Now about to parse yombo.ini.info.")
         try:
@@ -343,6 +364,7 @@ class Configuration(YomboLibrary):
         self._Configs.get('mqtt', 'server_allow_anonymous', False)
         self._Configs.get('misc', 'temperature_display', 'f')
         self._Configs.get('misc', 'length_display',  'imperial')  # will we ever get to metric?
+        yield self._GPG._init_from_config_()
 
     def _load_(self, **kwargs):
         self._loaded = True
@@ -355,13 +377,15 @@ class Configuration(YomboLibrary):
         # if self.periodic_load_yombo_ini is not None and self.periodic_load_yombo_ini.running:
         #     self.periodic_load_yombo_ini.stop()
 
+    @inlineCallbacks
     def _unload_(self, **kwargs):
         """
         Save the items in the config table to yombo.ini.  This allows
         the user to see the current configuration and make any changes.
         """
-        self.save(True)
+        yield self.save(True)
 
+    @inlineCallbacks
     def read_yombo_ini(self, update_self=True):
         temp = {}
         try:
@@ -371,9 +395,9 @@ class Configuration(YomboLibrary):
             config_parser.read('yombo.ini')
             for section in config_parser.sections():
                 temp[section] = {}
-
                 for option in config_parser.options(section):
                     value = config_parser.get(section, option)
+                    value = yield self._GPG.decrypt(value)
                     try:
                         value = is_string_bool(value)
                     except:
@@ -430,6 +454,7 @@ class Configuration(YomboLibrary):
                     return True
         return False
 
+    @inlineCallbacks
     def save(self, force_save=False):
         """
         Save the configuration configs to the INI file.
@@ -471,6 +496,10 @@ class Configuration(YomboLibrary):
 
                     try:
                         for item, data in options.items():
+                            if section in self.configs_details:
+                                if item in self.configs_details[section]:
+                                    if 'encrypt' in self.configs_details[section][item]:
+                                        data = yield self._GPG.encrypt(data)
                             i18n_label = _('config_item', "%s:%s" % (section, item))
                             if i18n_label != "%s:%s" % (section, item):
                                 config_file.write("# %s: %s\n" % (item, i18n_label))
@@ -552,7 +581,8 @@ class Configuration(YomboLibrary):
                            'enabled': {
                                'description': {
                                    'en': 'Enables/disables the web interface.',
-                               }
+                               },
+                               'encrypt': True
                            },
                            'port': {
                                'description': {
