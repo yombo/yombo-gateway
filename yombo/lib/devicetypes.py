@@ -417,7 +417,7 @@ class DeviceTypes(YomboLibrary):
 
     def devices_by_device_type(self, requested_device_type, gateway_id=None):
         """
-        A list of devicess for a given device type.
+        A list of devices for a given device type.
 
         :raises YomboWarning: Raised when module_id is not found.
         :param requested_device_type: A device type by either ID or Label.
