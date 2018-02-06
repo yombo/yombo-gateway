@@ -1193,6 +1193,9 @@ class Base_Device(object):
         :param kwargs:
         :return:
         """
+        command_id = None
+        command_label = None
+        command_machine_label = None
         if 'command' in kwargs:
             command = kwargs['command']
             if isinstance(command, str):
