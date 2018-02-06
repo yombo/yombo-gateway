@@ -1079,7 +1079,7 @@ class Devices(YomboLibrary):
         :param kwargs:
         :return:
         """
-        logger.warn("edit_device date: {data}", data=data)
+        logger.debug("edit_device date: {data}", data=data)
         if device_id not in self.devices:
             raise YomboWarning("device_id doesn't exist. Nothing to edit.", 300, 'edit_device', 'Devices')
 

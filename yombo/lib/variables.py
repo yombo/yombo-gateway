@@ -236,12 +236,12 @@ class Variables(YomboLibrary):
         :param data: 
         :return: 
         """
-        print("merge_variable_data. Groups: %s" % groups)
-        print("merge_variable_data. new_data_items: %s" % new_data_items)
+        # print("merge_variable_data. Groups: %s" % groups)
+        # print("merge_variable_data. new_data_items: %s" % new_data_items)
         for group_name, group in groups.items():
             for field_name, field in group['fields'].items():
-                print("111 field %s" % field )
-                print("111 field_name %s" % field )
+                # print("111 field %s" % field )
+                # print("111 field_name %s" % field )
                 found_field_id = None
                 found_field_key = None
                 if field_name in new_data_items:
@@ -252,8 +252,8 @@ class Variables(YomboLibrary):
                     found_field_key = field['id']
                 if found_field_id is not None:
                     new_data_item = new_data_items[found_field_key]
-                    print("222 new_data: %s" % new_data_item)
-                    print("222 field['id']: %s" % field['id'])
+                    # print("222 new_data: %s" % new_data_item)
+                    # print("222 field['id']: %s" % field['id'])
                     for data_id, data in new_data_item.items():
                         data_items = {
                             'id': data_id,
@@ -263,7 +263,7 @@ class Variables(YomboLibrary):
                             'created_at': time(),
                             'updated_at': time(),
                         }
-                        print("zzzzz")
+                        # print("zzzzz")
                         if data is not None:
                             data_items['value'] = yield self._GPG.decrypt(data)
                             data_items['value_display'] = yield self._GPG.display_encrypted(data)
@@ -272,16 +272,16 @@ class Variables(YomboLibrary):
                             data_items['value_display'] = ""
 
                         data_items['value_orig'] = data
-                        print("zzzzz 10")
+                        # print("zzzzz 10")
                         groups[group_name]['fields'][field_name]['data'][data_id] = data_items
-                        print("zzzzz 11")
+                        # print("zzzzz 11")
                         groups[group_name]['fields'][field_name]['values'].append(data_items['value'])
-                        print("zzzzz 12")
+                        # print("zzzzz 12")
                         groups[group_name]['fields'][field_name]['values_display'].append(data_items['value_display'])
-                        print("zzzzz 13")
+                        # print("zzzzz 13")
                         groups[group_name]['fields'][field_name]['values_orig'].append(data_items['value_orig'])
 
-                        print("newdata: %s" % data_items)
+                        # print("newdata: %s" % data_items)
 
         # print("merge_variable_data. groups_done: %s" % groups)
         return groups
