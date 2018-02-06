@@ -72,7 +72,7 @@
                         <div class="panel-body">
                             {% for command_id in device.available_commands() %}
                             <label style="margin-top: 0px; margin-bottom: 0px">
-                                <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}">{{ commands[command_id].label }}</a>
+                                <a id="{{command_id}}" class="deviceCmd" data-doc_value="{{ command_id }}" href="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}">{{ _commands[command_id].label }}</a>
                             </label>&nbsp;&nbsp;
                             <div class="modal fade" id="modal_cmd_{{command_id}}" tabindex="-1" role="dialog">
                               <div class="modal-dialog" role="document">
@@ -84,7 +84,7 @@
                                   <form id="form-cmd-{{command_id}}" action="/api/v1/device/{{ device.device_id }}/command/{{ command_id }}" method="POST">
                                   <div class="modal-body">
                                         <fieldset>
-                                          {% for input_label, input in device_types[device.device_type_id].commands[command_id]['inputs'].items()%}
+                                          {% for input_label, input in _devicetypes[device.device_type_id].commands[command_id]['inputs'].items()%}
                                             <label style="margin-top: 5px; margin-bottom: 0px">{{input.label}}</label><br>
                                             {{ input.notes }}<br>
                                             <div class="input-group">
@@ -136,11 +136,11 @@
                                         {{ _gateways[device.gateway_id].label }} <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Label: </label><br>
                                         {{ device.label }} <br>
-                                        <i>Effective:</i> {{ locations[device.area_id].label }} {{device.label}}<br>
+                                        <i>Effective:</i> {{ _locations[device.area_id].label }} {{device.label}}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Machine Label: </label><br>
                                         {{ device.machine_label }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Location: </label><br>
-                                        {{ locations[device.location_id].label }} -> {{ locations[device.area_id].label }}<br>
+                                        {{ _locations[device.location_id].label }} -> {{ _locations[device.area_id].label }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Description: </label><br>
                                         {{ device.description }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Status: </label><br>
@@ -148,7 +148,7 @@
                                         <label style="margin-top: 15px; margin-bottom: 0px">Pin Required // Pin Code: </label><br>
                                         {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
-                                        <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ device_types.get(device.device_type_id).label }}</a><br>
+                                        <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ _devicetypes[device.device_type_id].label }}</a><br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
                                         {{device.PLATFORM}} -> {{device.SUB_PLATFORM}}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Type: </label><br>
@@ -365,22 +365,22 @@ $('.nav-tabs a').on('shown.bs.tab', function (e) {
 
 $(document).ready(function () {
 {% for command in device.available_commands() %}
-    $("#{{commands[command].command_id}}").bind('mouseheld', function(e) {
-        console.log('Held {{commands[command].command_id}}', e);
-        $('#modal_cmd_{{commands[command].command_id}}').modal('show');
+    $("#{{_commands[command].command_id}}").bind('mouseheld', function(e) {
+        console.log('Held {{_commands[command].command_id}}', e);
+        $('#modal_cmd_{{_commands[command].command_id}}').modal('show');
     });
 
     // Send input data to AJAX / API
-    $("#form-cmd-{{commands[command].command_id}}").on('submit', function(e) {
+    $("#form-cmd-{{_commands[command].command_id}}").on('submit', function(e) {
         var $form = $(this).closest("form");
         var formURL = $form.attr("action");
-        var rawData = $('#form-cmd-{{commands[command].command_id}}').serializeJSON();
+        var rawData = $('#form-cmd-{{_commands[command].command_id}}').serializeJSON();
         var jsonData = JSON.stringify(rawData);
 
         $('<input />').attr('type', 'hidden')
           .attr('name', "json_output")
           .attr('value', jsonData)
-          .appendTo('#form-cmd-{{commands[command].command_id}}');
+          .appendTo('#form-cmd-{{_commands[command].command_id}}');
 
         var postData = $form.serializeArray();
         $(this.json_output).remove();
