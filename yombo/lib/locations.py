@@ -56,7 +56,7 @@ class Locations(YomboLibrary):
         :rtype: bool
         """
         try:
-            self.get_meta(location_requested)
+            self.get(location_requested)
             return True
         except:
             return False
@@ -78,7 +78,7 @@ class Locations(YomboLibrary):
         :return: A pointer to the location type instance.
         :rtype: instance
         """
-        return self.get_meta(location_requested)
+        return self.get(location_requested)
 
     def __setitem__(self, **kwargs):
         """
@@ -146,7 +146,7 @@ class Locations(YomboLibrary):
         self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.locations = {}
         self.location_search_attributes = ['location_id', 'gateway_id', 'location', 'machine_label', 'destination',
-            'data_type', 'status']
+            'data_type']
         self.load_deferred = Deferred()
         self._load_locations_from_database()
         return self.load_deferred
@@ -279,13 +279,13 @@ class Locations(YomboLibrary):
         """
         return self.locations.copy()
 
-    def get(self, location_requested, location_type=None, limiter=None, status=None):
+    def get(self, location_requested, location_type=None, limiter=None):
         """
         Performs the actual search.
 
         .. note::
 
-           Can use the built in methods below or use get_meta/get to include 'location_type' limiter:
+           Modules can also simply treat this library as a dictionary to lookup items:
 
             >>> self.Locations['13ase45']
 
@@ -299,8 +299,6 @@ class Locations(YomboLibrary):
         :type location_requested: string
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :param status: Deafult: 1 - The status of the location to check for.
-        :type status: int
         :return: Pointer to requested location.
         :rtype: dict
         """
@@ -312,13 +310,8 @@ class Locations(YomboLibrary):
         elif limiter < .10:
             limiter = .10
 
-        if status is None:
-            status = 1
-
         if location_requested in self.locations:
             item = self.locations[location_requested]
-            if item.status != status:
-                raise KeyError("Requested location found, but has invalid status: %s" % item.status)
             return item
         else:
             attrs = [
@@ -363,8 +356,7 @@ class Locations(YomboLibrary):
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
-        :param status: Deafult: 1 - The status of the location to check for.
-        :return: 
+        :return:
         """
         return search_instance(kwargs,
                                self.locations,
@@ -476,7 +468,6 @@ class Location:
     :ivar category_id: (string) Reference category id.
     :ivar input_regex: (string) A regex to validate if user input is valid or not.
     :ivar always_load: (int) 1 if this item is loaded at startup, otherwise 0.
-    :ivar status: (int) 0 - disabled, 1 - enabled, 2 - deleted
     :ivar public: (int) 0 - private, 1 - public pending approval, 2 - public
     :ivar created_at: (int) EPOCH time when created
     :ivar updated_at: (int) EPOCH time when last updated
