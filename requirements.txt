@@ -35,6 +35,8 @@ certifi
 pyephem
 numpy
 logger
+passlib
+argon2_cffi
 
 #hbmqtt
 #psutil
