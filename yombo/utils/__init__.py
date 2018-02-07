@@ -38,13 +38,11 @@ import sys
 from time import strftime, localtime
 import zlib
 
+from twisted.internet import reactor
 from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
-from twisted.internet import reactor
-# from twisted.internet.task import react
-# from twisted.internet import stdio, protocol
 from twisted.internet.defer import Deferred
-from twisted.internet.fdesc import readFromFD, setNonBlocking
+from twisted.internet.fdesc import readFromFD, writeToFD, setNonBlocking
 
 # Import 3rd-party libs
 from yombo.ext.hashids import Hashids
