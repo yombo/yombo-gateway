@@ -17,7 +17,7 @@ Responsible for creating and checking password hashes.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/Docs/gateway/html/current/_modules/yombo/lib/hash.html>`_
 """
-from passlib.hash import argon2
+from passlib.hash import argon2, bcrypt
 from time import time
 
 # Import twisted libraries
@@ -100,12 +100,12 @@ class Hash(YomboLibrary):
         memory_base = 1
         memory_min = 12
         memory_max = 17
-        rounds_min = 5
+        rounds_min = 0
         rounds_max = 16
         duration = 0
         skip = 0
         for memory_step in range(memory_min, memory_max):
-            for rounds in range(rounds_min, rounds_max):
+            for rounds in range(rounds_min + round(memory_step * 0.4), rounds_max):
                 # We implement a skipper if we blast through some of the early checks.
                 if skip > 0:
                     skip -= 1
@@ -143,7 +143,7 @@ class Hash(YomboLibrary):
 
                 start = time()
                 memory_cost = memory_base << memory_step
-                argon2.using(rounds=rounds, memory_cost=memory_cost).hash('tooooo')
+                argon2.using(rounds=rounds, memory_cost=memory_cost).hash('testingpassword!')
                 end = time()
                 duration = (end - start) * 1000
                 # print("rounds=%s, memory=%s (%s), time=%.3f" % (rounds, memory_cost, memory_step, duration))
@@ -152,7 +152,7 @@ class Hash(YomboLibrary):
                 memory_best = memory_step
                 rounds_best = rounds
                 duration_best = duration
-            if rounds == rounds_min:
+            if rounds == rounds_min + round(memory_step * 0.4):
                 break
         return([rounds_best, memory_best, duration_best])
         # print("Best = rounds=%s, memory=%s, time=%.3f" % (rounds_best, memory_best, duration_best))
@@ -171,7 +171,7 @@ class Hash(YomboLibrary):
             return results
 
     @inlineCallbacks
-    def verify(self, password, hash, algorithm=None):
+    def verify(self, password, hashed, algorithm=None):
         """
         Validates a password against a provided hash. This is a wrapper around various hash algorithms supported
         by this library.
@@ -179,17 +179,21 @@ class Hash(YomboLibrary):
         This function will try to guess the algorithm based on the hash.
 
         :param password:
-        :param hash:
+        :param hashed:
         :param algorithm:
         :return:
         """
         if algorithm is None:
-            if hash.startswith('$argon2'):
-                algorithm = 'argon2'
+            if argon2.identify(hashed):
+                results = yield self.argon2_verify(password, hashed)
+                return results
+            if bcrypt.identify(hashed):
+                results = yield self.bcrypt_verify(password, hashed)
+                return results
 
-        if algorithm.lower() == 'argon2':
-            results = yield self.argon2_verify(password, hash)
-            return results
+        if algorithm is None:
+            logger.warn("Unable to detect password hash algorithm")
+            return False
 
     @inlineCallbacks
     def argon2_hash(self, password, rounds=None, memory=None, fast=None):
@@ -216,13 +220,25 @@ class Hash(YomboLibrary):
         return hash
 
     @inlineCallbacks
-    def argon2_verify(self, password, hash):
+    def argon2_verify(self, password, hashed):
         """
         Verifies an argon2 hash.
 
         :param password:
-        :param hash:
+        :param hashed:
         :return:
         """
-        results = yield threads.deferToThread(argon2.verify, password, hash)
+        results = yield threads.deferToThread(argon2.verify, password, hashed)
+        return results
+
+    @inlineCallbacks
+    def bcrypt_verify(self, password, hashed):
+        """
+        Verifies an bcrypt hash.
+
+        :param password:
+        :param hashed:
+        :return:
+        """
+        results = yield threads.deferToThread(bcrypt.verify, password, hashed)
         return results
