@@ -116,9 +116,9 @@ class GPG(YomboLibrary):
         self.mykey_last_sent_keyserver = self._Configs.get2('gpg', 'last_sent_keyserver', None, False)
         self.mykey_last_received_keyserver = self._Configs.get2('gpg', 'last_received_keyserver', None, False)
 
-        if self._Loader.operating_mode == 'run':
-            yield self.sync_keyring_to_db()  # must sync first. Loads various data.
-            yield self.validate_gpg_ready()
+        # if self._Loader.operating_mode == 'run':
+        yield self.sync_keyring_to_db()  # must sync first. Loads various data.
+        yield self.validate_gpg_ready()
 
         # This feature isn't working in the GNUPG library, or library alternatives.
         # print("checking if gpg key is old... %s" % self.mykeyid())
@@ -160,7 +160,8 @@ class GPG(YomboLibrary):
         if keyid is None:
             keyid = self.mykeyid()
         if keyid is not None:
-            secret_file = "%s/usr/etc/gpg/%s.pass" % (self._Atoms.get('yombo.path'), keyid)
+            full_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            secret_file = "%s/usr/etc/gpg/%s.pass" % (full_path, keyid)
             if os.path.exists(secret_file):
                 phrase = yield read_file(secret_file)
                 phrase = bytes_to_unicode(phrase)
@@ -256,7 +257,7 @@ class GPG(YomboLibrary):
         self._Configs.set('gpg', 'last_sent_keyserver', int(time()))
 
     def _send_my_gpg_key_to_keyserver(self, server, gpg_key_id):
-        print("sending key to server: %s -> %s" % (gpg_key_id, server))
+        # print("sending key to server: %s -> %s" % (gpg_key_id, server))
         return self.gpg.send_keys("hkp://%s" % server, gpg_key_id)
 
     def get_my_gpg_key_from_keyserver(self):
@@ -290,8 +291,6 @@ class GPG(YomboLibrary):
         if self._Loader.operating_mode == 'first_run':
             logger.info("Not syncing GPG keys to database on first run.")
 
-        # print("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz2 Starting key sync from ring to DB")
-
         db_keys = yield self._LocalDB.get_gpg_key()
         # logger.debug("db_keys: {db_keys}", db_keys=db_keys)
         gpg_public_keys = yield self.get_keyring_keys()
@@ -306,20 +305,25 @@ class GPG(YomboLibrary):
                 logger.error("Not adding key ({length}) due to length being less then 2048. Key is unusable",
                              length=gpg_public_keys[keyid]['length'])
                 continue
+            # print("data: %s" % data)
             data['publickey'] = self.gpg.export_keys(data['keyid'])
             if data['keyid'] in gpg_private_keys:
+                # print("private key found: %s" % data['keyid'])
                 data['have_private'] = 1
             else:
                 data['have_private'] = 0
             if data['have_private'] == 1:
                 try:
                     passphrase = yield self.load_passphrase(data['keyid'])
+                    # print("have a loaded passphrase: %s" % passphrase)
                     data['privatekey'] = self.gpg.export_keys(data['keyid'],
                                                               secret=True,
                                                               passphrase=passphrase,
                                                               expect_passphrase=True)
                     data['passphrase'] = passphrase
                 except Exception as e:
+                    logger.warn("Error will trying to get private key ({keyid}): {e}",
+                                keyid=data['keyid'], e=e)
                     data['have_private'] = 0
             else:
                 try:
@@ -330,6 +334,7 @@ class GPG(YomboLibrary):
                     data['have_private'] = 0
 
             # sync to local cache
+            # print("adding key to cache: %s" % data['keyid'])
             self.__gpg_keys[data['keyid']] = data
 
             # sync to database
@@ -339,8 +344,9 @@ class GPG(YomboLibrary):
                 del db_keys[keyid]
             # del gpg_public_keys[keyid]
 
-        logger.debug("db_keys: {gpg_keys}", gpg_keys=db_keys.keys())
-        logger.debug("gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys.keys())
+        # print("final gpg keys: %s" % self.__gpg_keys)
+        # logger.debug("db_keys: {gpg_keys}", gpg_keys=db_keys.keys())
+        # logger.debug("gpg_public_keys: {gpg_keys}", gpg_keys=gpg_public_keys.keys())
 
         for keyid in list(db_keys):
             yield self._LocalDB.delete_gpg_key(keyid)
@@ -486,9 +492,9 @@ class GPG(YomboLibrary):
         yield self.send_my_gpg_key_to_keyserver()
 
     def _renew_expiration(self, keyid, expire_time, passphrase):
-        print("keyid: (%s) %s" % (keyid, type(keyid)))
-        print("expire_time: (%s) %s" % (expire_time, type(expire_time)))
-        print("passphrase: (%s) %s" % (passphrase, type(passphrase)))
+        # print("keyid: (%s) %s" % (keyid, type(keyid)))
+        # print("expire_time: (%s) %s" % (expire_time, type(expire_time)))
+        # print("passphrase: (%s) %s" % (passphrase, type(passphrase)))
         return self.gpg.expire(keyid, '6', passphrase)
 
     ##########################

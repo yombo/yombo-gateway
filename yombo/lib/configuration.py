@@ -367,6 +367,7 @@ class Configuration(YomboLibrary):
         self._Configs.get('mqtt', 'server_allow_anonymous', False)
         self._Configs.get('misc', 'temperature_display', 'f')
         self._Configs.get('misc', 'length_display',  'imperial')  # will we ever get to metric?
+        logger.debug("Calling GPG init_from_config...")
         yield self._GPG._init_from_config_()
 
     def _load_(self, **kwargs):
