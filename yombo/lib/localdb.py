@@ -449,6 +449,12 @@ class LocalDB(YomboLibrary):
                     elif queue_type == 'delete':
                         yield self.delete_many(table, db_data)
 
+    @inlineCallbacks
+    def make_backup(self, filename=None):
+        if filename is None:
+            filename = 'imarealbigtest.db'
+        yield self.dbconfig.executeOperation(".backup %s" % filename)
+
     #########################
     ###    Commands     #####
     #########################
