@@ -168,14 +168,12 @@ function doSearch() {
                 $('#tBody').append(trHTML);
             },
             error: function (req, status, err) {
-            error: function (req, status, err) {
                 var data = req.responseJSON;
 //                console.log('something went wrong', status, err);
 //                console.log(data);
                 var mymodal = $('#dns_check_error_modal');
                 mymodal.find('.modal-body').text(data['message']);
                 mymodal.modal('show');
-            }
             }
         });
 

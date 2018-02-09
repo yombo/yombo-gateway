@@ -294,9 +294,6 @@ class WebInterface(YomboLibrary):
         self.misc_wi_data['notification_priority_map_css'] = NOTIFICATION_PRIORITY_MAP_CSS
         self.misc_wi_data['breadcrumb'] = []
 
-        # self.functions = {
-        #     'yes_no': yombo.utils.is_yes_no,
-        # }
         self.webapp.templates.globals['yombo'] = self
         self.webapp.templates.globals['_local_gateway'] = self._Gateways.get_local()
         self.webapp.templates.globals['_amqp'] = self._AMQP
@@ -809,6 +806,15 @@ class WebInterface(YomboLibrary):
             target = "_self"
         return '<a href="%s" target="%s">%s</a>' % (link, target, link_text)
 
+    def excerpt(self, input, length=None):
+        if length is None:
+            length = 25
+
+        if isinstance(input, str):
+            if len(input) > length:
+                return "%s..." % input[:length]
+        return input
+
     def request_get_default(self, request, name, default, offset=None):
         if offset == None:
             offset = 0
@@ -882,6 +888,7 @@ class WebInterface(YomboLibrary):
 
     def setup_basic_filters(self):
         self.webapp.templates.filters['yes_no'] = yombo.utils.is_yes_no
+        self.webapp.templates.filters['excerpt'] = self.excerpt
         self.webapp.templates.filters['make_link'] = self.make_link
         self.webapp.templates.filters['status_to_string'] = yombo.utils.status_to_string
         self.webapp.templates.filters['public_to_string'] = yombo.utils.public_to_string

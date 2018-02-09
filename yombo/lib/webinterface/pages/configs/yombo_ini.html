@@ -16,7 +16,7 @@
                         <div class="panel-heading">
                             <h4>yombo.ini</h4>
                             <p>The primary configuration for Yombo Gateway.</p>
-                            <p>Consider this section an advanced configuration section. <strong>Be careful of any additions, edits, or deletions here.</strong>
+                            <p><strong>The system can be easily broken by modifying these values!</strong>
                             </p>
                         </div>
                         <!-- /.panel-heading -->
@@ -36,8 +36,8 @@
                                             <th data-priority="1">Section</th>
                                             <th data-priority="1">Item</th>
                                             <th data-priority="1">Value</th>
-                                            <th data-priority="2" width="90px">Last Update</th>
-                                            <th data-priority="6" width="90px">Created</th>
+                                            <th data-priority="2">Last Update</th>
+                                            <th data-priority="6">Created</th>
                                             <th data-priority="4"># Writes</th>
                                             <th data-priority="5"># Reads</th>
                                             <th data-priority="1">Commands</th>
@@ -48,9 +48,9 @@
                                          <tr>
                                             <td>{{ section }}</td>
                                             <td>{{ item }}</td>
-                                            <td>{{ data['value'] }}</td>
+                                            <td>{{ data['value']|excerpt(25) }}</td>
                                             <td>{{ data['updated_at']|epoch_to_human }}</td>
-                                            <td>{{ data['create_at']|epoch_to_human }}</td>
+                                            <td>{{ data['created_at']|epoch_to_human }}</td>
                                             <td>{{ data['writes'] }}</td>
                                             <td>{{ data['reads'] }}</td>
                                             <td>Edit, Delete</td>
