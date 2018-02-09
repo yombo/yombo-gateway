@@ -37,7 +37,7 @@ logger = get_logger('library.devicetypes')
 
 BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices._device': ['Device'],
-    'yombo.lib.devices.activity_trigger': ['Activity_Trigger'],
+    'yombo.lib.devices.activity_trigger': ['ActivityTrigger'],
     'yombo.lib.devices.appliance': ['Appliance'],
     'yombo.lib.devices.camera': ['Camera'],
     'yombo.lib.devices.climate': ['Climate'],
