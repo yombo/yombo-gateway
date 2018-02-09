@@ -1,13 +1,13 @@
-.. index:: devices_relay
+.. index:: devices_switch
 
-.. _devices_relay:
+.. _devices_switch:
 
-.. currentmodule:: yombo.lib.devices.relay
+.. currentmodule:: yombo.lib.devices.switch
 
 =================================================================
-Devices::Relay (yombo.lib.devices.relay)
+Devices::Switch (yombo.lib.devices.switch)
 =================================================================
-.. automodule:: yombo.lib.devices.relay
+.. automodule:: yombo.lib.devices.switch
    :members:
    :special-members:
    :private-members:

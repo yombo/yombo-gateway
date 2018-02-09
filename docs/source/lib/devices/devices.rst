@@ -32,12 +32,16 @@ Helper files and classes
    device.rst
    device_command.rst
    device_status.rst
+   activity_trigger.rst
    appliance.rst
+   camera.rst
    climate.rst
    fan.rst
    light.rst
-   relay.rst
+   lock.rst
+   scene.rst
    sensor.rst
-   thermometer.rst
+   switch.rst
+   tv.py
 
 Last updated: |today|

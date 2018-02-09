@@ -25,6 +25,12 @@ documentation system is unable to automatically generate easily viewable
 documentation. Please view the
 `source code for the routes <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/routes>`_ .
 
+Web Interface HTML
+==================
+
+The HTML pages displayed can be viewed from the git repository:
+`HTML Pages <https://github.com/yombo/yombo-gateway/tree/master/yombo/lib/webinterface/pages>`_ .
+
 Web Interface Library
 =========================
 
@@ -42,6 +48,5 @@ Helper Files
    auth.rst
    constants.rst
    logevents.rst
-   sessions.rst
 
 Last updated: |today|

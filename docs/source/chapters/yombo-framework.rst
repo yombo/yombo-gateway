@@ -51,6 +51,7 @@ IoT devices, etc.
 
    ../lib/amqp.rst
    ../lib/amqpyombo.rst
+   ../lib/apiauth.rst
    ../lib/atoms.rst
    ../lib/automation.rst
    ../lib/commands.rst
@@ -59,8 +60,10 @@ IoT devices, etc.
    ../lib/devices/devices.rst
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
+   ../lib/gateways.rst
    ../lib/gpg.rst
    ../lib/inputtypes/inputtypes.rst
+   ../lib/hash.rst
    ../lib/loader.rst
    ../lib/localdb.rst
    ../lib/localize.rst
@@ -74,11 +77,13 @@ IoT devices, etc.
    ../lib/startup.rst
    ../lib/states.rst
    ../lib/statistics/statistics.rst
+   ../lib/tasks.rst
    ../lib/times.rst
    ../lib/validate.rst
    ../lib/variables.rst
    ../lib/voicecmds.rst
    ../lib/webinterface/webinterface.rst
+   ../lib/websessions.rst
    ../lib/yomboapi.rst
 
 

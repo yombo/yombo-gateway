@@ -1,13 +1,13 @@
-.. index:: devices_thermometer
+.. index:: devices_camera
 
-.. _devices_thermometer:
+.. _devices_camera:
 
-.. currentmodule:: yombo.lib.devices.thermometer
+.. currentmodule:: yombo.lib.devices.camera
 
 =================================================================
-Devices::Thermometer (yombo.lib.devices.thermometer)
+Devices::Camera (yombo.lib.devices.camera)
 =================================================================
-.. automodule:: yombo.lib.devices.thermometer
+.. automodule:: yombo.lib.devices.camera
    :members:
    :special-members:
    :private-members:
