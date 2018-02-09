@@ -38,7 +38,7 @@ def route_api_v1_server(webapp):
                 url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             try:
-                results = yield webinterface._YomboAPI.request('GET', url)
+                results = yield webinterface._YomboAPI.request('GET', url, session=session['yomboapi_session'])
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
@@ -49,15 +49,6 @@ def route_api_v1_server(webapp):
             request.setHeader('Content-Type', 'application/json')
             return json.dumps(data)
 
-        # @webapp.route('/server/dns/check_available/<string:dnsname>', methods=['GET'])
-        # @require_auth()
-        # @inlineCallbacks
-        # def api_v1_dns_check_available(webinterface, request, session, dnsname):
-        #     url = '/api/v1/dns/check_available/%s' % dnsname
-        #     url = '/v1/device_type'
-        #     results = yield webinterface._YomboAPI.request('GET', url)
-        #     return results['content']
-
         @webapp.route('/server/dns/check_available/<string:dnsname>', methods=['GET'])
         @require_auth(api=True)
         @inlineCallbacks
@@ -67,7 +58,7 @@ def route_api_v1_server(webapp):
             # url = '/v1/dns/check_available/sam'
 
             try:
-                results = yield webinterface._YomboAPI.request('GET', url)
+                results = yield webinterface._YomboAPI.request('GET', url, session=session['yomboapi_session'])
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
@@ -96,7 +87,7 @@ def route_api_v1_server(webapp):
                 url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             try:
-                results = yield webinterface._YomboAPI.request('GET', url)
+                results = yield webinterface._YomboAPI.request('GET', url, session=session['yomboapi_session'])
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 
@@ -129,7 +120,7 @@ def route_api_v1_server(webapp):
                 url = url + "&?_filters[label]*%s&_filters[description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             try:
-                results = yield webinterface._YomboAPI.request('GET', url)
+                results = yield webinterface._YomboAPI.request('GET', url, session=session['yomboapi_session'])
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
             data = {
@@ -161,7 +152,7 @@ def route_api_v1_server(webapp):
                 url = url + "&?_filters[label]*%s&_filters[short_description]*%s&_filters[machine_label]*%s&_filteroperator=or" % (search, search, search)
 
             try:
-                results = yield webinterface._YomboAPI.request('GET', url)
+                results = yield webinterface._YomboAPI.request('GET', url, session=session['yomboapi_session'])
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
             data = {
@@ -177,7 +168,8 @@ def route_api_v1_server(webapp):
         def apiv1_server_modules_show_one(webinterface, request, session, module_id):
             # action = request.args.get('action')[0]
             try:
-                results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+                results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
+                                                               session=session['yomboapi_session'])
             except YomboWarning as e:
                 return return_error(request, e.message, e.errorno)
 

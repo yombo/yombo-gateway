@@ -70,7 +70,8 @@ def route_modules(webapp):
         @inlineCallbacks
         def page_modules_details_from_server(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
+                                                                      session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
@@ -89,7 +90,8 @@ def route_modules(webapp):
         @inlineCallbacks
         def page_modules_add(webinterface, request, session, module_id):
             try:
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
+                                                                      session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
@@ -277,7 +279,8 @@ def route_modules(webapp):
                 return webinterface.redirect(request, '/modules/index')
 
             try:
-                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+                module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
+                                                                      session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/modules/index')
@@ -318,12 +321,13 @@ def route_modules(webapp):
                 json_output.get('vars', {}))
             data['variable_data'] = variable_data
 
-            results = yield webinterface._Modules.edit_module(module_id, data)
+            results = yield webinterface._Modules.edit_module(module_id, data, session=session['yomboapi_session'])
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
 
                 try:
-                    results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id)
+                    results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % module_id,
+                                                                   session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/modules/index')
@@ -412,7 +416,7 @@ def route_modules(webapp):
                                    module=module,
                                    )
 
-            results = yield webinterface._Modules.enable_module(module._module_id)
+            results = yield webinterface._Modules.enable_module(module._module_id, session=session['yomboapi_session'])
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -481,7 +485,7 @@ def route_modules(webapp):
                                    module=module,
                                    )
 
-            results = yield webinterface._Modules.remove_module(module._module_id)
+            results = yield webinterface._Modules.remove_module(module._module_id, session=session['yomboapi_session'])
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')

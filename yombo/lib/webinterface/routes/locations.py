@@ -65,7 +65,8 @@ def route_locations(webapp):
         @inlineCallbacks
         def page_lib_location_details_get(webinterface, request, session, location_id):
             try:
-                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
+                                                                  session=session['yomboapi_session'])
             except YomboWarning as e:
                 print(e)
                 webinterface.add_alert(e.html_message, 'warning')
@@ -129,7 +130,8 @@ def route_locations(webapp):
         @inlineCallbacks
         def page_lib_location_edit_get(webinterface, request, session, location_id):
             try:
-                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
+                                                                  session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')
@@ -199,7 +201,8 @@ def route_locations(webapp):
         @inlineCallbacks
         def page_lib_location_delete_get(webinterface, request, session, location_id):
             try:
-                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id)
+                DL_results = yield webinterface._YomboAPI.request('GET', '/v1/location/%s' % location_id,
+                                                                  session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/locations/index')

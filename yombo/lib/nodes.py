@@ -458,7 +458,7 @@ class Nodes(YomboLibrary):
 
     @inlineCallbacks
     def create(self, data=None, data_content_type=None, node_type=None, gateway_id=None, weight=None, label=None,
-               machine_label=None, parent_node=None, parent_id=None, destination=None, status=None):
+               machine_label=None, parent_node=None, parent_id=None, destination=None, status=None, session=None):
         """
         A helper function to easily create new nodes. Simply submit what you have, and will pass on whatever
         that can to add_node().
@@ -516,10 +516,10 @@ class Nodes(YomboLibrary):
         }
 
         # This fancy inline just removed None and '' values.
-        results = yield self.add_node({k: v for k, v in api_data.items() if v})
+        results = yield self.add_node({k: v for k, v in api_data.items() if v}, session=session)
         # print("create results: %s" % results)
         if results['status'] != 'success':
-            return None
+            return results
         return self.nodes[results['node_id']]
 
     @inlineCallbacks
@@ -545,17 +545,26 @@ class Nodes(YomboLibrary):
 
             try:
                 api_to_send = {k: v for k, v in bytes_to_unicode(api_data).items() if v}
-                node_results = yield self._YomboAPI.request('POST', '/v1/node', api_to_send)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    return {
+                        'status': 'failed',
+                        'msg': "Couldn't add node: User session missing.",
+                        'apimsg': "Couldn't add node: User session missing.",
+                        'apimsghtml': "Couldn't add node: User session missing.",
+                    }
+
+                node_results = yield self._YomboAPI.request('POST', '/v1/node',
+                                                            api_to_send,
+                                                            session=session)
             except YomboWarning as e:
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't add node: %s" % e.message,
-                    # 'data': None,
-                    # 'node_id': None,
                     'apimsg': "Couldn't add node: %s" % e.message,
                     'apimsghtml': "Couldn't add node: %s" % e.html_message,
                 }
-                return results
             # print("added node results: %s" % node_results)
             node_id = node_results['data']['id']
             new_node = node_results['data']
@@ -573,7 +582,7 @@ class Nodes(YomboLibrary):
                                   node_id=node_id,
                                   node=self.nodes[node_id],
                                   )
-        results = {
+        return {
             'status': 'success',
             'msg': "Node added.",
             'node_id': node_id,
@@ -581,7 +590,6 @@ class Nodes(YomboLibrary):
             'apimsg': "Node edited.",
             'apimsghtml': "Node edited.",
         }
-        return results
 
     @inlineCallbacks
     def edit_node(self, node_id, api_data, source=None, **kwargs):
@@ -609,10 +617,17 @@ class Nodes(YomboLibrary):
             # print("new node data: %s" % api_data)
             try:
                 api_to_send = {k: v for k, v in bytes_to_unicode(api_data).items() if v}
-                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id), api_to_send)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    session = None
+                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % (node_id),
+                                                            api_to_send,
+                                                            session=session)
                 # print("node edit results: %s" % node_results)
             except YomboWarning as e:
-                results = {
+                logger.warn("Couldn't save node: {e}", e=e)
+                return {
                     'status': 'failed',
                     'msg': "Couldn't edit node: %s" % e.message,
                     'data': None,
@@ -620,11 +635,8 @@ class Nodes(YomboLibrary):
                     'apimsg': "Couldn't edit node: %s" % e.message,
                     'apimsghtml': "Couldn't edit node: %s" % e.html_message,
                 }
-                logger.warn("Couldn't save node: {e}", e=e)
-                return results
 
             api_data['data'] = node_results['data']
-
 
         if node_id in self.nodes:
             node = self.nodes[node_id]
@@ -637,7 +649,7 @@ class Nodes(YomboLibrary):
                           node_id=node_id,
                           node=self.nodes[node_id],
                           )
-        results = {
+        return {
             'status': 'success',
             'msg': "Node edited.",
             'node_id': node_id,
@@ -645,7 +657,6 @@ class Nodes(YomboLibrary):
             'apimsg': "Node edited.",
             'apimsghtml': "Node edited.",
             }
-        return results
 
     @inlineCallbacks
     def delete_node(self, node_id, source=None, **kwargs):
@@ -659,9 +670,21 @@ class Nodes(YomboLibrary):
         results = None
         if source != 'amqp':
             try:
-                node_results = yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    return {
+                        'status': 'failed',
+                        'msg': "Couldn't delete node: User session missing.",
+                        'data': None,
+                        'node_id': node_id,
+                        'apimsg': "Couldn't delete node: User session missing.",
+                        'apimsghtml': "Couldn't delete node: User session missing.",
+                    }
+                yield self._YomboAPI.request('DELETE', '/v1/node/%s' % node_id,
+                                             session=session)
             except YomboWarning as e:
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't delete node: %s" % e.message,
                     'data': None,
@@ -669,7 +692,6 @@ class Nodes(YomboLibrary):
                     'apimsg': "Couldn't delete node: %s" % e.message,
                     'apimsghtml': "Couldn't delete node: %s" % e.html_message,
                 }
-                return results
 
         api_data = {
             'status': 2,
@@ -686,7 +708,7 @@ class Nodes(YomboLibrary):
                           node=self.nodes[node_id],
                           )
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Node deleted.",
             'node_id': node_id,
@@ -694,7 +716,6 @@ class Nodes(YomboLibrary):
             'apimsg': "Node deleted.",
             'apimsghtml': "Node deleted.",
             }
-        return results
 
     @inlineCallbacks
     def enable_node(self, node_id, source=None, **kwargs):
@@ -712,9 +733,23 @@ class Nodes(YomboLibrary):
 
         if source != 'amqp':
             try:
-                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    return {
+                        'status': 'failed',
+                        'msg': "Couldn't enable node: User session missing.",
+                        'data': None,
+                        'node_id': node_id,
+                        'apimsg': "Couldn't enable node: User session missing.",
+                        'apimsghtml': "Couldn't enable node: User session missing.",
+                    }
+
+                yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id,
+                                             api_data,
+                                             session=session)
             except YomboWarning as e:
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't enable node: %s" % e.message,
                     'data': None,
@@ -722,7 +757,6 @@ class Nodes(YomboLibrary):
                     'apimsg': "Couldn't enable node: %s" % e.message,
                     'apimsghtml': "Couldn't enable node: %s" % e.html_message,
                 }
-                return results
 
         if node_id in self.nodes:
             node = self.nodes[node_id]
@@ -735,7 +769,7 @@ class Nodes(YomboLibrary):
                           node_id=node_id,
                           node=self.nodes[node_id],
                           )
-        results = {
+        return {
             'status': 'success',
             'msg': "Node enabled.",
             'node_id': node_id,
@@ -743,7 +777,6 @@ class Nodes(YomboLibrary):
             'apimsg': "Node enabled.",
             'apimsghtml': "Node enabled.",
             }
-        return results
 
     @inlineCallbacks
     def disable_node(self, node_id, source=None, **kwargs):
@@ -761,9 +794,23 @@ class Nodes(YomboLibrary):
 
         if source != 'amqp':
             try:
-                node_results = yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id, api_data)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    return {
+                        'status': 'failed',
+                        'msg': "Couldn't disable node: User session missing.",
+                        'data': None,
+                        'node_id': node_id,
+                        'apimsg': "Couldn't disable node: User session missing.",
+                        'apimsghtml': "Couldn't disable node: User session missing.",
+                    }
+
+                yield self._YomboAPI.request('PATCH', '/v1/node/%s' % node_id,
+                                             api_data,
+                                             session=session)
             except YomboWarning as e:
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't disable node: %s" % e.message,
                     'data': None,
@@ -771,7 +818,6 @@ class Nodes(YomboLibrary):
                     'apimsg': "Couldn't disable node: %s" % e.message,
                     'apimsghtml': "Couldn't disable node: %s" % e.html_message,
                 }
-                return results
 
         if node_id in self.nodes:
             node = self.nodes[node_id]
@@ -783,7 +829,7 @@ class Nodes(YomboLibrary):
                           node_id=node_id,
                           node=self.nodes[node_id],
                           )
-        results = {
+        return {
             'status': 'success',
             'msg': "Node disabled.",
             'node_id': node_id,
@@ -791,7 +837,6 @@ class Nodes(YomboLibrary):
             'apimsg': "Node disabled.",
             'apimsghtml': "Node disabled.",
         }
-        return results
 
 
 class Node(object):
@@ -832,7 +877,7 @@ class Node(object):
         self.weight = 0
         self.gw_always_load = 1
         self.destination = None
-        self.data = None
+        self.data = TriggerDict(callback=self._on_change)
         self.data_content_type = None
         self.status = None
         self.updated_at = None
@@ -840,15 +885,11 @@ class Node(object):
         self.update_attributes(node, source='parent')
         self._startup = True
 
-    def __setattr__(self, key, value):
-        # print("node settr called: %s = %s" % (key, value))
-        if key == 'data':
-            if isinstance(value, dict):
-                value = TriggerDict(value, callback=self._on_change)
-        object.__setattr__(self, key, value)
-        # self.key = value
-        if self._startup is not True:
-            self._on_change()
+    # def __setattr__(self, key, value):
+    #     # print("node settr called: %s = %s" % (key, value))
+    #     self.data[key] = value
+    #     if self._startup is not True:
+    #         self._on_change()
 
     @inlineCallbacks
     def _stop_(self):

@@ -107,6 +107,7 @@ def route_apiauth(webapp):
                 label=data['label'],
                 description=data['description'],
                 permissions=data['permissions'],
+                session=session['yomboapi_session']
             )
 
             if api_auth is None:

@@ -25,7 +25,9 @@ def route_devtools_config_input_types(webapp):
         @inlineCallbacks
         def page_devtools_input_types_details_get(webinterface, request, session, input_type_id):
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -33,7 +35,8 @@ def route_devtools_config_input_types(webapp):
             try:
                 category_results = yield webinterface._YomboAPI.request('GET',
                                                                         '/v1/category/%s' % input_type_results['data'][
-                                                                            'category_id'])
+                                                                            'category_id'],
+                                                                        session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -56,7 +59,9 @@ def route_devtools_config_input_types(webapp):
         @inlineCallbacks
         def page_devtools_input_types_delete_get(webinterface, request, session, input_type_id):
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -86,7 +91,8 @@ def route_devtools_config_input_types(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/%s/details' % input_type_id)
 
-            results = yield webinterface._InputTypes.dev_input_type_delete(input_type_id)
+            results = yield webinterface._InputTypes.dev_input_type_delete(input_type_id,
+                                                                           session=session['yomboapi_session'])
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -100,7 +106,8 @@ def route_devtools_config_input_types(webapp):
 
             try:
                 input_type_results = yield webinterface._YomboAPI.request('GET',
-                                                                          '/v1/input_types/%s' % input_type_id)
+                                                                          '/v1/input_types/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -121,7 +128,9 @@ def route_devtools_config_input_types(webapp):
         @inlineCallbacks
         def page_devtools_input_types_disable_get(webinterface, request, session, input_type_id):
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -153,7 +162,8 @@ def route_devtools_config_input_types(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/%s/input_type_id' % input_type_id)
 
-            results = yield webinterface._InputTypes.dev_input_type_disable(input_type_id)
+            results = yield webinterface._InputTypes.dev_input_type_disable(input_type_id,
+                                                                            session=session['yomboapi_session'])
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -166,7 +176,9 @@ def route_devtools_config_input_types(webapp):
             }
 
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -188,7 +200,9 @@ def route_devtools_config_input_types(webapp):
         @inlineCallbacks
         def page_devtools_input_types_enable_get(webinterface, request, session, input_type_id):
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -218,7 +232,8 @@ def route_devtools_config_input_types(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/%s/input_type_id' % input_type_id)
 
-            results = yield webinterface._InputTypes.dev_input_type_enable(input_type_id)
+            results = yield webinterface._InputTypes.dev_input_type_enable(input_type_id,
+                                                                           session=session['yomboapi_session'])
 
             if results['status'] == 'failed':
                 webinterface.add_alert(results['apimsghtml'], 'warning')
@@ -231,7 +246,9 @@ def route_devtools_config_input_types(webapp):
             }
 
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -253,7 +270,8 @@ def route_devtools_config_input_types(webapp):
         def page_devtools_input_types_add_get(webinterface, request, session):
             try:
                 category_results = yield webinterface._YomboAPI.request('GET',
-                                                                        '/v1/category?_filters[category_type]=input_type')
+                                                                        '/v1/category?_filters[category_type]=input_type',
+                                                                        session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -287,12 +305,15 @@ def route_devtools_config_input_types(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            input_type_results = yield webinterface._InputTypes.dev_input_type_add(data)
+            input_type_results = yield webinterface._InputTypes.dev_input_type_add(data,
+                                                                                   session=session['yomboapi_session']
+                                                                                   )
 
             if input_type_results['status'] == 'failed':
                 webinterface.add_alert(input_type_results['apimsghtml'], 'warning')
                 category_results = yield webinterface._YomboAPI.request('GET',
-                                                                        '/v1/category?_filters[category_type]=input_type')
+                                                                        '/v1/category?_filters[category_type]=input_type',
+                                                                        session=session['yomboapi_session'])
                 if category_results['code'] > 299:
                     webinterface.add_alert(category_results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -320,14 +341,17 @@ def route_devtools_config_input_types(webapp):
         @inlineCallbacks
         def page_devtools_input_types_edit_get(webinterface, request, session, input_type_id):
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
 
             try:
                 category_results = yield webinterface._YomboAPI.request('GET',
-                                                                        '/v1/category?_filters[category_type]=input_type')
+                                                                        '/v1/category?_filters[category_type]=input_type',
+                                                                        session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -356,21 +380,26 @@ def route_devtools_config_input_types(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            dev_input_type_results = yield webinterface._InputTypes.dev_input_type_edit(input_type_id, data)
+            dev_input_type_results = yield webinterface._InputTypes.dev_input_type_edit(input_type_id,
+                                                                                        data,
+                                                                                        session=session[
+                                                                                            'yomboapi_session'])
 
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 
             if dev_input_type_results['status'] == 'failed':
                 try:
                     input_type_results = yield webinterface._YomboAPI.request('GET',
-                                                                              '/v1/input_type/%s' % input_type_id)
+                                                                              '/v1/input_type/%s' % input_type_id,
+                                                                              session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/devtools/config/input_types/index')
 
                 try:
                     category_results = yield webinterface._YomboAPI.request('GET',
-                                                                            '/v1/category?_filters[category_type]=input_type')
+                                                                            '/v1/category?_filters[category_type]=input_type',
+                                                                            session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/devtools/config/input_types/index')
@@ -397,7 +426,9 @@ def route_devtools_config_input_types(webapp):
             }
 
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type/%s' % input_type_id)
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type/%s' % input_type_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/input_types/index')

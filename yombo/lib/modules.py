@@ -896,7 +896,7 @@ class Modules(YomboLibrary):
                 self.disabled_modules[module_id] = "Caught exception during call '%s': %s" % (e, hook)
 
         dl = DeferredList(dl_list)
-        dl_results = yield dl
+        yield dl
         # print("results: %s" % results)
         return results
 
@@ -1102,16 +1102,26 @@ class Modules(YomboLibrary):
         }
 
         try:
-            yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            yield self._YomboAPI.request('POST', '/v1/gateway/%s/module' % self.gateway_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add module: %s" % e.message,
                 'apimsg': "Couldn't add module: %s" % e.message,
                 'apimsghtml': "Couldn't add module: %s" % e.html_message,
             }
-            return results
-        # print("add module results: %s" % module_results)
+
+        if 'session' in kwargs:
+            session = kwargs['session']
+        else:
+            session = None
 
         # print("checking if var data... %s" % data)
         if 'variable_data' in data:
@@ -1134,15 +1144,16 @@ class Modules(YomboLibrary):
                         }
                         # print("post_data: %s" % post_data)
                         try:
-                            yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                            yield self._YomboAPI.request('POST', '/v1/variable/data',
+                                                         post_data,
+                                                         session=session)
                         except YomboWarning as e:
-                            results = {
+                            return {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables: %s" % e.message,
                                 'apimsg': "Couldn't add module variables: %s" % e.message,
                                 'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
                             }
-                            return results
                     else:
                         post_data = {
                             'data_weight': 0,
@@ -1152,28 +1163,28 @@ class Modules(YomboLibrary):
                         # print("post_data: %s" % post_data)
                         try:
                             yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
-                                                                            post_data)
+                                                         post_data,
+                                                         session=session)
                         except YomboWarning as e:
-                            results = {
+                            return {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables: %s" % e.message,
                                 'apimsg': "Couldn't add module variables: %s" % e.message,
                                 'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
                             }
-                            return results
 
         results = {
             'status': 'success',
             'msg': "Module added.",
             'module_id': data['module_id']
         }
-        module = self.get(data['module_id'])
+        a_module = self.get(data['module_id'])
         reactor.callLater(.0001,
                           global_invoke_all,
                           '_module_added_',
                           called_by=self,
                           module_id=data['module_id'],
-                          module=module,
+                          module=a_module,
                           )
         if 'module_label' in data:
             label = data['module_label']
@@ -1205,18 +1216,22 @@ class Modules(YomboLibrary):
             'status': data['status'],
         }
 
+        if 'session' in kwargs:
+            session = kwargs['session']
+        else:
+            session = None
         try:
             yield self._YomboAPI.request('PATCH',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
-                                                          api_data)
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit module: %s" % e.message,
                 'apimsg': "Couldn't edit module: %s" % e.message,
                 'apimsghtml': "Couldn't edit module: %s" % e.html_message,
             }
-            return results
 
         if 'variable_data' in data:
             logger.debug("editing variable data...")
@@ -1239,15 +1254,16 @@ class Modules(YomboLibrary):
                         }
                         # print("post_data: %s" % post_data)
                         try:
-                            yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                            yield self._YomboAPI.request('POST', '/v1/variable/data',
+                                                         post_data,
+                                                         session=session)
                         except YomboWarning as e:
-                            results = {
+                            return {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables: %s" % e.message,
                                 'apimsg': "Couldn't add module variables: %s" % e.message,
                                 'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
                             }
-                            return results
                     else:
                         post_data = {
                             'data_weight': 0,
@@ -1256,33 +1272,34 @@ class Modules(YomboLibrary):
                         # print("posting to: /v1/variable/data/%s" % data_id)
                         # print("post_data: %s" % post_data)
                         try:
-                            yield self._YomboAPI.request('PATCH', '/v1/variable/data/%s' % data_id,
-                                                                            post_data)
+                            yield self._YomboAPI.request('PATCH',
+                                                         '/v1/variable/data/%s' % data_id,
+                                                         post_data,
+                                                         session=session)
                         except YomboWarning as e:
-                            results = {
+                            return {
                                 'status': 'failed',
                                 'msg': "Couldn't add module variables: %s" % e.message,
                                 'apimsg': "Couldn't add module variables: %s" % e.message,
                                 'apimsghtml': "Couldn't add module variables: %s" % e.html_message,
                             }
-                            return results
 
         results = {
             'status': 'success',
             'msg': "Module edited.",
             'module_id': module_id
         }
-        module = self.get(module_id)
+        a_module = self.get(module_id)
         reactor.callLater(.0001,
                           global_invoke_all,
                           '_module_updated_',
                           called_by=self,
                           module_id=module_id,
-                          module=module,
+                          module=a_module,
                           )
         self._Notifications.add(
-            {'title': 'Module edited: %s' % module._label,
-             'message': "The module '%s' has been edited." % module._label,
+            {'title': 'Module edited: %s' % a_module._label,
+             'message': "The module '%s' has been edited." % a_module._label,
              'timeout': 3600,
              'source': 'Modules Library',
              'persist': False,
@@ -1305,17 +1322,22 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to remove.", 300, 'disable_module', 'Modules')
 
         try:
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
             yield self._YomboAPI.request('DELETE',
-                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
+                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete module: %s" % e.message,
                 'apimsg': "Couldn't delete module: %s" % e.message,
                 'apimsghtml': "Couldn't delete module: %s" % e.html_message,
             }
-            return results
 
         self._LocalDB.set_module_status(module_id, 2)
         self._LocalDB.del_variables('module', module_id)
@@ -1325,17 +1347,17 @@ class Modules(YomboLibrary):
             'msg': "Module deleted.",
             'module_id': module_id,
         }
-        module = self.get(module_id)
+        a_module = self.get(module_id)
         reactor.callLater(.0001,
                           global_invoke_all,
                           '_module_removed_',
                           called_by=self,
                           module_id=module_id,
-                          module=module,
+                          module=a_module,
                           )
         self._Notifications.add(
-            {'title': 'Module removed: %s' % module._label,
-             'message': "The module '%s' has been removed and will take affect on next reboot." % module._label,
+            {'title': 'Module removed: %s' % a_module._label,
+             'message': "The module '%s' has been removed and will take affect on next reboot." % a_module._label,
              'timeout': 3600,
              'source': 'Modules Library',
              'persist': False,
@@ -1365,18 +1387,23 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
 
         try:
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
             yield self._YomboAPI.request('PATCH',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
-                                                          api_data)
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
             # print("module enable results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable module: %s" % e.message,
                 'apimsg': "Couldn't enable module: %s" % e.message,
                 'apimsghtml': "Couldn't enable module: %s" % e.html_message,
             }
-            return results
 
         self._LocalDB.set_module_status(module_id, 1)
 
@@ -1385,7 +1412,7 @@ class Modules(YomboLibrary):
             'msg': "Module enabled.",
             'module_id': module_id,
         }
-        module = self.get(module_id)
+        a_module = self.get(module_id)
         reactor.callLater(.0001,
                           global_invoke_all,
                           '_module_enabled_',
@@ -1394,8 +1421,8 @@ class Modules(YomboLibrary):
                           module=module,
                           )
         self._Notifications.add(
-            {'title': 'Module enabled: %s' % module._label,
-             'message': "The module '%s' has been enabled and will take affect on next reboot." % module._label,
+            {'title': 'Module enabled: %s' % a_module._label,
+             'message': "The module '%s' has been enabled and will take affect on next reboot." % a_module._label,
              'timeout': 3600,
              'source': 'Modules Library',
              'persist': False,
@@ -1422,18 +1449,23 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
         try:
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
             yield self._YomboAPI.request('PATCH',
                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
-                                         api_data)
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
             # print("module disable results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable module: %s" % e.message,
                 'apimsg': "Couldn't disable module: %s" % e.message,
                 'apimsghtml': "Couldn't disable module: %s" % e.html_message,
             }
-            return results
 
         self._LocalDB.set_module_status(module_id, 0)
 
@@ -1442,7 +1474,7 @@ class Modules(YomboLibrary):
             'msg': "Module disabled.",
             'module_id': module_id,
         }
-        module = self.get(module_id)
+        a_module = self.get(module_id)
         reactor.callLater(.0001,
                           global_invoke_all,
                           '_module_disabled_',
@@ -1451,8 +1483,8 @@ class Modules(YomboLibrary):
                           module=module,
                           )
         self._Notifications.add(
-            {'title': 'Module disabled: %s' % module._label,
-             'message': "The module '%s' has been disabled and will take affect on next reboot." % module._label,
+            {'title': 'Module disabled: %s' % a_module._label,
+             'message': "The module '%s' has been disabled and will take affect on next reboot." % a_module._label,
              'timeout': 3600,
              'source': 'Modules Library',
              'persist': False,
@@ -1471,23 +1503,32 @@ class Modules(YomboLibrary):
         :return:
         """
         try:
-            module_results = yield self._YomboAPI.request('POST', '/v1/module', data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't add module: User session missing.",
+                    'apimsg': "Couldn't add module: User session missing.",
+                    'apimsghtml': "Couldn't add module: User session missing.",
+                }
+
+            module_results = yield self._YomboAPI.request('POST', '/v1/module', data,
+                                                          session=session)
         except YomboWarning as e:
             # print("module add results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add module: %s" % e.message,
                 'apimsg': "Couldn't add module: %s" % e.message,
                 'apimsghtml': "Couldn't add module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Module added.",
             'module_id': module_results['data']['id'],
         }
-        return results
 
     @inlineCallbacks
     def dev_module_edit(self, module_id, data, **kwargs):
@@ -1499,23 +1540,32 @@ class Modules(YomboLibrary):
         :return:
         """
         try:
-            module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id), data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't edit module: User session missing.",
+                    'apimsg': "Couldn't edit module: User session missing.",
+                    'apimsghtml': "Couldn't edit module: User session missing.",
+                }
+            yield self._YomboAPI.request('PATCH', '/v1/module/%s' % (module_id),
+                                         data,
+                                         session=session)
         except YomboWarning as e:
             # print("module edit results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit module: %s" % e.message,
                 'apimsg': "Couldn't edit module: %s" % e.message,
                 'apimsghtml': "Couldn't edit module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Module edited.",
             'module_id': module_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_module_delete(self, module_id, **kwargs):
@@ -1527,23 +1577,31 @@ class Modules(YomboLibrary):
         :return:
         """
         try:
-            module_results = yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't delete module: User session missing.",
+                    'apimsg': "Couldn't delete module: User session missing.",
+                    'apimsghtml': "Couldn't delete module: User session missing.",
+                }
+            yield self._YomboAPI.request('DELETE', '/v1/module/%s' % module_id,
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete module: %s" % e.message,
                 'apimsg': "Couldn't delete module: %s" % e.message,
                 'apimsghtml': "Couldn't delete module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Module deleted.",
             'module_id': module_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_module_enable(self, module_id, **kwargs):
@@ -1559,23 +1617,32 @@ class Modules(YomboLibrary):
         }
 
         try:
-            module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't enable module: User session missing.",
+                    'apimsg': "Couldn't enable module: User session missing.",
+                    'apimsghtml': "Couldn't enable module: User session missing.",
+                }
+            yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable module: %s" % e.message,
                 'apimsg': "Couldn't enable module: %s" % e.message,
                 'apimsghtml': "Couldn't enable module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Module enabled.",
             'module_id': module_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_module_disable(self, module_id, **kwargs):
@@ -1592,26 +1659,35 @@ class Modules(YomboLibrary):
         }
 
         try:
-            module_results = yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't disable module: User session missing.",
+                    'apimsg': "Couldn't disable module: User session missing.",
+                    'apimsghtml': "Couldn't disable module: User session missing.",
+                }
+            yield self._YomboAPI.request('PATCH', '/v1/module/%s' % module_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable module: %s" % e.message,
                 'apimsg': "Couldn't disable module: %s" % e.message,
                 'apimsghtml': "Couldn't disable module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Module disabled.",
             'module_id': module_id,
         }
-        return results
 
     @inlineCallbacks
-    def dev_module_device_type_add(self, module_id, device_type_id):
+    def dev_module_device_type_add(self, module_id, device_type_id, **kwargs):
         """
         Associate a device type to a module
 
@@ -1625,26 +1701,35 @@ class Modules(YomboLibrary):
         }
 
         try:
-            yield self._YomboAPI.request('POST', '/v1/module_device_type', data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't associate device type to module: User session missing.",
+                    'apimsg': "Couldn't associate device type to module: User session missing.",
+                    'apimsghtml': "Couldn't associate device type to module: User session missing.",
+                }
+            yield self._YomboAPI.request('POST', '/v1/module_device_type',
+                                         data,
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't associate device type to module: %s" % e.message,
                 'apimsg': "Couldn't associate device type to module: %s" % e.message,
                 'apimsghtml': "Couldn't associate device type to module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type associated to module.",
             'module_id': module_id,
         }
-        return results
 
     @inlineCallbacks
-    def dev_module_device_type_remove(self, module_id, device_type_id):
+    def dev_module_device_type_remove(self, module_id, device_type_id, **kwargs):
         """
         Removes an association of a device type from a module
 
@@ -1654,24 +1739,32 @@ class Modules(YomboLibrary):
         """
 
         try:
-            module_results = yield self._YomboAPI.request('DELETE',
-                                                          '/v1/module_device_type/%s/%s' % (module_id, device_type_id))
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't remove association device type from module: User session missing.",
+                    'apimsg': "Couldn't remove association device type from module: User session missing.",
+                    'apimsghtml': "Couldn't remove association device type from module: User session missing.",
+                }
+            yield self._YomboAPI.request('DELETE',
+                                         '/v1/module_device_type/%s/%s' % (module_id, device_type_id),
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't remove association device type from module: %s" % e.message,
                 'apimsg': "Couldn't remove association device type from module: %s" % e.message,
                 'apimsghtml': "Couldn't remove association device type from module: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type removed from module.",
             'module_id': module_id,
         }
-        return results
 
     @inlineCallbacks
     def _api_change_status(self, module_id, new_status, **kwargs):
@@ -1694,22 +1787,30 @@ class Modules(YomboLibrary):
             raise YomboWarning("module_id doesn't exist. Nothing to disable.", 300, 'disable_module', 'Modules')
 
         try:
-            module_results = yield self._YomboAPI.request('PATCH',
-                                                          '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id))
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't %s module: User session missing." % new_status,
+                    'apimsg': "Couldn't %s module: User session missing." % new_status,
+                    'apimsghtml': "Couldn't %s module: User session missing." % new_status,
+                }
+            yield self._YomboAPI.request('PATCH',
+                                         '/v1/gateway/%s/module/%s' % (self.gateway_id, module_id),
+                                         session=session)
         except YomboWarning as e:
             # print("module delete results: %s" % module_results)
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't %s module: %s" % (new_status, e.message),
                 'apimsg': "Couldn't %s module: %s" % (new_status, e.message),
                 'apimsghtml': "Couldn't %s module: %s" % (new_status, e.message),
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Module disabled.",
             'module_id': module_id,
         }
-        return results
 

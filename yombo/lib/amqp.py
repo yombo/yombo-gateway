@@ -822,12 +822,10 @@ class PikaFactory(protocol.ReconnectingClientFactory):
         if self.AMQPProtocol:
             self.AMQPProtocol.check_delivery_queue()
 
-        results = {
+        return {
             'message_meta': message_meta,
             'correlation_info': correlation_info,
         }
-
-        return results
 
     def close(self):
         """

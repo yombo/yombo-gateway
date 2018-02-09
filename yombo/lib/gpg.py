@@ -878,6 +878,6 @@ class GPG(YomboLibrary):
         results = cipher.decrypt(enc[AES.block_size:])
         try:
             results = results.decode('utf-8')
-            return results
         except:
-            return results
+            pass
+        return results

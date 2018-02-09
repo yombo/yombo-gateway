@@ -313,8 +313,6 @@ class Gateways(YomboLibrary):
         }
 
         return msgpack.packb(message)
-        # results = yield self._GPG.encrypt_aes(self.account_mqtt_key, msgpack.packb(data))
-        # return results
 
     def decrypt(self, incoming):
         # data = yield self._GPG.decrypt_aes(self.account_mqtt_key, data)
@@ -1115,25 +1113,30 @@ class Gateways(YomboLibrary):
 
         if source != 'amqp':
             try:
-                gateway_results = yield self._YomboAPI.request('POST', '/v1/gateway', api_data)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    session = None
+
+                gateway_results = yield self._YomboAPI.request('POST', '/v1/gateway',
+                                                               api_data,
+                                                               session=session)
             except YomboWarning as e:
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't add gateway: %s" % e.message,
                     'apimsg': "Couldn't add gateway: %s" % e.message,
                     'apimsghtml': "Couldn't add gateway: %s" % e.html_message,
                 }
-                return results
             gateway_id = gateway_results['data']['id']
 
-        results = {
+        new_gateway = gateway_results['data']
+        self.import_gateway(new_gateway)
+        return {
             'status': 'success',
             'msg': "Gateway added.",
             'gateway_id': gateway_id,
         }
-        new_gateway = gateway_results['data']
-        self.import_gateway(new_gateway)
-        return results
 
     @inlineCallbacks
     def edit_gateway(self, gateway_id, api_data, called_from_gateway=None, source=None, **kwargs):
@@ -1145,28 +1148,32 @@ class Gateways(YomboLibrary):
         :return:
         """
         try:
-            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % (gateway_id), api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % (gateway_id),
+                                                           api_data,
+                                                           session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit gateway: %s" % e.message,
                 'apimsg': "Couldn't edit gateway: %s" % e.message,
                 'apimsghtml': "Couldn't edit gateway: %s" % e.html_message,
             }
-            return results
-        # print("module edit results: %s" % module_results)
-
-        results = {
-            'status': 'success',
-            'msg': "Device type edited.",
-            'gateway_id': gateway_results['data']['id'],
-        }
 
         gateway = self.gateways[gateway_id]
         if called_from_gateway is not True:
             gateway.update_attributes(api_data)
             gateway.save_to_db()
-        return results
+
+        return {
+            'status': 'success',
+            'msg': "Device type edited.",
+            'gateway_id': gateway_results['data']['id'],
+        }
 
     @inlineCallbacks
     def delete_gateway(self, gateway_id, **kwargs):
@@ -1178,22 +1185,26 @@ class Gateways(YomboLibrary):
         :return:
         """
         try:
-            gateway_results = yield self._YomboAPI.request('DELETE', '/v1/gateway/%s' % gateway_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            yield self._YomboAPI.request('DELETE', '/v1/gateway/%s' % gateway_id,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete gateway: %s" % e.message,
                 'apimsg': "Couldn't delete gateway: %s" % e.message,
                 'apimsghtml': "Couldn't delete gateway: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Gateway deleted.",
             'gateway_id': gateway_id,
         }
-        return results
 
     @inlineCallbacks
     def enable_gateway(self, gateway_id, **kwargs):
@@ -1210,22 +1221,27 @@ class Gateways(YomboLibrary):
         }
 
         try:
-            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable gateway: %s" % e.message,
                 'apimsg': "Couldn't enable gateway: %s" % e.message,
                 'apimsghtml': "Couldn't enable gateway: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Gateway enabled.",
             'gateway_id': gateway_id,
         }
-        return results
 
     @inlineCallbacks
     def disable_gateway(self, gateway_id, **kwargs):
@@ -1242,22 +1258,27 @@ class Gateways(YomboLibrary):
         }
 
         try:
-            gateway_results = yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            yield self._YomboAPI.request('PATCH', '/v1/gateway/%s' % gateway_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable gateway: %s" % e.message,
                 'apimsg': "Couldn't disable gateway: %s" % e.message,
                 'apimsghtml': "Couldn't disable gateway: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Gateway disabled.",
             'gateway_id': gateway_id,
         }
-        return results
 
     def full_list_gateways(self):
         """

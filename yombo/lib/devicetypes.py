@@ -37,10 +37,16 @@ logger = get_logger('library.devicetypes')
 
 BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices._device': ['Device'],
+    'yombo.lib.devices.activity_trigger': ['Activity_Trigger'],
     'yombo.lib.devices.appliance': ['Appliance'],
+    'yombo.lib.devices.camera': ['Camera'],
+    'yombo.lib.devices.climate': ['Climate'],
+    'yombo.lib.devices.fan': ['Fan'],
     'yombo.lib.devices.light': ['Light', 'Color_Light'],
+    'yombo.lib.devices.lock': ['Lock'],
+    'yombo.lib.devices.scene': ['Scene'],
+    'yombo.lib.devices.sensor': ['Digital_Sensor', 'Door', 'Sensor', 'Thermometer', 'Window'],
     'yombo.lib.devices.switch': ['Switch', 'Relay'],
-    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor', 'Door', 'Thermometer', 'Window'],
 }
 
 
@@ -504,32 +510,41 @@ class DeviceTypes(YomboLibrary):
                     else:
                         data[key] = int(data[key])
         except Exception as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add device type",
                 'apimsg': e,
                 'apimsghtml': e,
                 'device_id': '',
             }
-            return results
 
         try:
-            device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type', data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't add device type: User session missing.",
+                    'apimsg': "Couldn't add device type: User session missing.",
+                    'apimsghtml': "Couldn't add device type: User session missing.",
+                }
+
+            device_type_results = yield self._YomboAPI.request('POST', '/v1/device_type',
+                                                               data,
+                                                               session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add device type: %s" % e.message,
                 'apimsg': "Couldn't add device type: %s" % e.message,
                 'apimsghtml': "Couldn't add device type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type added.",
             'device_type_id': device_type_results['data']['id'],
         }
-        return results
 
     @inlineCallbacks
     def dev_device_type_edit(self, device_type_id, data, **kwargs):
@@ -540,7 +555,6 @@ class DeviceTypes(YomboLibrary):
         :param kwargs:
         :return:
         """
-
         try:
             for key in list(data.keys()):
                 if data[key] == "":
@@ -551,32 +565,41 @@ class DeviceTypes(YomboLibrary):
                     else:
                         data[key] = int(data[key])
         except Exception as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add device type",
                 'apimsg': e,
                 'apimsghtml': e,
                 'device_id': '',
             }
-            return results
 
         try:
-            device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id), data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't edit device type: User session missing.",
+                    'apimsg': "Couldn't edit device type: User session missing.",
+                    'apimsghtml': "Couldn't edit device type: User session missing.",
+                }
+
+            device_type_results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % (device_type_id),
+                                                               data,
+                                                               session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit device type: %s" % e.message,
                 'apimsg': "Couldn't edit device type: %s" % e.message,
                 'apimsghtml': "Couldn't edit device type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type edited.",
             'device_type_id': device_type_results['data']['id'],
         }
-        return results
 
     @inlineCallbacks
     def dev_device_type_delete(self, device_type_id, **kwargs):
@@ -588,22 +611,31 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         try:
-            yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't delete device type: User session missing.",
+                    'apimsg': "Couldn't delete device type: User session missing.",
+                    'apimsghtml': "Couldn't delete device type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+             return {
                 'status': 'failed',
                 'msg': "Couldn't delete device type: %s" % e.message,
                 'apimsg': "Couldn't delete device type: %s" % e.message,
                 'apimsghtml': "Couldn't delete device type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type deleted.",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_device_type_enable(self, device_type_id, **kwargs):
@@ -619,22 +651,32 @@ class DeviceTypes(YomboLibrary):
         }
 
         try:
-            yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't enable device type: User session missing.",
+                    'apimsg': "Couldn't enable device type: User session missing.",
+                    'apimsghtml': "Couldn't enable device type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable device type: %s" % e.message,
                 'apimsg': "Couldn't enable device type: %s" % e.message,
                 'apimsghtml': "Couldn't enable device type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type enabled.",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_device_type_disable(self, device_type_id, **kwargs):
@@ -650,22 +692,32 @@ class DeviceTypes(YomboLibrary):
         }
 
         try:
-            yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't disable device type: User session missing.",
+                    'apimsg': "Couldn't disable device type: User session missing.",
+                    'apimsghtml': "Couldn't disable device type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable device type: %s" % e.message,
                 'apimsg': "Couldn't disable device type: %s" % e.message,
                 'apimsghtml': "Couldn't disable device type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device type disabled.",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_add(self, device_type_id, command_id, **kwargs):
@@ -683,22 +735,32 @@ class DeviceTypes(YomboLibrary):
         }
 
         try:
-            yield self._YomboAPI.request('POST', '/v1/device_type_command', api_data)
-        except YomboWarning as e:
-            results = {
-                'status': 'failed',
-                'msg': "Couldn't associate command to device typ: %s" % e.message,
-                'apimsg': "Couldn't associate command to device typ: %s" % e.message,
-                'apimsghtml': "CCouldn't associate command to device typ: %s" % e.html_message,
-            }
-            return results
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't associate command to device type: User session missing.",
+                    'apimsg': "Couldn't associate command to device type: User session missing.",
+                    'apimsghtml': "Couldn't associate command to device type: User session missing.",
+                }
 
-        results = {
+            yield self._YomboAPI.request('POST', '/v1/device_type_command',
+                                         api_data,
+                                         session=session)
+        except YomboWarning as e:
+            return {
+                'status': 'failed',
+                'msg': "Couldn't associate command to device type: %s" % e.message,
+                'apimsg': "Couldn't associate command to device type: %s" % e.message,
+                'apimsghtml': "Couldn't associate command to device type: %s" % e.html_message,
+            }
+
+        return {
             'status': 'success',
             'msg': "Associated command to device type.",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_input_add(self, device_type_id, command_id, input_type_id, data, **kwargs):
@@ -726,22 +788,32 @@ class DeviceTypes(YomboLibrary):
         }
 
         try:
-            yield self._YomboAPI.request('POST', '/v1/device_command_input', api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't associate input to device type command: User session missing.",
+                    'apimsg': "Couldn't associate input to device type command: User session missing.",
+                    'apimsghtml': "Couldn't associate input to device type command: User session missing.",
+                }
+
+            yield self._YomboAPI.request('POST', '/v1/device_command_input',
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't associate input to device type command: %s" % e.message,
-                'apimsg': "Couldn't add device type: %s" % e.message,
-                'apimsghtml': "Couldn't add device type: %s" % e.html_message,
+                'apimsg': "Couldn't associate input to device type command: %s" % e.message,
+                'apimsghtml': "Couldn't associate input to device type command: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Associated input to device type command",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_input_edit(self, device_type_id, command_id, input_type_id, data, **kwargs):
@@ -771,25 +843,34 @@ class DeviceTypes(YomboLibrary):
         }
 
         try:
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't update device type command input: User session missing.",
+                    'apimsg': "Couldn't update device type command input: User session missing.",
+                    'apimsghtml': "Couldn't update device type command input: User session missing.",
+                }
+
             yield self._YomboAPI.request('PATCH', '/v1/device_command_input/%s/%s/%s' % (
-                    device_type_id, command_id, input_type_id),
-                api_data
-           )
+                                         device_type_id, command_id, input_type_id),
+                                         api_data,
+                                         session=session
+                                         )
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't update device type command input: %s" % e.message,
                 'apimsg': "Couldn't update device type command input: %s" % e.message,
                 'apimsghtml': "Couldn't update device type command input: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Updated associated input to device type command",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_input_remove(self, device_type_id, command_id, input_type_id, **kwargs):
@@ -802,23 +883,32 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         try:
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't remove input from device type command: User session missing.",
+                    'apimsg': "Couldn't remove input from device type command: User session missing.",
+                    'apimsghtml': "Couldn't remove input from device type command: User session missing.",
+                }
+
             yield self._YomboAPI.request('DELETE', '/v1/device_command_input/%s/%s/%s' % (
-                device_type_id, command_id, input_type_id))
+                                         device_type_id, command_id, input_type_id),
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't remove input from device type command: %s" % e.message,
                 'apimsg': "Couldn't remove input from device type command: %s" % e.message,
                 'apimsghtml': "Couldn't remove input from device type command: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Removed input from device type command",
             'device_type_id': device_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_remove(self, device_type_id, command_id, **kwargs):
@@ -831,23 +921,32 @@ class DeviceTypes(YomboLibrary):
         :return:
         """
         try:
-            device_type_results = yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (
-            device_type_id, command_id))
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't remove command from device type: User session missing.",
+                    'apimsg': "Couldn't remove command from device type: User session missing.",
+                    'apimsghtml': "Couldn't remove command from device type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (
+                                                                device_type_id, command_id),
+                                                               session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't remove command from device type: %s" % e.message,
                 'apimsg': "Couldn't remove command from device type: %s" % e.message,
                 'apimsghtml': "Couldn't remove command from device type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Removed command from device type.",
             'device_type_id': device_type_id,
         }
-        return results
 
 class DeviceType(object):
     """

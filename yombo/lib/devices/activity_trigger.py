@@ -5,7 +5,7 @@ import yombo.utils.color as color_util
 
 class ActivityTrigger(Device):
     """
-    A generic activity trigger device. Basically calls a scene when something triggers this device.
+    An  activity trigger device doesn't do much except triggers automation rules, scenes, etc.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

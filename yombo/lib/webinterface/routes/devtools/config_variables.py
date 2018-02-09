@@ -15,7 +15,9 @@ def route_devtools_config_variables(webapp):
         def variable_group_breadcrumbs(webinterface, request, parent_id, parent_type):
             if parent_type in ('module', 'all_devices', 'all_modules'):
                 try:
-                    module_results = yield webinterface._YomboAPI.request('GET', '/v1/module/%s' % parent_id)
+                    module_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/module/%s' % parent_id,
+                                                                          session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -28,7 +30,9 @@ def route_devtools_config_variables(webapp):
                 return module_results
             elif parent_type == 'device_type':
                 try:
-                    device_type_results = yield webinterface._YomboAPI.request('GET', '/v1/device_type/%s' % parent_id)
+                    device_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                               '/v1/device_type/%s' % parent_id,
+                                                                               session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -44,13 +48,17 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_group_details_get(webinterface, request, session, group_id):
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             try:
-                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/by_group/%s' % group_id)
+                field_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/field/by_group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -124,7 +132,8 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(['content']['html_message'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/index')
 
-            dev_group_results = yield webinterface._Variables.dev_group_add(data)
+            dev_group_results = yield webinterface._Variables.dev_group_add(data,
+                                                                            session=session['yomboapi_session'])
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
@@ -155,7 +164,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_group_edit_get(webinterface, request, session, group_id):
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -186,7 +197,9 @@ def route_devtools_config_variables(webapp):
             }
 
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -199,7 +212,9 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(['content']['html_message'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/index')
 
-            dev_group_results = yield webinterface._Variables.dev_group_edit(group_id, data)
+            dev_group_results = yield webinterface._Variables.dev_group_edit(group_id,
+                                                                             data,
+                                                                             session=session['yomboapi_session'])
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return page_devtools_variables_group_form(webinterface, request, session, parent_type, parent['data'],
@@ -241,7 +256,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_group_enable_get(webinterface, request, session, group_id):
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -274,13 +291,16 @@ def route_devtools_config_variables(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/group/%s/enable' % group_id)
 
-            dev_group_results = yield webinterface._Variables.dev_group_enable(group_id)
+            dev_group_results = yield webinterface._Variables.dev_group_enable(group_id,
+                                                                               session=session['yomboapi_session'])
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/group/%s/enable' % group_id)
 
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -326,7 +346,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_group_disable_get(webinterface, request, session, group_id):
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -359,13 +381,16 @@ def route_devtools_config_variables(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/group/%s/disable' % group_id)
 
-            dev_group_results = yield webinterface._Variables.dev_group_disable(group_id)
+            dev_group_results = yield webinterface._Variables.dev_group_disable(group_id,
+                                                                                session=session['yomboapi_session'])
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/group/%s/disable' % group_id)
 
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -411,7 +436,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_group_delete_get(webinterface, request, session, group_id):
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -444,13 +471,16 @@ def route_devtools_config_variables(webapp):
                                        'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/group/%s/delete' % group_id)
 
-            dev_group_results = yield webinterface._Variables.dev_group_delete(group_id)
+            dev_group_results = yield webinterface._Variables.dev_group_delete(group_id,
+                                                                               session=session['yomboapi_session'])
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/group/%s/details' % group_id)
 
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -513,7 +543,9 @@ def route_devtools_config_variables(webapp):
             }
 
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -526,7 +558,9 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/index')
 
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type?status=1',
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -544,7 +578,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_field_add_post(webinterface, request, session, group_id):
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -573,7 +609,9 @@ def route_devtools_config_variables(webapp):
                     del data[data_key]
 
             try:
-                group_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/group/%s' % group_id)
+                group_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/group/%s' % group_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -589,12 +627,15 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/index')
 
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type?status=1',
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            dev_field_results = yield webinterface._Variables.dev_field_add(data)
+            dev_field_results = yield webinterface._Variables.dev_field_add(data,
+                                                                            session=session['yomboapi_session'])
             if dev_field_results['status'] == 'failed':
                 webinterface.add_alert(dev_field_results['apimsghtml'], 'warning')
                 return page_devtools_variables_field_form(webinterface, request, session,
@@ -638,7 +679,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_field_delete_get(webinterface, request, session, field_id):
             try:
-                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+                field_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/field/%s' % field_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -646,7 +689,8 @@ def route_devtools_config_variables(webapp):
             try:
                 group_results = yield webinterface._YomboAPI.request('GET',
                                                                      '/v1/variable/group/%s' % field_results['data'][
-                                                                         'group_id'])
+                                                                         'group_id'],
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -682,7 +726,9 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/variables/feild/%s/delete' % field_id)
 
             try:
-                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+                field_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/field/%s' % field_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -690,12 +736,14 @@ def route_devtools_config_variables(webapp):
             try:
                 group_results = yield webinterface._YomboAPI.request('GET',
                                                                      '/v1/variable/group/%s' % field_results['data'][
-                                                                         'group_id'])
+                                                                         'group_id'],
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            dev_group_results = yield webinterface._Variables.dev_field_delete(field_id)
+            dev_group_results = yield webinterface._Variables.dev_field_delete(field_id,
+                                                                               session=session['yomboapi_session'])
             if dev_group_results['status'] == 'failed':
                 webinterface.add_alert(dev_group_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devtools/config/variables/field/%s/details' % field_id)
@@ -742,7 +790,9 @@ def route_devtools_config_variables(webapp):
         @require_auth()
         @inlineCallbacks
         def page_devtools_variables_field_details_get(webinterface, request, session, field_id):
-            field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+            field_results = yield webinterface._YomboAPI.request('GET',
+                                                                 '/v1/variable/field/%s' % field_id,
+                                                                 session=session['yomboapi_session'])
             if field_results['code'] > 299:
                 webinterface.add_alert(field_results['content']['html_message'], 'warning')
                 return webinterface.redirect(request, '/modules/%s/variables' % field_id)
@@ -750,7 +800,8 @@ def route_devtools_config_variables(webapp):
             try:
                 group_results = yield webinterface._YomboAPI.request('GET',
                                                                      '/v1/variable/group/%s' % field_results['data'][
-                                                                         'group_id'])
+                                                                         'group_id'],
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -783,7 +834,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_field_edit_get(webinterface, request, session, field_id):
             try:
-                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+                field_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/field/%s' % field_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -807,7 +860,9 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/index')
 
             try:
-                input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+                input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                          '/v1/input_type?status=1',
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -826,7 +881,9 @@ def route_devtools_config_variables(webapp):
         @inlineCallbacks
         def page_devtools_variables_field_edit_post(webinterface, request, session, field_id):
             try:
-                field_results = yield webinterface._YomboAPI.request('GET', '/v1/variable/field/%s' % field_id)
+                field_results = yield webinterface._YomboAPI.request('GET',
+                                                                     '/v1/variable/field/%s' % field_id,
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -834,7 +891,8 @@ def route_devtools_config_variables(webapp):
             try:
                 group_results = yield webinterface._YomboAPI.request('GET',
                                                                      '/v1/variable/group/%s' % field_results['data'][
-                                                                         'group_id'])
+                                                                         'group_id'],
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -878,7 +936,9 @@ def route_devtools_config_variables(webapp):
             results = yield webinterface._Variables.dev_field_edit(field_id, data)
             if results['status'] == 'failed':
                 try:
-                    input_type_results = yield webinterface._YomboAPI.request('GET', '/v1/input_type?status=1')
+                    input_type_results = yield webinterface._YomboAPI.request('GET',
+                                                                              '/v1/input_type?status=1',
+                                                                              session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert(e.html_message, 'warning')
                     return webinterface.redirect(request, '/devtools/config/modules/index')

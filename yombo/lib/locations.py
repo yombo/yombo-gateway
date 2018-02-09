@@ -374,27 +374,32 @@ class Locations(YomboLibrary):
         :return:
         """
         try:
-            location_results = yield self._YomboAPI.request('POST', '/v1/location', data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            location_results = yield self._YomboAPI.request('POST', '/v1/location',
+                                                            data,
+                                                            session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add location: %s" % e.message,
                 'apimsg': "Couldn't add location: %s" % e.message,
                 'apimsghtml': "Couldn't add location: %s" % e.html_message,
             }
-            return results
 
-        results = {
-            'status': 'success',
-            'msg': "Location type added.",
-            'location_id': location_results['data']['id'],
-        }
         data['id'] = location_results['data']['id']
         data['updated_at'] = time()
         data['created_at'] = time()
         self._LocalDB.insert_locations(data)
         self.import_location(data)
-        return results
+        return {
+            'status': 'success',
+            'msg': "Location type added.",
+            'location_id': location_results['data']['id'],
+        }
 
     @inlineCallbacks
     def edit_location(self, location_id, data, **kwargs):
@@ -406,27 +411,31 @@ class Locations(YomboLibrary):
         :return:
         """
         try:
-            location_results = yield self._YomboAPI.request('PATCH', '/v1/location/%s' % (location_id), data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            location_results = yield self._YomboAPI.request('PATCH', '/v1/location/%s' % (location_id),
+                                                            data,
+                                                            session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit location: %s" % e.message,
                 'apimsg': "Couldn't edit location: %s" % e.message,
                 'apimsghtml': "Couldn't edit location: %s" % e.html_message,
             }
-            return results
-
-        results = {
-            'status': 'success',
-            'msg': "Device type edited.",
-            'location_id': location_results['data']['id'],
-        }
 
         if location_id in self.locations:
             self.locations[location_id].update_attributes(data)
             self.locations[location_id].save_to_db()
 
-        return results
+        return {
+            'status': 'success',
+            'msg': "Device type edited.",
+            'location_id': location_results['data']['id'],
+        }
 
     @inlineCallbacks
     def delete_location(self, location_id, **kwargs):
@@ -438,25 +447,28 @@ class Locations(YomboLibrary):
         :return:
         """
         try:
-            location_results = yield self._YomboAPI.request('DELETE', '/v1/location/%s' % location_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            yield self._YomboAPI.request('DELETE', '/v1/location/%s' % location_id,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete location: %s" % e.message,
                 'apimsg': "Couldn't delete location: %s" % e.message,
                 'apimsghtml': "Couldn't delete location: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        self.remove_location(location_id)
+        self._LocalDB.delete_locations(location_id)
+        return {
             'status': 'success',
             'msg': "Location deleted.",
             'location_id': location_id,
         }
-
-        self.remove_location(location_id)
-        self._LocalDB.delete_locations(location_id)
-        return results
 
 
 class Location:

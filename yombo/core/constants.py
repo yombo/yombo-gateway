@@ -4,14 +4,14 @@
 Various constants used throughout the system.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
-.. versionadded:: 0.14.0
+.. versionadded:: 0.15.0
 
 
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
 :view-source: `View Source Code <https://yombo.net/docs/gateway/html/current/_modules/yombo/core/constants.html>`_
 """
-VERSION = "0.15.0"
+VERSION = "0.17.0"
 
 WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 

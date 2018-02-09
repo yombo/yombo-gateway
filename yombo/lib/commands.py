@@ -414,24 +414,33 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         try:
-            command_results = yield self._YomboAPI.request('POST', '/v1/command', data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't add command: User session missing.",
+                    'apimsg': "Couldn't add command: User session missing.",
+                    'apimsghtml': "Couldn't add command: User session missing.",
+                }
+            command_results = yield self._YomboAPI.request('POST', '/v1/command',
+                                                           data,
+                                                           session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add command: %s" % e.message,
                 'apimsg': "Couldn't add command: %s" % e.message,
                 'apimsghtml': "Couldn't add command: %s" % e.html_message,
             }
-            return results
 
         # print("command edit results: %s" % command_results)
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Command added.",
             'command_id': command_results['data']['id'],
         }
-        return results
 
     @inlineCallbacks
     def dev_command_edit(self, command_id, data, **kwargs):
@@ -446,24 +455,33 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         try:
-            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id), data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't edit command: User session missing.",
+                    'apimsg': "Couldn't edit command: User session missing.",
+                    'apimsghtml': "Couldn't edit command: User session missing.",
+                }
+            yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id),
+                                         data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit command: %s" % e.message,
                 'apimsg': "Couldn't edit command: %s" % e.message,
                 'apimsghtml': "Couldn't edit command: %s" % e.html_message,
             }
-            return results
 
         # print("command edit results: %s" % command_results)
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Command edited.",
             'command_id': command_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_delete(self, command_id, **kwargs):
@@ -478,22 +496,31 @@ class Commands(YomboLibrary):
         :rtype: dict
         """
         try:
-            command_results = yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't delete command: User session missing.",
+                    'apimsg': "Couldn't delete command: User session missing.",
+                    'apimsghtml': "Couldn't delete command: User session missing.",
+                }
+
+            yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete command: %s" % e.message,
                 'apimsg': "Couldn't delete command: %s" % e.message,
                 'apimsghtml': "Couldn't delete command: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Command deleted.",
             'command_id': command_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_enable(self, command_id, **kwargs):
@@ -512,22 +539,32 @@ class Commands(YomboLibrary):
         }
 
         try:
-            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't enable command: User session missing.",
+                    'apimsg': "Couldn't enable command: User session missing.",
+                    'apimsghtml': "Couldn't enable command: User session missing.",
+                }
+
+            yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable command: %s" % e.message,
                 'apimsg': "Couldn't enable command: %s" % e.message,
                 'apimsghtml': "Couldn't enable command: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Command enabled.",
             'command_id': command_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_command_disable(self, command_id, **kwargs):
@@ -547,22 +584,32 @@ class Commands(YomboLibrary):
         }
 
         try:
-            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't disable command: User session missing.",
+                    'apimsg': "Couldn't disable command: User session missing.",
+                    'apimsghtml': "Couldn't disable command: User session missing.",
+                }
+
+            yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable command: %s" % e.message,
                 'apimsg': "Couldn't disable command: %s" % e.message,
                 'apimsghtml': "Couldn't disable command: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Command disabled.",
             'command_id': command_id,
         }
-        return results
 
     def full_list_commands(self):
         """

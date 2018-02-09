@@ -219,7 +219,8 @@ def route_configs(webapp):
             try:
                 dns_results = yield webinterface._YomboAPI.request('POST',
                                                                    '/v1/gateway/%s/dns_name' % webinterface.gateway_id(),
-                                                                   data)
+                                                                   data,
+                                                                   session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/configs/dns')

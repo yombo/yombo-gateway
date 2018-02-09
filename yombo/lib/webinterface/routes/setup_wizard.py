@@ -551,12 +551,14 @@ def route_setup_wizard(webapp):
                     'label': session['setup_wizard_gateway_label'],
                     'description': session['setup_wizard_gateway_description'],
                 }
-                results = yield webinterface._YomboAPI.request('PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'])
+                results = yield webinterface._YomboAPI.request('PATCH', '/v1/gateway/%s' % session['setup_wizard_gateway_id'],
+                                                               session=session['yomboapi_session'])
                 if results['code'] > 299:
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
 
-                results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'])
+                results = yield webinterface._YomboAPI.request('GET', '/v1/gateway/%s/new_hash' % session['setup_wizard_gateway_id'],
+                                                               session=session['yomboapi_session'])
                 if results['code'] > 299:
                     webinterface.add_alert(results['content']['html_message'], 'warning')
                     return webinterface.redirect(request, '/setup_wizard/5')
@@ -566,8 +568,8 @@ def route_setup_wizard(webapp):
             # print("new gwid: %s" % results['data']['id'])
             # print("got gwid before set: %s" % webinterface._Configs.get('core', 'gwid'))
             webinterface._Configs.set('core', 'gwid', results['data']['id'])
-            # print("got gwid after set: %s" % webinterface._Configs.get('core', 'gwid'))
             webinterface._Configs.set('core', 'gwuuid', results['data']['uuid'])
+            webinterface._Configs.set('core', 'api_auth', results['data']['api_auth'])
             webinterface._Configs.set('core', 'machine_label', session['setup_wizard_gateway_machine_label'])
             webinterface._Configs.set('core', 'label', session['setup_wizard_gateway_label'])
             webinterface._Configs.set('core', 'description', session['setup_wizard_gateway_description'])
@@ -631,7 +633,8 @@ def route_setup_wizard(webapp):
             try:
                 dns_results = yield webinterface._YomboAPI.request('GET',
                                                                    '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
-                                                                       'core', 'gwid'))
+                                                                       'core', 'gwid'),
+                                                                   session=session['yomboapi_session'])
             except YomboWarning as e:
                 # webinterface.add_alert(e.html_message, 'warning')
                 # webinterface.add_alert(dns_results['content']['html_message'], 'warning')
@@ -708,7 +711,9 @@ def route_setup_wizard(webapp):
             try:
                 dns_results = yield webinterface._YomboAPI.request('POST',
                                                                    '/v1/gateway/%s/dns_name' % webinterface._Configs.get(
-                                                                       'core', 'gwid'), data)
+                                                                       'core', 'gwid'),
+                                                                   data,
+                                                                   session=session['yomboapi_session'])
                 print("SW7 - 11: %s" % dns_results)
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')

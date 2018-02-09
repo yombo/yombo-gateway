@@ -868,7 +868,7 @@ class Devices(YomboLibrary):
                     else:
                         api_data[key] = int(value)
         except Exception as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add device",
                 'apimsg': e,
@@ -876,7 +876,6 @@ class Devices(YomboLibrary):
                 'device_id': None,
                 'data': None,
             }
-            return results
 
         try:
             global_invoke_all('_device_before_add_',
@@ -890,16 +889,22 @@ class Devices(YomboLibrary):
         if source != 'amqp':
             logger.debug("POSTING device. api data: {api_data}", api_data=api_data)
             try:
-                device_results = yield self._YomboAPI.request('POST', '/v1/device', api_data)
+                if 'session' in kwargs:
+                    session = kwargs['session']
+                else:
+                    session = None
+
+                device_results = yield self._YomboAPI.request('POST', '/v1/device',
+                                                              api_data,
+                                                              session=session)
             except YomboWarning as e:
                 logger.warn("add new device results: {device_results}", device_results=device_results)
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't add device: %s" % e.message,
                     'apimsg': "Couldn't add device: %s" % e.message,
                     'apimsghtml': "Couldn't add device: %s" % e.html_message,
                 }
-                return results
             logger.debug("add new device results: {device_results}", device_results=device_results)
 
             if 'variable_data' in api_data and len(api_data['variable_data']) > 0:
@@ -907,7 +912,8 @@ class Devices(YomboLibrary):
                 variable_results = yield self.set_device_variables(device_results['data']['id'],
                                                                    api_data['variable_data'],
                                                                    'add',
-                                                                   source)
+                                                                   source,
+                                                                   session=session)
                 # print("variable_results: %s" % variable_results)
                 if variable_results['code'] > 299:
                     results = {
@@ -940,9 +946,8 @@ class Devices(YomboLibrary):
         except YomboHookStopProcessing as e:
             pass
 
-
         if results is None:
-            results = {
+            return {
                 'status': 'success',
                 'msg': "Device added",
                 'apimsg':  "Device added",
@@ -950,12 +955,11 @@ class Devices(YomboLibrary):
                 'device_id': device_id,
                 'data': new_device,
             }
-        return results
 
     #todo: convert to use a deferred semaphore
     @inlineCallbacks
-    def set_device_variables(self, device_id, variables, action_type=None, source=None):
-        print("set variables: %s" % variables)
+    def set_device_variables(self, device_id, variables, action_type=None, source=None, session=None):
+        # print("set variables: %s" % variables)
         for field_id, data in variables.items():
             # print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.items():
@@ -972,15 +976,16 @@ class Devices(YomboLibrary):
                     }
                     # print("Posting new variable: %s" % post_data)
                     try:
-                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data', post_data)
+                        var_data_results = yield self._YomboAPI.request('POST', '/v1/variable/data',
+                                                                        post_data,
+                                                                        session=session)
                     except YomboWarning as e:
-                        results = {
+                        return {
                             'status': 'failed',
                             'msg': "Couldn't add device variables: %s" % e.message,
                             'apimsg': "Couldn't add device variables: %s" % e.message,
                             'apimsghtml': "Couldn't add device variables: %s" % e.html_message,
                         }
-                        return results
                     data = var_data_results['data']
                     self._LocalDB.add_variable_data(data)
                 else:
@@ -993,16 +998,16 @@ class Devices(YomboLibrary):
                         var_data_results = yield self._YomboAPI.request(
                             'PATCH',
                             '/v1/variable/data/%s' % data_id,
-                            post_data
+                            post_data,
+                            session=session
                         )
                     except YomboWarning as e:
-                        results = {
+                        return {
                             'status': 'failed',
                             'msg': "Couldn't edit device variables: %s" % e.message,
                             'apimsg': "Couldn't edit device variables: %s" % e.message,
                             'apimsghtml': "Couldn't edit device variables: %s" % e.html_message,
                         }
-                        return results
                     self._LocalDB.edit_variable_data(data_id, value)
 
         if device_id in self.devices:
@@ -1017,9 +1022,9 @@ class Devices(YomboLibrary):
         }
 
     @inlineCallbacks
-    def delete_device(self, device_id, called_from_device=None):
+    def delete_device(self, device_id, called_from_device=None, **kwargs):
         """
-        So sad to delete, but life goes one. This will delete a device by calling the API to request
+        So sad to delete, but life goes on. This will delete a device by calling the API to request
         the device be deleted.
 
         :param device_id: Device ID to delete. Will call API
@@ -1039,15 +1044,20 @@ class Devices(YomboLibrary):
             pass
 
         try:
-            yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            yield self._YomboAPI.request('DELETE', '/v1/device/%s' % device_id,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete device: %s" % e.message,
                 'apimsg': "Couldn't delete device: %s" % e.message,
                 'apimsghtml': "Couldn't delete device: %s" % e.html_message,
             }
-            return results
 
         if called_from_device is not True:
             self.devices[device_id].delete(True)
@@ -1061,12 +1071,11 @@ class Devices(YomboLibrary):
 
         del self.devices[device_id]
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device deleted.",
             'device_id': device_id
         }
-        return results
 
     @inlineCallbacks
     def edit_device(self, device_id, data, source=None, **kwargs):
@@ -1104,14 +1113,13 @@ class Devices(YomboLibrary):
                     else:
                         data[key] = int(data[key])
         except Exception as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit device",
                 'apimsg': e,
                 'apimsghtml': e,
                 'device_id': '',
             }
-            return results
 
         api_data = {}
         for key, value in data.items():
@@ -1127,29 +1135,35 @@ class Devices(YomboLibrary):
 
         if source != 'amqp':
             # print("send this data to api: %s" % api_data)
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
+                                                          api_data,
+                                                          session=session)
             # print("got this data from api: %s" % device_results)
             if device_results['code'] > 299:
-                results = {
+                return {
                     'status': 'failed',
                     'msg': "Couldn't edit device",
                     'apimsg': device_results['content']['message'],
                     'apimsghtml': device_results['content']['html_message'],
                     'device_id': device_id,
                 }
-                return results
 
             if 'variable_data' in data and len(api_data) > 0:
-                variable_results = yield self.set_device_variables(device_results['data']['id'], data['variable_data'])
+                variable_results = yield self.set_device_variables(device_results['data']['id'],
+                                                                   data['variable_data'],
+                                                                   session=session)
                 if variable_results['code'] > 299:
-                    results = {
+                    return {
                         'status': 'failed',
                         'msg': "Device saved, but had problems with saving variables: %s" % variable_results['msg'],
                         'apimsg': variable_results['apimsg'],
                         'apimsghtml': variable_results['apimsghtml'],
                         'device_id': device_id,
                     }
-                    return results
 
         try:
             yield global_invoke_all('_device_edited_',
@@ -1167,15 +1181,14 @@ class Devices(YomboLibrary):
 
         yield device.device_variables()
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Device edited.",
             'device_id': device_results['data']['id']
         }
-        return results
 
     @inlineCallbacks
-    def enable_device(self, device_id, source=None):
+    def enable_device(self, device_id, source=None, **kwargs):
         """
         Enables a given device id.
 
@@ -1190,15 +1203,21 @@ class Devices(YomboLibrary):
         }
 
         try:
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
+                                                          api_data,
+                                                          session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable device: %s" % e.message,
                 'apimsg': "Couldn't enable device: %s" % e.message,
                 'apimsghtml': "Couldn't enable device: %s" % e.html_message,
             }
-            return results
 
         if source != 'node':
             self.devices[device_id].enable(True)
@@ -1209,17 +1228,15 @@ class Devices(YomboLibrary):
                                     )
         except Exception as e:
             pass
-        results = {
+        yield self.devices[device_id].device_variables()
+        return {
             'status': 'success',
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-        yield self.devices[device_id].device_variables()
-
-        return results
 
     @inlineCallbacks
-    def disable_device(self, device_id, source=None):
+    def disable_device(self, device_id, source=None, **kwargs):
         """
         Disables a given device id.
 
@@ -1234,15 +1251,21 @@ class Devices(YomboLibrary):
         }
 
         try:
-            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                session = None
+
+            device_results = yield self._YomboAPI.request('PATCH', '/v1/device/%s' % device_id,
+                                                          api_data,
+                                                          session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable device: %s" % e.message,
                 'apimsg': "Couldn't disable device: %s" % e.message,
                 'apimsghtml': "Couldn't disable device: %s" % e.html_message,
             }
-            return results
 
         if source != 'node':
             self.devices[device_id].disable(True)
@@ -1254,13 +1277,11 @@ class Devices(YomboLibrary):
                                     )
         except Exception as e:
             pass
-        results = {
+        return {
             'status': 'success',
             'msg': "Device disabled.",
             'device_id': device_results['data']['id']
         }
-
-        return results
 
 
     ##############################################################################################################

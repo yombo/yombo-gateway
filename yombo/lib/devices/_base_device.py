@@ -387,8 +387,8 @@ class Base_Device(object):
                 if matches:
                     results[id] = DC
 
-            if limit is not None and len(results) == limit:
-                return results
+            # if limit is not None and len(results) == limit:
+            #     return results
         return results
 
     def available_commands(self):

@@ -25,7 +25,8 @@ def route_devtools_config_commands(webapp):
         @inlineCallbacks
         def page_devtools_commands_details_get(webinterface, request, session, command_id):
             try:
-                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                       session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -50,7 +51,9 @@ def route_devtools_config_commands(webapp):
             try:
                 command_results = yield webinterface._YomboAPI.request(
                     'GET',
-                    '/v1/command/%s' % command_id)
+                    '/v1/command/%s' % command_id,
+                    session=session['yomboapi_session']
+                )
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -82,7 +85,8 @@ def route_devtools_config_commands(webapp):
                 return webinterface.redirect(request,
                                                   '/devtools/config/commands/%s/details' % command_id)
 
-            command_results = yield webinterface._Commands.dev_command_delete(command_id)
+            command_results = yield webinterface._Commands.dev_command_delete(command_id,
+                                                                              session=session['yomboapi_session'])
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -96,7 +100,8 @@ def route_devtools_config_commands(webapp):
             }
 
             try:
-                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                           session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -116,7 +121,8 @@ def route_devtools_config_commands(webapp):
         @inlineCallbacks
         def page_devtools_commands_disable_get(webinterface, request, session, command_id):
             try:
-                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                       session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -146,7 +152,8 @@ def route_devtools_config_commands(webapp):
                 return webinterface.redirect(request,
                                              '/devtools/config/commands/%s/details' % command_id)
 
-            command_results = yield webinterface._Commands.dev_command_disable(command_id)
+            command_results = yield webinterface._Commands.dev_command_disable(command_id,
+                                                                               session=session['yomboapi_session'])
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -160,7 +167,8 @@ def route_devtools_config_commands(webapp):
             }
 
             try:
-                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                           session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -179,7 +187,8 @@ def route_devtools_config_commands(webapp):
         @inlineCallbacks
         def page_devtools_commands_enable_get(webinterface, request, session, command_id):
             try:
-                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                       session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -208,7 +217,8 @@ def route_devtools_config_commands(webapp):
                 return webinterface.redirect(request,
                                              '/devtools/config/commands/%s/details' % command_id)
 
-            command_results = yield webinterface._Commands.dev_command_enable(command_id)
+            command_results = yield webinterface._Commands.dev_command_enable(command_id,
+                                                                              session=session['yomboapi_session'])
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -222,7 +232,8 @@ def route_devtools_config_commands(webapp):
             }
 
             try:
-                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_api_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                           session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -266,7 +277,8 @@ def route_devtools_config_commands(webapp):
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
 
-            command_results = yield webinterface._Commands.dev_command_add(data)
+            command_results = yield webinterface._Commands.dev_command_add(data,
+                                                                           session=session['yomboapi_session'])
 
             if command_results['status'] == 'failed':
                 webinterface.add_alert(command_results['apimsghtml'], 'warning')
@@ -297,7 +309,8 @@ def route_devtools_config_commands(webapp):
         @inlineCallbacks
         def page_devtools_commands_edit_get(webinterface, request, session, command_id):
             try:
-                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id)
+                command_results = yield webinterface._YomboAPI.request('GET', '/v1/command/%s' % command_id,
+                                                                       session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/commands/index')
@@ -333,7 +346,8 @@ def route_devtools_config_commands(webapp):
                 'id': command_id,
             }
 
-            command_results = yield webinterface._Commands.dev_command_edit(command_id, data)
+            command_results = yield webinterface._Commands.dev_command_edit(command_id, data,
+                                                                            session=session['yomboapi_session'])
 
             data['machine_label'] = request.args.get('machine_label_hidden')[0]
 

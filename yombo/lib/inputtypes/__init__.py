@@ -437,33 +437,41 @@ class InputTypes(YomboLibrary):
                     else:
                         data[key] = int(data[key])
         except Exception as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add input type device",
                 'apimsg': e,
                 'apimsghtml': e,
                 'device_id': '',
             }
-            return results
 
         try:
-            input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type', data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't add input type: User session missing.",
+                    'apimsg': "Couldn't add input type: User session missing.",
+                    'apimsghtml': "Couldn't add input type: User session missing.",
+                }
+            input_type_results = yield self._YomboAPI.request('POST', '/v1/input_type',
+                                                              data,
+                                                              session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't add input type: %s" % e.message,
                 'apimsg': "Couldn't add input type: %s" % e.message,
                 'apimsghtml': "Couldn't add input type: %s" % e.html_message,
             }
-            return results
         # print("dt_results: %s" % input_type_results)
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Input type added.",
             'input_type_id': input_type_results['data']['id'],
         }
-        return results
 
     @inlineCallbacks
     def dev_input_type_edit(self, input_type_id, data, **kwargs):
@@ -484,33 +492,42 @@ class InputTypes(YomboLibrary):
                     else:
                         data[key] = int(data[key])
         except Exception as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit input type device",
                 'apimsg': e,
                 'apimsghtml': e,
                 'device_id': '',
             }
-            return results
 
         try:
-            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id), data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't edit input type: User session missing.",
+                    'apimsg': "Couldn't edit input type: User session missing.",
+                    'apimsghtml': "Couldn't edit input type: User session missing.",
+                }
+
+            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % (input_type_id),
+                                                              data,
+                                                              session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't edit input type: %s" % e.message,
                 'apimsg': "Couldn't edit input type: %s" % e.message,
                 'apimsghtml': "Couldn't edit input type: %s" % e.html_message,
             }
-            return results
         # print("module edit results: %s" % module_results)
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Input type edited.",
             'input_type_id': input_type_results['data']['id'],
         }
-        return results
 
     @inlineCallbacks
     def dev_input_type_delete(self, input_type_id, **kwargs):
@@ -522,22 +539,31 @@ class InputTypes(YomboLibrary):
         :return:
         """
         try:
-            input_type_results = yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't delete input type: User session missing.",
+                    'apimsg': "Couldn't delete input type: User session missing.",
+                    'apimsghtml': "Couldn't delete input type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('DELETE', '/v1/input_type/%s' % input_type_id,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't delete input type: %s" % e.message,
                 'apimsg': "Couldn't delete input type: %s" % e.message,
                 'apimsghtml': "Couldn't delete input type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Input type deleted.",
             'input_type_id': input_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_input_type_enable(self, input_type_id, **kwargs):
@@ -554,22 +580,32 @@ class InputTypes(YomboLibrary):
         }
 
         try:
-            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't enable input type: User session missing.",
+                    'apimsg': "Couldn't enable input type: User session missing.",
+                    'apimsghtml': "Couldn't enable input type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't enable input type: %s" % e.message,
                 'apimsg': "Couldn't enable input type: %s" % e.message,
                 'apimsghtml': "Couldn't enable input type: %s" % e.html_message,
             }
-            return results
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Input type enabled.",
             'input_type_id': input_type_id,
         }
-        return results
 
     @inlineCallbacks
     def dev_input_type_disable(self, input_type_id, **kwargs):
@@ -586,22 +622,32 @@ class InputTypes(YomboLibrary):
         }
 
         try:
-            input_type_results = yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id, api_data)
+            if 'session' in kwargs:
+                session = kwargs['session']
+            else:
+                return {
+                    'status': 'failed',
+                    'msg': "Couldn't disable input type: User session missing.",
+                    'apimsg': "Couldn't disable input type: User session missing.",
+                    'apimsghtml': "Couldn't disable input type: User session missing.",
+                }
+
+            yield self._YomboAPI.request('PATCH', '/v1/input_type/%s' % input_type_id,
+                                         api_data,
+                                         session=session)
         except YomboWarning as e:
-            results = {
+            return {
                 'status': 'failed',
                 'msg': "Couldn't disable input type: %s" % e.message,
                 'apimsg': "Couldn't disable input type: %s" % e.message,
                 'apimsghtml': "Couldn't disable input type: %s" % e.html_message,
             }
-            return results
         # print("disable input_type results: %s" % input_type_results)
 
-        results = {
+        return {
             'status': 'success',
             'msg': "Input type disabled.",
             'input_type_id': input_type_id,
         }
-        return results
 
 

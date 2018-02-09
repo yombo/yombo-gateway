@@ -175,7 +175,7 @@ def route_devices(webapp):
 
             if ok_to_save:
                 try:
-                    results = yield webinterface._Devices.add_device(device)
+                    results = yield webinterface._Devices.add_device(device, session=session['yomboapi_session'])
                 except YomboWarning as e:
                     webinterface.add_alert("Cannot add device, reason: %s" % e.message)
                     return webinterface.redirect(request, '/devices')
@@ -222,7 +222,7 @@ def route_devices(webapp):
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/devices/index", "Devices")
             webinterface.add_breadcrumb(request, "/devices/add", "Add Device - Details")
-            print("device_variables: %s" % device_variables)
+            # print("device_variables: %s" % device_variables)
             return page.render(alerts=webinterface.get_alerts(),
                                device=device,
                                # devices=webinterface._Devices.devices,
@@ -323,7 +323,8 @@ def route_devices(webapp):
                                    states=webinterface._States.get("#")
                                    )
 
-            device_results = yield webinterface._Devices.delete_device(device.device_id)
+            device_results = yield webinterface._Devices.delete_device(device.device_id,
+                                                                       session=session['yomboapi_session'])
             if device_results['status'] == 'failed':
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -365,7 +366,8 @@ def route_devices(webapp):
                                    device=device,
                                    )
 
-            device_results = yield webinterface._Devices.disable_device(device.device_id)
+            device_results = yield webinterface._Devices.disable_device(device.device_id,
+                                                                        session=session['yomboapi_session'])
             if device_results['status'] == 'failed':
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -408,7 +410,8 @@ def route_devices(webapp):
                                    device=device,
                                    )
 
-            device_results = yield webinterface._Devices.enable_device(device.device_id)
+            device_results = yield webinterface._Devices.enable_device(device.device_id,
+                                                                       session=session['yomboapi_session'])
             if device_results['status'] == 'failed':
                 webinterface.add_alert(device_results['apimsghtml'], 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -421,7 +424,8 @@ def route_devices(webapp):
         @inlineCallbacks
         def page_devices_edit_get(webinterface, request, session, device_id):
             try:
-                device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id)
+                device_api_results = yield webinterface._YomboAPI.request('GET', '/v1/device/%s' % device_id,
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -520,7 +524,7 @@ def route_devices(webapp):
             }
 
             try:
-                results = yield webinterface._Devices.edit_device(device_id, data)
+                results = yield webinterface._Devices.edit_device(device_id, data, session=session['yomboapi_session'])
             except YomboWarning as e:
                 results = {
                     'status': 'failed',

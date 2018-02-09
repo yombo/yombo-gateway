@@ -342,6 +342,8 @@ class Auth(object):
         if 'auth_data' in record:
             if isinstance(record['auth_data'], dict):
                 self.auth_data.update(record['auth_data'])
+        if 'yomboapi_session' not in self.auth_data:
+            self.auth_data['yombo_session'] = None
         if stay_clean is not True:
             self.save()
 

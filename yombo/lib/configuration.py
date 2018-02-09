@@ -112,6 +112,9 @@ class Configuration(YomboLibrary):
         'core': {
             'gwhash': {
                 'encrypt': True
+            },
+            'api_auth': {
+                'encrypt': True
             }
         },
         'webinterface': {
