@@ -1,4 +1,4 @@
-rgon2_cffi
+argon2_cffi
 asyncio
 certifi
 cython
