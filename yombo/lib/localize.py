@@ -120,6 +120,24 @@ class Localize(YomboLibrary):
             'type': out_type,
            }
 
+    def bytes2human(self, size, precision=2):
+        """
+        Converts bytes to a human friendly version.
+
+        Source: https://stackoverflow.com/questions/5194057/better-way-to-convert-file-sizes-in-python
+
+        :param precision:
+        :return:
+        """
+        # print("bytes2human: %s" % size)
+        # print("bytes2human: %s" % type(size))
+        suffixes = ['B', 'KB', 'MB', 'GB', 'TB']
+        suffixIndex = 0
+        while size > 1024 and suffixIndex < 4:
+            suffixIndex += 1  # increment the index of the suffix
+            size = size / 1024.0  # apply the division
+        return "%.*f%s" % (precision, size, suffixes[suffixIndex])
+
     def _modules_created_(self, **kwargs):
         """
         Called just before modules get their _init_ called. However, all the gateway libraries are loaded.
