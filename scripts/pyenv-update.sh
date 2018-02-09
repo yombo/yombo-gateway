@@ -35,6 +35,7 @@ cd /home/$USER/.pyenv && git pull && cd -
 
 cd ..
 pyenv install 3.6.4
+pyenv local --unset
 pyenv local 3.6.4
 pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip install -U
 pip3 install -r requirements.txt

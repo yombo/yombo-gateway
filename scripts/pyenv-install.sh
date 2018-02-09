@@ -40,4 +40,5 @@ log Installing python 3.6.4
 cd ..
 
 pyenv install 3.6.4
+pyenv local 3.6.4
 pip3 install -r requirements.txt
