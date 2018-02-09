@@ -14,11 +14,11 @@
     <link href="/static/css/bootstrap-metisMenu.min.css" rel="stylesheet">
     {% block head_css %}{% endblock %}
     {% block echarts %}{% endblock %}
-    <!-- SB Admin 2 and Font Awesome CSS -->
+    <!-- SB Admin 2 -->
     <link href="/static/css/admin2.min.css" rel="stylesheet">
-    <link href="/static/css/font_awesome.min.css" rel="stylesheet">
     <!-- Bootsrap-Select CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.2/css/bootstrap-select.min.css" rel="stylesheet">
+    <script defer src="/static/js/fontawesome-all.min.js"></script>
 
 	{% block head_bottom %}{% endblock %}
    </head>

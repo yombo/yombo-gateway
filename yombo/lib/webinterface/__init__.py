@@ -898,6 +898,8 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.filters['hide_none'] = self.dispay_hide_none
         self.webapp.templates.filters['display_encrypted'] = self._GPG.display_encrypted
         self.webapp.templates.filters['display_temperature'] = self._Localize.display_temperature
+        self.webapp.templates.filters['yombo'] = self
+
 
     def dispay_hide_none(self, input, allow_string=None):
         if input is None:
@@ -994,6 +996,45 @@ class WebInterface(YomboLibrary):
                     shutil.copy2(s, d)
 
         CAT_SCRIPTS = [
+            'source/bootstrap/dist/css/bootstrap.min.css',
+            'source/metisMenu/metisMenu.min.css',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap-metisMenu.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/bootstrap/dist/css/bootstrap.min.css',
+        ]
+        CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/creative/css/creative.css',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/css/creative.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/sb-admin/css/sb-admin-2.css',
+            'source/sb-admin/css/yombo.css',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/css/admin2.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        # CAT_SCRIPTS = [
+        #     'source/font-awesome5/css/fa-svg-with-js.css',
+        #     ]
+        # CAT_SCRIPTS_OUT = 'dist/css/font_awesome5.min.css'
+        # do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
+            'source/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.css',
+            'source/datatables-responsive/css/responsive.dataTables.min.css',
+            ]
+        CAT_SCRIPTS_OUT = 'dist/css/datatables.min.css'
+        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
+
+        CAT_SCRIPTS = [
             'source/jquery/jquery-2.2.4.min.js',
             'source/sb-admin/js/js.cookie.min.js',
             'source/bootstrap/dist/js/bootstrap.min.js',
@@ -1009,19 +1050,6 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
-            'source/bootstrap/dist/css/bootstrap.min.css',
-            'source/metisMenu/metisMenu.min.css',
-        ]
-        CAT_SCRIPTS_OUT = 'dist/css/bootstrap-metisMenu.min.css'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            'source/bootstrap/dist/css/bootstrap.min.css',
-        ]
-        CAT_SCRIPTS_OUT = 'dist/css/bootstrap.min.css'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
             'source/sb-admin/js/sb-admin-2.min.js',
             'source/sb-admin/js/yombo.js',
         ]
@@ -1029,24 +1057,11 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
-            'source/sb-admin/css/sb-admin-2.css',
-            'source/sb-admin/css/yombo.css',
+            'source/font-awesome5/js/fontawesome-all.min.js',
             ]
-        CAT_SCRIPTS_OUT = 'dist/css/admin2.min.css'
+        CAT_SCRIPTS_OUT = 'dist/js/fontawesome-all.min.js'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
-        CAT_SCRIPTS = [
-            'source/font-awesome/css/font-awesome.min.css',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/css/font_awesome.min.css'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            'source/datatables-plugins/integration/bootstrap/3/dataTables.bootstrap.css',
-            'source/datatables-responsive/css/responsive.dataTables.min.css',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/css/datatables.min.css'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
             'source/datatables/js/jquery.dataTables.min.js',
@@ -1068,12 +1083,6 @@ class WebInterface(YomboLibrary):
             'source/creative/js/creative.min.js',
             ]
         CAT_SCRIPTS_OUT = 'dist/js/creative.min.js'
-        do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
-
-        CAT_SCRIPTS = [
-            'source/creative/css/creative.css',
-            ]
-        CAT_SCRIPTS_OUT = 'dist/css/creative.css'
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         CAT_SCRIPTS = [
@@ -1119,7 +1128,7 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         # Just copy files
-        copytree('source/font-awesome/fonts/', 'dist/fonts/')
+        # copytree('source/font-awesome/fonts/', 'dist/fonts/')
 
         copytree('source/bootstrap/dist/fonts/', 'dist/fonts/')
 
