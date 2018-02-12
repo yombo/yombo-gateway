@@ -540,14 +540,15 @@ class SSLCert(object):
 
         :return:
         """
-        logger.info("Backing up SSL Certs to file system.")
+        logger.debug("Backing up SSL Certs to file system. Started")
         if self.sync_to_filesystem_working is True:
             return
         self.sync_to_filesystem_working = True
         self.dirty = False
-        yield threads.deferToThread(self._sync_to_filesystem)
+        yield self._sync_to_filesystem()
         self.sync_to_filesystem_working = False
 
+    @inlineCallbacks
     def _sync_to_filesystem(self):
         for label in ['current', 'next']:
 
@@ -599,13 +600,13 @@ class SSLCert(object):
                     yield save_file('usr/etc/certs/%s.%s.csr.pem' % (self.sslname, label), getattr(self, "%s_csr" % label))
 
             yield save_file('usr/etc/certs/%s.%s.meta' % (self.sslname, label),
-                      json.dumps(meta, indent=4))
+                            json.dumps(meta, indent=4))
 
             yield save_file('usr/etc/certs/%s.meta' % self.sslname,
-                      json.dumps({
-                          'sans': self.sans,
-                          'cn': self.cn,
-                      }, indent=4))
+                            json.dumps({
+                                'sans': self.sans,
+                                'cn': self.cn,
+                            }, indent=4))
 
     @inlineCallbacks
     def request_new_csr(self, submit=False, force_new=False):
@@ -697,6 +698,9 @@ class SSLCert(object):
         Submit a CSR for signing, only if we have a CSR and KEY.
         :return:
         """
+        if self._ParentLibrary._Loader.operating_mode != 'run':
+            return
+
         # self.next_submitted = int(time())
         missing = []
         if self.next_csr is None:
