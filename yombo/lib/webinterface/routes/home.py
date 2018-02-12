@@ -52,7 +52,7 @@ def route_home(webapp):
             #     return webinterface.redirect(request, "/?")
             try:
                 print("page logout get 2")
-                webinterface._WebSessions.close_session(request)
+                session.close_session(request)
                 print("page logout get 3")
             except:
                 pass
@@ -88,7 +88,7 @@ def route_home(webapp):
                 )
                 if len(results) != 1:
                     webinterface.add_alert('Email address not allowed to access gateway.', 'warning')
-                    #            webinterface.sessions.load(request)
+                    #            webinterface._WebSessions.load(request)
                     page = webinterface.get_template(request, webinterface._dir + 'pages/login_user.html')
                     return page.render(alerts=webinterface.get_alerts())
 
@@ -106,7 +106,7 @@ def route_home(webapp):
                 # print("login was good...")
 
                 # if session is False:
-                #     session = webinterface.sessions.create(request)
+                #     session = webinterface._WebSessions.create(request)
                 #
                 session['auth'] = True
                 session['auth_pin'] = True
@@ -115,10 +115,6 @@ def route_home(webapp):
                 session['yomboapi_session'] = login['session']
                 session['yomboapi_login_key'] = login['login_key']
                 request.received_cookies[webinterface._WebSessions.config.cookie_session_name] = session.session_id
-                # print("session saved...")
-                if webinterface.operating_mode == 'first_run':
-                    webinterface._YomboAPI.save_system_login_key(login['login_key'])
-                    webinterface._YomboAPI.save_system_session(login['session'])
                 return login_redirect(webinterface, request, session)
             else:
                 webinterface.add_alert(results['msg'], 'warning')
@@ -150,7 +146,7 @@ def route_home(webapp):
 
             def create_pin_session(l_webinterface, l_request, l_session):
                 # if session is False:
-                #     session = webinterface.sessions.create(request)
+                #     session = webinterface._WebSessions.create(request)
                 l_session['auth_pin'] = True
                 l_session['auth'] = False
                 l_session['auth_id'] = ''

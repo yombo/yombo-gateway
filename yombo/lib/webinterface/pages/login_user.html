@@ -10,92 +10,91 @@
 
 {% block content %}
 {% if misc_wi_data.operating_mode == 'config' %}
-            <div class="row">
-                <div class="col-md-6 col-md-offset-3">
-                    <h1 class="page-header">Setup Mode</h1>
-                    <p>
-                        Yombo Gateway is in configuration and setup mode.
-                    </p>
-                    <p>
-                        Use the Yombo credentials below to setup this gateway. If you do not have one, you
-                        will need to <a href="https://yg2.in/f_gw_my_account">create a Yombo account</a>.
-                    </p>
-                      <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
-                          <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
-                          in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
-                          </p>
-                      </div>
-                    <p>&nbsp;</p>
-                </div>
-                <!-- /.col-lg-12 -->
-            </div>
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <h1 class="page-header">Setup Mode</h1>
+        <p>
+            Yombo Gateway is in configuration and setup mode.
+        </p>
+        <p>
+            Use the Yombo credentials below to setup this gateway. If you do not have one, you
+            will need to <a href="https://yg2.in/f_gw_my_account">create a Yombo account</a>.
+        </p>
+          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+              <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
+              in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
+              </p>
+          </div>
+        <p>&nbsp;</p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
 {% endif %}
-            <div class="row">
-                <div class="col-md-6 col-md-offset-3">
-                    <div class="login-panel panel panel-default">
-                        <div class="panel-heading">
-                            <div style="float: left;">
-                                <a href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle  fa-2x"></i></a>
-                                <!-- Modal -->
-                                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                                  <div class="modal-dialog" role="document">
-                                    <div class="modal-content">
-                                      <div class="modal-header">
-                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                                        <h4 class="modal-title" id="myModalLabel">Login Required</h4>
-                                      </div>
-                                      <div class="modal-body">
-                                          <p>Logging into your Yombo account allows the gateway to validate you.
-                                          </p>
-                                          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
-                                              <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
-                                              in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
-                                              </p>
-                                          </div>
-                                      </div>
-                                      <div class="modal-footer">
-                                        <button type="button" class="btn btn-primary">Close</button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                            </div>
-                            <h3 class="panel-title"><center><strong>{{ misc_wi_data.gateway_label() }}</strong>
-                                <p> Sign into your account
-                                <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
-                        </div>
-                        <div class="panel-body">
-                         <div>
-                            <form action="/login/user" method="POST" role="form" id="login">
-                                <input type="hidden" class="hiddenRecaptcha required" name="hiddenRecaptcha" id="hiddenRecaptcha">
-                                <fieldset>
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" name="email" id="email" placeholder="E-mail"  required>
-                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                                    </div>
-                                    <br>
-                                    <div class="input-group">
-                                        <input type="password" class="form-control" name="password" id="password" placeholder="Password"  required>
-                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                                    </div>
-                                    <!-- Change this to a button or input when using this as a form -->
-                                    <br>
-                                    <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq" data-callback="enableSubmitBtn"></div>
-                                    <div>&nbsp;</div>
-                                    <button type="submit" id="submit_login" class="btn btn-lg btn-success btn-block">Login</button>
-                                </fieldset>
-                            </form>
-                         </div>
-                        </div>
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="login-panel panel panel-info">
+            <div class="panel-heading">
+                <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
+                <a href="#" data-toggle=modal data-target=#myModal> <i class="fa fa-question-circle fa-2x pull-right"></i></a>
+                <!-- Modal -->
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">Login Required</h4>
+                      </div>
+                      <div class="modal-body">
+                          <p>Logging into your Yombo account allows the gateway to validate you.
+                          </p>
+                          <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+                              <h4>It's Safe</h4> <p>You're credentials (email and/or password) will not be stored
+                              in plantext on the gateway. A hashed/encoded version that represents your account will be saved.
+                              </p>
+                          </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-primary">Close</button>
+                      </div>
                     </div>
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <center>This site is running <a href="https://yg2.in/f_gw_yombonet">Yombo Gateway</a> automation software.
-                                For help, see <a href="https://yg2.in/f_gw_docs">documentation</a>.</center>
-                    </div>
+                  </div>
                 </div>
-            <!-- /.row -->
-<div style="background-image: url('/static/img/logo-100px.png')">
+                <h2 style="text-align: center; margin-top: 10px;">{{ misc_wi_data.gateway_label() }}</h2>
+                <h3 class="panel-title"><center><strong></strong>
+                    <p> Sign into your account
+                    <br> <a target="_blank" href="https://my.yombo.net">Create / Manage Account</a></center></h3>
+            </div>
+            <div class="panel-body">
+             <div>
+                <form action="/login/user" method="POST" role="form" id="login">
+                    <input type="hidden" class="hiddenRecaptcha required" name="hiddenRecaptcha" id="hiddenRecaptcha">
+                    <fieldset>
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="email" id="email" placeholder="E-mail" required>
+                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                        </div>
+                        <br>
+                        <div class="input-group">
+                            <input type="password" class="form-control" name="password" id="password" placeholder="Password" required>
+                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                        </div>
+                        <!-- Change this to a button or input when using this as a form -->
+                        <br>
+                        <div align="center" class="g-recaptcha" data-sitekey="6Lf-ECYTAAAAADt-HAksVV_OsiFEziODndQe-xnq" data-callback="enableSubmitBtn"></div>
+                        <div>&nbsp;</div>
+                        <button type="submit" id="submit_login" class="btn btn-lg btn-info btn-block">Login</button>
+                    </fieldset>
+                </form>
+             </div>
+            </div>
+        </div>
+        <div style="text-align: center">
+            <h4>
+                This site is running <a href="https://yg2.in/f_gw_yombonet">Yombo Gateway</a> automation software.<br>
+                For help, see <a href="https://yg2.in/f_gw_docs">documentation</a>.</h4>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block body_bottom_js %}

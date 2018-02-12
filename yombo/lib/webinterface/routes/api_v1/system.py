@@ -5,7 +5,7 @@ except ImportError:
     import json
 from time import time
 
-from yombo.lib.webinterface.auth import require_auth
+from yombo.lib.webinterface.auth import require_auth, run_first
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized
 from yombo.utils import epoch_to_string, bytes_to_unicode, random_string
 
@@ -32,24 +32,20 @@ def route_api_v1_system(webapp):
                                )
 
         @webapp.route('/tools/uptime')
-        @require_auth(api=True)
+        @run_first()
+        # @require_auth(api=True)
         def apiv1_system_tools_uptime(webinterface, request, session):
             if webinterface.starting == True:
                 return return_error(request, payload='Not ready yet.')
             try:
-                request_id = str(request.args.get('timeonly')[0])
-                if request_id == '1':
+                timeonly = str(request.args.get('timeonly')[0])
+                if timeonly == '1':
                     return str(webinterface._Atoms['running_since'])
             except Exception as e:
                 pass
 
-            try:
-                request_id = request.args.get('id')[0]
-            except Exception as e:
-                request_id = random_string(length=12)
-
             return return_good(request,
-                               payload={'id': request_id,
+                               payload={
                                         'time': str(webinterface._Atoms['running_since']),
                                         }
                                )
