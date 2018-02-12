@@ -91,8 +91,6 @@ from yombo.lib.webinterface.routes.voicecmds import route_voicecmds
 from yombo.lib.webinterface.routes.setup_wizard import route_setup_wizard
 from yombo.lib.webinterface.constants import NAV_SIDE_MENU, DEFAULT_NODE, NOTIFICATION_PRIORITY_MAP_CSS
 
-#from yombo.lib.webinterfaceyombosession import YomboSession
-
 logger = get_logger("library.webinterface")
 
 
@@ -282,12 +280,10 @@ class WebInterface(YomboLibrary):
         self.web_factory = Yombo_Site(self.webapp.resource(), None, logPath=None)
         self.web_factory.setup_log_queue(self)
         self.web_factory.noisy = False  # turn off Starting/stopping message
-#        self.web_factory.sessionFactory = YomboSession
         self.displayTracebacks = False
 
         self._display_pin_console_at = 0
 
-        self.misc_wi_data['gateway_configured'] = self._home_gateway_configured()
         self.misc_wi_data['gateway_label'] = self._Configs.get2('core', 'label', 'Yombo Gateway', False)
         self.misc_wi_data['operating_mode'] = self.operating_mode
         self.misc_wi_data['notifications'] = self._Notifications
@@ -772,22 +768,6 @@ class WebInterface(YomboLibrary):
     def redirect(self, request, redirect_path):
         request.setHeader('server', 'Yombo/1.0')
         request.redirect(redirect_path)
-
-    def _tpl_home_gateway_configured(self):
-        if not self._home_gateway_configured():
-            return "This gateway is not properly configured. Click _here_ to run the configuration wizard."
-        else:
-            return ""
-
-    def _home_gateway_configured(self):
-        gwuuid = self._Configs.get("core", "gwuuid", None, False)
-        gwhash = self._Configs.get("core", "gwhash", None, False)
-        gpgkeyid = self._Configs.get('gpg', 'keyid', None, False)
-
-        if gwuuid is None or gwhash is None or gpgkeyid is None:
-            return False
-        else:
-            return True
 
     def _get_parms(self, request):
         return parse_qs(urlparse(request.uri).query)
