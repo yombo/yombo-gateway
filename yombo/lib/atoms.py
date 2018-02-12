@@ -247,6 +247,7 @@ class Atoms(YomboLibrary):
             return []
         return list(self.__Atoms[gateway_id].values())
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Sets up the atom library and files basic atoms values about the system.
@@ -266,6 +267,9 @@ class Atoms(YomboLibrary):
         # self._Automation = self._Libraries['automation']
         self.set('yombo.path', dirname(dirname(dirname(abspath(__file__)))) )
         self.automation_startup_check = {}
+        logger.debug("Calling GPG init_from_config...")
+        yield self._GPG._init_from_atoms_()
+
 
     def _load_(self, **kwargs):
         self._loaded = True
