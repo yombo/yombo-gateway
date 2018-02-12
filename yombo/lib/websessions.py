@@ -133,16 +133,11 @@ class WebSessions(YomboLibrary):
 
     @inlineCallbacks
     def do_close_session(self, request):
-        print("dp checking to close sssion....1")
-        print(self.active_sessions)
         try:
-            print("do checking to close sssion....2")
             session = yield self.get_session_from_request(request)
-            print("do checking to close sssion....3: %s" % session)
         except YomboWarning as e:
             return
         session.expire_session()
-        print("do checking to close sssion....4")
 
     @inlineCallbacks
     def get_session_from_request(self, request=None):
@@ -419,6 +414,7 @@ class Auth(object):
             'auth': None,
             'auth_id': None,
             'auth_at': None,
+            'yomboapi_session': None
         }
         self.update_attributes(record, True)
 
@@ -440,8 +436,11 @@ class Auth(object):
         if 'updated_at' in record:
             self.updated_at = record['updated_at']
         if 'session_data' in record:
-            if isinstance(record, dict):
+            if isinstance(record['session_data'], dict):
                 self.session_data.update(record['session_data'])
+        if 'yomboapi_session' not in self.session_data:
+            self.session_data['yombo_session'] = None
+
         if stay_clean is not True:
             self.is_dirty = 2000
 
@@ -472,11 +471,11 @@ class Auth(object):
         raise KeyError("Session doesn't have key: %s" % key)
 
     def delete(self, key):
-        if key in self:
+        if key in self.session_data:
             self.last_access = int(time())
             try:
                 del self.session_data[key]
-                self.session_data['updated_at'] = int(time())
+                self.updated_at = int(time())
                 self.is_dirty = 200
             except:
                 pass
