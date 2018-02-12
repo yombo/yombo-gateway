@@ -147,6 +147,9 @@ class SSLCerts(YomboLibrary):
         if fqdn is None:
             logger.warn("Unable to create webinterface SSL cert: DNS not set properly.")
             return
+
+        if self._Loader.operating_mode != 'run':
+            return
         sslcerts = yield global_invoke_all('_sslcerts_',
                                            called_by=self,
                                            )
@@ -220,6 +223,11 @@ class SSLCerts(YomboLibrary):
         results = SSLCert('sqldict', DictObject(item), self)
         yield results.start()
         return results
+
+    @inlineCallbacks
+    def import_cert(self, cert_name, data):
+        self.managed_certs[cert_name] = SSLCert('sqldict', DictObject(data), self)
+        yield self.managed_certs[cert_name].start()
 
     def get(self, sslname_requested):
         """
