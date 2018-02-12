@@ -21,11 +21,12 @@ from passlib.hash import argon2, bcrypt
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
-from twisted.internet import threads
+from twisted.internet.defer import inlineCallbacks
+from twisted.internet import reactor, threads
+
 
 # Import Yombo libraries
-#from yombo.core.exceptions import YomboWarning
+# from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 
@@ -39,6 +40,7 @@ class Hash(YomboLibrary):
     algorithms:
 
     * argon2
+    * bcrypt
 
     """
     def __str__(self):
@@ -58,29 +60,39 @@ class Hash(YomboLibrary):
         self.argon2_memory_fast = self._Configs.get('hash', 'argon2_memory_fast', None, False)
         self.argon2_duration_fast = self._Configs.get('hash', 'argon2_duration_fast', None, False)
 
-        if self.argon2_rounds is None or self.argon2_memory is None:
-            results = yield self.argon2_find_cost()
-            self.argon2_rounds = results[0]
-            self.argon2_memory = results[1]
-            self.argon2_duration = results[0]
-            self._Configs.set('hash', 'argon2_rounds', results[0])
-            self._Configs.set('hash', 'argon2_memory', results[1])
-            self._Configs.set('hash', 'argon2_duration', results[2])
-        if self.argon2_rounds_fast is None or self.argon2_memory_fast is None:
-            results = yield self.argon2_find_cost(max_time=MAX_DURATION/2)
-            self.argon2_rounds_fast = results[0]
-            self.argon2_memory_fast = results[1]
-            self.argon2_duration_fast = results[0]
-            self._Configs.set('hash', 'argon2_rounds_fast', results[0])
-            self._Configs.set('hash', 'argon2_memory_fast', results[1])
-            self._Configs.set('hash', 'argon2_duration_fast', results[2])
+        # Find argon2 cost now if don't have. Or find it in 70 seconds
+        # Want to do this incase the gateway is moved to a faster/slow processor.
+        if self.argon2_rounds is None or self.argon2_memory is None or\
+                        self.argon2_rounds_fast is None or self.argon2_memory_fast is None:
+            logger.info("Calculating the size of the earth.")
+            yield self.argon2_find_cost()
+        else:
+            reactor.callLater(70, self.argon2_find_cost)
+
+    @inlineCallbacks
+    def argon2_find_cost(self):
+        results = yield threads.deferToThread(self.argon2_find_cost_calculator)
+        self.argon2_rounds = results[0]
+        self.argon2_memory = results[1]
+        self.argon2_duration = results[0]
+        self._Configs.set('hash', 'argon2_rounds', results[0])
+        self._Configs.set('hash', 'argon2_memory', results[1])
+        self._Configs.set('hash', 'argon2_duration', results[2])
+
+        results = yield threads.deferToThread(self.argon2_find_cost_calculator, max_time=MAX_DURATION/2)
+        self.argon2_rounds_fast = results[0]
+        self.argon2_memory_fast = results[1]
+        self.argon2_duration_fast = results[0]
+        self._Configs.set('hash', 'argon2_rounds_fast', results[0])
+        self._Configs.set('hash', 'argon2_memory_fast', results[1])
+        self._Configs.set('hash', 'argon2_duration_fast', results[2])
 
         # hash2 = yield self.hash('asdf')
         # print("hash = %s" % hash2)
         # hash2 = yield self.hash('asdf', fast=True)
         # print("hash = %s" % hash2)
 
-    def argon2_find_cost(self, max_time=None):
+    def argon2_find_cost_calculator(self, max_time=None):
         """
         Finds a good cost factor for the current system. It tests various factors and finds the most expensive one
         for this system that is still under 400 milliseconds.
@@ -198,7 +210,8 @@ class Hash(YomboLibrary):
     @inlineCallbacks
     def argon2_hash(self, password, rounds=None, memory=None, fast=None):
         """
-        Creates an argon2 hash. Uses the argon2_find_cost to get the required cost.
+        Creates an argon2 hash.
+
         :param password:
         :param rounds:
         :param memory:
@@ -214,7 +227,6 @@ class Hash(YomboLibrary):
                 rounds = self.argon2_rounds
             if memory is None:
                 memory = self.argon2_memory
-        # print("rounds=%s, memroy=%s" % (rounds, memory))
         hasher = argon2.using(rounds=rounds, memory_cost=1 << memory).hash
         hash = yield threads.deferToThread(hasher, password)
         return hash
