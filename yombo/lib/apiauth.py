@@ -141,7 +141,6 @@ class APIAuth(YomboLibrary):
         except KeyError as e:
             raise YomboWarning("api auth isn't found")
 
-    @inlineCallbacks
     def create(self, label, description=None, permissions=None, auth_data=None, is_valid=None):
         """
         Creates a new session.
@@ -312,9 +311,9 @@ class Auth(object):
         self.updated_at = int(time())
         self.auth_data = {}
         self.permissions = {}
-        self.update_attributes(record, True)
+        self.update_attributes(record)
 
-    def update_attributes(self, record=None, stay_clean=None):
+    def update_attributes(self, record=None, stay_dirty=None):
         """
         Update various attributes
         
@@ -344,7 +343,7 @@ class Auth(object):
                 self.auth_data.update(record['auth_data'])
         if 'yomboapi_session' not in self.auth_data:
             self.auth_data['yombo_session'] = None
-        if stay_clean is not True:
+        if stay_dirty is not True:
             self.save()
 
     @property
@@ -374,11 +373,11 @@ class Auth(object):
         raise KeyError("Session doesn't have key: %s" % key)
 
     def delete(self, key):
-        if key in self:
+        if key in self.auth_data:
             self.last_access = int(time())
             try:
                 del self.auth_data[key]
-                self.auth_data['updated_at'] = int(time())
+                self.updated_at = int(time())
                 self.is_dirty = 200
             except Exception as e:
                 pass
