@@ -26,7 +26,7 @@
 	<div id="pageLoading"></div>
 	<header>
 		<!-- Top Navigation -->
-		{% if misc_wi_data.gateway_configured %}{% include 'lib/webinterface/fragments/full_top_nav.tpl' %}
+		{% if misc_wi_data.operating_mode == 'run' %}{% include 'lib/webinterface/fragments/full_top_nav.tpl' %}
 		{% else %}{% include 'lib/webinterface/fragments/config_top_nav.tpl' %}
         {% endif %}
 	</header>
