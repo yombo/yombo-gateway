@@ -1108,9 +1108,8 @@ class WebInterface(YomboLibrary):
         do_cat(CAT_SCRIPTS, CAT_SCRIPTS_OUT)
 
         # Just copy files
-        # copytree('source/font-awesome/fonts/', 'dist/fonts/')
-
         copytree('source/bootstrap/dist/fonts/', 'dist/fonts/')
+        copytree('source/img/', 'dist/img/')
 
 class web_translator(object):
     def __init__(self, webinterface, request):
