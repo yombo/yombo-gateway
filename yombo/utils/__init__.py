@@ -447,7 +447,10 @@ def bytes_to_unicode(input):
     elif isinstance(input, list):
         return [bytes_to_unicode(element) for element in input]
     elif isinstance(input, bytes):
-        return input.decode("utf-8")
+        try:
+            return input.decode("utf-8")
+        except Exception:
+            return input
     else:
         return input
 
