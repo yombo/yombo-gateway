@@ -49,6 +49,8 @@ class Startup(YomboLibrary):
         return "Yombo startup library"
 
     def _init_(self, **kwargs):
+        self.cache_updater_running = False
+        self.system_stopping = False
         first_run = self._Configs.get('core', 'first_run', False, False)
         if self._Loader.operating_mode == 'first_run':  # will know if first_run already or yombo.ini is missing.
             return
@@ -78,7 +80,7 @@ class Startup(YomboLibrary):
             needed_text = '</li><li>'.join(items_needed)
             print("start needetext: %s" % needed_text)
             self._Notifications.add({'title': 'Need configurations',
-                                     'message': 'System has been places into configuration mode. Reason: The following configurations are needed:<p><ul><li>%s</li></ul>' % needed_text,
+                                     'message': 'System has been placed into configuration mode. Reason: The following configurations are needed:<p><ul><li>%s</li></ul>' % needed_text,
                                      'source': 'Yombo Startup Library',
                                      'persist': False,
                                      'priority': 'high',
@@ -88,9 +90,6 @@ class Startup(YomboLibrary):
             self._Loader.operating_mode = 'config'
         else:
             self._Loader.operating_mode = 'run'
-
-        self.cache_updater_running = False
-        self.system_stopping = False
 
     def _start_(self, **kwargs):
         """
