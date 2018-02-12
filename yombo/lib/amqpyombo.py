@@ -465,7 +465,7 @@ class AMQPYombo(YomboLibrary):
                                  data_type=None, route=None, gateway_routing=None,
                                  previous_properties=None, previous_headers=None):
         if self._Loader.operating_mode != 'run':
-            return
+            return {}
         if previous_properties is None:
             raise YomboWarning("generate_message_response() requires 'previous_properties' argument.")
         if previous_headers is None:
@@ -505,7 +505,7 @@ class AMQPYombo(YomboLibrary):
                                  correlation_id=None, message_type=None, request_type=None,
                                  data_type=None, route=None, gateway_routing=None):
         if self._Loader.operating_mode != 'run':
-            return
+            return {}
 
         if message_type is None:
             message_type = "request"
@@ -579,7 +579,7 @@ class AMQPYombo(YomboLibrary):
         :rtype: dict
         """
         if self._Loader.operating_mode != 'run':
-            return
+            return {}
 
         # print("body: %s" % exchange_name)
         # print("body: %s" % body)
@@ -683,6 +683,9 @@ class AMQPYombo(YomboLibrary):
         create the message.
         :return:
         """
+        if self._Loader.operating_mode != 'run':
+            return
+
         logger.debug("about to publish: {kwargs}", kwargs=kwargs)
         if kwargs['meta']['finalized_for_sending'] is False:
             kwargs = self.finalize_message(kwargs)
