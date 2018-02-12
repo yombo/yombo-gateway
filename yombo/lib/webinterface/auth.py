@@ -130,7 +130,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                     session = webinterface._APIAuth.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
-                    logger.debug("API request doesn't have api key. Checking for cookie session...")
+                    logger.info("API request doesn't have api key. Checking for cookie session...")
                     try:
                         session = yield webinterface._WebSessions.get_session_from_request(request)
                     except YomboWarning as e:
@@ -138,20 +138,22 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                         return return_need_login(webinterface, request, False, **kwargs)
 
             if session.session_type == "websession":  # if we have a session, then inspect to see if it's valid.
-                if 'auth' in session:
-                    if session['auth'] is True:
-                        session.touch()
-                        request.auth_id = session['auth_id']
+                if 'auth' in session and session['auth'] is True:
+                    session.touch()
+                    request.auth_id = session['auth_id']
+                else:
+                    return return_need_login(webinterface, request, False, **kwargs)
+
             elif session.session_type == "apiauth":  # If we have an API session, we are good if it's valid.
                 if session.is_valid is not True:
                     return return_need_login(webinterface,
                                              request,
                                              False,
-                                             api_messag="API Key isn't valid anymore.",
+                                             api_message="API Key isn't valid anymore.",
                                              **kwargs)
 
             else:  # session doesn't exist
-                if login_redirect is not None: # only create a new session if we need too
+                if login_redirect is not None:  # only create a new session if we need too
                     if session is False:
                         try:
                             session = webinterface._WebSessions.create_from_request(request)
