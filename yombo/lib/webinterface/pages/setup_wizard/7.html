@@ -6,30 +6,31 @@
 {% set progressbar = 100 %}
 
 {% block content %}
-        <div class="row">
-            <div class="col-md-8 col-md-offset-2">
-                <div class="login-panel panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <center><h3 class="modal-title" id="myModalLabel">Gateway Setup Wizard</h3><br>Configuration Complete</center></h3>
-                            <p></p>
-                            <div class="col-md-8 col-md-offset-2">
-                                <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progressbar }}%">
-                                   {{ progressbar }}%
-                                  </div>
-                                </div>
-                            </div>
-                    </div>
-                    <div class="panel-body">
-                        <p></p>
-                        <h2>Setup Complete</h2>
-                        <p>Setup is complete. Simply restart the gateway and begin automating!</p>
-                        <p><strong>The first reboot can take a few minutes on slower systems. Please be extra patient.</strong></p>
-                        <a class="btn btn-md btn-success align-center" href="/setup_wizard/7_restart">Restart Gateway</a>
+<div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <div class="login-panel panel panel-info">
+            <div class="panel-heading">
+                <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
+                <h2 style="text-align: center">Gateway Setup Wizard</h2>
+                <h4 style="text-align: center">Setup complete</h4>
+                <p></p>
+                <div class="col-md-8 col-md-offset-2">
+                    <div class="progress">
+                      <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                        {{ progressbar }}%
+                      </div>
                     </div>
                 </div>
             </div>
+            <div class="panel-body">
+                <p></p>
+                <h2>Setup Complete</h2>
+                <p>Setup is complete. Simply restart the gateway and begin automating!</p>
+                <p><strong>The first reboot can take a few minutes on slower systems. Please be extra patient.</strong></p>
+                <a class="btn btn-md btn-success align-center" href="/setup_wizard/7_restart">Restart Gateway</a>
+            </div>
         </div>
+    </div>
+</div>
 
 {% endblock %}

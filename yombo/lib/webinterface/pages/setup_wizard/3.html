@@ -62,108 +62,109 @@
 </div>
 
 
-    <form id="myForm" action="/setup_wizard/4" method="POST" role="form">
-        <div class="row">
-            <div class="col-md-8 col-md-offset-2">
-                <div class="login-panel panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <center><h3 class="modal-title">Gateway Setup Wizard</h3><br>Step 3: Gateway Configuration</center></h3>
-                            <p></p>
-                            <div class="col-md-8 col-md-offset-2">
-                                <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
-                                    {{ progressbar }}%
-                                  </div>
+<form id="myForm" action="/setup_wizard/4" method="POST" role="form">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="login-panel panel panel-info">
+                <div class="panel-heading">
+                    <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
+                    <h2 style="text-align: center">Gateway Setup Wizard</h2>
+                    <h4 style="text-align: center">Step 2: Gateway Configuration</h4>
+                    <p></p>
+                    <div class="col-md-8 col-md-offset-2">
+                        <div class="progress">
+                          <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="2" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                            {{ progressbar }}%
+                          </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <p></p>
+{% if gw_fields.label|length == 0 %}
+                    <h2>Create New Gateway</h2>
+                    <p>New gateway settings.</p>
+{% else %}
+                    <h2>Use existing gateway</h2>
+                    <p>Verify existing gateway settings.</p>
+{% endif %}
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="gateway_label">Gateway Label</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" required>
+                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="gateway_machine_label">Gateway Machine Label</label>
+                        <br>Lower case, no spaces. Dashes and underscores are ok.
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" autofocus required>
+                            <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="gateway_description">Gateway Description</label>
+                        <div class="input-group">
+                            <textarea class="form-control" rows="5" name="gateway_description" id="gateway_description" placeholder="Detailed description">{{ gw_fields.description }}</textarea>
+                            <span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div id="address3" class="col-md-4">
+                            <div id="map-output"></div>
+                                <div class="form-group">
+                                    <label >Search for location</label>
+                            <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
+                                    <div class="input-group">
+                                        <input id="search_txt" type="text" size="30" value="{{ settings.location.location_search.data }}" maxlength="100"><br>
+                                        <input id="search_btn" type="button" value="    Search    ">
+                                        <input id="detect_btn" type="button" value="Detect" disabled>
+                                    </div>
+                                </div>
+                                        <input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100"><br>
+                                <div class="form-group">
+                                    <label for="location_latitude">Latitude</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ settings.location.latitude.data }}" required>
+                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location_longitude">Longitude</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ settings.location.longitude.data }}" required>
+                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="location_elevation">Elevation (in feet)</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ settings.location.elevation.data }}" required>
+                                        <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                                    </div>
                                 </div>
                             </div>
-                    </div>
-                    <div class="panel-body">
-                        <p></p>
-{% if gw_fields.label|length == 0 %}
-                        <h2>Create New Gateway</h2>
-                        <p>New gateway settings.</p>
-{% else %}
-                        <h2>Use existing gateway</h2>
-                        <p>Verify existing gateway settings.</p>
-{% endif %}
-                    </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label for="gateway_label">Gateway Label</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="gateway_label" id="gateway_label" placeholder="'House', 'Garage', 'Shed'" value="{{ gw_fields.label }}" required>
-                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+                        <div id="address2" class="col-md-8">
+                            <div id="map-search">
+                                <div id="gmap"></div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="gateway_machine_label">Gateway Machine Label</label>
-                            <br>Lower case, no spaces. Dashes and underscores are ok.
-                            <div class="input-group">
-                                <input type="text" class="form-control" name="gateway_machine_label" id="gateway_machine_label" placeholder="'house', 'harage', 'shed'" value="{{ gw_fields.machine_label }}" autofocus required>
-                                <span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="gateway_description">Gateway Description</label>
-                            <div class="input-group">
-                                <textarea class="form-control" rows="5" name="gateway_description" id="gateway_description" placeholder="Detailed description">{{ gw_fields.description }}</textarea>
-                                <span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
-                            </div>
-                        </div>
-
-						<div class="row">
-							<div id="address3" class="col-md-4">
-								<div id="map-output"></div>
-									<div class="form-group">
-										<label >Search for location</label>
-                                <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
-										<div class="input-group">
-											<input id="search_txt" type="text" size="30" value="{{ settings.location.location_search.data }}" maxlength="100"><br>
-											<input id="search_btn" type="button" value="    Search    ">
-											<input id="detect_btn" type="button" value="Detect" disabled>
-										</div>
-									</div>
-											<input type="hidden" class="form-control" name="location_search" id="location_search" size="30" value="a" maxlength="100"><br>
-									<div class="form-group">
-										<label for="location_latitude">Latitude</label>
-										<div class="input-group">
-											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ settings.location.latitude.data }}" required>
-											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-										</div>
-									</div>
-									<div class="form-group">
-										<label for="location_longitude">Longitude</label>
-										<div class="input-group">
-											<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ settings.location.longitude.data }}" required>
-											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-										</div>
-									</div>
-									<div class="form-group">
-										<label for="location_elevation">Elevation (in feet)</label>
-										<div class="input-group">
-											<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ settings.location.elevation.data }}" required>
-											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-										</div>
-									</div>
-								</div>
-							<div id="address2" class="col-md-8">
-								<div id="map-search">
-									<div id="gmap"></div>
-								</div>
-							</div>						</div> <!-- /row -->
-                        <div class="row">
-                            <div class="col-md-12">
-                            <div>&nbsp;</div>
-                                <a class="btn btn-md btn-warning" href="/setup_wizard/2"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
-                                <button type="submit" id="submit_login" class="btn btn-lg btn-success pull-right" onclick="$( '#myform' ).validate.form();">Next</button>
-                            </div>
+                        </div>						</div> <!-- /row -->
+                    <div class="row">
+                        <div class="col-md-12">
+                        <div>&nbsp;</div>
+                            <a class="btn btn-md btn-warning" href="/setup_wizard/2"><i class="fa fa-chevron-left pull-left"> &nbsp; </i>Back</a>
+                            <button type="submit" id="submit_login" class="btn btn-lg btn-info pull-right" onclick="$( '#myform' ).validate.form();">Next</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
+</form>
 {% endblock %}
 
 {% block body_bottom_js %}
@@ -226,12 +227,12 @@ $().ready(function() {
         },
         highlight: function (element) {
             var id_attr = "#" + $(element).attr("id") + "1";
-            $(element).closest('.form-group').removeClass('has-success').addClass('has-error');
+            $(element).closest('.form-group').removeClass('has-primary').addClass('has-error');
             $(id_attr).removeClass('glyphicon-ok').addClass('glyphicon-remove');
         },
         unhighlight: function (element) {
             var id_attr = "#" + $(element).attr("id") + "1";
-            $(element).closest('.form-group').removeClass('has-error').addClass('has-success');
+            $(element).closest('.form-group').removeClass('has-error').addClass('has-primary');
             $(id_attr).removeClass('glyphicon-remove').addClass('glyphicon-ok');
         },
         errorElement: 'span',

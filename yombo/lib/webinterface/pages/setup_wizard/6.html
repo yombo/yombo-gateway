@@ -9,7 +9,7 @@
 <div class="modal fade" id="confirm-submit" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header btn-primary">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             <h4 class="modal-title" id="">Confirm Submit</h4>
             </div>
@@ -26,78 +26,83 @@
         </div>
     </div>
 </div>
-    <form action="/setup_wizard/7" method="POST" role="form" id="myForm">
-        <div class="row">
-            <div class="col-md-8 col-md-offset-2">
-                <div class="login-panel panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <center><h3 class="modal-title" id="myModalLabel">Gateway Setup Wizard</h3><br>Select Domain</center></h3>
-                            <p></p>
-                            <div class="col-md-8 col-md-offset-2">
-                                <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progressbar }}%">
-                                   {{ progressbar }}% - Almost done!
-                                  </div>
-                                </div>
-                            </div>
+<form action="/setup_wizard/7" method="POST" role="form" id="myForm">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="login-panel panel panel-info">
+                <div class="panel-heading">
+                    <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
+                    <div style="float: right;">
+                        <h5><a href="#" data-toggle="modal" data-target="#privacy-notice"></i>Privacy<br>Summary</a></h5>
                     </div>
-                    <div class="panel-body">
-                        <h2>Gateway Setup Complete</h2>
-                        <p>The gateway has been configured and setup. This last step configures the optional
-                        dynamic DNS. This allows you to quickly access your gateway using a simple
-                        domain name instead of by IP address and port number.</p>
-                        <h3>Dynamic DNS setup</h3>
-                        <p><strong>DNS can only be changed once every 30 days.</strong></p>
-                        <ul>
-                            <li>Current FQDN: {{ dns_fqdn }} </li>
-                            <li>Current Sub-domain: {{ dns_name }}</li>
-                            <li>Current Domain: {{ dns_domain }}</li>
-                            <li>Allowed Next Change: {{ allow_change|epoch_to_human }}</li>
-                        </ul>
-                        <hr>
-                        {% if allow_change < current_time %}
-                        <h4>Set new DNS</h4>
-                        <p>
-                        <input type="hidden" name="dns_domain_id" />
-                        <label>Domain prefix: </label>
-                        <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
-                        <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
-                        <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
-                          <thead class="thead-default">
-                            <tr>
-                              <th>Domain</th>
-                              <th>Available</th>
-                            </tr>
-                          </thead>
-                          <tbody id="tBody"></tbody>
-                            <tr rowspan="2"><td><strong>Search for domains first.</strong></td> </tr>
-                        </table>
-                        </p>
-                        <hr>
-                        {% endif %}
-                        <a class="btn btn-lg btn-primary" href="/setup_wizard/7">Skip Dynamic DNS <i class="fa fa-chevron-right fa-remove pull-right"></i></a>
+                    <h2 style="text-align: center">Gateway Setup Wizard</h2>
+                    <h4 style="text-align: center">Select DNS Domain</h4>
+                    <h3 class="panel-title">
+                    <p></p>
+                    <div class="col-md-8 col-md-offset-2">
+                        <div class="progress">
+                          <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                            {{ progressbar }}%
+                          </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </form>
-    <div class="modal fade" id="dns_check_error_modal" role="dialog">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-                <div class="modal-header panel-heading panel-danger">
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="myModalLabel">Error</h4>
-                </div>
-                <div class="modal-body">
-                    <p> </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <div class="panel-body">
+                    <h2>Gateway Setup Complete</h2>
+                    <p>The gateway has been configured and setup. This last step configures the optional
+                    dynamic DNS. This allows you to quickly access your gateway using a simple
+                    domain name instead of by IP address and port number.</p>
+                    <h3>Dynamic DNS setup</h3>
+                    <p><strong>DNS can only be changed once every 30 days.</strong></p>
+                    <ul>
+                        <li>Current FQDN: {{ dns_fqdn }} </li>
+                        <li>Current Sub-domain: {{ dns_name }}</li>
+                        <li>Current Domain: {{ dns_domain }}</li>
+                        <li>Allowed Next Change: {{ allow_change|epoch_to_human }}</li>
+                    </ul>
+                    <hr>
+                    {% if allow_change < current_time %}
+                    <h4>Set new DNS</h4>
+                    <p>
+                    <input type="hidden" name="dns_domain_id" />
+                    <label>Domain prefix: </label>
+                    <input type="text" name="dns_name" id="dnsname" autofocus="autofocus">
+                    <a class="btn btn-large btn-success" id="fire" href="#">Search</a>
+                    <table id="myTableId" class="table table-nonfluid table-striped table-hover table-sm">
+                      <thead class="thead-default">
+                        <tr>
+                          <th>Domain</th>
+                          <th>Available</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tBody"></tbody>
+                        <tr rowspan="2"><td><strong>Search for domains first.</strong></td> </tr>
+                    </table>
+                    </p>
+                    <hr>
+                    {% endif %}
+                    <a class="btn btn-lg btn-primary" href="/setup_wizard/7">Skip Dynamic DNS <i class="fa fa-chevron-right pull-right"></i></a>
                 </div>
             </div>
         </div>
     </div>
+</form>
+<div class="modal fade" id="dns_check_error_modal" role="dialog">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header panel-heading panel-danger">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Error</h4>
+            </div>
+            <div class="modal-body">
+                <p> </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block body_bottom %}

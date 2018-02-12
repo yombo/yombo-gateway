@@ -1,24 +1,168 @@
+import base64
 from collections import OrderedDict
+import hashlib
+import json
 from time import time
 
 from twisted.internet.defer import inlineCallbacks
-# from twisted.internet import reactor
+from twisted.internet import reactor
 
 from yombo.core.exceptions import YomboWarning
-from yombo.lib.webinterface.auth import require_auth_pin, require_auth, run_first
-from yombo.utils import is_true_false
+from yombo.lib.webinterface.auth import require_auth_pin, require_auth
+from yombo.utils import is_true_false, unicode_to_bytes, bytes_to_unicode, save_file
 from yombo.core.log import get_logger
 
 logger = get_logger("library.webinterface.routes.setup_wizard")
 
 
-
 def route_setup_wizard(webapp):
     with webapp.subroute("/setup_wizard") as webapp:
+
+        def page_show_wizard_home(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/1.html')
+            return page.render(
+                               alerts=webinterface.get_alerts(),
+                               )
+
+        @webapp.route('/', methods=['GET'])
+        @require_auth_pin(login_redirect="/setup_wizard/1", create_session=True)
+        def page_setup_wizard_home(webinterface, request, session):
+            return webinterface.redirect(request, '/setup_wizard/1')
+
+        @webapp.route('/restore_details',)
+        @require_auth_pin(login_redirect="/setup_wizard/restore", create_session=True)
+        @inlineCallbacks
+        def page_setup_wizard_restore_details(webinterface, request, session):
+            """
+            Prompts user to upload the configuration file to restore the gateway.
+
+            :param webinterface:
+            :param request:
+            :param session:
+            :return:
+            """
+            try:
+                restorfile = request.args.get('restorefile')[0]
+                try:
+                    restorefile = json.loads(restorfile)
+                    logger.info("Received configuration backup file.")
+                    try:
+                        if restorefile['hash'] != hashlib.sha256(unicode_to_bytes(restorefile['data'])).hexdigest():
+                            webinterface.add_alert("Backup file appears to be corrupt: Invalid checksum.")
+                            return page_show_wizard_home(webinterface, request, session)
+                        restorefile['data'] = base64.b64decode(unicode_to_bytes(restorefile['data']))
+                    except Exception as e:
+                        logger.warn("Unable to b64decode data: {e}", e=e)
+                        webinterface.add_alert("Unable to properly decode pass 1 of data segment of restore file.")
+                        return page_show_wizard_home(webinterface, request, session)
+
+                    session.set('restore_backup_file', restorefile)
+                except Exception as e:
+                    logger.warn("Unable to parse JSON phase 2: {e}", e=e)
+                    webinterface.add_alert("Invalid restore file contents.")
+                    return page_show_wizard_home(webinterface, request, session)
+            except Exception:
+                restorefile = session.get('restore_backup_file', None)
+                if restorefile is None:
+                    webinterface.add_alert("No restore file found.")
+                    return page_show_wizard_home(webinterface, request, session)
+
+            required_keys = ('encrypted', 'time', 'file_type', 'created', 'backup_version')
+            if all(required in restorefile for required in required_keys) is False:
+                webinterface.add_alert("Backup file appears to be missing important parts.")
+                return page_show_wizard_home(webinterface, request, session)
+
+            if restorefile['encrypted'] is True:
+                try:
+                    password = request.args.get('password',)[0]
+                except Exception:
+                    password = session.get('restorepassword', None)
+
+                if password is None:
+                    page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_password.html')
+                    return page.render(
+                        alerts=webinterface.get_alerts(),
+                        restore=restorefile
+                    )
+
+                try:
+                    decrypted = yield webinterface._GPG.decrypt_aes(password, restorefile['data'])
+                    restorefile['data_processed'] = json.loads(bytes_to_unicode(decrypted))
+                except Exception as e:
+                    logger.warn("Unable to decrypt restoration file: {e}", e=e)
+                    webinterface.add_alert("It appears the password is incorrect.", 'danger')
+                    page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_password.html')
+                    return page.render(
+                        alerts=webinterface.get_alerts(),
+                        restore=restorefile
+                    )
+            else:  #no password
+                restorefile['data_processed'] = json.loads(bytes_to_unicode(restorefile['data']))
+
+            session.set('restore_backup_file', restorefile)
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_ready.html')
+            return page.render(
+                alerts=webinterface.get_alerts(),
+                restore=session.get('restore_backup_file')
+            )
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/restore_complete.html')
+            return page.render(
+                               alerts=webinterface.get_alerts(),
+                               )
+
+        @webapp.route('/restore_complete',)
+        @require_auth_pin(login_redirect="/setup_wizard/restore", create_session=True)
+        @inlineCallbacks
+        def page_setup_wizard_restore_complete(webinterface, request, session):
+            """
+            Prompts user to upload the configuration file to restore the gateway.
+
+            :param webinterface:
+            :param request:
+            :param session:
+            :return:
+            """
+            restorefile = session.get('restore_backup_file', None)
+            if restorefile is None:
+                webinterface.add_alert("No restore data found.")
+                return page_show_wizard_home(webinterface, request, session)
+
+            yombopath = webinterface._Atoms.get('yombo.path')
+            data = restorefile['data_processed']
+
+            for section, options in data['configs'].items():
+                for option, value in options.items():
+                    webinterface._Configs.set(section, option, value)
+            for fingerprint, key in data['gpg_keys'].items():
+                if key['publickey'] != None:
+                    yield webinterface._GPG.import_to_keyring(key['publickey'])
+                if key['privatekey'] != None:
+                    yield webinterface._GPG.import_to_keyring(key['privatekey'])
+                if key['passphrase'] != None:
+
+                    filename = "%s/usr/etc/gpg/%s.pass" % (yombopath, key['fingerprint'])
+                    yield save_file(filename, key['passphrase'])
+                if data['gpg_fingerprint'] == key['fingerprint']:
+                    filename = "%s/usr/etc/gpg/last.pass" % (yombopath)
+                    yield save_file(filename, key['passphrase'])
+
+            for cert_name, cert in data['sslcerts'].items():
+                webinterface._SSLCerts.import_cert(cert_name, cert)
+
+            webinterface._Configs.exit_config_file = data['yombo_ini']
+            yield webinterface._GPG.import_trust(data['gpg_trust'])
+
+            page = webinterface.get_template(request, webinterface._dir + 'pages/restart.html')
+            reactor.callLater(0.4, webinterface.do_restart)
+            return page.render(
+                               alerts=webinterface.get_alerts(),
+                               message="Configuration restored."
+                               )
+
         @webapp.route('/1')
-        @require_auth_pin(login_redirect="/setup_wizard/1")
-        # @get_session()
-        # @run_first()
+        @require_auth_pin(login_redirect="/setup_wizard/1", create_session=True)
         def page_setup_wizard_1(webinterface, request, session):
             """
             Displays the welcome page. Doesn't do much.
@@ -27,15 +171,12 @@ def route_setup_wizard(webapp):
             :param session:
             :return:
             """
-            # print "webinterface = %s" % webinterface
-            # print "request = %s" % request
-            # print "session = %s" % session
-            # print "session : %s" % session
+            session.delete('restore_backup_file')
             if session is not None and session is not False:
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
 
-            webinterface.sessions.set(request, 'setup_wizard_last_step', 1)
+            session.set('setup_wizard_last_step', 1)
             if session is not False:
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
@@ -45,9 +186,10 @@ def route_setup_wizard(webapp):
                                )
 
         @webapp.route('/2')
-        @require_auth(login_redirect="/setup_wizard/2")
+        @require_auth(login_redirect="/setup_wizard/2", create_session=True)
         @inlineCallbacks
         def page_setup_wizard_2(webinterface, request, session):
+            # print("sw2 start")
             if session is not None and session is not False:
                 if session.get('setup_wizard_done', False) is True:
                     return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
@@ -56,6 +198,8 @@ def route_setup_wizard(webapp):
                     return webinterface.redirect(request, '/setup_wizard/1')
 
             try:
+                # print("sw2 try1: %s" % session.session_type)
+                # print("sw2 try2: %s" % session.session_data)
                 results = yield webinterface._YomboAPI.request('GET',
                                                                '/v1/gateway/',
                                                                None,
@@ -70,16 +214,18 @@ def route_setup_wizard(webapp):
                 available_gateways[gateway['id']] = gateway
 
             available_gateways_sorted = OrderedDict(sorted(available_gateways.items(), key=lambda x: x[1]['label']))
-            print("available_gateways_sorted: %s" % available_gateways_sorted)
+            # print("available_gateways_sorted: %s" % available_gateways_sorted)
 
             session.set('available_gateways', available_gateways_sorted)
 
             session['setup_wizard_last_step'] = 2
             page = webinterface.get_template(request, webinterface._dir + 'pages/setup_wizard/2.html')
+            # print("session: %s" % session.session_data)
+
             output = page.render(
                                alerts=webinterface.get_alerts(),
                                available_gateways=available_gateways_sorted,
-                               selected_gateway=webinterface.sessions.get(request, 'setup_wizard_gateway_id'),
+                               selected_gateway=session.get('setup_wizard_gateway_id', 'new'),
                                )
             return output
 
@@ -90,7 +236,7 @@ def route_setup_wizard(webapp):
             if session.get('setup_wizard_done', False) is True:
                 return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             if session.get('setup_wizard_last_step', 1) not in (2, 3, 4):
-                # print "wiz step: %s" % webinterface.sessions.get(request, 'setup_wizard_last_step')
+                # print "wiz step: %s" % webinterface._WebSessions.get(request, 'setup_wizard_last_step')
                 return webinterface.redirect(request, '/setup_wizard/1')
 
             available_gateways = session.get('available_gateways', None)
@@ -104,7 +250,6 @@ def route_setup_wizard(webapp):
                 session['setup_wizard_last_step'] = 2
                 return webinterface.redirect(request, "/setup_wizard/2")
 
-            print("session: %s" % session.data)
             if session['setup_wizard_gateway_id'] != 'new' and session['setup_wizard_gateway_id'] not in available_gateways:
                 webinterface.add_alert("Selected gateway not found. Try again. (Error: 04)")
                 session['setup_wizard_last_step'] = 2
@@ -120,7 +265,7 @@ def route_setup_wizard(webapp):
             if session.get('setup_wizard_done', False) is True:
                 return webinterface.redirect(request, '/setup_wizard/%s' % session['setup_wizard_last_step'])
             if session.get('setup_wizard_last_step', 1) not in (2, 3, 4):
-                print("wiz step: %s" % webinterface.sessions.get(request, 'setup_wizard_last_step'))
+                # print("wiz step: %s" % session.get('setup_wizard_last_step'))
                 return webinterface.redirect(request, '/setup_wizard/1')
 
             valid_submit = True
@@ -460,7 +605,7 @@ def route_setup_wizard(webapp):
         @inlineCallbacks
         def page_setup_wizard_5_gpg_section(webinterface, request, session):
 
-            if webinterface.sessions.get(request, 'setup_wizard_last_step') != 5:
+            if session.get('setup_wizard_last_step') != 5:
                 return "Invalid wizard state. No content found."
 
             gpg_existing = yield webinterface._LocalDB.get_gpg_key()
@@ -740,7 +885,7 @@ def route_setup_wizard(webapp):
     #        if auth is not None:
     #            return auth
 
-    #        if webinterface.sessions.get(request, 'setup_wizard_done') is not True:
+    #        if webinterface._WebSessions.get(request, 'setup_wizard_done') is not True:
     #            return webinterface.redirect(request, '/setup_wizard/5')
 
     #     @webapp.route('/setup_wizard/static/', branch=True)

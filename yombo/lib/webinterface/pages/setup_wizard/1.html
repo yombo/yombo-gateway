@@ -1,29 +1,84 @@
 {% extends "lib/webinterface/fragments/layout_blank.tpl" %}
 
 {% block content %}
-        <div class="row">
-            <div class="col-md-8 col-md-offset-2">
-                <div class="login-panel panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <center><h3 class="modal-title" >Gateway Setup Wizard</h3><br>Step 1: Getting Started</center></h3>
-                            <p></p>
-                            <div class="col-md-8 col-md-offset-2">
-                                <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ ((0/6)*100)|int }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ ((0/6)*100)|int }}%">
-                                  0%
-                                  </div>
+<div class="row">
+    <div class="col-md-10 col-md-offset-1">
+        <div class="login-panel panel panel-info">
+            <div class="panel-heading">
+                <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
+                <h2 style="text-align: center">Welcome to Yombo!</h2>
+            </div>
+            <div class="panel-body">
+                <h3 style="text-align: center;">Getting started</h3>
+                <p style="text-align: center">Get started quickly using the setup wizard or restoring from a configuration
+                backup.</p><br>
+                <div class="row">
+                    <div class="col-md-7">
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <h2 style="text-align: center">Gateway Setup Wizard</h2>
+                                <h4 style="text-align: center">Step 1: Getting Started</h4>
+                                <p></p>
+                                <div class="col-md-8 col-md-offset-2">
+                                    <div class="progress">
+                                      <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ ((0/6)*100)|int }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ ((0/6)*100)|int }}%">
+                                      0%
+                                      </div>
+                                    </div>
                                 </div>
-                            </div>                    </div>
-                    <div class="panel-body">
-                        <h2 style="text-align: center;">Welcome!</h2>
-                        <p>The following setup wizard will get your gateway up and running with just a few steps.</p>
-                        <p>You will be required to login into your <a target="_blank" href="https://my.yombo.net">Yombo Account</a>.
-                        This allows the gateway to retrieve your account information.</p>
-                        <a class="btn btn-lg btn-success btn-block" href="/setup_wizard/2">Log into Yombo <i class="fa fa-chevron-right fa-remove pull-right"></i></a>
+                            </div>
+                            <div class="panel-body">
+                                <br>
+                                <p>Use the setup wizard when creating a new gateway, or when reinstalling a gateway
+                                    without a configuration backup.</p>
+                                <p>You will be required to login into your
+                                    <a target="_blank" href="https://my.yombo.net">Yombo Account</a>.
+                                This allows the gateway to retrieve your account information.</p>
+                                <a class="btn btn-lg btn-info btn-block" href="/setup_wizard/2">Get started
+                                    <i class="fa fa-angle-double-right pull-right"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="panel panel-info">
+                            <div class="panel-heading">
+                                <h3 class="panel-title">
+                                    <center><h3 class="modal-title" >Restore from backup</h3>
+                                    <p></p>
+
+                            </div>
+                            <div class="panel-body">
+                                <p>
+                                    If you are reinstalling and have a configuration backup, use this method to quickly
+                                    restore the configuration settings.
+                                </p>
+                                <p>
+                                    If you are reinstalling the gateway and don't have a configuration backup, don't
+                                    worry. Simply use the setup wizard. However, you will need to re-enter any
+                                    encrypted data such as passwords where needed.
+                                </p><br>
+                                <p style="font-size: 1.2em">
+                                    To restore, simply click the button below and select the configuration backup file.
+                                </p>
+                                <form method="post" action="/setup_wizard/restore_details" enctype="multipart/form-data">
+                                    <label class="btn btn-lg btn-info btn-block" for="restorefile">
+                                        <input id="restorefile" name="restorefile" type="file" style="display:none;" onchange="javascript:this.form.submit();">
+                                        Select configuration restore file
+                                    </label>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        <div style="text-align: center">
+            <h4>
+                This site is running <a href="https://yg2.in/f_gw_yombonet">Yombo Gateway</a> automation software.<br>
+                For help, see <a href="https://yg2.in/f_gw_docs">documentation</a>.</h4>
+        </div>
+
+    </div>
+</div>
 {% endblock %}
 

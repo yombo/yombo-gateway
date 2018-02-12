@@ -12,7 +12,7 @@
 <div class="modal fade" id="localModal" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header btn-primary">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
         <h4 class="modal-title" id="myModalLabel">Master or Slave</h4>
       </div>
@@ -56,185 +56,188 @@
   </div>
 </div>
 
-    <form action="/setup_wizard/5" method="POST" role="form" id="myForm">
-        <div class="row">
-            <div class="col-md-8 col-md-offset-2">
-                <div class="login-panel panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                        <div style="float: right;">
-                            <h5><a href="#" data-toggle="modal" data-target="#privacy-notice"></i>Privacy<br>Summary</a></h5>
-                        </div>
-                            <center><h3 class="modal-title">Gateway Setup Wizard</h3><br>Step 4: Misc Settings</center></h3>
-                            <p></p>
-                            <div class="col-md-8 col-md-offset-2">
-                                <div class="progress">
-                                  <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
-                                    {{ progressbar }}%
-                                  </div>
-                                </div>
-                            </div>
-                        {{ macros.modal("privacy-notice", "Privacy Statement Summary", "You can find the <a href='https://yombo.net/policies/privacy_policy' target='_blank'>full privacy statement online.</a>
-                        <h4>Summary of our privacy statement</h4>
-                        <h5>We won't:</h5>
-                        <ul>
-                            <li>We won't sell, loan, trade, or give away your data.</li>
-                            <li>We won't use your data for our own use.</li>
-                        </ul>
-                        <h5>We will:</h5>
-                        <ul>
-                            <li>We will do our best to protect your data.</li>
-                            <li>We will delete your data when you ask us to. However, we do make regular backups and may take a while for your data to fully purge from our backup system. </li>
-                        </ul>
-                        ") }}
-
+<form action="/setup_wizard/5" method="POST" role="form" id="myForm">
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <div class="login-panel panel panel-info">
+                <div class="panel-heading">
+                    <img src="/static/img/logo-100px.png" height="50px" class="pull-left" align="middle">
+                    <div style="float: right;">
+                        <h5><a href="#" data-toggle="modal" data-target="#privacy-notice"></i>Privacy<br>Summary</a></h5>
                     </div>
-                    <div class="panel-body">
-                        <p></p>
-                        <h2>Gateway Master / Slave
-                            <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question-circle  fa-lg"></i></a>
-                        </h2>
-                        <br>
-                        <div class="form-group">
-                            <label for="master-gateway" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
-                            <div class="pull-right">
-                                <select name="master-gateway" id="master-gateway" required class="selectpicker show-tick" title="Select...">
-                                    <option value="local" style="background: #e6f7ff; color: #000;"{% if security_items.master_gateway == 'None' or security_items.is_master == 1 %} selected{% endif %}>I'm the master!</option>
-                                    <option data-divider="true"></option>
-                                    {% for id, gateway in available_gateways.items() if gateway.is_master == '1' or gateway.is_master == 1  -%}
-                                    <option value="{{ gateway.id }}"{% if security_items.master_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
-                                    {%- endfor %}
-                                </select>
-                                <label for="master-gateway" class="label-primary"></label>
+                    <h2 style="text-align: center">Gateway Setup Wizard</h2>
+                    <h4 style="text-align: center">Step 2: Gateway Selection</h4>
+                    <h3 class="panel-title">
+                    <p></p>
+                    <div class="col-md-8 col-md-offset-2">
+                        <div class="progress">
+                          <div class="progress-bar progress-bar-primary progress-bar-striped" role="progressbar" aria-valuenow="{{ progressbar }}" aria-valuemin="0" aria-valuemax="100" style="min-width: 2em; width: {{ progressbar }}%">
+                            {{ progressbar }}%
+                          </div>
+                        </div>
+                    </div>
+                    {{ macros.modal("privacy-notice", "Privacy Statement Summary", "You can find the
+                        <strong><a href='https://yombo.net/policies/privacy_policy' target='_blank'>full privacy statement online.</a></strong>
+                    <h4>Summary of our privacy statement</h4>
+                    <h5>We won't:</h5>
+                    <ul>
+                        <li>We won't sell, loan, trade, or give away your data.</li>
+                        <li>We won't use your data for our own use.</li>
+                    </ul>
+                    <h5>We will:</h5>
+                    <ul>
+                        <li>We will do our best to protect your data.</li>
+                        <li>We will delete your data when you ask us to. However, we do make regular backups and may take a while for your data to fully purge from our backup system. </li>
+                    </ul>
+                    ") }}
+
+                </div>
+                <div class="panel-body">
+                    <p></p>
+                    <h2>Gateway Master / Slave
+                        <a href="#" data-toggle=modal data-target=#localModal> <i class="fa fa-question fa-1x"></i></a>
+                    </h2>
+                    <br>
+                    <div class="form-group">
+                        <label for="master-gateway" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
+                        <div class="pull-right">
+                            <select name="master-gateway" id="master-gateway" required class="selectpicker show-tick" title="Select...">
+                                <option value="local" style="background: #e6f7ff; color: #000;"{% if security_items.master_gateway == 'None' or security_items.is_master == 1 %} selected{% endif %}>I'm the master!</option>
+                                <option data-divider="true"></option>
+                                {% for id, gateway in available_gateways.items() if gateway.is_master == '1' or gateway.is_master == 1  -%}
+                                <option value="{{ gateway.id }}"{% if security_items.master_gateway == id %} selected{% endif %}>{{ gateway.label }}</option>
+                                {%- endfor %}
+                            </select>
+                            <label for="master-gateway" class="label-primary"></label>
+                        </div>
+                    </div>
+                    <hr>
+                    <h2>Basic Security Settings</h2>
+                    <p>Control the gateway's basic security settings.</p>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="security-status" data-toggle="tooltip" title="Send device status to mobile and other connected devices.">Allow device status to be sent to Yombo</label>
+                        <div class="material-switch pull-right">
+                            <input id="security-status" name="security-status" type="checkbox"{% if security_items.status == '1' %} checked {% endif %}/>
+                            <label for="security-status" class="label-primary"></label>
+                            &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitystatus"><i class="fa fa-question-circle  fa-2x"></i></a>
+                            {{ macros.modal("securitystatus", 'Send device status', '
+                            <div class="alert alert-warning">
+                              <ul class="fa-ul">
+                                <li>
+                                  <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
+                                  Risk: Medium
+                                </li>
+                              </ul>
                             </div>
+                            Sending device status allows you to access your device status externally. For example, if the
+                            mobile app is not able to connect directly to your gateway, it can retrieve this information
+                            from Yombo Servers.
+                            <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
+                                <h4>If disabled: May cause mobile app failures</h4>
+                                <p>The Yombo system was designed and implemented so that you can access your home automation system from anywhere,
+                                even if you cannot directly connect to your gateway while outside your local network.</p>
+                                <p>Disabling this field will
+                                prevent any mobile apps from accessing your device status if the mobile app cannot directly connect to your gateway.
+                                </p>
+                                <p>
+                                    Disabling this will also disable modules that require this, for example, Amazon Alexa and Google Home.
+                                </p>
+                            </div>') }}
                         </div>
                         <hr>
-                        <h2>Basic Security Settings</h2>
-                        <p>Control the gateway's basic security settings.</p>
                     </div>
-                    <div class="panel-body">
-                        <div class="form-group">
-                            <label for="security-status" data-toggle="tooltip" title="Send device status to mobile and other connected devices.">Allow device status to be sent to Yombo</label>
-                            <div class="material-switch pull-right">
-                                <input id="security-status" name="security-status" type="checkbox"{% if security_items.status == '1' %} checked {% endif %}/>
-                                <label for="security-status" class="label-primary"></label>
-                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitystatus"><i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitystatus", 'Send device status', '
-                                <div class="alert alert-warning">
-                                  <ul class="fa-ul">
-                                    <li>
-                                      <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
-                                      Risk: Medium
-                                    </li>
-                                  </ul>
-                                </div>
-                                Sending device status allows you to access your device status externally. For example, if the
-                                mobile app is not able to connect directly to your gateway, it can retrieve this information
-                                from Yombo Servers.
-                                <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
-                                    <h4>If disabled: May cause mobile app failures</h4>
-                                    <p>The Yombo system was designed and implemented so that you can access your home automation system from anywhere,
-                                    even if you cannot directly connect to your gateway while outside your local network.</p>
-                                    <p>Disabling this field will
-                                    prevent any mobile apps from accessing your device status if the mobile app cannot directly connect to your gateway.
-                                    </p>
-                                    <p>
-                                        Disabling this will also disable modules that require this, for example, Amazon Alexa and Google Home.
-                                    </p>
-                                </div>') }}
+                    <div class="form-group">
+                        <label for="security-gps-status" data-toggle="tooltip" title="Send fields marked as 'GPS' to Yombo.">Allow 'GPS' fields to be sent to Yombo</label>
+                        <div class="material-switch pull-right">
+                            <input id="security-gps-status" name="security-gps-status" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
+                            <label for="security-gps-status" class="label-primary"></label>
+                            &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitygpsstatus"><i class="fa fa-question-circle  fa-2x"></i></a>
+                            {{ macros.modal("securitygpsstatus", 'Send GPS information', '
+                            <div class="alert alert-warning">
+                              <ul class="fa-ul">
+                                <li>
+                                  <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
+                                  Risk: Medium - Other apps already send this data.
+                                </li>
+                              </ul>
                             </div>
-                            <hr>
-                        </div>
-                        <div class="form-group">
-                            <label for="security-gps-status" data-toggle="tooltip" title="Send fields marked as 'GPS' to Yombo.">Allow 'GPS' fields to be sent to Yombo</label>
-                            <div class="material-switch pull-right">
-                                <input id="security-gps-status" name="security-gps-status" type="checkbox"{% if security_items.gps_status == '1' %} checked {% endif %}/>
-                                <label for="security-gps-status" class="label-primary"></label>
-                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitygpsstatus"><i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitygpsstatus", 'Send GPS information', '
-                                <div class="alert alert-warning">
-                                  <ul class="fa-ul">
-                                    <li>
-                                      <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
-                                      Risk: Medium - Other apps already send this data.
-                                    </li>
-                                  </ul>
-                                </div>
-                                Depending on your configuration, device GPS may be too sensitive information to store in the cloud.
-                                <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
-                                    <h4><i class="fa fa-info-circle"></i> GPS information already sent</h4>
-                                    <p>The majority of iOS and Android phones and applications already transmit this information directly to 3rd parties.
-                                        This setting only changes how Yombo Gateway treats this information.</p>
-                                </div>
-                                <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
-                                    <h4>If disabled: May cause mobile app failures</h4>
-                                    <p>The Yombo system was designed and implemented so that you can access your home automation system from anywhere,
-                                    even if you cannot directly connect to your gateway while outside your local network.</p>
-                                    <p>Disabling this field will
-                                    prevent any mobile apps from accessing your device status if the mobile app cannot directly connect to your gateway.
-                                    </p>
-                                </div>') }}
+                            Depending on your configuration, device GPS may be too sensitive information to store in the cloud.
+                            <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
+                                <h4><i class="fa fa-info-circle"></i> GPS information already sent</h4>
+                                <p>The majority of iOS and Android phones and applications already transmit this information directly to 3rd parties.
+                                    This setting only changes how Yombo Gateway treats this information.</p>
                             </div>
-                            <hr>
+                            <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
+                                <h4>If disabled: May cause mobile app failures</h4>
+                                <p>The Yombo system was designed and implemented so that you can access your home automation system from anywhere,
+                                even if you cannot directly connect to your gateway while outside your local network.</p>
+                                <p>Disabling this field will
+                                prevent any mobile apps from accessing your device status if the mobile app cannot directly connect to your gateway.
+                                </p>
+                            </div>') }}
                         </div>
-                        <div class="form-group">
-                            <label for="security-send-private-stats" data-toggle="tooltip" title="Save private statistics information in the Yombo cloud.">Allow private statistics information to be sent to Yombo</label>
-                            <div class="material-switch pull-right">
-                                <input id="security-send-private-stats" name="security-send-private-stats" type="checkbox"{% if security_items.send_private_stats == '1' %} checked {% endif %}/>
-                                <label for="security-send-private-stats" class="label-primary"></label>
-                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysendprivatestats"><i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitysendprivatestats", 'Send private statistics to Yombo', '
-                                <div class="alert alert-success">
-                                  <ul class="fa-ul">
-                                    <li>
-                                      <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
-                                      Risk: Very Low
-                                    </li>
-                                  </ul>
-                                </div>
-                                Device and system statistics allows you to view detailed trends and historical details online. This includes
-                                energy used, device status trends, and more. It also acts as a backup to your data.
-                                <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
-                                    <h4>If disabled: No problem</h4>
-                                    <p>You will not be able to see long term trends as easily.
-                                    </p>
-                                </div>') }}
-                            </div>
-                            <hr>
-                        </div>
-                        <div class="form-group">
-                            <label for="security-send-anon-stats" data-toggle="tooltip" title="Save statistics information in the Yombo cloud.">Allow anonymous statistics information to be sent to Yombo</label>
-                            <div class="material-switch pull-right">
-                                <input id="security-send-anon-stats" name="security-send-anon-stats" type="checkbox"{% if security_items.send_anon_stats == '1' %} checked {% endif %}/>
-                                <label for="security-send-anon-stats" class="label-primary"></label>
-                                &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysendanonstats"><i class="fa fa-question-circle  fa-2x"></i></a>
-                                {{ macros.modal("securitysendanonstats", 'Send anonymous statistics to Yombo', '
-                                <div class="alert alert-success">
-                                  <ul class="fa-ul">
-                                    <li>
-                                      <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
-                                      Risk: Very Low
-                                    </li>
-                                  </ul>
-                                </div>
-                                Anonymous statistics includes system usage such as number of commands processed, number of dropped messages to/from the servers,
-                                and more. This information helps us design a more robust system.
-                                <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
-                                    <h4>If disabled: No problem</h4>
-                                    <p>The data will still be collected as it\'s hard carded into the code, but it won\'t be uploaded!
-                                    </p>
-                                </div>') }}
-                            </div>
-                            <hr>
-                        </div>
-                        <a class="btn btn-md btn-warning" href="/setup_wizard/3"><i class="fa fa-chevron-left fa-remove pull-left"> &nbsp; </i>Back</a>
-                        <button type="submit" id="submit-login" class="btn btn-lg btn-success pull-right">Next</button>
+                        <hr>
                     </div>
+                    <div class="form-group">
+                        <label for="security-send-private-stats" data-toggle="tooltip" title="Save private statistics information in the Yombo cloud.">Allow private statistics information to be sent to Yombo</label>
+                        <div class="material-switch pull-right">
+                            <input id="security-send-private-stats" name="security-send-private-stats" type="checkbox"{% if security_items.send_private_stats == '1' %} checked {% endif %}/>
+                            <label for="security-send-private-stats" class="label-primary"></label>
+                            &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysendprivatestats"><i class="fa fa-question-circle  fa-2x"></i></a>
+                            {{ macros.modal("securitysendprivatestats", 'Send private statistics to Yombo', '
+                            <div class="alert alert-success">
+                              <ul class="fa-ul">
+                                <li>
+                                  <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
+                                  Risk: Very Low
+                                </li>
+                              </ul>
+                            </div>
+                            Device and system statistics allows you to view detailed trends and historical details online. This includes
+                            energy used, device status trends, and more. It also acts as a backup to your data.
+                            <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
+                                <h4>If disabled: No problem</h4>
+                                <p>You will not be able to see long term trends as easily.
+                                </p>
+                            </div>') }}
+                        </div>
+                        <hr>
+                    </div>
+                    <div class="form-group">
+                        <label for="security-send-anon-stats" data-toggle="tooltip" title="Save statistics information in the Yombo cloud.">Allow anonymous statistics information to be sent to Yombo</label>
+                        <div class="material-switch pull-right">
+                            <input id="security-send-anon-stats" name="security-send-anon-stats" type="checkbox"{% if security_items.send_anon_stats == '1' %} checked {% endif %}/>
+                            <label for="security-send-anon-stats" class="label-primary"></label>
+                            &nbsp;&nbsp;&nbsp;<a href="#" data-toggle="modal" data-target="#securitysendanonstats"><i class="fa fa-question-circle  fa-2x"></i></a>
+                            {{ macros.modal("securitysendanonstats", 'Send anonymous statistics to Yombo', '
+                            <div class="alert alert-success">
+                              <ul class="fa-ul">
+                                <li>
+                                  <i class="fa fa-exclamation-triangle fa-li fa-lg"></i>
+                                  Risk: Very Low
+                                </li>
+                              </ul>
+                            </div>
+                            Anonymous statistics includes system usage such as number of commands processed, number of dropped messages to/from the servers,
+                            and more. This information helps us design a more robust system.
+                            <div class="bs-callout bs-callout-success" id="callout-images-ie-rounded-corners">
+                                <h4>If disabled: No problem</h4>
+                                <p>The data will still be collected as it\'s hard carded into the code, but it won\'t be uploaded!
+                                </p>
+                            </div>') }}
+                        </div>
+                        <hr>
+                    </div>
+                    <a class="btn btn-md btn-warning" href="/setup_wizard/3"><i class="fa fa-chevron-left pull-left"> &nbsp; </i>Back</a>
+                    <button type="submit" id="submit-login" class="btn btn-lg btn-info pull-right">Next</button>
                 </div>
             </div>
         </div>
+    </div>
 
-    </form>
+</form>
 {% endblock %}
 {% block body_bottom %}
 {% include 'lib/webinterface/fragments/select_js.tpl' %}
