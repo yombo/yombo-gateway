@@ -418,12 +418,8 @@ class Loader(YomboLibrary, object):
         for name, config in HARD_LOAD.items():
             if self.sigint:
                 return
-            if self.check_operating_mode(config['operating_mode']) is False:
-                HARD_LOAD[name]['_init_'] = False
-                continue
-            HARD_LOAD[name]['_init_'] = 'Starting'
+            HARD_LOAD[name]['_init_'] = False
             # self._log_loader('debug', name, 'library', 'init', 'About to call _init_.')
-
             component = name.lower()
             library = self.loadedLibraries[component]
             library._event_loop = self.event_loop
@@ -463,6 +459,9 @@ class Loader(YomboLibrary, object):
             library._Variables = self.loadedLibraries['variables']
             library._Validate = self.loadedLibraries['validate']
             library._WebSessions = self.loadedLibraries['websessions']
+            if self.check_operating_mode(config['operating_mode']) is False:
+                continue
+            HARD_LOAD[name]['_init_'] = 'Starting'
             if hasattr(library, '_init_') and isinstance(library._init_, Callable) \
                     and yombo.utils.get_method_definition_level(library._init_) != 'yombo.core.module.YomboModule':
                 d = Deferred()
@@ -609,7 +608,6 @@ class Loader(YomboLibrary, object):
             to_process = kwargs['components']
         else:
             for library_name, library in self.loadedLibraries.items():
-#                print "library %s" % library
                 label = library._FullName.lower() if fullName else library._Name.lower()
                 to_process[library_name] = label
         if 'stoponerror' in kwargs:
