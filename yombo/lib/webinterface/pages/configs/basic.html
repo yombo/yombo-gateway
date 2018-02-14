@@ -6,295 +6,381 @@
 {% endblock %}
 
 {% block content %}
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header">Basic Systems Configurations</h1>
-                </div>
-                <!-- /.col-lg-12 -->
-            </div>
-            <!-- /.row -->
-            <form method="post" id="basicconfig">
-				<div class="row">
-					<div class="panel panel-default">
-						<div class="panel-heading">
-							<h4>Basic Settings</h4>
-						</div>
-					<div class="panel-body">
-						<div class="form-group">
-							<label for="core_label">Gateway Label</label>
-							<a href="#" data-toggle="modal" data-target="#core_label"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("core_label", 'Gateway Label', '
-                                A personal label for this gateway. A way to identify this gateway from other systems.
-                                <div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
-                                    <h4>Try not to change</h4>
-                                    <p>It is suggested to not change this. Eventually, you may start referencing this label
-										in your notes, or software code if you start developing modules. Changing this is not
-										the end of the world, but should be avoided if possible.</p>
-                                </div>') }}
-							<div class="input-group">
-								<input type="text" class="form-control" name="core_label" id="core_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ config.core.label }}" autofocus required size="40">
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="core_description">Gateway Description</label>
-							<a href="#" data-toggle="modal" data-target="#core_description"><i class="fa fa-question fa-lg"></i></a>
-                                {{ macros.modal("core_description", 'Gateway Description', '
-                                A place to make reference notes about the system. Such as how GPIO ports are used.
-                                ') }}
-							<div class="input-group">
-								<textarea class="form-control" rows="5" name="core_description" id="core_description" placeholder="Detailed description">{{ config.core.description }}</textarea>
-								<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
-							</div>
-						</div>
-
-						<div class="row">
-							<div id="address3" class="col-md-4">
-								<div id="map-output"></div>
-									<div class="form-group">
-										<label >Search for location</label>
-										<a href="#" data-toggle="modal" data-target="#searchforlocation"><i class="fa fa-question fa-lg"></i></a>
-											{{ macros.modal("searchforlocation", 'Gateway Location', '
-											The location allows the gateway to calculate sunrise, sunset, when it is
-          									dark or light outside, and collect weather information.
-										  <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
-											  <h4>We do not share this</h4>
-											  <p>
-											  We won\'t share or sell this information, unless required by a court order. We do our best to
-											  keep your information private.
-											  </p>
-										  </div>
-										  <p>
-											  Depending on your use case, you may or may not desire to have a precise location set. Doing allows
-											  you to geo-fence things, such as automatically opening gates and garage doors when driving home. Or
-											  setting a thermostat to away mode when leaving the house.
-										  </p>
-										  <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
-											  <h4>Precision</h4>
-											  <p>
-
-											  </p>
-											  <p>
-												  By default, this tool limits precision to 3 decimal places. If you wish to enter a more precise location,
-												  here is a website to help you: <a target="_blank" href="http://www.latlong.net/">latlong.net</a>
-											  </p>
-											  <p>
-												  You can also increase the vagueness of your location by only using 2 decimal places in the latitude
-												  and longitude. For example, instead of "-123.437", change this to "-122.43".
-											  </p>
-											  <p>
-												  For reference, here are the degrees of precision:
-												  <ul>
-											  <li>The <b>first</b> decimal place is worth up to 11.1 km: it can distinguish the position of one large city from a neighboring large city.</li>
-											  <li>The <b>second</b> decimal place is worth up to 1.1 km: it can separate one village or town from the next.</li>
-											  <li>The <b>third</b> decimal place is worth up to 110 m: it can identify a large agricultural field or institutional campus.</li>
-											  <li>The <b>fourth</b> decimal place is worth up to 11 m: it can identify a parcel of land.</li>
-										  </ul>
-											  <a target="_blank" href="http://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude">Reference</a>
-											  </p>
-										  </div>
-										') }}
-										<div class="input-group">
-											<input id="search_txt" type="text" size="30" value="{{ config.location.searchbox }}" maxlength="1000"><br>
-											<input id="search_btn" type="button" value="    Search    ">
-											<input id="detect_btn" type="button" value="Detect" disabled>
-										</div>
-									</div>
-									<div class="form-group">
-										<label for="location_latitude">Latitude</label>
-										<div class="input-group">
-		                                    <input class="form-control" id="location_searchtext" name="location_searchtext" type="hidden">
-											<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
-											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-										</div>
-									</div>
-									<div class="form-group">
-										<label for="location_longitude">Longitude</label>
-										<div class="input-group">
-											<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
-											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-										</div>
-									</div>
-									<div class="form-group">
-										<label for="location_elevation">Elevation (in feet)</label>
-										<div class="input-group">
-											<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
-											<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-										</div>
-									</div>
-								</div>
-							<div id="address2" class="col-md-8">
-								<div id="map-search">
-									<div id="gmap"></div>
-								</div>
-							</div>
-						</div> <!-- /row -->
+<div class="modal fade" id="gwmaster" tabindex="-1" role="dialog" aria-labelledby="localModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header btn-primary">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Master or Slave</h4>
+      </div>
+      <div class="modal-body">
+		  <p>
+			  The two types of gateways (master and slave) allow multiple installations to act as if they are one. Only
+			  one gateways can be a master gateway within a cluster of gateways. Additional gateways can join as
+			  slaves.
+		  </p>
+          <p>
+              The master gateway is responsible for additional duties such as managing the communciations between
+			  all cluster gateways. If you plan to have many gateways, it's suggested to use a Raspberry Pi 3, however
+			  a Raspberry Pi 2 will just fine. If you plan to only have one gateway, then any Raspberry Pi will work,
+			  such as the Raspberry Pi Zero.
+          </p>
+          <p>
+              Secondary gateways are typically used when wires for automation control cannot be run back to the
+              master or it just doesn't make sense to (too far, too complex). Secondary gateways such as Raspberry Pi
+			  Zero are great for bluetooth device tracking (such as tracking who is where).
+		  </p>
+		  <p>
+		  	Secondary gateways are the same except for the following:
+              <ul>
+                  <li>Statistics for devices are stored and processed on the master gateway.</li>
+                  <li>Some modules handle all processing at the master, while the slaves only send sensor data and
+                  can receive control data to perform actions.</li>
+                  <li>Use USB or GPIO (relays and senors) over WIFI instead of long runs of wires.</li>
+                  <li>The above use cases and more can be used from the same gateway.</li>
+              </ul>
+          </p>
+          <p>
+              A simple Raspberry PI (any version, we recommend version 3) or other low end device can be
+              used as the master. Slave devices can even be slightly lower powered, such as the Raspberry PI Zero W.
+              Secondary gateways will communicate with the primary and other slave gateways using a secure channel.
+              This allows a master and secondary gateways to communicate over open networks (the internet).
+          </p>
+          <p>
+              Use cases:
+              <ul>
+                  <li>Using various slaves allows for receiving and sending IR commands to each room to control devices.</li>
+                  <li>Use a Raspberry Pi Zero in each room to collect signal strength of Bluetooth devices. This allows
+                      the system to know which room someone is in if they keep their cell phone or other bluetooth device
+                      with them. This allows for turning on lights or items based on who is in the room.</li>
+                </ul>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">Basic Systems Configurations</h1>
+	</div>
+	<!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<form method="post" id="basicconfig">
+<div class="row">
+	<div class="col-md-12">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Basic Settings</h4>
+			</div>
+			<div class="panel-body">
+				<div class="form-group">
+					<label for="core_label">Gateway Label</label>
+					<a href="#" data-toggle="modal" data-target="#core_label"><i class="fa fa-question fa-lg"></i></a>
+						{{ macros.modal("core_label", 'Gateway Label', '
+						A personal label for this gateway. A way to identify this gateway from other systems.
+						<div class="bs-callout bs-callout-danger" id="callout-images-ie-rounded-corners">
+							<h4>Try not to change</h4>
+							<p>It is suggested to not change this. Eventually, you may start referencing this label
+								in your notes, or software code if you start developing modules. Changing this is not
+								the end of the world, but should be avoided if possible.</p>
+						</div>') }}
+					<div class="input-group">
+						<input type="text" class="form-control" name="core_label" id="core_label" placeholder="'House', 'Garagage', 'Shed'" value="{{ config.core.label }}" autofocus required size="40">
 					</div>
 				</div>
-	            <!-- /.row -->
+				<div class="form-group">
+					<label for="core_description">Gateway Description</label>
+					<a href="#" data-toggle="modal" data-target="#core_description"><i class="fa fa-question fa-lg"></i></a>
+						{{ macros.modal("core_description", 'Gateway Description', '
+						A place to make reference notes about the system. Such as how GPIO ports are used.
+						') }}
+					<div class="input-group">
+						<textarea class="form-control" rows="5" name="core_description" id="core_description" placeholder="Detailed description">{{ config.core.description }}</textarea>
+						<span class="input-group-addon info"><span class="glyphicon glyphicon-asterisk"></span></span>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="master_gateway" data-toggle="tooltip" title="Select the master gateway.">Select master gateway</label>
+					<a href="#" data-toggle="modal" data-target="#gwmaster"><i class="fa fa-question fa-lg"></i></a>
+					<div class="input-group">
+						<select name="master_gateway" id="master_gateway" required class="selectpicker show-tick" title="Select...">
+							{%- if _gateways.is_master == 1 -%}
+							<option value="{{_local_gateway.gateway_id}}" style="background: #e6f7ff; color: #000;" selected>I'm the master!</option>
+							<option data-divider="true"></option>
+							{%- endif -%}
+							{% for id, gateway in _gateways.gateways.items() if gateway.gateway_id != _local_gateway.gateway_id or _gateways.is_master == 0 -%}
+							<option value="{{ id }}"{% if _gateways.master_gateway() == id %} selected{% endif %}>{{ gateway.label }}
+							{% if id == _local_gateway.gateway_id %} (This gateway){%endif%}</option>
+							{%- endfor %}
+						</select>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /.row -->
+
+<div class="row">
+	<div class="col-md-12">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Location</h4>
+			</div>
+			<div class="panel-body">
 				<div class="row">
-                    <div class="col-lg-6 col-md-6">
-						<div class="panel panel-default">
-							<div class="panel-heading">
-								<h4>Web Interface</h4> (This website)
-							</div>
-								<div class="alert alert-warning">
-								Disabling the web interface will remove the ability to access this website. If disabled
-								and you want to re-enable: 1) Stop yombo gateway. 2) Start gateway in configuration only
-								mode. Then come back here and enable.
-								</div>
-							<div class="panel-body">
-								<div class="form-group">
-									<label for="webinterface_enabled" data-toggle="tooltip" title="Web Interface is the web tool you are currently using! Disable with caution.">Web Interface</label>
-									<div class="material-switch pull-right">
-										<input id="webinterface_enabled" name="webinterface_enabled" type="checkbox" checked/>
-										<label for="webinterface_enabled" class="label-primary"></label>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="webinterface_localhost_only" data-toggle="tooltip" title="If enabled, only allows access from the same machine gateway is running on.">Localhost Only</label>
-									<div class="material-switch pull-right">
-										<input id="webinterface_localhost_only" name="webinterface_localhost_only" type="checkbox" checked/>
-										<label for="webinterface_localhost_only" class="label-primary"></label>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="webinterface_nonsecure_port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 8080 is used by web servers, but must be root to do this or using a proper startup script."><em>Takes affect on save!</em> Non-Secure web port. Usually 8080 or 80. 0 = Disabled</label>
-									<div class="input-group" data-validate="number">
-										<input type="text" class="form-control" name="webinterface_nonsecure_port" id="webinterface_nonsecure_port" placeholder="80" value="{{ config.webinterface.nonsecure_port }}" required>
-										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="webinterface_secure_port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script."><em>Takes affect on save!</em> Secure (SSL) webport. Usually 8443 or 443. 0 = Disabled</label>
-									<div class="input-group" data-validate="number">
-										<input type="text" class="form-control" name="webinterface_secure_port" id="webinterface_secure_port" placeholder="443" value="{{ config.webinterface.secure_port }}" required>
-										<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
-									</div>
-								</div>
-								<div class="col-lg-12 col-md-12" style="border: 1px solid #95B8C4; border-radius:10px; background-color: #DFECF0">
-									<div class="form-group">
-										<label for="webinterface_pin_type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
-										<div class="input-group">
-											<select class="form-control" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
-												<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static Access Code</option>
-												<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
-												<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>
-											</select>
-										</div>
-									</div>
-									<div class="form-group" id="webinterface_auth_pin_form">
-										<label  for="webinterface_auth_pin" data-toggle="tooltip" title="Web access code">Web access code</label>
-										<div class="input-group" data-validate="number">
-											<input type="text" class="form-control" name="webinterface_auth_pin" id="webinterface_auth_pin" placeholder="" value="{{ config.webinterface.auth_pin }}" required>
-										</div>
-									</div>
-									<div class="form-group" id="webinterface_auth_totp_form">
-										<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#totp_model">
-											Scan TOPT QR Code
-										</button>
-									</div>
-								</div>
+					<div id="address3" class="col-md-4">
+						<div id="map-output"></div>
+							<div class="form-group">
+								<label >Search for location</label>
+								<a href="#" data-toggle="modal" data-target="#searchforlocation"><i class="fa fa-question fa-lg"></i></a>
+									{{ macros.modal("searchforlocation", 'Gateway Location', '
+									The location allows the gateway to calculate sunrise, sunset, when it is
+									dark or light outside, and collect weather information.
+								  <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+									  <h4>We do not share this</h4>
+									  <p>
+									  We won\'t share or sell this information, unless required by a court order. We do our best to
+									  keep your information private.
+									  </p>
+								  </div>
+								  <p>
+									  Depending on your use case, you may or may not desire to have a precise location set. Doing allows
+									  you to geo-fence things, such as automatically opening gates and garage doors when driving home. Or
+									  setting a thermostat to away mode when leaving the house.
+								  </p>
+								  <div class="bs-callout bs-callout-primary" id=callout-images-ie-rounded-corners>
+									  <h4>Precision</h4>
+									  <p>
 
-                    <div class="col-lg-6 col-md-6">
-							<div class="modal fade" id="totp_model" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-							  <div class="modal-dialog" role="document">
-								<div class="modal-content">
-								  <div class="modal-header">
-									<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-									<h4 class="modal-title" id="myModalLabel">Scan QRCode below</h4>
+									  </p>
+									  <p>
+										  By default, this tool limits precision to 3 decimal places. If you wish to enter a more precise location,
+										  here is a website to help you: <a target="_blank" href="http://www.latlong.net/">latlong.net</a>
+									  </p>
+									  <p>
+										  You can also increase the vagueness of your location by only using 2 decimal places in the latitude
+										  and longitude. For example, instead of "-123.437", change this to "-122.43".
+									  </p>
+									  <p>
+										  For reference, here are the degrees of precision:
+										  <ul>
+									  <li>The <b>first</b> decimal place is worth up to 11.1 km: it can distinguish the position of one large city from a neighboring large city.</li>
+									  <li>The <b>second</b> decimal place is worth up to 1.1 km: it can separate one village or town from the next.</li>
+									  <li>The <b>third</b> decimal place is worth up to 110 m: it can identify a large agricultural field or institutional campus.</li>
+									  <li>The <b>fourth</b> decimal place is worth up to 11 m: it can identify a parcel of land.</li>
+								  </ul>
+									  <a target="_blank" href="http://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude">Reference</a>
+									  </p>
 								  </div>
-								  <div class="modal-body">
-									<p>Use your TOTP app (such as Google Authenticator). This code will be required when accessing
-									this website from a new machine.
-									</p>
-									  <p><strong>If you don't scan this, you could be locked out of the web interface until you
-									  stop the gateway service, edit the yombo.ini file, and start the gateway again.</strong></p>
-
-								  </div>
-								  <div class="modal-body" id="qrcode_here" align="center">
-								  </div>
-								  <div class="modal-footer">
-									<button type="button" class="btn btn-primary" data-dismiss="modal">I've scanned this code</button>
-								  </div>
+								') }}
+								<div class="input-group">
+									<input id="search_txt" type="text" size="30" value="{{ config.location.searchbox }}" maxlength="1000"><br>
+									<input id="search_btn" type="button" value="    Search    ">
+									<input id="detect_btn" type="button" value="Detect" disabled>
 								</div>
-							  </div>
 							</div>
-					</div>
-									</div>
+							<div class="form-group">
+								<label for="location_latitude">Latitude</label>
+								<div class="input-group">
+									<input class="form-control" id="location_searchtext" name="location_searchtext" type="hidden">
+									<input type="text" class="form-control" name="location_latitude" id="location_latitude" placeholder="37.757" value="{{ config.location.latitude }}" required>
+									<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+								</div>
 							</div>
-					</div>
-					<!-- /.col-lg-6 -->
-                    <div class="col-lg-6 col-md-6">
-						<div class="panel panel-default">
-							<div class="panel-heading">
-								<h4>Misc Settings</h4>
+							<div class="form-group">
+								<label for="location_longitude">Longitude</label>
+								<div class="input-group">
+									<input type="text" class="form-control" name="location_longitude" id="location_longitude" placeholder="-122.437" value="{{ config.location.longitude }}" required>
+									<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+								</div>
 							</div>
-							<div class="panel-body">
-								<div class="form-group">
-									<label  for="statistics_enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
-									<div class="material-switch pull-right">
-										<input id="statistics_enbled" name="statistics_enbled" type="checkbox" checked/>
-										<label for="statistics_enbled" class="label-primary"></label>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="statistics_upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
-									<div class="material-switch pull-right">
-										<input id="statistics_upload" name="statistics_upload" type="checkbox" checked/>
-										<label for="statistics_upload" class="label-primary"></label>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="statistics_anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
-									<div class="material-switch pull-right">
-										<input id="statistics_anonymous" name="statistics_anonymous" type="checkbox" checked/>
-										<label for="statistics_anonymous" class="label-primary"></label>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="device_sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
-									<div class="material-switch pull-right">
-										<input id="device_sendstatus" name="device_sendstatus" type="checkbox" checked/>
-										<label for="device_sendstatus" class="label-primary"></label>
-									</div>
-								</div>
-								<div class="form-group">
-									<label  for="device_sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
-									<div class="material-switch pull-right">
-										<input id="device_sendstatusgps" name="device_sendstatusgps" type="checkbox" checked/>
-										<label for="device_sendstatusgps" class="label-primary"></label>
-									</div>
+							<div class="form-group">
+								<label for="location_elevation">Elevation (in feet)</label>
+								<div class="input-group">
+									<input type="text" class="form-control" name="location_elevation" id="location_elevation" placeholder="90"  value="{{ config.location.elevation }}" required>
+									<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
 								</div>
 							</div>
 						</div>
-						<div class="panel panel-default">
-							<div class="panel-heading">
-								<h4>Localization Settings</h4>
-							</div>
-							<div class="panel-body">
-								<div class="form-group">
-									<label  for="system_degrees" data-toggle="tooltip" title="Select how the system should display temperatures.">Temperature Display</label>
-									<div class="material-switch pull-right">
-										<select name="localization_degrees" id="localization_degrees" required class="selectpicker show-tick" title="Select...">
-											<option value="fahrenheit"{% if config.localization.degrees == 'fahrenheit' %} selected{% endif %}>Fahrenheit</option>
-											<option value="celsius"{% if config.localization.degrees == 'celsius' %} selected{% endif %}>Celsius</option>
-										</select>
-									</div>
-								</div>
-
-							</div>
+					<div id="address2" class="col-md-8">
+						<div id="map-search">
+							<div id="gmap"></div>
 						</div>
 					</div>
-					<!-- /.col-lg-6 -->
+				</div> <!-- /row -->
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /.row -->
+<div class="row">
+	<div class="col-lg-6 col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Web Interface</h4> (This website)
+			</div>
+				<div class="alert alert-warning">
+				Disabling the web interface will remove the ability to access this website. If disabled
+				and you want to re-enable: 1) Stop yombo gateway. 2) Start gateway in configuration only
+				mode. Then come back here and enable.
 				</div>
-	            <!-- /.row -->
-				<div class="row">
-					<div class="col-lg-12">
-					<button type="submit" class="btn btn-primary col-xs-12 btn-lg" disabled>Save Settings</button>
+			<div class="panel-body">
+				<div class="form-group">
+					<label for="webinterface_enabled" data-toggle="tooltip" title="Web Interface is the web tool you are currently using! Disable with caution.">Web Interface</label>
+					<div class="material-switch pull-right">
+						<input id="webinterface_enabled" name="webinterface_enabled" type="checkbox" checked/>
+						<label for="webinterface_enabled" class="label-primary"></label>
 					</div>
-					<p>&nbsp;</p>
 				</div>
-	            <!-- /.row -->
+				<div class="form-group">
+					<label  for="webinterface_localhost_only" data-toggle="tooltip" title="If enabled, only allows access from the same machine gateway is running on.">Localhost Only</label>
+					<div class="material-switch pull-right">
+						<input id="webinterface_localhost_only" name="webinterface_localhost_only" type="checkbox" checked/>
+						<label for="webinterface_localhost_only" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="webinterface_nonsecure_port" data-toggle="tooltip" title="Non-secure port number that clients use to connect to. Usually port 8080 is used by web servers, but must be root to do this or using a proper startup script."><em>Takes affect on save!</em> Non-Secure web port. Usually 8080 or 80. 0 = Disabled</label>
+					<div class="input-group" data-validate="number">
+						<input type="text" class="form-control" name="webinterface_nonsecure_port" id="webinterface_nonsecure_port" placeholder="80" value="{{ config.webinterface.nonsecure_port }}" required>
+						<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="webinterface_secure_port" data-toggle="tooltip" title="Secure (SSL) port number that clients use to connect to. Usually port 443 is used by web servers, but must be root to do this or using a proper startup script."><em>Takes affect on save!</em> Secure (SSL) webport. Usually 8443 or 443. 0 = Disabled</label>
+					<div class="input-group" data-validate="number">
+						<input type="text" class="form-control" name="webinterface_secure_port" id="webinterface_secure_port" placeholder="443" value="{{ config.webinterface.secure_port }}" required>
+						<span class="input-group-addon danger"><span class="glyphicon glyphicon-remove"></span></span>
+					</div>
+				</div>
+				<div class="col-lg-12 col-md-12" style="border: 1px solid #95B8C4; border-radius:10px; background-color: #DFECF0">
+					<div class="form-group">
+						<label for="webinterface_pin_type" data-toggle="tooltip" title="Pin or OTP when accessing web interface from a new device. Extra layer of protection for this website.  Can use Google Authenticator as well for higher level of protection.">Webinterface Access Protection</label>
+						<div class="input-group">
+							<select class="form-control" name="webinterface_pin_type" id="webinterface_pin_type" placeholder="Select Twilight Degrees">
+								<option value="pin"{% if config.webinterface.auth_pin_type == "pin" %} selected{% endif %}>Static Access Code</option>
+								<option value="totp"{% if config.webinterface.auth_pin_type == "totp" %} selected{% endif %}>TOPT (Google Authenticator)</option>
+								<option value="none"{% if config.webinterface.auth_pin_type == "none" %} selected{% endif %}>None</option>
+							</select>
+						</div>
+					</div>
+					<div class="form-group" id="webinterface_auth_pin_form">
+						<label  for="webinterface_auth_pin" data-toggle="tooltip" title="Web access code">Web access code</label>
+						<div class="input-group" data-validate="number">
+							<input type="text" class="form-control" name="webinterface_auth_pin" id="webinterface_auth_pin" placeholder="" value="{{ config.webinterface.auth_pin }}" required>
+						</div>
+					</div>
+					<div class="form-group" id="webinterface_auth_totp_form">
+						<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#totp_model">
+							Scan TOPT QR Code
+						</button>
+					</div>
+				</div>
+
+	<div class="col-lg-6 col-md-6">
+			<div class="modal fade" id="totp_model" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+			  <div class="modal-dialog" role="document">
+				<div class="modal-content">
+				  <div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+					<h4 class="modal-title" id="myModalLabel">Scan QRCode below</h4>
+				  </div>
+				  <div class="modal-body">
+					<p>Use your TOTP app (such as Google Authenticator). This code will be required when accessing
+					this website from a new machine.
+					</p>
+					  <p><strong>If you don't scan this, you could be locked out of the web interface until you
+					  stop the gateway service, edit the yombo.ini file, and start the gateway again.</strong></p>
+
+				  </div>
+				  <div class="modal-body" id="qrcode_here" align="center">
+				  </div>
+				  <div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-dismiss="modal">I've scanned this code</button>
+				  </div>
+				</div>
+			  </div>
+			</div>
+	</div>
+					</div>
+			</div>
+	</div>
+	<!-- /.col-lg-6 -->
+	<div class="col-lg-6 col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Misc Settings</h4>
+			</div>
+			<div class="panel-body">
+				<div class="form-group">
+					<label  for="statistics_enbled" data-toggle="tooltip" title="When enabled, allows various statistics to be collected and gathered.">Statistics Enabled</label>
+					<div class="material-switch pull-right">
+						<input id="statistics_enbled" name="statistics_enbled" type="checkbox" checked/>
+						<label for="statistics_enbled" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="statistics_upload" data-toggle="tooltip" title="Allows stats to be backed up to the cloud and allows you to access this information using various tools.">Statistics Upload</label>
+					<div class="material-switch pull-right">
+						<input id="statistics_upload" name="statistics_upload" type="checkbox" checked/>
+						<label for="statistics_upload" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="statistics_anonymous" data-toggle="tooltip" title="Allows anonymouse usage stats to be collected so Yombo can learn how to better improve performance and featureset.">Anonymous Statistics</label>
+					<div class="material-switch pull-right">
+						<input id="statistics_anonymous" name="statistics_anonymous" type="checkbox" checked/>
+						<label for="statistics_anonymous" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="device_sendstatus" data-toggle="tooltip" title="Send device status to Yombo servers. Allows you to archive and access this information using various tools.">Allow sending device status</label>
+					<div class="material-switch pull-right">
+						<input id="device_sendstatus" name="device_sendstatus" type="checkbox" checked/>
+						<label for="device_sendstatus" class="label-primary"></label>
+					</div>
+				</div>
+				<div class="form-group">
+					<label  for="device_sendstatusgps" data-toggle="tooltip" title="Send device status if contains GPS data to Yombo servers. Most apps and cell phones already send this to various parties. We allow to select if this allowed.">Allow sending device status if GPS</label>
+					<div class="material-switch pull-right">
+						<input id="device_sendstatusgps" name="device_sendstatusgps" type="checkbox" checked/>
+						<label for="device_sendstatusgps" class="label-primary"></label>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>Localization Settings</h4>
+			</div>
+			<div class="panel-body">
+				<div class="form-group">
+					<label  for="system_degrees" data-toggle="tooltip" title="Select how the system should display temperatures.">Temperature Display</label>
+					<div class="material-switch pull-right">
+						<select name="localization_degrees" id="localization_degrees" required class="selectpicker show-tick" title="Select...">
+							<option value="fahrenheit"{% if config.localization.degrees == 'fahrenheit' %} selected{% endif %}>Fahrenheit</option>
+							<option value="celsius"{% if config.localization.degrees == 'celsius' %} selected{% endif %}>Celsius</option>
+						</select>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+<div class="row">
+	<div class="col-lg-12">
+	<button type="submit" class="btn btn-primary col-xs-12 btn-lg" disabled>Save Settings</button>
+	</div>
+	<p>&nbsp;</p>
+</div>
+<!-- /.row -->
 <img id="img-buffer" src="/static/img/logo-100px.png" hidden>
 			</form>
 {% endblock %}

@@ -28,6 +28,7 @@ def route_configs(webapp):
 
         @webapp.route('/basic', methods=['POST'])
         @require_auth(login_redirect="/configs/basic")
+        @inlineCallbacks
         def page_configs_basic_post(webinterface, request, session):
 
             valid_submit = True
@@ -41,11 +42,61 @@ def route_configs(webapp):
                 webinterface.add_alert("Invalid Gateway Label.")
 
             try:
+                submitted_master_gateway = request.args.get('master_gateway')[0]
+            except:
+                valid_submit = False
+                webinterface.add_alert("Master gateway not selected.")
+            try:
+                gateway = webinterface._Gateways[submitted_master_gateway]
+            except:
+                valid_submit = False
+                webinterface.add_alert("Invalid master gateway selection, selection doesn't exist.")
+
+            try:
                 submitted_core_description = request.args.get('core_description')[0]
                 webinterface._Configs.set('core', 'description', submitted_core_description)
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid Gateway Description.")
+
+
+            if valid_submit:
+                try:
+                    if submitted_master_gateway == webinterface.gateway_id():
+                        is_master = True
+                    else:
+                        is_master = False
+                    data = {
+                        'label': submitted_core_label,
+                        'description': submitted_core_description,
+                        'master_gateway': submitted_master_gateway,
+                        'is_master': is_master,
+                    }
+                    # print("data: %s" % data)
+                    results = yield webinterface._YomboAPI.request('PATCH',
+                                                                   '/v1/gateway/%s' % webinterface.gateway_id(),
+                                                                   data,
+                                                                   session=session['yomboapi_session'])
+                    # print("api results: %s" % results)
+
+                    previous_master_gateway = webinterface._Configs.get('core', 'master_gateway', None, False)
+                    if previous_master_gateway != submitted_master_gateway:
+                        webinterface._Configs.set('core', 'is_master', is_master)
+                        webinterface._Configs.set('core', 'master_gateway', submitted_master_gateway)
+                        webinterface._Notifications.add({'title': 'Restart Required',
+                                                         'message': 'A critical configuration change has occured and requires a restart: The master gateway has been changed.',
+                                                         'source': 'Web Interface',
+                                                         'persist': False,
+                                                         'priority': 'high',
+                                                         'always_show': True,
+                                                         'always_show_allow_clear': False,
+                                                         'id': 'reboot_required',
+                                                         'local': True,
+                                                         })
+
+                except YomboWarning as e:
+                    webinterface.add_alert(e.html_message, 'warning')
+                    return webinterface.redirect(request, '/configs/basic')
 
             try:
                 submitted_location_searchtext = request.args.get('location_searchtext')[0]
@@ -138,7 +189,7 @@ def route_configs(webapp):
                 webinterface.add_alert("Invalid webinterface secure port: %s" % e)
 
             try:
-                submitted_webinterface_pin_type= request.args.get('webinterface_pin_type')[0]
+                submitted_webinterface_pin_type=request.args.get('webinterface_pin_type')[0]
             except:
                 valid_submit = False
                 webinterface.add_alert("Invalid web interface auth pin type.")
@@ -274,14 +325,14 @@ def route_configs(webapp):
         @inlineCallbacks
         def page_gpg_keys_index(webinterface, request, session):
             db_keys = yield webinterface._LocalDB.get_gpg_key()
-            gw_keyid = webinterface._Configs.get('gpg', 'keyid')
+            gw_fingerprint = webinterface._Configs.get('gpg', 'fingerprint')
             page = webinterface.get_template(request, webinterface._dir + 'pages/configs/gpg_index.html')
             webinterface.home_breadcrumb(request)
             webinterface.add_breadcrumb(request, "/gpg/index", "GPG Keys")
             return page.render(
                 alerts=webinterface.get_alerts(),
                 gpg_keys=db_keys,
-                gw_keyid=gw_keyid,
+                gw_fingerprint=gw_fingerprint,
             )
 
         @webapp.route('/gpg/generate_key')
