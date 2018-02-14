@@ -45,8 +45,13 @@
                                 <label style="margin-top: 20px; margin-bottom: 0px">Machine Label: </label> (Class name of module, matching case!)
                                 <a href="#" data-toggle="modal" data-target="#modalmachinelabel"><i class="fa fa-question fa-lg"></i></a>
                                 {{ macros.modal("modalmachinelabel", 'Machine Label', '
-                                <p>The machine label is used by developers and the gateway to determine uniqueness. <strong>Once set, this cannot be changed!</strong></p>
-                                <p>Usually a short version of the module name. Example: x10_api, zwave, yombobot</p>') }}
+                                <p>
+                                    This <strong>must</strong> machine the class name of the module being added.
+                                </p>
+                                <p>
+                                    <strong>Once set, this cannot be changed!</strong>
+                                </p>
+                                ') }}
                                 <br>
                                 <div class="input-group">
                                     <input tabindex="2" type="text" class="form-control" name="machine_label" id="machine_label" size="30" placeholder="'modulename', 'module_name'" value="{{ module.machine_label }}">
@@ -242,7 +247,6 @@
                 <!-- /.col-lg-12 -->
             </div>
             <!-- /.row -->
-            <input type="submit" />
             </form>
 <br>
 {% endblock %}
