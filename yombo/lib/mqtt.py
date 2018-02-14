@@ -459,7 +459,7 @@ class MQTT(YomboLibrary):
                 return {
                     'nav_side': [
                         {
-                        'label1': 'Tools',
+                        'label1': 'System',
                         'label2': 'MQTT',
                         'priority1': None,  # Even with a value, 'Tools' is already defined and will be ignored.
                         'priority2': 10000,
