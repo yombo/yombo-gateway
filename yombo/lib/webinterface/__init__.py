@@ -181,6 +181,7 @@ class WebInterface(YomboLibrary):
         return "Yombo web interface library"
 
     def _init_(self, **kwargs):
+        self.web_interface_fully_started = False
         self.enabled = self._Configs.get('webinterface', 'enabled', True)
         if not self.enabled:
             return
@@ -349,6 +350,8 @@ class WebInterface(YomboLibrary):
         self._display_pin_console_at = int(time())
         self.display_pin_console()
         self._Notifications.delete('webinterface:starting')
+        self.web_interface_fully_started = True
+
 
         self.send_hook_listeners_ping_loop = LoopingCall(self.send_hook_listeners_ping_loop)
         self.send_hook_listeners_ping_loop.start(55, True)
@@ -893,7 +896,7 @@ class WebInterface(YomboLibrary):
 
     def restart(self, request, message=None, redirect=None):
         if message is None:
-            message = "Web interface requested restart."
+            message = ""
         if redirect is None:
             redirect = "/?"
 
