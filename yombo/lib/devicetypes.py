@@ -179,7 +179,7 @@ class DeviceTypes(YomboLibrary):
         Sets up basic attributes.
         """
         self.gateway_id = self._Configs.get('core', 'gwid', 'local', False)
-        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
+        # self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.device_types = {}
         self.device_type_search_attributes = ['device_type_id', 'input_type_id', 'category_id', 'label', 'machine_label', 'description',
             'status', 'always_load', 'public']
@@ -198,12 +198,12 @@ class DeviceTypes(YomboLibrary):
         # for component, item in platforms.items():
         #     self.load_platforms(item)
 
-    def _stop_(self, **kwargs):
-        """
-        Cleans up any pending deferreds.
-        """
-        if self.load_deferred is not None and self.load_deferred.called is False:
-            self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
+    # def _stop_(self, **kwargs):
+    #     """
+    #     Cleans up any pending deferreds.
+    #     """
+    #     if self.load_deferred is not None and self.load_deferred.called is False:
+    #         self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
 
     def sorted(self, key=None):
         """
@@ -992,17 +992,27 @@ class DeviceType(object):
         :param device_type: 
         :return: 
         """
-        self.category_id = device_type['category_id']
-        self.machine_label = device_type['machine_label']
-        self.label = device_type['label']
-        self.description = device_type['description']
-        self.public = device_type['public']
-        self.status = device_type['status']
-        self.created_at = device_type['created_at']
-        self.updated_at = device_type['updated_at']
+        if 'category_id' in device_type:
+            self.category_id = device_type['category_id']
+        if 'label' in device_type:
+            self.label = device_type['label']
+        if 'machine_label' in device_type:
+            self.machine_label = device_type['machine_label']
+        if 'description' in device_type:
+            self.description = device_type['description']
+        if 'always_load' in device_type:
+            self.always_load = device_type['always_load']
+        if 'status' in device_type:
+            self.status = device_type['status']
+        if 'public' in device_type:
+            self.public = device_type['public']
+        if 'created' in device_type:
+            self.created = device_type['created']
+        if 'updated' in device_type:
+            self.updated = device_type['updated']
         if 'platform' in device_type:
             if device_type["platform"] is None or device_type["platform"] == "":
-                self.platform = "device"
+                self.platform = "all"
             else:
                 self.platform = device_type["platform"]
 

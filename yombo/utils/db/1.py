@@ -348,11 +348,11 @@ def create_table_input_types(Registry, **kwargs):
     """ Input types defines input filters and how input validation is handled. """
     table = """CREATE TABLE `input_types` (
         `id`            TEXT NOT NULL,
-        `category_id`   TEXT NOT NULL,
         `machine_label` TEXT NOT NULL,
         `label`         TEXT NOT NULL,
         `description`   TEXT,
-        `input_regex`   TEXT,
+        `category_id`   TEXT NOT NULL,
+        `platform`      TEXT,
         `public`        INTEGER,
         `always_load`   INTEGER DEFAULT 0,
         `status`        INTEGER,

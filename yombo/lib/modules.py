@@ -598,7 +598,7 @@ class Modules(YomboLibrary):
             # print "loading modules: %s" % self.modules[module_id]._machine_label
             # print "loading modules: %s" % self.modules[module_id]._status
 
-            possible_module_files = ['_devices', '_validators']
+            possible_module_files = ['_devices', '_input_types']
             for possible_file_name in possible_module_files:
                 try:
                     file_path = pathName.lower() + "." + possible_file_name
@@ -612,8 +612,8 @@ class Modules(YomboLibrary):
                         klass = getattr(module_tail, name)
                         if possible_file_name == '_devices':
                             self._DeviceTypes.platforms[name.lower()] = klass
-                        if possible_file_name == '_validators':
-                            self._InputTypes.input_type_classes[name.lower()] = klass
+                        if possible_file_name == '_input_types':
+                            self._InputTypes.platforms[name.lower()] = klass
                 except Exception as e:
                     pass
 

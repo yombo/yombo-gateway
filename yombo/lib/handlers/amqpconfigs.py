@@ -310,7 +310,7 @@ class AmqpConfigHandler(YomboLibrary):
                     'machine_label': 'machine_label',
                     'label': 'label',
                     'description': 'description',
-                    'input_regex': 'input_regex',
+                    'platform': 'platform',
                     'always_load': 'always_load',
                     'created_at': 'created_at',
                     'updated_at': 'updated_at',
@@ -630,7 +630,7 @@ class AmqpConfigHandler(YomboLibrary):
         # print("!!!!!!!!!!!!!!")
         # print("!!!!!!!!!!!!!!amqpconfigs __pending_updates: %s" % self.__pending_updates)
         # print("!!!!!!!!!!!!!!")
-        # print("!!!!!!!!!!!!!!amqpconfigs config_items: %s" % self.config_items.keys())
+        # print("!!!!!!!!!!!!!!amqp_incoming_response body: %s" % body)
         if response_type not in self.config_items:
             raise YomboWarning("Configuration item '%s' not configured." % "get_" + response_type)
         self.__process_queue[random_string(length=10)] = {
