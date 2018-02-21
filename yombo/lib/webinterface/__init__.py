@@ -67,6 +67,8 @@ from yombo.lib.webinterface.routes.api_v1.system import route_api_v1_system
 from yombo.lib.webinterface.routes.devtools.config import route_devtools_config
 from yombo.lib.webinterface.routes.devtools.config_commands import route_devtools_config_commands
 from yombo.lib.webinterface.routes.devtools.config_device_types import route_devtools_config_device_types
+from yombo.lib.webinterface.routes.devtools.config_device_type_commands import route_devtools_config_device_type_commmands
+from yombo.lib.webinterface.routes.devtools.config_device_command_inputs import route_devtools_config_device_command_inputs
 from yombo.lib.webinterface.routes.devtools.config_input_types import route_devtools_config_input_types
 from yombo.lib.webinterface.routes.devtools.config_modules import route_devtools_config_modules
 from yombo.lib.webinterface.routes.devtools.config_variables import route_devtools_config_variables
@@ -224,6 +226,8 @@ class WebInterface(YomboLibrary):
         route_devtools_config(self.webapp)
         route_devtools_config_commands(self.webapp)
         route_devtools_config_device_types(self.webapp)
+        route_devtools_config_device_type_commmands(self.webapp)
+        route_devtools_config_device_command_inputs(self.webapp)
         route_devtools_config_input_types(self.webapp)
         route_devtools_config_modules(self.webapp)
         route_devtools_config_variables(self.webapp)
