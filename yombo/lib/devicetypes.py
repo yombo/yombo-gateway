@@ -543,7 +543,7 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Device type added.",
-            'device_type_id': device_type_results['data']['id'],
+            'data': device_type_results['data'],
         }
 
     @inlineCallbacks
@@ -598,7 +598,7 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Device type edited.",
-            'device_type_id': device_type_results['data']['id'],
+            'data': device_type_results['data'],
         }
 
     @inlineCallbacks
@@ -621,8 +621,9 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't delete device type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/device_type/%s' % device_type_id,
-                                         session=session)
+            results = yield self._YomboAPI.request('DELETE',
+                                                   '/v1/device_type/%s' % device_type_id,
+                                                   session=session)
         except YomboWarning as e:
              return {
                 'status': 'failed',
@@ -634,7 +635,7 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Device type deleted.",
-            'device_type_id': device_type_id,
+            'data': results['data'],
         }
 
     @inlineCallbacks
@@ -661,9 +662,9 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't enable device type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id,
-                                         api_data,
-                                         session=session)
+            results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id,
+                                                   api_data,
+                                                   session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -675,7 +676,7 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Device type enabled.",
-            'device_type_id': device_type_id,
+            'data': results['data'],
         }
 
     @inlineCallbacks
@@ -702,9 +703,9 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't disable device type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id,
-                                         api_data,
-                                         session=session)
+            results = yield self._YomboAPI.request('PATCH', '/v1/device_type/%s' % device_type_id,
+                                                   api_data,
+                                                   session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -716,7 +717,7 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Device type disabled.",
-            'device_type_id': device_type_id,
+            'data': results['data'],
         }
 
     @inlineCallbacks
@@ -745,21 +746,21 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't associate command to device type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('POST', '/v1/device_type_command',
-                                         api_data,
-                                         session=session)
+            results = yield self._YomboAPI.request('POST', '/v1/device_type_command',
+                                                   api_data,
+                                                   session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
                 'msg': "Couldn't associate command to device type: %s" % e.message,
                 'apimsg': "Couldn't associate command to device type: %s" % e.message,
-                'apimsghtml': "Couldn't associate command to device type: %s" % e.html_message,
+                'apimsghtml': "Couldn't associate command to device type: %s" % e.message,
             }
 
         return {
             'status': 'success',
             'msg': "Associated command to device type.",
-            'device_type_id': device_type_id,
+            'data': results['data'],
         }
 
     @inlineCallbacks
@@ -798,9 +799,9 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't associate input to device type command: User session missing.",
                 }
 
-            yield self._YomboAPI.request('POST', '/v1/device_command_input',
-                                         api_data,
-                                         session=session)
+            results = yield self._YomboAPI.request('POST', '/v1/device_command_input',
+                                                   api_data,
+                                                   session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -809,19 +810,20 @@ class DeviceTypes(YomboLibrary):
                 'apimsghtml': "Couldn't associate input to device type command: %s" % e.html_message,
             }
 
+        # print("dev_command_input_add results: %s" % results)
+
         return {
             'status': 'success',
             'msg': "Associated input to device type command",
-            'device_type_id': device_type_id,
+            'data': results['data'],
         }
 
     @inlineCallbacks
-    def dev_command_input_edit(self, device_type_id, command_id, input_type_id, data, **kwargs):
+    def dev_command_input_edit(self, device_command_input_id, data, **kwargs):
         """
         Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
 
-        :param device_type_id: The device_type ID to enable.
-        :param command_id: The command_id ID to add/associate.
+        :param device_command_input_id: The device_command_input ID to edit.
         :param kwargs:
         :return:
         """
@@ -853,11 +855,11 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't update device type command input: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/device_command_input/%s/%s/%s' % (
-                                         device_type_id, command_id, input_type_id),
-                                         api_data,
-                                         session=session
-                                         )
+            results = yield self._YomboAPI.request('PATCH',
+                                                   '/v1/device_command_input/%s' % device_command_input_id,
+                                                   api_data,
+                                                   session=session
+                                                   )
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -869,15 +871,15 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Updated associated input to device type command",
-            'device_type_id': device_type_id,
+            'data': results['content']['response']['device_command_input'],
         }
 
     @inlineCallbacks
-    def dev_command_input_remove(self, device_type_id, command_id, input_type_id, **kwargs):
+    def dev_command_input_remove(self, device_command_input_id, **kwargs):
         """
         Associate an input type to a device type command at the Yombo server level, not at the local gateway level.
 
-        :param device_type_id: The device_type ID to enable.
+        :param device_command_input_id: The device_command_input ID to delete.
         :param command_id: The command_id ID to add/associate.
         :param kwargs:
         :return:
@@ -893,8 +895,8 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't remove input from device type command: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/device_command_input/%s/%s/%s' % (
-                                         device_type_id, command_id, input_type_id),
+            yield self._YomboAPI.request('DELETE',
+                                         '/v1/device_command_input/%s' % device_command_input_id,
                                          session=session)
         except YomboWarning as e:
             return {
@@ -907,16 +909,14 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Removed input from device type command",
-            'device_type_id': device_type_id,
         }
 
     @inlineCallbacks
-    def dev_command_remove(self, device_type_id, command_id, **kwargs):
+    def dev_command_remove(self, device_type_command_id, **kwargs):
         """
         Remove a command from device type at the Yombo server level, not at the local gateway level.
 
-        :param device_type_id: The device_type ID to enable.
-        :param command_id: The command_id ID to add/associate.
+        :param device_type_command_id: The device_type_command ID to delete.
         :param kwargs:
         :return:
         """
@@ -931,9 +931,9 @@ class DeviceTypes(YomboLibrary):
                     'apimsghtml': "Couldn't remove command from device type: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/device_type_command/%s/%s' % (
-                                                                device_type_id, command_id),
-                                                               session=session)
+            yield self._YomboAPI.request('DELETE',
+                                         '/v1/device_type_command/%s' % device_type_command_id,
+                                         session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -945,7 +945,6 @@ class DeviceTypes(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Removed command from device type.",
-            'device_type_id': device_type_id,
         }
 
 class DeviceType(object):
@@ -984,6 +983,49 @@ class DeviceType(object):
 
         self.update_attributes(device_type)
 
+    @inlineCallbacks
+    def _init_(self):
+        """
+        Simply calls reload.
+        """
+
+        yield self.reload()
+
+    @inlineCallbacks
+    def reload(self):
+        """
+        Loads available commands from the database. This should only be called when a device type is loaded,
+        notification that device type has been updated, or when device type commands have changed.
+        :return:
+        """
+
+        command_ids = yield self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
+        self.commands.clear()
+        logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
+        for command_id in command_ids:
+            self.commands[command_id] = {
+                'command': self._DeviceTypes._Commands[command_id],
+                'inputs': {}
+            }
+            inputs = yield self._DeviceTypes._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
+            for input in inputs:
+                self.commands[command_id]['inputs'][input.machine_label] = {
+                    'input_type_id': input.input_type_id,
+                    'device_type_id': input.device_type_id,
+                    'command_id': input.command_id,
+                    'label': input.label,
+                    'machine_label': input.machine_label,
+                    'live_update': input.live_update,
+                    'value_required': input.value_required,
+                    'value_max': input.value_max,
+                    'value_min': input.value_min,
+                    'value_casing': input.value_casing,
+                    'encryption': input.encryption,
+                    'notes': input.notes,
+                    'updated_at': input.updated_at,
+                    'created_at': input.created_at,
+                }
+
     def update_attributes(self, device_type):
         """
         Sets various values from a device type dictionary. This can be called when either new or
@@ -1015,40 +1057,6 @@ class DeviceType(object):
                 self.platform = "all"
             else:
                 self.platform = device_type["platform"]
-
-    @inlineCallbacks
-    def _init_(self):
-        """
-        Loads available commands from the database. This should only be called when a device type is loaded,
-        notification that device type has been updated, or when device type commands have changed.
-
-        """
-        command_ids = yield self._DeviceTypes._LocalDB.get_device_type_commands(self.device_type_id)
-        self.commands.clear()
-        logger.debug("Device type received command ids: {command_ids}", command_ids=command_ids)
-        for command_id in command_ids:
-            self.commands[command_id] = {
-                'command': self._DeviceTypes._Commands[command_id],
-                'inputs': {}
-            }
-            inputs = yield self._DeviceTypes._LocalDB.device_type_command_inputs_get(self.device_type_id, command_id)
-            for input in inputs:
-                self.commands[command_id]['inputs'][input.machine_label] = {
-                    'input_type_id': input.input_type_id,
-                    'device_type_id': input.device_type_id,
-                    'command_id': input.command_id,
-                    'label': input.label,
-                    'machine_label': input.machine_label,
-                    'live_update': input.live_update,
-                    'value_required': input.value_required,
-                    'value_max': input.value_max,
-                    'value_min': input.value_min,
-                    'value_casing': input.value_casing,
-                    'encryption': input.encryption,
-                    'notes': input.notes,
-                    'updated_at': input.updated_at,
-                    'created_at': input.created_at,
-                }
 
     @inlineCallbacks
 #    @memoize_ttl(5)

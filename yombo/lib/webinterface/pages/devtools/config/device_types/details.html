@@ -78,18 +78,18 @@
                                             <th>Label</th><th>Machine<br>Label</th><th>Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody>{% for command in device_type_commands %}
+                                    <tbody>{% for dtc in device_type_commands %}
                                          <tr>
-                                             <td><a href="/devtools/config/device_types/{{device_type.id}}/command/{{ command.command_id }}/details">{{ command.command_label }}</a></td>
-                                             <td>{{ command.command_machine_label }}</td>
+                                             <td><a href="/devtools/config/device_type_commands/{{dtc.id}}/details">{{ dtc.command_label }}</a></td>
+                                             <td>{{ dtc.command_machine_label }}</td>
                                              <td>
-                                                 <a class="btn btn-sm btn-primary" href="/devtools/config/device_types/{{ device_type.id }}/command/{{ command.command_id }}/details">Details</a>
+                                                 <a class="btn btn-sm btn-primary" href="/devtools/config/device_type_commands/{{dtc.id}}/details">Details</a>
                                              </td>
                                          </tr>{% endfor -%}
                                     </tbody>
                                 </table>
                             </div>
-                            <a class="btn btn-md btn-primary" href="/devtools/config/device_types/{{device_type.id}}/command/add_command" title="Add a command to device type">Add command to device type</a>
+                            <a class="btn btn-md btn-primary" href="/devtools/config/device_type_commands/{{device_type.id}}/add" title="Add a command to device type">Add command to device type</a>
                         </div>
                     </div>
                 </div>

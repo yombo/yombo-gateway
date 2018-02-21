@@ -281,7 +281,7 @@ def route_devtools_config_input_types(webapp):
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
-                'input_regex': webinterface.request_get_default(request, 'input_regex', ""),
+                'platform': webinterface.request_get_default(request, 'platform', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
@@ -300,7 +300,7 @@ def route_devtools_config_input_types(webapp):
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'machine_label': webinterface.request_get_default(request, 'machine_label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
-                'input_regex': webinterface.request_get_default(request, 'input_regex', ""),
+                'platform': webinterface.request_get_default(request, 'platform', ""),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
@@ -375,7 +375,7 @@ def route_devtools_config_input_types(webapp):
                 'category_id': webinterface.request_get_default(request, 'category_id', ""),
                 'label': webinterface.request_get_default(request, 'label', ""),
                 'description': webinterface.request_get_default(request, 'description', ""),
-                'input_regex': webinterface.request_get_default(request, 'input_regex', 1),
+                'platform': webinterface.request_get_default(request, 'platform', 1),
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
                 'public': int(webinterface.request_get_default(request, 'public', 0)),
             }
