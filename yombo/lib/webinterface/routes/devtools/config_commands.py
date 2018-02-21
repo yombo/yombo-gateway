@@ -113,8 +113,8 @@ def route_devtools_config_commands(webapp):
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Delete")
 
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/config/commands/<string:command_id>/disable', methods=['GET'])
         @require_auth()
@@ -133,8 +133,8 @@ def route_devtools_config_commands(webapp):
                                         command_results['data']['label'])
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/delete" % command_id, "Disable")
             return page.render(alerts=webinterface.get_alerts(),
-                                    command=command_results['data'],
-                                    )
+                               command=command_results['data'],
+                               )
 
         @webapp.route('/config/commands/<string:command_id>/disable', methods=['POST'])
         @require_auth()
@@ -245,8 +245,8 @@ def route_devtools_config_commands(webapp):
             webinterface.add_breadcrumb(request, "/devtools/config/commands/%s/enable", "Enable")
 
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/config/commands/add', methods=['GET'])
         @require_auth()
@@ -294,7 +294,7 @@ def route_devtools_config_commands(webapp):
                 'header': 'Command Added',
                 'label': 'Command added successfully',
                 'description': '<p>The command has been added. If you have requested this command to be made public, please allow a few days for Yombo review.</p><p>Continue to <a href="/devtools/config/commands/index">command index</a> or <a href="/devtools/config/commands/%s/details">view the command</a>.</p>' %
-                               command_results['command_id'],
+                               command_results['data']['id'],
             }
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
@@ -346,7 +346,8 @@ def route_devtools_config_commands(webapp):
                 'id': command_id,
             }
 
-            command_results = yield webinterface._Commands.dev_command_edit(command_id, data,
+            command_results = yield webinterface._Commands.dev_command_edit(command_id,
+                                                                            data,
                                                                             session=session['yomboapi_session'])
 
             data['machine_label'] = request.args.get('machine_label_hidden')[0]

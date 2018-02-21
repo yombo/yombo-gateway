@@ -64,7 +64,7 @@ class Commands(YomboLibrary):
         """
         .. note:: The command must be enabled to be found using this method. An alternative,
         but equal function is: :py:meth:`get() <Commands.get>`
-        
+
         Attempts to find the device requested using a couple of methods.
 
             >>> off_cmd = self._Commands['137ab129da9318']  #by id
@@ -123,7 +123,7 @@ class Commands(YomboLibrary):
         """
         Returns the keys (command ID's) that are configured.
 
-        :return: A list of command IDs. 
+        :return: A list of command IDs.
         :rtype: list
         """
         return list(self.commands.keys())
@@ -152,7 +152,7 @@ class Commands(YomboLibrary):
     def _init_(self, **kwargs):
         """
         Setups up the basic framework.
-        
+
         """
         self.load_deferred = None  # Prevents loader from moving on past _start_ until we are done.
         self.commands = {}
@@ -189,7 +189,7 @@ class Commands(YomboLibrary):
     def _load_commands_from_database(self):
         """
         Loads commands from database and sends them to :py:meth:`import_command() <Commands.import_device>`
-        
+
         This can be triggered either on system startup or when new/updated commands have been saved to the
         database and we need to refresh existing commands.
         """
@@ -277,11 +277,11 @@ class Commands(YomboLibrary):
 
            Modules shouldn't use this function. Use the built in reference to
            find commands:
-           
+
             >>> self._Commands['sz45q3423']
-        
+
         or:
-        
+
             >>> self._Commands['on']
 
         :raises YomboWarning: For invalid requests.
@@ -353,12 +353,12 @@ class Commands(YomboLibrary):
 
     def search(self, _limiter=None, _operation=None, **kwargs):
         """
-        Advanced search, typically should use the :py:meth:`get <yombo.lib.commands.Commands.get>` method. 
+        Advanced search, typically should use the :py:meth:`get <yombo.lib.commands.Commands.get>` method.
 
         :param limiter_override: Default: .89 - A value between .5 and .99. Sets how close of a match it the search should be.
         :type limiter_override: float
         :param status: Deafult: 1 - The status of the command to check for.
-        :return: 
+        :return:
         """
         return search_instance(kwargs,
                                self.commands,
@@ -439,7 +439,7 @@ class Commands(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Command added.",
-            'command_id': command_results['data']['id'],
+            'data': command_results['data'],
         }
 
     @inlineCallbacks
@@ -464,9 +464,9 @@ class Commands(YomboLibrary):
                     'apimsg': "Couldn't edit command: User session missing.",
                     'apimsghtml': "Couldn't edit command: User session missing.",
                 }
-            yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id),
-                                         data,
-                                         session=session)
+            command_results = yield self._YomboAPI.request('PATCH', '/v1/command/%s' % (command_id),
+                                                           data,
+                                                           session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -480,7 +480,7 @@ class Commands(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Command edited.",
-            'command_id': command_id,
+            'data': command_results['data'],
         }
 
     @inlineCallbacks
@@ -506,8 +506,9 @@ class Commands(YomboLibrary):
                     'apimsghtml': "Couldn't delete command: User session missing.",
                 }
 
-            yield self._YomboAPI.request('DELETE', '/v1/command/%s' % command_id,
-                                         session=session)
+            command_results = yield self._YomboAPI.request('DELETE',
+                                                           '/v1/command/%s' % command_id,
+                                                           session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -519,7 +520,7 @@ class Commands(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Command deleted.",
-            'command_id': command_id,
+            'data': command_results['data'],
         }
 
     @inlineCallbacks
@@ -549,9 +550,10 @@ class Commands(YomboLibrary):
                     'apimsghtml': "Couldn't enable command: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id,
-                                         api_data,
-                                         session=session)
+            command_results = yield self._YomboAPI.request('PATCH',
+                                                           '/v1/command/%s' % command_id,
+                                                           api_data,
+                                                           session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -563,7 +565,7 @@ class Commands(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Command enabled.",
-            'command_id': command_id,
+            'data': command_results['data'],
         }
 
     @inlineCallbacks
@@ -594,9 +596,10 @@ class Commands(YomboLibrary):
                     'apimsghtml': "Couldn't disable command: User session missing.",
                 }
 
-            yield self._YomboAPI.request('PATCH', '/v1/command/%s' % command_id,
-                                         api_data,
-                                         session=session)
+            command_results = yield self._YomboAPI.request('PATCH',
+                                                           '/v1/command/%s' % command_id,
+                                                           api_data,
+                                                           session=session)
         except YomboWarning as e:
             return {
                 'status': 'failed',
@@ -608,7 +611,7 @@ class Commands(YomboLibrary):
         return {
             'status': 'success',
             'msg': "Command disabled.",
-            'command_id': command_id,
+            'data': command_results['data'],
         }
 
     def full_list_commands(self):
