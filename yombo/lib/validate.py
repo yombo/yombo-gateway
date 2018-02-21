@@ -59,6 +59,7 @@ TBL_SLUGIFY = {
     ord('ß'): 'ss'
 }
 
+
 class Validate(YomboLibrary):
     """
     Performs various tasks at startup.
@@ -268,8 +269,6 @@ class Validate(YomboLibrary):
             except Exception as _:
                 raise Invalid('Invalid socket timeout: {err}'.format(err=_))
 
-
-
     def x10_address(value):
         """Validate an x10 address."""
         regex = re.compile(r'([A-Pa-p]{1})(?:[2-9]|1[0-6]?)$')
@@ -326,9 +325,8 @@ class Validate(YomboLibrary):
                 raise Invalid('key dependencies require a dict')
             if key in value and dependency not in value:
                 raise Invalid('dependency violation - key "{}" requires '
-                                  'key "{}" to exist'.format(key, dependency))
+                              'key "{}" to exist'.format(key, dependency))
 
             return value
 
         return validator
-
