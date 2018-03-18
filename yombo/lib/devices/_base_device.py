@@ -114,6 +114,7 @@ class Base_Device(object):
         self._FullName = 'yombo.gateway.lib.Devices.Device'
         self._Name = 'Devices.Device'
         self._Parent = _Parent
+        self.gateway_id = _Parent.gateway_id
         self.call_before_command = []
         self.call_after_command = []
         self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
@@ -152,7 +153,7 @@ class Base_Device(object):
         }
 
         sizes = memory_sizing[self._Parent._Atoms['mem.sizing']]
-        if device["gateway_id"] != _Parent.gateway_id:
+        if device["gateway_id"] != self.gateway_id:
             self.device_commands = deque({}, sizes['other_device_commands'])
             self.status_history = deque({}, sizes['other_status_history'])
         else:
@@ -837,7 +838,7 @@ class Base_Device(object):
 
     def device_command_cancel(self, request_id, **kwargs):
         """
-        Cancel a device command request. Cannot guarentee this will happen. Unable to cancel if statu is 'done' or
+        Cancel a device command request. Cannot guarentee this will happen. Unable to cancel if status is 'done' or
         'failed'.
 
         :param request_id: The request_id provided by the _device_command_ hook.
@@ -975,7 +976,7 @@ class Base_Device(object):
 
         new_extra = kwargs.get('machine_status_extra', {})
         for key, value in new_extra.items():
-            previous_extra['key'] = value
+            previous_extra[key] = value
 
         kwargs['machine_status_extra'] = previous_extra
         return kwargs
@@ -1001,9 +1002,9 @@ class Base_Device(object):
             - silent *(any)* - If defined, will not broadcast a status update
               message; atypical.
         """
-        # logger.debug("set_status called...: {kwargs}", kwargs=kwargs)
         kwargs = self.set_status_process(**kwargs)
         kwargs, status_id = self._set_status(**kwargs)
+        # logger.info("set_status called...3: {kwargs}", kwargs=kwargs)
         if 'silent' not in kwargs:
             self.send_status(**kwargs)
 
@@ -1024,6 +1025,7 @@ class Base_Device(object):
         """
         if 'machine_status' not in kwargs:
             raise YomboWarning("set_status was called without a real machine_status!", errorno=120)
+        # logger.info("_set_status called...: {kwargs}", kwargs=kwargs)
         command = None
         machine_status = kwargs['machine_status']
         machine_status_extra = kwargs.get('machine_status_extra', {})
@@ -1034,6 +1036,9 @@ class Base_Device(object):
         set_at = kwargs.get('set_at', time())
         if 'gateway_id' not in kwargs:
             kwargs['gateway_id'] = self.gateway_id
+
+        # logger.info("setting final machine_status_extra:  called...h: {machine_status_extra}",
+        #             machine_status_extra=machine_status_extra)
 
         requested_by_default = {
             'user_id': 'Unknown',
@@ -1108,6 +1113,7 @@ class Base_Device(object):
             'uploadable': uploadable,
             }
         )
+
         self.status_history.appendleft(new_status)
         self.set_status_machine_extra(**kwargs)
 

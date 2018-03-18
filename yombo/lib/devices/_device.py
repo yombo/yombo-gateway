@@ -182,9 +182,7 @@ class Device(Base_Device):
         Return the machine status of the device.
         """
         # print("load history (%s): %s" % (self.label, len(self.status_history)))
-        if len(self.status_history) == 0:
-            return None
-        return self.status_history[0].machine_status
+        return self.machine_status
 
     @property
     def machine_status(self):
@@ -194,6 +192,16 @@ class Device(Base_Device):
         :return:
         """
         return self.status_all.machine_status
+
+    @property
+    def machine_status_extra(self):
+        """
+        Get the current machine status extra details for a device.
+
+        :return:
+        """
+        return self.status_all.machine_status_extra
+
 
     @property
     def status_all(self):
@@ -379,7 +387,7 @@ class Device(Base_Device):
     def toggle(self):
         return self.command('toggle')
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         for item in ('on', 'open'):
             try:
                 command = self.in_available_commands(item)
