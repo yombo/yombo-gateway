@@ -1371,7 +1371,9 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         :param data1: Data
         :return: None
         """
+        # print("dict_data before pickle: %s" % dict_data)
         dict_data = data_pickle(dict_data, 'msgpack_base85_zip')
+        # print("dict_data before pickle: %s" % dict_data)
 
         args = {'component': component,
                 'dict_name': dict_name,
@@ -1381,6 +1383,8 @@ GROUP BY name""" % (extra_where, str(int(time()) - 60 * 60 * 24 * 60))
         records = yield self.dbconfig.select('sqldict', select='dict_name',
                                              where=['component = ? AND dict_name = ?', component, dict_name])
         if len(records) > 0:
+            # print("saving sqldict: data %s" % args)
+            # print("where: component = %s AND dict_name = %s" % (component, dict_name))
             results = yield self.dbconfig.update('sqldict', args,
                                                  where=['component = ? AND dict_name = ?', component, dict_name])
         else:
