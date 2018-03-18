@@ -36,10 +36,10 @@ class Switch(Device):
         else:
             return self.command('off')
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         return self.command('on', **kwargs)
 
-    def turn_off(self, cmd, **kwargs):
+    def turn_off(self, **kwargs):
         return self.command('off', **kwargs)
 
     def command_from_status(self, machine_status, machine_status_extra=None):
