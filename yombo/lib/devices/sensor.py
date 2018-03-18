@@ -60,6 +60,16 @@ class Thermometer(Device):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.PLATFORM = "thermometer"
+        self.temperature_unit = 'c'  # what temperature unit the device works in.
+
+    @property
+    def temperature(self):
+        """
+        Return the temperatures of this thermometer.
+        """
+        if len(self.status_history) > 0:
+            return self.status_history[0].machine_status
+        return None
 
     def command_from_status(self, machine_status, machine_status_extra=None):
         """
