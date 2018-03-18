@@ -228,10 +228,10 @@ class Climate(Device):
     def can_toggle(self):
         return False
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         return self.command('on', **kwargs)
 
-    def turn_off(self, cmd, **kwargs):
+    def turn_off(self, **kwargs):
         return self.command('off', **kwargs)
 
     def asdict(self):

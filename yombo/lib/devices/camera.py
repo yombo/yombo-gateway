@@ -26,10 +26,10 @@ class Camera(Device):
         elif self.status_history[0].machine_status == 'recording':
             return self.command('stop')
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         return self.command('record', **kwargs)
 
-    def turn_off(self, cmd, **kwargs):
+    def turn_off(self, **kwargs):
         return self.command('stop', **kwargs)
 
     @property
