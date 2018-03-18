@@ -16,11 +16,25 @@ class Lock(Device):
         else:
             return self.command('unlock')
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         return self.command('lock', **kwargs)
 
-    def turn_off(self, cmd, **kwargs):
+    def turn_off(self, **kwargs):
         return self.command('unlock', **kwargs)
+
+    def is_locked(self):
+        if self.status_history[0].machine_status == 1:
+            return True
+        elif self.status_history[0].machine_status == 0:
+            return False
+        return None
+
+    def is_unlocked(self):
+        if self.status_history[0].machine_status == 0:
+            return True
+        elif self.status_history[0].machine_status == 1:
+            return False
+        return None
 
     def generate_human_status(self, machine_status, machine_status_extra):
         if machine_status == 1:
