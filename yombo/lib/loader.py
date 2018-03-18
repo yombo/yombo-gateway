@@ -71,6 +71,7 @@ HARD_LOAD["SQLDict"] = {'operating_mode': 'all'}
 HARD_LOAD["GPG"] = {'operating_mode': 'all'}
 HARD_LOAD["Configuration"] = {'operating_mode': 'all'}
 HARD_LOAD["Hash"] = {'operating_mode': 'all'}
+HARD_LOAD["HashIDS"] = {'operating_mode': 'all'}
 HARD_LOAD["Atoms"] = {'operating_mode': 'all'}
 HARD_LOAD["States"] = {'operating_mode': 'all'}
 HARD_LOAD["Statistics"] = {'operating_mode': 'all'}
@@ -434,6 +435,7 @@ class Loader(YomboLibrary, object):
             library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Hash = self.loadedLibraries['hash']
+            library._HashIDS = self.loadedLibraries['hashids']
             library._Locations = self.loadedLibraries['locations']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
             library._Gateways = self.loadedLibraries['gateways']
