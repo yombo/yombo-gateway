@@ -21,7 +21,8 @@ class Scene(Device):
             'all_off': False,
             'pingable': False,
             'pollable': False,
-            'sends_updates': False
+            'sends_updates': False,
+            'supports_deactivation': False,
         })
 
     def can_toggle(self):
@@ -30,8 +31,8 @@ class Scene(Device):
     def toggle(self):
         return
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         return self.command('on', **kwargs)
 
-    def turn_off(self, cmd, **kwargs):
+    def turn_off(self, **kwargs):
         return self.command('off', **kwargs)
