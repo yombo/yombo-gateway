@@ -293,7 +293,7 @@ def translate_int_value(value, leftMin, leftMax, rightMin, rightMax):
     valueScaled = float(value - leftMin) / float(leftSpan)
 
     # Convert the 0-1 range into a value in the right range.
-    return rightMin + (valueScaled * rightSpan)
+    return int(round(rightMin + (valueScaled * rightSpan)))
 
 def convert_temp(i_temp):
     """
