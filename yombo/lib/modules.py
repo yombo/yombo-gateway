@@ -686,6 +686,7 @@ class Modules(YomboLibrary):
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types
             module._Hash = self._Loader.loadedLibraries['hash']  # Input Types
+            module._HashIDS = self._Loader.loadedLibraries['hashids']
             module._Libraries = self._Loader.loadedLibraries
             module._Localize = self._Loader.loadedLibraries['localize']
             module._LocalDB = self._Loader.loadedLibraries['localdb'] # Provided for testing
@@ -1480,7 +1481,6 @@ class Modules(YomboLibrary):
                           '_module_disabled_',
                           called_by=self,
                           module_id=module_id,
-                          module=module,
                           )
         self._Notifications.add(
             {'title': 'Module disabled: %s' % a_module._label,
