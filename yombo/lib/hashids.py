@@ -2,9 +2,25 @@
 """
 Manages hashids.  Decodes and encodes.
 
+To encode or decode using the primary hashid:
 
-  self._Hashids.decode('something', 'abc123')
-  self._Hashids.encode('something', 12)
+.. code-block:: python
+
+  hash_int = self._Hashids.decode('abc123')  # decodes this string to an int.
+  hash_string = self._Hashids.encode(12)  # encodes this int to a string.
+
+
+A module can add custom hasher by implementing the hook '_hashids_':
+
+.. code-block:: python
+
+
+   def _hashids_(self, **kwargs):
+       return [{'new_hasher': {
+                   'salt': random_string(length=25)
+                   'length': 30,
+               },
+       }]
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 
@@ -35,7 +51,7 @@ class HashIDS(YomboLibrary, object):
     def _init_(self):
         self.keys = {
             'main': {
-                'salt': self._Configs.get('hashids', 'main', random_string(length=20)),
+                'salt': self._Configs.get('hashids', 'main', random_string(length=25)),
                 'length': '20',
             },
         }
@@ -43,12 +59,13 @@ class HashIDS(YomboLibrary, object):
             key['hasher'] = Hashids(salt=key['salt'], min_length=key['length'])
 
         hashids = yield global_invoke_libraries('_hashids_', called_by=self)
-        for component, hashid in hashids.items():
-            self.keys[hashid] = {
-                'salt': hashids[hashid]['salt'],
-                'length': hashids[hashid]['length'],
-                'hasher': Hashids(salt=hashids[hashid]['salt'], min_length=hashids[hashid]['length']),
-            }
+        for component, hashid_list in hashids.items():
+            for hashid, data in hashid_list.items():
+                self.keys[hashid] = {
+                    'salt': data['salt'],
+                    'length': data['length'],
+                    'hasher': Hashids(salt=data['salt'], min_length=data['length']),
+                }
 
     @inlineCallbacks
     def _modules_loaded_(self, **kwargs):
@@ -56,12 +73,13 @@ class HashIDS(YomboLibrary, object):
         Called after _load_ is called for all the modules.
         """
         hashids = yield global_invoke_modules('_hashids_', called_by=self)
-        for component, hashid in hashids.items():
-            self.keys[hashid] = {
-                'salt': hashids[hashid]['salt'],
-                'length': hashids[hashid]['length'],
-                'hasher': Hashids(salt=hashids[hashid]['salt'], min_length=hashids[hashid]['length']),
-            }
+        for component, hashid_list in hashids.items():
+            for hashid, data in hashid_list.items():
+                self.keys[hashid] = {
+                    'salt': data['salt'],
+                    'length': data['length'],
+                    'hasher': Hashids(salt=data['salt'], min_length=data['length']),
+                }
 
     def _configuration_details_(self, **kwargs):
         return [{'hashids': {
@@ -71,16 +89,16 @@ class HashIDS(YomboLibrary, object):
                 },
         }]
 
-    def encode(self, key, id):
-        if key in self.keys:
-            return self.keys[key]['hasher'].encode(id)
+    def encode(self, hashedid, hasher_name):
+        if hasher_name in self.keys:
+            return self.keys[hasher_name]['hasher'].encode(hashedid)
         else:
-            return self.keys['main']['hasher'].encode(id)
+            return self.keys[hasher_name]['hasher'].encode(hashedid)
 
-    def decode(self, key, id):
+    def decode(self, id_to_hash, hasher_name):
         # print("hashids decoding: %s: %s" % (key, id))
-        if key in self.keys:
+        if hasher_name in self.keys:
             # print "hashids key found."
-            return self.keys[key]['hasher'].decode(id)
+            return self.keys[hasher_name]['hasher'].decode(id_to_hash)
         else:
-            return self.keys['main']['hasher'].decode(id)
+            return self.keys[hasher_name]['hasher'].decode(id_to_hash)
