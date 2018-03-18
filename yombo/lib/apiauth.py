@@ -161,7 +161,7 @@ class APIAuth(YomboLibrary):
         if is_valid not in (True, False):
             is_valid = True
 
-        auth_id = random_string(length=randint(50, 55))
+        auth_id = random_string(length=randint(45, 50))
 
         data = {
             'auth_id': auth_id,
