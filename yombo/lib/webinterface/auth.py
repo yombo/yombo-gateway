@@ -102,7 +102,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
         def wrapped_f(webinterface, request, *a, **kw):
             update_request(webinterface, request)
             request.auth_id = None
-
+            # print("request uri: %s" % request.uri)
             host = request.getHeader('host')
             if host is None:
                 logger.info("Discarding request, appears to be malformed session id from require_auth")
@@ -130,7 +130,7 @@ def require_auth(roles=None, login_redirect=None, *args, **kwargs):
                     session = webinterface._APIAuth.get_session_from_request(request)
                     session.touch()
                 except YomboWarning as e:
-                    logger.info("API request doesn't have api key. Checking for cookie session...")
+                    logger.debug("API request doesn't have api key. Checking for cookie session...")
                     try:
                         session = yield webinterface._WebSessions.get_session_from_request(request)
                     except YomboWarning as e:
