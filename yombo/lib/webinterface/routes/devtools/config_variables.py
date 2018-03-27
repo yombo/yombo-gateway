@@ -12,7 +12,7 @@ def route_devtools_config_variables(webapp):
             webinterface.add_breadcrumb(request, "/devtools/config/modules/index", "Modules", True)
 
         @inlineCallbacks
-        def variable_group_breadcrumbs(webinterface, request, parent_id, parent_type):
+        def variable_group_breadcrumbs(webinterface, request, session, parent_id, parent_type):
             if parent_type in ('module', 'all_devices', 'all_modules'):
                 try:
                     module_results = yield webinterface._YomboAPI.request('GET',
@@ -63,7 +63,7 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session, group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
@@ -103,7 +103,7 @@ def route_devtools_config_variables(webapp):
                 'status': int(webinterface.request_get_default(request, 'status', 1)),
             }
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, parent_id, parent_type)
+            parent = yield variable_group_breadcrumbs(webinterface, request, session, parent_id, parent_type)
             webinterface.add_breadcrumb(request, "/", "Add Variable")
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
@@ -126,7 +126,7 @@ def route_devtools_config_variables(webapp):
                 'status': int(request.args.get('status')[0]),
             }
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, parent_id, parent_type)
+            parent = yield variable_group_breadcrumbs(webinterface, request, session, parent_id, parent_type)
             webinterface.add_breadcrumb(request, "/", "Add Variable")
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
@@ -172,7 +172,7 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent_type = group_results['data']['relation_type']
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session, group_results['data']['relation_id'],
                                                       parent_type)
             webinterface.add_breadcrumb(request, "/", "Edit Variable")
             if parent['code'] > 299:
@@ -205,7 +205,8 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent_type = group_results['data']['relation_type']
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       parent_type)
             webinterface.add_breadcrumb(request, "/", "Edit Variable")
             if parent['code'] > 299:
@@ -264,7 +265,8 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
-            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
@@ -307,7 +309,8 @@ def route_devtools_config_variables(webapp):
 
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
@@ -354,7 +357,8 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
-            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
@@ -397,7 +401,8 @@ def route_devtools_config_variables(webapp):
 
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
@@ -444,7 +449,8 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             data = group_results['data']
-            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'])
@@ -487,7 +493,8 @@ def route_devtools_config_variables(webapp):
 
             data = group_results['data']
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            parent = yield variable_group_breadcrumbs(webinterface, request, data['relation_id'], data['relation_type'])
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      data['relation_id'], data['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
                                         group_results['data']['group_label'], False)
@@ -551,7 +558,8 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             parent_type = group_results['data']['relation_type']
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       parent_type)
             if parent['code'] > 299:
                 webinterface.add_alert(['content']['html_message'], 'warning')
@@ -616,7 +624,8 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
@@ -695,7 +704,7 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            parent = yield variable_group_breadcrumbs(webinterface, request,
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
                                                       group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
 
@@ -749,7 +758,8 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/variables/field/%s/details' % field_id)
 
             page = webinterface.get_template(request, webinterface._dir + 'pages/display_notice.html')
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
@@ -783,8 +793,8 @@ def route_devtools_config_variables(webapp):
                                               group_results['data']['relation_id'])
 
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         @webapp.route('/config/variables/field/<string:field_id>/details', methods=['GET'])
         @require_auth()
@@ -809,12 +819,14 @@ def route_devtools_config_variables(webapp):
             try:
                 input_type_results = yield webinterface._YomboAPI.request('GET',
                                                                           '/v1/input_type/%s' % field_results['data'][
-                                                                              'input_type_id'])
+                                                                              'input_type_id'],
+                                                                          session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
@@ -824,10 +836,10 @@ def route_devtools_config_variables(webapp):
             page = webinterface.get_template(request,
                                              webinterface._dir + 'pages/devtools/config/variables/field_details.html')
             return page.render(alerts=webinterface.get_alerts(),
-                                    var_group=group_results['data'],
-                                    var_field=field_results['data'],
-                                    input_type=input_type_results['data']
-                                    )
+                               var_group=group_results['data'],
+                               var_field=field_results['data'],
+                               input_type=input_type_results['data']
+                               )
 
         @webapp.route('/config/variables/field/<string:field_id>/edit', methods=['GET'])
         @require_auth()
@@ -849,7 +861,8 @@ def route_devtools_config_variables(webapp):
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             webinterface.add_breadcrumb(request,
                                         "/devtools/config/variables/group/%s/details" % group_results['data']['id'],
@@ -922,7 +935,8 @@ def route_devtools_config_variables(webapp):
                     else:
                         data[key] = int(data[key])
 
-            parent = yield variable_group_breadcrumbs(webinterface, request, group_results['data']['relation_id'],
+            parent = yield variable_group_breadcrumbs(webinterface, request, session,
+                                                      group_results['data']['relation_id'],
                                                       group_results['data']['relation_type'])
             if parent['code'] > 299:
                 webinterface.add_alert(parent['content']['html_message'], 'warning')
