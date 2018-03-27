@@ -60,7 +60,7 @@
                                             <tbody>{% for request_id, command in device_commands.items()
                                             if command.status == 'delayed' %}
                                                  <tr>
-                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
                                                     <td>{{ command.command.label }}</td>
                                                     <td>{{ command.status }}</td>
                                                     <td>{{ command.requested_by.user_id }}</td>
@@ -81,7 +81,7 @@
                                             <tbody>{% for request_id, command in device_commands.items()
                                             if command.status in ('new', 'sent', 'received', 'pending') %}
                                                  <tr>
-                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
                                                     <td>{{ command.command.label }}</td>
                                                     <td>{{ command.status }}</td>
                                                     <td>{{ command.requested_by.user_id }}</td>
@@ -102,7 +102,7 @@
                                             <tbody>{% for request_id, command in device_commands.items()
                                             if command.status in ('failed', 'delay_expired') %}
                                                  <tr>
-                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
                                                     <td>{{ command.command.label }}</td>
                                                     <td>{{ command.status }}</td>
                                                     <td>{{ command.requested_by.user_id }}</td>
@@ -123,7 +123,7 @@
                                             <tbody>{% for request_id, command in device_commands.items()
                                             if command.status == 'finished' %}
                                                  <tr>
-                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
                                                     <td>{{ command.command.label }}</td>
                                                     <td>{{ command.status }}</td>
                                                     <td>{{ command.requested_by.user_id }}</td>
@@ -145,7 +145,7 @@
                                             if command.status not in ('delayed', 'new', 'sent', 'received', 'pending',
                                                 'failed', 'delay_expired', 'finished') %}
                                                  <tr>
-                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.label }}</a></td>
+                                                    <td><a href="/devices/device_commands/{{ request_id }}/details">{{ command.device.full_label }}</a></td>
                                                     <td>{{ command.command.label }}</td>
                                                     <td>{{ command.status }}</td>
                                                     <td>{{ command.requested_by.user_id }}</td>
