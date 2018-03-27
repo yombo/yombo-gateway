@@ -128,6 +128,16 @@ def route_devtools_debug(webapp):
                                devices=webinterface._Devices,
                                )
 
+        @webapp.route('/requirements')
+        @require_auth()
+        def page_devtools_debug_requirements(webinterface, request, session):
+            page = webinterface.get_template(request, webinterface._dir + 'pages/devtools/debug/requirements/index.html')
+            root_breadcrumb(webinterface, request)
+            webinterface.add_breadcrumb(request, "/devtools/debug/requirements", "Requirements")
+            return page.render(alerts=webinterface.get_alerts(),
+                               requirements=webinterface._Loader.requirements
+                               )
+
         @webapp.route('/statistic_bucket_lifetimes')
         @require_auth()
         def page_devtools_debug_statistic_bucket_lifetimes(webinterface, request, session):
