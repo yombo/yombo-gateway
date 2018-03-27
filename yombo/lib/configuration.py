@@ -601,7 +601,6 @@ class Configuration(YomboLibrary):
                            }
                        },
                }]
-
         """
         config_details = yield global_invoke_all('_configuration_details_', called_by=self)
 
