@@ -545,7 +545,7 @@ class Modules(YomboLibrary):
                                     'used_by': [module['machine_label']],
                                 }
                         else:
-                            self._Loader.requirements[line]['used_by'].append()
+                            self._Loader.requirements[line]['used_by'].append(module['machine_label'])
 
             try:
                 module_instance, module_name = self._Loader.import_component(pathName, module['machine_label'], 'module', module['id'])
@@ -1386,7 +1386,7 @@ class Modules(YomboLibrary):
 
         if module_id not in self.modules:
             raise YomboWarning("module_id doesn't exist. Nothing to enable.", 300, 'enable_module', 'Modules')
-
+        module = self.modules[module_id]
         try:
             if 'session' in kwargs:
                 session = kwargs['session']
