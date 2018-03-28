@@ -36,7 +36,7 @@ def route_api_v1_system(webapp):
         # @require_auth(api=True)
         def apiv1_system_tools_uptime(webinterface, request, session):
             if webinterface.web_interface_fully_started is False:
-                return return_error(request, payload='Not ready yet.')
+                return return_error(request, message='Not ready yet.')
             try:
                 timeonly = str(request.args.get('timeonly')[0])
                 if timeonly == '1':
