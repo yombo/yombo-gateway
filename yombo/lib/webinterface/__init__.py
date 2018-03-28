@@ -79,6 +79,7 @@ from yombo.lib.webinterface.routes.atoms import route_atoms
 from yombo.lib.webinterface.routes.automation import route_automation
 from yombo.lib.webinterface.routes.configs import route_configs
 from yombo.lib.webinterface.routes.devices import route_devices
+from yombo.lib.webinterface.routes.discovery import route_discovery
 from yombo.lib.webinterface.routes.locations import route_locations
 from yombo.lib.webinterface.routes.gateways import route_gateways
 from yombo.lib.webinterface.routes.home import route_home
@@ -239,6 +240,7 @@ class WebInterface(YomboLibrary):
         route_automation(self.webapp)
         route_configs(self.webapp)
         route_devices(self.webapp)
+        route_discovery(self.webapp)
         route_locations(self.webapp)
         route_devtools_config(self.webapp)
         route_gateways(self.webapp)

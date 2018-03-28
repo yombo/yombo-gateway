@@ -19,6 +19,16 @@ NAV_SIDE_MENU = [
         'tooltip': 'Show Devices',
         'opmode': 'run',
     },
+    {
+        'label1': 'Discovery',
+        'label2': 'Discovery',
+        'priority1': 450,
+        'priority2': 450,
+        'icon': 'fa fa-wifi fa-fw',
+        'url': '/discovery/index',
+        'tooltip': 'Auto discovered devices',
+        'opmode': 'run',
+    },
 
     {
         'label1': 'Modules',

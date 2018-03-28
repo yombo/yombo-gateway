@@ -1,0 +1,143 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% block head_css %}{% include 'lib/webinterface/fragments/datatables_css.tpl' %}{% endblock %}
+
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <h1 class="page-header">Auto Discovery</h1>
+        The discovery system tracks devices that were automatically discovered by the system and if there
+        is a matching Yombo device. This page allows you to quickly convert auto discovered devices to
+        Yombo controllable devices.
+        <p></p>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Discovered devices
+            </div>
+            <!-- /.panel-heading -->
+            <div class="panel-body">
+                <div class="devices locations-tabs" role="tabpanel" data-example-id="togglable-tabs">
+                  <ul class="nav nav-tabs nav-tabs-responsive">
+                      <li class="active">
+                          <a href="#needadding" role="tab" id="needadding-tab" data-toggle="tab" >Needs adding</a>
+                      </li>
+                      <li>
+                          <a href="#added" role="tab" id="added-tab" data-toggle="tab" >Already added</a>
+                      </li>
+                  </ul>
+                    <br>
+                  <div id="myTabContent" class="tab-content">
+                    <div role="tabpanel" class="tab-pane fade in active" id="needadding" aria-labelledby="needadding-tab">
+                      <div class="dataTable_wrapper">
+                        <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-needadding">
+                            <thead>
+                                <tr>
+                                    <tr><th>Description</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Discovered</th><th>Action</th></tr>
+                                </tr>
+                            </thead>
+                            <tbody>{% for device_id, device in discovery.items() if device.yombo_device == None %}
+                                 <tr>
+                                     <td>{{ device.display_description }}</td>
+                                     <td>{{ device.mfr }}</td>
+                                     <td>{{ device.model }}</td>
+                                     <td>{{ device.serial }}</td>
+                                     <td>{{ device.discovered_at|epoch_to_human }}</td>
+                                     <td>
+                                         {% if device.yombo_device == None %}
+                                         <form action="/devices/add/{{device.device_type.device_type_id}}" method="post">
+                                            <input type="hidden" name="vars" value='{{device_type_id}}'>
+                                            <input type="hidden" name="json_output" value='{{device.json_output}}'>
+                                            <button type="submit" class="btn btn-primary col-xs-12">Add Yombo Device</button>
+                                        </form>
+                                         {% else %}
+                                         <form action="/devices/{{device.yombo_device.device_id}}/details" method="get">
+                                            <button type="submit" class="btn btn-success col-xs-12">View Yombo Device</button>
+                                        </form>
+                                         {% endif %}
+                                     </td>
+                                 </tr>
+                                 {% endfor %}
+                            </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <div role="tabpanel" class="tab-pane fade" id="added" aria-labelledby="added-tab">
+                      <div class="dataTable_wrapper">
+                        <table width="100%" class="table table-striped table-bordered table-hover" id="dataTables-added">
+                            <thead>
+                                <tr>
+                                    <tr><th>Description</th><th>Manufacturer</th><th>Model</th><th>Serial</th><th>Discovered</th><th>Action</th></tr>
+                                </tr>
+                            </thead>
+                            <tbody>{% for device_id, device in discovery.items() if device.yombo_device != None %}
+                                 <tr>
+                                     <td>{{ device.display_description }}</td>
+                                     <td>{{ device.mfr }}</td>
+                                     <td>{{ device.model }}</td>
+                                     <td>{{ device.serial }}</td>
+                                     <td>{{ device.discovered_at|epoch_to_human }}</td>
+                                     <td>
+                                         {% if device.yombo_device == None %}
+                                         <form action="/devices/add/{{device.device_type.device_type_id}}" method="post">
+                                            <input type="hidden" name="vars" value='{{device_type_id}}'>
+                                            <input type="hidden" name="json_output" value='{{device.json_output}}'>
+                                            <button type="submit" class="btn btn-primary col-xs-12">Add Yombo Device</button>
+                                        </form>
+                                         {% else %}
+                                         <form action="/devices/{{device.yombo_device.device_id}}/details" method="get">
+                                            <button type="submit" class="btn btn-success col-xs-12">View Yombo Device</button>
+                                        </form>
+                                         {% endif %}
+                                     </td>
+                                 </tr>
+                                 {% endfor %}
+                            </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+
+
+            </div>
+        </div>
+        <!-- /.panel-body -->
+    </div>
+    <!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+{% endblock %}
+
+{% block body_bottom_js %}{% include 'lib/webinterface/fragments/datatables_js.tpl' %}{% endblock %}
+
+{% block body_bottom %}
+    <!-- Make the tables pretty -->
+    <script>
+    $(document).ready(function() {
+        $('#dataTables-needadding').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50,
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 4 ] },
+                    ]
+        });
+        $('#dataTables-added').DataTable({
+                responsive: true,
+                paging: true,
+                iDisplayLength: 50,
+                "aoColumnDefs": [
+                      { "bSearchable": false, "aTargets": [ 4 ] },
+                    ]
+        });
+    });
+    </script>
+{% endblock %}

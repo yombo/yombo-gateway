@@ -509,6 +509,9 @@ class Modules(YomboLibrary):
             reqs_file = 'yombo/modules/%s/requirements.txt' % module['machine_label'].lower()
             if os.path.isfile(reqs_file):
                 try:
+                    filesize = os.path.getsize(reqs_file)
+                    if filesize == 0:
+                        continue
                     input = yield read_file(reqs_file)
                 except Exception as e:
                     logger.warn("Unable to process requirements file for module '{module}', reason: {e}",
@@ -516,6 +519,8 @@ class Modules(YomboLibrary):
                 else:
                     requirements = bytes_to_unicode(input.splitlines())
                     for line in requirements:
+                        if line is None or line == '':
+                            continue
                         pkg_info = get_python_package_info(line)
                         if pkg_info is None:
                             logger.info("Attempting to install missing requirement: {line}", line=line)
@@ -564,7 +569,6 @@ class Modules(YomboLibrary):
             self.modules[module_id]._hooks_called = {}
             self.modules[module_id]._module_id = module['id']
             self.modules[module_id]._module_type = module['module_type']
-            # self.modules[module_id]._module_variables = []
             self.modules[module_id]._machine_label = module['machine_label']
             self.modules[module_id]._label = module['label']
             self.modules[module_id]._short_description = module['short_description']
@@ -616,11 +620,6 @@ class Modules(YomboLibrary):
                             self._InputTypes.platforms[name.lower()] = klass
                 except Exception as e:
                     pass
-
-            # self.modules[module_id]._ModuleDeviceTypes = partial(
-            #     self.module_device_types,
-            #     module_id,
-            # )
 
     def module_invoke_failure(self, failure, module_name, hook_name):
         logger.warn("---==(failure during module invoke for hook ({module_name}::{hook_name})==----",
@@ -682,6 +681,7 @@ class Modules(YomboLibrary):
             module._CronTab = self._Loader.loadedLibraries['crontab']
             module._Devices = self._Loader.loadedLibraries['devices']  # Basically, all devices
             module._DeviceTypes = self._Loader.loadedLibraries['devicetypes']  # All device types.
+            module._Discovery = self._Loader.loadedLibraries['discovery']
             module._Gateways = self._Loader.loadedLibraries['gateways']
             module._GPG = self._Loader.loadedLibraries['gpg']
             module._InputTypes = self._Loader.loadedLibraries['inputtypes']  # Input Types

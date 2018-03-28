@@ -72,6 +72,7 @@ HARD_LOAD["GPG"] = {'operating_mode': 'all'}
 HARD_LOAD["Configuration"] = {'operating_mode': 'all'}
 HARD_LOAD["Hash"] = {'operating_mode': 'all'}
 HARD_LOAD["HashIDS"] = {'operating_mode': 'all'}
+HARD_LOAD["Discovery"] = {'operating_mode': 'all'}
 HARD_LOAD["Atoms"] = {'operating_mode': 'all'}
 HARD_LOAD["States"] = {'operating_mode': 'all'}
 HARD_LOAD["Statistics"] = {'operating_mode': 'all'}
@@ -434,6 +435,7 @@ class Loader(YomboLibrary, object):
             library._CronTab = self.loadedLibraries['crontab']
             library._Devices = self.loadedLibraries['devices']
             library._DeviceTypes = self.loadedLibraries['devicetypes']
+            library._Discovery = self.loadedLibraries['discovery']
             library._Hash = self.loadedLibraries['hash']
             library._HashIDS = self.loadedLibraries['hashids']
             library._Locations = self.loadedLibraries['locations']
@@ -676,7 +678,7 @@ class Loader(YomboLibrary, object):
 
         try:
             # Instantiate the class
-            # logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
+            logger.debug("Instantiate class: {pyclassname}", pyclassname=pyclassname)
             moduleinst = klass()  # start the class, only libraries get the loader
             if componentType == 'library':
                 if componentName.lower() == 'modules':
