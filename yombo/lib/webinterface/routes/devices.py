@@ -106,6 +106,7 @@ def route_devices(webapp):
         def page_devices_add_post(webinterface, request, session, device_type_id):
             try:
                 device_type = webinterface._DeviceTypes[device_type_id]
+                device_type_id = device_type.device_type_id
             except Exception as e:
                 webinterface.add_alert('Device Type ID was not found: %s' % device_type_id, 'warning')
                 return webinterface.redirect(request, '/devices/add')
@@ -255,6 +256,8 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Request")
             try:
                 command = webinterface._Devices.device_commands[device_command_id]
+                device_command_id = command.command_id
+
             except Exception as e:
                 webinterface.add_alert("Cannot find requested id.")
                 return webinterface.redirect(request, '/devices/device_commands')
@@ -269,6 +272,7 @@ def route_devices(webapp):
         def page_devices_details(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -288,6 +292,7 @@ def route_devices(webapp):
         def page_device_delete_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -308,6 +313,7 @@ def route_devices(webapp):
             # print "in device delete post"
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -337,6 +343,7 @@ def route_devices(webapp):
         def page_device_disable_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -355,6 +362,7 @@ def route_devices(webapp):
         def page_device_disable_post(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -381,6 +389,7 @@ def route_devices(webapp):
         def page_device_enable_get(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -399,6 +408,7 @@ def route_devices(webapp):
         def page_device_enable_post(webinterface, request, session, device_id):
             try:
                 device = webinterface._Devices[device_id]
+                device_id = device.device_id
             except Exception as e:
                 webinterface.add_alert('Device ID was not found.  %s' % e, 'warning')
                 return webinterface.redirect(request, '/devices/index')
@@ -461,6 +471,7 @@ def route_devices(webapp):
             #     webinterface.add_alert(device_results['content']['html_message'], 'warning')
             #     return webinterface.redirect(request, '/devices/index')
             device = webinterface._Devices.devices[device_id]
+            device_id = device.device_id
 
             status = request.args.get('status')[0]
             if status == 'disabled':
