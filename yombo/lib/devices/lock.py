@@ -10,7 +10,7 @@ class Lock(Device):
         self.PLATFORM = "lock"
         self.TOGGLE_COMMANDS = ['lock', 'unlock']  # Put two command machine_labels in a list to enable toggling.
 
-    def toggle(self):
+    def toggle(self, **kwargs):
         if self.status_history[0].machine_status == 0:
             return self.command('lock')
         else:
