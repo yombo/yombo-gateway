@@ -512,13 +512,14 @@ class Devices(YomboLibrary):
         :return:
         """
         where = {
-#            'finished_at': None,
-#            'broadcast_at': [time() - 3600, '>'],
-#            'source_gateway_id': self.gateway_id,
             'created_at': [time() - 60*60*24, '>'],
         }
         device_commands = yield self._LocalDB.get_device_commands(where)
         for device_command in device_commands:
+            if device_command['device_id'] not in self.devices:
+                logger.warn("Seems a device id we were tracking is gone..{id}", id=device_command['device_id'])
+                continue
+
             self.device_commands[device_command['request_id']] = Device_Command(device_command, self, start=False)
         return None
 
@@ -898,7 +899,6 @@ class Devices(YomboLibrary):
                                                               api_data,
                                                               session=session)
             except YomboWarning as e:
-                logger.warn("add new device results: {device_results}", device_results=device_results)
                 return {
                     'status': 'failed',
                     'msg': "Couldn't add device: %s" % e.message,
@@ -961,7 +961,7 @@ class Devices(YomboLibrary):
     def set_device_variables(self, device_id, variables, action_type=None, source=None, session=None):
         # print("set variables: %s" % variables)
         for field_id, data in variables.items():
-            # print("devices.set_device_variables.data: %s" % data)
+            print("devices.set_device_variables.data: %s" % data)
             for data_id, value in data.items():
                 if value == "":
                     continue
