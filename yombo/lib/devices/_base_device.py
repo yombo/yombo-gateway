@@ -208,7 +208,7 @@ class Base_Device(object):
             group_relation_id=self.device_type_id,
             data_relation_id=self.device_id
         )
-        if self.test_device is None:
+        if self.test_device is None or self.test_device is False:
             self.meta = yield self._SQLDict.get('yombo.lib.device', 'meta_' + self.device_id)
         else:
             self.meta = {}
@@ -488,7 +488,7 @@ class Base_Device(object):
             }
 
     def command(self, cmd, pin=None, request_id=None, not_before=None, delay=None, max_delay=None,
-                requested_by=None, inputs=None, not_after=None, **kwargs):
+                requested_by=None, inputs=None, not_after=None, callbacks=None, **kwargs):
         """
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
@@ -642,6 +642,8 @@ class Base_Device(object):
                     # print("error checking input value: %s" % e)
                     pass
         device_command['inputs'] = inputs
+        if callbacks is not None:
+            device_command['callbacks'] = callbacks
 
         self.device_commands.appendleft(request_id)
 

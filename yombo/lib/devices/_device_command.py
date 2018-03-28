@@ -89,6 +89,14 @@ class Device_Command(object):
                         id=self.request_id, status=val, error=e)
             self._status = 'unknown'
 
+        # print("device command checking callbacks for val: %s" % val)
+        # print("device command checking callbacks for val\ - cbs: %s" % self.callbacks[val])
+        if val in self.callbacks:
+            # print("device command checking callbacks for val - cbs: %s" % self.callbacks[val])
+            if len(self.callbacks[val]) > 0:
+                for callback in self.callbacks[val]:
+                    callback(self)
+
     def __init__(self, data, parent, start=None):
         """
         Get the instance setup.
@@ -97,7 +105,6 @@ class Device_Command(object):
         :param parent: A pointer to the device types instance.
         """
         # print("new device_comamnd: %s" % data)
-        self._status = 0
         self._Parent = parent
         self.source_gateway_id = data.get('source_gateway_id', self._Parent.gateway_id)
         self.local_gateway_id = self._Parent.gateway_id
@@ -119,8 +126,18 @@ class Device_Command(object):
             self.history = data['history']
         else:
             self.history = []
+        self.callbacks = {
+            'broadcast': [],
+            'accepted': [],
+            'sent': [],
+            'received': [],
+            'pending': [],
+            'failed': [],
+            'canceled': [],
+            'done': [],
+        }
         self.requested_by = data['requested_by']
-        self.status = data.get('status', 'new')
+        self._status = data.get('status', 'new')
 
         self.command_status_received = is_true_false(data.get('command_status_received', False))  # if a status has been reported against this request
         self.persistent_request_id = data.get('persistent_request_id', None)
@@ -156,8 +173,21 @@ class Device_Command(object):
             self.started = False
             start = True
 
+        # Allows various callbacks to be called when status changes.
+        if 'callbacks' in data and data['callbacks'] is not None:
+            for cb_status, cb_callback in data['callbacks'].items():
+                self.add_callback(cb_status, cb_callback)
+
         if start is None or start is True:
-            reactor.callLater(0.001, self.start)
+            reactor.callLater(0.0001, self.start)
+
+    def add_callback(self, status, callback):
+        if status in self.callbacks:
+            if isinstance(callback, list):
+                for cb in callback:
+                    self.callbacks[status].append(cb)
+            else:
+                self.callbacks[status].append(callback)
 
     @inlineCallbacks
     def check_if_device_command_in_database(self):
