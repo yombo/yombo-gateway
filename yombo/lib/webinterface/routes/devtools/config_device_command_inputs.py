@@ -312,9 +312,7 @@ def route_devtools_config_device_command_inputs(webapp):
             try:
                 device_command_input_results = yield webinterface._YomboAPI.request(
                     'GET',
-                    '/v1/device_command_input?_filters[device_type_id]=%s&_filters[command_id]=%s&_filters[input_type_id]=%s' % (
-                        device_type_id, command_id,
-                        input_type_id),
+                    '/v1/device_command_input/%s' % device_command_input_id,
                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
