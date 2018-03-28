@@ -31,6 +31,7 @@ class Light(Device):
         self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             'brightness': True,
+            'percent': True,
             'color_temp': False,
             'effect': False,
             'rgb_color': False,
@@ -50,12 +51,62 @@ class Light(Device):
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
             if 'brightness' in machine_status_extra:
-                return machine_status_extra['brightness']
-            else:
-                return translate_int_value(self.status_history[0].machine_status,
+                return translate_int_value(machine_status_extra['brightness'],
                                            0, self.FEATURES['number_of_steps'],
                                            0, 100)
+            else:
+                return 0
         return None
+
+    def set_brightness(self, brightness, user_id=None, component=None, gateway_id=None, callbacks=None):
+        """
+        Set the brightness of the light, but the application or sender must know how many steps
+        the light can handle (100, 256, 1045, etc.)  Typically, light devices are controlled by
+        percentage and should actually use the set_percent() methid.
+
+        :param brightness:
+        :param user_id:
+        :param component:
+        :param gateway_id:
+        :return:
+        """
+        # print("setting brightness for %s to %s" % (self.full_label, val))
+        if gateway_id is None:
+            gateway_id = self.gateway_id
+        if component is None:
+            component = "yombo.gateway.lib.devices.light"
+
+        if brightness <= 0:
+            command = 'off'
+        else:
+            command = 'on'
+
+        return self.command(
+            cmd=command,
+            requested_by={
+                'user_id': user_id,
+                'component': component,
+                'gateway': gateway_id
+            },
+            inputs={'brightness': brightness},
+            callbacks=callbacks,
+        )
+
+    def set_percent(self, percent, user_id=None, component=None, gateway_id=None, callbacks=None):
+        """
+        Set the light based on a percent. Basically, just converts brightness to the devices
+        step range, and forwards request to set_brightness()
+
+        :param percent:
+        :param user_id:
+        :param component:
+        :param gateway_id:
+        :return:
+        """
+        brightness = translate_int_value(percent,
+                                         0, 100,
+                                         0, self.FEATURES['number_of_steps'])
+        return self.set_brightness(brightness, user_id, component, gateway_id, callbacks)
 
     @property
     def xy_color(self):
@@ -130,33 +181,26 @@ class Light(Device):
                     data[ATR_BRIGHTNESS])
         return data
 
-    def toggle(self):
+    def toggle(self, **kwargs):
         if self.status_history[0].machine_status == 0:
-            return self.command('on')
+            return self.command('on', **kwargs)
         else:
-            return self.command('off')
+            return self.command('off', **kwargs)
 
-    def turn_on(self, cmd, **kwargs):
+    def turn_on(self, **kwargs):
         return self.command('on', **kwargs)
 
-    def turn_off(self, cmd, **kwargs):
+    def turn_off(self, **kwargs):
         return self.command('off', **kwargs)
 
     def generate_human_status(self, machine_status, machine_status_extra):
-        return str(round(translate_int_value(machine_status, 0, self.FEATURES['number_of_steps'], 0, 100), 1)) + '%'
+        if 'brightness' not in machine_status_extra or machine_status_extra['brightness'] is None:
+            return "Unknown"
+        return str(translate_int_value(machine_status_extra['brightness'], 0, self.FEATURES['number_of_steps'], 0, 100)) + '%'
 
     def generate_human_message(self, machine_status, machine_status_extra):
         human_status = str(round(translate_int_value(machine_status, 0, self.FEATURES['number_of_steps'], 0, 100), 1))
         return "%s is now %s%%" % (self.area_label, human_status)
-
-    def set_status_machine_extra(self, **kwargs):
-        super().set_status_machine_extra(**kwargs)
-        self.status_history[0].machine_status
-        if len(self.status_history) > 0:
-            self.status_history[0].machine_status_extra['brightness'] =\
-                translate_int_value(self.status_history[0].machine_status,
-                                    0, self.FEATURES['number_of_steps'],
-                                    0, 100)
 
 class Color_Light(Light):
     """
