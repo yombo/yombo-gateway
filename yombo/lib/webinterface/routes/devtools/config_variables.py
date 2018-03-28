@@ -855,8 +855,9 @@ def route_devtools_config_variables(webapp):
 
             try:
                 group_results = yield webinterface._YomboAPI.request('GET',
-                                                                     '/v1/variable/group/%s' % field_results['data'][
-                                                                         'group_id'])
+                                                                     '/v1/variable/group/%s' %
+                                                                        field_results['data']['group_id'],
+                                                                     session=session['yomboapi_session'])
             except YomboWarning as e:
                 webinterface.add_alert(e.html_message, 'warning')
                 return webinterface.redirect(request, '/devtools/config/modules/index')
@@ -881,13 +882,13 @@ def route_devtools_config_variables(webapp):
                 return webinterface.redirect(request, '/devtools/config/modules/index')
 
             return page_devtools_variables_field_form(webinterface,
-                                                           request,
-                                                           session,
-                                                           group_results['data']['relation_type'],
-                                                           parent['data'], field_results['data'],
-                                                           input_type_results['data'],
-                                                           "Edit Field Variable: %s" %
-                                                           field_results['data']['field_label'])
+                                                      request,
+                                                      session,
+                                                      group_results['data']['relation_type'],
+                                                      parent['data'], field_results['data'],
+                                                      input_type_results['data'],
+                                                      "Edit Field Variable: %s" %
+                                                      field_results['data']['field_label'])
 
         @webapp.route('/config/variables/field/<string:field_id>/edit', methods=['POST'])
         @require_auth()
@@ -947,7 +948,7 @@ def route_devtools_config_variables(webapp):
                                         group_results['data']['group_label'])
             webinterface.add_breadcrumb(request, "/", "Edit Field")
 
-            results = yield webinterface._Variables.dev_field_edit(field_id, data)
+            results = yield webinterface._Variables.dev_field_edit(field_id, data, session=session['yomboapi_session'])
             if results['status'] == 'failed':
                 try:
                     input_type_results = yield webinterface._YomboAPI.request('GET',
@@ -959,14 +960,14 @@ def route_devtools_config_variables(webapp):
 
                 webinterface.add_alert(results['apimsghtml'], 'warning')
                 return page_devtools_variables_field_form(webinterface,
-                                                               request,
-                                                               session,
-                                                               parent['data'],
-                                                               group_results['data']['relation_type'],
-                                                               field_results['data'],
-                                                               input_type_results['data'],
-                                                               "Edit Field Variable: %s" % field_results['data'][
-                                                                   'field_label'])
+                                                          request,
+                                                          session,
+                                                          parent['data'],
+                                                          group_results['data']['relation_type'],
+                                                          field_results['data'],
+                                                          input_type_results['data'],
+                                                          "Edit Field Variable: %s" %
+                                                              field_results['data']['field_label'])
 
             msg = {
                 'header': 'Variable Field Edited',
@@ -996,8 +997,8 @@ def route_devtools_config_variables(webapp):
                                                    group_results['data']['relation_id'])
 
             return page.render(alerts=webinterface.get_alerts(),
-                                    msg=msg,
-                                    )
+                               msg=msg,
+                               )
 
         def page_devtools_variables_field_form(webinterface, request, session, parent, group, field, input_types,
                                                header_label):
