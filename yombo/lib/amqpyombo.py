@@ -53,9 +53,9 @@ from yombo.core.log import get_logger
 from yombo.utils import percentage, random_string, random_int, bytes_to_unicode, global_invoke_all
 
 # Handlers for processing various messages.
-from yombo.lib.handlers.amqpcontrol import AmqpControlHandler
-from yombo.lib.handlers.amqpconfigs import AmqpConfigHandler
-from yombo.lib.handlers.amqpsystem import AmqpSystemHandler
+from yombo.lib.amqpyomb_handlers.amqpcontrol import AmqpControlHandler
+from yombo.lib.amqpyomb_handlers.amqpconfigs import AmqpConfigHandler
+from yombo.lib.amqpyomb_handlers.amqpsystem import AmqpSystemHandler
 
 logger = get_logger('library.amqpyombo')
 

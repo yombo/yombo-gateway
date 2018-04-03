@@ -36,7 +36,7 @@ from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import random_string, dict_has_key, bytes_to_unicode, is_true_false
 
-logger = get_logger('library.handler.amqpconfigs')
+logger = get_logger('library.amqpyomb_handlers.amqpconfigs')
 
 class AmqpConfigHandler(YomboLibrary):
     """
