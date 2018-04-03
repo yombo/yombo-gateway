@@ -1,15 +1,6 @@
 # This file was created by Yombo for use with Yombo Python Gateway automation
 # software.  Details can be found at https://yombo.net
 """
-
-.. note::
-
-  For developer documentation, see: `AMQP @ Module Development <https://yombo.net/docs/libraries/amqp>`_
-
-.. seealso::
-
-   The :doc:`mqtt library </lib/mqtt>` can connect to MQTT brokers, this a light weight message broker.
-
 All AMQP connetions are managed by this library. To create a new connection use the
 :py:meth:`self._AMQP.new() <AMQP.new>` function to create a new connection. This will return a
 :class:`AMQPClient` instance which allows for creating exchanges, queues, queue bindings,
@@ -18,6 +9,14 @@ and sending/receiving messages.
 To learn more about AMQP, see the `RabbitMQ Tutorials <https://www.rabbitmq.com/getstarted.html>`_.
 
 Yombo Gateway interacts with Yombo servers using AMQPYombo which depends on this library.
+
+.. note::
+
+  For developer documentation, see: `AMQP @ Module Development <https://yombo.net/docs/libraries/amqp>`_
+
+.. seealso::
+
+   The :doc:`mqtt library </lib/mqtt>` can connect to MQTT brokers, this a light weight message broker.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
 .. versionadded:: 0.12.0
