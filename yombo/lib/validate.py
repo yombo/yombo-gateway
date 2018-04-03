@@ -41,7 +41,7 @@ import voluptuous as vol
 from yombo.core.exceptions import Invalid
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
-from yombo.core.constants import \
+from yombo.constants import \
     TEMP_FAHRENHEIT, TEMP_CELSIUS, MISC_UNIT_SYSTEM_METRIC, MISC_UNIT_SYSTEM_IMPERIAL, WEEKDAYS
 
 logger = get_logger('library.validate')
@@ -287,6 +287,12 @@ class Validate(YomboLibrary):
         if isinstance(value, str):
             return [member.strip() for member in value.split(',')]
         return self.ensure_list(value)
+
+    def string(value: Any) -> str:
+        """Coerce value to string, except for None."""
+        if value is not None:
+            return str(value)
+        raise vol.Invalid('string value is None')
 
     def is_json(self, value):
         """
