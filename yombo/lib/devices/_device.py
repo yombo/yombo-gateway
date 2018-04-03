@@ -172,8 +172,9 @@ class Device(Base_Device):
         """
         Return the current mode of operation for the device.
         """
-        if 'mode' in self.status_history[0].machine_status:
-            return self.status_history[0].machine_status['mode']
+        machine_status_extra = self.machine_status_extra
+        if 'mode' in machine_status_extra.machine_status_extra:
+            return machine_status_extra.machine_status_extra['mode']
         return None
 
     @property
