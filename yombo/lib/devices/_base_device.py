@@ -119,6 +119,12 @@ class Base_Device(object):
         self.call_after_command = []
         self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
 
+        self.STATUS_EXTRA = {}
+        # self.STATUS_EXTRA = {
+        #     'mode': ['auto', 'on', 'off'],
+        #     'running': ['auto', 'on', 'off'],
+        # }
+
         self.device_id = device["id"]
         if test_device is None:
             self.test_device = False
@@ -976,7 +982,21 @@ class Base_Device(object):
         if isinstance(previous_extra, dict) is False:
             previous_extra = {}
 
+        # filter out previous invalid status extra values.
+        for extra_key in list(previous_extra.keys()):
+            if extra_key not in self.STATUS_EXTRA:
+                del previous_extra[extra_key]
+
         new_extra = kwargs.get('machine_status_extra', {})
+
+        # filter out new invalid status extra values.
+        for extra_key in list(new_extra.keys()):
+            if extra_key not in self.STATUS_EXTRA:
+                logger.warn(
+                    "In future version, the 'status_extra' key '%s' will be removed. Update device class"
+                    " 'self.STATUS_EXTRA' to include this attribute." % extra_key)
+                # del new_extra[extra_key]
+
         for key, value in new_extra.items():
             previous_extra[key] = value
 

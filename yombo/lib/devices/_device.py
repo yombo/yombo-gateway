@@ -49,12 +49,6 @@ class Device(Base_Device):
         self.PLATFORM = "device"
         self.SUB_PLATFORM = None
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
-
-        self.STATUS_EXTRA = {}
-        # self.STATUS_EXTRA = {
-        #     'mode': ['auto', 'on', 'off'],
-        #     'running': ['auto', 'on', 'off'],
-        # }
         super().__init__(*args, **kwargs)
 
     @property
