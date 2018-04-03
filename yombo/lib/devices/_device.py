@@ -24,6 +24,13 @@ from ._device_status import Device_Status
 from ._base_device import Base_Device
 logger = get_logger('library.devices.device')
 
+# Yombo Constants
+from yombo.constants.features import FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE, \
+    FEATURE_SEND_UPDATES, FEATURE_POWER_CONTROL
+from yombo.constants.commands import COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, COMMAND_OFF, COMMAND_CLOSE, \
+    COMMAND_HIGH, COMMAND_LOW
+
+
 class Device(Base_Device):
     """
     The parent to all child device types.
@@ -31,12 +38,12 @@ class Device(Base_Device):
     def __init__(self, *args, **kwargs):
         # Features this device can support
         self.FEATURES = {
-            'power_control': True,
-            'all_on': False,
-            'all_off': False,
-            'pingable': True,
-            'pollable': True,
-            'sends_updates': True
+            FEATURE_POWER_CONTROL: True,
+            FEATURE_ALL_ON: False,
+            FEATURE_ALL_OFF: False,
+            FEATURE_PINGABLE: True,
+            FEATURE_POLLABLE: True,
+            FEATURE_SEND_UPDATES: True
         }
 
         self.PLATFORM = "device"
@@ -386,10 +393,10 @@ class Device(Base_Device):
         return not self.is_on()
 
     def toggle(self):
-        return self.command('toggle')
+        return self.command(COMMAND_TOGGLE)
 
     def turn_on(self, **kwargs):
-        for item in ('on', 'open'):
+        for item in (COMMAND_ON, COMMAND_OPEN):
             try:
                 command = self.in_available_commands(item)
                 return self.command(command, **kwargs)
@@ -398,7 +405,7 @@ class Device(Base_Device):
         raise YomboWarning("Unable to turn on device. Device doesn't have any of these commands: on, open")
 
     def turn_off(self, cmd, **kwargs):
-        for item in ('off', 'close'):
+        for item in (COMMAND_OFF, COMMAND_CLOSE):
             try:
                 command = self.in_available_commands(item)
                 return self.command(command, **kwargs)
@@ -410,18 +417,19 @@ class Device(Base_Device):
         """
         Attempt to find a command based on the status of a device.
         :param machine_status:
+        :param machine_status_extra:
         :return:
         """
         # print("attempting to get command_from_status - device: %s - %s" % (machine_status, machine_status_extra))
         if machine_status == int(1):
-            for item in ('on', 'open', 'high'):
+            for item in (COMMAND_ON, COMMAND_OPEN, COMMAND_HIGH):
                 try:
                     command = self.in_available_commands(item)
                     return command
                 except Exception:
                     pass
         elif machine_status == int(0):
-            for item in ('off', 'close', 'low'):
+            for item in (COMMAND_OFF, COMMAND_CLOSE, COMMAND_LOW):
                 try:
                     command = self.in_available_commands(item)
                     return command

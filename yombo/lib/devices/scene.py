@@ -1,6 +1,5 @@
 from yombo.lib.devices._device import Device
-from yombo.core.exceptions import YomboWarning
-import yombo.utils.color as color_util
+from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
 
 
 class Scene(Device):
@@ -15,7 +14,7 @@ class Scene(Device):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.PLATFORM = "scene"
-        self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+        self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             'all_on': False,
             'all_off': False,
@@ -32,7 +31,7 @@ class Scene(Device):
         return
 
     def turn_on(self, **kwargs):
-        return self.command('on', **kwargs)
+        return self.command(COMMAND_ON, **kwargs)
 
     def turn_off(self, **kwargs):
-        return self.command('off', **kwargs)
+        return self.command(COMMAND_OFF, **kwargs)

@@ -1,3 +1,7 @@
+from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
+    FEATURE_POLLABLE)
+from yombo.constants.commands import COMMAND_HIGH, COMMAND_LOW
+
 from yombo.lib.devices._device import Device
 
 
@@ -10,11 +14,11 @@ class Sensor(Device):
         self.PLATFORM = "sensor"
         self.TOGGLE_COMMANDS = []  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
-            'all_on': False,
-            'all_off': False,
-            'pingable': False,
-            'pollable': True,
-            'number_of_steps': 2,
+            FEATURE_ALL_ON: False,
+            FEATURE_ALL_OFF: False,
+            FEATURE_PINGABLE: False,
+            FEATURE_POLLABLE: True,
+            FEATURE_NUMBER_OF_STEPS: 2,
         })
 
     def can_toggle(self):
@@ -27,13 +31,14 @@ class Sensor(Device):
         """
         Attempt to find a command based on the status of a device.
         :param machine_status:
+        :param machine_status_extra:
         :return:
         """
         # print("attempting to get command_from_status - Sensor: %s - %s" % (machine_status, machine_status_extra))
         if machine_status == int(1):
-            return self._Parent._Commands['high']
+            return self._Parent._Commands[COMMAND_HIGH]
         elif machine_status == int(0):
-            return self._Parent._Commands['low']
+            return self._Parent._Commands[COMMAND_LOW]
         return None
 
 class Digital_Sensor(Sensor):
@@ -86,4 +91,3 @@ class Window(Sensor):
     def _init_(self):
         super()._init_()
         self.PLATFORM = "window"
-

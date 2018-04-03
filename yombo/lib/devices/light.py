@@ -1,6 +1,6 @@
 from yombo.constants.devicetypes.light import *
-from yombo.constants.features import FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,\
-    FEATURE_RGB_COLOR, FEATURE_TRSANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS
+from yombo.constants.features import (FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,
+    FEATURE_RGB_COLOR, FEATURE_TRANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS)
 from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS
 from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
 from yombo.constants.inputs import INPUT_BRIGHTNESS
@@ -30,7 +30,7 @@ class Light(Device):
             FEATURE_TRSANSITION: False,
             FEATURE_NUMBER_OF_STEPS: 255
         })
-        self.STATUS_EXTRA['brightness'] = True
+        self.STATUS_EXTRA[STATUS_EXTRA_BRIGHTNESS] = True
 
     @property
     def brightness(self):
@@ -40,7 +40,7 @@ class Light(Device):
         """
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
-            if 'brightness' in machine_status_extra:
+            if STATUS_EXTRA_BRIGHTNESS in machine_status_extra:
                 return translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
                                            0, self.FEATURES[FEATURE_BRIGHTNESS],
                                            0, 100)
@@ -209,6 +209,6 @@ class Color_Light(Light):
         self.FEATURES[FEATURE_EFFECT] = False
         self.FEATURES[FEATURE_RGB_COLOR] = True
         self.FEATURES[FEATURE_XY_COLOR] = False
-        self.FEATURES[FEATURE_TRSANSITION] = False
+        self.FEATURES[FEATURE_TRANSITION] = False
         self.FEATURES[FEATURE_WHITE_VALUE] = False
         self.FEATURES[FEATURE_NUMBER_OF_STEPS] = 255
