@@ -1179,13 +1179,11 @@ class Modules(YomboLibrary):
             'msg': "Module added.",
             'module_id': data['module_id']
         }
-        a_module = self.get(data['module_id'])
         reactor.callLater(.0001,
                           global_invoke_all,
                           '_module_added_',
                           called_by=self,
                           module_id=data['module_id'],
-                          module=a_module,
                           )
         if 'module_label' in data:
             label = data['module_label']
