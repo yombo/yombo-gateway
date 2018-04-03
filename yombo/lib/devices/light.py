@@ -27,7 +27,7 @@ class Light(Device):
             FEATURE_RGB_COLOR: False,
             FEATURE_XY_COLOR: False,
             FEATURE_WHITE_VALUE: False,
-            FEATURE_TRSANSITION: False,
+            FEATURE_TRANSITION: False,
             FEATURE_NUMBER_OF_STEPS: 255
         })
         self.STATUS_EXTRA[STATUS_EXTRA_BRIGHTNESS] = True
