@@ -7,6 +7,9 @@ handler.
 
 This library utilizes the amqp library to handle the low level handling.
 
+This connection should be maintained 100% of the time. This allows control messages to be received by your devices
+or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
+
 .. warning::
 
    This library is not intended to be accessed by developers or users. These functions, variables,
@@ -15,9 +18,6 @@ This library utilizes the amqp library to handle the low level handling.
 .. note::
 
   For developer documentation, see: `AMQPYombo @ Module Development <https://yombo.net/docs/libraries/amqpyombo>`_
-
-This connection should be maintained 100% of the time. This allows control messages to be received by your devices
-or 3rd party sources such as Amazon Alexa, Google Home, etc etc.
 
 .. todo:: The gateway needs to check for a non-responsive server or if it doesn't get a response in a timely manor.
    Perhaps disconnect and reconnect to another server? -Mitch
@@ -98,7 +98,7 @@ class AMQPYombo(YomboLibrary):
 
         self.amqpyombo_options = {   # Stores data from sub-modules
             'connected': [],
-            'disconnected': [],
+            'disconnected': [self.configHandler.disconnected, ],
             'routing': {
                 'config': [self.configHandler.amqp_incoming, ],
                 'control': [self.controlHandler.amqp_incoming, ],
@@ -195,6 +195,7 @@ class AMQPYombo(YomboLibrary):
             self.amqp.subscribe("ygw.q." + self.user_id, incoming_callback=self.amqp_incoming, queue_no_ack=False,
                                 persistent=True)
 
+        # print("in amqp:connect - setting init_deffered")
         self.configHandler.connect_setup(self.init_deferred)
 
     def disconnect(self):
