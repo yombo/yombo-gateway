@@ -4,6 +4,19 @@
 
 .. currentmodule:: yombo.lib.amqp
 
+.. meta::
+   :description: Connect to AMQP servers using the AMQP Yombo library.
+   :keywords: amqp, queue, yombo
+
+.. raw:: html
+   :file: _header_start.html
+
+.. include:: _header_middle.html
+
+.. raw:: html
+
+   </div>
+
 .. rubric:: Classes in this module
 
 .. autosummary::

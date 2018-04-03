@@ -4,6 +4,13 @@
 
 .. currentmodule:: yombo.lib.crontab
 
+.. meta::
+   :description: Schedule various actions to happen based on time of day. Works much like a Linux cron tab.
+   :keywords: crontab, schedule
+
+.. raw:: html
+   :file: _header_start.html
+
 .. rubric:: Classes in this module
 
 .. autosummary::

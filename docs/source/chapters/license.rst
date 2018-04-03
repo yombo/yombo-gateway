@@ -6,7 +6,7 @@ Policies
 ######################
 
 * `Privacy Policy <https://yombo.net/policies/privacy_policy>`_
-* `Terms Of Use <https://yombo.net/policies/terms-of-use>`_
+* `Terms Of Use <https://yombo.net/policies/terms_of_use>`_
 
 License
 #########

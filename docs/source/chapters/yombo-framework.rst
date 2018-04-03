@@ -60,13 +60,16 @@ IoT devices, etc.
    ../lib/devices/devices.rst
    ../lib/devicetypes.rst
    ../lib/downloadmodules.rst
+   ../lib/discovery.rst
    ../lib/gateways.rst
    ../lib/gpg.rst
    ../lib/inputtypes/inputtypes.rst
    ../lib/hash.rst
+   ../lib/hashids.rst
    ../lib/loader.rst
    ../lib/localdb.rst
    ../lib/localize.rst
+   ../lib/locations.rst
    ../lib/modules.rst
    ../lib/mqtt.rst
    ../lib/nodes.rst

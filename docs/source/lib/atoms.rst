@@ -4,6 +4,13 @@
 
 .. currentmodule:: yombo.lib.atoms
 
+.. meta::
+   :description: Atoms provide non-changing information about the environment the gateway is running in as well as about the Yombo Gateway software.
+   :keywords: atoms, static
+
+.. raw:: html
+   :file: _header_start.html
+
 ===========================
 Atoms (yombo.lib.atoms)
 ===========================

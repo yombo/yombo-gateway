@@ -2,6 +2,13 @@
 
 .. _configuration:
 
+.. meta::
+   :description: Manage various configuration settings for core the core of the Yombo Gateway automation software.
+   :keywords: configuration, yombo
+
+.. raw:: html
+   :file: _header_start.html
+
 .. currentmodule:: yombo.lib.configuration
 
 ========================================

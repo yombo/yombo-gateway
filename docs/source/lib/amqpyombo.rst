@@ -4,6 +4,20 @@
 
 .. currentmodule:: yombo.lib.amqpyombo
 
+.. meta::
+   :description: Responsible for handling configuration and control messages with the Yombo servers.
+     It requests configurations and directs them to the configuration handler.
+   :keywords: yombo amqp
+
+.. raw:: html
+   :file: _header_start.html
+
+.. include:: _header_middle.html
+
+.. raw:: html
+
+   </div>
+
 ===========================================
 AMQPYombo (yombo.lib.amqpyombo)
 ===========================================

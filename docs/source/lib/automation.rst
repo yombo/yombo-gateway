@@ -4,6 +4,13 @@
 
 .. currentmodule:: yombo.lib.automation
 
+.. meta::
+   :description: The automation library provides users an easy method to setup simple automation rules and tasks without the need to write a single line of code.
+   :keywords: automation, rules
+
+.. raw:: html
+   :file: _header_start.html
+
 ===========================================
 Automation (yombo.lib.automation)
 ===========================================
