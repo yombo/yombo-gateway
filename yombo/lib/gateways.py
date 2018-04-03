@@ -36,7 +36,7 @@ from yombo.core.exceptions import YomboWarning
 from yombo.core.library import YomboLibrary
 from yombo.core.log import get_logger
 from yombo.utils import do_search_instance, global_invoke_all, bytes_to_unicode, random_int, sleep
-from yombo.core.constants import VERSION
+from yombo.constants import VERSION
 
 logger = get_logger('library.gateways')
 
