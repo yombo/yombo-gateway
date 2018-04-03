@@ -33,6 +33,7 @@ from twisted.web.client import Agent
 from twisted.internet import reactor
 
 # Import Yombo libraries
+from yombo.constants import VERSION
 from yombo.ext.expiringdict import ExpiringDict
 from yombo.core.exceptions import YomboWarning, YomboWarningCredentails
 from yombo.core.library import YomboLibrary
@@ -82,9 +83,8 @@ class YomboAPI(YomboLibrary):
         self.gateway_id = self._Configs.get2('core', 'gwid', 'local', False)
         self.gateway_hash = self._Configs.get2('core', 'gwhash', None, False)
 
-        self.api_key = self._Configs.get('yomboapi', 'api_key', 'aBMKp5QcQoW43ipauw88R0PT2AohcE', False)
+        self.api_key = self._Configs.get('yomboapi', 'api_key', 'gd9mDxJlLdEwhKwxwyPfFksTEnRE5k', False)
         self._api_auth = self._Configs.get('core', 'api_auth', None, False)  # to be encrypted with gpg later
-        # self._api_auth = self._Configs.get('core', 'api_auth')  # to be encrypted with gpg later
         self.valid_api_auth = False
 
         if self._Loader.operating_mode == 'run':
@@ -149,7 +149,7 @@ class YomboAPI(YomboLibrary):
                                          {'gw_hash': gateway_hash,
                                           'api_auth': self.api_auth})
         except Exception as e:
-            logger.debug("do_validate_api_auth API Errror: {error}", error=e)
+            logger.debug("do_validate_api_auth API Error: {error}", error=e)
             return False
 
         if (results['content']['code'] != 200):
@@ -259,9 +259,9 @@ class YomboAPI(YomboLibrary):
     def make_headers(self, session, session_type):
         headers = {
             'Content-Type': self.contentType,
-            'Authorization': 'Yombo-Gateway-v0.17',
+            'Authorization': "Yombo-Gateway-%s" % VERSION,
             'x-api-key': self.api_key,
-            'User-Agent': 'yombo-gateway-v0_17_0',
+            'User-Agent': "yombo-gateway-%s" % VERSION,
         }
         if session is not None:
             headers['Authorization'] = '%s %s' % (session_type, session)
@@ -276,8 +276,6 @@ class YomboAPI(YomboLibrary):
         path = self.base_url + path
 
         logger.debug("{method}: {path}: {data}", method=method, path=path, data=data)
-        # if session is False:
-        #     session = None
         session_type = None
         if session is None:
             if self.api_auth is None:
@@ -290,7 +288,10 @@ class YomboAPI(YomboLibrary):
         else:
             session_type = 'Bearer'
 
+
+        logger.debug("session: {session_type} - {session}", session_type=session_type, session=session)
         headers = self.make_headers(session, session_type)
+        logger.debug("headers: {headers}", headers=headers)
         if data is not None:
             data = json.dumps(data).encode()
         logger.debug("yombo api request headers: {headers}", headers=headers)
