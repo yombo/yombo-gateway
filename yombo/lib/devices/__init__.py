@@ -21,7 +21,7 @@ saved to the local database.
 
 To send a command to a device is simple.
 
-*Usage**:
+**Usage**:
 
 .. code-block:: python
 

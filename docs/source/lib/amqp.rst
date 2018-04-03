@@ -6,7 +6,7 @@
 
 .. meta::
    :description: Connect to AMQP servers using the AMQP Yombo library.
-   :keywords: amqp, queue, yombo
+   :keywords: amqp, queue, yombo, python api
 
 .. raw:: html
    :file: _header_start.html

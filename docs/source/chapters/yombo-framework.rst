@@ -31,7 +31,6 @@ features to be used by libraries and modules.
 .. toctree::
    :maxdepth: 1
 
-   ../core/constants.rst
    ../core/exceptions.rst
    ../core/gwservice.rst
    ../core/library.rst
@@ -52,6 +51,7 @@ IoT devices, etc.
 
    ../lib/amqp.rst
    ../lib/amqpyombo.rst
+   ../lib/amqpyombo_handlers/amqpyombo_handlers.rst
    ../lib/apiauth.rst
    ../lib/atoms.rst
    ../lib/automation.rst

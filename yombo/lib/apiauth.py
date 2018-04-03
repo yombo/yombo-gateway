@@ -2,6 +2,7 @@
 Handles api auth headers for the webinterface.
 
 .. moduleauthor:: Mitch Schwenk <mitch-gw@yombo.net>
+
 :copyright: Copyright 2017 by Yombo.
 :license: LICENSE for details.
 """
@@ -14,15 +15,12 @@ from twisted.internet import reactor
 from twisted.internet.task import LoopingCall
 from twisted.internet.defer import inlineCallbacks
 
-# from yombo.ext.expiringdict import ExpiringDict
-
 # Import Yombo libraries
 from yombo.core.library import YomboLibrary
 from yombo.core.exceptions import YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, random_int, sleep, bytes_to_unicode
 from yombo.utils.datatypes import coerce_value
-# from yombo.utils.decorators import memoize_ttl
 
 logger = get_logger("library.apiauth")
 

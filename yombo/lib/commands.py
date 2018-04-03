@@ -38,7 +38,9 @@ class Commands(YomboLibrary):
     """
     def __contains__(self, command_requested):
         """
-        .. note:: The command must be enabled to be found using this method.
+        .. note::
+
+           The command must be enabled to be found using this method.
 
         Checks to if a provided command id, label, or machine_label exists.
 
@@ -62,8 +64,10 @@ class Commands(YomboLibrary):
 
     def __getitem__(self, command_requested):
         """
-        .. note:: The command must be enabled to be found using this method. An alternative,
-        but equal function is: :py:meth:`get() <Commands.get>`
+        .. note::
+
+           The command must be enabled to be found using this method. An alternative,
+           but equal function is: :py:meth:`get() <Commands.get>`
 
         Attempts to find the device requested using a couple of methods.
 

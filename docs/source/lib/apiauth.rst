@@ -6,10 +6,16 @@
 
 .. meta::
    :description: Handles api auth headers for the webinterface for thwe Yombo Gateway software.
-   :keywords: web interface, api auth, sessions
+   :keywords: web interface, api auth, sessions, python api
 
 .. raw:: html
    :file: _header_start.html
+
+.. include:: _header_middle.html
+
+.. raw:: html
+
+   </div>
 
 ===========================
 APIAuth (yombo.lib.apiauth)

@@ -99,7 +99,9 @@ class CronTab(YomboLibrary):
     """
     def __contains__(self, cron_task_requested):
         """
-        .. note:: The cron task must be enabled to be found using this method.
+        .. note::
+
+           The cron task must be enabled to be found using this method.
 
         Checks to if a provided cron task id, label, or machine_label exists.
 
@@ -123,8 +125,10 @@ class CronTab(YomboLibrary):
 
     def __getitem__(self, cron_task_requested):
         """
-        .. note:: The cron task must be enabled to be found using this method. An alternative,
-        but equal function is: :py:meth:`get() <CronTab.get>`
+        .. note::
+
+           The cron task must be enabled to be found using this method. An alternative,
+           but equal function is: :py:meth:`get() <CronTab.get>`
 
         Attempts to find the device requested using a couple of methods.
 

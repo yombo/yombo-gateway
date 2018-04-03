@@ -499,7 +499,7 @@ class Base_Device(object):
         Tells the device to a command. This in turn calls the hook _device_command_ so modules can process the command
         if they are supposed to.
 
-        If a pin is required, "pin" must be included as one of the arguments. All **kwargs are sent with the
+        If a pin is required, "pin" must be included as one of the arguments. All \\*\\*kwargs are sent with the
         hook call.
 
         :raises YomboWarning: Raised when:
@@ -517,15 +517,21 @@ class Base_Device(object):
         :type pin: str
         :param request_id: Request ID for tracking. If none given, one will be created_at.
         :type request_id: str
-        :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
-        :type delay: int or float
         :param not_before: An epoch time when the command should be sent. Not to be combined with 'delay'.
         :type not_before: int or float
+        :param delay: How many seconds to delay sending the command. Not to be combined with 'not_before'
+        :type delay: int or float
         :param max_delay: How many second after the 'delay' or 'not_before' can the command be send. This can occur
             if the system was stopped when the command was supposed to be send.
         :type max_delay: int or float
+        :param requested_by: A dictionary containing information about the request. Contains: user_id and component
+        :type requested_by: dict
         :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
-        :type input: list of dictionaries
+        :type inputs: list of dictionaries
+        :param not_after: An epoch time when the command should be discarded.
+        :type not_after: int or float
+        :param callbacks: A dictionary of callbacks
+        :type callbacks: dict
         :param kwargs: Any additional named arguments will be sent to the module for processing.
         :type kwargs: named arguments
         :return: The request id.
