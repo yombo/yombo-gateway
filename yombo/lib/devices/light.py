@@ -1,23 +1,13 @@
+from yombo.constants.devicetypes.light import *
+from yombo.constants.features import FEATURE_BRIGHTNESS, FEATURE_COLOR_TEMP, FEATURE_EFFECT, FEATURE_PERCENT,\
+    FEATURE_RGB_COLOR, FEATURE_TRSANSITION, FEATURE_WHITE_VALUE, FEATURE_XY_COLOR, FEATURE_NUMBER_OF_STEPS
+from yombo.constants.status_extra import STATUS_EXTRA_BRIGHTNESS
+from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
+from yombo.constants.inputs import INPUT_BRIGHTNESS
+
 from yombo.lib.devices._device import Device
 import yombo.utils.color as color_util
 from yombo.utils import translate_int_value
-
-# Brightness of the light, 0..255 or percentage
-ATR_BRIGHTNESS = "brightness"
-ATR_BRIGHTNESS_PCT = "brightness_pct"
-
-# Integer that represents transition time in seconds to make change.
-ATR_TRANSITION = "transition"
-
-# Lists holding color values
-ATR_RGB_COLOR = "rgb_color"
-ATR_XY_COLOR = "xy_color"
-ATR_COLOR_TEMP = "color_temp"
-ATR_KELVIN = "kelvin"
-ATR_MIN_MIREDS = "min_mireds"
-ATR_MAX_MIREDS = "max_mireds"
-ATR_COLOR_NAME = "color_name"
-ATR_WHITE_VALUE = "white_value"
 
 
 class Light(Device):
@@ -30,15 +20,15 @@ class Light(Device):
         self.PLATFORM = "light"
         self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
-            'brightness': True,
-            'percent': True,
-            'color_temp': False,
-            'effect': False,
-            'rgb_color': False,
-            'xy_color': False,
-            'white_value': False,
-            'transition': False,
-            'number_of_steps': 255
+            FEATURE_BRIGHTNESS: True,
+            FEATURE_PERCENT: True,
+            FEATURE_COLOR_TEMP: False,
+            FEATURE_EFFECT: False,
+            FEATURE_RGB_COLOR: False,
+            FEATURE_XY_COLOR: False,
+            FEATURE_WHITE_VALUE: False,
+            FEATURE_TRSANSITION: False,
+            FEATURE_NUMBER_OF_STEPS: 255
         })
         self.STATUS_EXTRA['brightness'] = True
 
@@ -51,8 +41,8 @@ class Light(Device):
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
             if 'brightness' in machine_status_extra:
-                return translate_int_value(machine_status_extra['brightness'],
-                                           0, self.FEATURES['number_of_steps'],
+                return translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+                                           0, self.FEATURES[FEATURE_BRIGHTNESS],
                                            0, 100)
             else:
                 return 0
@@ -68,6 +58,7 @@ class Light(Device):
         :param user_id:
         :param component:
         :param gateway_id:
+        :param callbacks:
         :return:
         """
         # print("setting brightness for %s to %s" % (self.full_label, val))
@@ -77,9 +68,9 @@ class Light(Device):
             component = "yombo.gateway.lib.devices.light"
 
         if brightness <= 0:
-            command = 'off'
+            command = COMMAND_OFF
         else:
-            command = 'on'
+            command = COMMAND_ON
 
         return self.command(
             cmd=command,
@@ -88,7 +79,7 @@ class Light(Device):
                 'component': component,
                 'gateway': gateway_id
             },
-            inputs={'brightness': brightness},
+            inputs={INPUT_BRIGHTNESS: brightness},
             callbacks=callbacks,
         )
 
@@ -105,7 +96,7 @@ class Light(Device):
         """
         brightness = translate_int_value(percent,
                                          0, 100,
-                                         0, self.FEATURES['number_of_steps'])
+                                         0, self.FEATURES[FEATURE_NUMBER_OF_STEPS])
         return self.set_brightness(brightness, user_id, component, gateway_id, callbacks)
 
     @property
@@ -174,8 +165,7 @@ class Light(Device):
                 if value is not None:
                     data[prop] = value
 
-            if ATR_RGB_COLOR not in data and ATR_XY_COLOR in data and \
-                            ATR_BRIGHTNESS in data:
+            if ATR_RGB_COLOR not in data and ATR_XY_COLOR in data and ATR_BRIGHTNESS in data:
                 data[ATR_RGB_COLOR] = color_util.color_xy_brightness_to_RGB(
                     data[ATR_XY_COLOR][0], data[ATR_XY_COLOR][1],
                     data[ATR_BRIGHTNESS])
@@ -183,23 +173,25 @@ class Light(Device):
 
     def toggle(self, **kwargs):
         if self.status_history[0].machine_status == 0:
-            return self.command('on', **kwargs)
+            return self.command(COMMAND_ON, **kwargs)
         else:
-            return self.command('off', **kwargs)
+            return self.command(COMMAND_OFF, **kwargs)
 
     def turn_on(self, **kwargs):
-        return self.command('on', **kwargs)
+        return self.command(COMMAND_ON, **kwargs)
 
     def turn_off(self, **kwargs):
-        return self.command('off', **kwargs)
+        return self.command(COMMAND_OFF, **kwargs)
 
     def generate_human_status(self, machine_status, machine_status_extra):
-        if 'brightness' not in machine_status_extra or machine_status_extra['brightness'] is None:
+        if 'brightness' not in machine_status_extra or machine_status_extra[STATUS_EXTRA_BRIGHTNESS] is None:
             return "Unknown"
-        return str(translate_int_value(machine_status_extra['brightness'], 0, self.FEATURES['number_of_steps'], 0, 100)) + '%'
+        return str(translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+                                       0, self.FEATURES[FEATURE_NUMBER_OF_STEPS], 0, 100)) + '%'
 
     def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = str(round(translate_int_value(machine_status, 0, self.FEATURES['number_of_steps'], 0, 100), 1))
+        human_status = str(translate_int_value(machine_status_extra[STATUS_EXTRA_BRIGHTNESS],
+                                               0, self.FEATURES[FEATURE_NUMBER_OF_STEPS], 0, 100))
         return "%s is now %s%%" % (self.area_label, human_status)
 
 class Color_Light(Light):
@@ -208,15 +200,15 @@ class Color_Light(Light):
     """
     PLATFORM = "light"
 
-    TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
+    TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
 
     def _start_(self, **kwargs):
         super()._start_()
-        self.FEATURES['brightness'] = True
-        self.FEATURES['color_temp'] = False
-        self.FEATURES['effect'] = False
-        self.FEATURES['rgb_color'] = True
-        self.FEATURES['xy_color'] = False
-        self.FEATURES['transition'] = False
-        self.FEATURES['white_value'] = False
-        self.FEATURES['number_of_steps'] = 255
+        self.FEATURES[FEATURE_BRIGHTNESS] = True
+        self.FEATURES[FEATURE_COLOR_TEMP] = False
+        self.FEATURES[FEATURE_EFFECT] = False
+        self.FEATURES[FEATURE_RGB_COLOR] = True
+        self.FEATURES[FEATURE_XY_COLOR] = False
+        self.FEATURES[FEATURE_TRSANSITION] = False
+        self.FEATURES[FEATURE_WHITE_VALUE] = False
+        self.FEATURES[FEATURE_NUMBER_OF_STEPS] = 255

@@ -1,0 +1,1 @@
+STATUS_EXTRA_BRIGHTNESS = 'brightness'

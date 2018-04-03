@@ -89,6 +89,17 @@ IoT devices, etc.
    ../lib/websessions.rst
    ../lib/yomboapi.rst
 
+.. _framework_constants:
+
+Constants
+=========
+
+Easily reference the same values across the Yombo Gateway framework.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../constants/constants.rst
 
 .. _framework_modules:
 
