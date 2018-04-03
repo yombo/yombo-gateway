@@ -7,6 +7,10 @@ and a place to put modules.  See online documentation for
 more details.
 https://yg2.in/dev
 
+constants
+---------
+Constants help maintain consistency across the Yombo Gateway framework.
+
 core
 ------
 Contains base functions and various Yombo Gateway APIs. Most libraries and
@@ -14,7 +18,8 @@ modules are built. `Core reference <https://yg2.in/dev_core>`_
 
 ext
 ---------
-External resources used by Yombo. See the COPYING file for more details.
+External resources used by Yombo. See the
+`COPYING <https://github.com/yombo/yombo-gateway/blob/master/COPYING>`_ file for more details.
 
 lib
 ----------
@@ -43,4 +48,4 @@ Where unit tests live.
 utils
 ----------
 Misc utility functions to help Yombo Gateway get things done. See:
-https://yg2.in/dev_util
+`Development utilities <https://yg2.in/dev_util>`_
