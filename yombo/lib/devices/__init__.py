@@ -1405,6 +1405,7 @@ class Devices(YomboLibrary):
         """
         return [
             { 'platform': 'devices',
+              'description': 'Allows devices to be controlled as an action.',
               'validate_action_callback': self.devices_validate_action_callback,  # function to call to validate an action is possible.
               'do_action_callback': self.devices_do_action_callback,  # function to be called to perform an action
               'get_available_items_callback': self.devices_get_available_devices_callback,  # get a value
@@ -1487,6 +1488,7 @@ class Devices(YomboLibrary):
                 device.command(cmd=action['command'],
                                requested_by=requested_by,
                                persistent_request_id=persistent_request_id,
+                               control_method='automation',
                                **kwargs)
             except YomboWarning as e:
                 logger.warn("Unable to process device automation rule: {e}", e=e)
