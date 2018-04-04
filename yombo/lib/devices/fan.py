@@ -159,6 +159,7 @@ class Fan(Device):
             raise YomboWarning("Fan direction is invalid.")
         return self.command(COMMAND_SET_DIRECTION, **kwargs)
 
+    @property
     def is_on(self):
         speed = self.speed
         if speed is None:
@@ -167,6 +168,7 @@ class Fan(Device):
             return True
         return False
 
+    @property
     def is_off(self):
         speed = self.speed
         if speed is None:

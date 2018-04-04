@@ -2,7 +2,8 @@
 Various sensors. A sensor is considered high if the machine status is 1, other low is 0.
 """
 from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
-                                      FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES)
+                                      FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_CONTROLLABLE,
+                                      FEATURE_ALLOW_DIRECT_CONTROL)
 from yombo.constants.commands import COMMAND_HIGH, COMMAND_LOW
 
 from yombo.lib.devices._device import Device
@@ -24,8 +25,11 @@ class Sensor(Device):
             FEATURE_POLLABLE: True,
             FEATURE_NUMBER_OF_STEPS: 2,
             FEATURE_ALLOW_IN_SCENES: False,
+            FEATURE_CONTROLLABLE: False,
+            FEATURE_ALLOW_DIRECT_CONTROL: False,
         })
 
+    @property
     def is_high(self):
         """
         If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
@@ -38,6 +42,7 @@ class Sensor(Device):
             return False
         return None
 
+    @property
     def is_low(self):
         """
         If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
@@ -73,6 +78,7 @@ class Digital_Sensor(Sensor):
         super()._init_()
         self.PLATFORM = "digital_sensor"
 
+    @property
     def is_high(self):
         """
         If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
@@ -85,6 +91,7 @@ class Digital_Sensor(Sensor):
             return False
         return None
 
+    @property
     def is_low(self):
         """
         If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.

@@ -36,6 +36,7 @@ class Cover(Device):
     def open(self, **kwargs):
         return self.command(COMMAND_CLOSE, **kwargs)
 
+    @property
     def is_closed(self):
         if self.machine_status == 1:
             return True
@@ -43,6 +44,7 @@ class Cover(Device):
             return False
         return None
 
+    @property
     def is_open(self):
         if self.machine_status == 1:
             return False

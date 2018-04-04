@@ -28,6 +28,7 @@ class Lock(Device):
     def unlock(self, **kwargs):
         return self.command(COMMAND_UNLOCK, **kwargs)
 
+    @property
     def is_locked(self):
         if self.status_history[0].machine_status == 1:
             return True
@@ -35,6 +36,7 @@ class Lock(Device):
             return False
         return None
 
+    @property
     def is_unlocked(self):
         if self.status_history[0].machine_status == 0:
             return True

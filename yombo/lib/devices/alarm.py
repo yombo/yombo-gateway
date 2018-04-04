@@ -52,6 +52,7 @@ class Alarm(Device):
         kwargs['inputs'][INPUT_BYPASS] = zones
         return self.command(COMMAND_ARM_CUSTOM_BYPASS, **kwargs)
 
+    @property
     def is_armed(self):
         if self.status_history[0].machine_status == 1:
             return True
@@ -59,6 +60,7 @@ class Alarm(Device):
             return False
         return None
 
+    @property
     def is_unarmed(self):
         if self.status_history[0].machine_status == 0:
             return True
