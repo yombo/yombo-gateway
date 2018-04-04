@@ -31,6 +31,17 @@ NAV_SIDE_MENU = [
     },
 
     {
+        'label1': 'Scenes',
+        'label2': 'Scenes',
+        'priority1': 700,
+        'priority2': 700,
+        'icon': 'fa fa-tree fa-fw',
+        'url': '/scenes/index',
+        'tooltip': 'Control multiple items within a single scene.',
+        'opmode': 'run',
+    },
+
+    {
         'label1': 'Modules',
         'label2': 'Modules',
         'priority1': 800,

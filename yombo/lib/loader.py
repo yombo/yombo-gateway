@@ -101,10 +101,12 @@ HARD_LOAD["APIAuth"] = {'operating_mode': 'all'}
 HARD_LOAD["WebSessions"] = {'operating_mode': 'all'}
 HARD_LOAD["WebInterface"] = {'operating_mode': 'all'}
 HARD_LOAD["Tasks"] = {'operating_mode': 'all'}
+HARD_LOAD["Scenes"] = {'operating_mode': 'all'}
 
 HARD_UNLOAD = OrderedDict()
 HARD_UNLOAD["Gateways"] = {'operating_mode': 'all'}
 HARD_UNLOAD["SSLCerts"] = {'operating_mode': 'all'}
+HARD_UNLOAD["Scenes"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Tasks"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Localize"] = {'operating_mode': 'all'}
 HARD_UNLOAD["Startup"] = {'operating_mode': 'all'}
@@ -453,6 +455,7 @@ class Loader(YomboLibrary, object):
             library._Nodes = self.loadedLibraries['nodes']
             library._Notifications = self.loadedLibraries['notifications']
             library._Queue = self.loadedLibraries['queue']
+            library._Scenes = self.loadedLibraries['scenes']
             library._SQLDict = self.loadedLibraries['sqldict']
             library._SSLCerts = self.loadedLibraries['sslcerts']
             library._States = self.loadedLibraries['states']

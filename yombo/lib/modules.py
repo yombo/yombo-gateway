@@ -696,6 +696,7 @@ class Modules(YomboLibrary):
             module._Nodes = self._Loader.loadedLibraries['nodes']
             module._Notifications = self._Loader.loadedLibraries['notifications']
             module._Queue = self._Loader.loadedLibraries['queue']
+            module._Scenes = self._Loader.loadedLibraries['scenes']
             module._SQLDict = self._Loader.loadedLibraries['sqldict']
             module._SSLCerts = self._Loader.loadedLibraries['sslcerts']
             module._States = self._Loader.loadedLibraries['states']

@@ -29,7 +29,7 @@ for local data.
 from time import time
 
 # Import twisted libraries
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import inlineCallbacks
 from twisted.internet import reactor
 
 # Import Yombo libraries
@@ -153,28 +153,23 @@ class Nodes(YomboLibrary):
     def values(self):
         return list(self.nodes.values())
 
+    @inlineCallbacks
     def _init_(self, **kwargs):
         """
         Setups up the basic framework. Nothing is loaded in here until the
         Load() stage.
         """
-        self.load_deferred = None  # Prevents loader from moving on past _load_ until we are done.
         self.gateway_id = self._Configs.get2("core", "gwid", "local", False)
         self.node_search_attributes = ['node_id', 'gateway_id', 'node_type', 'machine_label', 'destination',
                                        'data_type', 'status',
                                       ]
-        self.load_deferred = Deferred()
-        self._load_nodes_from_database()
-        return self.load_deferred
+        yield self._load_nodes_from_database()
 
     @inlineCallbacks
     def _stop_(self, **kwargs):
         """
         Cleans up any pending deferreds.
         """
-        if hasattr(self, 'load_deferred'):
-            if self.load_deferred is not None and self.load_deferred.called is False:
-                self.load_deferred.callback(1)  # if we don't check for this, we can't stop!
         for node_id, node in self.nodes.items():
             yield node._stop_()
 
@@ -190,7 +185,6 @@ class Nodes(YomboLibrary):
         nodes = yield self._LocalDB.get_nodes()
         for node in nodes:
             self.import_node(node, source='database')
-        self.load_deferred.callback(10)
 
     def import_node(self, node, source=None, test_node=False):
         """
@@ -475,8 +469,10 @@ class Nodes(YomboLibrary):
         :param status:
         :return:
         """
+        print("nodes:: create 1")
+
         if data is None:
-            data = []
+            data = {}
 
         if data_content_type is None:
             if isinstance(data, dict) or isinstance(data, list):
@@ -515,7 +511,8 @@ class Nodes(YomboLibrary):
             'status': status,
         }
 
-        # This fancy inline just removed None and '' values.
+        print("nodes:: create 10")
+        # This fancy inline just removes None and '' values.
         results = yield self.add_node({k: v for k, v in api_data.items() if v}, session=session)
         # print("create results: %s" % results)
         if results['status'] != 'success':
@@ -531,6 +528,7 @@ class Nodes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        print("nodes:: new_new 1")
         results = None
         new_node = None
         if 'gateway_id' not in api_data:
@@ -555,6 +553,7 @@ class Nodes(YomboLibrary):
                         'apimsghtml': "Couldn't add node: User session missing.",
                     }
 
+                print("nodes:: new_new 10")
                 node_results = yield self._YomboAPI.request('POST', '/v1/node',
                                                             api_to_send,
                                                             session=session)
@@ -773,7 +772,7 @@ class Nodes(YomboLibrary):
             'status': 'success',
             'msg': "Node enabled.",
             'node_id': node_id,
-            'data': node.dump(),
+            'data': node.asdict(),
             'apimsg': "Node enabled.",
             'apimsghtml': "Node enabled.",
             }
@@ -787,12 +786,15 @@ class Nodes(YomboLibrary):
         :param kwargs:
         :return:
         """
+        print("nodes::disable_node 1")
         results = None
         api_data = {
             'status': 0,
         }
+        print("nodes::disable_node 2")
 
         if source != 'amqp':
+            print("nodes::disable_node 3")
             try:
                 if 'session' in kwargs:
                     session = kwargs['session']
@@ -833,7 +835,7 @@ class Nodes(YomboLibrary):
             'status': 'success',
             'msg': "Node disabled.",
             'node_id': node_id,
-            'data': node.dump(),
+            'data': node.asdict(),
             'apimsg': "Node disabled.",
             'apimsghtml': "Node disabled.",
         }
@@ -853,6 +855,120 @@ class Node(object):
     :ivar created_at: (int) EPOCH time when created
     :ivar updated_at: (int) EPOCH time when last updated
     """
+    @property
+    def parent_id(self):
+        return self._parent_id
+
+    @parent_id.setter
+    def parent_id(self, val):
+        self._parent_id = val
+        self.on_change()
+        return
+
+    @property
+    def gateway_id(self):
+        return self._gateway_id
+
+    @gateway_id.setter
+    def gateway_id(self, val):
+        self._gateway_id = val
+        self.on_change()
+        return
+
+    @property
+    def node_type(self):
+        return self._node_type
+
+    @node_type.setter
+    def node_type(self, val):
+        self._node_type = val
+        self.on_change()
+        return
+
+    @property
+    def weight(self):
+        return self._weight
+
+    @weight.setter
+    def weight(self, val):
+        self._weight = val
+        self.on_change()
+        return
+
+    @property
+    def gw_always_load(self):
+        return self._gw_always_load
+
+    @gw_always_load.setter
+    def gw_always_load(self, val):
+        self._gw_always_load = val
+        self.on_change()
+        return
+
+    @property
+    def destination(self):
+        return self._destination
+
+    @destination.setter
+    def destination(self, val):
+        self._destination = val
+        self.on_change()
+        return
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, val):
+        self._data = val
+        self.on_change()
+        return
+
+    @property
+    def data_content_type(self):
+        return self._data_content_type
+
+    @data_content_type.setter
+    def data_content_type(self, val):
+        self._data_content_type = val
+        self.on_change()
+        return
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, val):
+        self._status = val
+        self.on_change()
+        return
+
+    @property
+    def updated_at(self):
+        return self._updated_at
+
+    @updated_at.setter
+    def updated_at(self, val):
+        return
+
+    @property
+    def created_at(self):
+        return self._created_at
+
+    @created_at.setter
+    def created_at(self, val):
+        return
+
+    @property
+    def node_id(self):
+        return self._node_id
+
+    @node_id.setter
+    def node_id(self, val):
+        return
+
 
     def __init__(self, parent, node):
         """
@@ -867,29 +983,22 @@ class Node(object):
         self._update_calllater_time = None
         self._update_calllater = None
         self._Parent = parent
-        self.node_id = node['id']
+        self._node_id = node['id']
         self.machine_label = node.get('machine_label', None)
 
         # below are configure in update_attributes()
-        self.parent_id = None
-        self.gateway_id = None
-        self.node_type = None
-        self.weight = 0
-        self.gw_always_load = 1
-        self.destination = None
-        self.data = TriggerDict(callback=self._on_change)
-        self.data_content_type = None
-        self.status = None
-        self.updated_at = None
-        self.created_at = None
+        self._parent_id = None
+        self._gateway_id = None
+        self._node_type = None
+        self._weight = 0
+        self._gw_always_load = 1
+        self._destination = None
+        self._data = TriggerDict(callback=self.on_change)
+        self._data_content_type = None
+        self._status = 1
+        self._updated_at = time()
+        self._created_at = time()
         self.update_attributes(node, source='parent')
-        self._startup = True
-
-    # def __setattr__(self, key, value):
-    #     # print("node settr called: %s = %s" % (key, value))
-    #     self.data[key] = value
-    #     if self._startup is not True:
-    #         self._on_change()
 
     @inlineCallbacks
     def _stop_(self):
@@ -904,7 +1013,7 @@ class Node(object):
             yield self.save()
             object.__setattr__(self, '_update_calllater', None)
 
-    def _on_change(self, *args, **kwargs):
+    def on_change(self, *args, **kwargs):
         """
         This function is called whenever something changes. We 10 seconds of no updates, or 120 seconds with
         continuous updates, we will update the Yombo API as well as save to disk.
@@ -915,9 +1024,9 @@ class Node(object):
         :param kwargs:
         :return:
         """
-        # print("Node oncahnge: %s: _on_change called: %s" % (self.node_id, self._update_calllater))
+        # print("Node oncahnge: %s: on_change called: %s" % (self.node_id, self._update_calllater))
         if self._update_calllater is not None and self._update_calllater.active():
-            # print("%s: _on_change called.. still active.")
+            # print("%s: on_change called.. still active.")
             self._update_calllater.cancel()
             object.__setattr__(self, '_update_calllater', None)
             if self._update_calllater_time is not None and self._update_calllater_time < time() - 120:
@@ -970,7 +1079,7 @@ class Node(object):
             self.destination = new_data['destination']
         if 'data' in new_data:
             if isinstance(new_data['data'], dict):
-                self.data = TriggerDict(new_data['data'], callback=self._on_change)
+                self.data = TriggerDict(new_data['data'], callback=self.on_change)
             else:
                 self.data = new_data['data']
         if 'data_content_type' in new_data:

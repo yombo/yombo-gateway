@@ -87,6 +87,7 @@ from yombo.lib.webinterface.routes.misc import route_misc
 from yombo.lib.webinterface.routes.modules import route_modules
 from yombo.lib.webinterface.routes.notices import route_notices
 from yombo.lib.webinterface.routes.panel import route_panel
+from yombo.lib.webinterface.routes.scenes import route_scenes
 from yombo.lib.webinterface.routes.statistics import route_statistics
 from yombo.lib.webinterface.routes.states import route_states
 from yombo.lib.webinterface.routes.system import route_system
@@ -249,6 +250,7 @@ class WebInterface(YomboLibrary):
         route_modules(self.webapp)
         route_notices(self.webapp)
         route_panel(self.webapp)
+        route_scenes(self.webapp)
         route_setup_wizard(self.webapp)
         route_statistics(self.webapp)
         route_states(self.webapp)
@@ -320,6 +322,7 @@ class WebInterface(YomboLibrary):
         self.webapp.templates.globals['_nodes'] = self._Nodes
         self.webapp.templates.globals['_notifiticaions'] = self._Notifications
         self.webapp.templates.globals['_queue'] = self._Queue
+        self.webapp.templates.globals['_scenes'] = self._Scenes
         self.webapp.templates.globals['_sqldict'] = self._SQLDict
         self.webapp.templates.globals['_sslcerts'] = self._SSLCerts
         self.webapp.templates.globals['_states'] = self._States

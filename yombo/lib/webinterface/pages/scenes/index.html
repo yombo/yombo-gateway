@@ -1,0 +1,151 @@
+{% extends "lib/webinterface/fragments/layout.tpl" %}
+{% import "lib/webinterface/fragments/macros.tpl" as macros%}
+{% block head_css %}
+{% include 'lib/webinterface/fragments/select_css.tpl' %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+                    <h1 class="page-header">{{ _('webinterface_label', 'Scenes') }}
+                    <a href="#" data-toggle=modal data-target=#scenesinfo><i class="fa fa-question pull-right"></i></a></h1>
+    </div>
+    <!-- /.col-lg-12 -->
+</div>
+<!-- /.row -->
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>
+                    Defined scenes
+                     <a href="/scenes/add" class="btn btn-md btn-primary">Add New Scene</a>
+                </h4>
+            </div>
+            <div class="panel-body">
+                {{ macros.modal("scenesinfo", 'Scenes', "
+                <p>
+                    Scenes allow you to control multiple items quickly with one command or request.
+                </p>
+                ") }}
+                {% if _scenes|length > 0 or _scenes|length > 0 %}
+                    <div class="devices devices-tabs" role="tabpanel" data-example-id="togglable-tabs">
+                      <ul id="myTab" class="nav nav-tabs nav-tabs-responsive" role="tablist">
+                        <li role="presentation" class="active bg-success">
+                          <a href="#enabled" id="enabled-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
+                            <span class="text-success">Local Scenes</span>
+                          </a>
+                        </li>
+                        <li role="presentation" class="next bg-success">
+                          <a href="#othergw" id="othergw-tab" role="tab" data-toggle="tab" aria-controls="home" aria-expanded="true">
+                            <span class="text-success">Other Gateways</span>
+                          </a>
+                        </li>
+                      </ul>
+                      <div id="myTabContent" class="tab-content">
+                        <div role="tabpanel" class="tab-pane fade in active" id="enabled" aria-labelledby="home-tab">
+                            <br>
+                            <div class="dataTable_wrapper">
+                                <table width="100%" class="table table-striped table-bordered table-hover" id="devices-enabled">
+                                    <thead>
+                                        <tr>
+                                            <th>Label</th><th>Machine Label</th><th>Status</th><th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>{% for scene_id, scene in _scenes.items() if scene.gateway_id == _local_gateway.gateway_id%}
+                                         <tr>
+                                             <td data-priority="1">
+                                                 <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a><br>
+                                             </td>
+                                             <td data-priority="4">{{ scene.machine_label }}</td>
+                                             <td>{{ scene.status|status_to_string }}</td>
+                                             <td>
+                                                {% if scene.status == 0 -%}
+                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                {% elif scene.status == 1 -%}
+                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                {% elif scene.status == 2 -%}
+                                             <a class="alert-success"  href="/scenes/{{ scene.scene_id }}/disable">Enable</a>
+                                                {% endif %}
+
+                                             </td>
+                                         </tr>{% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="othergw" aria-labelledby="profile-tab">
+                            <br>
+                            <div class="dataTable_wrapper">
+                                <table width="100%" class="table table-striped table-bordered table-hover" id="devices-enabled">
+                                    <thead>
+                                        <tr>
+                                            <th>Label</th><th>Machine Label</th><th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>{% for scene_id, scene in _scenes.items() if scene.gateway_id != _local_gateway.gateway_id%}
+                                         <tr>
+                                             <td data-priority="1">
+                                                 <a href="/scenes/{{ scene.scene_id }}/details">{{ scene.label }}</a><br>
+                                             </td>
+                                             <td data-priority="4">{{ scene.machine_label }}</td>
+                                             <td>
+                                                {% if scene.status == 0 -%}
+                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-success" href="/scenes/{{ scene.scene_id }}/enable">Enable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                {% elif scene.status == 1 -%}
+                                             <a href="/scenes/{{ scene.scene_id }}/edit">Edit</a> &nbsp; <a class="alert-warning" href="/scenes/{{ scene.scene_id }}/disable">Disable</a> &nbsp; <a class="alert-danger" href="/scenes/{{ scene.scene_id }}/delete">Delete</a>
+                                                {% elif scene.status == 2 -%}
+                                             <a class="alert-success"  href="/scenes/{{ scene.scene_id }}/disable">Enable</a>
+                                                {% endif %}
+
+                                             </td>
+                                         </tr>{% endfor %}
+                                    </tbody>
+                                </table>
+                             </div>
+                        </div>
+                      </div>
+                    </div>
+                {% else %}
+                    There are currently no scenes configured for this gateway.
+                    <strong><a href="/scenes/add">Add your first scene</a></strong> to this gateway.
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /.row -->
+
+{% endblock %}
+
+
+{% block body_bottom %}
+{% include 'lib/webinterface/fragments/select_js.tpl' %}
+
+<script>
+    $('.ls-modal').on('click', function(e){
+      e.preventDefault();
+      $('#myModal').modal('show').find('.modal-body').load($(this).attr('href'));
+    });
+
+$('#sendmqtt').submit(function() { // catch the form's submit event
+    $.ajax({ // create an AJAX call...
+        data: $(this).serialize(), // get the form data
+        type: $(this).attr('method'), // GET or POST
+        url: $(this).attr('action'), // the file to call
+        dataType: 'json',
+        success: function(resp){
+            $("#mqttresults").html(resp.message);
+            $("#mqttresultmodal").modal('show');
+        }
+//        success: function(response) { // on success..
+//            $('#created').html(response.message); // update the DIV
+//        }
+    });
+    return false; // cancel original event to prevent form submitting
+});
+
+</script>
+
+{% endblock %}
+
