@@ -37,16 +37,18 @@ logger = get_logger('library.devicetypes')
 
 BASE_DEVICE_TYPE_PLATFORMS = {
     'yombo.lib.devices._device': ['Device'],
-    'yombo.lib.devices.activity_trigger': ['ActivityTrigger'],
-    'yombo.lib.devices.appliance': ['Appliance'],
+    'yombo.lib.devices.alarm': ['Alarm'],
     'yombo.lib.devices.camera': ['Camera'],
     'yombo.lib.devices.climate': ['Climate'],
+    'yombo.lib.devices.cover': ['Cover', 'Door', 'Garage_Door', 'Window'],
     'yombo.lib.devices.fan': ['Fan'],
     'yombo.lib.devices.light': ['Light', 'Color_Light'],
     'yombo.lib.devices.lock': ['Lock'],
+    'yombo.lib.devices.mediaplayer': ['Media_Player'],
     'yombo.lib.devices.scene': ['Scene'],
-    'yombo.lib.devices.sensor': ['Digital_Sensor', 'Door', 'Sensor', 'Thermometer', 'Window'],
-    'yombo.lib.devices.switch': ['Switch', 'Relay'],
+    'yombo.lib.devices.sensor': ['Sensor', 'Digital_Sensor', 'Thermometer'],
+    'yombo.lib.devices.switch': ['Switch', 'Relay', 'Appliance'],
+    'yombo.lib.devices.tv': ['TV'],
 }
 
 

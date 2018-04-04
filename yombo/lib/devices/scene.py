@@ -1,37 +1,40 @@
+"""
+Scene devices are used when a scene resides on another automation controller. Yombo
+can trigger that scene mode using a module.
+"""
+from yombo.constants.features import (FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
+                                      FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES)
+from yombo.constants.commands import COMMAND_ENABLE, COMMAND_DISABLE, COMMAND_TRIGGER
 from yombo.lib.devices._device import Device
-from yombo.constants.commands import COMMAND_OFF, COMMAND_ON
 
 
 class Scene(Device):
     """
     A generic fan device.
     """
-
-    PLATFORM = "scene"
-
     TOGGLE_COMMANDS = []  # Put two command machine_labels in a list to enable toggling.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.PLATFORM_BASE = "scene"
         self.PLATFORM = "scene"
-        self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
+        self.TOGGLE_COMMANDS = None  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
-            'all_on': False,
-            'all_off': False,
-            'pingable': False,
-            'pollable': False,
-            'sends_updates': False,
-            'supports_deactivation': False,
+            FEATURE_ALL_ON: False,
+            FEATURE_ALL_OFF: False,
+            FEATURE_PINGABLE: False,
+            FEATURE_POLLABLE: False,
+            FEATURE_ALLOW_IN_SCENES: True,
         })
-
-    def can_toggle(self):
-        return True
 
     def toggle(self):
         return
 
-    def turn_on(self, **kwargs):
-        return self.command(COMMAND_ON, **kwargs)
+    def disable(self, **kwargs):
+        return self.command(COMMAND_DISABLE, **kwargs)
 
-    def turn_off(self, **kwargs):
-        return self.command(COMMAND_OFF, **kwargs)
+    def enable(self, **kwargs):
+        return self.command(COMMAND_ENABLE, **kwargs)
+
+    def trigger(self, **kwargs):
+        return self.command(COMMAND_TRIGGER, **kwargs)

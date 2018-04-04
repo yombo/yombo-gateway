@@ -1,5 +1,8 @@
+"""
+Various sensors. A sensor is considered high if the machine status is 1, other low is 0.
+"""
 from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
-    FEATURE_POLLABLE)
+                                      FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES)
 from yombo.constants.commands import COMMAND_HIGH, COMMAND_LOW
 
 from yombo.lib.devices._device import Device
@@ -11,21 +14,41 @@ class Sensor(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.PLATFORM_BASE = "sensor"
         self.PLATFORM = "sensor"
-        self.TOGGLE_COMMANDS = []  # Put two command machine_labels in a list to enable toggling.
+        self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
             FEATURE_ALL_ON: False,
             FEATURE_ALL_OFF: False,
             FEATURE_PINGABLE: False,
             FEATURE_POLLABLE: True,
             FEATURE_NUMBER_OF_STEPS: 2,
+            FEATURE_ALLOW_IN_SCENES: False,
         })
 
-    def can_toggle(self):
-        return False
+    def is_high(self):
+        """
+        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
 
-    def toggle(self):
-        return
+        :return:
+        """
+        if self.machine_status > 0:
+            return True
+        elif self.machine_status == 0:
+            return False
+        return None
+
+    def is_low(self):
+        """
+        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
+
+        :return:
+        """
+        if self.machine_status > 0:
+            return False
+        elif self.machine_status == 0:
+            return True
+        return None
 
     def command_from_status(self, machine_status, machine_status_extra=None):
         """
@@ -41,6 +64,7 @@ class Sensor(Device):
             return self._Parent._Commands[COMMAND_LOW]
         return None
 
+
 class Digital_Sensor(Sensor):
     """
     A sensor that will be either high or low.
@@ -49,18 +73,33 @@ class Digital_Sensor(Sensor):
         super()._init_()
         self.PLATFORM = "digital_sensor"
 
+    def is_high(self):
+        """
+        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
 
-class Door(Sensor):
-    """
-    A sensor that will be either high or low.
-    """
-    def _init_(self):
-        super()._init_()
-        self.PLATFORM = "door"
+        :return:
+        """
+        if self.machine_status == 1:
+            return True
+        elif self.machine_status == 0:
+            return False
+        return None
+
+    def is_low(self):
+        """
+        If the status is 1, then it's high. 0 when it's not. If it's unknown, then None.
+
+        :return:
+        """
+        if self.machine_status == 1:
+            return False
+        elif self.machine_status == 0:
+            return True
+        return None
 
 class Thermometer(Device):
     """
-    A generic Sensor
+    A generic thermometer sensor
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -84,10 +123,3 @@ class Thermometer(Device):
         """
         return None
 
-class Window(Sensor):
-    """
-    A sensor that will be either high or low.
-    """
-    def _init_(self):
-        super()._init_()
-        self.PLATFORM = "window"

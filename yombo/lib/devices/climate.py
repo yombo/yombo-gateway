@@ -1,3 +1,20 @@
+"""
+Climate device types. Used to monitor and control thermostats.
+"""
+from yombo.constants.features import (FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
+                                      FEATURE_POLLABLE, FEATURE_ALLOW_IN_SCENES, FEATURE_DETECTS_MOTION,
+                                      FEATURE_THERMOSTAT, FEATURE_MODES)
+from yombo.constants.devicetypes.climate import (FEATURE_AWAY_MODE, FEATURE_AUX_HEAT, FEATURE_DUAL_SETPOINTS,
+                                                 FEATURE_HOLD_MODE, FEATURE_ON_OFF, FEATURE_TARGET_HUMIDITY,
+                                                 FEATURE_TARGET_HUMIDITY_LOW, FEATURE_TARGET_HUMIDITY_HIGH,
+                                                 FEATURE_TARGET_TEMPERATURE, FEATURE_TARGET_TEMPERATURE_LOW,
+                                                 FEATURE_TARGET_TEMPERATURE_HIGH)
+from yombo.constants.status_extra import (STATUS_EXTRA_TEMPERATURE, STATUS_EXTRA_MODE, STATUS_EXTRA_HUMIDITY,
+                                          STATUS_EXTRA_TARGET_TEMPERATURE, STATUS_EXTRA_TARGET_TEMPERATURE_LOW,
+                                          STATUS_EXTRA_TARGET_TEMPERATURE_HIGH, STATUS_EXTRA_TARGET_HUMIDITY,
+                                          STATUS_EXTRA_TARGET_HUMIDITY_LOW, STATUS_EXTRA_TARGET_HUMIDITY_HIGH,
+                                          STATUS_EXTRA_TARGET_HUMIDITY
+                                          )
 from yombo.lib.devices._device import Device
 
 class Climate(Device):
@@ -6,62 +23,75 @@ class Climate(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.PLATFORM_BASE = "climate"
         self.PLATFORM = "climate"
-        self.FEATURES['thermostat'] = True
-        self.FEATURES['temp_sensor'] = False
-        self.FEATURES['dual_setpoints'] = False
-        self.FEATURES['number_of_steps'] = 99
-        self.temperature_unit = 'c'  # what temperature unit the device works in.
+        self.FEATURES.update({
+            FEATURE_ALL_ON: True,
+            FEATURE_ALL_OFF: True,
+            FEATURE_PINGABLE: True,
+            FEATURE_POLLABLE: True,
+            FEATURE_ALLOW_IN_SCENES: True,
+            FEATURE_DETECTS_MOTION: False,
+            FEATURE_THERMOSTAT: True,
+            FEATURE_AWAY_MODE: True,
+            FEATURE_AUX_HEAT: False,
+            FEATURE_DUAL_SETPOINTS: False,
+            FEATURE_HOLD_MODE: False,
+            FEATURE_ON_OFF: False,
+            FEATURE_TARGET_HUMIDITY: False,
+            FEATURE_TARGET_HUMIDITY_LOW: False,
+            FEATURE_TARGET_HUMIDITY_HIGH: False,
+            FEATURE_TARGET_TEMPERATURE: True,
+            FEATURE_TARGET_TEMPERATURE_LOW: False,
+            FEATURE_TARGET_TEMPERATURE_HIGH: False,
+            FEATURE_MODES: ['on', 'off', 'auto', 'cool', 'heat', 'away']
+        })
+        self.STATUS_EXTRA[STATUS_EXTRA_TEMPERATURE] = True
+        self.STATUS_EXTRA[STATUS_EXTRA_MODE] = True
+
+        self.temperature_unit = 'c'  # what temperature unit the device works in. Either 'c' or 'f'.
+
+    def look_up_status_extra(self, property_name):
+        if len(self.status_history) > 0:
+            status_current = self.status_history[0]
+            if property_name in status_current.machine_status_extra:
+                return status_current.machine_status_extra[property_name]
+        return None
 
     @property
     def current_mode(self):
-        """
-        Return current operation ie. heat, cool, off, auto.
-        """
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0]
-            if 'mode' in status_current.machine_status_extra:
-                return status_current.machine_status_extra['mode']
-        return None
+        """ Return current operation ie. heat, cool, off, auto. """
+        return self.look_up_status_extra(STATUS_EXTRA_MODE)
 
     @property
     def current_humidity(self):
-        """
-        Return the current humidity.
-        """
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0]
-            if 'mode' in status_current.machine_status_extra:
-                return status_current.machine_status_extra['humidity']
-        return None
-
-    @property
-    def target_humidity(self):
-        """
-        Return the humidity we try to reach.
-        """
-        if len(self.status_history) > 0:
-            status_current = self.status_history[0]
-            if 'mode' in status_current.machine_status_extra:
-                return status_current.machine_status_extra['target_humidity']
-        return None
-
-    @property
-    def operation_list(self):
-        """
-        Return the list of available operation modes.
-        """
-        return self.STATUS_EXTRA['mode']
+        """ Return the current humidity. """
+        return self.look_up_status_extra(STATUS_EXTRA_HUMIDITY)
 
     @property
     def current_temperature(self):
-        """
-        Return the current temperature.
-        """
-        if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
-            return status_current.machine_status_extra['target_humidity']
-        return None
+        """ Return the current temperature. """
+        return self.look_up_status_extra(STATUS_EXTRA_TEMPERATURE)
+
+    @property
+    def target_humidity(self):
+        """ Return the humidity we try to reach. """
+        return self.look_up_status_extra(STATUS_EXTRA_TARGET_HUMIDITY)
+
+    @property
+    def target_humidity_high(self):
+        """ Return the humidity we try to reach. """
+        return self.look_up_status_extra(STATUS_EXTRA_TARGET_HUMIDITY_LOW)
+
+    @property
+    def target_humidity_low(self):
+        """ Return the humidity we try to reach. """
+        return self.look_up_status_extra(STATUS_EXTRA_TARGET_HUMIDITY_LOW)
+
+    @property
+    def modes_available(self):
+        """ Return the list of available operation modes. """
+        return self.FEATURES[FEATURE_MODES]
 
     @property
     def target_temperature(self):
@@ -71,28 +101,34 @@ class Climate(Device):
         if self.current_mode is None:
             return None
         if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
             current_mode = self.current_mode
-            if current_mode is 'cool':
-                if 'target_temp_high' in status_current:
-                    return status_current['target_temp_high']
-            elif current_mode is 'heat':
-                return status_current['target_temp_low']
+            if self.device_feature_is_active(FEATURE_DUAL_SETPOINTS) in (False, None):
+                return self.look_up_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
+
+            if current_mode in ('cool', 'cool2', 'cool3', 'auto'):
+                target = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
+                if target is None:
+                    return None
+                else:
+                    return target
+            elif current_mode in ('heat', 'heat2', 'heat3', 'auto'):
+                target = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
+                if target is None:
+                    return None
+                else:
+                    return target
         return None
 
     @property
     def target_temperature_range(self):
         """Return the temperature range we try to stay in. Used for auto mode."""
-        low = None
-        high = None
-        if len(self.status_history) > 0:
-            status_current = self.machine_status_extra[0]
+        if self.device_feature_is_active(FEATURE_DUAL_SETPOINTS) in (False, None):
+            target = self.look_up_status_extra(STATUS_EXTRA_TARGET_TEMPERATURE)
+            return target, target
 
-            if 'target_temp_low' in status_current:
-                low = status_current['target_temp_low']
-            if 'target_temp_high' in status_current:
-                high = status_current['target_temp_high']
-        return (low, high)
+        low = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_LOW)
+        high = self.look_up_status_extra(FEATURE_TARGET_TEMPERATURE_HIGH)
+        return low, high
 
     @property
     def target_temperature_step(self):
@@ -244,7 +280,7 @@ class Climate(Device):
         results['current_mode'] = self.current_mode
         results['current_humidity'] = self.current_humidity
         results['target_humidity'] = self.target_humidity
-        results['operation_list'] = self.operation_list
+        results['modes_available'] = self.modes_available
         results['current_temperature'] = self.current_temperature
         results['target_temperature'] = self.target_temperature
         results['target_temperature_range'] = self.target_temperature_range

@@ -1,17 +1,11 @@
 from yombo.constants.features import (FEATURE_NUMBER_OF_STEPS, FEATURE_ALL_ON, FEATURE_ALL_OFF, FEATURE_PINGABLE,
-    FEATURE_POLLABLE, FEATURE_SEND_UPDATES)
+                                      FEATURE_POLLABLE, FEATURE_SEND_UPDATES, FEATURE_ALLOW_IN_SCENES)
 from yombo.constants.commands import COMMAND_ON, COMMAND_OFF, COMMAND_OPEN, COMMAND_CLOSE
+from yombo.constants.devicetypes.light import ATR_BRIGHTNESS, ATR_TRANSITION
 
 from yombo.lib.devices._device import Device
 from yombo.core.exceptions import YomboWarning
 import yombo.utils.color as color_util
-
-# Brightness of the light, 0..255 or percentage
-ATR_BRIGHTNESS = "brightness"
-ATR_BRIGHTNESS_PCT = "brightness_pct"
-
-# Integer that represents transition time in seconds to make change.
-ATR_TRANSITION = "transition"
 
 
 class Switch(Device):
@@ -20,6 +14,7 @@ class Switch(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.PLATFORM_BASE = "switch"
         self.PLATFORM = "switch"
         self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
@@ -28,7 +23,7 @@ class Switch(Device):
             FEATURE_PINGABLE: True,
             FEATURE_POLLABLE: True,
             FEATURE_SEND_UPDATES: False,
-            FEATURE_NUMBER_OF_STEPS: 2  # 0 = off, 1 = on
+            FEATURE_NUMBER_OF_STEPS: 2,  # 0 = off, 1 = on
         })
 
     def can_toggle(self):
@@ -75,3 +70,13 @@ class Relay(Switch):
             return self.command(COMMAND_OPEN)
         else:
             return self.command(COMMAND_CLOSE)
+
+
+class Appliance(Switch):
+    """
+    An appliance shouldn't be used in scenes.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.PLATFORM = "appliance"
+        self.FEATURES[FEATURE_ALLOW_IN_SCENES] = False

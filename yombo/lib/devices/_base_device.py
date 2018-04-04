@@ -527,7 +527,7 @@ class Base_Device(object):
         :param requested_by: A dictionary containing information about the request. Contains: user_id and component
         :type requested_by: dict
         :param inputs: A list of dictionaries containing the 'input_type_id' and any supplied 'value'.
-        :type inputs: list of dictionaries
+        :type inputs: dict
         :param not_after: An epoch time when the command should be discarded.
         :type not_after: int or float
         :param callbacks: A dictionary of callbacks

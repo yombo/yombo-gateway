@@ -16,6 +16,7 @@ class Fan(Device):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.PLATFORM_BASE = "fan"
         self.PLATFORM = "fan"
         self.TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
@@ -58,14 +59,27 @@ class Fan(Device):
         return None
 
     @property
-    def direciton(self):
+    def direction(self):
         """
-        Return the current direciton of a fan.
+        Return the current direction of a fan.
         """
         if len(self.status_history) > 0:
             machine_status_extra = self.status_history[0].machine_status_extra
             if STATUS_EXTRA_DIRECTION in machine_status_extra:
                 return machine_status_extra[STATUS_EXTRA_DIRECTION]
+            else:
+                return None
+        return None
+
+    @property
+    def oscillating(self):
+        """
+        Return the current direction of a fan.
+        """
+        if len(self.status_history) > 0:
+            machine_status_extra = self.status_history[0].machine_status_extra
+            if STATUS_EXTRA_OSCILLATING in machine_status_extra:
+                return machine_status_extra[STATUS_EXTRA_OSCILLATING]
             else:
                 return None
         return None
@@ -181,6 +195,22 @@ class Fan(Device):
             inputs={INPUT_DIRECTION: direction},
             callbacks=callbacks,
         )
+
+    def is_on(self):
+        speed = self.speed
+        if speed is None:
+            return None
+        if speed > 0:
+            return True
+        return False
+
+    def is_off(self):
+        speed = self.speed
+        if speed is None:
+            return None
+        if speed > 0:
+            return False
+        return True
 
     def turn_on(self, **kwargs):
         return self.command(COMMAND_ON, **kwargs)

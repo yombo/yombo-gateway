@@ -14,9 +14,9 @@ class Light(Device):
     """
     A generic light device.
     """
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.PLATFORM_BASE = "light"
         self.PLATFORM = "light"
         self.TOGGLE_COMMANDS = ['on', 'off']  # Put two command machine_labels in a list to enable toggling.
         self.FEATURES.update({
@@ -198,7 +198,7 @@ class Color_Light(Light):
     """
     A generic light device.
     """
-    PLATFORM = "light"
+    PLATFORM = "colorlight"
 
     TOGGLE_COMMANDS = [COMMAND_ON, COMMAND_OFF]  # Put two command machine_labels in a list to enable toggling.
 

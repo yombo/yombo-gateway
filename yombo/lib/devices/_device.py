@@ -26,7 +26,7 @@ logger = get_logger('library.devices.device')
 
 # Yombo Constants
 from yombo.constants.features import FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE, \
-    FEATURE_SEND_UPDATES, FEATURE_POWER_CONTROL
+    FEATURE_SEND_UPDATES, FEATURE_POWER_CONTROL, FEATURE_ALLOW_IN_SCENES
 from yombo.constants.commands import COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, COMMAND_OFF, COMMAND_CLOSE, \
     COMMAND_HIGH, COMMAND_LOW
 
@@ -43,9 +43,12 @@ class Device(Base_Device):
             FEATURE_ALL_OFF: False,
             FEATURE_PINGABLE: True,
             FEATURE_POLLABLE: True,
-            FEATURE_SEND_UPDATES: True
+            FEATURE_SEND_UPDATES: True,
+            FEATURE_ALLOW_IN_SCENES: True,
         }
 
+
+        self.PLATFORM_BASE = "device"
         self.PLATFORM = "device"
         self.SUB_PLATFORM = None
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
@@ -289,6 +292,18 @@ class Device(Base_Device):
         """
         return self._Parent._DeviceTypes[self.device_type_id]
 
+    def device_feature_is_active(self, feature_name):
+        if feature_name not in self.FEATURES:
+            return False
+        value = self.FEATURES[feature_name]
+        if value is False:
+            return False
+        if value is True:
+            return True
+        if isinstance(value, dict) or isinstance(value, list):
+            return True
+        return False
+
     def generate_human_status(self, machine_status, machine_status_extra):
         if machine_status == 1:
             return "On"
@@ -362,12 +377,13 @@ class Device(Base_Device):
                 return [value, self.energy_type]
         raise ValueError("Unable to determine enery usage.")
 
-
     def can_toggle(self):
         """
         If a device is toggleable, return True. It's toggleable if a device only has two commands.
         :return:
         """
+        if self.TOGGLE_COMMANDS is False or self.TOGGLE_COMMANDS is None:
+            return False
         if isinstance(self.TOGGLE_COMMANDS, list) is False:
             return False
         if len(self.TOGGLE_COMMANDS) == 2:
@@ -387,6 +403,8 @@ class Device(Base_Device):
         return not self.is_on()
 
     def toggle(self):
+        if self.can_toggle() is False:
+            return
         return self.command(COMMAND_TOGGLE)
 
     def turn_on(self, **kwargs):
