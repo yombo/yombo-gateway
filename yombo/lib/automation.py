@@ -69,7 +69,6 @@ logger = get_logger("library.automation")
 
 
 REQUIRED_RULE_FIELDS = ['action', 'name']
-# REQUIRED_RULE_FIELDS = ['action']
 REQUIRED_TRIGGER_FIELDS = ['source']
 REQUIRED_CONDITION_FIELDS = ['source', 'filter']
 REQUIRED_ACTION_FIELDS = ['platform']
