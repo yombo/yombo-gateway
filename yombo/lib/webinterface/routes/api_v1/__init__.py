@@ -76,7 +76,7 @@ def return_error(request, message=None, code=None, comments=None):
     if comments is None:
         comments = {}
     if code is None:
-        code = 404
+        code = 200
     request.setResponseCode(code)
     if message is None:
         message = "System error"

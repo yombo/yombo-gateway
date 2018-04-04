@@ -7,6 +7,7 @@ from time import time
 
 from twisted.internet.defer import inlineCallbacks
 
+from yombo.core.exceptions import YomboWarning
 from yombo.lib.webinterface.auth import require_auth
 from yombo.lib.webinterface.routes.api_v1.__init__ import return_good, return_not_found, return_error, return_unauthorized, args_to_dict
 from yombo.utils import epoch_to_string, bytes_to_unicode, sleep
@@ -30,7 +31,7 @@ def route_api_v1_device(webapp):
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
-                return return_not_found(request, 'device not found')
+                return return_not_found(request, 'Device not found')
 
             payload = device.asdict()
             if 'item' in arguments:
@@ -58,7 +59,7 @@ def route_api_v1_device(webapp):
             if device_id in webinterface._Devices:
                 device = webinterface._Devices[device_id]
             else:
-                return return_not_found(request, 'device not found')
+                return return_not_found(request, 'Device not found')
             # print("inputs: %s" % inputs)
             try:
                 request_id = device.command(
@@ -72,6 +73,8 @@ def route_api_v1_device(webapp):
                     )
             except KeyError as e:
                 return return_not_found(request, 'Error with command: %s' % e)
+            except YomboWarning as e:
+                return return_error(request, 'Error with command: %s' % e)
 
             DC = webinterface._Devices.device_commands[request_id]
             if wait_time > 0:
