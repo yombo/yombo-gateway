@@ -43,8 +43,6 @@ from yombo.utils import bytes_to_unicode, unicode_to_bytes
 logger = get_logger('library.yomboapi')
 
 class YomboAPI(YomboLibrary):
-
-
     @property
     def valid_api_auth(self):
         try:
