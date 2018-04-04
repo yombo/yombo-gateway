@@ -26,7 +26,15 @@ from time import time
 # Import twisted libraries
 from twisted.internet.defer import inlineCallbacks
 
+# Yombo Constants
+from yombo.constants.features import (FEATURE_ALL_OFF, FEATURE_ALL_ON, FEATURE_PINGABLE, FEATURE_POLLABLE,
+                                      FEATURE_SEND_UPDATES, FEATURE_POWER_CONTROL, FEATURE_ALLOW_IN_SCENES,
+                                      FEATURE_CONTROLLABLE, FEATURE_ALLOW_DIRECT_CONTROL)
+from yombo.constants.commands import (COMMAND_TOGGLE, COMMAND_OPEN, COMMAND_ON, COMMAND_OFF, COMMAND_CLOSE,
+                                      COMMAND_HIGH, COMMAND_LOW)
+
 # Import Yombo libraries
+from yombo.utils import is_true_false
 from yombo.core.exceptions import YomboPinCodeError, YomboWarning
 from yombo.core.log import get_logger
 from yombo.utils import random_string, global_invoke_all, do_search_instance
@@ -51,6 +59,286 @@ class Base_Device(object):
         * :py:meth:`get_status <Device.get_status>` - Get a latest device status object.
         * :py:meth:`set_status <Device.set_status>` - Set the device status.
     """
+    @property
+    def area(self) -> str:
+        """
+        Returns the label for the device's area_id.
+
+        :return:
+        """
+        locations = self._Parent._Locations.locations
+        try:
+            area = locations[self.area_id].label
+            if area.lower() == "none":
+                return ""
+            else:
+                return area
+        except Exception as e:
+            return ""
+
+    @property
+    def location(self) -> str:
+        """
+        Returns the label for the device location_id.
+
+        :return:
+        """
+        locations = self._Parent._Locations.locations
+        try:
+            location = locations[self.location_id].label
+            if location.lower() == "none":
+                return ""
+            else:
+                return location
+        except Exception as e:
+            return ""
+
+    @property
+    def area_label(self) -> str:
+        """
+        Returns the device's area label + device label.
+        :return:
+        """
+        locations = self._Parent._Locations.locations
+        try:
+            area = locations[self.area_id].label
+            if area.lower() == "none":
+                area = ""
+            else:
+                area = area + " "
+        except Exception as e:
+            area = ""
+        return "%s%s" % (area, self.label)
+
+    @property
+    def full_label(self) -> str:
+        """
+        Returns the device's location + area + device label.
+        :return:
+        """
+        locations = self._Parent._Locations.locations
+        try:
+            location = locations[self.location_id].label
+            if location.lower() == "none":
+                location = ""
+            else:
+                location = location + " "
+        except Exception as e:
+            location = ""
+
+        try:
+            area = locations[self.area_id].label
+            if area.lower() == "none":
+                area = ""
+            else:
+                area = area + " "
+        except Exception as e:
+            area = ""
+        return "%s%s%s" % (location, area, self.label)
+
+    @property
+    def statistic_label_slug(self):
+        """
+        Get statistics label. Use the user defined version or create one if doesn't exist.
+        :return:
+        """
+        if self.statistic_label in (None, "", "None", "none"):
+            locations = self._Parent._Locations.locations
+            new_label = ""
+            if self.location_id in locations:
+                location = locations[self.location_id].label
+                if location.lower() != "none":
+                    new_label = self._Validate.slugify(location)
+
+            if self.area_id in locations:
+                area = locations[self.area_id].label
+                if area.lower() != "none":
+                    if len(new_label) > 0:
+                        new_label = new_label + "." + self._Validate.slugify(location)
+                    else:
+                        new_label = self._Validate.slugify(location)
+            if len(new_label) > 0:
+                new_label = new_label + "." + self._Validate.slugify(self.machine_label)
+            else:
+                new_label = self._Validate.slugify(self.machine_label)
+            return new_label
+        else:
+            return self.statistic_label
+
+    @property
+    def should_poll(self) -> bool:
+        """
+        Return True if the device needs to be polled to get current status.
+        False if devices push status updates.
+
+        In most cases, the module handling the device will automatically poll the device periodically. For these
+        devices and for devices that don't send updates or are not polled, should return True.
+        """
+        return True
+
+    @property
+    def current_mode(self):
+        """
+        Return the current mode of operation for the device.
+        """
+        machine_status_extra = self.machine_status_extra
+        if 'mode' in machine_status_extra.machine_status_extra:
+            return machine_status_extra.machine_status_extra['mode']
+        return None
+
+    @property
+    def status(self):
+        """
+        Return the machine status of the device.
+        """
+        # print("load history (%s): %s" % (self.label, len(self.status_history)))
+        return self.machine_status
+
+    @property
+    def machine_status(self):
+        """
+        Get the current machine status for a device.
+
+        :return:
+        """
+        return self.status_all.machine_status
+
+    @property
+    def machine_status_extra(self):
+        """
+        Get the current machine status extra details for a device.
+
+        :return:
+        """
+        return self.status_all.machine_status_extra
+
+
+    @property
+    def status_all(self):
+        """
+        Return the device's current status. Will return fake status of
+        there is no current status which basically says the status is unknown.
+        """
+        if len(self.status_history) == 0:
+            requested_by = {
+                'user_id': 'Unknown',
+                'component': 'Unknown',
+            }
+            return Device_Status(self._Parent, self, {
+                'device_id': self.device_id,
+                'set_at': time(),
+                'energy_usage': 0,
+                'energy_type': self.energy_type,
+                'human_status': 'Unknown',
+                'human_message': 'Unknown status for device',
+                'machine_status': None,
+                'machine_status_extra': {},
+                'gateway_id': self.gateway_id,
+                'requested_by': requested_by,
+                'reported_by': None,
+                'request_id': None,
+                'uploaded': 0,
+                'uploadable': 1,
+                'fake_data': True,
+            })
+        return self.status_history[0]
+
+    @property
+    def unit_of_measurement(self):
+        """
+        Return the unit of measurement of this device, if any.
+        """
+        return None
+
+    @property
+    def icon(self):
+        """
+        Return the icon to use in the frontend, if any.
+        """
+        return None
+
+    @property
+    def icon_on_click(self):
+        """
+        Return the icon to use when icon is clicked, if any.
+        """
+        return None
+
+    @property
+    def device_picture(self):
+        """
+        Return the device picture to use in the frontend, if any.
+        """
+        return None
+
+    @property
+    def hidden(self) -> bool:
+        """
+        Return True if the device should be hidden from UIs.
+        """
+        return False
+
+    @property
+    def features(self) -> list:
+        """
+        Return a list of features this device supports.
+        """
+        features = {}
+        for feature, value in self.FEATURES.items():
+            if value is not False:
+                features[feature] = value
+        return features
+
+    @property
+    def device_type(self):
+        """
+        Returns the device type object for the device.
+        :return:
+        """
+        return self._Parent._DeviceTypes[self.device_type_id]
+
+    @property
+    def is_direct_controllable(self):
+        if self.device_feature_is_active(FEATURE_CONTROLLABLE) and \
+                    self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL) and \
+                    is_true_false(self.allow_direct_control) and \
+                    is_true_false(self.controllable):
+            return True
+        return False
+
+    @property
+    def is_controllable(self):
+        print("is_controllable %s: %s == %s" % (self.full_label, self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL),
+            is_true_false(self.controllable)))
+        print("is_controllable feature %s: %s " % (self.full_label, self.FEATURES))
+        if self.device_feature_is_active(FEATURE_ALLOW_DIRECT_CONTROL) and \
+                    is_true_false(self.controllable):
+            return True
+        return False
+
+    @property
+    def is_allowed_in_scenes(self):
+        print("is_allowed_in_scenes %s: %s == %s" % (self.full_label, self.device_feature_is_active(FEATURE_ALLOW_IN_SCENES),
+            is_true_false(self.controllable)))
+        if self.device_feature_is_active(FEATURE_ALLOW_IN_SCENES) and self.is_controllable:
+            return True
+        return False
+
+    @property
+    def is_dimmable(self):
+        return self.SUPPORT_BRIGHTNESS
+
+    @property
+    def is_on(self):
+        if self.status_history[0].machine_status > 0:
+            return True
+        else:
+            return False
+
+    @property
+    def is_off(self):
+        return not self.is_on()
+
     def __str__(self):
         """
         Print a string when printing the class.  This will return the device_id so that
@@ -58,7 +346,6 @@ class Base_Device(object):
         """
         return self.device_id
 
-    ## <start dict emulation>
     def __getitem__(self, key):
         return self.__dict__[key]
 
@@ -85,8 +372,6 @@ class Base_Device(object):
 
     def __iter__(self):
         return iter(self.__dict__)
-
-    ##  <end dict emulation>
 
     def __init__(self, device, _Parent, test_device=None):
         """
@@ -121,6 +406,19 @@ class Base_Device(object):
         self.PLATFORM_BASE = "device"
         self.PLATFORM = "device"
         self.SUB_PLATFORM = None
+        # Features this device can support
+        self.FEATURES = {
+            FEATURE_POWER_CONTROL: True,
+            FEATURE_ALL_ON: False,
+            FEATURE_ALL_OFF: False,
+            FEATURE_PINGABLE: True,
+            FEATURE_POLLABLE: True,
+            FEATURE_SEND_UPDATES: True,
+            FEATURE_ALLOW_IN_SCENES: True,
+            FEATURE_CONTROLLABLE: True,
+            FEATURE_ALLOW_DIRECT_CONTROL: True,
+        }
+        self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
 
         self.STATUS_EXTRA = {}
         # self.STATUS_EXTRA = {
@@ -162,12 +460,8 @@ class Base_Device(object):
         }
 
         sizes = memory_sizing[self._Parent._Atoms['mem.sizing']]
-        if device["gateway_id"] != self.gateway_id:
-            self.device_commands = deque({}, sizes['other_device_commands'])
-            self.status_history = deque({}, sizes['other_status_history'])
-        else:
-            self.device_commands = deque({}, sizes['local_device_commands'])
-            self.status_history = deque({}, sizes['local_status_history'])
+        self.device_commands = deque({}, sizes['other_device_commands'])
+        self.status_history = deque({}, sizes['other_status_history'])
 
         self.device_variables_cached = {}
         # self.device_variables = self.device_variables
@@ -197,12 +491,21 @@ class Base_Device(object):
         self.energy_tracker_source = None
         self.energy_map = None
         self.energy_type = None
+        self.allow_direct_control = None
+        self.controllable = None
+        self.energy_type = None
         self.device_is_new = True
         self.device_serial = device["id"]
         self.device_mfg = "Yombo"
         self.device_model = "Yombo"
 
         self.update_attributes(device, source='parent')
+        if device["gateway_id"] != self.gateway_id:
+            self.device_commands = deque({}, sizes['other_device_commands'])
+            self.status_history = deque({}, sizes['other_status_history'])
+        else:
+            self.device_commands = deque({}, sizes['local_device_commands'])
+            self.status_history = deque({}, sizes['local_status_history'])
 
     @inlineCallbacks
     def _init0_(self, **kwargs):
@@ -345,6 +648,11 @@ class Base_Device(object):
                 self.energy_map = energy_map_final
             else:
                 self.energy_map = None
+
+        if 'controllable' in device:
+            self.controllable = device['controllable']
+        if 'allow_direct_control' in device:
+            self.allow_direct_control = device['allow_direct_control']
 
         if self.device_is_new is True:
             global_invoke_all('_device_updated_',
@@ -549,6 +857,14 @@ class Base_Device(object):
             else:
                 if self.pin_code != pin:
                     raise YomboPinCodeError("'pin' supplied is incorrect.")
+        if self.is_controllable is False:
+                raise YomboWarning("This device cannot be controlled. Typically because it's an input type device.")
+
+        if 'control_method' not in kwargs:
+            kwargs['control_method'] = 'direct'
+        if self.is_direct_controllable == 0 and kwargs['control_method'] == 'direct':
+                raise YomboWarning("This device cannot be directly controlled. Set 'control_method'.")
+
         device_command = {
             "device": self,
             "pin": pin,

@@ -192,6 +192,8 @@ class AmqpConfigHandler(YomboLibrary):
                     'energy_tracker_source': 'energy_tracker_source',
                     'energy_tracker_device': 'energy_tracker_device',
                     'energy_map': 'energy_map',
+                    'controllable': 'controllable',
+                    'allow_direct_control': 'allow_direct_control',
                     'created_at': 'created_at',
                     'updated_at': 'updated_at',
                     'status': 'status',

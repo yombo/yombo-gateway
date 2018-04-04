@@ -137,6 +137,8 @@ def create_table_devices(Registry, **kwargs):
         `energy_tracker_source`  TEXT,
         `energy_tracker_device`  TEXT,
         `energy_map`             TEXT,
+        `controllable`           INTEGER DEFAULT 1,
+        `allow_direct_control`   INTEGER DEFAULT 1,
         `pin_code`               TEXT,
         `pin_required`           INTEGER NOT NULL,
         `pin_timeout`            INTEGER DEFAULT 0,

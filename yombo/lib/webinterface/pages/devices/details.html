@@ -149,8 +149,12 @@
                                         {{ device.pin_required|yes_no }} // {{ device.pin_code }} <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Device Type: </label><br>
                                         <a href="/devtools/config/device_types/{{ device.device_type_id }}/details">{{ _devicetypes[device.device_type_id].label }}</a><br>
-                                        <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
-                                        {{device.PLATFORM}} -> {{device.SUB_PLATFORM}}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Controllable: </label><br>
+                                        {{ device.is_controllable|yes_no }}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Allow Direct Control: </label><br>
+                                        {{ device.is_direct_controllable|yes_no }}<br>
+                                        <label style="margin-top: 15px; margin-bottom: 0px">Allowed in scenes: </label><br>
+                                        {{ device.is_allowed_in_scenes|yes_no }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Type: </label><br>
                                         {{ device.statistic_type }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Label: </label><br>
@@ -160,7 +164,7 @@
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
                                         {{ device.statistic_lifetime }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
-                                        {{ device.PLATFORM }}{% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}<br>
+                                        {{device.PLATFORM_BASE}} -> {{ device.PLATFORM }}{% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Features: </label><br>
                                         {% for feature, value in device.features.items() if value|string != 'False' %}
                                         {{feature}}{{ "," if not loop.last }}
@@ -312,15 +316,16 @@ $('.deviceCmd').click(function (event){
         success: function(resp){
             $("#cmdresult").html(resp.message);
             $("#cmdresultmodal").modal('show');
-            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 2000);
+            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 10000);
         },
         error:function (xhr, ajaxOptions, thrownError){
             $("#cmdresult").html(xhr.responseJSON.message + ' <br><label><a href="' + xhr.responseJSON.redirect + '">Login</a></label>');
             $("#cmdresultmodal").modal('show');
+            setTimeout(function() {$('#cmdresultmodal').modal('hide');}, 30000);
 
-            if(xhr.status==404) {
-                alert(thrownError);
-            }
+//            if(xhr.status==404) {
+//                alert(thrownError);
+//            }
         },
         fail: function(resp){
             console.log("got fail");
