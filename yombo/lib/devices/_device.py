@@ -47,10 +47,6 @@ class Device(Base_Device):
             FEATURE_ALLOW_IN_SCENES: True,
         }
 
-
-        self.PLATFORM_BASE = "device"
-        self.PLATFORM = "device"
-        self.SUB_PLATFORM = None
         self.TOGGLE_COMMANDS = False  # Put two command machine_labels in a list to enable toggling.
         super().__init__(*args, **kwargs)
 

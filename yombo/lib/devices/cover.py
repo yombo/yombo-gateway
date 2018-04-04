@@ -25,7 +25,7 @@ class Cover(Device):
         self.STATUS_EXTRA[STATUS_EXTRA_PERCENT] = True
 
     def toggle(self, **kwargs):
-        if self.status_history[0].machine_status == 0:
+        if self.machine_status == 0:
             return self.command(COMMAND_OPEN)
         else:
             return self.command(COMMAND_CLOSE)
@@ -55,10 +55,6 @@ class Cover(Device):
             return "Opened"
         return "Closed"
 
-    def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return "%s is now %s" % (self.area_label, human_status)
-
 
 class Door(Cover):
     """
@@ -76,39 +72,6 @@ class Garage_Door(Cover):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.PLATFORM = "garage_door"
-        # Put two command machine_labels in a list to enable toggling.
-        self.TOGGLE_COMMANDS = [COMMAND_OPEN, COMMAND_CLOSE]
-
-    def toggle(self, **kwargs):
-        if self.status_history[0].machine_status == 0:
-            return self.command(COMMAND_OPEN)
-        else:
-            return self.command(COMMAND_CLOSE)
-
-    def turn_on(self, **kwargs):
-        return self.command(COMMAND_OPEN, **kwargs)
-
-    def turn_off(self, **kwargs):
-        return self.command(COMMAND_CLOSE, **kwargs)
-
-    def is_closed(self):
-        if self.status_history[0].machine_status == 1:
-            return True
-        elif self.status_history[0].machine_status == 0:
-            return False
-        return None
-
-    def is_unlocked(self):
-        return not self.is_closed()
-
-    def generate_human_status(self, machine_status, machine_status_extra):
-        if machine_status == 1:
-            return "Opened"
-        return "Closed"
-
-    def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return "%s is now %s" % (self.area_label, human_status)
 
 
 class Window(Cover):

@@ -113,7 +113,7 @@ class Fan(Device):
         else:
             return False
 
-    def set_speed(self, speed, user_id=None, component=None, gateway_id=None, callbacks=None):
+    def set_speed(self, speed, **kwargs):
         """
         Set the speed of a fan. Typically, these are the speeds:
         0=off
@@ -122,35 +122,15 @@ class Fan(Device):
         3=fast
 
         :param speed:
-        :param user_id:
-        :param component:
-        :param gateway_id:
-        :param callbacks:
+        :param kwargs:
         :return:
         """
-        # print("setting brightness for %s to %s" % (self.full_label, val))
-        speed = self.fan_speed_to_int(speed)
-
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        if component is None:
-            component = "%s.%s" % (self.PLATFORM, self.SUB_PLATFORM)
-
-        if speed <= 0:
-            command = COMMAND_OFF
-        else:
-            command = COMMAND_SET_SPEED
-
-        return self.command(
-            cmd=command,
-            requested_by={
-                'user_id': user_id,
-                'component': component,
-                'gateway': gateway_id
-            },
-            inputs={INPUT_SPEED: speed},
-            callbacks=callbacks,
-        )
+        if 'inputs' not in kwargs:
+            kwargs['inputs'] = {}
+        kwargs['inputs'][INPUT_DIRECTION] = speed
+        if self.check_set_speed(speed) is False:
+            raise YomboWarning("Fan speed is invalid.")
+        return self.command(COMMAND_SET_SPEED, **kwargs)
 
     def check_set_direction(self, direction):
         """
@@ -159,42 +139,25 @@ class Fan(Device):
         :param direction:
         :return:
         """
-        if direction == DIRECTION_FORWARD or direction == DIRECTION_REVERSE:
+        if direction in (DIRECTION_FORWARD, DIRECTION_REVERSE):
             return True
         return False
 
-    def set_direction(self, direction, user_id=None, component=None, gateway_id=None, callbacks=None):
+    def set_direction(self, direction, **kwargs):
         """
-        Set the direction of the fan. There are two directions (can be relabeled by children).
-        forward
-        reverse
+        Set the direction of the fan. There are two directions (can be relabeled by children). Valid direction
+        values: forward (DIRECTION_FORWARD), reverse (DIRECTION_REVERSE).
 
         :param direction:
-        :param user_id:
-        :param component:
-        :param gateway_id:
-        :param callbacks:
+        :param kwargs:
         :return:
         """
-        # print("setting brightness for %s to %s" % (self.full_label, val))
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        if component is None:
-            component = "%s.%s" % (self.PLATFORM, self.SUB_PLATFORM)
-
-        if self.check_direction(direction) is False:
+        if 'inputs' not in kwargs:
+            kwargs['inputs'] = {}
+        kwargs['inputs'][INPUT_DIRECTION] = direction
+        if self.check_set_direction(direction) is False:
             raise YomboWarning("Fan direction is invalid.")
-
-        return self.command(
-            cmd=COMMAND_SET_SPEED,
-            requested_by={
-                'user_id': user_id,
-                'component': component,
-                'gateway': gateway_id
-            },
-            inputs={INPUT_DIRECTION: direction},
-            callbacks=callbacks,
-        )
+        return self.command(COMMAND_SET_DIRECTION, **kwargs)
 
     def is_on(self):
         speed = self.speed

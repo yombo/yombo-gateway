@@ -114,10 +114,13 @@ class Base_Device(object):
         self._FullName = 'yombo.gateway.lib.Devices.Device'
         self._Name = 'Devices.Device'
         self._Parent = _Parent
-        self.gateway_id = _Parent.gateway_id
         self.call_before_command = []
         self.call_after_command = []
         self._security_send_device_status = self._Configs.get2("security", "amqpsenddevicestatus", True)
+
+        self.PLATFORM_BASE = "device"
+        self.PLATFORM = "device"
+        self.SUB_PLATFORM = None
 
         self.STATUS_EXTRA = {}
         # self.STATUS_EXTRA = {
@@ -366,7 +369,7 @@ class Base_Device(object):
         variable_fields = self._Parent._DeviceTypes[self.device_type_id].get_variable_fields()
         return variable_fields
 
-    def commands_pending(self, criteria = None, limit = None):
+    def commands_pending(self, criteria=None, limit=None):
         device_commands = self._Parent.device_commands
         results = OrderedDict()
         for id, DC in device_commands.items():
@@ -563,8 +566,9 @@ class Base_Device(object):
         if requested_by is None:  # soon, this will cause an error!
             requested_by = {
                 'user_id': 'Unknown',
-                'component': 'Unknown',
+                'component': "$s.%s.%s" % (self.PLATFORM_BASE, self.PLATFORM, self.SUB_PLATFORM),
             }
+
         device_command['requested_by'] = requested_by
 
         if str(command.command_id) not in self.available_commands():
@@ -1040,7 +1044,8 @@ class Base_Device(object):
         return machine_status
 
     def generate_human_message(self, machine_status, machine_status_extra):
-        return "%s is now %s" % (self.area_label, machine_status)
+        human_status = self.generate_human_status(machine_status, machine_status_extra)
+        return "%s is now %s" % (self.area_label, human_status)
 
     def set_status_machine_extra(self, **kwargs):
         pass

@@ -1,5 +1,6 @@
-from yombo.constants.commands import (COMMAND_ON, COMMAND_OFF, COMMAND_CHANNEL_SET, COMMAND_CHANNEL_DOWN,
-                                      COMMAND_CHANNEL_UP)
+from yombo.constants.devicetypes.tv import (COMMAND_CHANNEL_SET, COMMAND_CHANNEL_DOWN, COMMAND_CHANNEL_UP,
+                                            INPUT_CHANNEL, INPUT_INPUT)
+from yombo.constants.commands import COMMAND_ON, COMMAND_OFF
 from yombo.constants.features import FEATURE_INPUT_CONTROL, FEATURE_CHANNEL_CONTROL
 
 from yombo.lib.devices._device import Device
@@ -38,11 +39,11 @@ class TV(Device):
     def set_channel(self, channel, **kwargs):
         if 'inputs' not in kwargs:
             kwargs['inputs'] = {}
-        kwargs['channel'] = channel
+        kwargs['inputs'][INPUT_CHANNEL] = channel
         return self.command(COMMAND_CHANNEL_SET, **kwargs)
 
     def set_input(self, input, **kwargs):
         if 'inputs' not in kwargs:
             kwargs['inputs'] = {}
-        kwargs['input'] = input
+        kwargs['input'][INPUT_INPUT] = input
         return self.command(COMMAND_CHANNEL_SET, **kwargs)

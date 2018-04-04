@@ -1,8 +1,5 @@
 # Various common commands
 COMMAND_ARM = 'arm'
-COMMAND_CHANNEL_DOWN = 'channel_down'
-COMMAND_CHANNEL_SET = 'channel_set'
-COMMAND_CHANNEL_UP = 'channel_up'
 COMMAND_CLOSE = 'close'
 COMMAND_DISABLE = 'disable'
 COMMAND_DISARM = 'disarm'

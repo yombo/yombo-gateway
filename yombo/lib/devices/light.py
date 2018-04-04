@@ -48,40 +48,26 @@ class Light(Device):
                 return 0
         return None
 
-    def set_brightness(self, brightness, user_id=None, component=None, gateway_id=None, callbacks=None):
+    def set_brightness(self, brightness, **kwargs):
         """
         Set the brightness of the light, but the application or sender must know how many steps
         the light can handle (100, 256, 1045, etc.)  Typically, light devices are controlled by
         percentage and should actually use the set_percent() methid.
 
+
         :param brightness:
-        :param user_id:
-        :param component:
-        :param gateway_id:
-        :param callbacks:
+        :param kwargs:
         :return:
         """
-        # print("setting brightness for %s to %s" % (self.full_label, val))
-        if gateway_id is None:
-            gateway_id = self.gateway_id
-        if component is None:
-            component = "yombo.gateway.lib.devices.light"
-
         if brightness <= 0:
             command = COMMAND_OFF
         else:
             command = COMMAND_ON
 
-        return self.command(
-            cmd=command,
-            requested_by={
-                'user_id': user_id,
-                'component': component,
-                'gateway': gateway_id
-            },
-            inputs={INPUT_BRIGHTNESS: brightness},
-            callbacks=callbacks,
-        )
+        if 'inputs' not in kwargs:
+            kwargs['inputs'] = {}
+        kwargs['inputs'][INPUT_BRIGHTNESS] = brightness
+        return self.command(command, **kwargs)
 
     def set_percent(self, percent, user_id=None, component=None, gateway_id=None, callbacks=None):
         """

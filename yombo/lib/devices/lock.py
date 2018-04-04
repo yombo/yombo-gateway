@@ -22,10 +22,10 @@ class Lock(Device):
         else:
             return self.command(COMMAND_UNLOCK)
 
-    def turn_on(self, **kwargs):
+    def lock(self, **kwargs):
         return self.command(COMMAND_LOCK, **kwargs)
 
-    def turn_off(self, **kwargs):
+    def unlock(self, **kwargs):
         return self.command(COMMAND_UNLOCK, **kwargs)
 
     def is_locked(self):
@@ -46,7 +46,3 @@ class Lock(Device):
         if machine_status == 1:
             return "Locked"
         return "Unlocked"
-
-    def generate_human_message(self, machine_status, machine_status_extra):
-        human_status = self.generate_human_status(machine_status, machine_status_extra)
-        return "%s is now %s" % (self.area_label, human_status)
