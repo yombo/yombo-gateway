@@ -146,8 +146,8 @@ class APIAuth(YomboLibrary):
         """
         # print("about to create new apiauth")
         # all_auths = yield self.get_all()
-        for auth_id, auth in self.active_api_auth:
-            if auth['label'].lower() == label.lower():
+        for auth_id, auth in self.active_api_auth.items():
+            if auth.label.lower() == label.lower():
                 raise YomboWarning("Already exists.")
 
         if description is None:
