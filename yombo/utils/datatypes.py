@@ -23,7 +23,7 @@ def coerce_value(value, value_type):
         return int(value)
     elif value_type.lower() == 'float':
         return float(value)
-    elif value_type.lower() == 'bool':
+    elif value_type.lower() in ('bool', 'boolean'):
         return is_true_false(value)
     else:
         return value
