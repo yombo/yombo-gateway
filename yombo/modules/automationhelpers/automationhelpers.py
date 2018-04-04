@@ -14,10 +14,8 @@ Helpers for automation items. Adds some core platforms to the source, filters, a
 :copyright: Copyright 2016 by Yombo.
 :license: LICENSE for details.
 """
-import operator
-
 # Import python libraries
-# from time import time
+import operator
 
 # Import Yombo libraries
 from yombo.core.exceptions import YomboWarning
@@ -32,17 +30,18 @@ logger = get_logger("modules.automationhelper")
 ops = {
     "==": operator.eq,
     "!=": operator.ne,
-   "<": operator.lt,
-   "<=": operator.le,
-   ">=": operator.ge,
-   ">": operator.gt,
+    "<": operator.lt,
+    "<=": operator.le,
+    ">=": operator.ge,
+    ">": operator.gt,
     "eq": operator.eq,
     "ne": operator.ne,
-   "lt": operator.lt,
-   "le": operator.le,
-   "ge": operator.ge,
-   "gt": operator.gt,
-   }
+    "lt": operator.lt,
+    "le": operator.le,
+    "ge": operator.ge,
+    "gt": operator.gt,
+    }
+
 
 class AutomationHelpers(YomboModule):
     """
@@ -67,10 +66,11 @@ class AutomationHelpers(YomboModule):
         :return:
         """
         return [
-            { 'platform': 'call_function',  # Defines a new action platform.
-              'description': 'Allows functions to be called as an action.',
-              'validate_action_callback': self.call_function_validate_action_callback,  # function to call to validate an action is possible.
-              'do_action_callback': self.call_function_do_action_callback  # function to be called to perform an action
+            {
+                'platform': 'call_function',  # Defines a new action platform.
+                'description': 'Allows functions to be called as an action.',
+                'validate_action_callback': self.call_function_validate_action_callback,  # function to call to validate an action is possible.
+                'do_action_callback': self.call_function_do_action_callback  # function to be called to perform an action
             },
          ]
 
@@ -148,7 +148,7 @@ class AutomationHelpers(YomboModule):
     def _automation_filter_list_(self, **kwargs):
         return [
              {
-                 'platform': 'any', # allow any value. Always returns true.
+                 'platform': 'any',  # allow any value. Always returns true.
                  'validate_filter_callback': self.any_validate_filter_callback,  # validate a condition combo is possible
                  'run_filter_callback': self.any_run_filter_callback,  # perform a condition check
              },
