@@ -6,7 +6,7 @@
 </td>
 <td>
  <a href="/scenes/{{scene.scene_id}}/edit_state/{{item_id}}">Edit</a>
- <a href="/scenes/{{scene.scene_id}}/edit_delete/{{item_id}}">Delete</a>
+ <a href="/scenes/{{scene.scene_id}}/delete_state/{{item_id}}">Delete</a>
 </td>
 
 {%- endmacro %}

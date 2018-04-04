@@ -15,19 +15,20 @@
     <!-- /.col-lg-12 -->
 </div>
 <!-- /.row -->
-<form method="post" id="sceneedit">
+<form method="post" id="scenestate">
 <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <label>State Information</label><br>
-                Enter the state name you would like to change, and the new value to set it to.
+                <label>Change state values</label><br>
+                State values can be changed through a scene. Enter the state name and desired value to set it
+                to when this scene is triggered.
             </div>
             <!-- /.panel-heading -->
             <div class="panel-body">
                 <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">State name: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalname"><i class="fa fa-question fa-lg"></i></a>
+                    <a href="#" data-toggle="modal" data-target="#modalname"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalname", 'State Name', '
                     <p>Select a state name to apply the new value to.</p>
                     ') }}
@@ -39,7 +40,7 @@
 
                 <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">State Value: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalvalue"><i class="fa fa-question fa-lg"></i></a>
+                    <a href="#" data-toggle="modal" data-target="#modalvalue"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalvalue", 'State Value', '
                     <p>
                         Enter a new value to set the state to.
@@ -52,7 +53,7 @@
 
                 <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">Value Type: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalvaluetype"><i class="fa fa-question fa-lg"></i></a>
+                    <a href="#" data-toggle="modal" data-target="#modalvaluetype"><i class="fa fa-question fa-sm"></i></a>
                     {{ macros.modal("modalstatus", 'Value Type', "
                     <p>Set a value type to try to coerce the new value into. For example, if the value is '1' and the
                         value type is string, it will be left as a string. However, if it's a value type is integer, it
@@ -74,20 +75,25 @@
 
                 <div class="form-group">
                     <label style="margin-top: 0px; margin-bottom: 0px">Weight: </label>
-                    <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-lg"></i></a>
-                    {{ macros.modal("modalvalue", 'Weight', '
+                    <a href="#" data-toggle="modal" data-target="#modalweight"><i class="fa fa-question fa-sm"></i></a>
+                    {{ macros.modal("modalweight", 'Weight', "
                     <p>
                         Weight is used to help determine the order in which each item is performed.
                     </p>
                     <p>
                         Enter a weight (as a number). The lower the number, the higher the priority. Negative numbers are valid.
-                    </p>') }}
+                    </p>
+                    <p>
+                        When the entry is saved, the system will calculate new weights for all scene items. This allows you to quickly
+                        move an item between two existing items simply by setting a weight value between the new items.
+                    </p>") }}
                     <br>
                     <div class="input-group">
                         <input tabindex="4" type="text" class="form-control" name="weight" id="weight" size="30" placeholder="10" value="{{ data['weight'] }}">
                     </div>
                 </div>
                 <a class="btn btn-md btn-danger" href="/scenes/{{scene.node_id}}/details">Cancel</a>
+                <input type="hidden" name="json_output" id="json_output" value="">
                 <button type="submit" class="btn btn-success">Save Scene</button>
             </div>
         </div>
@@ -107,22 +113,6 @@
 
 {% block body_bottom %}
     <script>
-    $('#short_description').keyup(updateCountShortDescription);
-    $('#short_description').keydown(updateCountShortDescription);
-    $('#short_description').focusin(updateCountShortDescription);
-    $('#short_description').focusout(updateCountShortDescription_remove);
-
-    function updateCountShortDescription() {
-        var cs = $(this).val().length;
-        $('#short_description_characters').text(cs + ' characters');
-        $('#short_description_characters_text').text('Should be 100 to 156 characters long.');
-    }
-
-    function updateCountShortDescription_remove() {
-        var cs = $(this).val().length;
-        $('#short_description_characters').text('');
-        $('#short_description_characters_text').text('');
-    }
 
      $(document).ready(function(){
         var i=1;
@@ -158,12 +148,13 @@
             };
         })(jQuery);
 
-        $("#sceneedit").submit(function(event) {
-//            event.preventDefault();
-
-            var rawData = $('#sceneedit').serializeFormJSON();
+        $("#scenestate").submit(function(event) {
+            var rawData = $( this ).serializeArray();
             var formData = JSON.stringify(rawData);
-            console.log(formData);
+            $('#json_output').val(formData);
+//            console.log(rawData);
+//            console.log(formData);
+//            event.preventDefault();
         });
 
 
