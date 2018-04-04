@@ -164,7 +164,10 @@
                                         <label style="margin-top: 15px; margin-bottom: 0px">Statistic Lifetime: </label><br>
                                         {{ device.statistic_lifetime }}<br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Platform: </label><br>
-                                        {{device.PLATFORM_BASE}} -> {{ device.PLATFORM }}{% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}<br>
+                                        {% if device.PLATFORM_BASE != device.PLATFORM%} {{device.PLATFORM_BASE}} -> {%endif%}
+                                        {{ device.PLATFORM }}
+                                        {% if device.SUB_PLATFORM is not none%} -> {{device.SUB_PLATFORM}}{%endif%}
+                                        <br>
                                         <label style="margin-top: 15px; margin-bottom: 0px">Features: </label><br>
                                         {% for feature, value in device.features.items() if value|string != 'False' %}
                                         {{feature}}{{ "," if not loop.last }}
