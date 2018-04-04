@@ -1,12 +1,16 @@
 # Device features
 FEATURE_ALL_ON = 'all_on'
 FEATURE_ALL_OFF = 'all_off'
+FEATURE_ALLOW_DIRECT_CONTROL = 'allow_direct_control'
 FEATURE_ALLOW_IN_SCENES = 'allow_in_scenes'
 FEATURE_BRIGHTNESS = 'brightness'
+FEATURE_CHANNEL_CONTROL = 'channel_control'
+FEATURE_CONTROLLABLE = 'controllable'
 FEATURE_COLOR_TEMP = 'color_temp'
 FEATURE_DETECTS_MOTION = 'detects_motion'
 FEATURE_EFFECT = 'effect'
 FEATURE_FAN_MODE = "fan_mode"
+FEATURE_INPUT_CONTROL = 'input_control'
 FEATURE_MODES = "modes"
 FEATURE_NUMBER_OF_STEPS = 'number_of_steps'
 FEATURE_OPERATION_MODE = "operation_mode"
@@ -20,5 +24,3 @@ FEATURE_THERMOSTAT = 'thermostat'
 FEATURE_TRANSITION = 'transition'
 FEATURE_WHITE_VALUE = 'white_value'
 FEATURE_XY_COLOR = 'xy_color'
-FEATURE_CHANNEL_CONTROL = 'channel_control'
-FEATURE_INPUT_CONTROL = 'input_control'
