@@ -21,35 +21,35 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                             <label style="margin-top: 0px; margin-bottom: 0px">Status: </label><br>
-                            {{ command.status }}<br>
+                            {{ device_command.status }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Device: </label><br>
-                            {{ command.device.label }}<br>
+                            {{ device_command.device.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Command: </label><br>
-                            {{ command.command.label }}<br>
+                            {{ device_command.command.label }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Created Time: </label><br>
-                            {{ command.created_at|epoch_to_human }} ({{command.created_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.created_at|epoch_to_human }} ({{device_command.created_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Sent Time: </label><br>
-                            {{ command.sent_at|epoch_to_human }} ({{command.sent_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.sent_at|epoch_to_human }} ({{device_command.sent_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Received Time: </label><br>
-                            {{ command.received_at|epoch_to_human }} ({{command.received_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.received_at|epoch_to_human }} ({{device_command.received_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Pending Time: </label><br>
-                            {{ command.pending_at|epoch_to_human }} ({{command.pending_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.pending_at|epoch_to_human }} ({{device_command.pending_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Finished Time: </label><br>
-                            {{ command.finished_at|epoch_to_human }} ({{command.finished_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.finished_at|epoch_to_human }} ({{device_command.finished_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Not Before Time: </label><br>
-                            {{ command.not_before_at|epoch_to_human }} ({{command.not_before_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.not_before_at|epoch_to_human }} ({{device_command.not_before_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Not After Time: </label><br>
-                            {{ command.not_after_at|epoch_to_human }} ({{command.not_after_at|epoch_to_pretty_date}})<br>
+                            {{ device_command.not_after_at|epoch_to_human }} ({{device_command.not_after_at|epoch_to_pretty_date}})<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Request Id: </label><br>
-                            {{ command.request_id }}<br>
+                            {{ device_command.request_id }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Persistent Request Id: </label><br>
-                            {{ command.persistent_request_id }}<br>
+                            {{ device_command.persistent_request_id }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Command Status Received:</label><br>
-                            {{ command.command_status_received|yes_no }}<br>
+                            {{ device_command.command_status_received|yes_no }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Dirty Bit:</label><br>
-                            {{ command.dirty }}<br>
+                            {{ device_command.dirty }}<br>
                             <label style="margin-top: 15px; margin-bottom: 0px">Source:</label><br>
-                            {{ command.source }}<br>
+                            {{ device_command.source }}<br>
                         </div>
                     </div>
                     <!-- /.panel-body -->
@@ -61,7 +61,7 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            {% for key, value in command.requested_by.items() %}
+                            {% for key, value in device_command.requested_by.items() %}
                                 <label style="margin-top: 15px; margin-bottom: 0px">{{ key }}:</label><br>
                                 {{ value }}<br>
                             {% endfor %}
@@ -84,7 +84,7 @@
                                         <th>Time</th><th>Status</th><th>Source Gateway</th><th>Message</th>
                                     </tr>
                                 </thead>
-                                <tbody>{% for history in command.history %}
+                                <tbody>{% for history in device_command.history %}
                                      <tr>
                                         <td>{{ history[0]|epoch_to_human}}</td>
                                         <td>{{ history[1]}}</td>

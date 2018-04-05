@@ -255,15 +255,12 @@ def route_devices(webapp):
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Device Commands")
             webinterface.add_breadcrumb(request, "/devices/device_commands", "Request")
             try:
-                command = webinterface._Devices.device_commands[device_command_id]
-                device_command_id = command.command_id
-
+                device_command = webinterface._Devices.device_commands[device_command_id]
             except Exception as e:
-                webinterface.add_alert("Cannot find requested id.")
+                webinterface.add_alert("Cannot find requested id. <br>Error details: %s" % e)
                 return webinterface.redirect(request, '/devices/device_commands')
-
             return page.render(alerts=webinterface.get_alerts(),
-                               command=command,
+                               device_command=device_command,
                                )
 
         @webapp.route('/<string:device_id>/details')
