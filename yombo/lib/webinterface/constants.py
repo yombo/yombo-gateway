@@ -24,7 +24,7 @@ NAV_SIDE_MENU = [
         'label2': 'Discovery',
         'priority1': 450,
         'priority2': 450,
-        'icon': 'fa fa-wifi fa-fw',
+        'icon': 'fa fa-hand-holding fa-fw',
         'url': '/discovery/index',
         'tooltip': 'Auto discovered devices',
         'opmode': 'run',
