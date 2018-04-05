@@ -1417,6 +1417,20 @@ def is_one_zero(input):
         return 0
 
 
+def is_none(input):
+    """
+    Returns None type if the input is None type, or a string saying "none". If it's not, will return the input.
+
+    :param input:
+    :return:
+    """
+    if input is None:
+        return None
+    elif isinstance(input, str):
+        if input.lower() == "none":
+            return None
+    return input
+
 def test_bit(int_type, offset):
     """
     Tests wether a specific bit is on or off for a given int.
